@@ -13,11 +13,13 @@
 //!   LWW; privacy, capabilities, routing locks, approvals and key settings
 //!   never do (type-enforced).
 
+pub mod bundle;
 pub mod envelope;
 pub mod lww;
 pub mod snapshot;
 pub mod transfer;
 
+pub use bundle::{open_bundle, seal_bundle, BundleError, SealedSnapshotBundle};
 pub use envelope::{RecordEnvelope, SyncGroup, SyncIdentity, SyncRecordType, SyncError};
 pub use lww::{lww_merge, is_lww_safe_field, LwwField};
 pub use snapshot::{sign_snapshot, verify_snapshot, SnapshotError, SyncSnapshot};

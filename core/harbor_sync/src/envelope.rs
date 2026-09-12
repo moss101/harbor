@@ -125,11 +125,11 @@ impl SyncGroup {
         let _ = now;
     }
 
-    fn epoch_key(&self, epoch: u64) -> Option<&KeyMaterial> {
+    pub fn epoch_key(&self, epoch: u64) -> Option<&KeyMaterial> {
         self.epoch_keys.get(&epoch)
     }
 
-    fn epoch_key_current(&self) -> &KeyMaterial {
+    pub fn epoch_key_current(&self) -> &KeyMaterial {
         self.epoch_keys.get(&self.current_epoch).expect("current epoch key")
     }
 }
@@ -137,7 +137,7 @@ impl SyncGroup {
 /// Hybrid logical clock: (physical ms, counter) — monotonic even when the
 /// wall clock stalls; cannot be extended by an untrusted local clock alone
 /// (peers' HLCs feed the max).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Hlc {
     pub physical_ms: u64,
     pub counter: u32,
@@ -153,7 +153,7 @@ impl Hlc {
 }
 
 /// Authenticated sync record envelope.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RecordEnvelope {
     pub group_id: String,
     pub device_id: String,

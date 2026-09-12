@@ -175,6 +175,17 @@ harbor_sync/src/snapshot.rs:
    commit (harbor:git_commit property, version suffix) and build profile;
    deterministic given identical tree + commit.
 
+## Session 21 additions (snapshot bundle transport)
+
+The bulk-record download for re-enrolling devices
+(harbor_sync/src/bundle.rs): `seal_bundle` packages the live record tails
+(current-epoch only) sealed under the CURRENT group epoch key with a
+unique nonce, snapshot metadata signed by the issuing device's identity
+key. `open_bundle` rejects stale-epoch bundles before decryption, verifies
+the issuer signature, and returns the authenticated envelopes. E2E test
+covers the full 90-day expiry flow: device expires -> epoch advances ->
+re-enrollment -> bundle download -> fresh uploads on the new epoch.
+
 ## Session 16 additions (PDF extraction, iOS launch evidence)
 
 1. **PDF text extraction with page mapping** (harbor_render::pdf +
