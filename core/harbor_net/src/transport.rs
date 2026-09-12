@@ -19,7 +19,7 @@ impl UreqTransport {
         UreqTransport {
             agent: ureq::AgentBuilder::new()
                 .redirects(0)
-                .user_agent("Harbor/0.1 (model acquisition)")
+                .user_agent("harbor-modelhub/0.1 (+https://github.com/mohsin/harbor)")
                 .build(),
         }
     }

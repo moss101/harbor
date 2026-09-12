@@ -22,7 +22,7 @@
     "fixture_bundle_sha256"
   ],
   "production_bindings": {
-    "model_package_sha256": null,
+    "model_package_sha256": "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e",
     "formula_engine_source_revision": "crates.io/formualizer@0.9.3",
     "formula_engine_sha256": "64b7771c27fcd3da6229ae4653acc4269cf6635412b283fa0dd16e8359b54139",
     "formula_adapter_revision": "harbor_formula/1",

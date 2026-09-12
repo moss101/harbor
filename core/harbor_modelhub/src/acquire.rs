@@ -192,6 +192,31 @@ impl HfAcquirer<'_> {
                         // Retry the hop with a fresh file.
                         continue;
                     }
+                    Err(BrokerError::Http(status)) if status == 429 || status == 503 => {
+                        if retries < 3 {
+                            std::thread::sleep(std::time::Duration::from_secs(
+                                2 * (retries as u64 + 1),
+                            ));
+                            retries += 1;
+                            continue;
+                        }
+                        return Err(AcquireError::Http(status, current_url.to_string()));
+                    }
+                    Err(BrokerError::Transport(_) | BrokerError::TooManyRedirects) => {
+                        // Connection-level failures (TLS reset, timeout):
+                        // nothing was accepted; recreate the partial file
+                        // and retry with a long backoff — edge CDNs reset
+                        // rapid successive handshakes.
+                        let _ = std::fs::remove_file(out);
+                        if retries < 3 {
+                            std::thread::sleep(std::time::Duration::from_secs(
+                                [5, 15, 30][retries as usize],
+                            ));
+                            retries += 1;
+                            continue;
+                        }
+                        return Err(AcquireError::Broker("transport failed after retries".into()));
+                    }
                     Err(e) => return Err(AcquireError::Broker(e.to_string())),
                 }
             }
@@ -214,6 +239,31 @@ impl HfAcquirer<'_> {
             .begin(package_id)
             .map_err(|e| AcquireError::Install(e.to_string()))?;
         let mut manifest_files = Vec::new();
+        // Metadata precheck: resolve the repo tree through the SAME
+        // brokered connection before the weight transfer. This cross-checks
+        // declared sizes against HF's own metadata and warms the pooled
+        // connection (edge nodes reset some fresh handshakes).
+        let tree_url = format!(
+            "https://huggingface.co/api/models/{repo_id}/tree/{revision}"
+        );
+        let tree = self.fetch(&tree_url, None)?;
+        let expected_sizes: std::collections::BTreeMap<String, u64> =
+            serde_json::from_slice::<serde_json::Value>(&tree)
+                .ok()
+                .and_then(|v| {
+                    Some(
+                        v.as_array()?
+                            .iter()
+                            .filter_map(|f| {
+                                Some((
+                                    f.get("path")?.as_str()?.to_string(),
+                                    f.get("size")?.as_u64()?,
+                                ))
+                            })
+                            .collect(),
+                    )
+                })
+                .unwrap_or_default();
         for (path, role, sha256) in files {
             let url = format!(
                 "https://huggingface.co/{repo_id}/resolve/{revision}/{path}"
@@ -227,6 +277,16 @@ impl HfAcquirer<'_> {
             if !sha256.is_empty() && got != *sha256 {
                 let _ = std::fs::remove_file(&out);
                 return Err(AcquireError::HashMismatch(path.clone()));
+            }
+            // Cross-check the streamed size against HF's own metadata
+            // when the tree provided it.
+            if let Some(expected) = expected_sizes.get(path) {
+                if size != *expected {
+                    let _ = std::fs::remove_file(&out);
+                    return Err(AcquireError::Install(format!(
+                        "size mismatch for {path}: expected {expected}, got {size}"
+                    )));
+                }
             }
             // With no pinned hash (search-driven acquisition), the hash of
             // the downloaded bytes becomes the package identity and is

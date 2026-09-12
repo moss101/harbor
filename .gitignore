@@ -21,3 +21,6 @@ apps/harbor_app/ios/Flutter/ephemeral/
 
 # OS
 .DS_Store
+
+# Large model fixture: re-acquire via core/harbor_modelhub example or direct download (sha256 6a1a2eb6...)
+fixtures/models/qwen2.5-1.5b-instruct-q4_k_m.gguf
