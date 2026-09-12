@@ -4,8 +4,8 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "0f12d6407b2d77bd6be9e348928545835c0e3bff8099457c14366a268f45729c",
-  "file_count_excluding_manifest": 364,
+  "input_manifest_sha256": "f5a15662ebe6546cb6401770225e25da58ef67dc2f28ecf7019b4370eaf4bbf3",
+  "file_count_excluding_manifest": 365,
   "files": [
     {
       "path": "00_README.md",
@@ -104,13 +104,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 68500,
-      "sha256": "62fd173643b6ce8648f8985de979728b7c60d95a72c46793c7f7daeeef77d99d"
+      "bytes": 68667,
+      "sha256": "c88d8717e057374596a68102ff8d3cd0becdb67939f1b55c50cdc01554a808d6"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "9a5615175e23986b10100c91c05996c0dac0b7821c23a24b7e28d379efd816f0"
+      "sha256": "7bd17088120fdd4c14405167ae4e558741e481e52e18f146c36c20cece064111"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -134,8 +134,8 @@
     },
     {
       "path": "26_Qualification_Profiles.json",
-      "bytes": 4765,
-      "sha256": "ced84533434bed759be7a331f9981d391205b2d77714adb18efebabfc885dfd2"
+      "bytes": 5020,
+      "sha256": "81d62e957745726f581b7db67b7c14113a8c7f249ee79ad7b1a8a46b3183bee5"
     },
     {
       "path": "27_Artifact_Commit_Qualification.md",
@@ -1224,13 +1224,13 @@
     },
     {
       "path": "core/harbor_knowledge/src/corpus.rs",
-      "bytes": 6677,
-      "sha256": "db0963b0a1b47a967269ceb272aee4e9b5f8b7f12ba0d2f1cb6086401281a899"
+      "bytes": 7160,
+      "sha256": "d3494402374bec51c053fee2611f76f10d827c3128df329793ac351e6fb82c02"
     },
     {
       "path": "core/harbor_knowledge/src/eval.rs",
-      "bytes": 10724,
-      "sha256": "81cc3a10ded7811fb0c038f2eb8316b7544cd8b4811448734bd6e2dc37e62328"
+      "bytes": 11150,
+      "sha256": "46deaafcc986d933ea8f74c070bf49beab5547902efbb48a59774cb79f27a877"
     },
     {
       "path": "core/harbor_knowledge/src/identity.rs",
@@ -1489,8 +1489,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 14592,
-      "sha256": "4234a3f9afc3ed4d3e2524f3561c784ed322ea944cc5d7faea6c5c3037e42b0c"
+      "bytes": 15367,
+      "sha256": "26d26f26c19ca4a6abc82ba20226fc0598c03b2cfeba0ffb97f8687a76b4362f"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -1529,18 +1529,18 @@
     },
     {
       "path": "evals/ar/corpus.json",
-      "bytes": 1354,
-      "sha256": "cf6bfddf2f045abdf96be544180cc538a018960b896bafd2f61f3e1989405bae"
+      "bytes": 47428,
+      "sha256": "2795b0327226a2a02168e7fdbd76260c2924c62981421c0e0387160da646e11f"
     },
     {
       "path": "evals/en/corpus.json",
-      "bytes": 1263,
-      "sha256": "a10c58e258af11221165e4d92cc06990751d7306bf4b2ca22ae95b8d2a235779"
+      "bytes": 38439,
+      "sha256": "50170954e909ac2e50441f39d7e4d80739f3311057a1003b4e166ec67ab5d5c6"
     },
     {
       "path": "evals/mixed/corpus.json",
-      "bytes": 613,
-      "sha256": "26d2dc8dcf796be12ce446b20050008b7b516eca002cdfc6bf54f62431b97170"
+      "bytes": 87796,
+      "sha256": "529e417537f9cc04758ea74a1823799ebaac10eb37f1451e021cad69700e479b"
     },
     {
       "path": "fixtures/catalog/root_public.hex",
@@ -1796,6 +1796,11 @@
       "path": "tools/contracts.py",
       "bytes": 16743,
       "sha256": "502498134afe4645749154e5622980e49bbbad389bbebf69fb269b24e83c71b0"
+    },
+    {
+      "path": "tools/expand_eval_corpus.py",
+      "bytes": 18920,
+      "sha256": "b6d4bb6ad1bff61ac0b917e21792a996e9e73212f8073a8fb9f20a2f8bed0bc1"
     },
     {
       "path": "tools/generate_gate_evidence.py",

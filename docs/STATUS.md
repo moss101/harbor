@@ -111,6 +111,7 @@ E2EE sync.
 | Network capture (real HF) | `cargo test -p harbor_modelhub --lib -- --ignored real_hf_capture` | PASS → evidence/network_capture.json |
 | Office conformance (all matrix rows) | `cargo test -p harbor_artifacts --test office_conformance` | PASS (20/20) |
 | Optional capabilities disabled | `python3 tools/check_optional_disabled.py --write` | N/A_DISABLED |
+| RAG eval (pinned corpora) | `cargo test -p harbor_knowledge` | PASS (464/464 cases across en/ar/mixed) |
 
 All ten machine suites: recorded, commit-bound, in `evidence/gate_results.json`
 (regenerate with `python3 tools/generate_gate_evidence.py --write`; the
@@ -131,22 +132,34 @@ same tree state).
   Apple-silicon device. Each is recorded `BLOCKED` /
   `BLOCKED_DEVICE_EVIDENCE` in evidence files; nothing else is blocked on
   them.
-- **Engineering gaps still open (honest):** evaluation corpus is 9 cases vs
-  the 100/language target in `26_Qualification_Profiles.json`; iOS native
-  core build (libharbor_ffi for iOS targets) not yet produced; visual
-  (pixel-diff) Office fixtures need a rendering stack; store/privacy
-  declarations need signed distribution.
+- **Engineering gaps still open (honest):** iOS native core build
+  (libharbor_ffi for iOS targets) not yet produced; visual (pixel-diff)
+  Office fixtures need a rendering stack; store/privacy declarations need
+  signed distribution; tool_selection/contradiction behaviors are not yet
+  expressed by the corpus schema (harbor.eval_corpus/v1 carries the fields
+  the reference runner measures).
+
+### Evaluation corpus (expanded this session)
+
+`evals/{en,ar,mixed}/corpus.json` regenerated deterministically by
+`tools/expand_eval_corpus.py`: **116 EN + 116 AR + 232 mixed = 464 cases**
+(72 supported incl. numeric, 24 abstention, 20 injection per language),
+meeting the ≥100-cases/language and ≥20-per-measurable-behavior minimums of
+`26_Qualification_Profiles.evaluation`. All 464 pass the reference runner.
+The evidence threshold in the reference harness
+(`eval.rs DEFAULT_MIN_SCORE`) was recalibrated 2026-09-12 with measured
+distributions (own-chunk min 0.99969 vs unrelated max 0.99908 → 0.9992);
+the rationale is recorded at the constant. The combined corpus hash is
+rebound: `evaluation_corpus_sha256 = a0b605a7…66829dc` (was 9e2a7e4d…),
+with the change recorded in `26_Qualification_Profiles.binding_history`.
 
 ### Next dependency-ready task
 
-Expand the evaluation corpus (`evals/{en,ar,mixed}/corpus.json`) toward the
-100-cases/language / 20-per-behavior minimum with real graded expectations
-(behaviors and thresholds already fixed in
-`26_Qualification_Profiles.evaluation`), then bind the expanded corpus hash
-in the dossier. This is machine-doable now and unblocks RAG quality gates
-(ACC-014/ACC-055 family). After that: iOS native core build (rustup target
-aarch64-apple-ios + cargo build -p harbor_ffi) to replace the iOS
-simulator's degraded state with a live core.
+iOS native core build: `rustup target add aarch64-apple-ios` +
+`cargo build -p harbor_ffi --target aarch64-apple-ios` (staticlib), wired
+into the Xcode project to replace the iOS simulator's degraded state with a
+live core (the Android recipe in `evidence/device_qualification.json` is
+the template).
 
 ### Reproduce the evidence
 

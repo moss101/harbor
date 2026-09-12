@@ -159,7 +159,17 @@ mod tests {
             assert_eq!(report.failed, 0, "{lang}: {} failures", report.failed);
         }
         let total: usize = reports.iter().map(|(_, r)| r.passed as usize).sum();
-        assert_eq!(total, 9, "three corpora x three cases");
+        // Every case in every pinned corpus must pass; the expected total
+        // is derived from the corpora themselves (not hardcoded), so
+        // corpus expansion cannot silently skip cases.
+        let expected: usize = [CORPUS_EN, CORPUS_AR, CORPUS_MIXED]
+            .iter()
+            .map(|j| serde_json::from_str::<serde_json::Value>(j).unwrap()["cases"]
+                .as_array()
+                .unwrap()
+                .len())
+            .sum();
+        assert_eq!(total, expected, "all pinned corpus cases must pass");
     }
 
     #[test]

@@ -47,7 +47,14 @@ pub struct EvalReport {
 /// embedding models are calibrated to their own scale; the deterministic
 /// test embedding reaches 1.0 only for identical text, so tests use a high
 /// threshold. Production qualification pins this per embedding model.
-pub const DEFAULT_MIN_SCORE: f32 = 0.995;
+///
+/// Recalibrated 2026-09-12 for the expanded pinned corpora (464 cases):
+/// the previous 0.995 was fitted to the initial 9-case corpus. Measured on
+/// the expanded corpora with the deterministic test embedding, the
+/// question-to-own-chunk cosine minimum is 0.99969 and the maximum
+/// unrelated cosine is 0.99908; 0.9992 separates evidence from accident.
+/// This constant exists only in the reference eval harness.
+pub const DEFAULT_MIN_SCORE: f32 = 0.999_2;
 
 /// The answer behavior under test: given question + retrieved citations,
 /// the pipeline emits either an answer or an explicit abstention.
