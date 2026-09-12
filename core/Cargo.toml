@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "harbor_canonical",
     "harbor_store",
+    "harbor_sync",
     "harbor_security",
     "harbor_net",
     "harbor_agent",

@@ -1727,6 +1727,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "harbor_sync"
+version = "0.1.0"
+dependencies = [
+ "chacha20poly1305",
+ "chrono",
+ "ed25519-dalek",
+ "harbor_canonical",
+ "harbor_security",
+ "harbor_store",
+ "hex",
+ "rand 0.8.8",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.14.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"

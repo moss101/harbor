@@ -100,6 +100,28 @@ Measured (Apple M5 Pro, Metal, Qwen2.5-1.5B Q4_K_M):
 These are BASELINE measurements, not the independent qualification run:
 GA still requires freezing approved thresholds and minimum-device runs.
 
+## Session 17 additions (harbor_sync E2EE protocol, M4 optional)
+
+`core/harbor_sync` implements the 11_Sync_Protocol.md core, fully tested:
+- Record envelope: group, device, device sequence, key epoch, record type,
+  object ID, hybrid logical clock, previous-record hash, tombstone flag,
+  AEAD ciphertext (ChaCha20-Poly1305, unique per-record nonce, all envelope
+  fields bound as AAD). Tampering any field breaks authentication.
+- Receiver policy: per-device sequence contiguity + per-device hash chain,
+  duplicate rejection, current-epoch-only live uploads. Old-epoch records
+  remain readable as history; restored old backups can never roll the
+  epoch backward.
+- Revocation advances the epoch; revoked devices cannot seal new records.
+- LWW policy is type-enforced: only appearance.theme, display.density,
+  ui.language may merge by LWW; privacy/capabilities/approvals/routing
+  never do.
+- Transfer handshake: durable source acknowledgement (stopped + dispatch
+  authority revoked + effects settled-or-outcome_unknown), destination
+  generation increment, crash retries reuse the transfer ID, completion
+  immutable.
+- Device horizon 90 days; tombstone retention 120 days (authority consts).
+Sync remains DISABLED by default; activation requires ACC-057 (M4 gate).
+
 ## Session 14 additions (key ceremony, launch verification)
 
 1. **Catalog key ceremony executed** (harbor_modelhub example
