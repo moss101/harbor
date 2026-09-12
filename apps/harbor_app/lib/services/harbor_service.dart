@@ -122,6 +122,18 @@ class HarborService extends ChangeNotifier {
     }
   }
 
+  /// Grounded generation: retrieve -> augment -> generate on-device.
+  /// Returns null when no chat model is installed (honest, never fake).
+  Map<String, dynamic>? generateAnswer(String question,
+      {required String chatPackage, int maxTokens = 64}) {
+    try {
+      return _client.generateAnswer(
+          question: question, chatPackage: chatPackage, maxTokens: maxTokens);
+    } on ffi.HarborCoreException {
+      return null;
+    }
+  }
+
   Map<String, dynamic>? fitScore(String packageId) {
     try {
       return _client.fitScore(

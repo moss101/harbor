@@ -157,6 +157,17 @@ class HarborCoreClient {
   Map<String, dynamic> searchKnowledge(String question, {int topK = 5}) =>
       call('knowledge.search', {'question': question, 'top_k': topK});
 
+  Map<String, dynamic> generateAnswer({
+    required String question,
+    required String chatPackage,
+    int maxTokens = 64,
+  }) =>
+      call('ask.generate', {
+        'question': question,
+        'chat_package': chatPackage,
+        'max_tokens': maxTokens,
+      });
+
   List<SkillSummary> listSkills() {
     final r = call('skills.list');
     return (r['skills'] as List)

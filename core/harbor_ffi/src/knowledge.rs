@@ -194,17 +194,21 @@ impl KnowledgeService {
             .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?;
         let q = qv.into_iter().next().ok_or_else(|| KnowledgeFfiError::Provider("empty query vector".into()))?;
         let index = self.index.lock().unwrap();
-        let hits = index.search(&q, top_k);
+        let hits = index.search_with_text(&q, top_k);
         let citations: Vec<serde_json::Value> = hits
             .iter()
             .map(|c| {
                 serde_json::json!({
-                    "source_id": c.source_id,
-                    "title": c.title,
-                    "chunk_id": c.chunk_id,
-                    "score": c.score,
-                    "state": format!("{:?}", c.state),
-                    "content_hash": c.content_hash,
+                    "source_id": c.citation.source_id,
+                    "title": c.citation.title,
+                    "chunk_id": c.citation.chunk_id,
+                    "score": c.citation.score,
+                    "state": format!("{:?}", c.citation.state),
+                    "content_hash": c.citation.content_hash,
+                    // Chunk text rides with the citation so grounded
+                    // generation can quote evidence; the UI shows only
+                    // title/score/state.
+                    "_text": c.text,
                 })
             })
             .collect();
@@ -214,5 +218,84 @@ impl KnowledgeService {
     pub fn supports_chat(&self) -> bool {
         let model_ref = ModelRef::InstalledPackage { package_id: self.embedding_package.clone() };
         self.provider.supports(&model_ref, &Capabilities::Chat)
+    }
+}
+
+/// Chat-side handle for RAG generation over an installed GGUF chat model.
+pub struct ChatHandle {
+    provider: GgufLlamaCppProvider,
+    loaded: std::sync::Mutex<std::collections::BTreeMap<String, ()>>,
+}
+
+/// The result of one grounded generation.
+pub struct RagAnswer {
+    pub answer: String,
+    pub used_citations: bool,
+    pub executed_on: String,
+    pub prompt_tokens: u64,
+    pub completion_tokens: u64,
+}
+
+impl ChatHandle {
+    pub fn new(models_root: &std::path::Path) -> Self {
+        ChatHandle {
+            provider: GgufLlamaCppProvider::new(models_root)
+                .expect("chat provider init"),
+            loaded: std::sync::Mutex::new(Default::default()),
+        }
+    }
+
+    /// Retrieve -> augment -> generate, with per-generation lease-free
+    /// cancellation left to the runtime layer (bounded tokens here).
+    pub fn generate_rag(
+        &self,
+        package_id: &str,
+        question: &str,
+        citations: Vec<serde_json::Value>,
+        max_tokens: u32,
+    ) -> Result<RagAnswer, String> {
+        use harbor_inference::provider::{Capabilities, ChatRequest, ModelRef};
+        {
+            let mut loaded = self.loaded.lock().unwrap();
+            if loaded.insert(package_id.to_string(), ()).is_none() {
+                self.provider
+                    .load(&ModelRef::InstalledPackage { package_id: package_id.into() })
+                    .map_err(|e| e.to_string())?;
+            }
+        }
+        // Compose: instructions + cited evidence + question.
+        let mut context = String::from(
+            "Answer using ONLY the evidence below. If the evidence is insufficient, reply exactly: INSUFFICIENT_EVIDENCE\n\n",
+        );
+        let mut used = false;
+        for (i, c) in citations.iter().enumerate() {
+            let title = c.get("title").and_then(|v| v.as_str()).unwrap_or("source");
+            let _ = title;
+            if let Some(evidence) = c.get("_text").and_then(|v| v.as_str()) {
+                used = true;
+                context.push_str(&format!("[{}] {}\n", i + 1, evidence));
+            }
+        }
+        context.push_str(&format!("\nQuestion: {question}\nAnswer:"));
+        let resp = self
+            .provider
+            .generate(ChatRequest {
+                model: ModelRef::InstalledPackage { package_id: package_id.into() },
+                messages: vec![JsonValue::object([
+                    ("role", JsonValue::str("user")),
+                    ("content", JsonValue::str(&context)),
+                ])],
+                max_tokens,
+                temperature: 0.0,
+                requires: vec![Capabilities::Chat],
+            })
+            .map_err(|e| e.to_string())?;
+        Ok(RagAnswer {
+            answer: resp.content,
+            used_citations: used,
+            executed_on: resp.executed_on,
+            prompt_tokens: resp.usage.prompt_tokens,
+            completion_tokens: resp.usage.completion_tokens,
+        })
     }
 }

@@ -43,6 +43,13 @@ pub struct Citation {
     pub content_hash: String,
 }
 
+/// A citation plus its chunk text (generation input, not display IR).
+#[derive(Debug, Clone, PartialEq)]
+pub struct CitationWithText {
+    pub citation: Citation,
+    pub text: String,
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum IndexError {
     #[error("index identity mismatch: {0}")]
@@ -131,6 +138,23 @@ impl KnowledgeIndex {
                     state: SourceVersionState::Current,
                     content_hash: s.content_hash.clone(),
                 })
+            })
+            .collect()
+    }
+
+    /// Like [`search`], but each citation carries its chunk text so
+    /// grounded generation can quote evidence.
+    pub fn search_with_text(&self, query: &[f32], top_k: usize) -> Vec<CitationWithText> {
+        self.search(query, top_k)
+            .into_iter()
+            .map(|c| {
+                let text = self
+                    .chunks
+                    .iter()
+                    .find(|ch| ch.chunk_id == c.chunk_id)
+                    .map(|ch| ch.text.clone())
+                    .unwrap_or_default();
+                CitationWithText { citation: c, text }
             })
             .collect()
     }

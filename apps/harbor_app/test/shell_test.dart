@@ -71,6 +71,7 @@ void main() {
   _appendPreviewTest();
   _appendSkillsTest();
   _appendKnowledgeTest();
+  _appendRagTest();
   testWidgets('home shows work-first headline and quick actions',
       (tester) async {
     await pumpApp(tester);
@@ -319,6 +320,66 @@ void _appendKnowledgeTest() {
       isEmpty,
       reason: 'unrelated question must not surface evidence',
     );
+    service!.close();
+  });
+}
+
+void _appendRagTest() {
+  testWidgets('ask generates grounded answers on-device end-to-end',
+      (tester) async {
+    if (!coreAvailable) return;
+    HarborService? service;
+    var opened = false;
+    await tester.runAsync(() async {
+      final dir = await Directory.systemTemp.createTemp('harbor-rag-');
+      final s = HarborService.open(
+          libraryPath: dylibPath, dataRoot: dir.path, workspaceId: 'ws-rag');
+      // Install BOTH models through the real staged-install path:
+      // the chat model and the embedding model.
+      final chat = await File(
+              '/Users/mohsin/projects/harbor/fixtures/models/stories260K.gguf')
+          .readAsBytes();
+      s.installModelFile(
+          packageId: 'stories260k',
+          path: 'stories260K.gguf',
+          bytes: chat);
+      final embed = await File(
+              '/Users/mohsin/projects/harbor/fixtures/models/bge-small-en-v1.5-q8_0.gguf')
+          .readAsBytes();
+      s.installModelFile(
+          packageId: 'bge-small-en-v1.5',
+          path: 'bge-small-en-v1.5-q8_0.gguf',
+          bytes: embed);
+      opened = s.openKnowledge();
+      if (opened) {
+        await s.ingestTexts([
+          {
+            'id': 'contract',
+            'title': 'Master Services Agreement',
+            'text': 'The contract value is 5000 USD. The agreement ends on '
+                '2026-12-31.',
+          }
+        ]);
+      }
+      service = s;
+    });
+    if (!opened || service == null) {
+      fail('knowledge must open in the test environment');
+    }
+    Map<String, dynamic>? answer;
+    await tester.runAsync(() async {
+      answer = service!.generateAnswer('What is the contract value?',
+          chatPackage: 'stories260k', maxTokens: 24);
+    });
+    // The RAG loop ran fully on-device with real provenance.
+    expect(answer, isNotNull);
+    expect(answer!['executed_on'], 'stories260k');
+    expect(answer!['execution'], 'ON_DEVICE');
+    expect((answer!['usage']['prompt_tokens'] as num).toInt(), greaterThan(0));
+    expect((answer!['usage']['completion_tokens'] as num).toInt(), greaterThan(0));
+    expect((answer!['answer'] as String).trim(), isNotEmpty);
+    // Citations were retrieved and surfaced with the answer.
+    expect((answer!['used_citations'] as bool), isTrue);
     service!.close();
   });
 }

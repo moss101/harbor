@@ -23,6 +23,8 @@ pub struct WorkspaceHandle {
     data_root: std::path::PathBuf,
     /// Created on demand when an embedding model is available.
     knowledge: Option<crate::knowledge::KnowledgeService>,
+    /// Chat provider over installed GGUF models (created on demand).
+    chat: Option<crate::knowledge::ChatHandle>,
 }
 
 fn str_from_ptr<'a>(p: *const c_char) -> Result<&'a str, HarborError> {
@@ -55,7 +57,12 @@ pub extern "C" fn harbor_core_open(
             device_id: "device".into(),
         };
         let ws = harbor_core::Workspace::open(&opts, ws_id, mode)?;
-        Ok(WorkspaceHandle { inner: ws, data_root: opts.data_root, knowledge: None })
+        Ok(WorkspaceHandle {
+            inner: ws,
+            data_root: opts.data_root,
+            knowledge: None,
+            chat: None,
+        })
     })();
     match result {
         Ok(h) => Box::into_raw(Box::new(h)),
@@ -466,6 +473,43 @@ fn dispatch(ws: &mut WorkspaceHandle, method: &str, args: &serde_json::Value) ->
                 .ok_or_else(|| HarborError::Other("missing question".into()))?;
             let top_k = args.get("top_k").and_then(|v| v.as_u64()).unwrap_or(5) as usize;
             ks.search(question, top_k).map_err(|e| HarborError::Other(e.to_string()))
+        }
+        // --- ask: retrieve -> augment -> generate ------------------------
+        "ask.generate" => {
+            let question = args.get("question").and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing question".into()))?;
+            let chat_package = args.get("chat_package").and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing chat_package".into()))?
+                .to_string();
+            let max_tokens = args.get("max_tokens").and_then(|v| v.as_u64()).unwrap_or(64) as u32;
+            // 1. Retrieve grounding (may be absent: generation still runs
+            //    but the answer carries no citations, so the UI cannot pass
+            //    generated text off as evidence-backed).
+            let citations = ws
+                .knowledge
+                .as_ref()
+                .and_then(|ks| ks.search(question, 3).ok())
+                .map(|v| {
+                    v.get("citations").cloned().unwrap_or(serde_json::json!([]))
+                })
+                .unwrap_or_else(|| serde_json::json!([]));
+            // 2. Generate on-device with the model-native template.
+            let chat = ws.chat.get_or_insert_with(|| {
+                crate::knowledge::ChatHandle::new(&ws.data_root.join("models"))
+            });
+            let answer = chat
+                .generate_rag(&chat_package, question, citations.as_array().cloned().unwrap_or_default(), max_tokens)
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            Ok(serde_json::json!({
+                "answer": answer.answer,
+                "used_citations": answer.used_citations,
+                "executed_on": answer.executed_on,
+                "execution": "ON_DEVICE",
+                "usage": {
+                    "prompt_tokens": answer.prompt_tokens,
+                    "completion_tokens": answer.completion_tokens,
+                },
+            }))
         }
         // --- activity ---------------------------------------------------
         "runs.list" => {
