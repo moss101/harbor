@@ -6,6 +6,8 @@
 //! pointers; strings returned by the boundary are freed with
 //! `harbor_core_string_free`.
 
+pub mod knowledge;
+
 use std::ffi::{c_char, CStr, CString};
 use std::ptr;
 
@@ -19,6 +21,8 @@ use harbor_security::policy::PrivacyMode;
 pub struct WorkspaceHandle {
     inner: Workspace,
     data_root: std::path::PathBuf,
+    /// Created on demand when an embedding model is available.
+    knowledge: Option<crate::knowledge::KnowledgeService>,
 }
 
 fn str_from_ptr<'a>(p: *const c_char) -> Result<&'a str, HarborError> {
@@ -51,7 +55,7 @@ pub extern "C" fn harbor_core_open(
             device_id: "device".into(),
         };
         let ws = harbor_core::Workspace::open(&opts, ws_id, mode)?;
-        Ok(WorkspaceHandle { inner: ws, data_root: opts.data_root })
+        Ok(WorkspaceHandle { inner: ws, data_root: opts.data_root, knowledge: None })
     })();
     match result {
         Ok(h) => Box::into_raw(Box::new(h)),
@@ -374,6 +378,94 @@ fn dispatch(ws: &mut WorkspaceHandle, method: &str, args: &serde_json::Value) ->
                 "corpus_sha256": hash,
                 "languages": langs,
             }))
+        }
+        // --- knowledge ---------------------------------------------------
+        "models.install_file" => {
+            let package_id = args.get("package_id").and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing package_id".into()))?;
+            let path = args.get("path").and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing path".into()))?;
+            let role = args.get("role").and_then(|v| v.as_str()).unwrap_or("weights");
+            let data_b64 = args.get("data_b64").and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing data_b64".into()))?;
+            use base64::Engine as _;
+            let bytes = base64::engine::general_purpose::STANDARD
+                .decode(data_b64)
+                .map_err(|e| HarborError::Other(format!("b64: {e}")))?;
+            let installer = harbor_modelhub::install::PackageInstaller::new(
+                ws.data_root.join("models"),
+            );
+            let file = harbor_modelhub::install::PackageFile {
+                role: role.to_string(),
+                path: path.to_string(),
+                sha256: harbor_canonical::sha256_hex(&bytes),
+                size_bytes: bytes.len() as u64,
+            };
+            let manifest = harbor_modelhub::install::PackageManifest {
+                schema: "harbor.model/v3".into(),
+                id: package_id.to_string(),
+                reference_type: "installed_package".into(),
+                files: vec![file.clone()],
+                runtime: harbor_modelhub::install::RuntimeBinding {
+                    kind: "gguf/llama.cpp".into(),
+                    min_revision: "0.1.156".into(),
+                    targets: vec![std::env::consts::ARCH.to_string()],
+                },
+            };
+            let mut staged = installer
+                .begin(package_id)
+                .map_err(|e| HarborError::Other(format!("staging: {e}")))?;
+            installer
+                .ingest_file(&mut staged, &file, &bytes)
+                .map_err(|e| HarborError::Other(format!("ingest: {e}")))?;
+            let report = installer
+                .validate(&staged, &manifest)
+                .map_err(|e| HarborError::Other(format!("validate: {e}")))?;
+            if !report.ok {
+                return Err(HarborError::Other(format!(
+                    "package invalid: {:?}", report.problems
+                )));
+            }
+            installer
+                .commit(&mut staged, &manifest, chrono::Utc::now())
+                .map_err(|e| HarborError::Other(format!("commit: {e}")))?;
+            Ok(serde_json::json!({ "installed": package_id }))
+        }
+        "knowledge.open" => {
+            let package_id = args.get("package_id").and_then(|v| v.as_str())
+                .unwrap_or("bge-small-en-v1.5");
+            let svc = crate::knowledge::KnowledgeService::open(&ws.data_root, package_id)
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let identity = svc.identity_hash();
+            let dimension = svc.embedding_dimension();
+            ws.knowledge = Some(svc);
+            Ok(serde_json::json!({ "identity": identity, "dimension": dimension }))
+        }
+        "knowledge.ingest" => {
+            let ks = ws.knowledge.as_ref()
+                .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
+            let sources: Vec<(String, String, String)> = args
+                .get("sources")
+                .and_then(|v| v.as_array())
+                .ok_or_else(|| HarborError::Other("missing sources".into()))?
+                .iter()
+                .map(|s| {
+                    (
+                        s.get("id").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+                        s.get("title").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+                        s.get("text").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+                    )
+                })
+                .collect();
+            ks.ingest(&sources).map_err(|e| HarborError::Other(e.to_string()))
+        }
+        "knowledge.search" => {
+            let ks = ws.knowledge.as_ref()
+                .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
+            let question = args.get("question").and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing question".into()))?;
+            let top_k = args.get("top_k").and_then(|v| v.as_u64()).unwrap_or(5) as usize;
+            ks.search(question, top_k).map_err(|e| HarborError::Other(e.to_string()))
         }
         // --- activity ---------------------------------------------------
         "runs.list" => {

@@ -135,6 +135,28 @@ class HarborCoreClient {
   Map<String, dynamic> previewArtifact(List<int> bytes) =>
       call('artifact.preview', {'data_b64': base64Encode(bytes)});
 
+  Map<String, dynamic> installModelFile({
+    required String packageId,
+    required String path,
+    required List<int> bytes,
+    String role = 'weights',
+  }) =>
+      call('models.install_file', {
+        'package_id': packageId,
+        'path': path,
+        'role': role,
+        'data_b64': base64Encode(bytes),
+      });
+
+  Map<String, dynamic> openKnowledge({String packageId = 'bge-small-en-v1.5'}) =>
+      call('knowledge.open', {'package_id': packageId});
+
+  Map<String, dynamic> ingestKnowledge(List<Map<String, dynamic>> sources) =>
+      call('knowledge.ingest', {'sources': sources});
+
+  Map<String, dynamic> searchKnowledge(String question, {int topK = 5}) =>
+      call('knowledge.search', {'question': question, 'top_k': topK});
+
   List<SkillSummary> listSkills() {
     final r = call('skills.list');
     return (r['skills'] as List)

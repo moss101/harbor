@@ -1434,11 +1434,13 @@ version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
  "chrono",
+ "encoding_rs",
  "harbor_agent",
  "harbor_artifacts",
  "harbor_canonical",
  "harbor_core",
  "harbor_formula",
+ "harbor_inference",
  "harbor_knowledge",
  "harbor_modelhub",
  "harbor_net",
@@ -1447,6 +1449,7 @@ dependencies = [
  "harbor_store",
  "rusqlite",
  "serde_json",
+ "thiserror 2.0.20",
  "zip 4.6.1",
 ]
 

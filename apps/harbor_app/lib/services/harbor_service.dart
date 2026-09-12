@@ -74,6 +74,54 @@ class HarborService extends ChangeNotifier {
     }
   }
 
+  bool knowledgeOpen = false;
+  int knowledgeDimension = 0;
+
+  /// Open the durable knowledge index over an installed embedding model.
+  /// Reports failure honestly (no embedding model installed) instead of
+  /// fabricating search results.
+  bool installModelFile({
+    required String packageId,
+    required String path,
+    required List<int> bytes,
+    String role = 'weights',
+  }) {
+    try {
+      _client.installModelFile(
+          packageId: packageId, path: path, bytes: bytes, role: role);
+      return true;
+    } on ffi.HarborCoreException {
+      return false;
+    }
+  }
+
+  bool openKnowledge({String packageId = 'bge-small-en-v1.5'}) {
+    try {
+      final r = _client.openKnowledge(packageId: packageId);
+      knowledgeOpen = true;
+      knowledgeDimension = r['dimension'] as int;
+      notifyListeners();
+      return true;
+    } on ffi.HarborCoreException {
+      knowledgeOpen = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<void> ingestTexts(List<Map<String, dynamic>> sources) async {
+    _client.ingestKnowledge(sources);
+  }
+
+  Map<String, dynamic>? searchKnowledge(String question, {int topK = 5}) {
+    if (!knowledgeOpen) return null;
+    try {
+      return _client.searchKnowledge(question, topK: topK);
+    } on ffi.HarborCoreException {
+      return null;
+    }
+  }
+
   Map<String, dynamic>? fitScore(String packageId) {
     try {
       return _client.fitScore(

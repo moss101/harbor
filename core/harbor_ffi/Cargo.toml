@@ -17,6 +17,7 @@ harbor_formula = { workspace = true }
 harbor_modelhub = { workspace = true }
 harbor_render = { workspace = true }
 harbor_knowledge = { workspace = true }
+harbor_inference = { workspace = true, features = ["gguf-backend"] }
 harbor_net = { workspace = true }
 harbor_security = { workspace = true }
 harbor_store = { workspace = true }
@@ -25,3 +26,5 @@ serde_json = { workspace = true }
 base64 = "0.22"
 zip = { workspace = true }
 chrono = { workspace = true }
+thiserror = { workspace = true }
+encoding_rs = "0.8"

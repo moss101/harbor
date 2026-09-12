@@ -64,10 +64,13 @@ Future<void> pumpApp(
   print('PUMP: pump2 done');
 }
 
+Map<String, dynamic>? _result;
+
 void main() {
   _appendLiveTests();
   _appendPreviewTest();
   _appendSkillsTest();
+  _appendKnowledgeTest();
   testWidgets('home shows work-first headline and quick actions',
       (tester) async {
     await pumpApp(tester);
@@ -252,5 +255,70 @@ void _appendSkillsTest() {
         find.text('Privacy Inspector'), 300,
         scrollable: find.byType(Scrollable).first);
     expect(find.text('Privacy Inspector'), findsOneWidget);
+  });
+}
+
+void _appendKnowledgeTest() {
+  testWidgets('knowledge answers from a real embedded model end-to-end',
+      (tester) async {
+    if (!coreAvailable) return;
+    HarborService? service;
+    var opened = false;
+    await tester.runAsync(() async {
+      final dir = await Directory.systemTemp.createTemp('harbor-knowledge-');
+      final s = HarborService.open(
+          libraryPath: dylibPath, dataRoot: dir.path, workspaceId: 'ws-know');
+      // Install the REAL bge-small-en-v1.5 embedding model through the
+      // staged-install path, then open the durable index over it.
+      final model = await File(
+              '/Users/mohsin/projects/harbor/fixtures/models/bge-small-en-v1.5-q8_0.gguf')
+          .readAsBytes();
+      s.installModelFile(
+        packageId: 'bge-small-en-v1.5',
+        path: 'bge-small-en-v1.5-q8_0.gguf',
+        bytes: model,
+      );
+      opened = s.openKnowledge();
+      if (opened) {
+        await s.ingestTexts([
+          {
+            'id': 'en-contract',
+            'title': 'Master Services Agreement',
+            'text': 'The contract value is 5000 USD. The agreement ends on '
+                '2026-12-31. Payment terms are net thirty days.',
+          }
+        ]);
+      }
+      service = s;
+    });
+    if (!opened || service == null) {
+      fail('embedding model must install and open in the test environment');
+    }
+    // Answerable question returns a real citation.
+    await tester.runAsync(() async {
+      _result =
+          service!.searchKnowledge('What is the contract value?', topK: 3);
+    });
+    expect(_result, isNotNull);
+    final citations = (_result!['citations'] as List).cast<Map>();
+    expect(citations, isNotEmpty);
+    expect(citations.first['source_id'], 'en-contract');
+    expect((citations.first['score'] as num).toDouble(), greaterThan(0.5));
+    // Unanswerable question: nothing above the evidence bar.
+    Map<String, dynamic>? empty;
+    await tester.runAsync(() async {
+      empty = service!.searchKnowledge("What is the CEO's favorite color?",
+          topK: 3);
+    });
+    final emptyCitations = (empty!['citations'] as List)
+        .cast<Map>()
+        .where((c) => (c['score'] as num).toDouble() > 0.5)
+        .toList();
+    expect(
+      emptyCitations,
+      isEmpty,
+      reason: 'unrelated question must not surface evidence',
+    );
+    service!.close();
   });
 }
