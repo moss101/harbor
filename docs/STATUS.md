@@ -4,7 +4,39 @@ Date: 2026-09-12 (session 2). Build identity: workspace `core/Cargo.toml` v0.1.0
 (not yet a git repository — initialize git before any promotion claim so evidence
 can bind to a commit).
 
-## Verified state this session (all commands reproducible)
+## Verified state — latest session (session 8, commits through d931839)
+
+| Suite | Command | Result |
+| --- | --- | --- |
+| Rust workspace (14 crates) | `cd core && cargo test --workspace` | 149 passed, 0 failed |
+| Rust + llama.cpp backend | `cargo test -p harbor_inference --features gguf-backend` | +11 real-model tests (on-device Metal inference) |
+| Dossier contract freeze | `python3 tools/validate_dossier.py` | PASS |
+| Contract suite | `python3 tools/test_contracts.py` | 124 passed |
+| harbor_ui | `flutter test` (packages/harbor_ui) | 7 passed |
+| harbor_app (incl. a11y + l10n gates + live-dylib RAG) | `flutter test` (apps/harbor_app) | 18 passed |
+| harbor_native / harbor_domain | `dart test` | passed |
+| Contrast audit | `python3 tools/check_contrast.py` | 46/46 pairs pass |
+| SBOM | `python3 tools/generate_sbom.py --write` | CycloneDX 1.5, 375 components |
+| Platform builds (last run) | flutter build macos / ios --simulator / apk --debug | all produced |
+
+## Session 8 additions (a11y, SBOM, migration docs)
+
+1. **Accessibility audit is a permanent test gate**
+   (apps/harbor_app/test/accessibility_audit_test.dart, 4 tests): semantic
+   labels across all 9 surfaces (found + fixed the unlabeled composer send
+   button and Ask search IconButton), 200% text scale at compact width with
+   zero overflow (fixed Work header flexibility; HarborEmptyState made
+   scrollable), 44px minimum targets on compact navigation destinations,
+   keyboard traversal reaching composer + quick actions.
+2. **CycloneDX 1.5 SBOM**: `tools/generate_sbom.py --write` — deterministic,
+   375 components, includes the pinned security-relevant versions.
+3. **docs/release/migration_rollback.md**: N-2 schema support policy,
+   fail-safe settings downgrade, binary/model rollback procedures,
+   catalog rotation-instead-of-rollback, recovery boundary cross-refs.
+4. Package-copy ignores extended to all build artifacts; manifest
+   regenerated (dossier PASS).
+
+## Earlier session results (all commands reproducible)
 
 Git: repository initialized at commit `4f90f73` and updated through session 2
 commits (see `git log`). Evidence can now bind to exact commits.
