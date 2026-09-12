@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "19400845c72f74963a144bcac10427b70e7558e53920985c43018780042e2a05",
+  "input_manifest_sha256": "01e9138f5fe888f88f79a8e4f3d52aaf52ce46f215e851ee96fb62f6a4f87972",
   "input_files": [
     {
       "path": "00_README.md",
@@ -1471,8 +1471,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 17085,
-      "sha256": "9221a45f311ba7252f6e8ca160cc61c0131fbf4b82d763b1119bd6a94a71c248"
+      "bytes": 17334,
+      "sha256": "0fc855c45da51cad463106a13aa5c9470bc29754d2a331f50db0a3b785f1e252"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -1756,8 +1756,8 @@
     },
     {
       "path": "scripts/package_apple.sh",
-      "bytes": 2572,
-      "sha256": "1937210ebed210869bc1b206675ac519588d6204a06ad151749ecbc753f004fb"
+      "bytes": 3148,
+      "sha256": "36e00198a394eab22b3fe266b2e58776b89fc0471cab9127713c2bfe6e72df4c"
     },
     {
       "path": "tools/README.md",

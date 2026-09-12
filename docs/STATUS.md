@@ -175,15 +175,18 @@ embeds the library into Runner.app and signs it, after which the iOS
 simulator's degraded state becomes a live core. The Android recipe in
 `evidence/device_qualification.json` is the template.
 
-### App-bundle native-library gap (found 2026-09-13, honest)
+### App-bundle native-library fix (macOS verified live, 2026-09-13)
 
-The macOS RELEASE app bundle does not ship `libharbor_ffi.dylib`: no Xcode
-build phase references it, and `lsof` on the launched release app shows zero
-harbor_ffi mappings — the bundled app renders the honest degraded state
-(dev runs and flutter tests load the dylib by absolute path, which is why
-their evidence shows a live core). Fix: an Xcode "copy + sign" build phase
-for Contents/Frameworks (macOS) and Runner.app (iOS), then relaunch
-evidence for both platforms.
+Found: the macOS RELEASE bundle did not ship `libharbor_ffi.dylib` (no
+build phase referenced it; `lsof` on the launched app showed zero
+harbor_ffi mappings — the bundled app rendered the honest degraded state;
+dev runs and tests load the dylib by absolute path). Fixed and verified:
+copying the freshly built `target/release/libharbor_ffi.dylib` into
+`Contents/Frameworks` + ad-hoc codesign makes the launched app map the
+library and create a full live workspace (agent.db + WAL, store.db,
+network_audit.db, device key) — the bundled macOS app now runs the live
+core. The step is codified in `scripts/package_apple.sh`. iOS Runner.app
+wiring remains the follow-up (the simulator dylib itself already builds).
 
 ### Next dependency-ready task
 

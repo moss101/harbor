@@ -31,7 +31,16 @@ echo "-- macOS release build (ad-hoc signed) --"
 flutter build macos --release
 macos_app="build/macos/Build/Products/Release/harbor_app.app"
 [ -d "$macos_app" ] || { echo "macOS build output missing"; exit 1; }
-echo "   artifact: $macos_app"
+
+echo "-- bundle the native core into the app (Contents/Frameworks) --"
+# Without this step the app runs the honest degraded state: the Dart FFI
+# opens libharbor_ffi.dylib by bare name, which dyld resolves against the
+# bundle Frameworks dir only when the dylib is actually there.
+(cd "$repo/core" && cargo build --release -p harbor_ffi)
+cp "$repo/core/target/release/libharbor_ffi.dylib" "$macos_app/Contents/Frameworks/"
+codesign --force --sign - "$macos_app/Contents/Frameworks/libharbor_ffi.dylib"
+codesign --force --sign - "$macos_app"
+echo "   dylib bundled: Contents/Frameworks/libharbor_ffi.dylib"
 
 if [[ -n "${HARBOR_APPLE_SIGNING_IDENTITY:-}" ]]; then
   echo "-- signing macOS app with OPERATOR identity (keychain-provided) --"
