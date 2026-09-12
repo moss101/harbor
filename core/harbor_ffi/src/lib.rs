@@ -439,7 +439,19 @@ fn dispatch(ws: &mut WorkspaceHandle, method: &str, args: &serde_json::Value) ->
                 .map_err(|e| HarborError::Other(format!("b64: {e}")))?;
             // Dispatch by OOXML content types (a workbook has no slide
             // parts, so emptiness — not success — separates the two).
-            if bytes.len() < 4 || &bytes[..2] != b"PK" {
+            if bytes.len() < 4 {
+                return Err(HarborError::Other("unsupported artifact".into()));
+            }
+            // PDF: header magic, text extraction with page mapping.
+            if bytes.starts_with(b"%PDF") {
+                let p = harbor_render::pdf::extract_pages(&bytes)
+                    .map_err(|e| HarborError::Other(e.to_string()))?;
+                return Ok(serde_json::json!({
+                    "kind": "pdf",
+                    "preview": serde_json::to_value(&p).map_err(|e| HarborError::Other(e.to_string()))?,
+                }));
+            }
+            if !bytes.starts_with(b"PK") {
                 return Err(HarborError::Other("unsupported artifact".into()));
             }
             let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))

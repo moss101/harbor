@@ -115,6 +115,16 @@ GA still requires freezing approved thresholds and minimum-device runs.
    (harbor_app.app) was launched, confirmed running (process check), and
    quit cleanly — instals-and-launches evidence for item 1 (macOS).
 
+## Session 16 additions (PDF extraction, iOS launch evidence)
+
+1. **PDF text extraction with page mapping** (harbor_render::pdf +
+   FFI artifact.preview auto-dispatch): the PDF Research skill's citation
+   basis now exists; corrupt-input rejection tested with a real fixture
+   (fixtures/office/hello.pdf).
+2. **iOS simulator launch verified**: Runner.app installed on iPhone 17 Pro
+   simulator, launched (PID 90681), screenshot captured
+   (evidence/ios_launch_screenshot.png), clean shutdown.
+
 ## Session 8 additions (a11y, SBOM, migration docs)
 
 1. **Accessibility audit is a permanent test gate**

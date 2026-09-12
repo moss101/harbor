@@ -5,6 +5,8 @@
 //! reported, never dropped silently. The IR is plain JSON so it crosses
 //! the FFI seam to Flutter unchanged.
 
+pub mod pdf;
 pub mod preview;
 
+pub use pdf::{PdfError, PdfPage, PdfPreview};
 pub use preview::{DeckPreview, SlidePreview, WorkbookPreview};

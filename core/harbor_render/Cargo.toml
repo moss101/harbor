@@ -10,6 +10,7 @@ harbor_canonical = { workspace = true }
 harbor_formula = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+pdf-extract = "0.12"
 thiserror = { workspace = true }
 
 [dev-dependencies]
