@@ -93,7 +93,7 @@ def run_regressions():
     # Mutation checks ensure package validation catches the actual review regressions.
     with tempfile.TemporaryDirectory(prefix='harbor-ledger-test-') as tmp:
         root=Path(tmp)/'package'
-        shutil.copytree(ROOT,root,ignore=shutil.ignore_patterns('assets','reviews','outputs','*.docx','__pycache__','target','.git','.github'))
+        shutil.copytree(ROOT,root,ignore=shutil.ignore_patterns('assets','reviews','outputs','*.docx','__pycache__','target','.git','.github','build','.dart_tool','.gradle','ephemeral','.idea','Pods'))
         def mutate(filename,key,ident,field,value,needle):
             p=root/filename;original=p.read_bytes();records=rows(filename,root)
             next(r for r in records if r[key]==ident)[field]=value
