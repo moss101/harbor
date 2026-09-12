@@ -7,11 +7,12 @@ ran at.
 
 ---
 
-## Authoritative snapshot — session 27 (2026-09-12/13, closed at HEAD 5468ca0;
-## commits this session: de09abc, 43ed690, 7115d49, eb54c4a, 5e5a6bd, 14367ae,
-## c060dad, a31734a, 5468ca0; the machine-suite evidence commit inside
+## Authoritative snapshot — session 27 (2026-09-12/13; commits this session:
+## de09abc, 43ed690, 7115d49, eb54c4a, 5e5a6bd, 14367ae, c060dad, a31734a,
+## 5468ca0, d323bde; the machine-suite evidence commit inside
 ## evidence/gate_results.json is 14367ae — later commits touch docs, packaging
-## scripts and evidence only)
+## scripts, the iOS build phase and evidence only; run `git log -1` for the
+## exact HEAD)
 
 ### What Harbor is
 
