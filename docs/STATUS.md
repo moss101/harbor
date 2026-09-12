@@ -165,13 +165,31 @@ the rationale is recorded at the constant. The combined corpus hash is
 rebound: `evaluation_corpus_sha256 = a0b605a7…66829dc` (was 9e2a7e4d…),
 with the change recorded in `26_Qualification_Profiles.binding_history`.
 
+### iOS native core (built this session; bundling pending)
+
+`cargo build --release -p harbor_ffi --target aarch64-apple-ios-sim`
+succeeds with the rustup 1.97.1 toolchain: `libharbor_ffi.dylib` (25 MB) and
+`libharbor_ffi.a` (53 MB) under `core/target/aarch64-apple-ios-sim/release/`
+(llama.cpp included). The remaining step is Xcode wiring: a build phase that
+embeds the library into Runner.app and signs it, after which the iOS
+simulator's degraded state becomes a live core. The Android recipe in
+`evidence/device_qualification.json` is the template.
+
+### App-bundle native-library gap (found 2026-09-13, honest)
+
+The macOS RELEASE app bundle does not ship `libharbor_ffi.dylib`: no Xcode
+build phase references it, and `lsof` on the launched release app shows zero
+harbor_ffi mappings — the bundled app renders the honest degraded state
+(dev runs and flutter tests load the dylib by absolute path, which is why
+their evidence shows a live core). Fix: an Xcode "copy + sign" build phase
+for Contents/Frameworks (macOS) and Runner.app (iOS), then relaunch
+evidence for both platforms.
+
 ### Next dependency-ready task
 
-iOS native core build: `rustup target add aarch64-apple-ios` +
-`cargo build -p harbor_ffi --target aarch64-apple-ios` (staticlib), wired
-into the Xcode project to replace the iOS simulator's degraded state with a
-live core (the Android recipe in `evidence/device_qualification.json` is
-the template).
+Wire the native library into the macOS and iOS app bundles (build phase +
+codesign), relaunch, and capture LOCAL ONLY live-core evidence for both —
+the iOS simulator dylib already builds (above); Android is done and live.
 
 ### Reproduce the evidence
 
