@@ -90,12 +90,18 @@ pub fn run_case(case: &FixtureCase) -> CaseResult {
     };
     let mut wb = HarborWorkbook::new();
     // Deterministic clock for volatile builtins (TODAY/NOW fixtures rely
-    // on the pinned clock; failures here are honest FAILs until resolved).
+    // on the pinned clock). The mode MUST be active: a silent failure here
+    // let TODAY/NOW evaluate from the wall clock, so their qualification
+    // only passed while the fixture date happened to equal today (found
+    // 2026-09-13 when the date rolled over). UTC is required — the engine
+    // rejects `Local` under deterministic mode.
     let (clock, _tz) = pinned_clock();
-    let _ = wb.inner_mut().set_deterministic_mode(DeterministicMode::Enabled {
-        timestamp_utc: clock,
-        timezone: Default::default(),
-    });
+    wb.inner_mut()
+        .set_deterministic_mode(DeterministicMode::Enabled {
+            timestamp_utc: clock,
+            timezone: formualizer::eval::timezone::TimeZoneSpec::Utc,
+        })
+        .expect("pinned deterministic clock must be accepted");
     set_cells(&mut wb, &case.cells);
     wb.set_formula("Sheet1", 1000, 1000, &case.formula);
     // NOTE: formula goes on the case's primary sheet via its own refs; cases
