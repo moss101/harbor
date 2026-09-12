@@ -16,6 +16,8 @@ jobs:
         run: python3 tools/validate_dossier.py
       - name: Contract tests
         run: python3 tools/test_contracts.py
+      - name: Semantic color contrast audit
+        run: python3 tools/check_contrast.py
       - name: Engine pin freshness
         run: |
           cargo fetch --manifest-path core/Cargo.toml

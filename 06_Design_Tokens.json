@@ -145,22 +145,22 @@
       "statusLocal": {
         "text": "#1E6F4E",
         "fill": "#E9F5EF",
-        "border": "#89BFA6"
+        "border": "#6D9884"
       },
       "statusHybrid": {
         "text": "#8A5200",
         "fill": "#FFF3DE",
-        "border": "#D8AE69"
+        "border": "#AC8B54"
       },
       "statusRemote": {
         "text": "#4F46C8",
         "fill": "#EEEEFF",
-        "border": "#AAA7F5"
+        "border": "#8B88C8"
       },
       "statusDanger": {
         "text": "#A33126",
         "fill": "#FCECE9",
-        "border": "#E6A39B"
+        "border": "#B8827C"
       },
       "primaryAction": {
         "text": "#FFFFFF",
