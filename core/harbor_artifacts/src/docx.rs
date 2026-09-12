@@ -367,3 +367,98 @@ mod tests {
         assert!(matches!(err, Err(DocxError::ParagraphChanged(1))));
     }
 }
+
+/// Locate tables in raw document XML using the GLOBAL paragraph ordinal
+/// space (the same indexes DocxOp::TextReplace targets). Returns, per
+/// table (document order), a map of (row, col) -> (paragraph indexes,
+/// gridSpan). Column accounting honors gridSpan so merged cells occupy
+/// their full width.
+pub fn table_cell_paragraph_map(
+    xml: &str,
+) -> Result<BTreeMap<usize, BTreeMap<(usize, usize), (Vec<usize>, u32)>>, DocxError> {
+    let doc = roxmltree::Document::parse(xml).map_err(|e| DocxError::Malformed(e.to_string()))?;
+
+    let tbl_ids: Vec<roxmltree::NodeId> = doc
+        .descendants()
+        .filter(|n| n.has_tag_name("tbl"))
+        .map(|n| n.id())
+        .collect();
+
+    let mut result: BTreeMap<usize, BTreeMap<(usize, usize), (Vec<usize>, u32)>> = BTreeMap::new();
+    let mut global_para = 0usize;
+    for node in doc.descendants().filter(|n| n.has_tag_name("p")) {
+        // The global ordinal counts EVERY paragraph in document order —
+        // the same space DocxDocument::paragraphs and TextReplace target.
+        let this_para = global_para;
+        global_para += 1;
+        let mut cell_info: Option<(usize, usize, usize, u32)> = None;
+        let mut anc = node.parent();
+        while let Some(a) = anc {
+            if a.has_tag_name("tc") {
+                // Walk UP from the cell to find its table ordinal + row
+                // ordinal, honoring the tc element itself.
+                let tc = a;
+                let mut table_idx = None;
+                let mut row_idx = None;
+                let mut cur = tc.parent();
+                while let Some(x) = cur {
+                    if x.has_tag_name("tr") && row_idx.is_none() {
+                        let rows: Vec<roxmltree::NodeId> = x
+                            .parent()
+                            .map(|p| {
+                                p.children()
+                                    .filter(|c| c.has_tag_name("tr"))
+                                    .map(|c| c.id())
+                                    .collect()
+                            })
+                            .unwrap_or_default();
+                        row_idx = rows.iter().position(|id| *id == x.id());
+                    }
+                    if x.has_tag_name("tbl") {
+                        table_idx = tbl_ids.iter().position(|id| *id == x.id());
+                        break;
+                    }
+                    cur = x.parent();
+                }
+                if let (Some(t), Some(r)) = (table_idx, row_idx) {
+                    let row_node = tc.parent().unwrap();
+                    let mut c = 0usize;
+                    for tc_sibling in row_node.children().filter(|n| n.has_tag_name("tc")) {
+                        if tc_sibling.id() == tc.id() {
+                            break;
+                        }
+                        let span = tc_sibling
+                            .descendants()
+                            .find(|n| n.has_tag_name("gridSpan"))
+                            .and_then(|g| g.attribute("val"))
+                            .and_then(|v| v.parse::<u32>().ok())
+                            .unwrap_or(1);
+                        c += span as usize;
+                    }
+                    let grid_span = tc
+                        .descendants()
+                        .find(|n| n.has_tag_name("gridSpan"))
+                        .and_then(|g| g.attribute("val"))
+                        .and_then(|v| v.parse::<u32>().ok())
+                        .unwrap_or(1);
+                    cell_info = Some((t, r, c, grid_span));
+                }
+                break;
+            }
+            anc = a.parent();
+        }
+        match cell_info {
+            Some((t, r, c, span)) => {
+                result
+                    .entry(t)
+                    .or_default()
+                    .entry((r, c))
+                    .or_insert_with(|| (Vec::new(), span))
+                    .0
+                    .push(this_para);
+            }
+            None => {}
+        }
+    }
+    Ok(result)
+}

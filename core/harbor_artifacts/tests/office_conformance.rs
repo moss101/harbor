@@ -166,3 +166,33 @@ fn docx_same_length_replacement_preserves_run_formatting() {
     assert!(xml.contains("Kept"), "first run carries the replacement head");
     assert!(xml.contains("tail"), "second run carries the replacement tail");
 }
+
+#[test]
+fn table_cells_are_addressable_with_merge_aware_columns() {
+    let bytes = structured_docx();
+    let xml = {
+        let mut ar = zip::ZipArchive::new(Cursor::new(bytes.as_slice())).unwrap();
+        let mut f = ar.by_name("word/document.xml").unwrap();
+        use std::io::Read as _;
+        let mut xml = String::new();
+        f.read_to_string(&mut xml).unwrap();
+        xml
+    };
+    let map =
+        harbor_artifacts::docx::table_cell_paragraph_map(&xml).unwrap();
+    let table = map.get(&0).expect("one table");
+    // Merged header occupies (row 0, col 0) with gridSpan 2; body cells at
+    // (row 1, col 0) and (row 1, col 1).
+    let (header_paras, span) = table.get(&(0, 0)).unwrap();
+    assert_eq!(*span, 2, "gridSpan recognized");
+    assert!(!header_paras.is_empty());
+    assert!(table.contains_key(&(1, 0)));
+    assert!(table.contains_key(&(1, 1)));
+    // Cell paragraphs point at the right global paragraph ordinals: row 1
+    // col 0 cell text is "A", col 1 is "B".
+    let doc = harbor_artifacts::DocxDocument::load(&bytes).unwrap();
+    let a_idx = table[&(1, 0)].0[0];
+    let b_idx = table[&(1, 1)].0[0];
+    assert_eq!(doc.paragraphs[a_idx].text, "A");
+    assert_eq!(doc.paragraphs[b_idx].text, "B");
+}
