@@ -92,12 +92,34 @@ pub enum LogError {
 
 pub struct EventLog {
     conn: std::sync::Mutex<Connection>,
+    /// When set, event payloads are sealed at rest with AEAD
+    /// (ChaCha20-Poly1305, per-record nonce, (run, seq, event) bound as
+    /// AAD). Policy 13: run evidence is private workspace data.
+    payload_key: Option<harbor_store::keys::KeyMaterial>,
 }
 
 impl EventLog {
     /// Open (or create) the agent database at `path` and apply migrations.
     /// A fresh process reopens the same file to resume after kill/restart.
+    /// Payloads are stored as plaintext JSON — only for tests/tools; the
+    /// product path is [`Self::open_with_payload_key`].
     pub fn open(path: impl AsRef<std::path::Path>) -> Result<Self, LogError> {
+        Self::open_inner(path, None)
+    }
+
+    /// Open with at-rest payload encryption (policy 13: run evidence is
+    /// private workspace data and must not sit in plaintext SQLite).
+    pub fn open_with_payload_key(
+        path: impl AsRef<std::path::Path>,
+        key: harbor_store::keys::KeyMaterial,
+    ) -> Result<Self, LogError> {
+        Self::open_inner(path, Some(key))
+    }
+
+    fn open_inner(
+        path: impl AsRef<std::path::Path>,
+        payload_key: Option<harbor_store::keys::KeyMaterial>,
+    ) -> Result<Self, LogError> {
         if let Some(parent) = path.as_ref().parent() {
             std::fs::create_dir_all(parent).map_err(LogError::Io)?;
         }
@@ -125,7 +147,7 @@ impl EventLog {
                 )?;
             }
         }
-        Ok(EventLog { conn: std::sync::Mutex::new(conn) })
+        Ok(EventLog { conn: std::sync::Mutex::new(conn), payload_key })
     }
 
     /// Create a run with its `run.created` event. Transactional.
@@ -158,7 +180,7 @@ impl EventLog {
             "INSERT INTO runs (run_id, workspace_id, state, created_at, updated_at) VALUES (?1, ?2, 'CREATED', ?3, ?3)",
             rusqlite::params![run_id, workspace_id, now.to_rfc3339_opts(chrono::SecondsFormat::Micros, true)],
         )?;
-        insert_event(&conn, &event, &hash)?;
+        insert_event(&conn, &event, &hash, self.payload_key.as_ref())?;
         Ok(event)
     }
 
@@ -246,7 +268,7 @@ impl EventLog {
         // guarantees exclusive access for the whole section.
         conn.execute_batch("BEGIN IMMEDIATE;")?;
         let result = (|| -> Result<(), LogError> {
-            insert_event(&conn, &event, &hash)?;
+            insert_event(&conn, &event, &hash, self.payload_key.as_ref())?;
             if let EventPayload::Transition { to_state, reason, .. } = &event.payload {
                 conn.execute(
                     "UPDATE runs SET state = ?2, pause_reason = ?3, updated_at = ?4 WHERE run_id = ?1",
@@ -293,7 +315,7 @@ impl EventLog {
     /// Load the full event stream for replay.
     pub fn load_stream(&self, run_id: &str) -> Result<Vec<RunEvent>, LogError> {
         let conn = self.conn.lock().unwrap();
-        load_stream(&conn, run_id)
+        load_stream(&conn, run_id, self.payload_key.as_ref())
     }
 
     /// Replay with the authority rules: halts on unknown authority/state
@@ -419,8 +441,69 @@ fn run_exists(conn: &Connection, run_id: &str) -> Result<bool, LogError> {
     Ok(n > 0)
 }
 
-fn insert_event(conn: &Connection, event: &RunEvent, hash: &str) -> Result<(), LogError> {
+/// Storage marker for an AEAD-sealed payload:
+/// `enc.v1:<hex nonce><hex ciphertext>`.
+const SEALED_PREFIX: &str = "enc.v1:";
+
+fn hex_encode(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+fn hex_decode(s: &str) -> Option<Vec<u8>> {
+    (0..s.len() / 2)
+        .map(|i| u8::from_str_radix(&s[2 * i..2 * i + 2], 16).ok())
+        .collect()
+}
+
+fn seal_payload(
+    key: &harbor_store::keys::KeyMaterial,
+    event: &RunEvent,
+    plaintext: &[u8],
+) -> Result<String, LogError> {
+    use rand::RngCore;
+    let mut nonce = [0u8; 12];
+    rand::rngs::OsRng.fill_bytes(&mut nonce);
+    let aad = format!("{}:{}:{}", event.run_id, event.seq, event.event_id);
+    let ct = harbor_store::keys::aead_seal(key, &nonce, plaintext, aad.as_bytes())
+        .map_err(|_| LogError::Payload("seal failed".into()))?;
+    Ok(format!("{SEALED_PREFIX}{}{}", hex_encode(&nonce), hex_encode(&ct)))
+}
+
+fn open_payload(
+    key: &harbor_store::keys::KeyMaterial,
+    run_id: &str,
+    seq: i64,
+    event_id: &str,
+    stored: &str,
+) -> Result<String, LogError> {
+    let body = stored
+        .strip_prefix(SEALED_PREFIX)
+        .ok_or_else(|| LogError::Payload("bad seal marker".into()))?;
+    if body.len() < 24 || body.len() % 2 != 0 {
+        return Err(LogError::Payload("bad seal body".into()));
+    }
+    let mut nonce = [0u8; 12];
+    for (i, b) in hex_decode(&body[..24]).unwrap_or_default().into_iter().enumerate() {
+        nonce[i] = b;
+    }
+    let ct = hex_decode(&body[24..]).ok_or_else(|| LogError::Payload("bad ct hex".into()))?;
+    let aad = format!("{run_id}:{seq}:{event_id}");
+    let pt = harbor_store::keys::aead_open(key, &nonce, &ct, aad.as_bytes())
+        .map_err(|_| LogError::Payload("payload authentication failed".into()))?;
+    String::from_utf8(pt).map_err(|e| LogError::Payload(e.to_string()))
+}
+
+fn insert_event(
+    conn: &Connection,
+    event: &RunEvent,
+    hash: &str,
+    payload_key: Option<&harbor_store::keys::KeyMaterial>,
+) -> Result<(), LogError> {
     let payload_json = event.payload.to_json().to_canonical_bytes()?;
+    let stored_payload = match payload_key {
+        Some(key) => seal_payload(key, event, &payload_json)?,
+        None => String::from_utf8(payload_json).map_err(|e| LogError::Payload(e.to_string()))?,
+    };
     conn.execute(
         "INSERT INTO run_events (run_id, seq, event_id, event_type, replay_semantics, actor, lease_generation,
          active_compute_ms_total, step_count_total, tool_count_total, context_tokens_total, payload, created_at, prev_event_hash, event_hash)
@@ -437,7 +520,7 @@ fn insert_event(conn: &Connection, event: &RunEvent, hash: &str) -> Result<(), L
             event.counters.step_count_total as i64,
             event.counters.tool_count_total as i64,
             event.counters.context_tokens_total as i64,
-            String::from_utf8(payload_json).map_err(|e| LogError::Payload(e.to_string()))?,
+            stored_payload,
             event.created_at.to_rfc3339_opts(chrono::SecondsFormat::Micros, true),
             event.prev_event_hash,
             hash
@@ -500,7 +583,11 @@ fn stored_hash(conn: &Connection, run_id: &str, seq: u64) -> Result<String, LogE
     .map_err(|_| LogError::ChainBroken(seq))
 }
 
-fn load_stream(conn: &Connection, run_id: &str) -> Result<Vec<RunEvent>, LogError> {
+fn load_stream(
+    conn: &Connection,
+    run_id: &str,
+    payload_key: Option<&harbor_store::keys::KeyMaterial>,
+) -> Result<Vec<RunEvent>, LogError> {
     let mut stmt = conn.prepare(
         "SELECT seq, event_id, event_type, replay_semantics, actor, lease_generation,
         active_compute_ms_total, step_count_total, tool_count_total, context_tokens_total, payload, created_at, prev_event_hash
@@ -527,8 +614,16 @@ fn load_stream(conn: &Connection, run_id: &str) -> Result<Vec<RunEvent>, LogErro
     for row in rows {
         let (seq, event_id, etype_s, sem_s, actor_s, gen, a, s, t, c, payload_s, created_s, prev) = row?;
         let etype = EventType::parse(&etype_s);
+        let payload_text = if payload_s.starts_with(SEALED_PREFIX) {
+            let key = payload_key
+                .as_ref()
+                .ok_or_else(|| LogError::Payload("sealed payload without key".into()))?;
+            open_payload(key, run_id, seq, &event_id, &payload_s)?
+        } else {
+            payload_s
+        };
         let payload_json: harbor_canonical::JsonValue =
-            harbor_canonical::parse(&payload_s).map_err(|e| LogError::Payload(e.to_string()))?;
+            harbor_canonical::parse(&payload_text).map_err(|e| LogError::Payload(e.to_string()))?;
         let payload = EventPayload::from_json(etype.clone(), &payload_json)
             .map_err(|e| LogError::Payload(e.to_string()))?;
         out.push(RunEvent {
@@ -563,4 +658,106 @@ fn load_stream(conn: &Connection, run_id: &str) -> Result<Vec<RunEvent>, LogErro
         });
     }
     Ok(out)
+}
+
+#[cfg(test)]
+mod at_rest_tests {
+    use super::*;
+    use harbor_store::keys::KeyMaterial;
+
+    fn event(run_id: &str, seq: u64, prev: Option<String>) -> RunEvent {
+        RunEvent {
+            run_id: run_id.into(),
+            event_id: format!("evt-{run_id}-{seq}"),
+            seq,
+            event_type: EventType::RunCreated,
+            replay_semantics: ReplaySemantics::StateAffecting,
+            actor: Actor::System,
+            lease_generation: 0,
+            counters: Default::default(),
+            payload: EventPayload::Created,
+            created_at: chrono::Utc::now(),
+            prev_event_hash: prev,
+        }
+    }
+
+    #[test]
+    fn encrypted_payloads_roundtrip_across_reopen() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = dir.path().join("agent.db");
+        let key = KeyMaterial::random();
+        {
+            let log = EventLog::open_with_payload_key(&db, key.clone()).unwrap();
+            log.create_run("run-e1", "ws", chrono::Utc::now()).unwrap();
+        }
+        // Reopen: sealed payloads must replay transparently.
+        let log = EventLog::open_with_payload_key(&db, key.clone()).unwrap();
+        let stream = log.load_stream("run-e1").unwrap();
+        assert_eq!(stream.len(), 1);
+        assert!(matches!(stream[0].payload, EventPayload::Created));
+    }
+
+    #[test]
+    fn sealed_payload_never_sits_in_plaintext_on_disk() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = dir.path().join("agent.db");
+        let key = KeyMaterial::random();
+        let log = EventLog::open_with_payload_key(&db, key.clone()).unwrap();
+        log.create_run("run-e2", "ws", chrono::Utc::now()).unwrap();
+        // The run id rides in several columns, so search for something
+        // only the payload would carry.
+        drop(log);
+        let raw = std::fs::read(&db).unwrap();
+        // The Created payload's JSON would contain e.g. {"v":1,...} — not
+        // distinctive. Append a StepStarted with a sentinel description.
+        let log = EventLog::open_with_payload_key(&db, key.clone()).unwrap();
+        let stream = log.load_stream("run-e2").unwrap();
+        let head = stream.last().unwrap();
+        let head_hash = head.hash().unwrap();
+        let needle = "SENTINEL-PRIVATE-CONTENT-9f3b";
+        let evt = RunEvent {
+            run_id: "run-e2".into(),
+            event_id: "evt-e2-1".into(),
+            seq: 1,
+            event_type: EventType::RunStepStarted,
+            replay_semantics: ReplaySemantics::IgnorableDisplay,
+            actor: Actor::Executor,
+            lease_generation: 1,
+            counters: Default::default(),
+            payload: EventPayload::StepStarted {
+                step_id: "s1".into(),
+                description: needle.into(),
+            },
+            created_at: chrono::Utc::now(),
+            prev_event_hash: Some(head_hash),
+        };
+        log.append(evt, 1, None).unwrap();
+        drop(log);
+        // Scan the db file AND any WAL/journal siblings.
+        let mut scanned = 0;
+        for entry in std::fs::read_dir(dir.path()).unwrap() {
+            let p = entry.unwrap().path();
+            if p.file_name().unwrap_or_default().to_string_lossy().starts_with("agent.db") {
+                let bytes = std::fs::read(&p).unwrap();
+                assert!(
+                    !windows_or_bytes_contains(&bytes, needle.as_bytes()),
+                    "plaintext sentinel found in {}",
+                    p.display()
+                );
+                scanned += 1;
+            }
+        }
+        assert!(scanned >= 1, "db files scanned");
+        // And replay still returns the sentinel through the API.
+        let log = EventLog::open_with_payload_key(&db, key.clone()).unwrap();
+        let stream = log.load_stream("run-e2").unwrap();
+        match &stream[1].payload {
+            EventPayload::StepStarted { description, .. } => assert_eq!(description, needle),
+            other => panic!("unexpected payload {other:?}"),
+        }
+    }
+
+    fn windows_or_bytes_contains(haystack: &[u8], needle: &[u8]) -> bool {
+        haystack.windows(needle.len()).any(|w| w == needle)
+    }
 }

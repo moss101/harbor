@@ -1610,6 +1610,7 @@ dependencies = [
  "harbor_agent",
  "harbor_artifacts",
  "harbor_canonical",
+ "harbor_core",
  "harbor_formula",
  "harbor_inference",
  "harbor_modelhub",

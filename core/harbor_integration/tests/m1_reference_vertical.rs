@@ -128,6 +128,7 @@ fn m1_deck_generation_diff_approval_safesave_offline() {
             ],
             notes: Some("Generated offline by Harbor from Sheet1!B6, C6, D6.".into()),
             chart: None,
+        image: None,
         }],
     };
     let deck_bytes = deck.to_pptx_bytes().unwrap();
@@ -288,6 +289,7 @@ fn m1_kill_restart_replay_with_artifacts_and_blobs() {
             bullets: vec!["b".into()],
             notes: None,
             chart: None,
+        image: None,
         }],
     };
     let deck_bytes = deck.to_pptx_bytes().unwrap();

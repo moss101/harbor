@@ -17,6 +17,7 @@ pub mod batch;
 pub mod commit;
 pub mod diff;
 pub mod docx;
+pub mod office_matrix;
 pub mod pptx;
 pub mod workbook;
 
@@ -26,5 +27,6 @@ pub use commit::{
 };
 pub use diff::{ArtifactDiff, DiffEntry};
 pub use docx::{DocxDocument, DocxError, DocxOp};
-pub use pptx::{ChartKind, ChartSpec, PptxDeck, PptxError, PptxOp, SlideContent};
-pub use workbook::{SheetData, WorkbookDoc, WorkbookOp};
+pub use office_matrix::{classify_part, compatibility_report, Classification, CompatibilityReport, MatrixClass, OfficeFormat};
+pub use pptx::{ChartKind, ChartSpec, PptxDeck, PptxError, PptxOp, SlideContent, SlideImage};
+pub use workbook::{SheetData, WorkbookDoc, WorkbookOp, XlsxChartKind, PreservationReport};

@@ -236,7 +236,7 @@ impl EgressBroker {
                 session.class,
                 &current_origin,
                 &current.method,
-                parsed.path(),
+                current_path(&current).as_str(),
                 None,
                 Some(&session.session_id),
                 run_id,
@@ -250,7 +250,7 @@ impl EgressBroker {
                         session.class,
                         &current_origin,
                         &current.method,
-                        parsed.path(),
+                        current_path(&current).as_str(),
                         None,
                         Some(&session.session_id),
                         run_id,
@@ -315,7 +315,7 @@ impl EgressBroker {
                 session.class,
                 &current_origin,
                 &current.method,
-                parsed.path(),
+                current_path(&current).as_str(),
                 Some(response.status),
                 Some(&session.session_id),
                 run_id,
@@ -368,7 +368,7 @@ impl EgressBroker {
                 session.class,
                 &current_origin,
                 &current.method,
-                parsed.path(),
+                current_path(&current).as_str(),
                 None,
                 Some(&session.session_id),
                 run_id,
@@ -382,7 +382,7 @@ impl EgressBroker {
                         session.class,
                         &current_origin,
                         &current.method,
-                        parsed.path(),
+                        current_path(&current).as_str(),
                         None,
                         Some(&session.session_id),
                         run_id,
@@ -443,7 +443,7 @@ impl EgressBroker {
                 session.class,
                 &current_origin,
                 &current.method,
-                parsed.path(),
+                current_path(&current).as_str(),
                 Some(response.status),
                 Some(&session.session_id),
                 run_id,
@@ -488,6 +488,20 @@ impl EgressBroker {
             entry_hash: String::new(),
         });
     }
+}
+
+/// Path (+query) of the request actually being executed at this hop.
+fn current_path(req: &TransportRequest) -> String {
+    req.url
+        .parse::<url::Url>()
+        .map(|u| {
+            let p = u.path();
+            match u.query() {
+                Some(q) => format!("{p}?{q}"),
+                None => p.to_string(),
+            }
+        })
+        .unwrap_or_else(|_| req.url.clone())
 }
 
 fn request_origin(u: &url::Url) -> Option<String> {

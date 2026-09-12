@@ -13,6 +13,7 @@
 pub mod audit;
 pub mod transport;
 pub mod broker;
+pub mod capture;
 
 pub use audit::{AuditSink, NetworkAuditEntry, NetworkEventKind, SqliteAuditSink};
 pub use transport::UreqTransport;

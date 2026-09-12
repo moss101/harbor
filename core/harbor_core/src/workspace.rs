@@ -84,13 +84,23 @@ impl Workspace {
             })
         })?;
         let key = WorkspaceKey::from_wrapped(&root, &wrapped)?;
-        blobs.bind_workspace(workspace_id, key, wrapped);
+        blobs.bind_workspace(workspace_id, key.clone(), wrapped);
+        // Run evidence is private workspace data (policy 13): the event
+        // log seals its payloads with a key derived from the workspace
+        // key (domain-separated), never stored raw on disk.
+        let payload_key = harbor_store::keys::KeyMaterial::derive_subkey(
+            key.kek_material(),
+            "harbor.agent.event-payload/v1",
+        );
 
         let audit = SqliteAuditSink::open(opts.data_root.join("db").join("network_audit.db"))
             .map_err(HarborError::Store)?;
         let broker = EgressBroker::new(Box::new(audit));
 
-        let agent_log = EventLog::open(opts.data_root.join("db").join("agent.db"))?;
+        let agent_log = EventLog::open_with_payload_key(
+            opts.data_root.join("db").join("agent.db"),
+            payload_key,
+        )?;
 
         Ok(Workspace {
             workspace_id: workspace_id.into(),

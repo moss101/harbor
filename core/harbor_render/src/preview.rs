@@ -169,6 +169,7 @@ mod tests {
                 bullets: vec!["Q1 3600".into()],
                 notes: None,
                 chart: None,
+            image: None,
             }],
         };
         let bytes = deck.to_pptx_bytes().unwrap();

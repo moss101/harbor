@@ -16,17 +16,33 @@ pub struct SlideContent {
     pub bullets: Vec<String>,
     /// Speaker notes text.
     pub notes: Option<String>,
-    /// Embedded basic chart (bar/column or line) with cached values.
-    /// Cached data lives in the chart XML itself; per matrix row 14 this
-    /// is the qualified basic-series scope.
+    /// Embedded basic chart (bar/column, line, pie or scatter) with cached
+    /// values. Cached data lives in the chart XML itself; per matrix row 14
+    /// this is the qualified basic-series scope.
     pub chart: Option<ChartSpec>,
+    /// Inline picture rendered from Harbor IR (matrix row 17: images).
+    pub image: Option<SlideImage>,
 }
 
-/// Basic chart kinds supported by the generator (matrix row 14 scope).
+/// An inline image on a slide: raw encoded bytes (PNG or JPEG) placed in
+/// ppt/media and referenced by a p:pic drawing.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SlideImage {
+    /// File name inside ppt/media (e.g. "chart-shot").
+    pub name: String,
+    /// Content-type extension without dot ("png" or "jpg").
+    pub extension: String,
+    pub bytes: Vec<u8>,
+}
+
+/// Basic chart kinds supported by the generator (matrix rows 14/19 scope:
+/// bar/column, line, pie and scatter basic series).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChartKind {
     Bar,
     Line,
+    Pie,
+    Scatter,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -110,6 +126,17 @@ fn slide_xml(slide: &SlideContent) -> String {
             )
         })
         .unwrap_or_default();
+    // An inline picture becomes a p:pic shape referencing the media part.
+    let image_frame = slide
+        .image
+        .as_ref()
+        .map(|img| {
+            let name = xml_escape(&img.name);
+            format!(
+                r#"<p:pic><p:nvPicPr><p:cNvPr id="5" name="{name}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="rId4"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="4572000" y="1143000"/><a:ext cx="3657600" cy="2743200"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>"#
+            )
+        })
+        .unwrap_or_default();
     format!(
         r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
@@ -128,6 +155,7 @@ fn slide_xml(slide: &SlideContent) -> String {
         <p:txBody><a:bodyPr/><a:lstStyle/>{}</p:txBody>
       </p:sp>
       {chart_frame}
+      {image_frame}
     </p:spTree>
   </p:cSld>
   <p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>
@@ -136,6 +164,7 @@ fn slide_xml(slide: &SlideContent) -> String {
         xml_escape(&slide.title),
         body_paras,
         chart_frame = chart_frame,
+        image_frame = image_frame,
     )
 }
 
@@ -193,7 +222,7 @@ const THEME_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"
 </a:themeElements>
 </a:theme>"#;
 
-fn rels_for_slide(n: usize, with_notes: bool, with_chart: bool) -> String {
+fn rels_for_slide(n: usize, with_notes: bool, with_chart: bool, image_ext: Option<&str>) -> String {
     let mut rels = format!(
         r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
@@ -206,6 +235,11 @@ fn rels_for_slide(n: usize, with_notes: bool, with_chart: bool) -> String {
     }
     if with_chart {
         rels.push_str("<Relationship Id=\"rId3\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart\" Target=\"../charts/chart{n}.xml\"/>");
+    }
+    if let Some(ext) = image_ext {
+        rels.push_str(&format!(
+            "<Relationship Id=\"rId4\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image\" Target=\"../media/slide{n}-image.{ext}\"/>"
+        ));
     }
     rels.push_str("</Relationships>");
     rels
@@ -233,6 +267,21 @@ impl PptxDeck {
         }
         if self.slides.iter().any(|s| s.chart.is_some()) {
             ct.push_str("<Default Extension=\"xlsx\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\"/>");
+        }
+        // Image media defaults (matrix row 17): PNG and JPEG.
+        if self
+            .slides
+            .iter()
+            .any(|s| s.image.as_ref().map(|i| i.extension == "png").unwrap_or(false))
+        {
+            ct.push_str("<Default Extension=\"png\" ContentType=\"image/png\"/>");
+        }
+        if self
+            .slides
+            .iter()
+            .any(|s| s.image.as_ref().map(|i| i.extension == "jpg").unwrap_or(false))
+        {
+            ct.push_str("<Default Extension=\"jpg\" ContentType=\"image/jpeg\"/>");
         }
         ct.push_str("</Types>");
         zip.start_file("[Content_Types].xml", opts)?;
@@ -309,7 +358,15 @@ impl PptxDeck {
             zip.start_file(format!("ppt/slides/slide{n}.xml"), opts)?;
             zip.write_all(slide_xml(slide).as_bytes())?;
             zip.start_file(format!("ppt/slides/_rels/slide{n}.xml.rels"), opts)?;
-            zip.write_all(rels_for_slide(n, slide.notes.is_some(), slide.chart.is_some()).as_bytes())?;
+            zip.write_all(
+                rels_for_slide(
+                    n,
+                    slide.notes.is_some(),
+                    slide.chart.is_some(),
+                    slide.image.as_ref().map(|im| im.extension.as_str()),
+                )
+                .as_bytes(),
+            )?;
             zip.start_file(format!("ppt/notesSlides/notesSlide{n}.xml"), opts)?;
             zip.write_all(notes_xml(slide).as_bytes())?;
             zip.start_file(format!("ppt/notesSlides/_rels/notesSlide{n}.xml.rels"), opts)?;
@@ -343,6 +400,10 @@ impl PptxDeck {
                 zip.start_file(format!("ppt/embeddings/chartdata{n}.xlsx"), opts)?;
                 zip.write_all(&xlsx)?;
             }
+            if let Some(img) = &slide.image {
+                zip.start_file(format!("ppt/media/slide{n}-image.{}", img.extension), opts)?;
+                zip.write_all(&img.bytes)?;
+            }
         }
         zip.start_file("ppt/notesMasters/notesMaster1.xml", opts)?;
         zip.write_all(
@@ -371,6 +432,8 @@ impl PptxDeck {
     }
 
     /// Load an existing deck's slide texts (read-back preview) from bytes.
+    /// Speaker notes are recovered through each slide's notesSlide
+    /// relationship (matrix row 18 round-trip).
     pub fn from_pptx_bytes(bytes: &[u8]) -> Result<PptxDeck, PptxError> {
         let mut archive = zip::ZipArchive::new(Cursor::new(bytes))?;
         // Minimal read-back: slide count + titles/bullets text extraction.
@@ -387,14 +450,87 @@ impl PptxDeck {
         });
         let mut slides = Vec::new();
         for name in &names {
-            let mut f = archive.by_name(name)?;
-            let mut xml = String::new();
-            f.read_to_string(&mut xml)?;
-            slides.push(parse_slide_texts(&xml)?);
+            let xml = {
+                let mut f = archive.by_name(name)?;
+                let mut xml = String::new();
+                f.read_to_string(&mut xml)?;
+                xml
+            };
+            let mut slide = parse_slide_texts(&xml)?;
+            slide.notes = read_notes_via_rels(&mut archive, name)?;
+            slides.push(slide);
         }
         let title = read_title(&mut archive)?;
         Ok(PptxDeck { title, slides })
     }
+}
+
+/// Resolve `ppt/slides/_rels/slideN.xml.rels` to the notes slide part and
+/// extract its text. None when the slide has no notes relationship.
+fn read_notes_via_rels(
+    archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+    slide_name: &str,
+) -> Result<Option<String>, PptxError> {
+    let rels_name = format!(
+        "ppt/slides/_rels/{}.rels",
+        slide_name.rsplit('/').next().unwrap_or(slide_name)
+    );
+    let target = match archive.by_name(&rels_name) {
+        Ok(mut f) => {
+            let mut rels = String::new();
+            f.read_to_string(&mut rels)?;
+            find_notes_slide_target(&rels)
+        }
+        Err(_) => None,
+    };
+    let Some(target) = target else { return Ok(None) };
+    // Target is relative to ppt/slides/ (e.g. "../notesSlides/notesSlide1.xml").
+    let part = normalize_rel_path("ppt/slides", &target);
+    let Ok(mut f) = archive.by_name(&part) else {
+        return Err(PptxError::Malformed(format!(
+            "notes relationship target missing: {part}"
+        )));
+    };
+    let mut xml = String::new();
+    f.read_to_string(&mut xml)?;
+    let doc = roxmltree::Document::parse(&xml)
+        .map_err(|e| PptxError::Malformed(e.to_string()))?;
+    let mut text = String::new();
+    for t in doc.descendants().filter(|n| n.has_tag_name("t")) {
+        text.push_str(t.text().unwrap_or_default());
+    }
+    Ok(if text.is_empty() { None } else { Some(text) })
+}
+
+fn find_notes_slide_target(rels_xml: &str) -> Option<String> {
+    let doc = roxmltree::Document::parse(rels_xml).ok()?;
+    for rel in doc.descendants().filter(|n| n.has_tag_name("Relationship")) {
+        if rel.attribute("Type")
+            == Some("http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide")
+        {
+            return rel.attribute("Target").map(|s| s.to_string());
+        }
+    }
+    None
+}
+
+/// Resolve a relationship target relative to its source part directory.
+fn normalize_rel_path(source_dir: &str, target: &str) -> String {
+    let mut parts: Vec<&str> = if source_dir.is_empty() {
+        Vec::new()
+    } else {
+        source_dir.split('/').collect()
+    };
+    for seg in target.split('/') {
+        match seg {
+            "." => {}
+            ".." => {
+                parts.pop();
+            }
+            s => parts.push(s),
+        }
+    }
+    parts.join("/")
 }
 
 fn read_title(archive: &mut zip::ZipArchive<Cursor<&[u8]>>) -> Result<String, PptxError> {
@@ -433,7 +569,7 @@ fn parse_slide_texts(xml: &str) -> Result<SlideContent, PptxError> {
             bullets.extend(texts);
         }
     }
-    Ok(SlideContent { title, bullets, notes: None, chart: None })
+    Ok(SlideContent { title, bullets, notes: None, chart: None, image: None })
 }
 
 #[cfg(test)]
@@ -450,12 +586,14 @@ mod tests {
                     bullets: vec!["Revenue grew 12% QoQ".into(), "EMEA leads growth".into()],
                     notes: Some("Source: verified workbook recalc".into()),
                     chart: None,
+                image: None,
                 },
                 SlideContent {
                     title: "Outlook".into(),
                     bullets: vec!["Pipeline strong".into()],
                     notes: None,
                     chart: None,
+                image: None,
                 },
             ],
         };
@@ -479,8 +617,8 @@ mod tests {
     }
 }
 
-/// Build a c:chartSpace document for a basic bar/column, line or pie chart
-/// with cached categories and values.
+/// Build a c:chartSpace document for a basic bar/column, line, pie or
+/// scatter chart with cached categories and values.
 pub fn chart_space_xml(
     kind: ChartKind,
     title: &str,
@@ -490,6 +628,8 @@ pub fn chart_space_xml(
     let chart_el = match kind {
         ChartKind::Bar => "barChart",
         ChartKind::Line => "lineChart",
+        ChartKind::Pie => "pieChart",
+        ChartKind::Scatter => "scatterChart",
     };
     let mut sers = String::new();
     for (i, (name, values)) in series.iter().enumerate() {
@@ -506,26 +646,52 @@ pub fn chart_space_xml(
                 "<c:pt idx=\"{j}\"><c:v>{v}</c:v></c:pt>"
             ));
         }
-        sers.push_str(&format!(
-            r#"<c:ser><c:idx val="{i}"/><c:order val="{i}"/><c:tx><c:strRef><c:f>Sheet1!$A$1</c:f><c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>{}</c:v></c:pt></c:strCache></c:strRef></c:tx><c:cat><c:strRef><c:f>Sheet1!$B$1:$B${n}</c:f><c:strCache><c:ptCount val="{n}"/>{cats}</c:strCache></c:strRef></c:cat><c:val><c:numRef><c:f>Sheet1!$C$1:$C${n}</c:f><c:numCache><c:formatCode>General</c:formatCode><c:ptCount val="{n}"/>{vals}</c:numCache></c:numRef></c:val></c:ser>"#,
-            xml_escape(name),
-            n = categories.len(),
-        ));
+        let series_name = format!(
+            r#"<c:tx><c:strRef><c:f>Sheet1!$A$1</c:f><c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>{}</c:v></c:pt></c:strCache></c:strRef></c:tx>"#,
+            xml_escape(name)
+        );
+        let ser = match kind {
+            // Category charts: c:cat (strings) + c:val (numbers).
+            ChartKind::Bar | ChartKind::Line | ChartKind::Pie => format!(
+                r#"<c:ser><c:idx val="{i}"/><c:order val="{i}"/>{series_name}<c:cat><c:strRef><c:f>Sheet1!$B$1:$B${n}</c:f><c:strCache><c:ptCount val="{n}"/>{cats}</c:strCache></c:strRef></c:cat><c:val><c:numRef><c:f>Sheet1!$C$1:$C${n}</c:f><c:numCache><c:formatCode>General</c:formatCode><c:ptCount val="{n}"/>{vals}</c:numCache></c:numRef></c:val></c:ser>"#,
+                n = categories.len(),
+            ),
+            // Scatter: numeric c:xVal (categories parsed as numbers) +
+            // c:yVal; requires numeric categories by definition.
+            ChartKind::Scatter => {
+                let mut xvals = String::new();
+                for (j, c) in categories.iter().enumerate() {
+                    let x: f64 = c.trim().parse().unwrap_or(0.0);
+                    xvals.push_str(&format!("<c:pt idx=\"{j}\"><c:v>{x}</c:v></c:pt>"));
+                }
+                format!(
+                    r#"<c:ser><c:idx val="{i}"/><c:order val="{i}"/>{series_name}<c:spPr><a:ln w="28575"><a:solidFill><a:srgbClr val="1F5FCC"/></a:solidFill></a:ln></c:spPr><c:marker><c:symbol val="circle"/></c:marker><c:xVal><c:numRef><c:f>Sheet1!$B$1:$B${n}</c:f><c:numCache><c:formatCode>General</c:formatCode><c:ptCount val="{n}"/>{xvals}</c:numCache></c:numRef></c:xVal><c:yVal><c:numRef><c:f>Sheet1!$C$1:$C${n}</c:f><c:numCache><c:formatCode>General</c:formatCode><c:ptCount val="{n}"/>{vals}</c:numCache></c:numRef></c:yVal></c:ser>"#,
+                    n = categories.len(),
+                )
+            }
+        };
+        sers.push_str(&ser);
     }
     let axes = match kind {
-        ChartKind::Bar | ChartKind::Line => format!(
+        ChartKind::Bar | ChartKind::Line | ChartKind::Scatter => format!(
             r#"<c:axId val="111111111"/><c:axId val="222222222"/>"#
         ),
+        ChartKind::Pie => String::new(),
     };
     let axes_xml = match kind {
         ChartKind::Bar | ChartKind::Line => String::from(
             r#"<c:catAx><c:axId val="111111111"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:crossAx val="222222222"/></c:catAx><c:valAx><c:axId val="222222222"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:crossAx val="111111111"/></c:valAx>"#,
         ),
-        _ => String::new(),
+        // Scatter uses two value axes.
+        ChartKind::Scatter => String::from(
+            r#"<c:valAx><c:axId val="111111111"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:crossAx val="222222222"/></c:valAx><c:valAx><c:axId val="222222222"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:crossAx val="111111111"/></c:valAx>"#,
+        ),
+        ChartKind::Pie => String::new(),
     };
     let grouping = match kind {
         ChartKind::Bar => "<c:grouping val=\"clustered\"/>",
-        _ => "<c:grouping val=\"standard\"/>",
+        ChartKind::Line | ChartKind::Scatter => "<c:grouping val=\"standard\"/>",
+        ChartKind::Pie => "",
     };
     format!(
         r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

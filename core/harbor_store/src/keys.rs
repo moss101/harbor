@@ -35,6 +35,24 @@ impl KeyMaterial {
     }
 }
 
+impl KeyMaterial {
+    /// Domain-separated subkey derivation: SHA-256(domain || base). Used
+    /// to derive purpose-scoped keys (e.g. the run-event payload key)
+    /// from a workspace key without storing a second wrapped key.
+    pub fn derive_subkey(base: &KeyMaterial, domain: &str) -> KeyMaterial {
+        let mut input = Vec::with_capacity(domain.len() + 32);
+        input.extend_from_slice(domain.as_bytes());
+        input.extend_from_slice(&base.0);
+        let digest = harbor_canonical::sha256_hex(&input);
+        let mut out = [0u8; 32];
+        for i in 0..32 {
+            out[i] = u8::from_str_radix(&digest[2 * i..2 * i + 2], 16)
+                .unwrap_or(0);
+        }
+        KeyMaterial(out)
+    }
+}
+
 impl std::fmt::Debug for KeyMaterial {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "KeyMaterial(<redacted>)")
@@ -187,6 +205,11 @@ impl PartialEq for WorkspaceKey {
 impl WorkspaceKey {
     pub fn generate() -> Self {
         WorkspaceKey { kek: KeyMaterial::random() }
+    }
+
+    /// Raw key material for domain-separated subkey derivation.
+    pub fn kek_material(&self) -> &KeyMaterial {
+        &self.kek
     }
 
     pub fn wrap_with(&self, root: &KeyMaterial) -> Result<WrappedKey> {

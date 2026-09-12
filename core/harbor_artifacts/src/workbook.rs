@@ -48,13 +48,30 @@ pub fn col_number(s: &str) -> u32 {
     n
 }
 
+/// What the save path preserved from the loaded package without
+/// interpretation.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct PreservationReport {
+    /// Parts carried over verbatim from the loaded package (parts the edit
+    /// backend does not model: pivot tables/caches, external links, VBA
+    /// projects, slicers, connections).
+    pub carried_parts: Vec<String>,
+    /// Relationship entries restored so every carried part stays reachable
+    /// from the package relationship graph.
+    pub restored_relationships: Vec<String>,
+}
+
 /// A workbook loaded for inspection/edit. Structure preservation is the
 /// umya backend's contract; unsupported parts (pivot caches, external
-/// links) are preserved byte-for-byte by the writer (PRESERVE_ONLY rows of
-/// the Office Feature Matrix).
+/// links, VBA) are carried over byte-for-byte by the writer (PRESERVE_ONLY
+/// rows of the Office Feature Matrix) with their relationships and content
+/// types restored so the package graph remains resolvable.
 pub struct WorkbookDoc {
     book: umya_spreadsheet::Workbook,
     sheets: BTreeMap<String, SheetData>,
+    /// Every entry of the loaded package (name -> bytes), the source for
+    /// carry-over on save.
+    original: BTreeMap<String, Vec<u8>>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -73,6 +90,8 @@ impl WorkbookDoc {
     pub fn load(bytes: &[u8]) -> Result<Self, WorkbookError> {
         let book = xlsx_reader::read_reader(&mut Cursor::new(bytes), true)
             .map_err(|e| WorkbookError::Load(e.to_string()))?;
+        let mut archive =
+            zip::ZipArchive::new(Cursor::new(bytes)).map_err(|e| WorkbookError::BadZip(e.to_string()))?;
         let mut sheets = BTreeMap::new();
         for name in book.get_sheet_collection().iter().map(|s| s.get_name().to_string()) {
             let mut data = SheetData { name: name.clone(), cells: BTreeMap::new() };
@@ -98,7 +117,31 @@ impl WorkbookDoc {
             }
             sheets.insert(name, data);
         }
-        Ok(WorkbookDoc { book, sheets })
+        let mut original = BTreeMap::new();
+        {
+            use std::io::Read as _;
+            for i in 0..archive.len() {
+                let mut entry = archive
+                    .by_index(i)
+                    .map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+                let name = entry.name().to_string();
+                let mut buf = Vec::new();
+                entry
+                    .read_to_end(&mut buf)
+                    .map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+                original.insert(name, buf);
+            }
+        }
+        drop(archive);
+        Ok(WorkbookDoc { book, sheets, original })
+    }
+
+    /// Parts of the loaded package the edit backend does not model (they
+    /// will be carried over verbatim on save).
+    pub fn unmodeled_parts(&self) -> Vec<String> {
+        unmodeled_candidates(&self.original)
+            .into_keys()
+            .collect()
     }
 
     pub fn sheet(&self, name: &str) -> Result<&SheetData, WorkbookError> {
@@ -204,11 +247,20 @@ impl WorkbookDoc {
     }
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, WorkbookError> {
+        Ok(self.write_package_with_report()?.0)
+    }
+
+    /// Serialize, carrying over unmodeled package parts byte-identically,
+    /// and report what was preserved.
+    pub fn write_package_with_report(
+        &self,
+    ) -> Result<(Vec<u8>, PreservationReport), WorkbookError> {
         let mut buf = std::io::BufWriter::new(Cursor::new(Vec::new()));
         xlsx_writer::write_writer(&self.book, &mut buf)
             .map_err(|e| WorkbookError::Load(e.to_string()))?;
         let inner = buf.into_inner().map_err(|e| WorkbookError::Load(e.to_string()))?;
-        Ok(inner.into_inner())
+        let emitted = inner.into_inner();
+        merge_carried_parts(emitted, &self.original)
     }
 
     pub fn sheets_snapshot(&self) -> &BTreeMap<String, SheetData> {
@@ -288,10 +340,12 @@ impl WorkbookDoc {
         Ok(out)
     }
 
-    /// Add a basic bar/column chart over `series` ranges anchored at
-    /// `from`..`to` on `sheet` (matrix row 14: bar/column basic series).
-    pub fn add_bar_chart(
+    /// Add a basic chart of `kind` over `series` ranges anchored at
+    /// `from`..`to` on `sheet` (matrix rows 13/19: bar/column, line, pie
+    /// and scatter basic series).
+    pub fn add_chart(
         &mut self,
+        kind: XlsxChartKind,
         sheet: &str,
         from: &str,
         to: &str,
@@ -312,11 +366,30 @@ impl WorkbookDoc {
         let mut to_marker = MarkerType::default();
         to_marker.set_coordinate(to);
         let series_refs: Vec<&str> = series.iter().map(|x| x.as_str()).collect();
+        let chart_type = match kind {
+            XlsxChartKind::Bar => ChartType::BarChart,
+            XlsxChartKind::Line => ChartType::LineChart,
+            XlsxChartKind::Pie => ChartType::PieChart,
+            XlsxChartKind::Scatter => ChartType::ScatterChart,
+        };
         let mut chart = Chart::default();
-        chart.new_chart(&ChartType::BarChart, from_marker, to_marker, series_refs);
+        chart.new_chart(&chart_type, from_marker, to_marker, series_refs);
         chart.set_title(title);
         s.add_chart(chart);
         Ok(())
+    }
+
+    /// Add a basic bar/column chart over `series` ranges anchored at
+    /// `from`..`to` on `sheet` (matrix row 13: bar/column basic series).
+    pub fn add_bar_chart(
+        &mut self,
+        sheet: &str,
+        from: &str,
+        to: &str,
+        series: Vec<String>,
+        title: &str,
+    ) -> Result<(), WorkbookError> {
+        self.add_chart(XlsxChartKind::Bar, sheet, from, to, series, title)
     }
 
     /// Count chart parts in raw xlsx bytes (round-trip conformance check).
@@ -387,6 +460,308 @@ fn string_to_value(s: &str) -> CellValue {
         return CellValue::Number(n);
     }
     CellValue::Text(s.to_string())
+}
+
+/// Basic chart kinds Harbor can create on a workbook (matrix row 13).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum XlsxChartKind {
+    Bar,
+    Line,
+    Pie,
+    Scatter,
+}
+
+/// Package entry names the umya edit backend models (it rewrites them from
+/// its object model). Anything else found in a loaded package is carried
+/// over verbatim on save.
+const MODELED_PREFIXES: &[&str] = &[
+    "[Content_Types].xml",
+    "_rels/",
+    "docProps/",
+    "xl/workbook.xml",
+    "xl/_rels/",
+    "xl/worksheets/",
+    "xl/theme/",
+    "xl/styles.xml",
+    "xl/sharedStrings.xml",
+    "xl/calcChain.xml",
+    "xl/charts/",
+    "xl/drawings/",
+    "xl/media/",
+    "xl/tables/",
+];
+
+fn unmodeled_candidates(original: &BTreeMap<String, Vec<u8>>) -> BTreeMap<String, Vec<u8>> {
+    original
+        .iter()
+        .filter(|(name, _)| {
+            !MODELED_PREFIXES
+                .iter()
+                .any(|p| name.starts_with(p))
+        })
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect()
+}
+
+/// Merge original package parts that the edit backend did not emit back
+/// into the saved package, restoring the relationship entries and content
+/// type declarations needed to keep them resolvable (PRESERVE_ONLY matrix
+/// rows: pivot tables/caches, external links, VBA projects, slicers).
+fn merge_carried_parts(
+    emitted: Vec<u8>,
+    original: &BTreeMap<String, Vec<u8>>,
+) -> Result<(Vec<u8>, PreservationReport), WorkbookError> {
+    use std::collections::BTreeSet;
+    use std::io::{Read as _, Write as _};
+
+    let zip_err = |e: zip::result::ZipError| WorkbookError::BadZip(e.to_string());
+    let mut out_archive = zip::ZipArchive::new(Cursor::new(emitted.as_slice())).map_err(zip_err)?;
+    let mut out_names: BTreeSet<String> = BTreeSet::new();
+    for i in 0..out_archive.len() {
+        out_names.insert(out_archive.by_index(i).map_err(zip_err)?.name().to_string());
+    }
+    // Every part present in the final package: what the backend emitted
+    // plus everything the loaded package contained (carried verbatim).
+    let final_parts: BTreeSet<&str> = out_names
+        .iter()
+        .map(|s| s.as_str())
+        .chain(original.keys().map(|k| k.as_str()))
+        .collect();
+    // ---- Restore relationship entries pointing at carried parts. ----
+    let mut restored: Vec<String> = Vec::new();
+    // rels file -> (Id, target part) entries to restore.
+    let mut restorations: BTreeMap<String, Vec<(String, String, String)>> = BTreeMap::new();
+    for (rels_name, rels_bytes) in original.iter().filter(|(n, _)| n.contains("_rels/")) {
+        let text = match std::str::from_utf8(rels_bytes) {
+            Ok(t) => t,
+            Err(_) => continue,
+        };
+        let doc = match roxmltree::Document::parse(text) {
+            Ok(d) => d,
+            Err(_) => continue,
+        };
+        // Source directory the targets resolve against: strip the trailing
+        // "_rels/<file>.rels" from the rels entry name.
+        let source_dir = match rels_name.rsplit_once("_rels/") {
+            Some((dir, _)) => dir.trim_end_matches('/').to_string(),
+            None => continue,
+        };
+        for rel in doc.descendants().filter(|n| n.tag_name().name() == "Relationship") {
+            if rel.attribute("TargetMode") == Some("External") {
+                continue;
+            }
+            let (Some(id), Some(target)) = (rel.attribute("Id"), rel.attribute("Target")) else {
+                continue;
+            };
+            let resolved = normalize_package_path(&source_dir, target);
+            if !final_parts.contains(resolved.as_str()) {
+                continue;
+            }
+            // Skip when the emitted package already declares this Id in an
+            // existing rels file (Id collision means umya manages it).
+            if let Ok(mut f) = out_archive.by_name(rels_name) {
+                let mut existing = String::new();
+                if f.read_to_string(&mut existing).is_ok()
+                    && existing.contains(&format!("Id=\"{id}\""))
+                {
+                    continue;
+                }
+            }
+            let rtype = rel.attribute("Type").unwrap_or("").to_string();
+            restorations
+                .entry(rels_name.clone())
+                .or_default()
+                .push((id.to_string(), rtype, target.to_string()));
+        }
+    }
+    for (rels_name, entries) in &restorations {
+        restored.extend(
+            entries
+                .iter()
+                .map(|(id, _, target)| format!("{rels_name}#{id}->{target}")),
+        );
+    }
+
+    let carried: Vec<(String, Vec<u8>)> = original
+        .iter()
+        .filter(|(name, _)| {
+            !out_names.contains(*name) && !restorations.contains_key(*name)
+        })
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect();
+    if carried.is_empty() && restorations.is_empty() {
+        return Ok((emitted, PreservationReport::default()));
+    }
+    let carried_names: BTreeSet<&str> = carried.iter().map(|(n, _)| n.as_str()).collect();
+    let _ = &carried_names;
+
+    // ---- Patch [Content_Types].xml for carried parts. ----
+    let mut ct = {
+        let mut f = out_archive
+            .by_name("[Content_Types].xml")
+            .map_err(zip_err)?;
+        let mut s = String::new();
+        f.read_to_string(&mut s).map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+        s
+    };
+    if let Some(orig_ct) = original.get("[Content_Types].xml") {
+        let orig_text = std::str::from_utf8(orig_ct).unwrap_or_default();
+        for part in carried_names.iter() {
+            let part_name = format!("/{}", part);
+            let override_tag_prefix = format!("<Override PartName=\"{part_name}\" ");
+            if ct.contains(&override_tag_prefix) {
+                continue;
+            }
+            if let Some(line_start) = orig_text.find(&override_tag_prefix) {
+                let line_end = orig_text[line_start..].find("/>").map(|e| e + 2);
+                if let Some(end_off) = line_end {
+                    let tag = &orig_text[line_start..line_start + end_off];
+                    ct = ct.replace("</Types>", &format!("{tag}</Types>"));
+                }
+            } else if let Some(ext) = part.rsplit_once('.').map(|(_, e)| e.to_lowercase()) {
+                // No Override: the part relies on a Default extension
+                // declaration. Ensure it exists in the output too.
+                let default_prefix = format!("<Default Extension=\"{ext}\" ");
+                if !ct.contains(&default_prefix) {
+                    if let Some(start) = orig_text.find(&default_prefix) {
+                        if let Some(end_off) = orig_text[start..].find("/>").map(|e| e + 2) {
+                            let tag = &orig_text[start..start + end_off];
+                            ct = ct.replace("</Types>", &format!("{tag}</Types>"));
+                        }
+                    }
+                }
+            }
+        }
+        // Macro-enabled workbooks: carrying vbaProject.bin requires the
+        // workbook part to keep its original (macroEnabled) content type.
+        if carried_names.contains("xl/vbaProject.bin") {
+            if let Some(orig_wb) = override_content_type(orig_text, "/xl/workbook.xml") {
+                ct = replace_override_content_type(&ct, "/xl/workbook.xml", &orig_wb);
+            }
+        }
+    }
+
+    // ---- Rewrite the package. ----
+    let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    let opts = zip::write::SimpleFileOptions::default();
+    for i in 0..out_archive.len() {
+        let mut f = out_archive.by_index(i).map_err(zip_err)?;
+        let name = f.name().to_string();
+        writer.start_file(name.clone(), opts).map_err(zip_err)?;
+        if name == "[Content_Types].xml" {
+            writer
+                .write_all(ct.as_bytes())
+                .map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+        } else if restorations.contains_key(&name) {
+            let mut existing = String::new();
+            f.read_to_string(&mut existing)
+                .map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+            let mut merged = existing.clone();
+            if let Some(entries) = restorations.get(&name) {
+                for (id, rtype, target) in entries {
+                    let tag = format!(
+                        "<Relationship Id=\"{id}\" Type=\"{rtype}\" Target=\"{target}\"/>"
+                    );
+                    if !merged.contains(&format!("Id=\"{id}\"")) {
+                        merged = merged.replace("</Relationships>", &format!("{tag}</Relationships>"));
+                    }
+                }
+            }
+            writer
+                .write_all(merged.as_bytes())
+                .map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+        } else {
+            std::io::copy(&mut f, &mut writer).map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+        }
+    }
+    // Relationship files that existed only in the original package (the
+    // emitted output had no rels for that part at all).
+    for (rels_name, entries) in &restorations {
+        if out_names.contains(rels_name) {
+            continue;
+        }
+        let mut merged = String::from(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">",
+        );
+        for (id, rtype, target) in entries {
+            merged.push_str(&format!(
+                "<Relationship Id=\"{id}\" Type=\"{rtype}\" Target=\"{target}\"/>"
+            ));
+        }
+        merged.push_str("</Relationships>");
+        writer
+            .start_file(rels_name.clone(), opts)
+            .map_err(zip_err)?;
+        writer
+            .write_all(merged.as_bytes())
+            .map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+    }
+    for (name, bytes) in &carried {
+        writer.start_file(name.clone(), opts).map_err(zip_err)?;
+        writer.write_all(bytes).map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+    }
+    let report = PreservationReport {
+        carried_parts: carried.iter().map(|(n, _)| n.clone()).collect(),
+        restored_relationships: restored,
+    };
+    let final_bytes = writer.finish().map_err(zip_err)?.into_inner();
+    Ok((final_bytes, report))
+}
+
+fn normalize_package_path(source_dir: &str, target: &str) -> String {
+    let mut parts: Vec<&str> = if source_dir.is_empty() {
+        Vec::new()
+    } else {
+        source_dir.split('/').collect()
+    };
+    for seg in target.split('/') {
+        match seg {
+            "." => {}
+            ".." => {
+                parts.pop();
+            }
+            s => parts.push(s),
+        }
+    }
+    parts.join("/")
+}
+
+/// Extract the ContentType attribute of the Override for `part_name`.
+fn override_content_type(content_types_xml: &str, part_name: &str) -> Option<String> {
+    let needle = format!("<Override PartName=\"{part_name}\" ");
+    let start = content_types_xml.find(&needle)?;
+    let rest = &content_types_xml[start..];
+    let ct_key = "ContentType=\"";
+    let ct_off = rest.find(ct_key)? + ct_key.len();
+    let end = rest[ct_off..].find('"')?;
+    Some(rest[ct_off..ct_off + end].to_string())
+}
+
+/// Replace (or add) the ContentType of the Override for `part_name`.
+fn replace_override_content_type(xml: &str, part_name: &str, new_ct: &str) -> String {
+    let needle = format!("<Override PartName=\"{part_name}\" ");
+    let Some(start) = xml.find(&needle) else {
+        return xml.to_string();
+    };
+    let rest = &xml[start..];
+    let Some(tag_end_off) = rest.find("/>").map(|e| e + 2) else {
+        return xml.to_string();
+    };
+    let tag = &rest[..tag_end_off];
+    let rebuilt = match tag.find("ContentType=\"") {
+        Some(ct_off) => {
+            let after = &tag[ct_off + "ContentType=\"".len()..];
+            let close = after.find('"').unwrap_or(0);
+            format!(
+                "{}{}{}",
+                &tag[..ct_off + "ContentType=\"".len()],
+                new_ct,
+                &after[close..]
+            )
+        }
+        None => tag.to_string(),
+    };
+    format!("{}{}{}", &xml[..start], rebuilt, &xml[start + tag_end_off..])
 }
 
 #[cfg(test)]
