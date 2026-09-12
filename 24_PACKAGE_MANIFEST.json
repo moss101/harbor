@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "da8ec22120ba3ad16902a97fe7c858086e9ed81660dfab65d9b775ea7ccfa38c",
+  "input_manifest_sha256": "3138d58c9fbea6d2527136125c508a825ce348995e3d036d369ea318858db9ef",
   "file_count_excluding_manifest": 365,
   "files": [
     {
@@ -105,12 +105,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 68667,
-      "sha256": "56117f3b4607ca04755e70a86b945f5214dde19b9a1b2c1aabff5aa7640dffb1"
+      "sha256": "1b652ef906ed1e5b9eb4cb4a04121dd5e3f445dcb60761899e4382d948071343"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "03c0829bca4ed647ea250edeed378417dda7f4bea3d05bcac10c39aada8e9187"
+      "sha256": "96020bf6f003c578d5924d460a21179b734e340c20666b11cfae0cf9e425caf8"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -499,8 +499,8 @@
     },
     {
       "path": "apps/harbor_app/ios/Runner.xcodeproj/project.pbxproj",
-      "bytes": 25737,
-      "sha256": "9f095597c6f38e6fcd25533b1b8c3056fd0d9f29c28a97012573081a71757d93"
+      "bytes": 26883,
+      "sha256": "09291e7cfd388e2093e2238e78494ef2246ad299e3f003c44abdaf0dda73f888"
     },
     {
       "path": "apps/harbor_app/ios/Runner.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
@@ -579,8 +579,8 @@
     },
     {
       "path": "apps/harbor_app/lib/services/harbor_service.dart",
-      "bytes": 6704,
-      "sha256": "78b0ffbdb1de77494ad201af404c83a8fbeac973eda2489ff3c15fbc1a45701b"
+      "bytes": 6938,
+      "sha256": "51b016023f1aa0bc879b287529762834a9585f888672e4ec4e5b4edf773796dd"
     },
     {
       "path": "apps/harbor_app/lib/shell/adaptive_shell.dart",
@@ -1489,8 +1489,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 17547,
-      "sha256": "644e077658754ad9a97f8406e6deb1dcbb21b74fbbc818957fd872ae39828dcf"
+      "bytes": 17392,
+      "sha256": "8b0b90d7a28a2673133206259529769d002fed759deaeb69645f4f6fcc90b1e1"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",

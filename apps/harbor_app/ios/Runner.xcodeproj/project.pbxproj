@@ -158,6 +158,7 @@
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
+				74B0F1A12B7F000000000001 /* Embed Harbor Native Core */,
 			);
 			buildRules = (
 			);
@@ -265,6 +266,21 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
+		};
+		74B0F1A12B7F000000000001 /* Embed Harbor Native Core */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Embed Harbor Native Core";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"$PLATFORM_NAME\" = \"iphonesimulator\" ]; then\nFFI_LIB=\"$SRCROOT/../../../core/target/aarch64-apple-ios-sim/release/libharbor_ffi.dylib\"\nif [ ! -f \"$FFI_LIB\" ]; then\necho \"harbor_ffi: building libharbor_ffi.dylib (aarch64-apple-ios-sim)...\"\n(cd \"$SRCROOT/../../../core\" && \"$HOME/.cargo/bin/cargo\" build --release -p harbor_ffi --target aarch64-apple-ios-sim) || exit 1\nfi\ncp -f \"$FFI_LIB\" \"$BUILT_PRODUCTS_DIR/$PRODUCT_NAME.app/libharbor_ffi.dylib\" || exit 1\ncodesign --force --sign - \"$BUILT_PRODUCTS_DIR/$PRODUCT_NAME.app/libharbor_ffi.dylib\" || exit 1\necho \"harbor_ffi: embedded into $PRODUCT_NAME.app\"\nelse\necho \"harbor_ffi: skipping (simulator embedding only; device uses static-link)\"\nfi";
 		};
 /* End PBXShellScriptBuildPhase section */
 

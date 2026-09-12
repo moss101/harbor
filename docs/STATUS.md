@@ -169,34 +169,31 @@ the rationale is recorded at the constant. The combined corpus hash is
 rebound: `evaluation_corpus_sha256 = a0b605a7…66829dc` (was 9e2a7e4d…),
 with the change recorded in `26_Qualification_Profiles.binding_history`.
 
-### iOS native core (built this session; bundling pending)
+### App bundles now carry the live native core (macOS + iOS, 2026-09-13)
 
-`cargo build --release -p harbor_ffi --target aarch64-apple-ios-sim`
-succeeds with the rustup 1.97.1 toolchain: `libharbor_ffi.dylib` (25 MB) and
-`libharbor_ffi.a` (53 MB) under `core/target/aarch64-apple-ios-sim/release/`
-(llama.cpp included). The remaining step is Xcode wiring: a build phase that
-embeds the library into Runner.app and signs it, after which the iOS
-simulator's degraded state becomes a live core. The Android recipe in
-`evidence/device_qualification.json` is the template.
-
-### App-bundle native-library fix (macOS verified live, 2026-09-13)
-
-Found: the macOS RELEASE bundle did not ship `libharbor_ffi.dylib` (no
-build phase referenced it; `lsof` on the launched app showed zero
-harbor_ffi mappings — the bundled app rendered the honest degraded state;
-dev runs and tests load the dylib by absolute path). Fixed and verified:
-copying the freshly built `target/release/libharbor_ffi.dylib` into
+**macOS**: the release bundle did not ship `libharbor_ffi.dylib` (found via
+`lsof` on the launched app: zero mappings; it rendered the honest degraded
+state). Fixed and verified: `target/release/libharbor_ffi.dylib` copied into
 `Contents/Frameworks` + ad-hoc codesign makes the launched app map the
-library and create a full live workspace (agent.db + WAL, store.db,
-network_audit.db, device key) — the bundled macOS app now runs the live
-core. The step is codified in `scripts/package_apple.sh`. iOS Runner.app
-wiring remains the follow-up (the simulator dylib itself already builds).
+library and open a full live workspace (agent.db + WAL, store.db,
+network_audit.db, device key). Codified in `scripts/package_apple.sh`.
+
+**iOS simulator**: an "Embed Harbor Native Core" Xcode build phase
+(simulator-guarded, with a cargo fallback build) copies
+`core/target/aarch64-apple-ios-sim/release/libharbor_ffi.dylib` into
+Runner.app and ad-hoc signs it; `HarborBinding` resolves it via
+`@executable_path/libharbor_ffi.dylib`. Verified live on the iPhone 17 Pro
+simulator: `lsof` shows the mapping, the app opened a full workspace
+(agent.db + WAL + SHM, store.db, network_audit.db, keys) in its container,
+and the Home surface shows the LOCAL ONLY badge with real model state —
+the OFFLINE degraded banner is gone (`evidence/ios/live_core_screenshot.png`).
 
 ### Next dependency-ready task
 
-Wire the native library into the macOS and iOS app bundles (build phase +
-codesign), relaunch, and capture LOCAL ONLY live-core evidence for both —
-the iOS simulator dylib already builds (above); Android is done and live.
+iOS device (physical) build: `cargo build -p harbor_ffi --target
+aarch64-apple-ios` (staticlib) linked into the app — device embedding uses
+a static-lib link step plus development signing, which needs a physical
+iPhone attached (currently BLOCKED_DEVICE_EVIDENCE).
 
 ### Reproduce the evidence
 

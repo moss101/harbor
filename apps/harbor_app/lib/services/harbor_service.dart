@@ -206,6 +206,11 @@ class HarborBinding {
     if (fromEnv.isNotEmpty) return fromEnv;
     if (Platform.isAndroid) return 'libharbor_ffi.so';
     if (Platform.isWindows) return 'harbor_ffi.dll';
+    if (Platform.isIOS) {
+      // The "Embed Harbor Native Core" build phase places the dylib at the
+      // app-bundle root; @executable_path resolves against Runner.app/.
+      return '@executable_path/libharbor_ffi.dylib';
+    }
     return 'libharbor_ffi.dylib';
   }
 }
