@@ -93,11 +93,14 @@ E2EE sync.
    `N/A_DISABLED`. `feature:sync` remains gated on ACC-022/023/057 despite
    the harbor_sync protocol implementation being complete and tested.
 
-### Test results at this HEAD (evidence/gate_results.json, commit 7115d49, OVERALL: PASS 10/10)
+### Test results (evidence/gate_results.json, OVERALL: PASS 10/10; the
+suite-bound commit is recorded inside the file — the corpus expansion and the
+TODAY/NOW deterministic-clock fix postdate the 7115d49 snapshot and are
+recorded in commits 5e5a6bd / 14367ae)
 
 | Suite | Command | Result |
 | --- | --- | --- |
-| Rust workspace (15 crates) | `cd core && cargo test --workspace` | **206 passed, 0 failed** |
+| Rust workspace (15 crates) | `cd core && cargo test --workspace` | **206 passed, 0 failed** (incl. 464-case RAG eval and all 71 formula-qualification targets under the pinned clock) |
 | Rust + llama.cpp backend | `cargo test -p harbor_inference --features gguf-backend` | **13 passed, 0 failed** (real Metal inference) |
 | Dossier + contract freeze | `python3 tools/validate_dossier.py` | PASS |
 | Contract suite | `python3 tools/test_contracts.py` | PASS |
@@ -138,6 +141,15 @@ same tree state).
   signed distribution; tool_selection/contradiction behaviors are not yet
   expressed by the corpus schema (harbor.eval_corpus/v1 carries the fields
   the reference runner measures).
+
+### TODAY/NOW clock fix (found 2026-09-13)
+
+The formula-qualification harness called `set_deterministic_mode` with a
+`Local` timezone and discarded the resulting error, so TODAY/NOW evaluated
+from the wall clock; their fixtures only passed while the fixture date
+happened to equal the current date. The date rollover to 2026-09-13 exposed
+it (M1 gate dropped to 69/71). The harness now pins UTC explicitly and
+propagates the error (commit 14367ae).
 
 ### Evaluation corpus (expanded this session)
 

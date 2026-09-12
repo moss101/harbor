@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "f5a15662ebe6546cb6401770225e25da58ef67dc2f28ecf7019b4370eaf4bbf3",
+  "input_manifest_sha256": "2b8e4cc7eda76b7124eb45e29095f64300d701127b2116037c9c9f3b4026b501",
   "input_files": [
     {
       "path": "00_README.md",
@@ -1116,8 +1116,8 @@
     },
     {
       "path": "core/harbor_formula/src/qualify.rs",
-      "bytes": 7191,
-      "sha256": "c8329bcfea1bdde1fb7b7dc76f5d4d10b3e9834fb6630ce2c8d8ea80dfe87c44"
+      "bytes": 7568,
+      "sha256": "7902193ce50bf61256a4f5b5ff72a89ec171aa3c9939c55da1a0d91a27bf3841"
     },
     {
       "path": "core/harbor_formula/src/value.rs",
@@ -1471,8 +1471,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 15367,
-      "sha256": "26d26f26c19ca4a6abc82ba20226fc0598c03b2cfeba0ffb97f8687a76b4362f"
+      "bytes": 16073,
+      "sha256": "7cb1f056a21a4aa9b8cdf0b301b8ad5424ce8fb7a4d23787aa8bdc0636dea7d0"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
