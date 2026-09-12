@@ -7,7 +7,11 @@ ran at.
 
 ---
 
-## Authoritative snapshot — session of 2026-09-12 (HEAD 7115d49, final evidence commit recorded in evidence/gate_results.json)
+## Authoritative snapshot — session 27 (2026-09-12/13, closed at HEAD 5468ca0;
+## commits this session: de09abc, 43ed690, 7115d49, eb54c4a, 5e5a6bd, 14367ae,
+## c060dad, a31734a, 5468ca0; the machine-suite evidence commit inside
+## evidence/gate_results.json is 14367ae — later commits touch docs, packaging
+## scripts and evidence only)
 
 ### What Harbor is
 
