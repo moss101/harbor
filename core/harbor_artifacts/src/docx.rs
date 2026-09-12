@@ -41,6 +41,10 @@ pub enum DocxError {
 pub enum DocxOp {
     /// Replace the entire text of paragraph `index` (text.replace).
     TextReplace { index: u32, new_text: String },
+    /// Set a table cell's first-paragraph text (cell.set). The cell is
+    /// addressed merge-aware via the table/row/col map; the cell's OTHER
+    /// paragraphs are preserved.
+    TableCellSet { table: usize, row: usize, col: usize, new_text: String },
 }
 
 fn para_style(p: roxmltree::Node) -> Option<String> {
@@ -104,7 +108,8 @@ impl DocxDocument {
     }
 
     /// Apply typed ops to the document XML and return the full new DOCX
-    /// package. Precondition: paragraph text hash must match.
+    /// package. Every op carries an implicit precondition: the target
+    /// paragraph's current text must hash to the recorded content hash.
     pub fn apply(&self, bytes: &[u8], ops: &[DocxOp]) -> Result<Vec<u8>, DocxError> {
         let mut archive = zip::ZipArchive::new(Cursor::new(bytes))?;
         let mut xml = String::new();
@@ -114,7 +119,9 @@ impl DocxDocument {
                 .map_err(|_| DocxError::Malformed("missing word/document.xml".into()))?;
             f.read_to_string(&mut xml)?;
         }
-        // Parse current paragraphs (in document order) to locate replacements.
+
+        // Normalize every op into (paragraph ordinal 1-based, new text),
+        // validating preconditions against the loaded document state.
         let doc = roxmltree::Document::parse(&xml).map_err(|e| DocxError::Malformed(e.to_string()))?;
         let para_nodes: Vec<roxmltree::Node<'_, '_>> = doc
             .descendants()
@@ -122,9 +129,24 @@ impl DocxDocument {
             .collect();
         let mut replacement: BTreeMap<usize, String> = BTreeMap::new();
         for op in ops {
-            let DocxOp::TextReplace { index, new_text } = op;
-            let Some(node) = para_nodes.get((*index as usize).saturating_sub(1)) else {
-                return Err(DocxError::ParagraphChanged(*index));
+            let (index, new_text): (u32, String) = match op {
+                DocxOp::TextReplace { index, new_text } => (*index, new_text.clone()),
+                DocxOp::TableCellSet { table, row, col, new_text } => {
+                    let map = table_cell_paragraph_map(&xml)?;
+                    let cell = map
+                        .get(table)
+                        .and_then(|t| t.get(&(*row, *col)))
+                        .ok_or(DocxError::ParagraphChanged(0))?;
+                    let first = cell
+                        .0
+                        .first()
+                        .copied()
+                        .ok_or(DocxError::ParagraphChanged(((*row).max(1)) as u32))?;
+                    ((first + 1) as u32, new_text.clone())
+                }
+            };
+            let Some(node) = para_nodes.get((index as usize).saturating_sub(1)) else {
+                return Err(DocxError::ParagraphChanged(index));
             };
             let mut text = String::new();
             for t in node.descendants().filter(|n| n.has_tag_name("t")) {
@@ -134,18 +156,18 @@ impl DocxDocument {
             let expected = self
                 .paragraphs
                 .iter()
-                .find(|p| p.index == *index)
-                .ok_or(DocxError::ParagraphChanged(*index))?;
+                .find(|p| p.index == index)
+                .ok_or(DocxError::ParagraphChanged(index))?;
             if expected.content_hash != hash {
-                return Err(DocxError::ParagraphChanged(*index));
+                return Err(DocxError::ParagraphChanged(index));
             }
-            replacement.insert((*index as usize) - 1, new_text.clone());
+            replacement.insert((index as usize) - 1, new_text.clone());
         }
+
         // Serialize replacements by rewriting runs of target paragraphs:
-        // keep the first run's properties, set its w:t to the new text, and
-        // drop the remaining runs' text nodes.
-        let mut new_xml = rewrite_paragraph_texts(&xml, &replacement)?;
-        let _ = &mut new_xml;
+        // keep the first run's properties, and distribute the new text
+        // across runs when lengths align (formatting preservation).
+        let new_xml = rewrite_paragraph_texts(&xml, &replacement)?;
 
         // Rebuild package with replaced document.xml.
         let mut out = zip::ZipWriter::new(Cursor::new(Vec::new()));

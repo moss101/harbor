@@ -196,3 +196,39 @@ fn table_cells_are_addressable_with_merge_aware_columns() {
     assert_eq!(doc.paragraphs[a_idx].text, "A");
     assert_eq!(doc.paragraphs[b_idx].text, "B");
 }
+
+#[test]
+fn docx_table_cell_set_edit_roundtrip() {
+    let bytes = structured_docx();
+    let doc = harbor_artifacts::DocxDocument::load(&bytes).unwrap();
+
+    // Table-cell addressing: table 0, body row 1, column 1 -> "B".
+    let out = doc
+        .apply(
+            &bytes,
+            &[harbor_artifacts::DocxOp::TableCellSet {
+                table: 0,
+                row: 1,
+                col: 1,
+                new_text: "Revised B".into(),
+            }],
+        )
+        .unwrap();
+    let reloaded = harbor_artifacts::DocxDocument::load(&out).unwrap();
+    // The targeted cell changed; every other paragraph is untouched.
+    let texts: Vec<&str> = reloaded.paragraphs.iter().map(|p| p.text.as_str()).collect();
+    assert_eq!(
+        texts,
+        vec![
+            "Harbor Plan",
+            "First item",
+            "Second item",
+            "Merged header",
+            "A",
+            "Revised B",
+            "Summary"
+        ]
+    );
+    // The merged header cell was NOT treated as a body cell.
+    assert_eq!(reloaded.paragraphs[3].text, "Merged header");
+}

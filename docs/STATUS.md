@@ -186,6 +186,16 @@ the issuer signature, and returns the authenticated envelopes. E2E test
 covers the full 90-day expiry flow: device expires -> epoch advances ->
 re-enrollment -> bundle download -> fresh uploads on the new epoch.
 
+## Session 22 additions (DOCX TableCellSet typed op)
+
+- New typed op `DocxOp::TableCellSet { table, row, col, new_text }`:
+  merge-aware table-cell addressing via
+  `docx::table_cell_paragraph_map` (gridSpan-honoring column accounting,
+  global paragraph ordinals), precondition hash validated against the
+  loaded document state, other paragraphs preserved. Conformance test
+  proves targeted-cell edit leaves merged header and all other cells
+  untouched. (harbor_artifacts 20 tests.)
+
 ## Session 16 additions (PDF extraction, iOS launch evidence)
 
 1. **PDF text extraction with page mapping** (harbor_render::pdf +
