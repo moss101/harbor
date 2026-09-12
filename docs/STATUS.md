@@ -208,6 +208,18 @@ re-enrollment -> bundle download -> fresh uploads on the new epoch.
   conformance suite); formatted-run replacement (same-length distribution)
 - Verified: 178 Rust tests; dossier PASS
 
+## Session 24 additions (PPTX chart embedding)
+
+The PptxDeck writer embeds real DrawingML chart parts: slides carry a
+`chart: Option<ChartSpec>` (kind bar/line, title, categories, series with
+cached values); the package gains `ppt/charts/chartN.xml` (c:chartSpace
+with strCache/numCache), `ppt/embeddings/chartdataN.xlsx` (minimal
+workbook), chart relationships from the slide, and a graphicFrame in the
+slide spTree. Read-back via DeckPreview::from_pptx exposes chart parts
+through the existing slide-text parse. Conformance-tested: bar chart with
+cached values (3600/4000) survives write/read; chart part, rels and
+embedded workbook all present. (harbor_artifacts: 20 tests.)
+
 ## Session 16 additions (PDF extraction, iOS launch evidence)
 
 1. **PDF text extraction with page mapping** (harbor_render::pdf +

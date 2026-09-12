@@ -131,6 +131,7 @@ mod tests {
                 title: "Totals".into(),
                 bullets: vec!["Q1 3600".into()],
                 notes: None,
+                chart: None,
             }],
         };
         let bytes = deck.to_pptx_bytes().unwrap();

@@ -16,6 +16,26 @@ pub struct SlideContent {
     pub bullets: Vec<String>,
     /// Speaker notes text.
     pub notes: Option<String>,
+    /// Embedded basic chart (bar/column or line) with cached values.
+    /// Cached data lives in the chart XML itself; per matrix row 14 this
+    /// is the qualified basic-series scope.
+    pub chart: Option<ChartSpec>,
+}
+
+/// Basic chart kinds supported by the generator (matrix row 14 scope).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ChartKind {
+    Bar,
+    Line,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ChartSpec {
+    pub kind: ChartKind,
+    pub title: String,
+    pub categories: Vec<String>,
+    /// (series name, values) — values.len() == categories.len().
+    pub series: Vec<(String, Vec<f64>)>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -80,6 +100,16 @@ fn slide_xml(slide: &SlideContent) -> String {
     if slide.bullets.is_empty() {
         body_paras.push_str("<a:p><a:endParaRPr lang=\"en-US\"/></a:p>");
     }
+    // A slide-level chart becomes a graphicFrame referencing the chart part.
+    let chart_frame = slide
+        .chart
+        .as_ref()
+        .map(|_| {
+            format!(
+                r#"<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="4" name="Chart 3"/><p:cNvGraphicFramePr/><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="838200" y="3600000"/><a:ext cx="7200000" cy="3000000"/></p:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId3"/></a:graphicData></a:graphic></p:graphicFrame>"#
+            )
+        })
+        .unwrap_or_default();
     format!(
         r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
@@ -97,13 +127,15 @@ fn slide_xml(slide: &SlideContent) -> String {
         <p:spPr><a:xfrm><a:off x="838200" y="1593850"/><a:ext cx="7416800" cy="4171925"/></a:xfrm></p:spPr>
         <p:txBody><a:bodyPr/><a:lstStyle/>{}</p:txBody>
       </p:sp>
+      {chart_frame}
     </p:spTree>
   </p:cSld>
   <p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>
 </p:sld>
 "#,
         xml_escape(&slide.title),
-        body_paras
+        body_paras,
+        chart_frame = chart_frame,
     )
 }
 
@@ -161,25 +193,22 @@ const THEME_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"
 </a:themeElements>
 </a:theme>"#;
 
-fn rels_for_slide(n: usize, with_notes: bool) -> String {
-    let mut r = format!(
+fn rels_for_slide(n: usize, with_notes: bool, with_chart: bool) -> String {
+    let mut rels = format!(
         r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>
-<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" Target="../notesSlides/notesSlide{n}.xml"/>
-</Relationships>"#,
-        n = n
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>"#
     );
-    if !with_notes {
-        r = r.replace(
-            &format!(
-                "<Relationship Id=\"rId2\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide\" Target=\"../notesSlides/notesSlide{n}.xml\"/>",
-                n = n
-            ),
-            "",
-        );
+    if with_notes {
+        rels.push_str(&format!(
+            "<Relationship Id=\"rId2\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide\" Target=\"../notesSlides/notesSlide{n}.xml\"/>"
+        ));
     }
-    r
+    if with_chart {
+        rels.push_str("<Relationship Id=\"rId3\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart\" Target=\"../charts/chart{n}.xml\"/>");
+    }
+    rels.push_str("</Relationships>");
+    rels
 }
 
 impl PptxDeck {
@@ -196,6 +225,14 @@ impl PptxDeck {
             ct.push_str(&format!(
                 "<Override PartName=\"/ppt/notesSlides/notesSlide{i}.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml\"/>"
             ));
+            if self.slides[i - 1].chart.is_some() {
+                ct.push_str(&format!(
+                    "<Override PartName=\"/ppt/charts/chart{i}.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.drawingml.chart+xml\"/>"
+                ));
+            }
+        }
+        if self.slides.iter().any(|s| s.chart.is_some()) {
+            ct.push_str("<Default Extension=\"xlsx\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\"/>");
         }
         ct.push_str("</Types>");
         zip.start_file("[Content_Types].xml", opts)?;
@@ -272,7 +309,7 @@ impl PptxDeck {
             zip.start_file(format!("ppt/slides/slide{n}.xml"), opts)?;
             zip.write_all(slide_xml(slide).as_bytes())?;
             zip.start_file(format!("ppt/slides/_rels/slide{n}.xml.rels"), opts)?;
-            zip.write_all(rels_for_slide(n, slide.notes.is_some()).as_bytes())?;
+            zip.write_all(rels_for_slide(n, slide.notes.is_some(), slide.chart.is_some()).as_bytes())?;
             zip.start_file(format!("ppt/notesSlides/notesSlide{n}.xml"), opts)?;
             zip.write_all(notes_xml(slide).as_bytes())?;
             zip.start_file(format!("ppt/notesSlides/_rels/notesSlide{n}.xml.rels"), opts)?;
@@ -283,6 +320,29 @@ impl PptxDeck {
 <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="../slides/slide1.xml"/>
 </Relationships>"#,
             )?;
+            // Embedded chart: chart part + rels to the embedded workbook +
+            // the workbook itself (minimal; cached values live in the XML).
+            if let Some(spec) = &slide.chart {
+                let chart_xml = chart_space_xml(
+                    spec.kind,
+                    &spec.title,
+                    &spec.categories,
+                    &spec.series,
+                );
+                zip.start_file(format!("ppt/charts/chart{n}.xml"), opts)?;
+                zip.write_all(chart_xml.as_bytes())?;
+                zip.start_file(format!("ppt/charts/_rels/chart{n}.xml.rels"), opts)?;
+                zip.write_all(
+                    format!(
+                        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/package" Target="../embeddings/chartdata{n}.xlsx"/></Relationships>"#
+                    )
+                    .as_bytes(),
+                )?;
+                let xlsx = minimal_embedded_xlsx(&spec.series);
+                zip.start_file(format!("ppt/embeddings/chartdata{n}.xlsx"), opts)?;
+                zip.write_all(&xlsx)?;
+            }
         }
         zip.start_file("ppt/notesMasters/notesMaster1.xml", opts)?;
         zip.write_all(
@@ -373,7 +433,7 @@ fn parse_slide_texts(xml: &str) -> Result<SlideContent, PptxError> {
             bullets.extend(texts);
         }
     }
-    Ok(SlideContent { title, bullets, notes: None })
+    Ok(SlideContent { title, bullets, notes: None, chart: None })
 }
 
 #[cfg(test)]
@@ -389,11 +449,13 @@ mod tests {
                     title: "Revenue".into(),
                     bullets: vec!["Revenue grew 12% QoQ".into(), "EMEA leads growth".into()],
                     notes: Some("Source: verified workbook recalc".into()),
+                    chart: None,
                 },
                 SlideContent {
                     title: "Outlook".into(),
                     bullets: vec!["Pipeline strong".into()],
                     notes: None,
+                    chart: None,
                 },
             ],
         };
@@ -415,4 +477,88 @@ mod tests {
     fn xml_escaping() {
         assert_eq!(xml_escape("a<b>&\"c\""), "a&lt;b&gt;&amp;&quot;c&quot;");
     }
+}
+
+/// Build a c:chartSpace document for a basic bar/column, line or pie chart
+/// with cached categories and values.
+pub fn chart_space_xml(
+    kind: ChartKind,
+    title: &str,
+    categories: &[String],
+    series: &[(String, Vec<f64>)],
+) -> String {
+    let chart_el = match kind {
+        ChartKind::Bar => "barChart",
+        ChartKind::Line => "lineChart",
+    };
+    let mut sers = String::new();
+    for (i, (name, values)) in series.iter().enumerate() {
+        let mut cats = String::new();
+        let mut vals = String::new();
+        for (j, c) in categories.iter().enumerate() {
+            cats.push_str(&format!(
+                "<c:pt idx=\"{j}\"><c:v>{}</c:v></c:pt>",
+                xml_escape(c)
+            ));
+        }
+        for (j, v) in values.iter().enumerate() {
+            vals.push_str(&format!(
+                "<c:pt idx=\"{j}\"><c:v>{v}</c:v></c:pt>"
+            ));
+        }
+        sers.push_str(&format!(
+            r#"<c:ser><c:idx val="{i}"/><c:order val="{i}"/><c:tx><c:strRef><c:f>Sheet1!$A$1</c:f><c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>{}</c:v></c:pt></c:strCache></c:strRef></c:tx><c:cat><c:strRef><c:f>Sheet1!$B$1:$B${n}</c:f><c:strCache><c:ptCount val="{n}"/>{cats}</c:strCache></c:strRef></c:cat><c:val><c:numRef><c:f>Sheet1!$C$1:$C${n}</c:f><c:numCache><c:formatCode>General</c:formatCode><c:ptCount val="{n}"/>{vals}</c:numCache></c:numRef></c:val></c:ser>"#,
+            xml_escape(name),
+            n = categories.len(),
+        ));
+    }
+    let axes = match kind {
+        ChartKind::Bar | ChartKind::Line => format!(
+            r#"<c:axId val="111111111"/><c:axId val="222222222"/>"#
+        ),
+    };
+    let axes_xml = match kind {
+        ChartKind::Bar | ChartKind::Line => String::from(
+            r#"<c:catAx><c:axId val="111111111"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:crossAx val="222222222"/></c:catAx><c:valAx><c:axId val="222222222"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:crossAx val="111111111"/></c:valAx>"#,
+        ),
+        _ => String::new(),
+    };
+    let grouping = match kind {
+        ChartKind::Bar => "<c:grouping val=\"clustered\"/>",
+        _ => "<c:grouping val=\"standard\"/>",
+    };
+    format!(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<c:chart><c:title><c:tx><c:rich><a:bodyPr/><a:p><a:r><a:t>{title}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title><c:autoTitleDeleted val="0"/>
+<c:plotArea><c:layout/>{chart_el}{grouping}{sers}{axes}{axes_xml}</c:plotArea>
+<c:plotVisOnly val="1"/><c:dispBlanksAs val="gap"/>
+</c:chart>
+</c:chartSpace>"#,
+        title = xml_escape(title),
+        chart_el = chart_el,
+        grouping = grouping,
+        sers = sers,
+        axes = axes,
+        axes_xml = axes_xml,
+    )
+}
+
+/// Minimal embedded workbook bytes for a chart (PowerPoint tolerates an
+/// empty data sheet when cached values are present).
+pub fn minimal_embedded_xlsx(series: &[(String, Vec<f64>)]) -> Vec<u8> {
+    let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    let opts = zip::write::SimpleFileOptions::default();
+    zip.start_file("[Content_Types].xml", opts).unwrap();
+    zip.write_all(br#"<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/></Types>"#).unwrap();
+    zip.start_file("_rels/.rels", opts).unwrap();
+    zip.write_all(br#"<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>"#).unwrap();
+    zip.start_file("xl/workbook.xml", opts).unwrap();
+    zip.write_all(br#"<?xml version="1.0"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheets><sheet name="Sheet1" sheetId="1" r:id="rId1" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/></sheets></workbook>"#).unwrap();
+    zip.start_file("xl/_rels/workbook.xml.rels", opts).unwrap();
+    zip.write_all(br#"<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>"#).unwrap();
+    zip.start_file("xl/worksheets/sheet1.xml", opts).unwrap();
+    let _ = series;
+    zip.write_all(br#"<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData/></worksheet>"#).unwrap();
+    zip.finish().unwrap().into_inner()
 }

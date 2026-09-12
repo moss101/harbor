@@ -127,6 +127,7 @@ fn m1_deck_generation_diff_approval_safesave_offline() {
                 "All figures verified by pinned engine recalculation.".into(),
             ],
             notes: Some("Generated offline by Harbor from Sheet1!B6, C6, D6.".into()),
+            chart: None,
         }],
     };
     let deck_bytes = deck.to_pptx_bytes().unwrap();
@@ -286,6 +287,7 @@ fn m1_kill_restart_replay_with_artifacts_and_blobs() {
             title: "T".into(),
             bullets: vec!["b".into()],
             notes: None,
+            chart: None,
         }],
     };
     let deck_bytes = deck.to_pptx_bytes().unwrap();

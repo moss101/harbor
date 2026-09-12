@@ -291,3 +291,39 @@ fn xlsx_chart_roundtrip_preserved_through_harbor_pipeline() {
         Some(harbor_formula::value::CellValue::Number(1200.0))
     );
 }
+
+#[test]
+fn pptx_chart_embedding_roundtrip() {
+    // Matrix row: PPTX charts from Harbor IR with cached values.
+    let deck = harbor_artifacts::PptxDeck {
+        title: "Chart deck".into(),
+        slides: vec![harbor_artifacts::SlideContent {
+            title: "Revenue chart".into(),
+            bullets: vec!["Values verified in the workbook".into()],
+            notes: None,
+            chart: Some(harbor_artifacts::ChartSpec {
+                kind: harbor_artifacts::ChartKind::Bar,
+                title: "Quarterly revenue".into(),
+                categories: vec!["Q1".into(), "Q2".into()],
+                series: vec![("Revenue".into(), vec![3600.0, 4000.0])],
+            }),
+        }],
+    };
+    let bytes = deck.to_pptx_bytes().unwrap();
+    let mut ar = zip::ZipArchive::new(Cursor::new(bytes.as_slice())).unwrap();
+    // Chart part exists with cached values.
+    let mut chart_xml = String::new();
+    use std::io::Read as _;
+    ar.by_name("ppt/charts/chart1.xml")
+        .unwrap()
+        .read_to_string(&mut chart_xml)
+        .unwrap();
+    assert!(chart_xml.contains("barChart"));
+    assert!(chart_xml.contains("<c:v>3600</c:v>"));
+    assert!(chart_xml.contains("<c:v>4000</c:v>"));
+    assert!(chart_xml.contains("<c:v>Q1</c:v>"));
+    // Embedded workbook present for the chart.
+    assert!(ar.by_name("ppt/embeddings/chartdata1.xlsx").is_ok());
+    // Chart relationship from the slide.
+    assert!(ar.by_name("ppt/slides/_rels/slide1.xml.rels").is_ok());
+}
