@@ -3,6 +3,7 @@ import 'package:harbor_ui/harbor_ui.dart';
 
 import '../l10n/app_localizations.dart';
 import '../main.dart';
+import '../services/harbor_service.dart';
 
 export 'ask_surface.dart';
 export 'work_surface.dart';
@@ -51,11 +52,31 @@ class HomeSurface extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: HarborSpace.s8),
-              ModelDock(
-                modelLabel: 'No model installed — open Models to install one',
-                runtimeLabel: 'LOCAL ONLY',
-                semantic: ExecutionSemantic.local,
-              ),
+              Builder(builder: (context) {
+                final sp = HarborServiceProvider.of(context);
+                final service = sp.notifier;
+                if (sp.failed || service == null) {
+                  return const ModelDock(
+                    modelLabel: 'Core unavailable — native runtime not loaded',
+                    runtimeLabel: 'OFFLINE',
+                    semantic: ExecutionSemantic.danger,
+                  );
+                }
+                final models = service.installedModels;
+                final policy = service.policy;
+                if (models.isEmpty) {
+                  return ModelDock(
+                    modelLabel: 'No model installed — open Models to install one',
+                    runtimeLabel: policy.contains('LOCAL_ONLY') ? 'LOCAL ONLY' : 'LOCAL',
+                    semantic: ExecutionSemantic.local,
+                  );
+                }
+                return ModelDock(
+                  modelLabel: models.first['id'] as String,
+                  runtimeLabel: policy.contains('LOCAL_ONLY') ? 'LOCAL ONLY' : 'LOCAL',
+                  semantic: ExecutionSemantic.local,
+                );
+              }),
             ],
           ),
         ),
@@ -148,11 +169,53 @@ class ModelsSurface extends StatelessWidget {
                 title: l10n.modelsHuggingFace,
                 body: 'Search public repositories. Model packages are data — '
                     'no repository code ever executes.'),
-            HarborEmptyState(
-                title: l10n.modelsInstalled,
-                body: 'Install a model from Recommended or the Library. '
-                    'Fit Score shows what your device can run well.',
-                actionLabel: l10n.modelsRecommended),
+            Builder(builder: (context) {
+              final sp = HarborServiceProvider.of(context);
+              final service = sp.notifier;
+              if (sp.failed || service == null) {
+                return HarborErrorState(
+                  message: 'Native core not loaded; installed models are '
+                      'unavailable. Build core/harbor_ffi to enable this view.',
+                );
+              }
+              final models = service.installedModels;
+              if (models.isEmpty) {
+                return HarborEmptyState(
+                    title: l10n.modelsInstalled,
+                    body: 'Install a model from Recommended or the Library. '
+                        'Fit Score shows what your device can run well.',
+                    actionLabel: l10n.modelsRecommended);
+              }
+              return ListView(
+                padding: const EdgeInsets.all(HarborSpace.s4),
+                children: [
+                  for (final m in models)
+                    Card(
+                      margin: const EdgeInsets.only(bottom: HarborSpace.s2),
+                      child: ListTile(
+                        title: Text(m['id'] as String),
+                        subtitle: Text(
+                            '${m['files']} files · ${(m['total_bytes'] as int) ~/ (1024 * 1024)} MB · runtime ${m['runtime']}'),
+                        trailing: Builder(builder: (context) {
+                          final fit = service.fitScore(m['id'] as String);
+                          if (fit == null) return const SizedBox.shrink();
+                          final band = switch (fit['band']) {
+                            'excellent' => FitBand.excellent,
+                            'good' => FitBand.good,
+                            'limited' => FitBand.limited,
+                            'unsupported' => FitBand.unsupported,
+                            _ => FitBand.tooLarge,
+                          };
+                          return FitScoreBadge(
+                              band: band,
+                              reasons:
+                                  (fit['reasons'] as List).cast<String>());
+                        }),
+                      ),
+                    ),
+                ],
+              );
+            }),
             HarborEmptyState(
                 title: l10n.modelsBenchmark,
                 body: 'Controlled device-local benchmark workloads with '
@@ -256,10 +319,58 @@ class ActivitySurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return HarborEmptyState(
-      title: l10n.activityEmptyTitle,
-      body: l10n.activityEmptyBody,
-    );
+    return Builder(builder: (context) {
+      final sp = HarborServiceProvider.of(context);
+      final service = sp.notifier;
+      if (sp.failed || service == null) {
+        return HarborErrorState(
+          message: 'Native core not loaded; durable runs live in the core '
+              'store and cannot be listed.',
+        );
+      }
+      final runs = service.runs;
+      if (runs.isEmpty) {
+        return HarborEmptyState(
+          title: l10n.activityEmptyTitle,
+          body: l10n.activityEmptyBody,
+        );
+      }
+      return ListView(
+        padding: const EdgeInsets.all(HarborSpace.s4),
+        children: [
+          for (final r in runs)
+            Card(
+              margin: const EdgeInsets.only(bottom: HarborSpace.s2),
+              child: ListTile(
+                title: Text(r['run_id'] as String),
+                subtitle: Text('state: ${r['state']} · '
+                    '${r['active_compute_ms_total']} ms executor time'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  final report = service.replayRun(r['run_id'] as String);
+                  if (report == null) return;
+                  showModalBottomSheet<void>(
+                    context: context,
+                    showDragHandle: true,
+                    builder: (_) => Padding(
+                      padding: const EdgeInsets.all(HarborSpace.s5),
+                      child: RunTrail(
+                        entries: [
+                          for (final e in (report['trail'] as List).cast<Map>())
+                            RunTrailEntry(
+                                e['summary'] as String,
+                                icon: Icons.circle_outlined,
+                                detail: 'seq ${e['seq']} · ${e['actor']}'),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      );
+    });
   }
 }
 

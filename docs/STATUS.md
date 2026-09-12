@@ -6,6 +6,9 @@ can bind to a commit).
 
 ## Verified state this session (all commands reproducible)
 
+Git: repository initialized at commit `4f90f73` and updated through session 2
+commits (see `git log`). Evidence can now bind to exact commits.
+
 | Suite | Command | Result |
 | --- | --- | --- |
 | Rust workspace (13 crates) | `cd core && cargo test --workspace` | 129 passed, 0 failed |
@@ -18,7 +21,37 @@ can bind to a commit).
 | Dart↔Rust FFI boundary | `dart test` (packages/harbor_native) | passed against real libharbor_ffi.dylib |
 | macOS platform build | `flutter build macos --debug` (apps/harbor_app) | harbor_app.app produced |
 
-## New this session
+## New in session 2 (continuation)
+
+1. **Git repository initialized**; first commit `4f90f73` (280 files). CI
+   workflow is in place (`.github/workflows/ci.yml`); it runs on push once a
+   remote is added.
+2. **GGUF provider upgraded**: model-native chat templates (from GGUF metadata
+   via `LlamaModel::chat_template`/`apply_chat_template`, documented minimal
+   template as fallback) and mean-pooling `embed()` (deterministic, with the
+   index-identity obligation documented on the method). Real-model tests:
+   greedy decoding is deterministic; embeddings are stable and text-sensitive.
+   11/11 inference tests pass with `--features gguf-backend`.
+3. **Live FFI wiring in the app**: FFI dispatcher gained `models.installed`,
+   `model.fit_score` (device facts in, score computed in core), `runs.list`,
+   `run.replay` (verified event trail), `artifact.preview` (OOXML content-type
+   sniffing -> harbor_render preview IR). `HarborService` in harbor_app feeds
+   Home (Model Dock shows real installed models / honest degraded state),
+   Models > Installed (real list + Fit Score band + reasons), Activity (real
+   durable runs + replayed Run Trail), Work Canvas (real workbook preview from
+   board_demo.xlsx through blob->preview path). 9/9 app tests green, several
+   running the real dylib (loaded via `tester.runAsync`).
+4. **harbor_render implemented**: `WorkbookPreview` (values + formulas from the
+   real engine recalc) and `DeckPreview` (slides/bullets) preview IR with
+   tests. Real fixture `fixtures/office/board_demo.xlsx` generated through the
+   engine (sha256 1dbd1df1…; generator committed as harbor_render example).
+5. **All three desktop/mobile toolchains now compile**:
+   - macOS debug: `harbor_app.app`
+   - iOS simulator: `Runner.app` (`flutter build ios --simulator --debug`)
+   - Android: `app-debug.apk` (152 MB debug APK, real Android SDK found at
+     `~/Library/Android/sdk`)
+
+## Session 1 recap
 
 1. **llama.cpp GGUF provider is real**: `harbor_inference` feature `gguf-backend`
    pins `llama-cpp-2 =0.1.156` (the llama.cpp source snapshot is vendored inside

@@ -98,6 +98,42 @@ class HarborCoreClient {
 
   Map<String, dynamic> trustPulse() => call('trust.pulse');
 
+  List<Map<String, dynamic>> installedModels() {
+    final r = call('models.installed');
+    return (r['models'] as List).cast<Map>().map((m) => m.cast<String, dynamic>()).toList();
+  }
+
+  Map<String, dynamic> fitScore({
+    required String packageId,
+    int? physicalRam,
+    int? availableRam,
+    bool gpuBackend = false,
+    bool accelerated = false,
+    String thermal = 'normal',
+    int contextTokens = 2048,
+  }) =>
+      call('model.fit_score', {
+        'package_id': packageId,
+        'physical_ram': physicalRam,
+        'available_ram': availableRam,
+        'gpu_backend': gpuBackend,
+        'accelerated': accelerated,
+        'thermal': thermal,
+        'context_tokens': contextTokens,
+      });
+
+  List<Map<String, dynamic>> listRuns() {
+    final r = call('runs.list');
+    return (r['runs'] as List).cast<Map>().map((m) => m.cast<String, dynamic>()).toList();
+  }
+
+  Map<String, dynamic> replayRun(String runId) =>
+      call('run.replay', {'run_id': runId});
+
+  /// Work Canvas preview IR for artifact bytes (xlsx/pptx sniffed by core).
+  Map<String, dynamic> previewArtifact(List<int> bytes) =>
+      call('artifact.preview', {'data_b64': base64Encode(bytes)});
+
   void close() {
     final closeFn =
         _lib.lookupFunction<_CloseNative, _CloseDart>('harbor_core_close');

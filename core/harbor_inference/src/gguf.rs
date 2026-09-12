@@ -19,11 +19,10 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
-use llama_cpp_2::context::params::LlamaContextParams;
+use llama_cpp_2::context::params::{LlamaContextParams, LlamaPoolingType};
 use llama_cpp_2::llama_batch::LlamaBatch;
 use llama_cpp_2::llama_backend::LlamaBackend;
-use llama_cpp_2::model::AddBos;
-use llama_cpp_2::model::LlamaModel;
+use llama_cpp_2::model::{AddBos, LlamaChatMessage, LlamaChatTemplate, LlamaModel};
 use llama_cpp_2::sampling::LlamaSampler;
 
 use harbor_canonical::JsonValue;
@@ -98,8 +97,42 @@ impl GgufLlamaCppProvider {
         Ok(path)
     }
 
-    /// Assemble the prompt from chat messages (minimal documented template).
-    fn build_prompt(messages: &[JsonValue]) -> String {
+    /// Convert canonical JSON messages into engine chat messages.
+    fn to_chat_messages(
+        messages: &[JsonValue],
+    ) -> Result<Vec<LlamaChatMessage>, ProviderError> {
+        messages
+            .iter()
+            .map(|m| {
+                let role = m.get("role").and_then(|v| v.as_str()).unwrap_or("user").to_string();
+                let content = m
+                    .get("content")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string();
+                LlamaChatMessage::new(role, content)
+                    .map_err(|e| ProviderError::Backend(format!("chat message: {e}")))
+            })
+            .collect()
+    }
+
+    /// Assemble the prompt. Preference order:
+    /// 1. the MODEL-NATIVE chat template carried in the GGUF metadata,
+    /// 2. the documented minimal template (fallback for models without one).
+    fn build_prompt(
+        model: &LlamaModel,
+        messages: &[JsonValue],
+    ) -> Result<String, ProviderError> {
+        let chat = Self::to_chat_messages(messages)?;
+        if let Ok(template) = model.chat_template(None) {
+            let rendered = model
+                .apply_chat_template(&template, &chat, true)
+                .map_err(|e| ProviderError::Backend(format!("template: {e}")))?;
+            if !rendered.trim().is_empty() {
+                return Ok(rendered);
+            }
+        }
+        // Fallback: minimal documented template.
         let mut out = String::new();
         for m in messages {
             let role = m.get("role").and_then(|v| v.as_str()).unwrap_or("user");
@@ -112,7 +145,7 @@ impl GgufLlamaCppProvider {
             }
         }
         out.push_str("<assistant>\n");
-        out
+        Ok(out)
     }
 
     /// Generate with cooperative cancellation. `cancel` checked between tokens.
@@ -137,7 +170,7 @@ impl GgufLlamaCppProvider {
                 .ok_or_else(|| ProviderError::ModelNotFound(package.clone()))?
         };
 
-        let prompt = Self::build_prompt(&req.messages);
+        let prompt = Self::build_prompt(&model, &req.messages)?;
         let tokens = model
             .str_to_token(&prompt, AddBos::Always)
             .map_err(|e| ProviderError::Backend(format!("tokenize: {e}")))?;
@@ -214,18 +247,80 @@ impl GgufLlamaCppProvider {
     }
 }
 
+impl GgufLlamaCppProvider {
+    /// Embed texts with the model's pooling (mean). The caller MUST record
+    /// `model identity + revision + dimension` in the knowledge index
+    /// identity (`harbor_knowledge`) — vectors from a different embedding
+    /// identity are never combinable.
+    pub fn embed(
+        &self,
+        model_ref: &ModelRef,
+        texts: &[String],
+    ) -> Result<Vec<Vec<f32>>, ProviderError> {
+        let package = match model_ref {
+            ModelRef::InstalledPackage { package_id } => package_id.clone(),
+            other => {
+                return Err(ProviderError::ModelNotFound(format!(
+                    "gguf backend only embeds installed packages, got {other:?}"
+                )))
+            }
+        };
+        let model = {
+            let loaded = self.loaded.lock().unwrap();
+            loaded
+                .get(&package)
+                .cloned()
+                .ok_or_else(|| ProviderError::ModelNotFound(package.clone()))?
+        };
+        let n_ctx = self.context_tokens.max(512).min(model.n_ctx_train());
+        let n_ctx = std::num::NonZeroU32::new(n_ctx)
+            .ok_or(ProviderError::Backend("n_ctx 0".into()))?;
+        let ctx_params = LlamaContextParams::default()
+            .with_n_ctx(Some(n_ctx))
+            .with_embeddings(true)
+            .with_pooling_type(LlamaPoolingType::Mean);
+        let mut ctx = model
+            .new_context(&self.backend, ctx_params)
+            .map_err(|e| ProviderError::Backend(format!("context: {e}")))?;
+        let mut out = Vec::with_capacity(texts.len());
+        for text in texts {
+            let tokens = model
+                .str_to_token(text, AddBos::Always)
+                .map_err(|e| ProviderError::Backend(format!("tokenize: {e}")))?;
+            if tokens.is_empty() {
+                out.push(Vec::new());
+                continue;
+            }
+            let mut batch = LlamaBatch::new(tokens.len(), 1);
+            for (pos, t) in tokens.iter().enumerate() {
+                batch
+                    .add(*t, pos as i32, &[0], false)
+                    .map_err(|e| ProviderError::Backend(format!("batch: {e}")))?;
+            }
+            ctx.decode(&mut batch)
+                .map_err(|e| ProviderError::Backend(format!("decode: {e}")))?;
+            let emb = ctx
+                .embeddings_seq_ith(0)
+                .map_err(|e| ProviderError::Backend(format!("embeddings: {e}")))?;
+            out.push(emb.to_vec());
+        }
+        Ok(out)
+    }
+}
+
 impl ModelProvider for GgufLlamaCppProvider {
     fn id(&self) -> &str {
         "harbor.gguf.llama-cpp"
     }
 
     fn capabilities(&self) -> &'static [Capabilities] {
-        &[Capabilities::Chat]
+        &[Capabilities::Chat, Capabilities::Embeddings]
     }
 
     fn supports(&self, model: &ModelRef, need: &Capabilities) -> bool {
         match (model, need) {
-            (ModelRef::InstalledPackage { package_id }, Capabilities::Chat) => {
+            (ModelRef::InstalledPackage { package_id }, Capabilities::Chat)
+            | (ModelRef::InstalledPackage { package_id }, Capabilities::Embeddings) => {
                 self.weights_path(package_id).is_ok()
             }
             _ => false,

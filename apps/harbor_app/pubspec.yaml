@@ -13,6 +13,8 @@ dependencies:
     sdk: flutter
   harbor_ui:
     path: ../../packages/harbor_ui
+  harbor_native:
+    path: ../../packages/harbor_native
 
 dev_dependencies:
   flutter_test:

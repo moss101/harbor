@@ -15,9 +15,12 @@ harbor_artifacts = { workspace = true }
 harbor_canonical = { workspace = true }
 harbor_formula = { workspace = true }
 harbor_modelhub = { workspace = true }
+harbor_render = { workspace = true }
 harbor_net = { workspace = true }
 harbor_security = { workspace = true }
 harbor_store = { workspace = true }
+rusqlite = { workspace = true }
 serde_json = { workspace = true }
 base64 = "0.22"
+zip = { workspace = true }
 chrono = { workspace = true }

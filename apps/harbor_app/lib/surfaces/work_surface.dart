@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
 import '../l10n/app_localizations.dart';
+import '../services/harbor_service.dart';
 import '../shell/adaptive_shell.dart';
 
 /// Work Canvas (goal §22): the artifact workspace. The user must always be
@@ -37,11 +38,58 @@ class WorkSurface extends StatelessWidget {
           ]),
         ),
         Expanded(
-          child: HarborEmptyState(
-            title: l10n.workEmptyTitle,
-            body: l10n.workEmptyBody,
-            actionLabel: 'Open file',
-          ),
+          child: Builder(builder: (context) {
+            final sp = HarborServiceProvider.of(context);
+            final service = sp.notifier;
+            final preview = service?.preview;
+            if (preview == null) {
+              return HarborEmptyState(
+                title: l10n.workEmptyTitle,
+                body: l10n.workEmptyBody,
+                actionLabel: 'Open file',
+              );
+            }
+            if (preview['kind'] == 'workbook') {
+              final data = preview['preview'] as Map;
+              final cells = (data['cells'] as List).cast<Map>();
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(HarborSpace.s4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Sheet: ${data['sheet']}',
+                        style: t.text.captionOf(t.colors.inkMuted)),
+                    const SizedBox(height: HarborSpace.s2),
+                    for (final c in cells)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          'r${c['row']}c${c['col']}: '
+                          '${c['formula'] ?? c['value'] ?? ''}',
+                          style: t.text.monoOf(t.colors.ink, size: 12),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            }
+            final data = preview['preview'] as Map;
+            final slides = (data['slides'] as List).cast<Map>();
+            return ListView(
+              padding: const EdgeInsets.all(HarborSpace.s4),
+              children: [
+                for (final s in slides)
+                  Card(
+                    margin: const EdgeInsets.only(bottom: HarborSpace.s2),
+                    child: ListTile(
+                      title: Text('${s['index']}. ${s['title']}'),
+                      subtitle: Text(
+                          (s['bullets'] as List).cast<String>().join(' · ')),
+                    ),
+                  ),
+              ],
+            );
+          }),
         ),
       ]),
     );

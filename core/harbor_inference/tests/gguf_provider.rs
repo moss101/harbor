@@ -139,3 +139,61 @@ fn generation_is_cancellable() {
         "pre-cancelled request must return Cancelled"
     );
 }
+
+#[test]
+fn real_model_generates_via_native_template_when_present() {
+    let dir = tempfile::tempdir().unwrap();
+    let package = install_test_model(dir.path());
+    let provider = GgufLlamaCppProvider::new(dir.path()).unwrap().with_context_tokens(512);
+    let m = ModelRef::InstalledPackage { package_id: package };
+    provider.load(&m).unwrap();
+    let req = ChatRequest {
+        model: m,
+        messages: vec![
+            JsonValue::object([
+                ("role", JsonValue::str("system")),
+                ("content", JsonValue::str("You write stories.")),
+            ]),
+            JsonValue::object([
+                ("role", JsonValue::str("user")),
+                ("content", JsonValue::str("One sentence about a cat.")),
+            ]),
+        ],
+        max_tokens: 16,
+        temperature: 0.0,
+        requires: vec![Capabilities::Chat],
+    };
+    let r1 = provider.generate(req.clone()).unwrap();
+    let r2 = provider.generate(req).unwrap();
+    // Greedy decoding is deterministic: identical prompts -> identical output.
+    assert_eq!(r1.content, r2.content);
+    assert!(!r1.content.is_empty());
+}
+
+#[test]
+fn embeddings_via_mean_pooling_are_deterministic_and_typed() {
+    let dir = tempfile::tempdir().unwrap();
+    let package = install_test_model(dir.path());
+    let provider = GgufLlamaCppProvider::new(dir.path()).unwrap();
+    let m = ModelRef::InstalledPackage { package_id: package };
+    provider.load(&m).unwrap();
+    let a = provider
+        .embed(&m, &["The board approved the budget.".to_string()])
+        .unwrap()
+        .pop()
+        .unwrap();
+    assert!(!a.is_empty(), "mean-pooled embedding must have model dimension");
+    let b = provider
+        .embed(&m, &["The board approved the budget.".to_string()])
+        .unwrap()
+        .pop()
+        .unwrap();
+    assert_eq!(a, b, "same text must embed identically");
+    // Different text embeds to a different vector.
+    let c = provider
+        .embed(&m, &["Something completely unrelated.".to_string()])
+        .unwrap()
+        .pop()
+        .unwrap();
+    assert_ne!(a, c);
+}

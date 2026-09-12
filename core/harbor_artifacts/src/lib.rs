@@ -26,5 +26,5 @@ pub use commit::{
 };
 pub use diff::{ArtifactDiff, DiffEntry};
 pub use docx::{DocxDocument, DocxOp};
-pub use pptx::{PptxDeck, PptxOp, SlideContent};
+pub use pptx::{PptxDeck, PptxError, PptxOp, SlideContent};
 pub use workbook::{SheetData, WorkbookDoc, WorkbookOp};

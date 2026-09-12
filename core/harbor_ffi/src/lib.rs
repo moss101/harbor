@@ -209,6 +209,182 @@ fn dispatch(ws: &mut WorkspaceHandle, method: &str, args: &serde_json::Value) ->
             "policy_version": ws.inner.privacy_policy_version,
             "execution_hint": "ON_DEVICE",
         })),
+        // --- models -----------------------------------------------------
+        "models.installed" => {
+            let installer = harbor_modelhub::install::PackageInstaller::new(
+                ws.data_root.join("models"),
+            );
+            let ids = installer
+                .installed_packages()
+                .map_err(|e| HarborError::Other(format!("models: {e}")))?;
+            let mut out = Vec::new();
+            for id in ids {
+                let m = installer
+                    .load_manifest(&id)
+                    .map_err(|e| HarborError::Other(format!("manifest: {e}")))?;
+                let total: u64 = m.files.iter().map(|f| f.size_bytes).sum();
+                out.push(serde_json::json!({
+                    "id": m.id,
+                    "runtime": m.runtime.kind,
+                    "min_revision": m.runtime.min_revision,
+                    "files": m.files.len(),
+                    "total_bytes": total,
+                }));
+            }
+            Ok(serde_json::json!({ "models": out }))
+        }
+        "model.fit_score" => {
+            // Device facts come from the platform adapters (native layer);
+            // the core computes the score — never the UI.
+            let package_id = args
+                .get("package_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing package_id".into()))?;
+            let installer = harbor_modelhub::install::PackageInstaller::new(
+                ws.data_root.join("models"),
+            );
+            let manifest = installer
+                .load_manifest(package_id)
+                .map_err(|e| HarborError::Other(format!("manifest: {e}")))?;
+            let weights: u64 = manifest
+                .files
+                .iter()
+                .filter(|f| f.role == "weights" || f.role == "weights_shard")
+                .map(|f| f.size_bytes)
+                .sum();
+            let device = harbor_modelhub::fit::DeviceProfile {
+                architecture: args
+                    .get("architecture")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or(std::env::consts::ARCH)
+                    .to_string(),
+                physical_ram: args.get("physical_ram").and_then(|v| v.as_u64()).unwrap_or(8 << 30),
+                available_ram: args.get("available_ram").and_then(|v| v.as_u64()).unwrap_or(4 << 30),
+                gpu_backend: if args.get("gpu_backend").and_then(|v| v.as_bool()) == Some(true) {
+                    Some("Metal".to_string())
+                } else {
+                    None
+                },
+                accelerated_gguf_supported: args
+                    .get("accelerated")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false),
+                thermal: match args.get("thermal").and_then(|v| v.as_str()) {
+                    Some("reduced") => harbor_modelhub::fit::Thermal::Reduced,
+                    Some("critical") => harbor_modelhub::fit::Thermal::Critical,
+                    _ => harbor_modelhub::fit::Thermal::Normal,
+                },
+            };
+            let footprint = harbor_modelhub::fit::ModelFootprint {
+                format: "GGUF".to_string(),
+                weights_bytes: weights,
+                peak_memory_bytes: weights + weights / 8,
+                kv_cache_per_1k_tokens: 8 << 20,
+                context_tokens: args.get("context_tokens").and_then(|v| v.as_u64()).unwrap_or(2048),
+                quantization: "Q4_K_M".to_string(),
+                multimodal: false,
+                runtime_kind: manifest.runtime.kind,
+            };
+            let score = harbor_modelhub::fit::FitScore::evaluate(&device, &footprint);
+            Ok(serde_json::json!({
+                "band": format!("{:?}", score.band).to_lowercase(),
+                "reasons": score.reasons,
+                "estimated_peak_bytes": score.estimated_peak_bytes,
+            }))
+        }
+        // --- artifact previews (Work Canvas) -----------------------------
+        "artifact.preview" => {
+            let data_b64 = args
+                .get("data_b64")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing data_b64".into()))?;
+            use base64::Engine as _;
+            let bytes = base64::engine::general_purpose::STANDARD
+                .decode(data_b64)
+                .map_err(|e| HarborError::Other(format!("b64: {e}")))?;
+            // Dispatch by OOXML content types (a workbook has no slide
+            // parts, so emptiness — not success — separates the two).
+            if bytes.len() < 4 || &bytes[..2] != b"PK" {
+                return Err(HarborError::Other("unsupported artifact".into()));
+            }
+            let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))
+                .map_err(|e| HarborError::Other(format!("zip: {e}")))?;
+            let content_types = archive
+                .by_name("[Content_Types].xml")
+                .ok()
+                .map(|mut f| {
+                    use std::io::Read as _;
+                    let mut s = String::new();
+                    let _ = f.read_to_string(&mut s);
+                    s
+                })
+                .unwrap_or_default();
+            let is_deck = content_types.contains("presentationml");
+            drop(archive);
+            if is_deck {
+                let p = harbor_render::DeckPreview::from_pptx(&bytes)
+                    .map_err(|e| HarborError::Other(e.to_string()))?;
+                Ok(serde_json::json!({
+                    "kind": "deck",
+                    "preview": serde_json::to_value(&p).map_err(|e| HarborError::Other(e.to_string()))?,
+                }))
+            } else {
+                let p = harbor_render::WorkbookPreview::from_xlsx(&bytes)
+                    .map_err(|e| HarborError::Other(e.to_string()))?;
+                Ok(serde_json::json!({
+                    "kind": "workbook",
+                    "preview": serde_json::to_value(&p).map_err(|e| HarborError::Other(e.to_string()))?,
+                }))
+            }
+        }
+        // --- activity ---------------------------------------------------
+        "runs.list" => {
+            let conn = rusqlite::Connection::open(ws.data_root.join("db").join("agent.db"))
+                .map_err(|e| HarborError::Other(format!("db: {e}")))?;
+            let mut stmt = conn
+                .prepare("SELECT run_id, state, active_compute_ms_total FROM runs ORDER BY created_at DESC LIMIT 100")
+                .map_err(|e| HarborError::Other(format!("db: {e}")))?;
+            let rows = stmt
+                .query_map([], |r| {
+                    Ok(serde_json::json!({
+                        "run_id": r.get::<_, String>(0)?,
+                        "state": r.get::<_, String>(1)?,
+                        "active_compute_ms_total": r.get::<_, i64>(2)?,
+                    }))
+                })
+                .map_err(|e| HarborError::Other(format!("db: {e}")))?;
+            let runs: Vec<serde_json::Value> =
+                rows.filter_map(|r| r.ok()).collect();
+            Ok(serde_json::json!({ "runs": runs }))
+        }
+        "run.replay" => {
+            let run_id = args.get("run_id").and_then(|v| v.as_str()).unwrap_or("");
+            let report = ws.inner.agent_log.replay(run_id)?;
+            let stream = ws.inner.agent_log.load_stream(run_id)?;
+            let trail: Vec<serde_json::Value> = stream
+                .iter()
+                .map(|e| {
+                    serde_json::json!({
+                        "seq": e.seq,
+                        "type": e.event_type.as_str(),
+                        "actor": e.actor.as_str(),
+                        "summary": match &e.payload {
+                            harbor_agent::EventPayload::Transition { from_state, to_state, reason } => format!(
+                                "{} -> {}{}", from_state.as_str(), to_state.as_str(),
+                                reason.map(|r| format!(" ({})", r.as_str())).unwrap_or_default()),
+                            harbor_agent::EventPayload::EffectResolved { outcome, .. } => format!("effect {outcome}"),
+                            _ => e.event_type.as_str().to_string(),
+                        },
+                    })
+                })
+                .collect();
+            Ok(serde_json::json!({
+                "final_state": report.final_state.map(|s| s.as_str()),
+                "verified_events": report.verified_events,
+                "skipped_display_events": report.skipped_display_events,
+                "trail": trail,
+            }))
+        }
         other => Err(HarborError::Other(format!("unknown method {other}"))),
     }
 }

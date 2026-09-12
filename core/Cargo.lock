@@ -1439,9 +1439,12 @@ dependencies = [
  "harbor_formula",
  "harbor_modelhub",
  "harbor_net",
+ "harbor_render",
  "harbor_security",
  "harbor_store",
+ "rusqlite",
  "serde_json",
+ "zip 4.6.1",
 ]
 
 [[package]]
@@ -1546,6 +1549,15 @@ dependencies = [
 [[package]]
 name = "harbor_render"
 version = "0.1.0"
+dependencies = [
+ "harbor_artifacts",
+ "harbor_canonical",
+ "harbor_formula",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.20",
+]
 
 [[package]]
 name = "harbor_security"

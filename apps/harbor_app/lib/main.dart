@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
+import 'dart:io';
+
 import 'l10n/app_localizations.dart';
+import 'services/harbor_service.dart';
 import 'shell/adaptive_shell.dart';
 import 'surfaces/surfaces.dart';
 
@@ -35,7 +38,10 @@ class AppState extends ChangeNotifier {
 }
 
 class HarborApp extends StatefulWidget {
-  const HarborApp({super.key});
+  const HarborApp({super.key, this.service});
+
+  /// Injectable for tests; when null a real FFI service is created.
+  final HarborService? service;
 
   @override
   State<HarborApp> createState() => _HarborAppState();
@@ -43,6 +49,26 @@ class HarborApp extends StatefulWidget {
 
 class _HarborAppState extends State<HarborApp> {
   final AppState _state = AppState();
+  HarborService? _service;
+  bool _serviceFailed = false;
+
+  HarborService? get service => widget.service ?? _service;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.service == null) {
+      final lib =
+          Platform.environment['HARBOR_FFI_LIB'] ?? 'libharbor_ffi.dylib';
+      try {
+        final dir = Directory.systemTemp.createTempSync('harbor-app-');
+        _service = HarborService.open(libraryPath: lib, dataRoot: dir.path);
+        _service!.refresh();
+      } catch (_) {
+        _serviceFailed = true;
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +98,11 @@ class _HarborAppState extends State<HarborApp> {
             text: HarborType(arabic: arabic),
             child: child ?? const SizedBox.shrink(),
           ),
-          home: AdaptiveShell(state: _state),
+          home: HarborServiceProvider(
+            service: service,
+            failed: _serviceFailed,
+            child: AdaptiveShell(state: _state),
+          ),
         );
       },
     );
