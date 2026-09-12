@@ -38,6 +38,8 @@ pub struct HfDiscovery<'a> {
     pub transport: &'a dyn Transport,
     /// Session origin override for tests/proxies.
     pub origin: String,
+    /// Optional bearer token for gated/private repos (M4).
+    pub auth_token: Option<String>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -50,7 +52,14 @@ pub enum HfError {
 
 impl<'a> HfDiscovery<'a> {
     pub fn new(broker: &'a EgressBroker, transport: &'a dyn Transport) -> Self {
-        HfDiscovery { broker, transport, origin: HF_ORIGIN.into() }
+        HfDiscovery { broker, transport, origin: HF_ORIGIN.into(), auth_token: None }
+    }
+
+    /// Attach a bearer token for gated/private repos. Only ever sent to
+    /// the HF origin; the broker strips it on cross-origin redirects.
+    pub fn with_token(mut self, token: Option<String>) -> Self {
+        self.auth_token = token;
+        self
     }
 
     fn get_json(
@@ -59,12 +68,14 @@ impl<'a> HfDiscovery<'a> {
         path: &str,
     ) -> Result<serde_json::Value, HfError> {
         let url = format!("{}{}", self.origin, path);
-        let req = TransportRequest {
-            method: "GET".into(),
-            url,
-            headers: vec![("accept".into(), "application/json".into()), ("user-agent".into(), "Harbor/0.1".into())],
-            body: Vec::new(),
-        };
+        let mut headers = vec![
+            ("accept".to_string(), "application/json".to_string()),
+            ("user-agent".to_string(), "Harbor/0.1".to_string()),
+        ];
+        if let Some(token) = &self.auth_token {
+            headers.push(("authorization".to_string(), format!("Bearer {token}")));
+        }
+        let req = TransportRequest { method: "GET".into(), url, headers, body: Vec::new() };
         let resp = self
             .broker
             .dispatch(session, req, self.transport, None, chrono::Utc::now())

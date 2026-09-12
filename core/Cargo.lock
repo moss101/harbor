@@ -1529,6 +1529,7 @@ dependencies = [
  "harbor_store",
  "rusqlite",
  "serde_json",
+ "tempfile",
  "thiserror 2.0.20",
  "zip 4.6.1",
 ]

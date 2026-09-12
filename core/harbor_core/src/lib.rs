@@ -24,6 +24,8 @@ pub enum HarborError {
     Lease(#[from] harbor_agent::LeaseError),
     #[error("artifacts: {0}")]
     Artifacts(#[from] harbor_artifacts::SafeCommitError),
+    #[error("db: {0}")]
+    Db(#[from] rusqlite::Error),
     #[error("{0}")]
     Other(String),
     #[error("io: {0}")]

@@ -15,6 +15,7 @@ use harbor_agent::event::{Counters, EventPayload, EventType, ReplaySemantics, Ru
 use harbor_agent::lease::LeaseManager;
 use harbor_agent::{Actor, PauseReason, RunState};
 use harbor_core::workspace::{OpenOptions, Workspace};
+use harbor_store::keys::KeyStore;
 use harbor_core::HarborError;
 use harbor_security::policy::PrivacyMode;
 
@@ -32,6 +33,118 @@ pub struct WorkspaceHandle {
         harbor_modelhub::catalog_signing::CatalogVerifier,
         harbor_canonical::JsonValue,
     )>,
+    /// Optional HF token for gated/private repos (M4). Sourced from the
+    /// keystore; never returned across the boundary.
+    hub_token: Option<String>,
+}
+
+fn load_hub_token(data_root: &std::path::Path) -> Option<String> {
+    // The token is stored wrapped by the device root key (encrypted at
+    // rest); the plaintext never crosses the FFI boundary outward.
+    let ks = harbor_store::keys::FileKeyStore::new(data_root.join("keys")).ok()?;
+    let root = ks.device_root_key("harbor.device").ok()?;
+    let conn = rusqlite::Connection::open(data_root.join("db").join("store.db")).ok()?;
+    let wrapped: Vec<u8> = conn
+        .query_row(
+            "SELECT secret FROM hub_tokens WHERE id = 'default'",
+            [],
+            |r| r.get(0),
+        )
+        .ok()?;
+    harbor_store::keys::WrappedKey::from_bytes(&wrapped)
+        .ok()?
+        .unwrap(&root)
+        .ok()
+        .and_then(|b| String::from_utf8(b).ok())
+}
+
+/// Durable catalog trust state: trusted keys, accepted epoch, accepted
+/// document. Restored when a workspace opens so epoch monotonicity and
+/// key revocations survive process death.
+fn persist_catalog_state(
+    data_root: &std::path::Path,
+    verifier: &harbor_modelhub::catalog_signing::CatalogVerifier,
+    entries: &harbor_canonical::JsonValue,
+) -> Result<(), HarborError> {
+    std::fs::create_dir_all(data_root.join("db"))?;
+    let conn = rusqlite::Connection::open(data_root.join("db").join("store.db"))?;
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS catalog_trust (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            state TEXT NOT NULL
+        );",
+    )?;
+    let state = serde_json::json!({
+        "trusted": verifier.trusted,
+        "accepted_epoch": verifier.accepted_epoch,
+        "revoked": verifier.revoked.keys().collect::<Vec<_>>(),
+        "entries": entries,
+    });
+    conn.execute(
+        "INSERT INTO catalog_trust (id, state) VALUES (1, ?1)
+         ON CONFLICT(id) DO UPDATE SET state = ?1",
+        rusqlite::params![state.to_string()],
+    )?;
+    Ok(())
+}
+
+fn load_catalog_state(
+    data_root: &std::path::Path,
+) -> Option<(
+    harbor_modelhub::catalog_signing::CatalogVerifier,
+    harbor_canonical::JsonValue,
+)> {
+    let conn = rusqlite::Connection::open(data_root.join("db").join("store.db")).ok()?;
+    let state: String = conn
+        .query_row("SELECT state FROM catalog_trust WHERE id = 1", [], |r| r.get(0))
+        .ok()?;
+    let v: serde_json::Value = serde_json::from_str(&state).ok()?;
+    let mut trusted = std::collections::BTreeMap::new();
+    for (k, v) in v.get("trusted")?.as_object()?.iter() {
+        trusted.insert(k.clone(), v.as_str()?.to_string());
+    }
+    let accepted_epoch = v.get("accepted_epoch")?.as_u64()?;
+    let mut revoked = std::collections::BTreeMap::new();
+    for k in v.get("revoked")?.as_array()? {
+        revoked.insert(k.as_str()?.to_string(), ());
+    }
+    let entries = harbor_canonical::parse(&v.get("entries")?.to_string()).ok()?;
+    Some((
+        harbor_modelhub::catalog_signing::CatalogVerifier {
+            trusted,
+            accepted_epoch,
+            revoked,
+        },
+        entries,
+    ))
+}
+
+/// Persist (or clear with None) the hub token, wrapped by the device root.
+fn save_hub_token(data_root: &std::path::Path, token: Option<&str>) -> Result<(), HarborError> {
+    std::fs::create_dir_all(data_root.join("db"))?;
+    let ks = harbor_store::keys::FileKeyStore::new(data_root.join("keys"))?;
+    let root = ks.device_root_key("harbor.device")?;
+    let conn = rusqlite::Connection::open(data_root.join("db").join("store.db"))?;
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS hub_tokens (
+            id TEXT PRIMARY KEY,
+            secret BLOB NOT NULL
+        );",
+    )?;
+    match token {
+        Some(t) => {
+            let wrapped = harbor_store::keys::WrappedKey::wrap(&root, t.as_bytes())?;
+            conn.execute(
+                "INSERT INTO hub_tokens (id, secret) VALUES ('default', ?1)
+                 ON CONFLICT(id) DO UPDATE SET secret = ?1",
+                rusqlite::params![wrapped.to_bytes()],
+            )?;
+        }
+        None => {
+            conn.execute("DELETE FROM hub_tokens WHERE id = 'default'", [])?;
+        }
+    }
+    Ok(())
 }
 
 fn str_from_ptr<'a>(p: *const c_char) -> Result<&'a str, HarborError> {
@@ -59,18 +172,20 @@ pub extern "C" fn harbor_core_open(
             2 => PrivacyMode::RemoteAllowed,
             other => return Err(HarborError::Other(format!("bad privacy mode {other}"))),
         };
+        let data_root = std::path::PathBuf::from(root);
         let opts = OpenOptions {
-            data_root: std::path::PathBuf::from(root),
+            data_root: data_root.clone(),
             device_id: "device".into(),
         };
         let ws = harbor_core::Workspace::open(&opts, ws_id, mode)?;
         Ok(WorkspaceHandle {
             inner: ws,
-            data_root: opts.data_root,
+            data_root,
             knowledge: None,
             chat: None,
             transport: harbor_net::transport::UreqTransport::new(),
-            catalog: None,
+            catalog: load_catalog_state(&opts.data_root),
+            hub_token: load_hub_token(&opts.data_root),
         })
     })();
     match result {
@@ -395,6 +510,19 @@ fn dispatch(ws: &mut WorkspaceHandle, method: &str, args: &serde_json::Value) ->
                 "languages": langs,
             }))
         }
+        // --- hub auth (M4: gated/private repos) ---------------------------
+        "hub.set_token" => {
+            let token = args.get("token").and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing token".into()))?;
+            save_hub_token(&ws.data_root, Some(token))?;
+            ws.hub_token = Some(token.to_string());
+            Ok(serde_json::json!({ "set": true }))
+        }
+        "hub.clear_token" => {
+            save_hub_token(&ws.data_root, None)?;
+            ws.hub_token = None;
+            Ok(serde_json::json!({ "set": false }))
+        }
         // --- acquisition -------------------------------------------------
         "models.search_hf" => {
             let query = args.get("query").and_then(|v| v.as_str())
@@ -407,7 +535,8 @@ fn dispatch(ws: &mut WorkspaceHandle, method: &str, args: &serde_json::Value) ->
                 ws.inner.privacy_mode,
             ).map_err(|e| HarborError::Other(e.to_string()))?;
             let discovery = harbor_modelhub::hf::HfDiscovery::new(
-                &ws.inner.broker, &ws.transport);
+                &ws.inner.broker, &ws.transport)
+                .with_token(ws.hub_token.clone());
             let models = discovery
                 .search(&session, query, limit.min(20))
                 .map_err(|e| HarborError::Other(e.to_string()))?;
@@ -449,6 +578,7 @@ fn dispatch(ws: &mut WorkspaceHandle, method: &str, args: &serde_json::Value) ->
                 transport: &ws.transport,
                 installer: &installer,
                 sessions,
+                auth_token: ws.hub_token.clone(),
             };
             acquirer.acquire(package_id, repo_id, revision, &files, harbor_core::Workspace::now())
                 .map_err(|e| HarborError::Other(e.to_string()))
@@ -497,13 +627,23 @@ fn dispatch(ws: &mut WorkspaceHandle, method: &str, args: &serde_json::Value) ->
                 .map_err(|e| HarborError::Other(e.to_string()))?;
             *stored_entries =
                 harbor_canonical::convert(entries).map_err(|e| HarborError::Other(e.to_string()))?;
+            // Trust state survives process death: epochs stay monotonic
+            // across restarts (rollback protection is durable, not
+            // session-local).
+            persist_catalog_state(
+                &ws.data_root,
+                verifier,
+                stored_entries,
+            )?;
             Ok(serde_json::json!({ "accepted_epoch": epoch }))
         }
         "models.acquire_catalog" => {
             let package_id = args.get("package_id").and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing package_id".into()))?;
             let Some((verifier, entries)) = ws.catalog.as_ref() else {
-                return Err(HarborError::Other("no catalog imported".into()));
+                return Err(HarborError::Other(
+                    "no catalog imported; import a signed catalog first".into(),
+                ));
             };
             // Re-verify against the CURRENT verifier state on every use:
             // an epoch regression or revoked key can never acquire.
@@ -537,6 +677,7 @@ fn dispatch(ws: &mut WorkspaceHandle, method: &str, args: &serde_json::Value) ->
                 transport: &ws.transport,
                 installer: &installer,
                 sessions,
+                auth_token: ws.hub_token.clone(),
             };
             acquirer.acquire(
                 &package.id, &package.repo_id, &package.revision,
@@ -749,5 +890,52 @@ pub unsafe extern "C" fn harbor_core_call(
     match result {
         Ok(v) => ok_json(v),
         Err(e) => err_json(e.to_string()),
+    }
+}
+
+#[cfg(test)]
+mod trust_persistence_tests {
+    use super::*;
+
+    #[test]
+    fn hub_token_and_catalog_trust_survive_restart() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+
+        // Hub token round-trip: stored wrapped, loaded decrypted.
+        save_hub_token(root, Some("hf_tok_123")).unwrap();
+        assert_eq!(load_hub_token(root).as_deref(), Some("hf_tok_123"));
+        save_hub_token(root, None).unwrap();
+        assert!(load_hub_token(root).is_none());
+
+        // Catalog trust round-trip: epoch monotonicity survives restarts.
+        let key = harbor_modelhub::catalog_signing::CatalogSigningKey::from_secret_bytes(&[7; 32]);
+        let root_hex = hex_encode(&key.public_bytes());
+        let mut verifier = harbor_modelhub::catalog_signing::CatalogVerifier::new(&root_hex).unwrap();
+        let entries = harbor_canonical::parse(r#"{"packages":[]}"#).unwrap();
+        let catalog = harbor_modelhub::catalog_signing::sign_catalog(
+            &key, 4, "2026-09-12T00:00:00Z", entries.clone(),
+        )
+        .unwrap();
+        verifier.verify(&catalog).unwrap();
+        persist_catalog_state(root, &verifier, &entries).unwrap();
+
+        // New "process": load and confirm epoch/keys restored; a stale
+        // epoch stays rejected after restart.
+        let (mut restored, restored_entries) = load_catalog_state(root).unwrap();
+        assert_eq!(restored.accepted_epoch, 4);
+        assert_eq!(restored_entries, entries);
+        let stale = harbor_modelhub::catalog_signing::sign_catalog(
+            &key, 2, "2026-09-12T00:00:00Z", entries,
+        )
+        .unwrap();
+        assert!(matches!(
+            restored.verify(&stale),
+            Err(harbor_modelhub::catalog_signing::CatalogSignError::StaleEpoch { .. })
+        ));
+    }
+
+    fn hex_encode(bytes: &[u8]) -> String {
+        bytes.iter().map(|b| format!("{b:02x}")).collect()
     }
 }
