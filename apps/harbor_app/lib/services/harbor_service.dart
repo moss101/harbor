@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
@@ -202,6 +204,8 @@ class HarborBinding {
   static String defaultLibraryPath() {
     const fromEnv = String.fromEnvironment('HARBOR_FFI_LIB');
     if (fromEnv.isNotEmpty) return fromEnv;
+    if (Platform.isAndroid) return 'libharbor_ffi.so';
+    if (Platform.isWindows) return 'harbor_ffi.dll';
     return 'libharbor_ffi.dylib';
   }
 }

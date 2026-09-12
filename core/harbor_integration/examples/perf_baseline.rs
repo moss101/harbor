@@ -89,12 +89,20 @@ fn main() {
 
     // ---- model load (Qwen2.5-1.5B, the bound production package) ----
     let mut load_samples = Vec::new();
+    let mut load_cold_ms: u128 = 0;
     let provider = GgufLlamaCppProvider::new(&models_root).unwrap();
     let model = ModelRef::InstalledPackage { package_id: "qwen2.5-1.5b-instruct".into() };
-    for _ in 0..3 {
+    for n in 0..3 {
         let t = Instant::now();
         provider.load(&model).unwrap();
-        load_samples.push(ms(t));
+        let dt = ms(t);
+        if n == 0 {
+            // First load of a fresh binary: one-time Metal kernel
+            // compilation lands here (cold start), not in steady state.
+            load_cold_ms = dt;
+        } else {
+            load_samples.push(dt);
+        }
         provider.unload(&model).unwrap();
     }
 
@@ -148,7 +156,7 @@ fn main() {
     let embed_root = models_root.clone();
     let embed_provider = GgufLlamaCppProvider::new(&embed_root).unwrap();
     let embed_model = ModelRef::InstalledPackage { package_id: "bge-small-en-v1.5".into() };
-    if embed_provider.load(&embed_model).is_ok() {
+    let rag_rate: Option<u128> = if embed_provider.load(&embed_model).is_ok() {
         let docs: Vec<String> = (0..20)
             .map(|i| {
                 format!(
@@ -162,11 +170,13 @@ fn main() {
         let dt = t.elapsed().as_secs_f64();
         let rate = (docs.len() as f64 / dt * 60.0) as u128;
         println!("rag_docs_per_minute: {rate} ({} docs, dim {})", docs.len(), vectors[0].len());
+        Some(rate)
     } else {
         // Optional measurement requires an explicit unavailable reason,
         // never a fabricated zero (15_Performance_Qualification.yaml).
         println!("rag_docs_per_minute: UNAVAILABLE (bge model not installed)");
-    }
+        None
+    };
 
     let report = serde_json::json!({
         "schema": "harbor.performance/v2",
@@ -178,7 +188,8 @@ fn main() {
         "runtime": "llama.cpp/llama-cpp-sys-2@0.1.156",
         "protocol": "raw samples; p50/p95 derived; greedy decoding",
         "samples": {
-            "model_load_ms": load_samples,
+            "model_load_cold_first_ms": load_cold_ms,
+            "model_load_warm_ms": load_samples,
             "ttft_1tok_ms": ttft_samples,
             "tokens_per_second_64tok": tps_samples,
             "artifact_open_ms": open_samples,
@@ -186,8 +197,8 @@ fn main() {
             "artifact_save_ms": save_samples,
         },
         "derived": {
-            "model_load_ms_p50": p50(&mut load_samples),
-            "model_load_ms_p95": p95(&mut load_samples),
+            "model_load_cold_first_ms": load_cold_ms,
+            "model_load_warm_ms_p95": p95(&mut load_samples),
             "ttft_ms_p50": p50(&mut ttft_samples),
             "ttft_ms_p95": p95(&mut ttft_samples),
             "tokens_per_second_p50": p50(&mut tps_samples),
@@ -195,6 +206,11 @@ fn main() {
             "artifact_open_ms_p50": p50(&mut open_samples),
             "artifact_recalc_ms_p50": p50(&mut recalc_samples),
             "artifact_save_ms_p50": p50(&mut save_samples),
+            "rag_docs_per_minute": rag_rate,
+            "rag_docs_per_minute_note": match rag_rate {
+                Some(_) => "measured via bge-small-en-v1.5 through the pinned runtime",
+                None => "UNAVAILABLE: bge model not installed (explicit reason, not a zero)",
+            },
         },
         "fixed_safety_slo": {
             "cancellation_ack_p95_ms": 250,

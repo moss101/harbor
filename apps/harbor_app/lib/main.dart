@@ -58,8 +58,7 @@ class _HarborAppState extends State<HarborApp> {
   void initState() {
     super.initState();
     if (widget.service == null) {
-      final lib =
-          Platform.environment['HARBOR_FFI_LIB'] ?? 'libharbor_ffi.dylib';
+      final lib = HarborBinding.defaultLibraryPath();
       try {
         final dir = Directory.systemTemp.createTempSync('harbor-app-');
         _service = HarborService.open(libraryPath: lib, dataRoot: dir.path);

@@ -435,6 +435,7 @@ fn dispatch(ws: &mut WorkspaceHandle, method: &str, args: &serde_json::Value) ->
                 .ok_or_else(|| HarborError::Other("missing data_b64".into()))?;
             use base64::Engine as _;
             let bytes = base64::engine::general_purpose::STANDARD
+
                 .decode(data_b64)
                 .map_err(|e| HarborError::Other(format!("b64: {e}")))?;
             // Dispatch by OOXML content types (a workbook has no slide
@@ -467,6 +468,19 @@ fn dispatch(ws: &mut WorkspaceHandle, method: &str, args: &serde_json::Value) ->
                 })
                 .unwrap_or_default();
             drop(archive);
+            // Office Feature Matrix compatibility report: every part
+            // classified per 21_Office_Feature_Matrix.csv; unknown parts
+            // surface as UNKNOWN_REJECT_OR_PRESERVE_ONLY (row 23).
+            let compatibility = {
+                let fmt = if content_types.contains("spreadsheetml") {
+                    harbor_artifacts::OfficeFormat::Xlsx
+                } else if content_types.contains("presentationml") {
+                    harbor_artifacts::OfficeFormat::Pptx
+                } else {
+                    harbor_artifacts::OfficeFormat::Docx
+                };
+                harbor_artifacts::compatibility_report(fmt, &bytes).ok()
+            };
             // DOCX: paragraph preview with styles.
             if content_types.contains("wordprocessingml") {
                 let p = harbor_render::DocxPreview::from_docx(&bytes)
@@ -474,6 +488,7 @@ fn dispatch(ws: &mut WorkspaceHandle, method: &str, args: &serde_json::Value) ->
                 return Ok(serde_json::json!({
                     "kind": "docx",
                     "preview": serde_json::to_value(&p).map_err(|e| HarborError::Other(e.to_string()))?,
+                    "compatibility": compatibility,
                 }));
             }
             let is_deck = content_types.contains("presentationml");
@@ -483,6 +498,7 @@ fn dispatch(ws: &mut WorkspaceHandle, method: &str, args: &serde_json::Value) ->
                 Ok(serde_json::json!({
                     "kind": "deck",
                     "preview": serde_json::to_value(&p).map_err(|e| HarborError::Other(e.to_string()))?,
+                    "compatibility": compatibility,
                 }))
             } else {
                 let p = harbor_render::WorkbookPreview::from_xlsx(&bytes)
@@ -490,6 +506,7 @@ fn dispatch(ws: &mut WorkspaceHandle, method: &str, args: &serde_json::Value) ->
                 Ok(serde_json::json!({
                     "kind": "workbook",
                     "preview": serde_json::to_value(&p).map_err(|e| HarborError::Other(e.to_string()))?,
+                    "compatibility": compatibility,
                 }))
             }
         }

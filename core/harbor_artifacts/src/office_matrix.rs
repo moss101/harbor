@@ -8,7 +8,8 @@
 
 use std::io::{Cursor, Read};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum MatrixClass {
     /// Row class SUPPORTED_GA: read/render/edit within qualified scope.
     SupportedGa,
@@ -38,7 +39,7 @@ impl MatrixClass {
 }
 
 /// One classified package part or document feature.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 pub struct Classification {
     /// Package part name (or document feature marker like
     /// "document.xml#floatingDrawing").
@@ -48,7 +49,7 @@ pub struct Classification {
     pub reason: &'static str,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize)]
 pub struct CompatibilityReport {
     pub format: OfficeFormat,
     pub entries: Vec<Classification>,
@@ -69,7 +70,8 @@ impl CompatibilityReport {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum OfficeFormat {
     #[default]
     Docx,

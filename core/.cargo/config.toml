@@ -1,0 +1,2 @@
+[target.aarch64-linux-android]
+linker = "/Users/mohsin/Library/Android/sdk/ndk/27.1.12297006/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android24-clang"
