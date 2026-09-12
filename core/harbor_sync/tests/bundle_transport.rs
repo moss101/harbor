@@ -138,3 +138,53 @@ fn stale_bundle_epoch_is_rejected_before_decryption() {
         Err(harbor_sync::bundle::BundleError::StaleBundle { bundle: 1, group: 2 })
     ));
 }
+
+#[test]
+fn bundle_carries_latest_state_per_object_with_tombstones() {
+    let t0 = Utc::now();
+    let mut group = SyncGroup::create("group-1", t0);
+    group.enroll("device-b", t0);
+
+    // Two versions of the same object plus a tombstone for another.
+    let v1 = RecordEnvelope::seal(
+        &group, "device-b", 1, SyncRecordType::RunHistory, "doc-1",
+        Hlc::now(100, None), None, false, b"version one",
+    )
+    .unwrap();
+    let v2 = RecordEnvelope::seal(
+        &group, "device-b", 2, SyncRecordType::RunHistory, "doc-1",
+        Hlc::now(200, None), None, false, b"version two",
+    )
+    .unwrap();
+    let del = RecordEnvelope::seal(
+        &group, "device-b", 3, SyncRecordType::Tombstone, "doc-2",
+        Hlc::now(300, None), None, true, b"",
+    )
+    .unwrap();
+
+    let issuer_seed = [9u8; 32];
+    let bundle = seal_bundle(
+        &group,
+        &issuer_seed,
+        "device-b",
+        t0,
+        t0,
+        &[v1, v2, del],
+    )
+    .unwrap();
+
+    let signer_public = VerifyingKey::from(&SigningKey::from_bytes(&issuer_seed));
+    let opened = open_bundle(&group, &bundle, &signer_public).unwrap();
+    // doc-1 collapsed to its latest version; the tombstone propagated.
+    let doc1: Vec<&RecordEnvelope> = opened
+        .iter()
+        .filter(|e| e.object_id == "doc-1")
+        .collect();
+    assert_eq!(doc1.len(), 1, "latest per object only");
+    assert_eq!(doc1[0].hlc, Hlc { physical_ms: 200, counter: 0 });
+    assert_eq!(doc1[0].open(&group).unwrap(), b"version two");
+    // Tombstone present and authenticated.
+    let tomb = opened.iter().find(|e| e.tombstone).expect("tombstone rides");
+    assert_eq!(tomb.object_id, "doc-2");
+    assert!(tomb.open(&group).is_ok());
+}

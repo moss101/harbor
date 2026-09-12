@@ -220,6 +220,14 @@ through the existing slide-text parse. Conformance-tested: bar chart with
 cached values (3600/4000) survives write/read; chart part, rels and
 embedded workbook all present. (harbor_artifacts: 20 tests.)
 
+## Session 24b additions (bundle dedupe + tombstone propagation)
+
+`seal_bundle` now collapses tails to the LATEST envelope per object
+(highest HLC, deterministic order) and propagates tombstones as the
+latest state of their object — a snapshot certifies current state, not
+history. Test: two versions of doc-1 collapse to version two; doc-2's
+tombstone rides and authenticates.
+
 ## Session 16 additions (PDF extraction, iOS launch evidence)
 
 1. **PDF text extraction with page mapping** (harbor_render::pdf +

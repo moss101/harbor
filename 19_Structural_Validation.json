@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "69f59c2527901704a77e4334006d0fcd68b5b637ee627da36aa8983ec92bc420",
+  "input_manifest_sha256": "8bde4fdc2e1e32ee93c038b59ef8d4ddc9c36b5ba5e713b4cab5a4f09b55d8d6",
   "input_files": [
     {
       "path": "00_README.md",
@@ -1386,8 +1386,8 @@
     },
     {
       "path": "core/harbor_sync/src/bundle.rs",
-      "bytes": 6142,
-      "sha256": "185d68b535fec0edf924c8dc23479b3790468b7e82e170640b634ab6be0f64a5"
+      "bytes": 6832,
+      "sha256": "452f2f654002780ed0af390b109d67f3c7c71dddde1f7b3b9708182413a0f5ee"
     },
     {
       "path": "core/harbor_sync/src/envelope.rs",
@@ -1416,8 +1416,8 @@
     },
     {
       "path": "core/harbor_sync/tests/bundle_transport.rs",
-      "bytes": 4492,
-      "sha256": "d88504a83974e22d877552d9c5f62f3b164c1b30a1b69628bec3d83a262b9d2e"
+      "bytes": 6215,
+      "sha256": "4a4efd71e62a3e7b51f529da1c364c602646c9ee43bd2d1dbd1f5c9ab2398cec"
     },
     {
       "path": "core/harbor_sync/tests/snapshot_expiry.rs",
@@ -1431,8 +1431,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 20062,
-      "sha256": "6d3ed9f41a1aa9b8d99da8715bed8106e3d5833b5294a8e542ea28fab3c0d824"
+      "bytes": 20741,
+      "sha256": "92d3a9cbf6e17ed8148b4148fffd452da3383c57a0d761e3a71590b189dd5448"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",

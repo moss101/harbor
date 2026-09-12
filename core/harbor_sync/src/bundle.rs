@@ -70,10 +70,25 @@ pub fn seal_bundle(
     // Only current-epoch records ride a live snapshot: older-epoch records
     // are history, re-derivable from restored backups, and a returning
     // device must not receive records sealed under keys it may not hold.
-    let current: Vec<&RecordEnvelope> = tails
-        .iter()
-        .filter(|e| e.key_epoch == group.current_epoch)
-        .collect();
+    //
+    // Dedupe to the LATEST envelope per object (highest HLC): a snapshot
+    // certifies current state, not history. Tombstones participate as the
+    // latest state of their object, so deletions propagate.
+    let mut latest: std::collections::BTreeMap<&str, &RecordEnvelope> = Default::default();
+    for e in tails.iter().filter(|e| e.key_epoch == group.current_epoch) {
+        match latest.get(e.object_id.as_str()) {
+            Some(prev) if prev.hlc >= e.hlc => {}
+            _ => {
+                latest.insert(e.object_id.as_str(), e);
+            }
+        }
+    }
+    let current: Vec<&RecordEnvelope> = {
+        let mut v: Vec<&RecordEnvelope> = latest.values().copied().collect();
+        // Deterministic order: by object id.
+        v.sort_by(|a, b| a.object_id.cmp(&b.object_id));
+        v
+    };
     let serialized = serde_json::to_vec(&current)
         .map_err(|e| SyncError::Other(format!("serialize tails: {e}")))?;
 
