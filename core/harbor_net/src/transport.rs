@@ -5,6 +5,7 @@
 //! and strips cross-origin credentials — the transport must never follow
 //! a redirect on its own (13 policy).
 
+use std::io::Read as _;
 use std::time::Duration;
 
 use crate::broker::{Transport, TransportRequest, TransportResponse};
@@ -31,6 +32,64 @@ impl Default for UreqTransport {
 }
 
 impl Transport for UreqTransport {
+    /// True streaming: response bytes are written to `sink` in 64 KiB
+    /// chunks as they arrive off the wire.
+    fn execute_streaming(
+        &self,
+        req: &TransportRequest,
+        timeout: Duration,
+        sink: &mut dyn FnMut(&[u8]) -> std::io::Result<()>,
+    ) -> std::io::Result<TransportResponse> {
+        let mut request = self
+            .agent
+            .request(&req.method, &req.url)
+            .timeout(timeout);
+        for (k, v) in &req.headers {
+            request = request.set(k, v);
+        }
+        let response = if req.body.is_empty() && req.method != "POST" {
+            request.call()
+        } else {
+            request.send(req.body.as_slice())
+        };
+        let resp = match response {
+            Ok(resp) => resp,
+            Err(ureq::Error::Status(_code, resp)) => resp,
+            Err(ureq::Error::Transport(t)) => {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("transport: {t}"),
+                ));
+            }
+        };
+        let status = resp.status();
+        let headers: Vec<(String, String)> = resp
+            .headers_names()
+            .iter()
+            .map(|name| {
+                (
+                    name.to_lowercase(),
+                    resp.header(name).unwrap_or_default().to_string(),
+                )
+            })
+            .collect();
+        let mut reader = resp.into_reader().take(16 * 1024 * 1024 * 1024);
+        let mut chunk = [0u8; 64 * 1024];
+        loop {
+            let n = reader.read(&mut chunk)?;
+            if n == 0 {
+                break;
+            }
+            sink(&chunk[..n])?;
+        }
+        Ok(TransportResponse {
+            status,
+            headers,
+            body: Vec::new(),
+            final_url: String::new(),
+        })
+    }
+
     fn execute(
         &self,
         req: &TransportRequest,

@@ -8,6 +8,8 @@
 //! is installed unless every file's hash matches the expected value.
 
 use std::collections::BTreeMap;
+use std::io::Write as _;
+use std::path::{Path, PathBuf};
 
 use harbor_net::AuditSink;
 use harbor_net::broker::{
@@ -15,6 +17,8 @@ use harbor_net::broker::{
 };
 use harbor_net::broker::PrivacyMode;
 use chrono::{DateTime, Utc};
+use sha2::{Digest, Sha256};
+use harbor_canonical::JsonValue;
 
 use crate::install::{PackageFile, PackageInstaller, PackageManifest, RuntimeBinding};
 
@@ -37,19 +41,6 @@ pub struct HfAcquirer<'a> {
     pub sessions: BTreeMap<String, harbor_net::broker::EgressSession>,
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum AcquireError {
-    #[error("no session for origin {0} (redirect blocked)")]
-    NoSession(String),
-    #[error("broker: {0}")]
-    Broker(String),
-    #[error("http {0} for {1}")]
-    Http(u16, String),
-    #[error("hash mismatch for {0}")]
-    HashMismatch(String),
-    #[error("install: {0}")]
-    Install(String),
-}
 
 impl HfAcquirer<'_> {
     fn session_for(&self, origin: &str) -> Option<&harbor_net::broker::EgressSession> {
@@ -66,6 +57,7 @@ impl HfAcquirer<'_> {
         let mut current_url: url::Url =
             url.parse().map_err(|e| AcquireError::Broker(format!("url: {e}")))?;
         let mut hops = 0;
+        let mut retried = false;
         loop {
             let origin = origin_of(&current_url)
                 .ok_or_else(|| AcquireError::Broker("no origin".into()))?;
@@ -87,7 +79,15 @@ impl HfAcquirer<'_> {
             match result {
                 Ok(resp) => {
                     if !(200..300).contains(&resp.status) {
-                        return Err(AcquireError::Http(resp.status, current_url.to_string()));
+                        // 429/503 are transient server-side refusals (no
+                        // bytes dispatched to us): retry once after a pause.
+                        if (resp.status == 429 || resp.status == 503) && !retried {
+                            retried = true;
+                            std::thread::sleep(std::time::Duration::from_secs(3));
+                        } else {
+                            return Err(AcquireError::Http(resp.status, current_url.to_string()));
+                        }
+                        continue;
                     }
                     return Ok(resp.body);
                 }
@@ -115,6 +115,76 @@ impl HfAcquirer<'_> {
         }
     }
 
+    /// Stream a URL into `out` through the broker, hashing incrementally.
+    /// Memory use is O(chunk), not O(file): safe for multi-GB weights.
+    pub fn fetch_streaming_to(
+        &self,
+        url: &str,
+        out: &Path,
+        run_id: Option<&str>,
+    ) -> Result<(String, u64), AcquireError> {
+        let mut current_url: url::Url =
+            url.parse().map_err(|e| AcquireError::Broker(format!("url: {e}")))?;
+        let mut hops = 0;
+        let mut retried = false;
+        loop {
+            let origin = origin_of(&current_url)
+                .ok_or_else(|| AcquireError::Broker("no origin".into()))?;
+            let session = self
+                .session_for(&origin)
+                .ok_or_else(|| AcquireError::NoSession(origin.clone()))?;
+            let mut file = std::fs::File::create(out)
+                .map_err(|e| AcquireError::Install(e.to_string()))?;
+            let mut hasher = Sha256::new();
+            let mut size = 0u64;
+            {
+                let mut sink = |chunk: &[u8]| -> std::io::Result<()> {
+                    hasher.update(chunk);
+                    size += chunk.len() as u64;
+                    file.write_all(chunk)
+                };
+                let result = self.broker.dispatch_streaming(
+                    session,
+                    TransportRequest {
+                        method: "GET".into(),
+                        url: current_url.to_string(),
+                        headers: vec![("accept".into(), "*/*".into())],
+                        body: Vec::new(),
+                    },
+                    self.transport,
+                    run_id,
+                    Utc::now(),
+                    &mut sink,
+                );
+                file.flush().ok();
+                match result {
+                    Ok(()) => {
+                        let hash = hex::encode(hasher.finalize());
+                        return Ok((hash, size));
+                    }
+                    Err(BrokerError::RedirectDenied(next)) => {
+                        let next_url: url::Url = next
+                            .parse()
+                            .map_err(|e| AcquireError::Broker(format!("url: {e}")))?;
+                        let next_origin = origin_of(&next_url)
+                            .ok_or_else(|| AcquireError::Broker("no origin".into()))?;
+                        if self.session_for(&next_origin).is_none() {
+                            return Err(AcquireError::NoSession(next_origin));
+                        }
+                        current_url = next_url;
+                        hops += 1;
+                        if hops > 10 {
+                            return Err(AcquireError::Broker("too many hops".into()));
+                        }
+                        // Retry the hop with a fresh file.
+                        continue;
+                    }
+                    Err(e) => return Err(AcquireError::Broker(e.to_string())),
+                }
+            }
+        }
+    }
+
     /// Acquire one model package: download each declared file from HF,
     /// verify hashes, and commit through the staged installer.
     #[allow(clippy::too_many_arguments)]
@@ -135,9 +205,14 @@ impl HfAcquirer<'_> {
             let url = format!(
                 "https://huggingface.co/{repo_id}/resolve/{revision}/{path}"
             );
-            let bytes = self.fetch(&url, None)?;
-            let got = harbor_canonical::sha256_hex(&bytes);
+            let out = staged.staging_dir.join(path);
+            if let Some(parent) = out.parent() {
+                std::fs::create_dir_all(parent)
+                    .map_err(|e| AcquireError::Install(e.to_string()))?;
+            }
+            let (got, size) = self.fetch_streaming_to(&url, &out, None)?;
             if !sha256.is_empty() && got != *sha256 {
+                let _ = std::fs::remove_file(&out);
                 return Err(AcquireError::HashMismatch(path.clone()));
             }
             // With no pinned hash (search-driven acquisition), the hash of
@@ -147,12 +222,11 @@ impl HfAcquirer<'_> {
             let pf = PackageFile {
                 role: role.clone(),
                 path: path.clone(),
-                sha256: effective_sha,
-                size_bytes: bytes.len() as u64,
+                sha256: effective_sha.clone(),
+                size_bytes: size,
             };
-            self.installer
-                .ingest_file(&mut staged, &pf, &bytes)
-                .map_err(|e| AcquireError::Install(e.to_string()))?;
+            staged.verified_files.insert(path.clone(), size);
+            let _ = effective_sha;
             manifest_files.push(pf);
         }
         let manifest = PackageManifest {
@@ -327,5 +401,255 @@ mod tests {
             }
             other => panic!("expected NoSession, got {other:?}"),
         }
+    }
+}
+
+/// A package entry inside a signed catalog document.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CatalogPackage {
+    pub id: String,
+    pub repo_id: String,
+    pub revision: String,
+    /// (path, role, pinned sha256)
+    pub files: Vec<(String, String, String)>,
+    pub quantization: String,
+    pub context_tokens: u64,
+}
+
+/// Parse a signed catalog document (the canonical `entries` JSON of a
+/// `SignedCatalog`). Every file must carry a pinned sha256: entries without
+/// one are rejected — acquisition without an accountable hash never runs.
+pub fn parse_catalog_document(entries: &JsonValue) -> Result<Vec<CatalogPackage>, AcquireError> {
+    let Some(packages) = entries.get("packages").and_then(|v| v.as_array()) else {
+        return Err(AcquireError::Malformed("missing packages array".into()));
+    };
+    let mut out = Vec::new();
+    for p in packages {
+        let id = p
+            .get("id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| AcquireError::Malformed("package missing id".into()))?
+            .to_string();
+        let repo_id = p
+            .get("repo_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| AcquireError::Malformed("package missing repo_id".into()))?
+            .to_string();
+        let revision = p
+            .get("revision")
+            .and_then(|v| v.as_str())
+            .unwrap_or("main")
+            .to_string();
+        let quantization = p
+            .get("quantization")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default()
+            .to_string();
+        let context_tokens = p
+            .get("context_tokens")
+            .and_then(|v| v.as_int())
+            .map(|i| i.max(0) as u64)
+            .unwrap_or(2048);
+        let mut files = Vec::new();
+        for f in p
+            .get("files")
+            .and_then(|v| v.as_array())
+            .ok_or_else(|| AcquireError::Malformed("package missing files".into()))?
+        {
+            let path = f
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| AcquireError::Malformed("file missing path".into()))?
+                .to_string();
+            let role = f
+                .get("role")
+                .and_then(|v| v.as_str())
+                .unwrap_or("weights")
+                .to_string();
+            let sha = f
+                .get("sha256")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default()
+                .to_string();
+            if sha.len() != 64 {
+                return Err(AcquireError::Malformed(format!(
+                    "file {path} lacks a pinned 64-char sha256"
+                )));
+            }
+            files.push((path, role, sha));
+        }
+        out.push(CatalogPackage {
+            id,
+            repo_id,
+            revision,
+            files,
+            quantization,
+            context_tokens,
+        });
+    }
+    Ok(out)
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum AcquireError {
+    #[error("no session for origin {0} (redirect blocked)")]
+    NoSession(String),
+    #[error("broker: {0}")]
+    Broker(String),
+    #[error("http {0} for {1}")]
+    Http(u16, String),
+    #[error("hash mismatch for {0}")]
+    HashMismatch(String),
+    #[error("install: {0}")]
+    Install(String),
+    #[error("malformed catalog: {0}")]
+    Malformed(String),
+    #[error("catalog: {0}")]
+    Catalog(String),
+    #[error("package {0} not in catalog")]
+    PackageNotInCatalog(String),
+}
+
+/// Verify a signed catalog and acquire one of its packages. The pinned
+/// per-file hashes come ONLY from the signed document — a signature over
+/// the whole document makes the hash set tamper-evident, and the epoch rule
+/// prevents rolling the catalog back to older (weaker) contents.
+#[allow(clippy::too_many_arguments)]
+pub fn acquire_signed(
+    verifier: &mut crate::catalog_signing::CatalogVerifier,
+    signed: &crate::catalog_signing::SignedCatalog,
+    package_id: &str,
+    installer: &PackageInstaller,
+    broker: &EgressBroker,
+    transport: &dyn Transport,
+    sessions: &BTreeMap<String, harbor_net::broker::EgressSession>,
+    now: DateTime<Utc>,
+) -> Result<serde_json::Value, AcquireError> {
+    verifier
+        .verify(signed)
+        .map_err(|e| AcquireError::Catalog(e.to_string()))?;
+    let packages = parse_catalog_document(&signed.entries)?;
+    let package = packages
+        .iter()
+        .find(|p| p.id == package_id)
+        .ok_or_else(|| AcquireError::PackageNotInCatalog(package_id.to_string()))?;
+    let acquirer = HfAcquirer {
+        broker,
+        transport,
+        installer,
+        sessions: sessions.clone(),
+    };
+    acquirer.acquire(
+        &package.id,
+        &package.repo_id,
+        &package.revision,
+        &package.files
+            .iter()
+            .map(|(p, r, s)| (p.clone(), r.clone(), s.clone()))
+            .collect::<Vec<_>>(),
+        now,
+    )
+}
+
+#[cfg(test)]
+mod signed_tests {
+    use super::*;
+    use crate::catalog_signing::{sign_catalog, CatalogSigningKey, CatalogVerifier};
+    use harbor_net::audit::SqliteAuditSink;
+    use harbor_net::broker::EgressBroker;
+    use harbor_net::transport::UreqTransport;
+    use tempfile::TempDir;
+
+    fn sessions_for(broker: &EgressBroker) -> BTreeMap<String, harbor_net::broker::EgressSession> {
+        let mut sessions = BTreeMap::new();
+        for origin in ["https://huggingface.co", HF_CDN_ORIGINS[0], HF_CDN_ORIGINS[1], HF_CDN_ORIGINS[2], HF_CDN_ORIGINS[3]] {
+            let s = broker
+                .open_session(
+                    EgressClass::WeightTransfer,
+                    origin,
+                    chrono::Duration::minutes(10),
+                    harbor_security::policy::PrivacyMode::LocalOnly,
+                )
+                .unwrap();
+            sessions.insert(origin.to_string(), s);
+        }
+        sessions
+    }
+
+    fn signed_catalog(sha: &str) -> crate::catalog_signing::SignedCatalog {
+        let key = CatalogSigningKey::from_secret_bytes(&[7u8; 32]);
+        let entries = harbor_canonical::parse(&format!(
+            r#"{{"packages":[{{"context_tokens":2048,"files":[{{"path":"tinyllamas/stories260K.gguf","role":"weights","sha256":"{sha}"}}],"id":"stories260k","quantization":"Q8_0","repo_id":"ggml-org/models","revision":"main"}}]}}"#
+        ))
+        .unwrap();
+        sign_catalog(&key, 1, "2026-09-12T00:00:00Z", entries).unwrap()
+    }
+
+    #[test]
+    fn signed_catalog_acquisition_verifies_against_pinned_hash() {
+        let dir = TempDir::new().unwrap();
+        let sink = std::sync::Arc::new(SqliteAuditSink::open_in_memory().unwrap());
+        let broker = EgressBroker::new(Box::new(sink.clone()));
+        let transport = UreqTransport::new();
+        let installer = PackageInstaller::new(dir.path().join("models"));
+        let key = CatalogSigningKey::from_secret_bytes(&[7u8; 32]);
+        let mut verifier = CatalogVerifier::new(&hex::encode(&key.public_bytes())).unwrap();
+        let sessions = sessions_for(&broker);
+
+        // The pinned hash is the REAL model hash, signed into the catalog.
+        let catalog = signed_catalog(
+            "270cba1bd5109f42d03350f60406024560464db173c0e387d91f0426d3bd256d",
+        );
+        let result = acquire_signed(
+            &mut verifier,
+            &catalog,
+            "stories260k",
+            &installer,
+            &broker,
+            &transport,
+            &sessions,
+            Utc::now(),
+        )
+        .unwrap();
+        assert_eq!(result["installed"], "stories260k");
+        assert_eq!(
+            installer.installed_packages().unwrap(),
+            vec!["stories260k".to_string()]
+        );
+        // Brokered evidence: the stream was dispatched and completed.
+        assert!(sink.entries().iter().any(|e| e.kind == harbor_net::NetworkEventKind::Completed));
+    }
+
+    #[test]
+    fn signed_catalog_with_wrong_pinned_hash_blocks_install() {
+        let dir = TempDir::new().unwrap();
+        let sink = std::sync::Arc::new(SqliteAuditSink::open_in_memory().unwrap());
+        let broker = EgressBroker::new(Box::new(sink.clone()));
+        let transport = UreqTransport::new();
+        let installer = PackageInstaller::new(dir.path().join("models"));
+        let key = CatalogSigningKey::from_secret_bytes(&[7u8; 32]);
+        let mut verifier = CatalogVerifier::new(&hex::encode(&key.public_bytes())).unwrap();
+        let sessions = sessions_for(&broker);
+
+        // A catalog signed with a WRONG hash (attacker or stale metadata):
+        // the download happens, the pinned-hash check must refuse install.
+        let catalog = signed_catalog(&"0".repeat(64));
+        let result = acquire_signed(
+            &mut verifier,
+            &catalog,
+            "stories260k",
+            &installer,
+            &broker,
+            &transport,
+            &sessions,
+            Utc::now(),
+        );
+        assert!(matches!(result, Err(AcquireError::HashMismatch(_))));
+        // Nothing installed.
+        assert!(installer.installed_packages().unwrap().is_empty());
+        assert!(matches!(
+            verifier.verify(&signed_catalog(&"0".repeat(64))),
+            Err(crate::catalog_signing::CatalogSignError::StaleEpoch { .. })
+        ));
     }
 }

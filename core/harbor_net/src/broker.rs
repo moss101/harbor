@@ -75,6 +75,21 @@ impl TransportResponse {
 /// themselves; the broker drives each hop.
 pub trait Transport: Send + Sync {
     fn execute(&self, req: &TransportRequest, timeout: Duration) -> std::io::Result<TransportResponse>;
+
+    /// Streaming variant for large bodies: each chunk is handed to `sink`
+    /// as it arrives. Default delegates to the buffered [`Self::execute`];
+    /// real transports override this so multi-GB models never need to fit
+    /// in memory.
+    fn execute_streaming(
+        &self,
+        req: &TransportRequest,
+        timeout: Duration,
+        sink: &mut dyn FnMut(&[u8]) -> std::io::Result<()>,
+    ) -> std::io::Result<TransportResponse> {
+        let response = self.execute(req, timeout)?;
+        sink(&response.body)?;
+        Ok(response)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -310,6 +325,140 @@ impl EgressBroker {
         }
     }
 
+    /// Streaming dispatch: identical authorization loop to [`Self::dispatch`]
+    /// but the final 2xx response body is streamed chunk-by-chunk into
+    /// `sink` instead of buffered. Redirect hops are re-authorized exactly
+    /// as in the buffered path; the hop count still applies.
+    #[allow(clippy::too_many_arguments)]
+    pub fn dispatch_streaming(
+        &self,
+        session: &EgressSession,
+        req: TransportRequest,
+        transport: &dyn Transport,
+        run_id: Option<&str>,
+        now: DateTime<Utc>,
+        sink: &mut dyn FnMut(&[u8]) -> std::io::Result<()>,
+    ) -> Result<(), BrokerError> {
+        let parsed: url::Url = req
+            .url
+            .parse()
+            .map_err(|_| BrokerError::InvalidRequest("unparseable url"))?;
+        let origin =
+            request_origin(&parsed).ok_or(BrokerError::InvalidRequest("no origin"))?;
+        if !session.allows_origin(&origin, now) {
+            self.log(
+                NetworkEventKind::Blocked,
+                session.class,
+                &origin,
+                &req.method,
+                parsed.path(),
+                None,
+                Some(&session.session_id),
+                run_id,
+                "no valid session for origin".into(),
+            );
+            return Err(BrokerError::PolicyDenied);
+        }
+        let mut current = req;
+        let mut current_origin = origin;
+        let mut hops = 0usize;
+        loop {
+            self.log(
+                NetworkEventKind::Dispatched,
+                session.class,
+                &current_origin,
+                &current.method,
+                parsed.path(),
+                None,
+                Some(&session.session_id),
+                run_id,
+                format!("stream hop {hops}"),
+            );
+            let response = transport
+                .execute_streaming(&current, self.default_timeout, sink)
+                .map_err(|e| {
+                    self.log(
+                        NetworkEventKind::Completed,
+                        session.class,
+                        &current_origin,
+                        &current.method,
+                        parsed.path(),
+                        None,
+                        Some(&session.session_id),
+                        run_id,
+                        format!("stream transport error: {e}"),
+                    );
+                    BrokerError::Transport(e.to_string())
+                })?;
+            if response.is_redirect() {
+                let location = response.header("location").unwrap_or_default();
+                let next: url::Url = parsed
+                    .join(location)
+                    .map_err(|_| BrokerError::InvalidRequest("bad redirect location"))?;
+                match self.redirect_decision(session, &current_origin, &next, Utc::now()) {
+                    RedirectDecision::Follow { strip_credentials } => {
+                        let mut next_req = TransportRequest {
+                            method: if response.status == 307 || response.status == 308 {
+                                current.method.clone()
+                            } else {
+                                "GET".into()
+                            },
+                            url: next.to_string(),
+                            headers: current.headers.clone(),
+                            body: Vec::new(),
+                        };
+                        if strip_credentials {
+                            next_req.headers.retain(|(k, _)| {
+                                !CREDENTIAL_HEADERS
+                                    .contains(&k.to_ascii_lowercase().as_str())
+                            });
+                        }
+                        current = next_req;
+                        current_origin = request_origin(&next)
+                            .ok_or(BrokerError::InvalidRequest("no origin"))?;
+                        hops += 1;
+                        if hops > 10 {
+                            return Err(BrokerError::TooManyRedirects);
+                        }
+                        continue;
+                    }
+                    RedirectDecision::Blocked => {
+                        self.log(
+                            NetworkEventKind::RedirectBlocked,
+                            session.class,
+                            &current_origin,
+                            &current.method,
+                            next.path(),
+                            Some(response.status),
+                            Some(&session.session_id),
+                            run_id,
+                            format!("stream redirect to {next} denied"),
+                        );
+                        return Err(BrokerError::RedirectDenied(next.to_string()));
+                    }
+                }
+            }
+            self.log(
+                NetworkEventKind::Completed,
+                session.class,
+                &current_origin,
+                &current.method,
+                parsed.path(),
+                Some(response.status),
+                Some(&session.session_id),
+                run_id,
+                "stream completed".into(),
+            );
+            // Non-2xx after streaming: the error document may already be
+            // streamed to the caller's discard/hash sink; the caller must
+            // treat non-2xx as failure and discard state.
+            if !(200..300).contains(&response.status) {
+                return Err(BrokerError::Http(response.status));
+            }
+            return Ok(());
+        }
+    }
+
     #[allow(clippy::too_many_arguments)]
     fn log(
         &self,
@@ -366,6 +515,8 @@ pub enum BrokerError {
     InvalidRequest(&'static str),
     #[error("transport failure: {0}")]
     Transport(String),
+    #[error("http status {0}")]
+    Http(u16),
 }
 
 // Re-export the policy alias used in session construction signatures.

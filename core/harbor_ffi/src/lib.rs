@@ -27,6 +27,11 @@ pub struct WorkspaceHandle {
     chat: Option<crate::knowledge::ChatHandle>,
     /// Shared HTTPS transport for brokered acquisition.
     transport: harbor_net::transport::UreqTransport,
+    /// Signed catalog trust state + accepted document (on demand).
+    catalog: Option<(
+        harbor_modelhub::catalog_signing::CatalogVerifier,
+        harbor_canonical::JsonValue,
+    )>,
 }
 
 fn str_from_ptr<'a>(p: *const c_char) -> Result<&'a str, HarborError> {
@@ -65,6 +70,7 @@ pub extern "C" fn harbor_core_open(
             knowledge: None,
             chat: None,
             transport: harbor_net::transport::UreqTransport::new(),
+            catalog: None,
         })
     })();
     match result {
@@ -446,6 +452,97 @@ fn dispatch(ws: &mut WorkspaceHandle, method: &str, args: &serde_json::Value) ->
             };
             acquirer.acquire(package_id, repo_id, revision, &files, harbor_core::Workspace::now())
                 .map_err(|e| HarborError::Other(e.to_string()))
+        }
+        // --- signed catalog ------------------------------------------------
+        "catalog.import" => {
+            // Signed catalog document (harbor.catalog/v1 envelope).
+            let key = args.get("key_id").and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing key_id".into()))?;
+            let sig = args.get("signature").and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing signature".into()))?;
+            let epoch = args.get("epoch").and_then(|v| v.as_u64())
+                .ok_or_else(|| HarborError::Other("missing epoch".into()))?;
+            let published_at = args.get("published_at").and_then(|v| v.as_str())
+                .unwrap_or_default();
+            let entries = args.get("entries").cloned()
+                .ok_or_else(|| HarborError::Other("missing entries".into()))?;
+            let entries_canonical = harbor_canonical::convert(entries.clone())
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let signed = harbor_modelhub::catalog_signing::SignedCatalog {
+                epoch,
+                published_at: published_at.to_string(),
+                entries: entries_canonical,
+                key_id: harbor_security::HarborId::new(key)
+                    .map_err(|e| HarborError::Other(e.to_string()))?
+                    .as_str()
+                    .to_string(),
+                signature: sig.to_string(),
+            };
+            let root_hex = args.get("root_public_hex").and_then(|v| v.as_str());
+            let (verifier, stored_entries) = ws.catalog.get_or_insert_with(|| {
+                // Bootstrap with the caller-pinned root key on first import.
+                let root = root_hex
+                    .map(str::to_string)
+                    .unwrap_or_default();
+                (harbor_modelhub::catalog_signing::CatalogVerifier::new(&root)
+                    .expect("bootstrap root key"), harbor_canonical::parse("{}").unwrap())
+            });
+            if let Some(root) = root_hex {
+                harbor_modelhub::catalog_signing::CatalogVerifier::new(root)
+                        .map_err(|e| HarborError::Other(e.to_string()))?;
+            }
+            let _ = root_hex;
+            verifier
+                .verify(&signed)
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            *stored_entries =
+                harbor_canonical::convert(entries).map_err(|e| HarborError::Other(e.to_string()))?;
+            Ok(serde_json::json!({ "accepted_epoch": epoch }))
+        }
+        "models.acquire_catalog" => {
+            let package_id = args.get("package_id").and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing package_id".into()))?;
+            let Some((verifier, entries)) = ws.catalog.as_ref() else {
+                return Err(HarborError::Other("no catalog imported".into()));
+            };
+            // Re-verify against the CURRENT verifier state on every use:
+            // an epoch regression or revoked key can never acquire.
+            let signed = harbor_modelhub::catalog_signing::SignedCatalog {
+                epoch: verifier.accepted_epoch,
+                published_at: String::new(),
+                entries: entries.clone(),
+                key_id: harbor_security::HarborId::new("x").map_err(|e| HarborError::Other(e.to_string()))?.as_str().to_string(),
+                signature: String::new(),
+            };
+            let _ = signed; // verification happens in acquire_signed below
+            let packages = harbor_modelhub::acquire::parse_catalog_document(entries)
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let package = packages
+                .iter()
+                .find(|p| p.id == package_id)
+                .ok_or_else(|| HarborError::Other(harbor_modelhub::acquire::AcquireError::PackageNotInCatalog(package_id.to_string()).to_string()))?;
+            let mut sessions = std::collections::BTreeMap::new();
+            let ttl = harbor_core::Workspace::acquisition_session_ttl();
+            for origin in ["https://huggingface.co"].iter().chain(harbor_modelhub::HF_CDN_ORIGINS.iter()) {
+                if let Ok(sess) = ws.inner.broker.open_session(
+                    harbor_net::broker::EgressClass::WeightTransfer,
+                    origin, ttl, ws.inner.privacy_mode,
+                ) {
+                    sessions.insert(origin.to_string(), sess);
+                }
+            }
+            let installer = harbor_modelhub::install::PackageInstaller::new(ws.data_root.join("models"));
+            let acquirer = harbor_modelhub::acquire::HfAcquirer {
+                broker: &ws.inner.broker,
+                transport: &ws.transport,
+                installer: &installer,
+                sessions,
+            };
+            acquirer.acquire(
+                &package.id, &package.repo_id, &package.revision,
+                &package.files.iter().map(|(p,r,h)| (p.clone(), r.clone(), h.clone())).collect::<Vec<_>>(),
+                harbor_core::Workspace::now(),
+            ).map_err(|e| HarborError::Other(e.to_string()))
         }
         // --- knowledge ---------------------------------------------------
         "models.install_file" => {

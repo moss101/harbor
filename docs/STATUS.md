@@ -39,6 +39,26 @@ can bind to a commit).
 5. Status check added: non-2xx responses are errors, never silently
    hashed (found via a rate-limit response during testing).
 
+## Session 10 additions (signed catalog + streaming acquisition)
+
+1. **Signed catalog drives acquisition**: `parse_catalog_document` +
+   `acquire_signed` join the two halves — per-file SHA-256 hashes live ONLY
+   inside the signed catalog document (tamper-evident, epoch-protected);
+   `acquire_signed` verifies the signature/epoch FIRST, then downloads and
+   enforces the signed hashes. A signed-but-wrong hash blocks the install
+   (real-network negative test). Entries without a pinned 64-char hash are
+   rejected at parse.
+2. **Streaming download for multi-GB models**: `Transport::execute_streaming`
+   (ureq impl streams 64 KiB chunks; buffered default for other transports)
+   + `EgressBroker::dispatch_streaming` (same authorization/hop loop, non-2xx
+   is an error). `fetch_streaming_to` writes staged bytes incrementally with
+   an incremental SHA-256 — memory use is O(chunk), not O(file).
+3. FFI: `catalog.import` (verify + accept a signed document; epoch + trust
+   state persist in the handle), `models.acquire_catalog` (acquire from the
+   accepted catalog; sessions re-opened per origin per acquisition).
+4. Retry-once for 429/503 (server-side refusals; GETs are not protected
+   effects) — removes CI flakiness from rate limiting.
+
 ## Session 8 additions (a11y, SBOM, migration docs)
 
 1. **Accessibility audit is a permanent test gate**
