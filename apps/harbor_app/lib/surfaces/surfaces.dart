@@ -138,7 +138,7 @@ class _ComposerState extends State<Composer> {
         FilledButton.icon(
           onPressed: _controller.text.isEmpty ? null : () {},
           icon: const Icon(Icons.arrow_forward),
-          label: const Text(''),
+          label: Text(l10n.sendAction),
         ),
       ]),
     );

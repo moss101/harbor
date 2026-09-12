@@ -547,6 +547,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'I could not find support for this in your Knowledge.'**
   String get askAbstentionHeading;
+
+  /// No description provided for @sendAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get sendAction;
+
+  /// No description provided for @lensOpenTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the Harbor Lens inspector'**
+  String get lensOpenTooltip;
+
+  /// No description provided for @askSearchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Knowledge'**
+  String get askSearchTooltip;
 }
 
 class _AppLocalizationsDelegate

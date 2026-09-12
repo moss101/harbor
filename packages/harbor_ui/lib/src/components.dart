@@ -408,27 +408,33 @@ class HarborEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = HarborTheme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(HarborSpace.s8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.inbox_outlined, size: 32, color: t.colors.inkMuted),
-            const SizedBox(height: HarborSpace.s3),
-            Text(title, style: t.text.h2Of(t.colors.ink), textAlign: TextAlign.center),
-            const SizedBox(height: HarborSpace.s2),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Text(body,
-                  textAlign: TextAlign.center,
-                  style: t.text.smallOf(t.colors.inkMuted)),
+    // Scrollable so 200% scaled text never clips (accessibility §27).
+    return SingleChildScrollView(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height * 0.4),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(HarborSpace.s8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.inbox_outlined, size: 32, color: t.colors.inkMuted),
+                const SizedBox(height: HarborSpace.s3),
+                Text(title, style: t.text.h2Of(t.colors.ink), textAlign: TextAlign.center),
+                const SizedBox(height: HarborSpace.s2),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: Text(body,
+                      textAlign: TextAlign.center,
+                      style: t.text.smallOf(t.colors.inkMuted)),
+                ),
+                if (actionLabel != null) ...[
+                  const SizedBox(height: HarborSpace.s4),
+                  FilledButton(onPressed: onAction, child: Text(actionLabel!)),
+                ],
+              ],
             ),
-            if (actionLabel != null) ...[
-              const SizedBox(height: HarborSpace.s4),
-              FilledButton(onPressed: onAction, child: Text(actionLabel!)),
-            ],
-          ],
+          ),
         ),
       ),
     );

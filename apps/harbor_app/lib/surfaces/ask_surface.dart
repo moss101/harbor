@@ -93,6 +93,7 @@ class _AskSurfaceState extends State<AskSurface> {
             ),
             const SizedBox(width: HarborSpace.s2),
             IconButton.filled(
+                tooltip: l10n.askSearchTooltip,
                 onPressed: knowledgeReady ? _ask : null,
                 icon: const Icon(Icons.search)),
           ]),

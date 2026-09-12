@@ -263,4 +263,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get askAbstentionHeading =>
       'I could not find support for this in your Knowledge.';
+
+  @override
+  String get sendAction => 'Send';
+
+  @override
+  String get lensOpenTooltip => 'Open the Harbor Lens inspector';
+
+  @override
+  String get askSearchTooltip => 'Search Knowledge';
 }

@@ -29,12 +29,15 @@ class WorkSurface extends StatelessWidget {
               label: Text(l10n.lensButton),
             ),
             const Spacer(),
-            Text(
-              canvasMinApplies
-                  ? l10n.workCanvasRuleActive(
-                      HarborLayout.workCanvasMin.toInt())
-                  : l10n.canvasViewportEditing,
-              style: t.text.captionOf(t.colors.inkMuted),
+            Flexible(
+              child: Text(
+                canvasMinApplies
+                    ? l10n.workCanvasRuleActive(
+                        HarborLayout.workCanvasMin.toInt())
+                    : l10n.canvasViewportEditing,
+                textAlign: TextAlign.end,
+                style: t.text.captionOf(t.colors.inkMuted),
+              ),
             ),
           ]),
         ),

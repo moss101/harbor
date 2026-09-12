@@ -67,7 +67,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get workEmptyBody =>
-      'Open a document, workbook, deck or PDF to see it here with version, verification and conflict state.';
+      'افتح مستنداً أو جدول بيانات أو عرضاً أو PDF لرؤيته هنا مع حالة الإصدار والتحقق والتعارض.';
 
   @override
   String get modelsInstalled => 'المثبتة';
@@ -131,35 +131,35 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get agentsEmptyBody =>
-      'Agents combine a model, tools, skills, knowledge and policy. Create one to delegate multi-step work with durable, inspectable runs.';
+      'يجمع الوكلاء نموذجاً وأدوات ومهارات ومعرفة وسياسة. أنشئ واحداً لتفويض عمل متعدد الخطوات بمهام دائمة قابلة للفحص.';
 
   @override
   String get skillsEmptyTitle => 'المهارات المدمجة جاهزة';
 
   @override
   String get skillsEmptyBody =>
-      'Ship-quality skills for documents, spreadsheets, research, translation and more.';
+      'مهارات عالية الجودة للمستندات وجداول البيانات والبحث والترجمة وغيرها.';
 
   @override
   String get knowledgeEmptyTitle => 'المعرفة فارغة';
 
   @override
   String get knowledgeEmptyBody =>
-      'Add folders or documents to build a local, citation-backed index. Sources never leave the device under Local Only.';
+      'أضف مجلدات أو مستندات لبناء فهرس محلي مدعوم بالاستشهادات. المصادر لا تترك الجهاز في وضع محلي فقط.';
 
   @override
   String get activityEmptyTitle => 'لا توجد مهام بعد';
 
   @override
   String get activityEmptyBody =>
-      'Durable agent runs appear here with their full Run Trail — including pause, approval and recovery states.';
+      'تظهر مهام الوكلاء الدائمة هنا مع مسار التشغيل الكامل — بما فيه الإيقاف والموافقة والاسترداد.';
 
   @override
   String get askEmptyTitle => 'اسأل يعمل على ملفاتك';
 
   @override
   String get askEmptyBody =>
-      'Answers ground in your workspace with citations and abstain when evidence is insufficient.';
+      'تؤسس الإجابات على مساحة عملك مع استشهادات وتمتنع عندما تكون الأدلة غير كافية.';
 
   @override
   String get lensButton => 'العدسة';
@@ -260,4 +260,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get askAbstentionHeading => 'لم أجد دعماً لذلك في معرفتك.';
+
+  @override
+  String get sendAction => 'إرسال';
+
+  @override
+  String get lensOpenTooltip => 'افتح مفتش العدسة';
+
+  @override
+  String get askSearchTooltip => 'ابحث في المعرفة';
 }

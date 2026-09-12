@@ -148,5 +148,8 @@
   "askKnowledgeNotOpen": "Knowledge is not open yet. Install an embedding model (Models → Installed) to ground answers locally.",
   "@askKnowledgeNotOpen": {},
   "askAbstentionHeading": "I could not find support for this in your Knowledge.",
-  "@askAbstentionHeading": {}
+  "@askAbstentionHeading": {},
+  "sendAction": "Send",
+  "lensOpenTooltip": "Open the Harbor Lens inspector",
+  "askSearchTooltip": "Search Knowledge"
 }
