@@ -877,3 +877,43 @@ mod token_tests {
         }
     }
 }
+
+#[cfg(test)]
+mod committed_catalog_tests {
+    /// The committed signed catalog (fixtures/catalog) must always verify
+    /// against the committed root public key. This pins the release trust
+    /// anchor: if either file drifts, the test fails.
+    #[test]
+    fn committed_signed_catalog_verifies_against_committed_root_key() {
+        let repo_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap();
+        let root_hex = std::fs::read_to_string(repo_root.join("fixtures/catalog/root_public.hex"))
+            .expect("root key fixture")
+            .trim()
+            .to_string();
+        let doc: serde_json::Value = serde_json::from_str(
+            &std::fs::read_to_string(repo_root.join("fixtures/catalog/signed_catalog.json"))
+                .expect("signed catalog fixture"),
+        )
+        .unwrap();
+        let mut verifier = crate::catalog_signing::CatalogVerifier::new(&root_hex).unwrap();
+        let signed = crate::catalog_signing::SignedCatalog {
+            epoch: doc["epoch"].as_u64().unwrap(),
+            published_at: doc["published_at"].as_str().unwrap().to_string(),
+            entries: harbor_canonical::parse(&doc["entries"].to_string()).unwrap(),
+            key_id: doc["key_id"].as_str().unwrap().to_string(),
+            signature: doc["signature"].as_str().unwrap().to_string(),
+        };
+        verifier.verify(&signed).unwrap();
+        assert!(verifier.accepted_epoch >= 1);
+        // All three qualified model packages are in the signed document.
+        let packages = super::parse_catalog_document(&signed.entries).unwrap();
+        let ids: Vec<&str> = packages.iter().map(|p| p.id.as_str()).collect();
+        assert!(ids.contains(&"qwen2.5-1.5b-instruct"));
+        assert!(ids.contains(&"bge-small-en-v1.5"));
+        assert!(ids.contains(&"stories260k"));
+    }
+}

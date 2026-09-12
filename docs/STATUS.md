@@ -80,6 +80,21 @@ can bind to a commit).
    `cargo test --workspace -- --ignored` (4 tests), which CI now does as a
    separate step.
 
+## Session 14 additions (key ceremony, launch verification)
+
+1. **Catalog key ceremony executed** (harbor_modelhub example
+   `key_ceremony.rs`): release root key generated (key_id
+   5cff12934466e591); the SECRET seed is stored OUTSIDE the repository at
+   ~/.harbor-keys/catalog-root.key (0600) and must move to secure/offline
+   storage before public release. The signed production catalog
+   (fixtures/catalog/signed_catalog.json, epoch 1) binds all three model
+   packages with pinned hashes (qwen2.5-1.5b-instruct, bge-small-en-v1.5,
+   stories260k test model) plus root_public.hex. A permanent test verifies
+   the COMMITTED signature against the COMMITTED root key on every run.
+2. **Launch verification**: the macOS RELEASE build
+   (harbor_app.app) was launched, confirmed running (process check), and
+   quit cleanly — instals-and-launches evidence for item 1 (macOS).
+
 ## Session 8 additions (a11y, SBOM, migration docs)
 
 1. **Accessibility audit is a permanent test gate**

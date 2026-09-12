@@ -60,6 +60,11 @@ impl CatalogSigningKey {
     pub fn public_bytes(&self) -> [u8; 32] {
         self.signing.verifying_key().to_bytes()
     }
+
+    /// The 32-byte secret seed (for secure off-repo persistence).
+    pub fn secret_bytes(&self) -> [u8; 32] {
+        self.signing.to_bytes()
+    }
 }
 
 /// A signed catalog document (entries carried as canonical JSON).
