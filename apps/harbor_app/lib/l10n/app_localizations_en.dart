@@ -160,4 +160,107 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get askEmptyBody =>
       'Answers ground in your workspace with citations and abstain when evidence is insufficient.';
+
+  @override
+  String get lensButton => 'Lens';
+
+  @override
+  String workCanvasRuleActive(int min) {
+    return 'canvas ≥ ${min}px rule active';
+  }
+
+  @override
+  String get canvasViewportEditing => 'viewport-sized editing';
+
+  @override
+  String get openFile => 'Open file';
+
+  @override
+  String sheetLabel(String name) {
+    return 'Sheet: $name';
+  }
+
+  @override
+  String get attachFilesTooltip => 'Attach files';
+
+  @override
+  String get modelDockEmpty =>
+      'No model installed — open Models to install one';
+
+  @override
+  String get modelDockCoreUnavailable =>
+      'Core unavailable — native runtime not loaded';
+
+  @override
+  String get modelsLibraryEmpty =>
+      'Curated Harbor library packages appear here.';
+
+  @override
+  String get modelsHfEmpty =>
+      'Search public repositories. Model packages are data — no repository code ever executes.';
+
+  @override
+  String get coreNotLoadedModels =>
+      'Native core not loaded; installed models are unavailable. Build core/harbor_ffi to enable this view.';
+
+  @override
+  String get modelsInstalledEmpty =>
+      'Install a model from Recommended or the Library. Fit Score shows what your device can run well.';
+
+  @override
+  String get modelsBenchmarkEmpty =>
+      'Controlled device-local benchmark workloads with model/runtime/device identity.';
+
+  @override
+  String get modelsRecommendedEmpty =>
+      'Recommendations appear once the catalog is synced. A model is recommended only when your device can run it well.';
+
+  @override
+  String get coreNotLoadedSkills =>
+      'Native core not loaded; skills are declared in the core and cannot be listed.';
+
+  @override
+  String get coreNotLoadedActivity =>
+      'Native core not loaded; durable runs live in the core store and cannot be listed.';
+
+  @override
+  String get newAgent => 'New agent';
+
+  @override
+  String get addSources => 'Add sources';
+
+  @override
+  String toolsCount(int count) {
+    return '$count tools';
+  }
+
+  @override
+  String filesSizeRuntime(int files, int mb, String runtime) {
+    return '$files files · $mb MB · runtime $runtime';
+  }
+
+  @override
+  String runStateLine(String state, int ms) {
+    return 'state: $state · $ms ms executor time';
+  }
+
+  @override
+  String scoreLine(String pct, String state) {
+    return 'score $pct% · $state';
+  }
+
+  @override
+  String get askNoEvidenceTitle => 'No supporting evidence';
+
+  @override
+  String get askNoEvidenceBody =>
+      'Nothing in the local index supports this question, so I am abstaining rather than guessing.';
+
+  @override
+  String get askKnowledgeNotOpen =>
+      'Knowledge is not open yet. Install an embedding model (Models → Installed) to ground answers locally.';
+
+  @override
+  String get askAbstentionHeading =>
+      'I could not find support for this in your Knowledge.';
 }

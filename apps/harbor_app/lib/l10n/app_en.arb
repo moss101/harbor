@@ -48,5 +48,105 @@
   "activityEmptyTitle": "No runs yet",
   "activityEmptyBody": "Durable agent runs appear here with their full Run Trail — including pause, approval and recovery states.",
   "askEmptyTitle": "Ask works on your files",
-  "askEmptyBody": "Answers ground in your workspace with citations and abstain when evidence is insufficient."
+  "askEmptyBody": "Answers ground in your workspace with citations and abstain when evidence is insufficient.",
+  "lensButton": "Lens",
+  "@lensButton": {},
+  "workCanvasRuleActive": "canvas ≥ {min}px rule active",
+  "@workCanvasRuleActive": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "canvasViewportEditing": "viewport-sized editing",
+  "@canvasViewportEditing": {},
+  "openFile": "Open file",
+  "@openFile": {},
+  "sheetLabel": "Sheet: {name}",
+  "@sheetLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "attachFilesTooltip": "Attach files",
+  "@attachFilesTooltip": {},
+  "modelDockEmpty": "No model installed — open Models to install one",
+  "@modelDockEmpty": {},
+  "modelDockCoreUnavailable": "Core unavailable — native runtime not loaded",
+  "@modelDockCoreUnavailable": {},
+  "modelsLibraryEmpty": "Curated Harbor library packages appear here.",
+  "@modelsLibraryEmpty": {},
+  "modelsHfEmpty": "Search public repositories. Model packages are data — no repository code ever executes.",
+  "@modelsHfEmpty": {},
+  "coreNotLoadedModels": "Native core not loaded; installed models are unavailable. Build core/harbor_ffi to enable this view.",
+  "@coreNotLoadedModels": {},
+  "modelsInstalledEmpty": "Install a model from Recommended or the Library. Fit Score shows what your device can run well.",
+  "@modelsInstalledEmpty": {},
+  "modelsBenchmarkEmpty": "Controlled device-local benchmark workloads with model/runtime/device identity.",
+  "@modelsBenchmarkEmpty": {},
+  "modelsRecommendedEmpty": "Recommendations appear once the catalog is synced. A model is recommended only when your device can run it well.",
+  "@modelsRecommendedEmpty": {},
+  "coreNotLoadedSkills": "Native core not loaded; skills are declared in the core and cannot be listed.",
+  "@coreNotLoadedSkills": {},
+  "coreNotLoadedActivity": "Native core not loaded; durable runs live in the core store and cannot be listed.",
+  "@coreNotLoadedActivity": {},
+  "newAgent": "New agent",
+  "@newAgent": {},
+  "addSources": "Add sources",
+  "@addSources": {},
+  "toolsCount": "{count} tools",
+  "@toolsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "filesSizeRuntime": "{files} files · {mb} MB · runtime {runtime}",
+  "@filesSizeRuntime": {
+    "placeholders": {
+      "files": {
+        "type": "int"
+      },
+      "mb": {
+        "type": "int"
+      },
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "runStateLine": "state: {state} · {ms} ms executor time",
+  "@runStateLine": {
+    "placeholders": {
+      "state": {
+        "type": "String"
+      },
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "scoreLine": "score {pct}% · {state}",
+  "@scoreLine": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "askNoEvidenceTitle": "No supporting evidence",
+  "@askNoEvidenceTitle": {},
+  "askNoEvidenceBody": "Nothing in the local index supports this question, so I am abstaining rather than guessing.",
+  "@askNoEvidenceBody": {},
+  "askKnowledgeNotOpen": "Knowledge is not open yet. Install an embedding model (Models → Installed) to ground answers locally.",
+  "@askKnowledgeNotOpen": {},
+  "askAbstentionHeading": "I could not find support for this in your Knowledge.",
+  "@askAbstentionHeading": {}
 }

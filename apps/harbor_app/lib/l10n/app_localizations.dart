@@ -391,6 +391,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Answers ground in your workspace with citations and abstain when evidence is insufficient.'**
   String get askEmptyBody;
+
+  /// No description provided for @lensButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Lens'**
+  String get lensButton;
+
+  /// No description provided for @workCanvasRuleActive.
+  ///
+  /// In en, this message translates to:
+  /// **'canvas ≥ {min}px rule active'**
+  String workCanvasRuleActive(int min);
+
+  /// No description provided for @canvasViewportEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'viewport-sized editing'**
+  String get canvasViewportEditing;
+
+  /// No description provided for @openFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Open file'**
+  String get openFile;
+
+  /// No description provided for @sheetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sheet: {name}'**
+  String sheetLabel(String name);
+
+  /// No description provided for @attachFilesTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach files'**
+  String get attachFilesTooltip;
+
+  /// No description provided for @modelDockEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No model installed — open Models to install one'**
+  String get modelDockEmpty;
+
+  /// No description provided for @modelDockCoreUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Core unavailable — native runtime not loaded'**
+  String get modelDockCoreUnavailable;
+
+  /// No description provided for @modelsLibraryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Curated Harbor library packages appear here.'**
+  String get modelsLibraryEmpty;
+
+  /// No description provided for @modelsHfEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Search public repositories. Model packages are data — no repository code ever executes.'**
+  String get modelsHfEmpty;
+
+  /// No description provided for @coreNotLoadedModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Native core not loaded; installed models are unavailable. Build core/harbor_ffi to enable this view.'**
+  String get coreNotLoadedModels;
+
+  /// No description provided for @modelsInstalledEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Install a model from Recommended or the Library. Fit Score shows what your device can run well.'**
+  String get modelsInstalledEmpty;
+
+  /// No description provided for @modelsBenchmarkEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Controlled device-local benchmark workloads with model/runtime/device identity.'**
+  String get modelsBenchmarkEmpty;
+
+  /// No description provided for @modelsRecommendedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommendations appear once the catalog is synced. A model is recommended only when your device can run it well.'**
+  String get modelsRecommendedEmpty;
+
+  /// No description provided for @coreNotLoadedSkills.
+  ///
+  /// In en, this message translates to:
+  /// **'Native core not loaded; skills are declared in the core and cannot be listed.'**
+  String get coreNotLoadedSkills;
+
+  /// No description provided for @coreNotLoadedActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Native core not loaded; durable runs live in the core store and cannot be listed.'**
+  String get coreNotLoadedActivity;
+
+  /// No description provided for @newAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'New agent'**
+  String get newAgent;
+
+  /// No description provided for @addSources.
+  ///
+  /// In en, this message translates to:
+  /// **'Add sources'**
+  String get addSources;
+
+  /// No description provided for @toolsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tools'**
+  String toolsCount(int count);
+
+  /// No description provided for @filesSizeRuntime.
+  ///
+  /// In en, this message translates to:
+  /// **'{files} files · {mb} MB · runtime {runtime}'**
+  String filesSizeRuntime(int files, int mb, String runtime);
+
+  /// No description provided for @runStateLine.
+  ///
+  /// In en, this message translates to:
+  /// **'state: {state} · {ms} ms executor time'**
+  String runStateLine(String state, int ms);
+
+  /// No description provided for @scoreLine.
+  ///
+  /// In en, this message translates to:
+  /// **'score {pct}% · {state}'**
+  String scoreLine(String pct, String state);
+
+  /// No description provided for @askNoEvidenceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No supporting evidence'**
+  String get askNoEvidenceTitle;
+
+  /// No description provided for @askNoEvidenceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing in the local index supports this question, so I am abstaining rather than guessing.'**
+  String get askNoEvidenceBody;
+
+  /// No description provided for @askKnowledgeNotOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Knowledge is not open yet. Install an embedding model (Models → Installed) to ground answers locally.'**
+  String get askKnowledgeNotOpen;
+
+  /// No description provided for @askAbstentionHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'I could not find support for this in your Knowledge.'**
+  String get askAbstentionHeading;
 }
 
 class _AppLocalizationsDelegate

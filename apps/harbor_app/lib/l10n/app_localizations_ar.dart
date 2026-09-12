@@ -160,4 +160,104 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get askEmptyBody =>
       'Answers ground in your workspace with citations and abstain when evidence is insufficient.';
+
+  @override
+  String get lensButton => 'العدسة';
+
+  @override
+  String workCanvasRuleActive(int min) {
+    return 'قاعدة عرض اللوحة $min بكسل نشطة';
+  }
+
+  @override
+  String get canvasViewportEditing => 'تحرير بحجم نافذة العرض';
+
+  @override
+  String get openFile => 'افتح ملفاً';
+
+  @override
+  String sheetLabel(String name) {
+    return 'الورقة: $name';
+  }
+
+  @override
+  String get attachFilesTooltip => 'أرفق ملفات';
+
+  @override
+  String get modelDockEmpty => 'لا يوجد نموذج مثبت — افتح النماذج للتثبيت';
+
+  @override
+  String get modelDockCoreUnavailable =>
+      'النواة غير متاحة — لم يتم تحميل بيئة التشغيل الأصلية';
+
+  @override
+  String get modelsLibraryEmpty => 'حزم مكتبة هاربر المنتقاة تظهر هنا.';
+
+  @override
+  String get modelsHfEmpty =>
+      'ابحث في المستودعات العامة. حزم النماذج بيانات فقط — لا ينفَّذ أي كود من المستودعات أبداً.';
+
+  @override
+  String get coreNotLoadedModels =>
+      'النواة الأصلية غير محملة؛ النماذج المثبتة غير متاحة. ابنِ core/harbor_ffi لتمكين هذا العرض.';
+
+  @override
+  String get modelsInstalledEmpty =>
+      'ثبّت نموذجاً من الموصى بها أو المكتبة. يُظهر مقياس الملاءمة ما يستطيع جهازك تشغيله جيداً.';
+
+  @override
+  String get modelsBenchmarkEmpty =>
+      'أحمال قياس أداء محلية مضبوطة على الجهاز مع هوية النموذج وبيئة التشغيل والجهاز.';
+
+  @override
+  String get modelsRecommendedEmpty =>
+      'تظهر التوصيات بعد مزامنة الكتالوج. لا يُوصى بنموذج إلا إذا استطاع جهازك تشغيله جيداً.';
+
+  @override
+  String get coreNotLoadedSkills =>
+      'النواة الأصلية غير محملة؛ المهارات معرّفة في النواة ولا يمكن سردها.';
+
+  @override
+  String get coreNotLoadedActivity =>
+      'النواة الأصلية غير محملة؛ المهام الدائمة مخزنة في النواة ولا يمكن سردها.';
+
+  @override
+  String get newAgent => 'وكيل جديد';
+
+  @override
+  String get addSources => 'أضف مصادر';
+
+  @override
+  String toolsCount(int count) {
+    return '$count أدوات';
+  }
+
+  @override
+  String filesSizeRuntime(int files, int mb, String runtime) {
+    return '$files ملفات · $mb ميجابايت · بيئة التشغيل $runtime';
+  }
+
+  @override
+  String runStateLine(String state, int ms) {
+    return 'الحالة: $state · $ms ملي ثانية تنفيذ';
+  }
+
+  @override
+  String scoreLine(String pct, String state) {
+    return 'النتيجة $pct% · $state';
+  }
+
+  @override
+  String get askNoEvidenceTitle => 'لا توجد أدلة كافية';
+
+  @override
+  String get askNoEvidenceBody =>
+      'لا شيء في الفهرس المحلي يدعم هذا السؤال، لذا أمتنع عن الإجابة بدلاً من التخمين.';
+
+  @override
+  String get askKnowledgeNotOpen =>
+      'المعرفة غير مفتوحة بعد. ثبّت نموذج تضمين (النماذج ← المثبتة) لتأسيس الإجابات محلياً.';
+
+  @override
+  String get askAbstentionHeading => 'لم أجد دعماً لذلك في معرفتك.';
 }

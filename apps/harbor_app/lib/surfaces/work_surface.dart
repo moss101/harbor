@@ -26,13 +26,14 @@ class WorkSurface extends StatelessWidget {
             TextButton.icon(
               onPressed: () => openHarborLens(context),
               icon: const Icon(Icons.insights_outlined, size: 16),
-              label: const Text('Lens'),
+              label: Text(l10n.lensButton),
             ),
             const Spacer(),
             Text(
               canvasMinApplies
-                  ? 'canvas ≥ ${HarborLayout.workCanvasMin.toInt()}px rule active'
-                  : 'viewport-sized editing',
+                  ? l10n.workCanvasRuleActive(
+                      HarborLayout.workCanvasMin.toInt())
+                  : l10n.canvasViewportEditing,
               style: t.text.captionOf(t.colors.inkMuted),
             ),
           ]),
@@ -46,7 +47,7 @@ class WorkSurface extends StatelessWidget {
               return HarborEmptyState(
                 title: l10n.workEmptyTitle,
                 body: l10n.workEmptyBody,
-                actionLabel: 'Open file',
+                actionLabel: l10n.openFile,
               );
             }
             if (preview['kind'] == 'workbook') {
@@ -57,7 +58,7 @@ class WorkSurface extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Sheet: ${data['sheet']}',
+                    Text(l10n.sheetLabel(data['sheet'] as String),
                         style: t.text.captionOf(t.colors.inkMuted)),
                     const SizedBox(height: HarborSpace.s2),
                     for (final c in cells)

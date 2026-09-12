@@ -53,27 +53,30 @@ class HomeSurface extends StatelessWidget {
               ),
               const SizedBox(height: HarborSpace.s8),
               Builder(builder: (context) {
+                final l10n = AppLocalizations.of(context)!;
                 final sp = HarborServiceProvider.of(context);
                 final service = sp.notifier;
                 if (sp.failed || service == null) {
-                  return const ModelDock(
-                    modelLabel: 'Core unavailable — native runtime not loaded',
+                  return ModelDock(
+                    modelLabel: l10n.modelDockCoreUnavailable,
                     runtimeLabel: 'OFFLINE',
                     semantic: ExecutionSemantic.danger,
                   );
                 }
                 final models = service.installedModels;
                 final policy = service.policy;
+                final runtimeLabel =
+                    policy.contains('LOCAL_ONLY') ? 'LOCAL ONLY' : 'LOCAL';
                 if (models.isEmpty) {
                   return ModelDock(
-                    modelLabel: 'No model installed — open Models to install one',
-                    runtimeLabel: policy.contains('LOCAL_ONLY') ? 'LOCAL ONLY' : 'LOCAL',
+                    modelLabel: l10n.modelDockEmpty,
+                    runtimeLabel: runtimeLabel,
                     semantic: ExecutionSemantic.local,
                   );
                 }
                 return ModelDock(
                   modelLabel: models.first['id'] as String,
-                  runtimeLabel: policy.contains('LOCAL_ONLY') ? 'LOCAL ONLY' : 'LOCAL',
+                  runtimeLabel: runtimeLabel,
                   semantic: ExecutionSemantic.local,
                 );
               }),
@@ -106,6 +109,7 @@ class _ComposerState extends State<Composer> {
   @override
   Widget build(BuildContext context) {
     final t = HarborTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: HarborSpace.s4, vertical: HarborSpace.s2),
       decoration: ShapeDecoration(
@@ -126,7 +130,7 @@ class _ComposerState extends State<Composer> {
           ),
         ),
         IconButton(
-          tooltip: 'Attach files',
+          tooltip: l10n.attachFilesTooltip,
           onPressed: () {},
           icon: const Icon(Icons.attach_file_outlined),
         ),
@@ -164,26 +168,23 @@ class ModelsSurface extends StatelessWidget {
             _recommendations(context),
             HarborEmptyState(
                 title: l10n.modelsLibrary,
-                body: 'Curated Harbor library packages appear here.'),
+                body: l10n.modelsLibraryEmpty),
             HarborEmptyState(
                 title: l10n.modelsHuggingFace,
-                body: 'Search public repositories. Model packages are data — '
-                    'no repository code ever executes.'),
+                body: l10n.modelsHfEmpty),
             Builder(builder: (context) {
               final sp = HarborServiceProvider.of(context);
               final service = sp.notifier;
               if (sp.failed || service == null) {
                 return HarborErrorState(
-                  message: 'Native core not loaded; installed models are '
-                      'unavailable. Build core/harbor_ffi to enable this view.',
+                  message: l10n.coreNotLoadedModels,
                 );
               }
               final models = service.installedModels;
               if (models.isEmpty) {
                 return HarborEmptyState(
                     title: l10n.modelsInstalled,
-                    body: 'Install a model from Recommended or the Library. '
-                        'Fit Score shows what your device can run well.',
+                    body: l10n.modelsInstalledEmpty,
                     actionLabel: l10n.modelsRecommended);
               }
               return ListView(
@@ -194,8 +195,11 @@ class ModelsSurface extends StatelessWidget {
                       margin: const EdgeInsets.only(bottom: HarborSpace.s2),
                       child: ListTile(
                         title: Text(m['id'] as String),
-                        subtitle: Text(
-                            '${m['files']} files · ${(m['total_bytes'] as int) ~/ (1024 * 1024)} MB · runtime ${m['runtime']}'),
+                        subtitle: Text(l10n.filesSizeRuntime(
+                          m['files'] as int,
+                          (m['total_bytes'] as int) ~/ (1024 * 1024),
+                          m['runtime'] as String,
+                        )),
                         trailing: Builder(builder: (context) {
                           final fit = service.fitScore(m['id'] as String);
                           if (fit == null) return const SizedBox.shrink();
@@ -218,8 +222,7 @@ class ModelsSurface extends StatelessWidget {
             }),
             HarborEmptyState(
                 title: l10n.modelsBenchmark,
-                body: 'Controlled device-local benchmark workloads with '
-                    'model/runtime/device identity.'),
+                body: l10n.modelsBenchmarkEmpty),
           ]),
         ),
       ]),
@@ -241,8 +244,7 @@ class ModelsSurface extends StatelessWidget {
         const SizedBox(height: HarborSpace.s4),
         HarborEmptyState(
             title: l10n.modelsRecommended,
-            body: 'Recommendations appear once the catalog is synced. '
-                'A model is recommended only when your device can run it well.'),
+            body: l10n.modelsRecommendedEmpty),
       ],
     );
   }
@@ -257,7 +259,7 @@ class AgentsSurface extends StatelessWidget {
     return HarborEmptyState(
       title: l10n.agentsEmptyTitle,
       body: l10n.agentsEmptyBody,
-      actionLabel: 'New agent',
+      actionLabel: l10n.newAgent,
     );
   }
 }
@@ -274,8 +276,7 @@ class SkillsSurface extends StatelessWidget {
       final service = sp.notifier;
       if (sp.failed || service == null) {
         return HarborErrorState(
-          message: 'Native core not loaded; skills are declared in the core '
-              'and cannot be listed.',
+          message: l10n.coreNotLoadedSkills,
         );
       }
       final skills = service.skills;
@@ -291,7 +292,7 @@ class SkillsSurface extends StatelessWidget {
                 title: Text(s.title),
                 subtitle: Text(s.description,
                     maxLines: 2, overflow: TextOverflow.ellipsis),
-                trailing: Text('${s.tools.length} tools',
+                trailing: Text(l10n.toolsCount(s.tools.length),
                     style: t.text.captionOf(t.colors.inkMuted)),
               ),
             ),
@@ -310,7 +311,7 @@ class KnowledgeSurface extends StatelessWidget {
     return HarborEmptyState(
       title: l10n.knowledgeEmptyTitle,
       body: l10n.knowledgeEmptyBody,
-      actionLabel: 'Add sources',
+      actionLabel: l10n.addSources,
     );
   }
 }
@@ -326,8 +327,7 @@ class ActivitySurface extends StatelessWidget {
       final service = sp.notifier;
       if (sp.failed || service == null) {
         return HarborErrorState(
-          message: 'Native core not loaded; durable runs live in the core '
-              'store and cannot be listed.',
+          message: l10n.coreNotLoadedActivity,
         );
       }
       final runs = service.runs;
@@ -345,8 +345,10 @@ class ActivitySurface extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: HarborSpace.s2),
               child: ListTile(
                 title: Text(r['run_id'] as String),
-                subtitle: Text('state: ${r['state']} · '
-                    '${r['active_compute_ms_total']} ms executor time'),
+                subtitle: Text(l10n.runStateLine(
+                  r['state'] as String,
+                  r['active_compute_ms_total'] as int,
+                )),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
                   final report = service.replayRun(r['run_id'] as String);

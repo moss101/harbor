@@ -188,8 +188,10 @@ void _appendLiveTests() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('run-visible-1'), findsOneWidget);
-    expect(find.textContaining('state: CREATED'), findsOneWidget);
+    // The run id appears in BOTH the Activity list and the persistent
+    // Harbor Lens (which now shows real runs, not samples).
+    expect(find.text('run-visible-1'), findsWidgets);
+    expect(find.textContaining('CREATED'), findsWidgets);
     service!.close();
   });
 }

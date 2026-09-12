@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
 import '../l10n/app_localizations.dart';
+import '../services/harbor_service.dart';
 import '../main.dart';
 
 /// The adaptive product shell (UI authority §20):
@@ -79,7 +80,8 @@ void openHarborLens(BuildContext context) {
   );
 }
 
-/// Harbor Lens: context, run and knowledge inspector.
+/// Harbor Lens: context, run and knowledge inspector. The Run Trail shows
+/// the REAL durable runs from the core — never sample data.
 class HarborLens extends StatelessWidget {
   const HarborLens({super.key});
 
@@ -87,6 +89,9 @@ class HarborLens extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = HarborTheme.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final sp = HarborServiceProvider.of(context);
+    final service = sp.notifier;
+    final runs = service?.runs ?? const [];
     return Material(
       color: t.colors.surfaceRaised,
       child: SingleChildScrollView(
@@ -97,23 +102,29 @@ class HarborLens extends StatelessWidget {
             Text(l10n.surfaceActivity, style: t.text.h2Of(t.colors.ink)),
             const SizedBox(height: HarborSpace.s3),
             TrustPulse(
-              policyLabel: l10n.trustPolicy,
+              policyLabel: service?.policy ?? l10n.trustPolicy,
               executionLabel: l10n.trustExecutionOnDevice,
               executionSemantic: ExecutionSemantic.local,
             ),
             const SizedBox(height: HarborSpace.s4),
             Text(l10n.surfaceActivity, style: t.text.captionOf(t.colors.inkMuted)),
             const SizedBox(height: HarborSpace.s2),
-            RunTrail(entries: const [
-              RunTrailEntry('Workbook recalculated (6 formulas)',
-                  icon: Icons.calculate_outlined),
-              RunTrailEntry('Values verified against expectations',
-                  icon: Icons.verified_outlined),
-              RunTrailEntry('Board deck generated from verified values',
-                  icon: Icons.slideshow_outlined),
-              RunTrailEntry('Approval required for safe save',
-                  icon: Icons.approval_outlined),
-            ]),
+            if (runs.isEmpty)
+              Text(l10n.runTrailEmpty, style: t.text.smallOf(t.colors.inkMuted))
+            else
+              RunTrail(
+                entries: [
+                  for (final r in runs)
+                    RunTrailEntry(
+                      r['run_id'] as String,
+                      detail: l10n.runStateLine(
+                        r['state'] as String,
+                        r['active_compute_ms_total'] as int,
+                      ),
+                      icon: Icons.circle_outlined,
+                    ),
+                ],
+              ),
           ],
         ),
       ),

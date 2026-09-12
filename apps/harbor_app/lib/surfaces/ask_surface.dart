@@ -50,14 +50,12 @@ class _AskSurfaceState extends State<AskSurface> {
                 title: l10n.askEmptyTitle,
                 body: knowledgeReady
                     ? l10n.askEmptyBody
-                    : 'Knowledge is not open yet. Install an embedding model '
-                        '(Models → Installed) to ground answers locally.',
+                    : l10n.askKnowledgeNotOpen,
               )
             : _result == null || (_result!['citations'] as List).isEmpty
                 ? HarborEmptyState(
-                    title: 'No supporting evidence',
-                    body: 'Nothing in the local index supports this question, '
-                        'so I am abstaining rather than guessing.',
+                    title: l10n.askNoEvidenceTitle,
+                    body: l10n.askNoEvidenceBody,
                   )
                 : ListView(
                     padding: const EdgeInsets.all(HarborSpace.s4),
@@ -75,7 +73,7 @@ class _AskSurfaceState extends State<AskSurface> {
                               leading: Icon(Icons.format_quote_outlined,
                                   color: t.colors.brand),
                               title: Text(c['title'] as String),
-                              subtitle: Text('score $scorePct% · $state'),
+                              subtitle: Text(l10n.scoreLine(scorePct, state)),
                             ),
                           );
                         }),
