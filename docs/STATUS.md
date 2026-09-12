@@ -59,6 +59,27 @@ can bind to a commit).
 4. Retry-once for 429/503 (server-side refusals; GETs are not protected
    effects) — removes CI flakiness from rate limiting.
 
+## Session 12 additions (release builds, device qualification, composer wiring)
+
+1. **Qualified reference device bound**: real manifest
+   fixtures/qualification/reference_device_macos_arm64.json
+   (MacBook Pro Mac17,8 / Apple M5 Pro / 24GB / macOS 26.5.1, Metal 4)
+   documenting the M1 + inference evidence that ran on THIS hardware;
+   `qualified_device_manifest_sha256` = 42f662ae… now bound in
+   26_Qualification_Profiles.json (M1/M2 dev qualification).
+2. **Release-mode builds**: macOS release harbor_app.app (42.9MB, ad-hoc
+   signed) and Android app-release.apk (50.2MB, debug-key signed —
+   STORE SIGNING still requires real credentials). Reproducible release
+   compilation proven; store distribution remains BLOCKED.
+3. **Home composer drives the runtime**: submit creates a durable run and
+   logs the request as its first step under lease authority
+   (FFI `run.log_request`); the run appears in Activity/Lens. Widget test
+   included (19/19 app tests).
+4. **Test tiers split**: `cargo test --workspace` is fully offline
+   (152 tests); real-network tests are `#[ignore]`-marked and run via
+   `cargo test --workspace -- --ignored` (4 tests), which CI now does as a
+   separate step.
+
 ## Session 8 additions (a11y, SBOM, migration docs)
 
 1. **Accessibility audit is a permanent test gate**

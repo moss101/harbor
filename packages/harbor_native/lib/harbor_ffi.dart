@@ -186,6 +186,9 @@ class HarborCoreClient {
         'max_tokens': maxTokens,
       });
 
+  Map<String, dynamic> logRunRequest(String runId, String text) =>
+      call('run.log_request', {'run_id': runId, 'text': text});
+
   List<SkillSummary> listSkills() {
     final r = call('skills.list');
     return (r['skills'] as List)

@@ -1,0 +1,36 @@
+{
+  "schema": "harbor.device_manifest/v1",
+  "role": "M1_LOCAL_REFERENCE",
+  "generated_at": "2026-09-12T00:00:00Z",
+  "device": {
+    "platform": "macOS",
+    "architecture": "arm64",
+    "model_name": "MacBook Pro",
+    "model_identifier": "Mac17,8",
+    "chip": "Apple M5 Pro",
+    "cores": {"total": 18, "performance": 12, "efficiency": 6},
+    "memory_gb": 24,
+    "gpu": {"chipset": "Apple M5 Pro", "metal": "Metal 4"},
+    "os": {"name": "macOS", "version": "26.5.1", "build": "25F80"}
+  },
+  "qualification_evidence": [
+    {
+      "gate": "M1 local reference workflow",
+      "command": "cargo test -p harbor_integration --test m1_reference_vertical",
+      "result": "PASS",
+      "notes": "workbook recalc via pinned engine, verified deck generation, diff, approval receipt, safe save with base revalidation, kill/restart/replay with encrypted blob restore; offline"
+    },
+    {
+      "gate": "M1 inference on-device",
+      "command": "cargo test -p harbor_inference --features gguf-backend --test gguf_provider",
+      "result": "PASS",
+      "notes": "stories260K + bge-small-en-v1.5 loaded from staged installs; greedy generation deterministic; mean-pool embeddings; Metal acceleration observed"
+    }
+  ],
+  "binds": {
+    "formula_engine": "crates.io/formualizer@0.9.3",
+    "runtime": "llama.cpp/llama-cpp-sys-2@0.1.156",
+    "test_model_stories260K_sha256": "270cba1bd5109f42d03350f60406024560464db173c0e387d91f0426d3bd256d",
+    "embedding_model_bge_small_sha256": "f046db1dc724cf4f6f0a0c5917e922823b73eb1d27b8f9a9c2797f7866974804"
+  }
+}

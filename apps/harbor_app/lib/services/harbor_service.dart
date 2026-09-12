@@ -66,6 +66,20 @@ class HarborService extends ChangeNotifier {
     }
   }
 
+  /// Full Home-composer flow: create the durable run and log the user's
+  /// request as its first step. Returns the run id or null on failure.
+  String? submitRequest(String text) {
+    try {
+      final runId =
+          'run-\${DateTime.now().millisecondsSinceEpoch.toRadixString(36)}';
+      _client.createRun(runId);
+      _client.logRunRequest(runId, text);
+      return runId;
+    } on ffi.HarborCoreException {
+      return null;
+    }
+  }
+
   Map<String, dynamic>? replayRun(String runId) {
     try {
       return _client.replayRun(runId);

@@ -304,6 +304,7 @@ mod tests {
     /// through the broker (including the CDN redirect hop) and confirm the
     /// installed bytes match the recorded fixture hash.
     #[test]
+    #[ignore = "requires network"]
     fn acquire_real_model_through_broker_end_to_end() {
         let _guard = HF_NETWORK_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         let dir = TempDir::new().unwrap();
@@ -376,6 +377,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires network"]
     fn no_cdn_session_blocks_the_download() {
         let _guard = HF_NETWORK_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         let dir = TempDir::new().unwrap();
@@ -608,6 +610,7 @@ mod signed_tests {
     }
 
     #[test]
+    #[ignore = "requires network"]
     fn signed_catalog_acquisition_verifies_against_pinned_hash() {
         let _guard = HF_NETWORK_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         let dir = TempDir::new().unwrap();
@@ -644,6 +647,7 @@ mod signed_tests {
     }
 
     #[test]
+    #[ignore = "requires network"]
     fn signed_catalog_with_wrong_pinned_hash_blocks_install() {
         let _guard = HF_NETWORK_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         let dir = TempDir::new().unwrap();

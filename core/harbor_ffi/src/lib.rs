@@ -510,6 +510,47 @@ fn dispatch(ws: &mut WorkspaceHandle, method: &str, args: &serde_json::Value) ->
                 "languages": langs,
             }))
         }
+        // Log the user's request as the first step of a run (Home composer).
+        "run.log_request" => {
+            let run_id = args.get("run_id").and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing run_id".into()))?;
+            let text = args.get("text").and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing text".into()))?;
+            let mut mgr = LeaseManager::open(ws.data_root.join("db").join("agent.db"))?;
+            let lease = mgr.acquire(run_id, "ffi-executor", chrono::Duration::minutes(10), harbor_core::Workspace::now())?;
+            let stream = ws.inner.agent_log.load_stream(run_id)?;
+            let head = stream.last().ok_or_else(|| HarborError::Other("run missing".into()))?;
+            let head_hash = head.hash().map_err(|e| HarborError::Other(format!("hash: {e}")))?;
+            let counters = head.counters;
+            let now = harbor_core::Workspace::now()
+                .to_rfc3339_opts(chrono::SecondsFormat::Micros, true)
+                .parse::<chrono::DateTime<chrono::Utc>>()
+                .map_err(|e| HarborError::Other(format!("time: {e}")))?
+                .into();
+            let event = RunEvent {
+                run_id: run_id.to_string(),
+                event_id: format!("evt-{}", harbor_canonical::sha256_hex(format!("{run_id}-req-{}", chrono::Utc::now()).as_bytes()).get(..16).unwrap_or("evt")),
+                seq: stream.len() as u64,
+                event_type: EventType::RunStepStarted,
+                replay_semantics: ReplaySemantics::StateAffecting,
+                actor: Actor::User,
+                lease_generation: lease.generation,
+                counters: Counters {
+                    active_compute_ms_total: counters.active_compute_ms_total,
+                    step_count_total: counters.step_count_total + 1,
+                    tool_count_total: counters.tool_count_total,
+                    context_tokens_total: counters.context_tokens_total,
+                },
+                payload: EventPayload::StepStarted {
+                    step_id: format!("step-{}", counters.step_count_total + 1),
+                    description: text.to_string(),
+                },
+                created_at: now,
+                prev_event_hash: Some(head_hash),
+            };
+            ws.inner.agent_log.append(event, lease.generation, None)?;
+            Ok(serde_json::json!({ "logged": true }))
+        }
         // --- hub auth (M4: gated/private repos) ---------------------------
         "hub.set_token" => {
             let token = args.get("token").and_then(|v| v.as_str())

@@ -72,6 +72,7 @@ void main() {
   _appendSkillsTest();
   _appendKnowledgeTest();
   _appendRagTest();
+  _appendComposerTest();
   testWidgets('home shows work-first headline and quick actions',
       (tester) async {
     await pumpApp(tester);
@@ -383,5 +384,26 @@ void _appendRagTest() {
     // Citations were retrieved and surfaced with the answer.
     expect((answer!['used_citations'] as bool), isTrue);
     service!.close();
+  });
+}
+
+void _appendComposerTest() {
+  testWidgets('home composer creates a durable run through the core',
+      (tester) async {
+    if (!coreAvailable) return;
+    await pumpApp(tester);
+    await tester.enterText(
+        find.byType(TextField).first, 'summarize the board pack');
+    await tester.pump();
+    // The send action is the labeled FilledButton in the composer.
+    await tester.tap(find.text('Send'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    // The submitted request became a durable run visible in Activity.
+    await tester.tap(find.text('Activity').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.textContaining('run-'), findsWidgets);
   });
 }

@@ -37,7 +37,16 @@ class HomeSurface extends StatelessWidget {
             children: [
               Text(l10n.homeHeadline, style: t.text.titleOf(t.colors.ink)),
               const SizedBox(height: HarborSpace.s4),
-              Composer(hint: l10n.homeComposerHint),
+              Composer(
+                hint: l10n.homeComposerHint,
+                onSubmit: (text) {
+                  final sp = HarborServiceProvider.of(context);
+                  final service = sp.notifier;
+                  if (service == null) return;
+                  final runId = service.submitRequest(text);
+                  if (runId != null) service.refresh();
+                },
+              ),
               const SizedBox(height: HarborSpace.s6),
               Wrap(
                 spacing: HarborSpace.s2,
@@ -90,8 +99,10 @@ class HomeSurface extends StatelessWidget {
 
 /// The composer accepts text plus file/context attachments.
 class Composer extends StatefulWidget {
-  const Composer({super.key, required this.hint});
+  const Composer({super.key, required this.hint, this.onSubmit});
   final String hint;
+  /// Called with the submitted text (Home wires this to the runtime).
+  final ValueChanged<String>? onSubmit;
 
   @override
   State<Composer> createState() => _ComposerState();
@@ -99,6 +110,12 @@ class Composer extends StatefulWidget {
 
 class _ComposerState extends State<Composer> {
   final _controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(() => setState(() {}));
+  }
 
   @override
   void dispose() {
@@ -136,7 +153,13 @@ class _ComposerState extends State<Composer> {
         ),
         const SizedBox(width: HarborSpace.s2),
         FilledButton.icon(
-          onPressed: _controller.text.isEmpty ? null : () {},
+          onPressed: _controller.text.isEmpty
+              ? null
+              : () {
+                  widget.onSubmit?.call(_controller.text);
+                  _controller.clear();
+                  setState(() {});
+                },
           icon: const Icon(Icons.arrow_forward),
           label: Text(l10n.sendAction),
         ),

@@ -38,7 +38,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with: { workspaces: core }
-      - name: Test all crates
+      - name: Test all crates (offline)
         run: cargo test --workspace
+      - name: Network-dependent tests (real HF acquisition)
+        run: cargo test --workspace -- --ignored
+        continue-on-error: false
       - name: Formula qualification report
         run: cargo test -p harbor_formula full_qualification -- --nocapture
