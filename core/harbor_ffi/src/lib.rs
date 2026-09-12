@@ -466,8 +466,17 @@ fn dispatch(ws: &mut WorkspaceHandle, method: &str, args: &serde_json::Value) ->
                     s
                 })
                 .unwrap_or_default();
-            let is_deck = content_types.contains("presentationml");
             drop(archive);
+            // DOCX: paragraph preview with styles.
+            if content_types.contains("wordprocessingml") {
+                let p = harbor_render::DocxPreview::from_docx(&bytes)
+                    .map_err(|e| HarborError::Other(e.to_string()))?;
+                return Ok(serde_json::json!({
+                    "kind": "docx",
+                    "preview": serde_json::to_value(&p).map_err(|e| HarborError::Other(e.to_string()))?,
+                }));
+            }
+            let is_deck = content_types.contains("presentationml");
             if is_deck {
                 let p = harbor_render::DeckPreview::from_pptx(&bytes)
                     .map_err(|e| HarborError::Other(e.to_string()))?;

@@ -25,6 +25,6 @@ pub use commit::{
     CommitJournal, CommitMode, CommitOutcome, SafeCommitError, SafeCommitter,
 };
 pub use diff::{ArtifactDiff, DiffEntry};
-pub use docx::{DocxDocument, DocxOp};
+pub use docx::{DocxDocument, DocxError, DocxOp};
 pub use pptx::{ChartKind, ChartSpec, PptxDeck, PptxError, PptxOp, SlideContent};
 pub use workbook::{SheetData, WorkbookDoc, WorkbookOp};

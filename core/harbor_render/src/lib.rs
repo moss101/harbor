@@ -9,4 +9,4 @@ pub mod pdf;
 pub mod preview;
 
 pub use pdf::{PdfError, PdfPage, PdfPreview};
-pub use preview::{DeckPreview, SlidePreview, WorkbookPreview};
+pub use preview::{DeckPreview, DocxParagraphPreview, DocxPreview, SlidePreview, WorkbookPreview};

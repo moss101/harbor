@@ -36,5 +36,14 @@ void main() {
     // Typed errors surface through the envelope.
     expect(() => client.runState('missing-run'),
         throwsA(isA<HarborCoreException>()));
+
+    // DOCX preview through the boundary (real fixture bytes).
+    final docx = File(
+            '/Users/mohsin/projects/harbor/fixtures/office/structured.docx')
+        .readAsBytesSync();
+    final preview = client.previewArtifact(docx);
+    expect(preview['kind'], 'docx');
+    final paras = (preview['preview']['paragraphs'] as List).cast<Map>();
+    expect(paras.first['text'], contains('Harbor Plan'));
   });
 }

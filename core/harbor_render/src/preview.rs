@@ -2,6 +2,7 @@
 
 use serde::Serialize;
 
+use harbor_artifacts::docx::DocxDocument;
 use harbor_artifacts::workbook::WorkbookDoc;
 use harbor_artifacts::PptxDeck;
 
@@ -9,6 +10,8 @@ use harbor_artifacts::PptxDeck;
 pub enum PreviewError {
     #[error("workbook: {0}")]
     Workbook(#[from] harbor_artifacts::workbook::WorkbookError),
+    #[error("docx: {0}")]
+    Docx(#[from] harbor_artifacts::DocxError),
     #[error("pptx: {0}")]
     Pptx(#[from] harbor_artifacts::PptxError),
 }
@@ -37,6 +40,40 @@ pub struct SlidePreview {
     pub index: usize,
     pub title: String,
     pub bullets: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct DocxPreview {
+    pub kind: String,
+    /// Non-rendered parts preserved verbatim (compatibility report).
+    pub preserved_parts: Vec<String>,
+    pub paragraphs: Vec<DocxParagraphPreview>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct DocxParagraphPreview {
+    pub index: u32,
+    pub style: Option<String>,
+    pub text: String,
+}
+
+impl DocxPreview {
+    pub fn from_docx(bytes: &[u8]) -> Result<Self, PreviewError> {
+        let doc = DocxDocument::load(bytes)?;
+        Ok(DocxPreview {
+            kind: "docx".into(),
+            preserved_parts: doc.preserved_parts.clone(),
+            paragraphs: doc
+                .paragraphs
+                .iter()
+                .map(|p| DocxParagraphPreview {
+                    index: p.index,
+                    style: p.style.clone(),
+                    text: p.text.clone(),
+                })
+                .collect(),
+        })
+    }
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]

@@ -53,6 +53,42 @@ class WorkSurface extends StatelessWidget {
                 actionLabel: l10n.openFile,
               );
             }
+            if (preview['kind'] == 'docx') {
+              final data = preview['preview'] as Map;
+              final paras = (data['paragraphs'] as List).cast<Map>();
+              return ListView(
+                padding: const EdgeInsets.all(HarborSpace.s4),
+                children: [
+                  for (final p in paras)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: HarborSpace.s2),
+                      child: Text(
+                        p['style'] != null
+                            ? '[${p['style']}] ${p['text']}'
+                            : '${p['text']}',
+                        style: t.text.smallOf(t.colors.ink),
+                      ),
+                    ),
+                ],
+              );
+            }
+            if (preview['kind'] == 'pdf') {
+              final data = preview['preview'] as Map;
+              final pages = (data['pages'] as List).cast<Map>();
+              return ListView(
+                padding: const EdgeInsets.all(HarborSpace.s4),
+                children: [
+                  for (final pg in pages)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: HarborSpace.s2),
+                      child: Text(
+                        'p${pg['index']}: ${pg['text']}',
+                        style: t.text.monoOf(t.colors.ink, size: 12),
+                      ),
+                    ),
+                ],
+              );
+            }
             if (preview['kind'] == 'workbook') {
               final data = preview['preview'] as Map;
               final cells = (data['cells'] as List).cast<Map>();
