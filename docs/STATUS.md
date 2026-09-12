@@ -196,6 +196,18 @@ re-enrollment -> bundle download -> fresh uploads on the new epoch.
   proves targeted-cell edit leaves merged header and all other cells
   untouched. (harbor_artifacts 20 tests.)
 
+## Session 23 additions (XLSX charts conformance, M2 row 14)
+
+- WorkbookDoc::add_bar_chart: bar/column basic-series chart creation via
+  the umya backend (matrix row 14, REQUIRED_UNQUALIFIED -> machinery in
+  place); WorkbookPreview now reports embedded chart counts
+- Conformance test: chart-bearing workbook survives Harbor's full
+  load/edit/recalc/save pipeline with the chart part intact and data
+  cells unchanged
+- DocxOp::TableCellSet: merge-aware table-cell typed edit (row 23 of the
+  conformance suite); formatted-run replacement (same-length distribution)
+- Verified: 178 Rust tests; dossier PASS
+
 ## Session 16 additions (PDF extraction, iOS launch evidence)
 
 1. **PDF text extraction with page mapping** (harbor_render::pdf +

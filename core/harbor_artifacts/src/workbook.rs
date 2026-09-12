@@ -61,6 +61,8 @@ pub struct WorkbookDoc {
 pub enum WorkbookError {
     #[error("xlsx load failed: {0}")]
     Load(String),
+    #[error("zip: {0}")]
+    BadZip(String),
     #[error("sheet not found: {0}")]
     SheetNotFound(String),
     #[error("cell ref invalid: {0}")]
@@ -284,6 +286,55 @@ impl WorkbookDoc {
         }
         self.refresh_snapshot()?;
         Ok(out)
+    }
+
+    /// Add a basic bar/column chart over `series` ranges anchored at
+    /// `from`..`to` on `sheet` (matrix row 14: bar/column basic series).
+    pub fn add_bar_chart(
+        &mut self,
+        sheet: &str,
+        from: &str,
+        to: &str,
+        series: Vec<String>,
+        title: &str,
+    ) -> Result<(), WorkbookError> {
+        let idx = self
+            .book
+            .get_sheet_collection()
+            .iter()
+            .position(|s| s.get_name() == sheet)
+            .ok_or_else(|| WorkbookError::SheetNotFound(sheet.into()))?;
+        let s = self.book.get_sheet_mut(&idx).map_err(|e| WorkbookError::Load(e.to_string()))?;
+        use umya_spreadsheet::structs::{Chart, ChartType};
+        use umya_spreadsheet::structs::drawing::spreadsheet::MarkerType;
+        let mut from_marker = MarkerType::default();
+        from_marker.set_coordinate(from);
+        let mut to_marker = MarkerType::default();
+        to_marker.set_coordinate(to);
+        let series_refs: Vec<&str> = series.iter().map(|x| x.as_str()).collect();
+        let mut chart = Chart::default();
+        chart.new_chart(&ChartType::BarChart, from_marker, to_marker, series_refs);
+        chart.set_title(title);
+        s.add_chart(chart);
+        Ok(())
+    }
+
+    /// Count chart parts in raw xlsx bytes (round-trip conformance check).
+    pub fn count_charts_in_bytes(bytes: &[u8]) -> Result<usize, WorkbookError> {
+        let mut ar =
+            zip::ZipArchive::new(Cursor::new(bytes)).map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+        let mut count = 0usize;
+        for i in 0..ar.len() {
+            let name = ar
+                .by_index(i)
+                .map_err(|e| WorkbookError::BadZip(e.to_string()))?
+                .name()
+                .to_string();
+            if name.starts_with("xl/charts/chart") {
+                count += 1;
+            }
+        }
+        Ok(count)
     }
 
     fn refresh_snapshot(&mut self) -> Result<(), WorkbookError> {

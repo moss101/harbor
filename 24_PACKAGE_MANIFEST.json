@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "37817b10adf2ea6077b387762d3d289603f193307620efddee48eb5b3bd290cf",
+  "input_manifest_sha256": "9fa5779e146ef65dfde5b9afb613c72740471d23d7f70a6cd855edeb909c515d",
   "file_count_excluding_manifest": 348,
   "files": [
     {
@@ -104,13 +104,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 65619,
-      "sha256": "e3db7e91c9f1615c9dbf69ab33d460a16ceb31c2e9b5978ca095958585581622"
+      "bytes": 65620,
+      "sha256": "6e1a77806f9de8f960e4156a627e305535502412e2b573be53691df0b0f9d9b6"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "342dd9fb1f7ea1d33a29aa864911dc8bd5f194fcc494a556ca8f56d2ea0b5e97"
+      "sha256": "5b7d6a481a8ebc94d28f130ec5f3aca268bc9fd8038c5c14961e7b6572ffa3ad"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -1024,13 +1024,13 @@
     },
     {
       "path": "core/harbor_artifacts/src/workbook.rs",
-      "bytes": 15415,
-      "sha256": "b9c5654c604e5accf1a975392dc723130ecf14d98d891c8f53c7a8fbf176739d"
+      "bytes": 17369,
+      "sha256": "0a85b214ea7bc97179af644b9fa4bd220b683b2c32cdb37d8f162f35ee5e85a3"
     },
     {
       "path": "core/harbor_artifacts/tests/office_conformance.rs",
-      "bytes": 9259,
-      "sha256": "a4f5e32489b16ec6e664005130e7c8ab850aee6b5b7d4b0bf639ecfeb779d27f"
+      "bytes": 11789,
+      "sha256": "10ed942978932189bf31074e3a4c5b17f0c9f06ac550fc33d9b39a00e592fe1b"
     },
     {
       "path": "core/harbor_canonical/Cargo.toml",
@@ -1319,8 +1319,8 @@
     },
     {
       "path": "core/harbor_render/src/preview.rs",
-      "bytes": 4425,
-      "sha256": "214c34ae88916a0331fe9c739d3e34fe51fed899670f67feb92c4d11eed150b1"
+      "bytes": 4624,
+      "sha256": "543a50ebd4b7cf87b94373da89a80dfe566eb73a1f3ec2080e5463732dceef97"
     },
     {
       "path": "core/harbor_security/Cargo.toml",
@@ -1449,8 +1449,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 18964,
-      "sha256": "15c6bad109e8fda11be2d75d1101c83c5a2ec4e70c214c1d0d33cdb14ee3e409"
+      "bytes": 19452,
+      "sha256": "60a3794003dfbeae2eebdbeb61b0874764e5aece5e06f8de133f8df32a3f1a71"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",

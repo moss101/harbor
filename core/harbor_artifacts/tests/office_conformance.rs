@@ -232,3 +232,62 @@ fn docx_table_cell_set_edit_roundtrip() {
     // The merged header cell was NOT treated as a body cell.
     assert_eq!(reloaded.paragraphs[3].text, "Merged header");
 }
+
+#[test]
+fn xlsx_chart_roundtrip_preserved_through_harbor_pipeline() {
+    // Matrix row 14: bar/column basic series. Chart creation via the
+    // Harbor workbook API, then preservation proof through the full
+    // load/edit/recalc/save pipeline.
+    let mut wb = umya_spreadsheet::new_file();
+    let sheet = wb.get_sheet_mut(&0).unwrap();
+    // Data: category labels + two value columns.
+    sheet.get_cell_mut((1, 1)).set_value("Region");
+    sheet.get_cell_mut((1, 2)).set_value("Q1");
+    sheet.get_cell_mut((1, 3)).set_value("Q2");
+    let rows = [("North", 1200.0, 1350.0), ("South", 800.0, 950.0)];
+    for (i, (region, q1, q2)) in rows.iter().enumerate() {
+        let r = (i + 2) as u32;
+        sheet.get_cell_mut((1, r)).set_value(*region);
+        sheet.get_cell_mut((2, r)).set_value(q1.to_string());
+        sheet.get_cell_mut((3, r)).set_value(q2.to_string());
+    }
+    let series = vec![
+        "Sheet1!$B$1:$B$3".to_string(),
+        "Sheet1!$C$1:$C$3".to_string(),
+    ];
+    let chart = umya_spreadsheet::structs::Chart::default();
+    let mut chart = chart;
+    let mut from = umya_spreadsheet::structs::drawing::spreadsheet::MarkerType::default();
+    from.set_coordinate("F2");
+    let mut to = umya_spreadsheet::structs::drawing::spreadsheet::MarkerType::default();
+    to.set_coordinate("N16");
+    chart.new_chart(&umya_spreadsheet::structs::ChartType::BarChart, from, to, series.iter().map(|s| s.as_str()).collect::<Vec<_>>());
+    sheet.add_chart(chart);
+
+    let mut buf = std::io::BufWriter::new(Cursor::new(Vec::new()));
+    umya_spreadsheet::writer::xlsx::write_writer(&wb, &mut buf).unwrap();
+    let bytes = buf.into_inner().unwrap().into_inner();
+    assert_eq!(
+        harbor_artifacts::WorkbookDoc::count_charts_in_bytes(&bytes).unwrap(),
+        1,
+        "source workbook must carry exactly one chart"
+    );
+
+    // Harbor pipeline: load, recalc everything, save.
+    let mut doc = harbor_artifacts::WorkbookDoc::load(&bytes).unwrap();
+    doc.recalculate_all().unwrap();
+    let out = doc.to_bytes().unwrap();
+
+    // Chart part survives the full pipeline.
+    assert_eq!(
+        harbor_artifacts::WorkbookDoc::count_charts_in_bytes(&out).unwrap(),
+        1,
+        "chart must survive load/edit/recalc/save"
+    );
+    // Data cells intact.
+    let reloaded = harbor_artifacts::WorkbookDoc::load(&out).unwrap();
+    assert_eq!(
+        reloaded.sheet("Sheet1").unwrap().cells.get(&(2, 2)).unwrap().cached,
+        Some(harbor_formula::value::CellValue::Number(1200.0))
+    );
+}

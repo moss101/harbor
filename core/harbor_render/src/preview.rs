@@ -28,6 +28,8 @@ pub struct WorkbookPreview {
     pub sheet: String,
     pub sheets: Vec<String>,
     pub cells: Vec<PreviewCell>,
+    /// Number of embedded charts (round-trip conformance signal).
+    pub chart_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -61,11 +63,13 @@ impl WorkbookPreview {
             });
         }
         cells.sort_by_key(|c| (c.row, c.col));
+        let chart_count = WorkbookDoc::count_charts_in_bytes(bytes)? as usize;
         Ok(WorkbookPreview {
             kind: "workbook".into(),
             sheet: first,
             sheets,
             cells,
+            chart_count,
         })
     }
 }

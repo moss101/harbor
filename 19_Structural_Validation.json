@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "37817b10adf2ea6077b387762d3d289603f193307620efddee48eb5b3bd290cf",
+  "input_manifest_sha256": "9fa5779e146ef65dfde5b9afb613c72740471d23d7f70a6cd855edeb909c515d",
   "input_files": [
     {
       "path": "00_README.md",
@@ -1006,13 +1006,13 @@
     },
     {
       "path": "core/harbor_artifacts/src/workbook.rs",
-      "bytes": 15415,
-      "sha256": "b9c5654c604e5accf1a975392dc723130ecf14d98d891c8f53c7a8fbf176739d"
+      "bytes": 17369,
+      "sha256": "0a85b214ea7bc97179af644b9fa4bd220b683b2c32cdb37d8f162f35ee5e85a3"
     },
     {
       "path": "core/harbor_artifacts/tests/office_conformance.rs",
-      "bytes": 9259,
-      "sha256": "a4f5e32489b16ec6e664005130e7c8ab850aee6b5b7d4b0bf639ecfeb779d27f"
+      "bytes": 11789,
+      "sha256": "10ed942978932189bf31074e3a4c5b17f0c9f06ac550fc33d9b39a00e592fe1b"
     },
     {
       "path": "core/harbor_canonical/Cargo.toml",
@@ -1301,8 +1301,8 @@
     },
     {
       "path": "core/harbor_render/src/preview.rs",
-      "bytes": 4425,
-      "sha256": "214c34ae88916a0331fe9c739d3e34fe51fed899670f67feb92c4d11eed150b1"
+      "bytes": 4624,
+      "sha256": "543a50ebd4b7cf87b94373da89a80dfe566eb73a1f3ec2080e5463732dceef97"
     },
     {
       "path": "core/harbor_security/Cargo.toml",
@@ -1431,8 +1431,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 18964,
-      "sha256": "15c6bad109e8fda11be2d75d1101c83c5a2ec4e70c214c1d0d33cdb14ee3e409"
+      "bytes": 19452,
+      "sha256": "60a3794003dfbeae2eebdbeb61b0874764e5aece5e06f8de133f8df32a3f1a71"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
