@@ -122,6 +122,17 @@ GA still requires freezing approved thresholds and minimum-device runs.
 - Device horizon 90 days; tombstone retention 120 days (authority consts).
 Sync remains DISABLED by default; activation requires ACC-057 (M4 gate).
 
+## Session 18 additions (Office-matrix conformance deepening)
+
+- New conformance suite (harbor_artifacts/tests/office_conformance.rs)
+  covering matrix rows: DOCX headings (pStyle) + numbered-list membership
+  (numPr) + tables with horizontal merge (gridSpan) — all read in document
+  order, and typed edits preserve the remainder of the document; XLSX
+  merged cells (A1:B1) survive Harbor's load/edit/recalc/save round-trip
+  with the recalculated formula cache persisted. (Matrix rows 2-4, 11,
+  23; SUPPORTED_GA.)
+- 168 Rust tests green; dossier PASS.
+
 ## Session 14 additions (key ceremony, launch verification)
 
 1. **Catalog key ceremony executed** (harbor_modelhub example
