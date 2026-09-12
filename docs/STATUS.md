@@ -148,6 +148,21 @@ Sync remains DISABLED by default; activation requires ACC-057 (M4 gate).
    (harbor_app.app) was launched, confirmed running (process check), and
    quit cleanly — instals-and-launches evidence for item 1 (macOS).
 
+## Session 19 additions (sync snapshots + device expiry)
+
+Completes the "Offline and restore" section of 11_Sync_Protocol.md in
+harbor_sync/src/snapshot.rs:
+- Group-clock expiry: devices past the 90-day horizon are expired and the
+  epoch advances (revocation rules); a device cannot extend its own
+  horizon with an untrusted local clock
+- Signed snapshots (`harbor.sync_snapshot/v1`): Ed25519 signature binding
+  group, epoch, deletion watermark and issue time; tamper detected
+- Restore validation: snapshots older than the live epoch are rejected
+  (never roll backward); wrong-group snapshots rejected
+- Tests: horizon expiry advances epoch + blocks uploads from the expired
+  device while compliant devices continue on the new epoch; signature +
+  tamper + stale-restore negatives
+
 ## Session 16 additions (PDF extraction, iOS launch evidence)
 
 1. **PDF text extraction with page mapping** (harbor_render::pdf +
