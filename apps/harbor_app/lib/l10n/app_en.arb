@@ -151,5 +151,6 @@
   "@askAbstentionHeading": {},
   "sendAction": "Send",
   "lensOpenTooltip": "Open the Harbor Lens inspector",
-  "askSearchTooltip": "Search Knowledge"
+  "askSearchTooltip": "Search Knowledge",
+  "statusInstalled": "INSTALLED"
 }

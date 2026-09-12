@@ -19,6 +19,26 @@ can bind to a commit).
 | SBOM | `python3 tools/generate_sbom.py --write` | CycloneDX 1.5, 375 components |
 | Platform builds (last run) | flutter build macos / ios --simulator / apk --debug | all produced |
 
+## Session 9 additions (in-app acquisition through the Egress Broker)
+
+1. **Real HTTPS transport** (`harbor_net::transport::UreqTransport`, ureq +
+   rustls, redirects DISABLED): every hop returns to the broker for
+   re-authorization — the transport can never bypass policy.
+2. **HfAcquirer** (`harbor_modelhub::acquire`): brokered multi-origin
+   download (huggingface.co + CDN origins incl. the new Xet storage
+   us.aws.cdn.hf.co / cas-bridge.xethub.hf.co), explicit weight-transfer
+   sessions per origin, hash verification per file, staged install commit.
+   Without a CDN session the download is refused (logged redirect_blocked).
+3. **FFI**: `models.search_hf` (acquisition metadata only),
+   `models.acquire_hf` (brokered download + staged install; first-download
+   hash becomes the recorded package identity). Dart client + Models →
+   Hugging Face tab wired (search → install flow).
+4. **Real-network test**: acquires stories260K through the broker across
+   the CDN redirect chain; installed bytes hash-match the fixture
+   (270cba1b…); audit log shows dispatched + completed entries.
+5. Status check added: non-2xx responses are errors, never silently
+   hashed (found via a rate-limit response during testing).
+
 ## Session 8 additions (a11y, SBOM, migration docs)
 
 1. **Accessibility audit is a permanent test gate**

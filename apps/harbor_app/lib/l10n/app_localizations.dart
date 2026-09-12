@@ -565,6 +565,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search Knowledge'**
   String get askSearchTooltip;
+
+  /// No description provided for @statusInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'INSTALLED'**
+  String get statusInstalled;
 }
 
 class _AppLocalizationsDelegate

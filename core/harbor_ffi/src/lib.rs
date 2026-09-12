@@ -25,6 +25,8 @@ pub struct WorkspaceHandle {
     knowledge: Option<crate::knowledge::KnowledgeService>,
     /// Chat provider over installed GGUF models (created on demand).
     chat: Option<crate::knowledge::ChatHandle>,
+    /// Shared HTTPS transport for brokered acquisition.
+    transport: harbor_net::transport::UreqTransport,
 }
 
 fn str_from_ptr<'a>(p: *const c_char) -> Result<&'a str, HarborError> {
@@ -62,6 +64,7 @@ pub extern "C" fn harbor_core_open(
             data_root: opts.data_root,
             knowledge: None,
             chat: None,
+            transport: harbor_net::transport::UreqTransport::new(),
         })
     })();
     match result {
@@ -385,6 +388,64 @@ fn dispatch(ws: &mut WorkspaceHandle, method: &str, args: &serde_json::Value) ->
                 "corpus_sha256": hash,
                 "languages": langs,
             }))
+        }
+        // --- acquisition -------------------------------------------------
+        "models.search_hf" => {
+            let query = args.get("query").and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing query".into()))?;
+            let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(8) as usize;
+            let session = ws.inner.broker.open_session(
+                harbor_net::broker::EgressClass::AcquisitionMetadata,
+                "https://huggingface.co",
+                harbor_core::Workspace::acquisition_session_ttl(),
+                ws.inner.privacy_mode,
+            ).map_err(|e| HarborError::Other(e.to_string()))?;
+            let discovery = harbor_modelhub::hf::HfDiscovery::new(
+                &ws.inner.broker, &ws.transport);
+            let models = discovery
+                .search(&session, query, limit.min(20))
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            Ok(serde_json::to_value(&models).map_err(|e| HarborError::Other(e.to_string()))?)
+        }
+        "models.acquire_hf" => {
+            let package_id = args.get("package_id").and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing package_id".into()))?;
+            let repo_id = args.get("repo_id").and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing repo_id".into()))?;
+            let revision = args.get("revision").and_then(|v| v.as_str()).unwrap_or("main");
+            let files: Vec<(String, String, String)> = args
+                .get("files")
+                .and_then(|v| v.as_array())
+                .ok_or_else(|| HarborError::Other("missing files".into()))?
+                .iter()
+                .map(|f| (
+                    f.get("path").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+                    f.get("role").and_then(|v| v.as_str()).unwrap_or("weights").to_string(),
+                    f.get("sha256").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+                ))
+                .collect();
+            // Explicit weight-transfer sessions: HF + CDN origins. Each open
+            // is logged; under LOCAL_ONLY, acquisition metadata remains
+            // permitted but weight transfer is equally explicit per policy.
+            let mut sessions = std::collections::BTreeMap::new();
+            let ttl = harbor_core::Workspace::acquisition_session_ttl();
+            for origin in ["https://huggingface.co"].iter().chain(harbor_modelhub::HF_CDN_ORIGINS.iter()) {
+                if let Ok(sess) = ws.inner.broker.open_session(
+                    harbor_net::broker::EgressClass::WeightTransfer,
+                    origin, ttl, ws.inner.privacy_mode,
+                ) {
+                    sessions.insert(origin.to_string(), sess);
+                }
+            }
+            let installer = harbor_modelhub::install::PackageInstaller::new(ws.data_root.join("models"));
+            let acquirer = harbor_modelhub::acquire::HfAcquirer {
+                broker: &ws.inner.broker,
+                transport: &ws.transport,
+                installer: &installer,
+                sessions,
+            };
+            acquirer.acquire(package_id, repo_id, revision, &files, harbor_core::Workspace::now())
+                .map_err(|e| HarborError::Other(e.to_string()))
         }
         // --- knowledge ---------------------------------------------------
         "models.install_file" => {

@@ -11,6 +11,7 @@
 //! evaluates device + model reality and never recommends a model merely
 //! because the file can physically be downloaded.
 
+pub mod acquire;
 pub mod catalog;
 pub mod catalog_signing;
 pub mod fit;
@@ -18,6 +19,7 @@ pub mod hf;
 pub mod install;
 
 pub use catalog::{CatalogEntry, RecommendedTier};
+pub use acquire::{AcquireError, HfAcquirer, HF_CDN_ORIGINS};
 pub use catalog_signing::{sign_catalog, sign_rotation, CatalogSignError, CatalogSigningKey, CatalogVerifier, SignedCatalog, SignedRotation};
 pub use fit::{DeviceProfile, FitBand, FitScore, ModelFootprint, Thermal};
 pub use hf::{HfDiscovery, HfFile};

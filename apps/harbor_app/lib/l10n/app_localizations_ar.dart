@@ -269,4 +269,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get askSearchTooltip => 'ابحث في المعرفة';
+
+  @override
+  String get statusInstalled => 'مثبت';
 }

@@ -272,4 +272,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get askSearchTooltip => 'Search Knowledge';
+
+  @override
+  String get statusInstalled => 'INSTALLED';
 }

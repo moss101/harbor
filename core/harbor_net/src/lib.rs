@@ -11,7 +11,9 @@
 //!   completed traffic, is append-only and hash-chained like run events.
 
 pub mod audit;
+pub mod transport;
 pub mod broker;
 
 pub use audit::{AuditSink, NetworkAuditEntry, NetworkEventKind, SqliteAuditSink};
+pub use transport::UreqTransport;
 pub use broker::{DispatchOutcome, EgressBroker, EgressClass, EgressSession, RedirectDecision, Transport, TransportRequest, TransportResponse};

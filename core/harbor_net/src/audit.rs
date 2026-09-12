@@ -183,6 +183,15 @@ fn hash_entry(e: &NetworkAuditEntry) -> String {
     sha256_hex(canonical.as_bytes())
 }
 
+impl<T: AuditSink + ?Sized> AuditSink for std::sync::Arc<T> {
+    fn append(&self, entry: NetworkAuditEntry) {
+        self.as_ref().append(entry);
+    }
+    fn entries(&self) -> Vec<NetworkAuditEntry> {
+        self.as_ref().entries()
+    }
+}
+
 /// Verify the audit chain end-to-end.
 pub fn verify_chain(entries: &[NetworkAuditEntry]) -> bool {
     let mut prev_hash: Option<String> = None;

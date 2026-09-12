@@ -80,6 +80,30 @@ class HarborService extends ChangeNotifier {
   /// Open the durable knowledge index over an installed embedding model.
   /// Reports failure honestly (no embedding model installed) instead of
   /// fabricating search results.
+  /// Search public HF repositories (acquisition metadata only).
+  List<Map<String, dynamic>> searchHuggingFace(String query) {
+    try {
+      return _client.searchHuggingFace(query);
+    } on ffi.HarborCoreException {
+      return [];
+    }
+  }
+
+  /// Acquire a model package: brokered download + staged install + hash
+  /// identity. Returns the install result or null (honest failure).
+  Map<String, dynamic>? acquireModelHf({
+    required String packageId,
+    required String repoId,
+    required List<Map<String, String>> files,
+  }) {
+    try {
+      return _client.acquireModelHf(
+          packageId: packageId, repoId: repoId, files: files);
+    } on ffi.HarborCoreException {
+      return null;
+    }
+  }
+
   bool installModelFile({
     required String packageId,
     required String path,

@@ -77,5 +77,6 @@
   "askEmptyBody": "تؤسس الإجابات على مساحة عملك مع استشهادات وتمتنع عندما تكون الأدلة غير كافية.",
   "sendAction": "إرسال",
   "lensOpenTooltip": "افتح مفتش العدسة",
-  "askSearchTooltip": "ابحث في المعرفة"
+  "askSearchTooltip": "ابحث في المعرفة",
+  "statusInstalled": "مثبت"
 }

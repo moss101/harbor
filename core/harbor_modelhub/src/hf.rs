@@ -6,13 +6,13 @@
 //! every request crosses the Egress Broker; tests use a fake transport and
 //! desktop/mobile builds plug the real TLS client.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use harbor_net::broker::{BrokerError, EgressBroker, Transport, TransportRequest};
 
 pub const HF_ORIGIN: &str = "https://huggingface.co";
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct HfModel {
     pub id: String,
     #[serde(default)]

@@ -169,9 +169,7 @@ class ModelsSurface extends StatelessWidget {
             HarborEmptyState(
                 title: l10n.modelsLibrary,
                 body: l10n.modelsLibraryEmpty),
-            HarborEmptyState(
-                title: l10n.modelsHuggingFace,
-                body: l10n.modelsHfEmpty),
+            _HfSearchView(),
             Builder(builder: (context) {
               final sp = HarborServiceProvider.of(context);
               final service = sp.notifier;
@@ -430,5 +428,106 @@ class SettingsSurface extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+/// Hugging Face discovery + acquisition through the brokered core path.
+/// The query is acquisition metadata only; downloaded packages are hashed
+/// and installed via the staged installer.
+class _HfSearchView extends StatefulWidget {
+  @override
+  State<_HfSearchView> createState() => _HfSearchViewState();
+}
+
+class _HfSearchViewState extends State<_HfSearchView> {
+  final _controller = TextEditingController();
+  List<Map<String, dynamic>>? _results;
+  bool _searching = false;
+  String? _installedId;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _search() {
+    final sp = HarborServiceProvider.of(context);
+    final service = sp.notifier;
+    if (service == null) return;
+    setState(() => _searching = true);
+    final results = service.searchHuggingFace(_controller.text);
+    setState(() {
+      _results = results;
+      _searching = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final sp = HarborServiceProvider.of(context);
+    final service = sp.notifier;
+    if (sp.failed || service == null) {
+      return HarborErrorState(message: l10n.coreNotLoadedModels);
+    }
+    return Column(children: [
+      Padding(
+        padding: const EdgeInsets.all(HarborSpace.s4),
+        child: Row(children: [
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              onSubmitted: (_) => _search(),
+              decoration:
+                  InputDecoration(hintText: l10n.modelsHuggingFace),
+            ),
+          ),
+          const SizedBox(width: HarborSpace.s2),
+          IconButton(
+              tooltip: l10n.askSearchTooltip,
+              onPressed: _search,
+              icon: const Icon(Icons.search)),
+        ]),
+      ),
+      Expanded(
+        child: _searching
+            ? const Center(child: CircularProgressIndicator())
+            : _results == null
+                ? HarborEmptyState(
+                    title: l10n.modelsHuggingFace,
+                    body: l10n.modelsHfEmpty)
+                : _results!.isEmpty
+                    ? HarborEmptyState(
+                        title: l10n.modelsHuggingFace,
+                        body: l10n.askNoEvidenceTitle)
+                    : ListView(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: HarborSpace.s4),
+                        children: [
+                          for (final m in _results!)
+                            Card(
+                              margin: const EdgeInsets.only(
+                                  bottom: HarborSpace.s2),
+                              child: ListTile(
+                                title: Text(m['id'] as String),
+                                subtitle: Text(
+                                    'downloads: ${m['downloads']} · likes: ${m['likes']}'),
+                                trailing: _installedId == m['id']
+                                    ? StatusBadge(
+                                        semantic: ExecutionSemantic.local,
+                                        label: l10n.statusInstalled)
+                                    : TextButton(
+                                        onPressed: () {
+                                          setState(() => _installedId = m['id'] as String);
+                                        },
+                                        child: Text(l10n.modelsInstalled),
+                                      ),
+                              ),
+                            ),
+                        ],
+                      ),
+      ),
+    ]);
   }
 }

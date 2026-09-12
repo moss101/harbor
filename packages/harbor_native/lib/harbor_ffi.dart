@@ -157,6 +157,24 @@ class HarborCoreClient {
   Map<String, dynamic> searchKnowledge(String question, {int topK = 5}) =>
       call('knowledge.search', {'question': question, 'top_k': topK});
 
+  List<Map<String, dynamic>> searchHuggingFace(String query, {int limit = 8}) {
+    final r = call('models.search_hf', {'query': query, 'limit': limit});
+    return (r as List).cast<Map>().map((m) => m.cast<String, dynamic>()).toList();
+  }
+
+  Map<String, dynamic> acquireModelHf({
+    required String packageId,
+    required String repoId,
+    String revision = 'main',
+    required List<Map<String, String>> files,
+  }) =>
+      call('models.acquire_hf', {
+        'package_id': packageId,
+        'repo_id': repoId,
+        'revision': revision,
+        'files': files,
+      });
+
   Map<String, dynamic> generateAnswer({
     required String question,
     required String chatPackage,
