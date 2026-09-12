@@ -1,0 +1,23 @@
+[package]
+name = "harbor_ffi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "harbor_ffi"
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+harbor_core = { workspace = true }
+harbor_agent = { workspace = true }
+harbor_artifacts = { workspace = true }
+harbor_canonical = { workspace = true }
+harbor_formula = { workspace = true }
+harbor_modelhub = { workspace = true }
+harbor_net = { workspace = true }
+harbor_security = { workspace = true }
+harbor_store = { workspace = true }
+serde_json = { workspace = true }
+base64 = "0.22"
+chrono = { workspace = true }

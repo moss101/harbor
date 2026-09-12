@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harbor.invalid/schemas/approval_receipt.schema.json",
+  "title": "Harbor approval receipt",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "harbor.approval/v1"
+    },
+    "receipt_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "effect_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "device_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "executor_generation": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "effect_class": {
+      "enum": [
+        "file_write",
+        "connector_write",
+        "network_send",
+        "delete",
+        "export",
+        "settings_write"
+      ]
+    },
+    "canonical_args_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "target": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "artifact",
+            "file",
+            "connector_object",
+            "remote_destination",
+            "workspace_setting"
+          ]
+        },
+        "identity": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "capability_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+        }
+      },
+      "required": [
+        "kind",
+        "identity",
+        "capability_id"
+      ],
+      "additionalProperties": false
+    },
+    "policy_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "authorization_source": {
+      "enum": [
+        "allow_once",
+        "persistent_policy"
+      ]
+    },
+    "permission_record_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "decision": {
+      "enum": [
+        "approved",
+        "denied"
+      ]
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "consumed_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "base_content_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "proposed_output_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "batch_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    }
+  },
+  "required": [
+    "schema",
+    "receipt_id",
+    "run_id",
+    "effect_id",
+    "device_id",
+    "executor_generation",
+    "effect_class",
+    "canonical_args_hash",
+    "target",
+    "policy_version",
+    "authorization_source",
+    "decision",
+    "issued_at",
+    "expires_at",
+    "consumed_at"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "authorization_source": {
+            "const": "persistent_policy"
+          }
+        },
+        "required": [
+          "authorization_source"
+        ]
+      },
+      "then": {
+        "required": [
+          "permission_record_id"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "effect_class": {
+            "const": "file_write"
+          }
+        },
+        "required": [
+          "effect_class"
+        ]
+      },
+      "then": {
+        "required": [
+          "base_content_hash",
+          "proposed_output_hash",
+          "batch_id"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+schema: harbor.performance/v2
+status: BLOCKED_UNTIL_MEASURED
+protocol: 26_Qualification_Profiles.json
+fixed_safety_slo:
+  cancellation_ack_p95_ms: 250
+  cancellation_unacknowledged_pause_after_ms: 5000
+metrics_required_before_ga:
+  - cold_start_ms_p50_p95
+  - warm_start_ms_p50_p95
+  - starter_model_load_ms_p50_p95
+  - starter_ttft_ms_p50_p95
+  - starter_tokens_per_second_p50_p95
+  - peak_rss_bytes
+  - peak_gpu_or_accelerator_bytes_if_measurable
+  - ui_frame_miss_rate_during_streaming
+  - artifact_open_ms_by_fixture
+  - office_save_ms_by_fixture
+  - rag_index_docs_per_minute
+  - thermal_state_after_10min_reference_generation
+  - recovery_time_after_memory_or_thermal_pause
+qualification_rule: >-
+  Bind exact model/runtime/device/OS/backend and fixture hashes before calibration.
+  Freeze approved target-specific thresholds before the independent qualification run.
+  Record raw samples and protocol identity. Missing bindings, thresholds, unavailable
+  mandatory measurements or out-of-bound results block ACC-054. Optional accelerator
+  measurements require an explicit unavailable reason rather than a fabricated zero.

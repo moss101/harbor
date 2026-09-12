@@ -1,0 +1,2579 @@
+{
+ "schema": "harbor.formula_corpus/v1",
+ "authority": "22_Formula_Coverage.json target_groups + required_fixture_dimensions",
+ "notes": "Dates >= 1900-03-01 only (Excel 1900 leap-bug zone excluded). TODAY/NOW cases use a pinned clock: 2026-09-12T12:00:00Z (Asia/Riyadh). Value encoding: {\"n\":x} number, {\"t\":s} text, {\"b\":bool}, {\"e\":code} error, {} blank. Optional \"tol\" for float tolerance.",
+ "pinned_clock": "2026-09-12T09:00:00Z",
+ "pinned_timezone": "Asia/Riyadh",
+ "cases": [
+  {
+   "id": "arith-ops-1",
+   "group": "arithmetic_reference",
+   "target": "ARITHMETIC_OPERATORS",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 10
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 4
+     }
+    ]
+   ],
+   "formula": "=A1+B1*2-A1/2",
+   "expect": {
+    "n": 13
+   }
+  },
+  {
+   "id": "arith-ops-2",
+   "group": "arithmetic_reference",
+   "target": "ARITHMETIC_OPERATORS",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=-2^2",
+   "expect": {
+    "n": 4
+   },
+   "notes": "Excel evaluates unary minus before ^; -2^2 = 4."
+  },
+  {
+   "id": "arith-ops-3",
+   "group": "arithmetic_reference",
+   "target": "ARITHMETIC_OPERATORS",
+   "dimension": "errors",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 5
+     }
+    ]
+   ],
+   "formula": "=A1/0",
+   "expect": {
+    "e": "#DIV/0!"
+   }
+  },
+  {
+   "id": "arith-cmp-1",
+   "group": "arithmetic_reference",
+   "target": "COMPARISON_OPERATORS",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 3
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 3
+     }
+    ]
+   ],
+   "formula": "=IF(A1>=B1,\"ge\",\"lt\")",
+   "expect": {
+    "t": "ge"
+   }
+  },
+  {
+   "id": "arith-cmp-2",
+   "group": "arithmetic_reference",
+   "target": "COMPARISON_OPERATORS",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "t": "apple"
+     }
+    ]
+   ],
+   "formula": "=IF(A1<>\"banana\",TRUE,FALSE)",
+   "expect": {
+    "b": true
+   }
+  },
+  {
+   "id": "arith-ref-1",
+   "group": "arithmetic_reference",
+   "target": "SAME_SHEET_REFERENCES",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 7
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 3
+     }
+    ]
+   ],
+   "formula": "=A1-A2",
+   "expect": {
+    "n": 4
+   }
+  },
+  {
+   "id": "arith-xref-1",
+   "group": "arithmetic_reference",
+   "target": "CROSS_SHEET_REFERENCES",
+   "dimension": "values",
+   "cells": [
+    [
+     "Data",
+     1,
+     1,
+     {
+      "n": 21
+     }
+    ]
+   ],
+   "formula": "=Data!A1+1",
+   "expect": {
+    "n": 22
+   }
+  },
+  {
+   "id": "arith-range-1",
+   "group": "arithmetic_reference",
+   "target": "RANGES",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 2
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "n": 3
+     }
+    ]
+   ],
+   "formula": "=SUM(A1:A3)",
+   "expect": {
+    "n": 6
+   }
+  },
+  {
+   "id": "arith-range-2",
+   "group": "arithmetic_reference",
+   "target": "RANGES",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 2
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     3,
+     {
+      "n": 3
+     }
+    ]
+   ],
+   "formula": "=SUM(A1:C1)",
+   "expect": {
+    "n": 6
+   }
+  },
+  {
+   "id": "agg-sum-1",
+   "group": "aggregation",
+   "target": "SUM",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1.5
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 2.5
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "t": "x"
+     }
+    ]
+   ],
+   "formula": "=SUM(A1:A3)",
+   "expect": {
+    "n": 4
+   }
+  },
+  {
+   "id": "agg-sum-2",
+   "group": "aggregation",
+   "target": "SUM",
+   "dimension": "blanks",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 5
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {}
+    ]
+   ],
+   "formula": "=SUM(A1:A2)",
+   "expect": {
+    "n": 5
+   }
+  },
+  {
+   "id": "agg-avg-1",
+   "group": "aggregation",
+   "target": "AVERAGE",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 2
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 4
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "n": 6
+     }
+    ]
+   ],
+   "formula": "=AVERAGE(A1:A3)",
+   "expect": {
+    "n": 4
+   }
+  },
+  {
+   "id": "agg-avg-2",
+   "group": "aggregation",
+   "target": "AVERAGE",
+   "dimension": "errors",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ]
+   ],
+   "formula": "=AVERAGE(A1:A1)",
+   "expect": {
+    "n": 1
+   }
+  },
+  {
+   "id": "agg-min-1",
+   "group": "aggregation",
+   "target": "MIN",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 9
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": -3
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "n": 5
+     }
+    ]
+   ],
+   "formula": "=MIN(A1:A3)",
+   "expect": {
+    "n": -3
+   }
+  },
+  {
+   "id": "agg-max-1",
+   "group": "aggregation",
+   "target": "MAX",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 9
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": -3
+     }
+    ]
+   ],
+   "formula": "=MAX(A1:A2)",
+   "expect": {
+    "n": 9
+   }
+  },
+  {
+   "id": "agg-count-1",
+   "group": "aggregation",
+   "target": "COUNT",
+   "dimension": "blanks",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "t": "a"
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "b": true
+     }
+    ],
+    [
+     "Sheet1",
+     4,
+     1,
+     {}
+    ]
+   ],
+   "formula": "=COUNT(A1:A4)",
+   "expect": {
+    "n": 1
+   }
+  },
+  {
+   "id": "agg-counta-1",
+   "group": "aggregation",
+   "target": "COUNTA",
+   "dimension": "blanks",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "t": "a"
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {}
+    ]
+   ],
+   "formula": "=COUNTA(A1:A3)",
+   "expect": {
+    "n": 2
+   }
+  },
+  {
+   "id": "agg-product-1",
+   "group": "aggregation",
+   "target": "PRODUCT",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 3
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 4
+     }
+    ]
+   ],
+   "formula": "=PRODUCT(A1:A2)",
+   "expect": {
+    "n": 12
+   }
+  },
+  {
+   "id": "agg-subtotal-1",
+   "group": "aggregation",
+   "target": "SUBTOTAL",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 10
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 20
+     }
+    ]
+   ],
+   "formula": "=SUBTOTAL(9,A1:A2)",
+   "expect": {
+    "n": 30
+   }
+  },
+  {
+   "id": "agg-subtotal-2",
+   "group": "aggregation",
+   "target": "SUBTOTAL",
+   "dimension": "recalc_edit",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 10
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 20
+     }
+    ]
+   ],
+   "formula": "=SUBTOTAL(109,A1:A2)",
+   "expect": {
+    "n": 30
+   },
+   "edits": [
+    {
+     "cells": [
+      [
+       "Sheet1",
+       1,
+       1,
+       {
+        "n": 15
+       }
+      ]
+     ],
+     "expect": {
+      "n": 35
+     }
+    }
+   ]
+  },
+  {
+   "id": "cond-if-1",
+   "group": "conditional",
+   "target": "IF",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 85
+     }
+    ]
+   ],
+   "formula": "=IF(A1>=90,\"A\",IF(A1>=80,\"B\",\"C\"))",
+   "expect": {
+    "t": "B"
+   }
+  },
+  {
+   "id": "cond-ifs-1",
+   "group": "conditional",
+   "target": "IFS",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 42
+     }
+    ]
+   ],
+   "formula": "=IFS(A1<40,\"low\",A1<50,\"mid\",TRUE,\"high\")",
+   "expect": {
+    "t": "mid"
+   }
+  },
+  {
+   "id": "cond-and-1",
+   "group": "conditional",
+   "target": "AND",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "b": true
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 1
+     }
+    ]
+   ],
+   "formula": "=AND(A1,B1)",
+   "expect": {
+    "b": true
+   }
+  },
+  {
+   "id": "cond-or-1",
+   "group": "conditional",
+   "target": "OR",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "b": false
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "b": false
+     }
+    ]
+   ],
+   "formula": "=OR(A1,B1)",
+   "expect": {
+    "b": false
+   }
+  },
+  {
+   "id": "cond-not-1",
+   "group": "conditional",
+   "target": "NOT",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "b": false
+     }
+    ]
+   ],
+   "formula": "=NOT(A1)",
+   "expect": {
+    "b": true
+   }
+  },
+  {
+   "id": "cond-iferror-1",
+   "group": "conditional",
+   "target": "IFERROR",
+   "dimension": "errors",
+   "cells": [],
+   "formula": "=IFERROR(1/0,\"fallback\")",
+   "expect": {
+    "t": "fallback"
+   }
+  },
+  {
+   "id": "cond-iferror-2",
+   "group": "conditional",
+   "target": "IFERROR",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 5
+     }
+    ]
+   ],
+   "formula": "=IFERROR(A1,\"fallback\")",
+   "expect": {
+    "n": 5
+   }
+  },
+  {
+   "id": "cond-ifna-1",
+   "group": "conditional",
+   "target": "IFNA",
+   "dimension": "errors",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "t": "k"
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 1
+     }
+    ]
+   ],
+   "formula": "=IFNA(VLOOKUP(\"z\",A1:B1,2,FALSE),\"missing\")",
+   "expect": {
+    "t": "missing"
+   }
+  },
+  {
+   "id": "cond-ifna-2",
+   "group": "conditional",
+   "target": "IFNA",
+   "dimension": "errors",
+   "cells": [],
+   "formula": "=IFNA(1/0,\"na-guard\")",
+   "expect": {
+    "e": "#DIV/0!"
+   }
+  },
+  {
+   "id": "cagg-countif-1",
+   "group": "conditional_aggregation",
+   "target": "COUNTIF",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "t": "a"
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "t": "b"
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "t": "a"
+     }
+    ]
+   ],
+   "formula": "=COUNTIF(A1:A3,\"a\")",
+   "expect": {
+    "n": 2
+   }
+  },
+  {
+   "id": "cagg-countif-2",
+   "group": "conditional_aggregation",
+   "target": "COUNTIF",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 5
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 15
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "n": 25
+     }
+    ]
+   ],
+   "formula": "=COUNTIF(A1:A3,\">10\")",
+   "expect": {
+    "n": 2
+   }
+  },
+  {
+   "id": "cagg-countifs-1",
+   "group": "conditional_aggregation",
+   "target": "COUNTIFS",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "t": "east"
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 100
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "t": "west"
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     2,
+     {
+      "n": 300
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "t": "east"
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     2,
+     {
+      "n": 400
+     }
+    ]
+   ],
+   "formula": "=COUNTIFS(A1:A3,\"east\",B1:B3,\">200\")",
+   "expect": {
+    "n": 1
+   }
+  },
+  {
+   "id": "cagg-sumif-1",
+   "group": "conditional_aggregation",
+   "target": "SUMIF",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "t": "east"
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 100
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "t": "west"
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     2,
+     {
+      "n": 300
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "t": "east"
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     2,
+     {
+      "n": 400
+     }
+    ]
+   ],
+   "formula": "=SUMIF(A1:A3,\"east\",B1:B3)",
+   "expect": {
+    "n": 500
+   }
+  },
+  {
+   "id": "cagg-sumifs-1",
+   "group": "conditional_aggregation",
+   "target": "SUMIFS",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 100
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "t": "east"
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 300
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     2,
+     {
+      "t": "west"
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "n": 400
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     2,
+     {
+      "t": "east"
+     }
+    ]
+   ],
+   "formula": "=SUMIFS(A1:A3,B1:B3,\"east\")",
+   "expect": {
+    "n": 500
+   }
+  },
+  {
+   "id": "cagg-avgif-1",
+   "group": "conditional_aggregation",
+   "target": "AVERAGEIF",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "t": "e"
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 10
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "t": "w"
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     2,
+     {
+      "n": 30
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "t": "e"
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     2,
+     {
+      "n": 20
+     }
+    ]
+   ],
+   "formula": "=AVERAGEIF(A1:A3,\"e\",B1:B3)",
+   "expect": {
+    "n": 15
+   }
+  },
+  {
+   "id": "cagg-avgifs-1",
+   "group": "conditional_aggregation",
+   "target": "AVERAGEIFS",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 10
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "t": "e"
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 30
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     2,
+     {
+      "t": "w"
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "n": 20
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     2,
+     {
+      "t": "e"
+     }
+    ]
+   ],
+   "formula": "=AVERAGEIFS(A1:A3,B1:B3,\"e\")",
+   "expect": {
+    "n": 15
+   }
+  },
+  {
+   "id": "lk-vlookup-1",
+   "group": "lookup",
+   "target": "VLOOKUP",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "t": "a"
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 10
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "t": "b"
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     2,
+     {
+      "n": 20
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "t": "c"
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     2,
+     {
+      "n": 30
+     }
+    ]
+   ],
+   "formula": "=VLOOKUP(\"b\",A1:B3,2,FALSE)",
+   "expect": {
+    "n": 20
+   }
+  },
+  {
+   "id": "lk-vlookup-2",
+   "group": "lookup",
+   "target": "VLOOKUP",
+   "dimension": "errors",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "t": "a"
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 10
+     }
+    ]
+   ],
+   "formula": "=VLOOKUP(\"zz\",A1:B1,2,FALSE)",
+   "expect": {
+    "e": "#N/A"
+   }
+  },
+  {
+   "id": "lk-hlookup-1",
+   "group": "lookup",
+   "target": "HLOOKUP",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "t": "q1"
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "t": "q2"
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 100
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     2,
+     {
+      "n": 200
+     }
+    ]
+   ],
+   "formula": "=HLOOKUP(\"q2\",A1:B2,2,FALSE)",
+   "expect": {
+    "n": 200
+   }
+  },
+  {
+   "id": "lk-xlookup-1",
+   "group": "lookup",
+   "target": "XLOOKUP",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "t": "a"
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 10
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "t": "b"
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     2,
+     {
+      "n": 20
+     }
+    ]
+   ],
+   "formula": "=XLOOKUP(\"b\",A1:A2,B1:B2)",
+   "expect": {
+    "n": 20
+   }
+  },
+  {
+   "id": "lk-xlookup-2",
+   "group": "lookup",
+   "target": "XLOOKUP",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "t": "a"
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 10
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "t": "b"
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     2,
+     {
+      "n": 20
+     }
+    ]
+   ],
+   "formula": "=XLOOKUP(\"z\",A1:A2,B1:B2,\"nf\")",
+   "expect": {
+    "t": "nf"
+   }
+  },
+  {
+   "id": "lk-index-1",
+   "group": "lookup",
+   "target": "INDEX",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 5
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 6
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "n": 7
+     }
+    ]
+   ],
+   "formula": "=INDEX(A1:A3,2)",
+   "expect": {
+    "n": 6
+   }
+  },
+  {
+   "id": "lk-index-2",
+   "group": "lookup",
+   "target": "INDEX",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 2
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 3
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     2,
+     {
+      "n": 4
+     }
+    ]
+   ],
+   "formula": "=INDEX(A1:B2,2,2)",
+   "expect": {
+    "n": 4
+   }
+  },
+  {
+   "id": "lk-match-1",
+   "group": "lookup",
+   "target": "MATCH",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 10
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 20
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "n": 30
+     }
+    ]
+   ],
+   "formula": "=MATCH(20,A1:A3,0)",
+   "expect": {
+    "n": 2
+   }
+  },
+  {
+   "id": "lk-match-2",
+   "group": "lookup",
+   "target": "MATCH",
+   "dimension": "errors",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 10
+     }
+    ]
+   ],
+   "formula": "=MATCH(99,A1:A1,0)",
+   "expect": {
+    "e": "#N/A"
+   }
+  },
+  {
+   "id": "num-abs-1",
+   "group": "numeric",
+   "target": "ABS",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=ABS(-4.5)",
+   "expect": {
+    "n": 4.5
+   }
+  },
+  {
+   "id": "num-int-1",
+   "group": "numeric",
+   "target": "INT",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=INT(-1.5)",
+   "expect": {
+    "n": -2
+   }
+  },
+  {
+   "id": "num-mod-1",
+   "group": "numeric",
+   "target": "MOD",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=MOD(-3,2)",
+   "expect": {
+    "n": 1
+   }
+  },
+  {
+   "id": "num-round-1",
+   "group": "numeric",
+   "target": "ROUND",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=ROUND(2.5,0)",
+   "expect": {
+    "n": 3
+   }
+  },
+  {
+   "id": "num-round-2",
+   "group": "numeric",
+   "target": "ROUND",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=ROUND(-2.5,0)",
+   "expect": {
+    "n": -3
+   }
+  },
+  {
+   "id": "num-round-3",
+   "group": "numeric",
+   "target": "ROUND",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=ROUND(2.149,1)",
+   "expect": {
+    "n": 2.1
+   }
+  },
+  {
+   "id": "num-roundup-1",
+   "group": "numeric",
+   "target": "ROUNDUP",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=ROUNDUP(3.21,1)",
+   "expect": {
+    "n": 3.3
+   }
+  },
+  {
+   "id": "num-rounddown-1",
+   "group": "numeric",
+   "target": "ROUNDDOWN",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=ROUNDDOWN(3.29,1)",
+   "expect": {
+    "n": 3.2
+   }
+  },
+  {
+   "id": "num-ceiling-1",
+   "group": "numeric",
+   "target": "CEILING",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=CEILING(2.1,1)",
+   "expect": {
+    "n": 3
+   }
+  },
+  {
+   "id": "num-floor-1",
+   "group": "numeric",
+   "target": "FLOOR",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=FLOOR(2.9,1)",
+   "expect": {
+    "n": 2
+   }
+  },
+  {
+   "id": "num-power-1",
+   "group": "numeric",
+   "target": "POWER",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=POWER(2,10)",
+   "expect": {
+    "n": 1024
+   }
+  },
+  {
+   "id": "num-sqrt-1",
+   "group": "numeric",
+   "target": "SQRT",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=SQRT(2)",
+   "expect": {
+    "n": 1.4142135623730951,
+    "tol": 1e-12
+   }
+  },
+  {
+   "id": "num-sqrt-2",
+   "group": "numeric",
+   "target": "SQRT",
+   "dimension": "errors",
+   "cells": [],
+   "formula": "=SQRT(-1)",
+   "expect": {
+    "e": "#NUM!"
+   }
+  },
+  {
+   "id": "txt-left-1",
+   "group": "text",
+   "target": "LEFT",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=LEFT(\"Harbor\",3)",
+   "expect": {
+    "t": "Har"
+   }
+  },
+  {
+   "id": "txt-right-1",
+   "group": "text",
+   "target": "RIGHT",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=RIGHT(\"Harbor\",3)",
+   "expect": {
+    "t": "bor"
+   }
+  },
+  {
+   "id": "txt-mid-1",
+   "group": "text",
+   "target": "MID",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=MID(\"Harbor\",2,3)",
+   "expect": {
+    "t": "arb"
+   }
+  },
+  {
+   "id": "txt-len-1",
+   "group": "text",
+   "target": "LEN",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=LEN(\"Harbor\")",
+   "expect": {
+    "n": 6
+   }
+  },
+  {
+   "id": "txt-len-2",
+   "group": "text",
+   "target": "LEN",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=LEN(\"مرفأ\")",
+   "expect": {
+    "n": 4
+   }
+  },
+  {
+   "id": "txt-trim-1",
+   "group": "text",
+   "target": "TRIM",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=TRIM(\"  a  b  \")",
+   "expect": {
+    "t": "a b"
+   }
+  },
+  {
+   "id": "txt-upper-1",
+   "group": "text",
+   "target": "UPPER",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=UPPER(\"harbor\")",
+   "expect": {
+    "t": "HARBOR"
+   }
+  },
+  {
+   "id": "txt-lower-1",
+   "group": "text",
+   "target": "LOWER",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=LOWER(\"HARBOR\")",
+   "expect": {
+    "t": "harbor"
+   }
+  },
+  {
+   "id": "txt-concat-1",
+   "group": "text",
+   "target": "CONCAT",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=CONCAT(\"Har\",\"bor\")",
+   "expect": {
+    "t": "Harbor"
+   }
+  },
+  {
+   "id": "txt-concaten-1",
+   "group": "text",
+   "target": "CONCATENATE",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=CONCATENATE(\"a\",1,TRUE)",
+   "expect": {
+    "t": "a1TRUE"
+   }
+  },
+  {
+   "id": "txt-textjoin-1",
+   "group": "text",
+   "target": "TEXTJOIN",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "t": "a"
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {}
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "t": "b"
+     }
+    ]
+   ],
+   "formula": "=TEXTJOIN(\",\",TRUE,A1:A3)",
+   "expect": {
+    "t": "a,b"
+   }
+  },
+  {
+   "id": "txt-textjoin-2",
+   "group": "text",
+   "target": "TEXTJOIN",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "t": "a"
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {}
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "t": "b"
+     }
+    ]
+   ],
+   "formula": "=TEXTJOIN(\",\",FALSE,A1:A3)",
+   "expect": {
+    "t": "a,,b"
+   }
+  },
+  {
+   "id": "txt-value-1",
+   "group": "text",
+   "target": "VALUE",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=VALUE(\"1234.5\")",
+   "expect": {
+    "n": 1234.5
+   }
+  },
+  {
+   "id": "txt-text-1",
+   "group": "text",
+   "target": "TEXT",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=TEXT(1234.567,\"0.00\")",
+   "expect": {
+    "t": "1234.57"
+   }
+  },
+  {
+   "id": "txt-text-2",
+   "group": "text",
+   "target": "TEXT",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=TEXT(0.285,\"0.0%\")",
+   "expect": {
+    "t": "28.5%"
+   }
+  },
+  {
+   "id": "dt-date-1",
+   "group": "date_time",
+   "target": "DATE",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=DATE(2026,9,12)",
+   "expect": {
+    "n": 46277
+   }
+  },
+  {
+   "id": "dt-date-2",
+   "group": "date_time",
+   "target": "DATE",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=DATE(2024,2,29)",
+   "expect": {
+    "n": 45351
+   }
+  },
+  {
+   "id": "dt-year-1",
+   "group": "date_time",
+   "target": "YEAR",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=YEAR(DATE(2026,9,12))",
+   "expect": {
+    "n": 2026
+   }
+  },
+  {
+   "id": "dt-month-1",
+   "group": "date_time",
+   "target": "MONTH",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=MONTH(DATE(2026,9,12))",
+   "expect": {
+    "n": 9
+   }
+  },
+  {
+   "id": "dt-day-1",
+   "group": "date_time",
+   "target": "DAY",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=DAY(DATE(2026,9,12))",
+   "expect": {
+    "n": 12
+   }
+  },
+  {
+   "id": "dt-days-1",
+   "group": "date_time",
+   "target": "DAYS",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=DAYS(DATE(2026,9,12),DATE(2026,1,1))",
+   "expect": {
+    "n": 254
+   }
+  },
+  {
+   "id": "dt-edate-1",
+   "group": "date_time",
+   "target": "EDATE",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=EDATE(DATE(2026,1,31),1)",
+   "expect": {
+    "n": 46081
+   }
+  },
+  {
+   "id": "dt-edate-2",
+   "group": "date_time",
+   "target": "EDATE",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=EDATE(DATE(2026,3,31),-1)",
+   "expect": {
+    "n": 46081
+   }
+  },
+  {
+   "id": "dt-eomonth-1",
+   "group": "date_time",
+   "target": "EOMONTH",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=EOMONTH(DATE(2026,2,10),0)",
+   "expect": {
+    "n": 46081
+   }
+  },
+  {
+   "id": "dt-eomonth-2",
+   "group": "date_time",
+   "target": "EOMONTH",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=EOMONTH(DATE(2024,1,15),1)",
+   "expect": {
+    "n": 45351
+   }
+  },
+  {
+   "id": "dt-workday-1",
+   "group": "date_time",
+   "target": "WORKDAY",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=WORKDAY(DATE(2026,9,11),3)",
+   "expect": {
+    "n": 46281
+   }
+  },
+  {
+   "id": "dt-workday-2",
+   "group": "date_time",
+   "target": "WORKDAY",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=WORKDAY(DATE(2026,9,11),1)",
+   "expect": {
+    "n": 46279
+   }
+  },
+  {
+   "id": "dt-netdays-1",
+   "group": "date_time",
+   "target": "NETWORKDAYS",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=NETWORKDAYS(DATE(2026,9,7),DATE(2026,9,11))",
+   "expect": {
+    "n": 5
+   }
+  },
+  {
+   "id": "dt-netdays-2",
+   "group": "date_time",
+   "target": "NETWORKDAYS",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=NETWORKDAYS(DATE(2026,9,5),DATE(2026,9,11))",
+   "expect": {
+    "n": 5
+   }
+  },
+  {
+   "id": "dt-today-1",
+   "group": "date_time",
+   "target": "TODAY",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=DATE(2026,9,12)-TODAY()",
+   "expect": {
+    "n": 0
+   }
+  },
+  {
+   "id": "dt-now-1",
+   "group": "date_time",
+   "target": "NOW",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=TODAY()=INT(NOW())",
+   "expect": {
+    "b": true
+   }
+  },
+  {
+   "id": "stat-median-1",
+   "group": "statistics_basic",
+   "target": "MEDIAN",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 2
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "n": 3
+     }
+    ],
+    [
+     "Sheet1",
+     4,
+     1,
+     {
+      "n": 4
+     }
+    ],
+    [
+     "Sheet1",
+     5,
+     1,
+     {
+      "n": 5
+     }
+    ]
+   ],
+   "formula": "=MEDIAN(A1:A5)",
+   "expect": {
+    "n": 3
+   }
+  },
+  {
+   "id": "stat-stdevs-1",
+   "group": "statistics_basic",
+   "target": "STDEV.S",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 2
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "n": 3
+     }
+    ],
+    [
+     "Sheet1",
+     4,
+     1,
+     {
+      "n": 4
+     }
+    ],
+    [
+     "Sheet1",
+     5,
+     1,
+     {
+      "n": 5
+     }
+    ]
+   ],
+   "formula": "=STDEV.S(A1:A5)",
+   "expect": {
+    "n": 1.5811388300841898,
+    "tol": 1e-09
+   }
+  },
+  {
+   "id": "stat-stdevp-1",
+   "group": "statistics_basic",
+   "target": "STDEV.P",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 2
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "n": 3
+     }
+    ],
+    [
+     "Sheet1",
+     4,
+     1,
+     {
+      "n": 4
+     }
+    ],
+    [
+     "Sheet1",
+     5,
+     1,
+     {
+      "n": 5
+     }
+    ]
+   ],
+   "formula": "=STDEV.P(A1:A5)",
+   "expect": {
+    "n": 1.4142135623730951,
+    "tol": 1e-09
+   }
+  },
+  {
+   "id": "stat-vars-1",
+   "group": "statistics_basic",
+   "target": "VAR.S",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 2
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "n": 3
+     }
+    ],
+    [
+     "Sheet1",
+     4,
+     1,
+     {
+      "n": 4
+     }
+    ],
+    [
+     "Sheet1",
+     5,
+     1,
+     {
+      "n": 5
+     }
+    ]
+   ],
+   "formula": "=VAR.S(A1:A5)",
+   "expect": {
+    "n": 2.5
+   }
+  },
+  {
+   "id": "stat-varp-1",
+   "group": "statistics_basic",
+   "target": "VAR.P",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 2
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "n": 3
+     }
+    ],
+    [
+     "Sheet1",
+     4,
+     1,
+     {
+      "n": 4
+     }
+    ],
+    [
+     "Sheet1",
+     5,
+     1,
+     {
+      "n": 5
+     }
+    ]
+   ],
+   "formula": "=VAR.P(A1:A5)",
+   "expect": {
+    "n": 2
+   }
+  },
+  {
+   "id": "stat-rank-1",
+   "group": "statistics_basic",
+   "target": "RANK.EQ",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 10
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 30
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "n": 20
+     }
+    ],
+    [
+     "Sheet1",
+     4,
+     1,
+     {
+      "n": 40
+     }
+    ]
+   ],
+   "formula": "=RANK.EQ(20,A1:A4,1)",
+   "expect": {
+    "n": 2
+   }
+  },
+  {
+   "id": "stat-rank-2",
+   "group": "statistics_basic",
+   "target": "RANK.EQ",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 10
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 30
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "n": 20
+     }
+    ],
+    [
+     "Sheet1",
+     4,
+     1,
+     {
+      "n": 40
+     }
+    ]
+   ],
+   "formula": "=RANK.EQ(30,A1:A4,0)",
+   "expect": {
+    "n": 2
+   }
+  },
+  {
+   "id": "stat-pct-1",
+   "group": "statistics_basic",
+   "target": "PERCENTILE.INC",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 2
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "n": 3
+     }
+    ],
+    [
+     "Sheet1",
+     4,
+     1,
+     {
+      "n": 4
+     }
+    ],
+    [
+     "Sheet1",
+     5,
+     1,
+     {
+      "n": 5
+     }
+    ]
+   ],
+   "formula": "=PERCENTILE.INC(A1:A5,0.3)",
+   "expect": {
+    "n": 2.2,
+    "tol": 1e-12
+   }
+  },
+  {
+   "id": "stat-pct-2",
+   "group": "statistics_basic",
+   "target": "PERCENTILE.INC",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 2
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "n": 3
+     }
+    ],
+    [
+     "Sheet1",
+     4,
+     1,
+     {
+      "n": 4
+     }
+    ]
+   ],
+   "formula": "=PERCENTILE.INC(A1:A4,0.25)",
+   "expect": {
+    "n": 1.75,
+    "tol": 1e-12
+   }
+  },
+  {
+   "id": "edit-cross-1",
+   "group": "aggregation",
+   "target": "SUM",
+   "dimension": "recalc_edit",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 100
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 200
+     }
+    ]
+   ],
+   "formula": "=A1+A2",
+   "expect": {
+    "n": 300
+   },
+   "edits": [
+    {
+     "cells": [
+      [
+       "Sheet1",
+       2,
+       1,
+       {
+        "n": 250
+       }
+      ]
+     ],
+     "expect": {
+      "n": 350
+     }
+    }
+   ]
+  },
+  {
+   "id": "edit-xsheet-1",
+   "group": "arithmetic_reference",
+   "target": "CROSS_SHEET_REFERENCES",
+   "dimension": "recalc_edit",
+   "cells": [
+    [
+     "Data",
+     1,
+     1,
+     {
+      "n": 5
+     }
+    ],
+    [
+     "Data",
+     2,
+     1,
+     {
+      "n": 6
+     }
+    ]
+   ],
+   "formula": "=Data!A1*Data!A2",
+   "expect": {
+    "n": 30
+   },
+   "edits": [
+    {
+     "cells": [
+      [
+       "Data",
+       1,
+       1,
+       {
+        "n": 10
+       }
+      ]
+     ],
+     "expect": {
+      "n": 60
+     }
+    }
+   ]
+  }
+ ]
+}

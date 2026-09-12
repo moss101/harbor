@@ -1,0 +1,26 @@
+[package]
+name = "harbor_inference"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+harbor_canonical = { workspace = true }
+harbor_modelhub = { workspace = true }
+harbor_security = { workspace = true }
+harbor_net = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+# Pinned llama.cpp bindings. The llama.cpp source snapshot is vendored
+# inside llama-cpp-sys-2 (see the include list of its Cargo.toml), so the
+# crate version pins the exact runtime revision.
+llama-cpp-2 = { version = "=0.1.156", optional = true }
+encoding_rs = { version = "0.8", optional = true }
+
+[features]
+gguf-backend = ["dep:llama-cpp-2", "dep:encoding_rs"]
+
+[dev-dependencies]
+tempfile = "3"

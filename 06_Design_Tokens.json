@@ -1,0 +1,233 @@
+{
+  "meta": {
+    "product": "Harbor",
+    "version": "3.0-corrected-authority",
+    "date": "2026-09-12",
+    "theme_name": "Harbor Current"
+  },
+  "color": {
+    "light": {
+      "canvas": "#F7F9FC",
+      "surface": "#FFFFFF",
+      "surfaceRaised": "#FBFCFE",
+      "ink": "#12263A",
+      "inkMuted": "#5B6F84",
+      "border": "#D6E0EA",
+      "brand": "#1F5FCC",
+      "brandSoft": "#EAF2FF",
+      "accent": "#22B8C7",
+      "local": "#1E6F4E",
+      "hybrid": "#8A5200",
+      "remote": "#4F46C8",
+      "danger": "#A33126",
+      "warning": "#8A5200",
+      "success": "#1E6F4E",
+      "onBrand": "#FFFFFF"
+    },
+    "dark": {
+      "canvas": "#08131F",
+      "surface": "#0E1C2B",
+      "surfaceRaised": "#132438",
+      "ink": "#F3F7FB",
+      "inkMuted": "#9FB0C1",
+      "border": "#253C52",
+      "brand": "#7EA9FF",
+      "brandSoft": "#132E54",
+      "accent": "#4BD5E1",
+      "local": "#7FE0AF",
+      "hybrid": "#F6C36B",
+      "remote": "#C5C6FF",
+      "danger": "#FFAAA0",
+      "warning": "#F6C36B",
+      "success": "#7FE0AF",
+      "onBrand": "#07111D"
+    }
+  },
+  "type": {
+    "familyLatin": "Inter",
+    "familyArabic": "Noto Sans Arabic",
+    "mono": "JetBrains Mono",
+    "display": {
+      "size": 32,
+      "line": 38,
+      "weight": 650
+    },
+    "title": {
+      "size": 24,
+      "line": 30,
+      "weight": 650
+    },
+    "h2": {
+      "size": 18,
+      "line": 24,
+      "weight": 620
+    },
+    "body": {
+      "size": 14,
+      "line": 21,
+      "weight": 400,
+      "arabicLine": 24
+    },
+    "small": {
+      "size": 12,
+      "line": 17,
+      "weight": 400,
+      "arabicLine": 20
+    },
+    "caption": {
+      "size": 11,
+      "line": 15,
+      "weight": 450,
+      "arabicLine": 18
+    }
+  },
+  "space": {
+    "1": 4,
+    "2": 8,
+    "3": 12,
+    "4": 16,
+    "5": 20,
+    "6": 24,
+    "8": 32,
+    "10": 40,
+    "12": 48,
+    "16": 64
+  },
+  "radius": {
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 22,
+    "pill": 999
+  },
+  "stroke": {
+    "hairline": 1,
+    "focus": 2
+  },
+  "motion": {
+    "instant": 80,
+    "fast": 120,
+    "normal": 180,
+    "slow": 260,
+    "panel": 320,
+    "easing": "cubic-bezier(.2,.8,.2,1)"
+  },
+  "breakpoints": {
+    "compactMax": 599,
+    "mediumMin": 600,
+    "mediumMax": 1023,
+    "expandedMin": 1024,
+    "wideMin": 1440
+  },
+  "layout": {
+    "desktopRail": 220,
+    "desktopLens": 320,
+    "contentMax": 1440,
+    "mobileGutter": 16,
+    "tabletGutter": 24,
+    "desktopGutter": 28,
+    "desktopRailExpanded": 220,
+    "desktopRailCollapsed": 72,
+    "workCanvasMin": 640,
+    "lensOverlayBelow": 1280,
+    "railCollapseBelow": 1180,
+    "workCanvasMinAppliesAtViewport": 1024,
+    "compactMinimumViewport": 320,
+    "compactEditor": "viewport-sized controls; responsive or scrollable artifact surface; no 640px viewport minimum"
+  },
+  "semantic": {
+    "local": "Execution remains on this device",
+    "hybrid": "Local first; approved remote fallback allowed",
+    "remote": "Current request may leave the device"
+  },
+  "semanticRoles": {
+    "light": {
+      "statusLocal": {
+        "text": "#1E6F4E",
+        "fill": "#E9F5EF",
+        "border": "#89BFA6"
+      },
+      "statusHybrid": {
+        "text": "#8A5200",
+        "fill": "#FFF3DE",
+        "border": "#D8AE69"
+      },
+      "statusRemote": {
+        "text": "#4F46C8",
+        "fill": "#EEEEFF",
+        "border": "#AAA7F5"
+      },
+      "statusDanger": {
+        "text": "#A33126",
+        "fill": "#FCECE9",
+        "border": "#E6A39B"
+      },
+      "primaryAction": {
+        "text": "#FFFFFF",
+        "fill": "#1F5FCC",
+        "border": "#1F5FCC"
+      },
+      "focusRing": "#1F5FCC"
+    },
+    "dark": {
+      "statusLocal": {
+        "text": "#7FE0AF",
+        "fill": "#153328",
+        "border": "#2C7A58"
+      },
+      "statusHybrid": {
+        "text": "#F6C36B",
+        "fill": "#3A2A12",
+        "border": "#8D682C"
+      },
+      "statusRemote": {
+        "text": "#C5C6FF",
+        "fill": "#28295C",
+        "border": "#5D5FB8"
+      },
+      "statusDanger": {
+        "text": "#FFAAA0",
+        "fill": "#4A211D",
+        "border": "#A8564E"
+      },
+      "primaryAction": {
+        "text": "#07111D",
+        "fill": "#7EA9FF",
+        "border": "#7EA9FF"
+      },
+      "focusRing": "#9FC0FF"
+    }
+  },
+  "accessibility": {
+    "normalTextMinContrast": 4.5,
+    "largeTextMinContrast": 3.0,
+    "contrastRounding": "forbidden",
+    "statusMeaningNotColorOnly": true,
+    "minimumTouchTarget": 44,
+    "desktopMinimumTarget": 32,
+    "requiredTextScalePercent": [
+      100,
+      200
+    ],
+    "allowedTextSurfacePairs": [
+      {
+        "text": "ink",
+        "surfaces": [
+          "canvas",
+          "surface",
+          "surfaceRaised",
+          "brandSoft"
+        ]
+      },
+      {
+        "text": "inkMuted",
+        "surfaces": [
+          "canvas",
+          "surface",
+          "surfaceRaised",
+          "brandSoft"
+        ]
+      }
+    ]
+  }
+}

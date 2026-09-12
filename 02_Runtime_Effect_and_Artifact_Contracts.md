@@ -1,0 +1,35 @@
+# Harbor runtime effect and artifact contracts
+
+## Version and canonical identity
+Runtime events, effects, batches and model references use v3. Legacy v2 envelopes must pass an explicit migration before replay; missing authority fields cannot be filled with permissive defaults. Approvals and commit journals use v1. IDs are stable and unique within their declared scope. Hashes are lowercase SHA-256.
+
+harbor.canonical_json/v1 uses UTF-8 JSON with object keys sorted by Unicode scalar value, no insignificant whitespace, no Unicode normalization, preserved string values, lowercase JSON literals and integers restricted to the exact signed 53-bit range. Floating-point JSON values are forbidden; typed decimal quantities use strings. Duplicate keys, non-finite values and unpaired surrogates are rejected. JSON strings escape quotation marks, backslashes and control characters; other Unicode is emitted directly. This is Harbor's bounded canonical format, not a claim of RFC 8785 conformance. tools/contracts.py is the reference encoder. Hash bindings include the versioned effect identity, target, policy and approval fields rather than an ambiguous concatenation.
+
+## Durable run transitions
+Legal transitions: CREATED to PLANNING, CANCELLING or FAILED; PLANNING to RUNNING, PAUSED, CANCELLING or FAILED; RUNNING to WAITING_APPROVAL, PAUSED, CANCELLING, COMPLETED or FAILED; WAITING_APPROVAL to RUNNING, PAUSED, CANCELLING or FAILED; PAUSED to RUNNING or CANCELLING; CANCELLING to CANCELLED or PAUSED with cancellation_unacknowledged. Terminal states have no outgoing transition.
+
+PAUSED requires a persisted reason: user, background, thermal, resource_pressure, source_unavailable, network_policy, effect_outcome_unknown or cancellation_unacknowledged. Executor-active time, steps, tool calls and consumed context tokens are durable monotonic totals. Resource admission and effect dispatch recheck remaining budgets transactionally. A resumed process does not reset totals.
+
+Exactly one generation-fenced executor lease owns a run. The durable transaction validates current owner, generation and lease validity before any authoritative event or dispatch authorization. Only the capability/effect broker can dispatch protected work. Lease acquisition increments generation; stale owners cannot authorize dispatch or finalize commits. A lease never implies remote-provider idempotency.
+
+The UI acknowledges a cancel request immediately. The reference generation acknowledgement SLO is <=250 ms p95. After 5 seconds without executor/provider acknowledgement, revoke dispatch authority and persist PAUSED/cancellation_unacknowledged. Enter CANCELLED only with durable provider acknowledgement or verified executor termination. Already dispatched effects remain separately outcome_unknown until reconciled; stopping execution does not claim a remote action was undone. Later acknowledgement can resume the cancellation procedure, never normal tool execution without a fresh resume decision.
+
+Known event types have typed payloads. Unknown authority/state events halt replay. Unknown ignorable_display events may be skipped only after envelope integrity and origin validation; callers cannot relabel a known authority event as display-only.
+
+## Effects and approvals
+Persist immutable canonical arguments, their hash, stable target/capability identity, tool/effect class, policy version, effect ID, executor generation, receipt and idempotency strategy before dispatch. The event log refers to this record. Updates change only effect state, attempt/result references and timestamps. Argument or target changes create a new effect and approval.
+
+provider_key mode requires a persisted key; reconcile mode requires a versioned adapter and lookup identity. A dispatched effect requires an attempt ID. After a crash, reuse the same provider key within its retention guarantee or reconcile using a reliable read. An expired idempotency window or inconclusive reconciliation produces outcome_unknown, never an automatic retry. Provider-specific retryable failures must be classified before dispatch.
+
+Receipts bind effect, run, device, generation, canonical arguments hash, target, effect class and policy version. Artifact writes also bind batch ID, approved base hash and proposed output hash. Both allow-once and persistent-policy-derived receipts are single-effect receipts with at most 15 minutes validity; persistent permissions mint new scoped receipts rather than reusing old ones. Denied, expired, revoked, consumed or post-termination receipts cannot authorize a new dispatch. A provider-key reconciliation of an already dispatched effect observes the original effect; it cannot authorize changed arguments. Receipt consumption and dispatch preparation commit together. Recheck policy/capability revocation immediately before dispatch. Receipt authenticity is established by encrypted authoritative storage and device-bound integrity, never by an untrusted JSON payload alone.
+
+## Artifact batches and safe save
+Every mutation uses harbor.artifact_batch/v3 with stable artifact/base version, base hash, unique batch and operation IDs, typed arguments and per-target expected-content hashes. A newly created artifact first registers an immutable empty base version with the SHA-256 of empty bytes. Duplicate op IDs and incompatible operation/precondition targets are rejected. Partial acceptance creates dependency-safe sub-batches with fresh output hashes and approval.
+
+1. Stage the complete proposed output, validate format/compatibility and verify it matches the approved output hash.
+2. In a durable DB transaction, record the commit journal, effect, receipt consumption, base/output identity, staging blob, target and predetermined destination. Flush staged bytes before publication.
+3. Reacquire the file capability and use a qualified conditional/coordination mode from 27_Artifact_Commit_Qualification.md. Validate the base inside the protected write interval. A plain check followed by rename is insufficient for external files.
+4. Publish once, make file and directory metadata durable where supported, and finalize the journal/version record transactionally. A provider lacking the required conditional or exclusive-write guarantee uses create-new-copy with a predetermined destination and no overwrite.
+5. On recovery, inspect the prepared journal and destination identity. If the approved output is present, finalize the same committed version. If the original base is still present and non-publication is established, resume only with valid authority. If a third version is present, enter conflict without overwrite. If the provider outcome cannot be established, enter outcome_unknown and prohibit automatic retry. Replaying a committed batch ID returns its existing version. Crash-created copies are found by the predetermined identity; recovery does not invent a second destination.
+
+All-or-nothing applies to publication of the batch. Cross-artifact workflows use independently approved batches with a recorded dependency graph; a failed later artifact never falsely rolls back an already committed external effect.

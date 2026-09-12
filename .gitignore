@@ -1,0 +1,23 @@
+# Rust
+core/target/
+**/*.rs.bk
+
+# Dart / Flutter
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+.idea/
+
+# Harbor local artifacts
+evidence/
+*.hblob
+apps/harbor_app/macos/Flutter/ephemeral/
+apps/harbor_app/windows/flutter/ephemeral/
+apps/harbor_app/android/.gradle/
+apps/harbor_app/ios/Flutter/ephemeral/
+
+# OS
+.DS_Store

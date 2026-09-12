@@ -1,0 +1,24 @@
+Format,Capability,Feature,GA classification,Mutation allowed,Verification requirement,Fallback / user-visible behavior,Qualification Profile
+DOCX,Read/render,"paragraphs, runs, direct formatting",SUPPORTED_GA,yes,golden round-trip + visual fixture,render normally,office-core-v1
+DOCX,Read/render,"headings, numbered/bulleted lists",SUPPORTED_GA,yes,golden round-trip + visual fixture,render normally,office-core-v1
+DOCX,Read/render,tables incl. merged cells,SUPPORTED_GA,yes,round-trip + visual fixture,render normally,office-core-v1
+DOCX,Read/render,inline images,SUPPORTED_GA,yes,round-trip + visual fixture,render normally,office-core-v1
+DOCX,Read/render,portrait/landscape sections; page size/margins; default/first/even headers and footers; explicit page breaks; header/footer paragraphs and inline images,SUPPORTED_GA,limited,fixture per section type,unsupported continuous section/column/floating interactions are preserve-only; report per package part,office-core-v1
+DOCX,Preserve,floating drawings / advanced anchoring,PRESERVE_ONLY,no,byte/relationship preservation,compatibility banner; external editor recommended,compatibility-report-v1
+DOCX,Preserve,"fields, TOC, equations not qualified",PRESERVE_ONLY,no,package preservation,show preserved-not-rendered status,compatibility-report-v1
+DOCX,Security,macros / OLE / active content,PRESERVE_NO_EXECUTE,no,malicious fixture suite,never execute; warn before export,compatibility-report-v1
+XLSX,Read/render,"values, formulas, styles, number formats",SUPPORTED_GA,yes,calculation + round-trip corpus,render normally,office-core-v1
+XLSX,Read/render,"merged cells, row/column dimensions",SUPPORTED_GA,yes,visual + round-trip corpus,render normally,office-core-v1
+XLSX,Calculate,functions marked PASS in 22_Formula_Coverage.json,SUPPORTED_GA,yes,formula corpus on all qualified platforms,verified result badge,office-core-v1
+XLSX,Calculate,function not PASS / stale dependency,PRESERVE_ONLY,no verified dependent output,dependency trace,unverified badge; block verified claims,compatibility-report-v1
+XLSX,Charts,bar/column/line/pie/scatter basic series,REQUIRED_UNQUALIFIED,limited,chart fixtures + image diff,until PASS: preserve and preview fallback,compatibility-report-v1
+XLSX,Preserve,pivot tables / slicers / Power Query,PRESERVE_ONLY,no,package relationship preservation,do not recalc; compatibility report,compatibility-report-v1
+XLSX,Preserve,external workbook/data links,PRESERVE_ONLY,no automatic fetch,offline + link integrity tests,show stale/external dependency,compatibility-report-v1
+XLSX,Security,VBA/macros/ActiveX,PRESERVE_NO_EXECUTE,no,malicious fixture suite,never execute; warn before export,compatibility-report-v1
+PPTX,Read/render,"text boxes, shapes, images, themes",SUPPORTED_GA,yes,visual + round-trip fixtures,render normally,office-core-v1
+PPTX,Read/render,speaker notes,SUPPORTED_GA,yes,round-trip fixtures,render in notes panel,office-core-v1
+PPTX,Charts,qualified chart types from Harbor IR,REQUIRED_UNQUALIFIED,yes after PASS,visual + data-binding fixture,until PASS: preserve original,compatibility-report-v1
+PPTX,Preserve,animations / transitions,PRESERVE_ONLY,no,relationship/package preservation,not previewed; preserve on save,compatibility-report-v1
+PPTX,Security,macros/OLE/embedded executable content,PRESERVE_NO_EXECUTE,no,malicious fixture suite,never execute; warn before export,compatibility-report-v1
+ALL,Commit,typed artifact operation batch,SUPPORTED_GA,yes,base-hash/precondition/conflict corpus,atomic replace or versioned-copy fallback,office-core-v1
+ALL,Unknown,feature absent from this matrix,REJECT_OR_PRESERVE_ONLY,no,explicit compatibility classifier required,must not silently claim support,compatibility-report-v1

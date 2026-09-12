@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harbor.invalid/schemas/artifact_commit.schema.json",
+  "title": "Harbor artifact commit journal",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "harbor.artifact_commit/v1"
+    },
+    "batch_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "artifact_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "effect_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "state": {
+      "enum": [
+        "prepared",
+        "staged",
+        "replaced",
+        "committed",
+        "conflict",
+        "outcome_unknown",
+        "aborted"
+      ]
+    },
+    "mode": {
+      "enum": [
+        "private_store_atomic",
+        "provider_compare_and_swap",
+        "exclusive_handle_replace",
+        "new_copy"
+      ]
+    },
+    "base_content_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "proposed_output_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "staging_blob_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "target_identity": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "destination_identity": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "expected_target_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "coordination_proof_ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "approval_receipt_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "executor_generation": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "committed_version_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "schema",
+    "batch_id",
+    "artifact_id",
+    "effect_id",
+    "state",
+    "mode",
+    "base_content_hash",
+    "proposed_output_hash",
+    "staging_blob_id",
+    "target_identity",
+    "destination_identity",
+    "approval_receipt_id",
+    "executor_generation",
+    "created_at",
+    "updated_at"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "provider_compare_and_swap"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "required": [
+          "expected_target_version",
+          "coordination_proof_ref"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "exclusive_handle_replace"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "required": [
+          "coordination_proof_ref"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "committed"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "required": [
+          "committed_version_id"
+        ]
+      }
+    }
+  ]
+}

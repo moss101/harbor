@@ -1,0 +1,225 @@
+{
+  "schema": "harbor.feature_registry/v1",
+  "milestones": [
+    "M0_CONTRACT",
+    "M1_LOCAL_REFERENCE",
+    "M2_PLATFORM_BETA",
+    "M3_GA_CORE",
+    "M4_OPTIONAL_SERVICES"
+  ],
+  "platforms": {
+    "iOS": [
+      "arm64"
+    ],
+    "Android": [
+      "arm64-v8a"
+    ],
+    "macOS": [
+      "arm64"
+    ],
+    "Windows": [
+      "x64",
+      "arm64"
+    ]
+  },
+  "implicit_feature": "core",
+  "required_at_core_ga": [
+    "feature:hf_public",
+    "feature:rag"
+  ],
+  "features": {
+    "feature:hf_public": {
+      "default_enabled": false,
+      "earliest_milestone": "M1_LOCAL_REFERENCE",
+      "requires": [],
+      "activation_gates": [
+        "ACC-006"
+      ],
+      "platforms": [
+        "iOS",
+        "Android",
+        "macOS",
+        "Windows"
+      ]
+    },
+    "feature:rag": {
+      "default_enabled": false,
+      "earliest_milestone": "M3_GA_CORE",
+      "requires": [],
+      "activation_gates": [
+        "ACC-014",
+        "ACC-055"
+      ],
+      "platforms": [
+        "iOS",
+        "Android",
+        "macOS",
+        "Windows"
+      ]
+    },
+    "feature:ocr_ar": {
+      "default_enabled": false,
+      "earliest_milestone": "M3_GA_CORE",
+      "requires": [],
+      "activation_gates": [
+        "ACC-060"
+      ],
+      "platforms": [
+        "iOS",
+        "Android",
+        "macOS",
+        "Windows"
+      ]
+    },
+    "feature:hf_auth": {
+      "default_enabled": false,
+      "earliest_milestone": "M4_OPTIONAL_SERVICES",
+      "requires": [
+        "feature:hf_public"
+      ],
+      "activation_gates": [
+        "ACC-066"
+      ],
+      "platforms": [
+        "iOS",
+        "Android",
+        "macOS",
+        "Windows"
+      ]
+    },
+    "feature:hf_gated": {
+      "default_enabled": false,
+      "earliest_milestone": "M4_OPTIONAL_SERVICES",
+      "requires": [
+        "feature:hf_auth"
+      ],
+      "activation_gates": [
+        "ACC-067"
+      ],
+      "platforms": [
+        "iOS",
+        "Android",
+        "macOS",
+        "Windows"
+      ]
+    },
+    "feature:connectors": {
+      "default_enabled": false,
+      "earliest_milestone": "M4_OPTIONAL_SERVICES",
+      "requires": [],
+      "activation_gates": [
+        "ACC-068"
+      ],
+      "platforms": [
+        "iOS",
+        "Android",
+        "macOS",
+        "Windows"
+      ]
+    },
+    "feature:diagnostics": {
+      "default_enabled": false,
+      "earliest_milestone": "M4_OPTIONAL_SERVICES",
+      "requires": [],
+      "activation_gates": [
+        "ACC-069"
+      ],
+      "platforms": [
+        "iOS",
+        "Android",
+        "macOS",
+        "Windows"
+      ]
+    },
+    "feature:remote_inference": {
+      "default_enabled": false,
+      "earliest_milestone": "M4_OPTIONAL_SERVICES",
+      "requires": [],
+      "activation_gates": [
+        "ACC-037"
+      ],
+      "platforms": [
+        "iOS",
+        "Android",
+        "macOS",
+        "Windows"
+      ]
+    },
+    "feature:sync": {
+      "default_enabled": false,
+      "earliest_milestone": "M4_OPTIONAL_SERVICES",
+      "requires": [],
+      "activation_gates": [
+        "ACC-022",
+        "ACC-023",
+        "ACC-057"
+      ],
+      "platforms": [
+        "iOS",
+        "Android",
+        "macOS",
+        "Windows"
+      ]
+    },
+    "feature:desktop_sandbox": {
+      "default_enabled": false,
+      "earliest_milestone": "M4_OPTIONAL_SERVICES",
+      "requires": [],
+      "activation_gates": [
+        "ACC-073"
+      ],
+      "platforms": [
+        "macOS",
+        "Windows"
+      ]
+    },
+    "feature:app_lock": {
+      "default_enabled": false,
+      "earliest_milestone": "M4_OPTIONAL_SERVICES",
+      "requires": [],
+      "activation_gates": [
+        "ACC-074"
+      ],
+      "platforms": [
+        "iOS",
+        "Android",
+        "macOS",
+        "Windows"
+      ]
+    },
+    "provider:apple_system": {
+      "default_enabled": false,
+      "earliest_milestone": "M4_OPTIONAL_SERVICES",
+      "requires": [],
+      "activation_gates": [
+        "ACC-070"
+      ],
+      "platforms": [
+        "iOS",
+        "macOS"
+      ]
+    },
+    "provider:android_system": {
+      "default_enabled": false,
+      "earliest_milestone": "M4_OPTIONAL_SERVICES",
+      "requires": [],
+      "activation_gates": [
+        "ACC-071"
+      ],
+      "platforms": [
+        "Android"
+      ]
+    },
+    "provider:windows_foundry": {
+      "default_enabled": false,
+      "earliest_milestone": "M4_OPTIONAL_SERVICES",
+      "requires": [],
+      "activation_gates": [
+        "ACC-072"
+      ],
+      "platforms": [
+        "Windows"
+      ]
+    }
+  }
+}

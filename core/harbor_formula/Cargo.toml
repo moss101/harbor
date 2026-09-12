@@ -1,0 +1,18 @@
+[package]
+name = "harbor_formula"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+harbor_canonical = { workspace = true }
+formualizer = { workspace = true, features = ["umya"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"

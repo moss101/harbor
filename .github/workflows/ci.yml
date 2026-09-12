@@ -1,0 +1,36 @@
+# Untrusted PR CI (separate from signing/promotion per 08_Repo_Structure.md).
+name: ci
+on:
+  push:
+  pull_request:
+
+jobs:
+  dossier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install -r requirements-validation.txt
+      - name: Package structural validation
+        run: python3 tools/validate_dossier.py
+      - name: Contract tests
+        run: python3 tools/test_contracts.py
+      - name: Engine pin freshness
+        run: |
+          cargo fetch --manifest-path core/Cargo.toml
+          python3 tools/pin_engine.py --check
+
+  rust:
+    runs-on: macos-14
+    defaults:
+      run: { working-directory: core }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: core }
+      - name: Test all crates
+        run: cargo test --workspace
+      - name: Formula qualification report
+        run: cargo test -p harbor_formula full_qualification -- --nocapture

@@ -1,0 +1,82 @@
+Gate ID,Milestone,Blocking,Applicability,Platforms,Owner,Tasks,Security IDs,Screen IDs,Evidence
+ACC-001,M3_GA_CORE,Yes,core,All,Offline,HBR-031;HBR-073;HBR-098;HBR-125,SEC-011,UX-004;UX-006;UX-007,evidence/gates/ACC-001/report.json
+ACC-002,M3_GA_CORE,Yes,core,All,Privacy,HBR-100;HBR-125;HBR-150,SEC-030;SEC-035,UX-031;UX-032;UX-046,evidence/gates/ACC-002/report.json
+ACC-003,M3_GA_CORE,Yes,core,All,Inference,HBR-030;HBR-031;HBR-132,SEC-019,UX-006;UX-023,evidence/gates/ACC-003/report.json
+ACC-004,M3_GA_CORE,Yes,core,All,Routing,HBR-032;HBR-037;HBR-157,SEC-011,UX-045,evidence/gates/ACC-004/report.json
+ACC-005,M3_GA_CORE,Yes,core,All,Models,HBR-041;HBR-154,SEC-029,UX-018;UX-021,evidence/gates/ACC-005/report.json
+ACC-006,M1_LOCAL_REFERENCE,Yes,feature:hf_public,All,Models,HBR-046;HBR-048;HBR-157,SEC-045,UX-022,evidence/gates/ACC-006/report.json
+ACC-007,M3_GA_CORE,Yes,core,All,Models,HBR-043;HBR-049;HBR-157,SEC-021,UX-020;UX-024,evidence/gates/ACC-007/report.json
+ACC-008,M3_GA_CORE,Yes,core,All,Models,HBR-121,SEC-009;SEC-018,UX-020;UX-032,evidence/gates/ACC-008/report.json
+ACC-009,M3_GA_CORE,Yes,core,All,Agents,HBR-022;HBR-063;HBR-149,SEC-007;SEC-008,UX-017;UX-043,evidence/gates/ACC-009/report.json
+ACC-010,M3_GA_CORE,Yes,core,All,Agents,HBR-064;HBR-149,SEC-031;SEC-032,UX-016;UX-041;UX-043,evidence/gates/ACC-010/report.json
+ACC-011,M3_GA_CORE,Yes,core,All,Artifacts,HBR-091;HBR-092;HBR-093;HBR-094;HBR-133;HBR-153,SEC-042,UX-008;UX-009;UX-010,evidence/gates/ACC-011/report.json
+ACC-012,M3_GA_CORE,Yes,core,macOS;Windows,Artifacts,HBR-092;HBR-093;HBR-094;HBR-133;HBR-153,SEC-042,UX-008;UX-009;UX-010,evidence/gates/ACC-012/report.json
+ACC-013,M3_GA_CORE,Yes,core,All,Artifacts,HBR-096;HBR-151,SEC-033,UX-012;UX-017;UX-047,evidence/gates/ACC-013/report.json
+ACC-014,M3_GA_CORE,Yes,feature:rag,All,RAG,HBR-083;HBR-084;HBR-085;HBR-155,SEC-006;SEC-047,UX-011;UX-028;UX-029,evidence/gates/ACC-014/report.json
+ACC-015,M3_GA_CORE,Yes,core,All,Security,HBR-049;HBR-091;HBR-123,SEC-001;SEC-002;SEC-003;SEC-021;SEC-004,UX-024;UX-041,evidence/gates/ACC-015/report.json
+ACC-016,M3_GA_CORE,Yes,core,All,UX,HBR-037;HBR-150;HBR-160,SEC-011,UX-006;UX-016;UX-032;UX-046,evidence/gates/ACC-016/report.json
+ACC-017,M3_GA_CORE,Yes,core,All,UX,HBR-010;HBR-012;HBR-013;HBR-160,,UX-004;UX-007;UX-008;UX-009;UX-010,evidence/gates/ACC-017/report.json
+ACC-018,M3_GA_CORE,Yes,core,All,A11y,HBR-014;HBR-015;HBR-135;HBR-158,,UX-004;UX-006;UX-007;UX-037,evidence/gates/ACC-018/report.json
+ACC-019,M3_GA_CORE,Yes,core,All,Localization,HBR-011;HBR-131;HBR-158;HBR-159,,UX-037;UX-042,evidence/gates/ACC-019/report.json
+ACC-020,M3_GA_CORE,Yes,core,All,Persistence,HBR-046;HBR-064;HBR-148;HBR-151,SEC-031;SEC-043;SEC-046,UX-022;UX-041;UX-047,evidence/gates/ACC-020/report.json
+ACC-021,M3_GA_CORE,Yes,core,All,Storage,HBR-048;HBR-122;HBR-152,SEC-038;SEC-024,UX-023;UX-036,evidence/gates/ACC-021/report.json
+ACC-022,M4_OPTIONAL_SERVICES,Yes,feature:sync,All,Sync,HBR-104;HBR-156,SEC-016;SEC-039;SEC-040,UX-035,evidence/gates/ACC-022/report.json
+ACC-023,M4_OPTIONAL_SERVICES,Yes,feature:sync,All,Sync,HBR-106;HBR-156,SEC-039,UX-035,evidence/gates/ACC-023/report.json
+ACC-024,M3_GA_CORE,Yes,core,All,Performance,HBR-020;HBR-023;HBR-050;HBR-083;HBR-154,,UX-025;UX-041,evidence/gates/ACC-024/report.json
+ACC-025,M3_GA_CORE,Yes,core,iOS;Android,Thermal,HBR-023;HBR-110;HBR-111;HBR-154,SEC-019,UX-041,evidence/gates/ACC-025/report.json
+ACC-026,M3_GA_CORE,Yes,core,macOS;Windows,Desktop,HBR-023;HBR-031;HBR-157,SEC-045,UX-022;UX-023,evidence/gates/ACC-026/report.json
+ACC-027,M3_GA_CORE,Yes,core,All,Updates,HBR-004;HBR-136,,UX-041,evidence/gates/ACC-027/report.json
+ACC-028,M3_GA_CORE,Yes,core,All,Supply chain,HBR-140;HBR-141,SEC-027,,evidence/gates/ACC-028/report.json
+ACC-029,M3_GA_CORE,Yes,core,All,Catalog,HBR-042;HBR-144;HBR-157,SEC-012;SEC-044,UX-019;UX-021,evidence/gates/ACC-029/report.json
+ACC-030,M3_GA_CORE,Yes,core,All,Diagnostics,HBR-121,SEC-018,UX-032,evidence/gates/ACC-030/report.json
+ACC-031,M3_GA_CORE,Yes,core,All,Share-in,HBR-073;HBR-081;HBR-114,SEC-014,UX-039;UX-040;UX-044,evidence/gates/ACC-031/report.json
+ACC-032,M3_GA_CORE,Yes,core,All,Office agent,HBR-099;HBR-161,SEC-033;SEC-041;SEC-043,UX-009;UX-010;UX-012;UX-017,evidence/gates/ACC-032/report.json
+ACC-033,M3_GA_CORE,Yes,core,All,Model UX,HBR-041;HBR-043;HBR-160,,UX-003;UX-018;UX-021,evidence/gates/ACC-033/report.json
+ACC-034,M3_GA_CORE,Yes,core,All,Model UX,HBR-040;HBR-043;HBR-157,,UX-020;UX-021,evidence/gates/ACC-034/report.json
+ACC-035,M3_GA_CORE,Yes,core,All,Agent UX,HBR-065;HBR-148;HBR-160,,UX-016,evidence/gates/ACC-035/report.json
+ACC-036,M3_GA_CORE,Yes,core,All,Permissions,HBR-022;HBR-063;HBR-149,SEC-008,UX-017;UX-032;UX-044,evidence/gates/ACC-036/report.json
+ACC-037,M4_OPTIONAL_SERVICES,Yes,feature:remote_inference,All,Remote,HBR-036;HBR-037;HBR-124;HBR-150,SEC-011;SEC-010,UX-034;UX-046,evidence/gates/ACC-037/report.json
+ACC-038,M3_GA_CORE,Yes,core,All,Network,HBR-100;HBR-150,SEC-030;SEC-034;SEC-035,UX-031,evidence/gates/ACC-038/report.json
+ACC-039,M3_GA_CORE,Yes,core,All,Recovery,HBR-024;HBR-080;HBR-152,SEC-036;SEC-037,UX-041,evidence/gates/ACC-039/report.json
+ACC-040,M3_GA_CORE,Yes,core,All,Store compliance,HBR-110;HBR-111;HBR-112;HBR-142;HBR-143,SEC-027;SEC-028,,evidence/gates/ACC-040/report.json
+ACC-041,M0_CONTRACT,Yes,core,All,Release,HBR-146;HBR-147,,UX-041,Machine-readable gate-evaluator output with commit SHA and evidence URIs.
+ACC-042,M1_LOCAL_REFERENCE,Yes,core,All,Agent,HBR-148,SEC-046,UX-016;UX-041,Replay matrix for every transition and pause reason.
+ACC-043,M1_LOCAL_REFERENCE,Yes,core,All,Agent,HBR-148,SEC-046,UX-041,Concurrent resume test with executor lease evidence.
+ACC-044,M1_LOCAL_REFERENCE,Yes,core,All,Agent/Tools,HBR-149,SEC-031,UX-016;UX-043,Fault-injection log across prepared/dispatched/committed windows.
+ACC-045,M1_LOCAL_REFERENCE,Yes,core,All,Agent/Tools,HBR-149,SEC-032,UX-016;UX-043,OUTCOME_UNKNOWN scenario with user-visible recovery path.
+ACC-046,M1_LOCAL_REFERENCE,Yes,core,All,Artifacts,HBR-151,SEC-033;SEC-023,UX-047,TOCTOU fixture on DOCX/XLSX/PPTX.
+ACC-047,M1_LOCAL_REFERENCE,Yes,core,All,Artifacts,HBR-090;HBR-097;HBR-151,SEC-043,UX-008;UX-009;UX-010;UX-012;UX-047,Atomic replace/fallback evidence per platform.
+ACC-048,M2_PLATFORM_BETA,Yes,core,All,Network,HBR-150,SEC-030;SEC-034;SEC-035,UX-031;UX-032;UX-046,Packet/proxy capture plus broker log reconciliation.
+ACC-049,M2_PLATFORM_BETA,Yes,core,All,Security,HBR-152,SEC-036;SEC-037,UX-036,Synthetic-secret filesystem inspection.
+ACC-050,M2_PLATFORM_BETA,Yes,core,All,Security,HBR-152,SEC-038,UX-036,Key rotation/delete/restore scenario report.
+ACC-051,M1_LOCAL_REFERENCE,Yes,core,All,Artifacts,HBR-153;HBR-161,SEC-041,UX-009;UX-012;UX-017,Pinned workbook corpus with expected values and calculation diagnostics.
+ACC-052,M2_PLATFORM_BETA,Yes,core,All,Artifacts,HBR-153,SEC-042,UX-008;UX-010;UX-012,Golden render and compatibility-report corpus.
+ACC-053,M2_PLATFORM_BETA,Yes,core,All,Platform,HBR-154,,UX-022;UX-041,support_matrix.yaml plus device-lab results.
+ACC-054,M3_GA_CORE,Yes,core,All,Performance,HBR-154;HBR-132,,UX-025,performance_budgets.yaml and benchmark report.
+ACC-055,M3_GA_CORE,Yes,feature:rag,All,RAG,HBR-082;HBR-083;HBR-084;HBR-155,SEC-047,UX-028;UX-029,Index-migration and source-revocation report.
+ACC-056,M3_GA_CORE,Yes,core,All,Evaluation,HBR-155;HBR-134,SEC-006;SEC-047,UX-013;UX-029,Versioned evaluation dataset/results.
+ACC-057,M4_OPTIONAL_SERVICES,Yes,feature:sync,All,Sync,HBR-104;HBR-105;HBR-156,SEC-016;SEC-039;SEC-040,UX-035,Feature-specific sync qualification suite.
+ACC-058,M2_PLATFORM_BETA,Yes,core,All,Model Hub,HBR-047;HBR-157,SEC-012;SEC-013;SEC-044;SEC-045,UX-022;UX-024,Provider/package contract fixtures.
+ACC-059,M2_PLATFORM_BETA,Yes,core,All,Design,HBR-158;HBR-135,,UX-001;UX-037,Automated token/component contrast report plus manual review.
+ACC-060,M3_GA_CORE,Yes,feature:ocr_ar,All,Localization,HBR-159,,UX-039;UX-042,Arabic/mixed-script OCR fixture results.
+ACC-061,M2_PLATFORM_BETA,Yes,core,All,Design,HBR-160;HBR-012,,UX-007;UX-008;UX-009;UX-010;UX-011;UX-012,Golden layout suite at breakpoint widths.
+ACC-062,M2_PLATFORM_BETA,Yes,core,All,Design/Release,HBR-160,,UX-043;UX-044;UX-045;UX-046;UX-047,Screen-state coverage report.
+ACC-063,M1_LOCAL_REFERENCE,Yes,core,All,Product,HBR-161;HBR-099,SEC-031;SEC-033;SEC-041;SEC-043,UX-009;UX-010;UX-012;UX-016;UX-017;UX-023;UX-041;UX-047,"End-to-end trace, artifacts, known-answer report and recovery evidence."
+ACC-064,M1_LOCAL_REFERENCE,Yes,core,All,Capability activation,HBR-003;HBR-022;HBR-147;HBR-150,,UX-032;UX-034;UX-035;UX-046,evidence/gates/ACC-064/report.json
+ACC-065,M3_GA_CORE,Yes,core,All,Security coverage,HBR-120;HBR-123;HBR-130,SEC-004;SEC-020;SEC-023;SEC-024,UX-008;UX-012;UX-036;UX-040;UX-047,evidence/gates/ACC-065/report.json
+ACC-066,M4_OPTIONAL_SERVICES,Yes,feature:hf_auth,All,Hub authentication,HBR-044;HBR-121;HBR-150,SEC-009;SEC-018;SEC-034,UX-020;UX-032,evidence/gates/ACC-066/report.json
+ACC-067,M4_OPTIONAL_SERVICES,Yes,feature:hf_gated,All,Gated Hub,HBR-044;HBR-045,SEC-009;SEC-013,UX-020;UX-021,evidence/gates/ACC-067/report.json
+ACC-068,M4_OPTIONAL_SERVICES,Yes,feature:connectors,All,Connectors,HBR-101;HBR-102;HBR-103;HBR-149;HBR-150,SEC-015;SEC-007;SEC-008;SEC-031;SEC-032,UX-033;UX-043;UX-044,evidence/gates/ACC-068/report.json
+ACC-069,M4_OPTIONAL_SERVICES,Yes,feature:diagnostics,All,Diagnostics upload,HBR-121;HBR-145;HBR-150,SEC-018;SEC-030,UX-025;UX-032;UX-046,evidence/gates/ACC-069/report.json
+ACC-070,M4_OPTIONAL_SERVICES,Yes,provider:apple_system,iOS;macOS,Apple system provider,HBR-033;HBR-110;HBR-037;HBR-150;HBR-157,SEC-011;SEC-019;SEC-035,UX-023;UX-045;UX-046,evidence/gates/ACC-070/report.json
+ACC-071,M4_OPTIONAL_SERVICES,Yes,provider:android_system,Android,Android system provider,HBR-034;HBR-111;HBR-037;HBR-150;HBR-157,SEC-011;SEC-019;SEC-035,UX-023;UX-045;UX-046,evidence/gates/ACC-071/report.json
+ACC-072,M4_OPTIONAL_SERVICES,Yes,provider:windows_foundry,Windows,Windows system provider,HBR-035;HBR-112;HBR-037;HBR-150;HBR-157,SEC-011;SEC-019;SEC-035,UX-023;UX-045;UX-046,evidence/gates/ACC-072/report.json
+ACC-073,M4_OPTIONAL_SERVICES,Yes,feature:desktop_sandbox,macOS;Windows,Desktop sandbox,HBR-075;HBR-022,SEC-022,UX-015;UX-016;UX-044,evidence/gates/ACC-073/report.json
+ACC-074,M4_OPTIONAL_SERVICES,Yes,feature:app_lock,All,App lock,HBR-162,SEC-017;SEC-026,UX-032;UX-041,evidence/gates/ACC-074/report.json
+ACC-075,M0_CONTRACT,Yes,core,All,Contract freeze,HBR-001;HBR-002;HBR-003;HBR-005;HBR-140;HBR-147;HBR-160,,,evidence/gates/ACC-075/report.json
+ACC-076,M1_LOCAL_REFERENCE,Yes,core,All,Runtime contracts,HBR-020;HBR-021;HBR-023;HBR-060;HBR-061;HBR-062;HBR-066;HBR-067,SEC-007;SEC-008;SEC-019;SEC-046,UX-015;UX-016;UX-041;UX-043,evidence/gates/ACC-076/report.json
+ACC-077,M3_GA_CORE,Yes,core,All,Skills,HBR-070;HBR-071;HBR-072,SEC-005,UX-026;UX-027,evidence/gates/ACC-077/report.json
+ACC-078,M1_LOCAL_REFERENCE,Yes,core,All,Context isolation,HBR-038;HBR-086,SEC-025,UX-006;UX-028,evidence/gates/ACC-078/report.json
+ACC-079,M2_PLATFORM_BETA,Yes,core,All,Files and extraction,HBR-073;HBR-074;HBR-095,SEC-020;SEC-014,UX-011;UX-039;UX-040,evidence/gates/ACC-079/report.json
+ACC-080,M2_PLATFORM_BETA,Yes,core,All,Platform lifecycle,HBR-110;HBR-111;HBR-112;HBR-113;HBR-114,SEC-014;SEC-028,UX-039;UX-040;UX-041;UX-044,evidence/gates/ACC-080/report.json
+ACC-081,M2_PLATFORM_BETA,Yes,core,All,Platform reference workflow,HBR-099;HBR-161;HBR-110;HBR-111;HBR-112,SEC-031;SEC-033;SEC-041;SEC-043,UX-009;UX-010;UX-012;UX-016;UX-017;UX-041;UX-047,evidence/gates/ACC-081/report.json

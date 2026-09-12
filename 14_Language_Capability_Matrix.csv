@@ -1,0 +1,10 @@
+Feature,English,Arabic,Offline at GA,Implementation,Release rule
+Application UI,Full,Full RTL,Yes,Flutter localized strings + mirrored layout,Both required on all shipped platforms
+Model answers,Required for recommended starter models,Required for recommended bilingual models,Yes,Per-model capability/eval label,Catalog may list non-Arabic models but must disclose
+OCR printed text,Full,Full for enabled Arabic pack,Yes,Platform OCR where qualified; Harbor Arabic OCR pack using Tesseract ara+eng fallback,"If Arabic pack unavailable, disable Arabic scan before capture"
+OCR handwriting,Not promised,Not promised,N/A,Out of GA scope,Must not imply support
+Embeddings/RAG,Required,Required for default multilingual embedding profile,Yes,Pinned multilingual embedding model,EN/AR retrieval eval gate ACC-056
+Speech-to-text,Optional feature,Optional feature,Only where selected provider is offline,Feature-gated provider facade,Out of this release registry; unavailable until a separately versioned provider/feature contract and activation gate are added.
+Text-to-speech,Optional feature,Optional feature,Platform dependent,Native provider adapter,Out of this release registry; unavailable until a separately versioned provider/feature contract and activation gate are added.
+Generated DOCX/XLSX/PPTX,Full Unicode,Full Unicode + RTL paragraphs/cells where applicable,Yes,Harbor artifact engine + font fallback map,Arabic golden files required
+Search/tokenization,Full,Full,Yes,Unicode-normalized tokenizer/search pipeline,Mixed-script fixtures required

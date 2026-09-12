@@ -1,0 +1,13 @@
+name: harbor_native
+description: "Dart FFI bindings to Harbor Core (libharbor_ffi)."
+publish_to: none
+version: 0.1.0
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  ffi: ^2.1.0
+
+dev_dependencies:
+  lints: ^4.0.0
+  test: ^1.25.0

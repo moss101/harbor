@@ -1,0 +1,23 @@
+[package]
+name = "harbor_core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+harbor_canonical = { workspace = true }
+harbor_store = { workspace = true }
+harbor_security = { workspace = true }
+harbor_net = { workspace = true }
+harbor_agent = { workspace = true }
+harbor_formula = { workspace = true }
+harbor_artifacts = { workspace = true }
+harbor_modelhub = { workspace = true }
+harbor_inference = { workspace = true }
+harbor_knowledge = { workspace = true }
+rusqlite = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"

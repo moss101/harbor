@@ -1,0 +1,1153 @@
+{
+  "schema": "harbor.contract_fixtures/v1",
+  "purpose": "Synthetic schema and semantic regression fixtures only; never release evidence",
+  "cases": [
+    {
+      "id": "effect-valid",
+      "schema": "effect_intent.schema.json",
+      "expected_valid": true,
+      "record": {
+        "schema": "harbor.effect/v3",
+        "effect_id": "effect-1",
+        "run_id": "run-1",
+        "tool": "connector.send",
+        "effect_class": "connector_write",
+        "canonicalization": "harbor.canonical_json/v1",
+        "canonical_args": {
+          "recipient": "fixture@example.invalid",
+          "text": "Synthetic fixture only"
+        },
+        "canonical_args_hash": "3611ac7b8afbf970ee015819493905316466c018c1611eb2ac621bd30b4f430a",
+        "target": {
+          "kind": "connector_object",
+          "identity": "fixture-target",
+          "capability_id": "cap-1"
+        },
+        "policy_version": "policy-1",
+        "approval_receipt_id": "receipt-1",
+        "executor_generation": 1,
+        "state": "prepared",
+        "idempotency_mode": "provider_key",
+        "provider_key": "stable-key",
+        "created_at": "2026-09-12T00:00:00Z",
+        "updated_at": "2026-09-12T00:00:00Z"
+      }
+    },
+    {
+      "id": "effect-key-missing",
+      "schema": "effect_intent.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.effect/v3",
+        "effect_id": "effect-1",
+        "run_id": "run-1",
+        "tool": "connector.send",
+        "effect_class": "connector_write",
+        "canonicalization": "harbor.canonical_json/v1",
+        "canonical_args": {
+          "recipient": "fixture@example.invalid",
+          "text": "Synthetic fixture only"
+        },
+        "canonical_args_hash": "3611ac7b8afbf970ee015819493905316466c018c1611eb2ac621bd30b4f430a",
+        "target": {
+          "kind": "connector_object",
+          "identity": "fixture-target",
+          "capability_id": "cap-1"
+        },
+        "policy_version": "policy-1",
+        "approval_receipt_id": "receipt-1",
+        "executor_generation": 1,
+        "state": "dispatched",
+        "idempotency_mode": "provider_key",
+        "created_at": "2026-09-12T00:00:00Z",
+        "updated_at": "2026-09-12T00:00:00Z",
+        "attempt_id": "attempt-1"
+      }
+    },
+    {
+      "id": "effect-approval-missing",
+      "schema": "effect_intent.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.effect/v3",
+        "effect_id": "effect-1",
+        "run_id": "run-1",
+        "tool": "connector.send",
+        "effect_class": "connector_write",
+        "canonicalization": "harbor.canonical_json/v1",
+        "canonical_args": {
+          "recipient": "fixture@example.invalid",
+          "text": "Synthetic fixture only"
+        },
+        "canonical_args_hash": "3611ac7b8afbf970ee015819493905316466c018c1611eb2ac621bd30b4f430a",
+        "target": {
+          "kind": "connector_object",
+          "identity": "fixture-target",
+          "capability_id": "cap-1"
+        },
+        "policy_version": "policy-1",
+        "executor_generation": 1,
+        "state": "prepared",
+        "idempotency_mode": "provider_key",
+        "provider_key": "stable-key",
+        "created_at": "2026-09-12T00:00:00Z",
+        "updated_at": "2026-09-12T00:00:00Z"
+      }
+    },
+    {
+      "id": "effect-arguments-tampered",
+      "schema": "effect_intent.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.effect/v3",
+        "effect_id": "effect-1",
+        "run_id": "run-1",
+        "tool": "connector.send",
+        "effect_class": "connector_write",
+        "canonicalization": "harbor.canonical_json/v1",
+        "canonical_args": {
+          "recipient": "fixture@example.invalid",
+          "text": "Synthetic fixture only"
+        },
+        "canonical_args_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "target": {
+          "kind": "connector_object",
+          "identity": "fixture-target",
+          "capability_id": "cap-1"
+        },
+        "policy_version": "policy-1",
+        "approval_receipt_id": "receipt-1",
+        "executor_generation": 1,
+        "state": "prepared",
+        "idempotency_mode": "provider_key",
+        "provider_key": "stable-key",
+        "created_at": "2026-09-12T00:00:00Z",
+        "updated_at": "2026-09-12T00:00:00Z"
+      }
+    },
+    {
+      "id": "effect-canonical-arguments-supported",
+      "schema": "effect_intent.schema.json",
+      "expected_valid": true,
+      "record": {
+        "schema": "harbor.effect/v3",
+        "effect_id": "effect-1",
+        "run_id": "run-1",
+        "tool": "connector.send",
+        "effect_class": "connector_write",
+        "canonicalization": "harbor.canonical_json/v1",
+        "canonical_args": {
+          "recipient": "fixture@example.invalid",
+          "text": "Synthetic fixture only"
+        },
+        "canonical_args_hash": "3611ac7b8afbf970ee015819493905316466c018c1611eb2ac621bd30b4f430a",
+        "target": {
+          "kind": "connector_object",
+          "identity": "fixture-target",
+          "capability_id": "cap-1"
+        },
+        "policy_version": "policy-1",
+        "approval_receipt_id": "receipt-1",
+        "executor_generation": 1,
+        "state": "prepared",
+        "idempotency_mode": "provider_key",
+        "provider_key": "stable-key",
+        "created_at": "2026-09-12T00:00:00Z",
+        "updated_at": "2026-09-12T00:00:00Z"
+      }
+    },
+    {
+      "id": "canonical-float-forbidden",
+      "schema": "effect_intent.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.effect/v3",
+        "effect_id": "effect-1",
+        "run_id": "run-1",
+        "tool": "connector.send",
+        "effect_class": "connector_write",
+        "canonicalization": "harbor.canonical_json/v1",
+        "canonical_args": {
+          "value": 1.5
+        },
+        "canonical_args_hash": "3611ac7b8afbf970ee015819493905316466c018c1611eb2ac621bd30b4f430a",
+        "target": {
+          "kind": "connector_object",
+          "identity": "fixture-target",
+          "capability_id": "cap-1"
+        },
+        "policy_version": "policy-1",
+        "approval_receipt_id": "receipt-1",
+        "executor_generation": 1,
+        "state": "prepared",
+        "idempotency_mode": "provider_key",
+        "provider_key": "stable-key",
+        "created_at": "2026-09-12T00:00:00Z",
+        "updated_at": "2026-09-12T00:00:00Z"
+      }
+    },
+    {
+      "id": "effect-dispatch-needs-attempt",
+      "schema": "effect_intent.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.effect/v3",
+        "effect_id": "effect-1",
+        "run_id": "run-1",
+        "tool": "connector.send",
+        "effect_class": "connector_write",
+        "canonicalization": "harbor.canonical_json/v1",
+        "canonical_args": {
+          "recipient": "fixture@example.invalid",
+          "text": "Synthetic fixture only"
+        },
+        "canonical_args_hash": "3611ac7b8afbf970ee015819493905316466c018c1611eb2ac621bd30b4f430a",
+        "target": {
+          "kind": "connector_object",
+          "identity": "fixture-target",
+          "capability_id": "cap-1"
+        },
+        "policy_version": "policy-1",
+        "approval_receipt_id": "receipt-1",
+        "executor_generation": 1,
+        "state": "dispatched",
+        "idempotency_mode": "provider_key",
+        "provider_key": "stable-key",
+        "created_at": "2026-09-12T00:00:00Z",
+        "updated_at": "2026-09-12T00:00:00Z"
+      }
+    },
+    {
+      "id": "receipt-valid",
+      "schema": "approval_receipt.schema.json",
+      "expected_valid": true,
+      "record": {
+        "schema": "harbor.approval/v1",
+        "receipt_id": "receipt-1",
+        "run_id": "run-1",
+        "effect_id": "effect-1",
+        "device_id": "device-1",
+        "executor_generation": 1,
+        "effect_class": "connector_write",
+        "canonical_args_hash": "3611ac7b8afbf970ee015819493905316466c018c1611eb2ac621bd30b4f430a",
+        "target": {
+          "kind": "connector_object",
+          "identity": "fixture-target",
+          "capability_id": "cap-1"
+        },
+        "policy_version": "policy-1",
+        "authorization_source": "allow_once",
+        "decision": "approved",
+        "issued_at": "2026-09-12T00:00:00Z",
+        "expires_at": "2026-09-12T00:15:00Z",
+        "consumed_at": null
+      }
+    },
+    {
+      "id": "receipt-overlong-lifetime",
+      "schema": "approval_receipt.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.approval/v1",
+        "receipt_id": "receipt-1",
+        "run_id": "run-1",
+        "effect_id": "effect-1",
+        "device_id": "device-1",
+        "executor_generation": 1,
+        "effect_class": "connector_write",
+        "canonical_args_hash": "3611ac7b8afbf970ee015819493905316466c018c1611eb2ac621bd30b4f430a",
+        "target": {
+          "kind": "connector_object",
+          "identity": "fixture-target",
+          "capability_id": "cap-1"
+        },
+        "policy_version": "policy-1",
+        "authorization_source": "allow_once",
+        "decision": "approved",
+        "issued_at": "2026-09-12T00:00:00Z",
+        "expires_at": "2026-09-12T00:16:00Z",
+        "consumed_at": null
+      }
+    },
+    {
+      "id": "persistent-receipt-needs-policy",
+      "schema": "approval_receipt.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.approval/v1",
+        "receipt_id": "receipt-1",
+        "run_id": "run-1",
+        "effect_id": "effect-1",
+        "device_id": "device-1",
+        "executor_generation": 1,
+        "effect_class": "connector_write",
+        "canonical_args_hash": "3611ac7b8afbf970ee015819493905316466c018c1611eb2ac621bd30b4f430a",
+        "target": {
+          "kind": "connector_object",
+          "identity": "fixture-target",
+          "capability_id": "cap-1"
+        },
+        "policy_version": "policy-1",
+        "authorization_source": "persistent_policy",
+        "decision": "approved",
+        "issued_at": "2026-09-12T00:00:00Z",
+        "expires_at": "2026-09-12T00:15:00Z",
+        "consumed_at": null
+      }
+    },
+    {
+      "id": "event-valid",
+      "schema": "run_event.schema.json",
+      "expected_valid": true,
+      "record": {
+        "schema": "harbor.run_event/v3",
+        "run_id": "run-1",
+        "event_id": "event-1",
+        "seq": 0,
+        "event_type": "run.created",
+        "replay_semantics": "state_affecting",
+        "actor": "executor",
+        "lease_generation": 1,
+        "active_compute_ms_total": 0,
+        "step_count_total": 0,
+        "tool_count_total": 0,
+        "context_tokens_total": 0,
+        "payload": {
+          "initial_state": "CREATED"
+        },
+        "created_at": "2026-09-12T00:00:00Z",
+        "prev_event_hash": null
+      }
+    },
+    {
+      "id": "authority-needs-generation",
+      "schema": "run_event.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.run_event/v3",
+        "run_id": "run-1",
+        "event_id": "event-1",
+        "seq": 0,
+        "event_type": "lease.acquired",
+        "replay_semantics": "authority_affecting",
+        "actor": "executor",
+        "active_compute_ms_total": 0,
+        "step_count_total": 0,
+        "tool_count_total": 0,
+        "context_tokens_total": 0,
+        "payload": {
+          "owner_id": "owner-1",
+          "expires_at": "2026-09-12T00:00:30Z"
+        },
+        "created_at": "2026-09-12T00:00:00Z",
+        "prev_event_hash": null
+      }
+    },
+    {
+      "id": "known-authority-cannot-relabel-display",
+      "schema": "run_event.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.run_event/v3",
+        "run_id": "run-1",
+        "event_id": "event-1",
+        "seq": 0,
+        "event_type": "lease.acquired",
+        "replay_semantics": "ignorable_display",
+        "actor": "executor",
+        "lease_generation": 1,
+        "active_compute_ms_total": 0,
+        "step_count_total": 0,
+        "tool_count_total": 0,
+        "context_tokens_total": 0,
+        "payload": {
+          "message": "ignore me"
+        },
+        "created_at": "2026-09-12T00:00:00Z",
+        "prev_event_hash": null
+      }
+    },
+    {
+      "id": "unknown-authority-fails-closed",
+      "schema": "run_event.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.run_event/v3",
+        "run_id": "run-1",
+        "event_id": "event-1",
+        "seq": 0,
+        "event_type": "future.authority",
+        "replay_semantics": "authority_affecting",
+        "actor": "executor",
+        "lease_generation": 1,
+        "active_compute_ms_total": 0,
+        "step_count_total": 0,
+        "tool_count_total": 0,
+        "context_tokens_total": 0,
+        "payload": {},
+        "created_at": "2026-09-12T00:00:00Z",
+        "prev_event_hash": null
+      }
+    },
+    {
+      "id": "unknown-display-is-forward-compatible",
+      "schema": "run_event.schema.json",
+      "expected_valid": true,
+      "record": {
+        "schema": "harbor.run_event/v3",
+        "run_id": "run-1",
+        "event_id": "event-1",
+        "seq": 0,
+        "event_type": "future.display",
+        "replay_semantics": "ignorable_display",
+        "actor": "executor",
+        "lease_generation": 1,
+        "active_compute_ms_total": 0,
+        "step_count_total": 0,
+        "tool_count_total": 0,
+        "context_tokens_total": 0,
+        "payload": {
+          "message": "display only"
+        },
+        "created_at": "2026-09-12T00:00:00Z",
+        "prev_event_hash": null
+      }
+    },
+    {
+      "id": "terminal-run-cannot-resume",
+      "schema": "run_event.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.run_event/v3",
+        "run_id": "run-1",
+        "event_id": "event-1",
+        "seq": 0,
+        "event_type": "run.transition",
+        "replay_semantics": "state_affecting",
+        "actor": "executor",
+        "lease_generation": 1,
+        "active_compute_ms_total": 0,
+        "step_count_total": 0,
+        "tool_count_total": 0,
+        "context_tokens_total": 0,
+        "payload": {
+          "from_state": "COMPLETED",
+          "to_state": "RUNNING",
+          "reason": "resume"
+        },
+        "created_at": "2026-09-12T00:00:00Z",
+        "prev_event_hash": null
+      }
+    },
+    {
+      "id": "cancelled-needs-proof",
+      "schema": "run_event.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.run_event/v3",
+        "run_id": "run-1",
+        "event_id": "event-1",
+        "seq": 0,
+        "event_type": "run.transition",
+        "replay_semantics": "state_affecting",
+        "actor": "executor",
+        "lease_generation": 1,
+        "active_compute_ms_total": 0,
+        "step_count_total": 0,
+        "tool_count_total": 0,
+        "context_tokens_total": 0,
+        "payload": {
+          "from_state": "CANCELLING",
+          "to_state": "CANCELLED",
+          "reason": "cancel_acknowledged"
+        },
+        "created_at": "2026-09-12T00:00:00Z",
+        "prev_event_hash": null
+      }
+    },
+    {
+      "id": "batch-valid",
+      "schema": "artifact_batch.schema.json",
+      "expected_valid": true,
+      "record": {
+        "schema": "harbor.artifact_batch/v3",
+        "batch_id": "batch-1",
+        "artifact_id": "artifact-1",
+        "base_version_id": "version-1",
+        "base_content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "operations": [
+          {
+            "op_id": "op-1",
+            "kind": "text.replace",
+            "precondition": {
+              "target_id": "paragraph-1",
+              "expected_content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "args": {
+              "text": "Replacement"
+            }
+          }
+        ],
+        "proposed_output_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "approval_receipt_id": "receipt-1",
+        "created_at": "2026-09-12T00:00:00Z"
+      }
+    },
+    {
+      "id": "batch-duplicate-operation",
+      "schema": "artifact_batch.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.artifact_batch/v3",
+        "batch_id": "batch-1",
+        "artifact_id": "artifact-1",
+        "base_version_id": "version-1",
+        "base_content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "operations": [
+          {
+            "op_id": "op-1",
+            "kind": "text.replace",
+            "precondition": {
+              "target_id": "paragraph-1",
+              "expected_content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "args": {
+              "text": "Replacement"
+            }
+          },
+          {
+            "op_id": "op-1",
+            "kind": "text.replace",
+            "precondition": {
+              "target_id": "paragraph-1",
+              "expected_content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "args": {
+              "text": "Replacement"
+            }
+          }
+        ],
+        "proposed_output_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "approval_receipt_id": "receipt-1",
+        "created_at": "2026-09-12T00:00:00Z"
+      }
+    },
+    {
+      "id": "batch-unknown-kind",
+      "schema": "artifact_batch.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.artifact_batch/v3",
+        "batch_id": "batch-1",
+        "artifact_id": "artifact-1",
+        "base_version_id": "version-1",
+        "base_content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "operations": [
+          {
+            "op_id": "op-1",
+            "kind": "arbitrary_mutation",
+            "precondition": {
+              "target_id": "paragraph-1",
+              "expected_content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "args": {
+              "text": "Replacement"
+            }
+          }
+        ],
+        "proposed_output_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "approval_receipt_id": "receipt-1",
+        "created_at": "2026-09-12T00:00:00Z"
+      }
+    },
+    {
+      "id": "batch-empty-preconditions",
+      "schema": "artifact_batch.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.artifact_batch/v3",
+        "batch_id": "batch-1",
+        "artifact_id": "artifact-1",
+        "base_version_id": "version-1",
+        "base_content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "operations": [
+          {
+            "op_id": "op-1",
+            "kind": "text.replace",
+            "precondition": {},
+            "args": {
+              "text": "Replacement"
+            }
+          }
+        ],
+        "proposed_output_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "approval_receipt_id": "receipt-1",
+        "created_at": "2026-09-12T00:00:00Z"
+      }
+    },
+    {
+      "id": "model-valid",
+      "schema": "model_package.schema.json",
+      "expected_valid": true,
+      "record": {
+        "schema": "harbor.model/v3",
+        "id": "model-1",
+        "reference_type": "installed_package",
+        "capabilities": [
+          "chat"
+        ],
+        "files": [
+          {
+            "role": "weights",
+            "path": "model.gguf",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 1024
+          }
+        ],
+        "source": {
+          "kind": "local_import",
+          "revision": "content-sha256",
+          "origin": "user-selected-file"
+        },
+        "license": {
+          "identifier": "fixture-license",
+          "accepted_at": "2026-09-12T00:00:00Z"
+        },
+        "storage_class": "public_model"
+      }
+    },
+    {
+      "id": "model-empty-files",
+      "schema": "model_package.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.model/v3",
+        "id": "model-1",
+        "reference_type": "installed_package",
+        "capabilities": [
+          "chat"
+        ],
+        "files": [],
+        "source": {
+          "kind": "local_import",
+          "revision": "content-sha256",
+          "origin": "user-selected-file"
+        },
+        "license": {
+          "identifier": "fixture-license",
+          "accepted_at": "2026-09-12T00:00:00Z"
+        },
+        "storage_class": "public_model"
+      }
+    },
+    {
+      "id": "model-path-traversal",
+      "schema": "model_package.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.model/v3",
+        "id": "model-1",
+        "reference_type": "installed_package",
+        "capabilities": [
+          "chat"
+        ],
+        "files": [
+          {
+            "role": "weights",
+            "path": "../../outside.gguf",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 1024
+          }
+        ],
+        "source": {
+          "kind": "local_import",
+          "revision": "content-sha256",
+          "origin": "user-selected-file"
+        },
+        "license": {
+          "identifier": "fixture-license",
+          "accepted_at": "2026-09-12T00:00:00Z"
+        },
+        "storage_class": "public_model"
+      }
+    },
+    {
+      "id": "model-invalid-digest",
+      "schema": "model_package.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.model/v3",
+        "id": "model-1",
+        "reference_type": "installed_package",
+        "capabilities": [
+          "chat"
+        ],
+        "files": [
+          {
+            "role": "weights",
+            "path": "model.gguf",
+            "sha256": "invalid",
+            "size_bytes": 1024
+          }
+        ],
+        "source": {
+          "kind": "local_import",
+          "revision": "content-sha256",
+          "origin": "user-selected-file"
+        },
+        "license": {
+          "identifier": "fixture-license",
+          "accepted_at": "2026-09-12T00:00:00Z"
+        },
+        "storage_class": "public_model"
+      }
+    },
+    {
+      "id": "model-missing-path",
+      "schema": "model_package.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.model/v3",
+        "id": "model-1",
+        "reference_type": "installed_package",
+        "capabilities": [
+          "chat"
+        ],
+        "files": [
+          {
+            "role": "weights",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 1024
+          }
+        ],
+        "source": {
+          "kind": "local_import",
+          "revision": "content-sha256",
+          "origin": "user-selected-file"
+        },
+        "license": {
+          "identifier": "fixture-license",
+          "accepted_at": "2026-09-12T00:00:00Z"
+        },
+        "storage_class": "public_model"
+      }
+    },
+    {
+      "id": "model-case-collision",
+      "schema": "model_package.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.model/v3",
+        "id": "model-1",
+        "reference_type": "installed_package",
+        "capabilities": [
+          "chat"
+        ],
+        "files": [
+          {
+            "role": "weights",
+            "path": "model.gguf",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 1024
+          },
+          {
+            "role": "weights",
+            "path": "MODEL.gguf",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 1024
+          }
+        ],
+        "source": {
+          "kind": "local_import",
+          "revision": "content-sha256",
+          "origin": "user-selected-file"
+        },
+        "license": {
+          "identifier": "fixture-license",
+          "accepted_at": "2026-09-12T00:00:00Z"
+        },
+        "storage_class": "public_model"
+      }
+    },
+    {
+      "id": "model-reserved-name",
+      "schema": "model_package.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.model/v3",
+        "id": "model-1",
+        "reference_type": "installed_package",
+        "capabilities": [
+          "chat"
+        ],
+        "files": [
+          {
+            "role": "weights",
+            "path": "CON.gguf",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 1024
+          }
+        ],
+        "source": {
+          "kind": "local_import",
+          "revision": "content-sha256",
+          "origin": "user-selected-file"
+        },
+        "license": {
+          "identifier": "fixture-license",
+          "accepted_at": "2026-09-12T00:00:00Z"
+        },
+        "storage_class": "public_model"
+      }
+    },
+    {
+      "id": "private-model-cannot-use-public-store",
+      "schema": "model_package.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.model/v3",
+        "id": "model-1",
+        "reference_type": "installed_package",
+        "capabilities": [
+          "chat"
+        ],
+        "files": [
+          {
+            "role": "weights",
+            "path": "model.gguf",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 1024
+          }
+        ],
+        "source": {
+          "kind": "hf_private",
+          "revision": "pinned",
+          "origin": "fixture"
+        },
+        "license": {
+          "identifier": "fixture-license",
+          "accepted_at": "2026-09-12T00:00:00Z"
+        },
+        "storage_class": "public_model",
+        "workspace_id": "workspace-1"
+      }
+    },
+    {
+      "id": "system-reference-valid",
+      "schema": "model_package.schema.json",
+      "expected_valid": true,
+      "record": {
+        "schema": "harbor.model/v3",
+        "id": "system-1",
+        "reference_type": "system_managed",
+        "provider": "os-provider",
+        "provider_model_id": "os-model",
+        "capabilities": [
+          "chat"
+        ]
+      }
+    },
+    {
+      "id": "system-needs-provider",
+      "schema": "model_package.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.model/v3",
+        "id": "system-1",
+        "reference_type": "system_managed",
+        "provider_model_id": "os-model",
+        "capabilities": [
+          "chat"
+        ]
+      }
+    },
+    {
+      "id": "remote-needs-profile",
+      "schema": "model_package.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.model/v3",
+        "id": "system-1",
+        "reference_type": "remote_endpoint",
+        "provider": "os-provider",
+        "provider_model_id": "os-model",
+        "capabilities": [
+          "chat"
+        ]
+      }
+    },
+    {
+      "id": "remote-reference-valid",
+      "schema": "model_package.schema.json",
+      "expected_valid": true,
+      "record": {
+        "schema": "harbor.model/v3",
+        "id": "system-1",
+        "reference_type": "remote_endpoint",
+        "provider": "os-provider",
+        "provider_model_id": "os-model",
+        "capabilities": [
+          "chat"
+        ],
+        "endpoint_profile_id": "endpoint-1"
+      }
+    },
+    {
+      "id": "release-build-binding-valid",
+      "schema": "release_gate.schema.json",
+      "expected_valid": true,
+      "record": {
+        "schema": "harbor.gate_result/v2",
+        "gate_id": "ACC-041",
+        "status": "PASS",
+        "release_descriptor_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "build_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "target": {
+          "platform": "Windows",
+          "architecture": "x64",
+          "os_version": "fixture",
+          "device_class": "fixture",
+          "qualification_profile": "fixture"
+        },
+        "features": [],
+        "evidence": [
+          {
+            "path": "reports/test.json",
+            "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "test_ids": [
+              "fixture.test"
+            ],
+            "media_type": "application/json"
+          }
+        ],
+        "completed_at": "2026-09-12T00:00:00Z"
+      }
+    },
+    {
+      "id": "release-empty-commit",
+      "schema": "release_gate.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.gate_result/v2",
+        "gate_id": "ACC-041",
+        "status": "PASS",
+        "release_descriptor_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "commit_sha": "",
+        "build_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "target": {
+          "platform": "Windows",
+          "architecture": "x64",
+          "os_version": "fixture",
+          "device_class": "fixture",
+          "qualification_profile": "fixture"
+        },
+        "features": [],
+        "evidence": [
+          {
+            "path": "reports/test.json",
+            "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "test_ids": [
+              "fixture.test"
+            ],
+            "media_type": "application/json"
+          }
+        ],
+        "completed_at": "2026-09-12T00:00:00Z"
+      }
+    },
+    {
+      "id": "release-empty-evidence",
+      "schema": "release_gate.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.gate_result/v2",
+        "gate_id": "ACC-041",
+        "status": "PASS",
+        "release_descriptor_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "build_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "target": {
+          "platform": "Windows",
+          "architecture": "x64",
+          "os_version": "fixture",
+          "device_class": "fixture",
+          "qualification_profile": "fixture"
+        },
+        "features": [],
+        "evidence": [],
+        "completed_at": "2026-09-12T00:00:00Z"
+      }
+    },
+    {
+      "id": "release-empty-evidence-path",
+      "schema": "release_gate.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.gate_result/v2",
+        "gate_id": "ACC-041",
+        "status": "PASS",
+        "release_descriptor_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "build_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "target": {
+          "platform": "Windows",
+          "architecture": "x64",
+          "os_version": "fixture",
+          "device_class": "fixture",
+          "qualification_profile": "fixture"
+        },
+        "features": [],
+        "evidence": [
+          {
+            "path": "",
+            "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "test_ids": [
+              "fixture.test"
+            ],
+            "media_type": "application/json"
+          }
+        ],
+        "completed_at": "2026-09-12T00:00:00Z"
+      }
+    },
+    {
+      "id": "release-needs-target",
+      "schema": "release_gate.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.gate_result/v2",
+        "gate_id": "ACC-041",
+        "status": "PASS",
+        "release_descriptor_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "build_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "features": [],
+        "evidence": [
+          {
+            "path": "reports/test.json",
+            "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "test_ids": [
+              "fixture.test"
+            ],
+            "media_type": "application/json"
+          }
+        ],
+        "completed_at": "2026-09-12T00:00:00Z"
+      }
+    },
+    {
+      "id": "release-na-needs-reason",
+      "schema": "release_gate.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.gate_result/v2",
+        "gate_id": "ACC-041",
+        "status": "N/A_DISABLED",
+        "release_descriptor_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "build_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "target": {
+          "platform": "Windows",
+          "architecture": "x64",
+          "os_version": "fixture",
+          "device_class": "fixture",
+          "qualification_profile": "fixture"
+        },
+        "features": [],
+        "evidence": [],
+        "completed_at": "2026-09-12T00:00:00Z"
+      }
+    },
+    {
+      "id": "release-na-valid",
+      "schema": "release_gate.schema.json",
+      "expected_valid": true,
+      "record": {
+        "schema": "harbor.gate_result/v2",
+        "gate_id": "ACC-041",
+        "status": "N/A_DISABLED",
+        "release_descriptor_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "build_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "target": {
+          "platform": "Windows",
+          "architecture": "x64",
+          "os_version": "fixture",
+          "device_class": "fixture",
+          "qualification_profile": "fixture"
+        },
+        "features": [],
+        "evidence": [],
+        "completed_at": "2026-09-12T00:00:00Z",
+        "reason": "Feature disabled by descriptor"
+      }
+    },
+    {
+      "id": "commit-new-copy-valid",
+      "schema": "artifact_commit.schema.json",
+      "expected_valid": true,
+      "record": {
+        "schema": "harbor.artifact_commit/v1",
+        "batch_id": "batch-1",
+        "artifact_id": "artifact-1",
+        "effect_id": "effect-1",
+        "state": "prepared",
+        "mode": "new_copy",
+        "base_content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "proposed_output_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "staging_blob_id": "blob-1",
+        "target_identity": "file-a",
+        "destination_identity": "predetermined-copy-1",
+        "approval_receipt_id": "receipt-1",
+        "executor_generation": 1,
+        "created_at": "2026-09-12T00:00:00Z",
+        "updated_at": "2026-09-12T00:00:00Z"
+      }
+    },
+    {
+      "id": "overwrite-needs-coordination",
+      "schema": "artifact_commit.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.artifact_commit/v1",
+        "batch_id": "batch-1",
+        "artifact_id": "artifact-1",
+        "effect_id": "effect-1",
+        "state": "prepared",
+        "mode": "exclusive_handle_replace",
+        "base_content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "proposed_output_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "staging_blob_id": "blob-1",
+        "target_identity": "file-a",
+        "destination_identity": "predetermined-copy-1",
+        "approval_receipt_id": "receipt-1",
+        "executor_generation": 1,
+        "created_at": "2026-09-12T00:00:00Z",
+        "updated_at": "2026-09-12T00:00:00Z"
+      }
+    },
+    {
+      "id": "commit-needs-final-version",
+      "schema": "artifact_commit.schema.json",
+      "expected_valid": false,
+      "record": {
+        "schema": "harbor.artifact_commit/v1",
+        "batch_id": "batch-1",
+        "artifact_id": "artifact-1",
+        "effect_id": "effect-1",
+        "state": "committed",
+        "mode": "new_copy",
+        "base_content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "proposed_output_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "staging_blob_id": "blob-1",
+        "target_identity": "file-a",
+        "destination_identity": "predetermined-copy-1",
+        "approval_receipt_id": "receipt-1",
+        "executor_generation": 1,
+        "created_at": "2026-09-12T00:00:00Z",
+        "updated_at": "2026-09-12T00:00:00Z"
+      }
+    }
+  ]
+}

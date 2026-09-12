@@ -1,0 +1,285 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harbor.invalid/schemas/effect_intent.schema.json",
+  "title": "Harbor effect intent",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "harbor.effect/v3"
+    },
+    "effect_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "tool": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "effect_class": {
+      "enum": [
+        "file_write",
+        "connector_write",
+        "network_send",
+        "delete",
+        "export",
+        "settings_write"
+      ]
+    },
+    "canonicalization": {
+      "const": "harbor.canonical_json/v1"
+    },
+    "canonical_args": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/jsonValue"
+      }
+    },
+    "canonical_args_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "target": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "artifact",
+            "file",
+            "connector_object",
+            "remote_destination",
+            "workspace_setting"
+          ]
+        },
+        "identity": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "capability_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+        }
+      },
+      "required": [
+        "kind",
+        "identity",
+        "capability_id"
+      ],
+      "additionalProperties": false
+    },
+    "policy_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "approval_receipt_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "executor_generation": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "state": {
+      "enum": [
+        "prepared",
+        "dispatched",
+        "committed",
+        "outcome_unknown",
+        "aborted"
+      ]
+    },
+    "idempotency_mode": {
+      "enum": [
+        "provider_key",
+        "reconcile",
+        "none"
+      ]
+    },
+    "provider_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "reconciliation": {
+      "type": "object",
+      "properties": {
+        "adapter_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+        },
+        "lookup_identity": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "adapter_id",
+        "lookup_identity"
+      ],
+      "additionalProperties": false
+    },
+    "attempt_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "provider_result_ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "schema",
+    "effect_id",
+    "run_id",
+    "tool",
+    "effect_class",
+    "canonicalization",
+    "canonical_args",
+    "canonical_args_hash",
+    "target",
+    "policy_version",
+    "approval_receipt_id",
+    "executor_generation",
+    "state",
+    "idempotency_mode",
+    "created_at",
+    "updated_at"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "idempotency_mode": {
+            "const": "provider_key"
+          }
+        },
+        "required": [
+          "idempotency_mode"
+        ]
+      },
+      "then": {
+        "required": [
+          "provider_key"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "idempotency_mode": {
+            "const": "reconcile"
+          }
+        },
+        "required": [
+          "idempotency_mode"
+        ]
+      },
+      "then": {
+        "required": [
+          "reconciliation"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "enum": [
+              "dispatched",
+              "committed",
+              "outcome_unknown"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "attempt_id"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "committed"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "required": [
+          "provider_result_ref"
+        ]
+      }
+    }
+  ],
+  "$defs": {
+    "jsonValue": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/jsonValue"
+          },
+          "minItems": 0,
+          "maxItems": 10000
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/jsonValue"
+          }
+        }
+      ]
+    }
+  }
+}

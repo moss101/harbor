@@ -1,0 +1,116 @@
+{
+  "schema": "harbor.qualification_profiles/v1",
+  "status": "BLOCKED_BINDINGS_REQUIRED",
+  "fixture_sources": [
+    {
+      "path": "fixtures/qualification/reference_cases.json",
+      "sha256": "ad5615d16361d0f5824cd5694776fffe5a597116e856d21850b723751486cafd"
+    }
+  ],
+  "required_identity_fields": [
+    "model_package_sha256",
+    "runtime_sha256",
+    "adapter_revision",
+    "os_version",
+    "device_hardware_id",
+    "backend",
+    "driver_version_or_unavailable_reason",
+    "context_tokens",
+    "quantization",
+    "offload_parameters",
+    "thread_count",
+    "fixture_bundle_sha256"
+  ],
+  "production_bindings": {
+    "model_package_sha256": null,
+    "formula_engine_source_revision": "crates.io/formualizer@0.9.3",
+    "formula_engine_sha256": "64b7771c27fcd3da6229ae4653acc4269cf6635412b283fa0dd16e8359b54139",
+    "formula_adapter_revision": "harbor_formula/1",
+    "binary_fixture_bundle_sha256": "f5c97506bf348b6d009f2ebe3818ebb948cb7925efad499b87325da7527f0e54",
+    "evaluation_corpus_sha256": null,
+    "qualified_device_manifest_sha256": null
+  },
+  "performance": {
+    "profile_id": "performance-reference-v1",
+    "seed": 1729,
+    "context_tokens": 4096,
+    "input_tokens": 1024,
+    "output_tokens": 256,
+    "warmup_runs": 5,
+    "measured_runs": 30,
+    "cold_runs": 10,
+    "percentile_method": "nearest-rank; report raw samples and sample count; no cross-device pooling",
+    "temperature": "fixed by profile; record ambient and OS thermal state",
+    "thermal_duration_seconds": 600,
+    "concurrent_workload": "generation plus 100-document indexing and one 256 MiB local test-server transfer; record resource governor decisions",
+    "metric_direction": {
+      "latency": "maximum",
+      "throughput": "minimum",
+      "memory": "maximum",
+      "frame_miss_rate": "maximum",
+      "recovery_time": "maximum"
+    },
+    "thresholds": "Calibrate on each lowest qualified target; record independent dated threshold decision before qualification; no retroactive relaxation to pass the same run."
+  },
+  "office": {
+    "profile_id": "office-core-v1",
+    "numeric_absolute_tolerance": 1e-09,
+    "numeric_relative_tolerance": 1e-08,
+    "money_rounding": "fixture-specific decimal rounding; compare final rounded minor units exactly",
+    "errors": "exact Excel error token; distinguish blank, zero, text and error",
+    "date_systems": [
+      "1900 including serial-60 compatibility",
+      "1904"
+    ],
+    "clock": "2026-09-12T00:00:00Z",
+    "timezone": "UTC",
+    "recalculation": "full dependency recalculation after edit plus save/reload; unsupported dependency taints dependent outputs",
+    "visual": {
+      "dpi": 144,
+      "font_binding_required": true,
+      "max_channel_difference": 16,
+      "max_changed_pixel_fraction": 0.01,
+      "mask_rule": "only fixture-declared nondeterministic regions; no missing content masking",
+      "hard_failures": [
+        "missing supported text or image",
+        "wrong text direction",
+        "clipped editing or approval controls",
+        "unsupported-part loss",
+        "incorrect chart data"
+      ]
+    },
+    "preservation": "untouched preserve-only package parts byte-identical; relationship graph remains resolvable; supported edits use fixture-specific expected structural diffs"
+  },
+  "evaluation": {
+    "profile_id": "quality-en-ar-v1",
+    "languages": [
+      "en",
+      "ar",
+      "mixed"
+    ],
+    "minimum_cases_per_language": 100,
+    "minimum_cases_per_behavior_per_language": 20,
+    "behaviors": [
+      "supported_answer",
+      "insufficient_evidence",
+      "contradiction",
+      "prompt_injection",
+      "tool_selection",
+      "numeric_analysis"
+    ],
+    "seed": 1729,
+    "thresholds_per_language": {
+      "retrieval_recall_at_10_min": 0.85,
+      "citation_supported_claim_fraction_min": 0.95,
+      "insufficient_evidence_abstention_fraction_min": 0.9,
+      "correct_tool_selection_fraction_min": 0.95,
+      "known_answer_numeric_pass_fraction": 1.0,
+      "unauthorized_effect_count_max": 0
+    },
+    "grading": "pinned human-reviewed expected claims/spans/actions; report numerator and denominator per metric; disputed subjective cases require documented adjudication; no dataset substitution after viewing qualification outcomes"
+  },
+  "binding_rule": "Null or missing identities and unsigned/unapproved threshold records block product qualification. This protocol supplies test design, not measured results.",
+  "test_fixtures": {
+    "stories260K_gguf_sha256": "270cba1bd5109f42d03350f60406024560464db173c0e387d91f0426d3bd256d"
+  }
+}

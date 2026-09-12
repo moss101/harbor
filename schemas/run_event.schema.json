@@ -1,0 +1,495 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harbor.invalid/schemas/run_event.schema.json",
+  "title": "Harbor run event",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "harbor.run_event/v3"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "event_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "seq": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "event_type": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "replay_semantics": {
+      "enum": [
+        "state_affecting",
+        "authority_affecting",
+        "ignorable_display"
+      ]
+    },
+    "actor": {
+      "enum": [
+        "executor",
+        "user",
+        "system",
+        "provider",
+        "recovery"
+      ]
+    },
+    "lease_generation": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "active_compute_ms_total": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "step_count_total": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "tool_count_total": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "context_tokens_total": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "payload": {
+      "type": "object"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "prev_event_hash": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "schema",
+    "run_id",
+    "event_id",
+    "seq",
+    "event_type",
+    "replay_semantics",
+    "actor",
+    "active_compute_ms_total",
+    "step_count_total",
+    "tool_count_total",
+    "context_tokens_total",
+    "payload",
+    "created_at",
+    "prev_event_hash"
+  ],
+  "additionalProperties": false,
+  "oneOf": [
+    {
+      "properties": {
+        "event_type": {
+          "const": "run.created"
+        },
+        "replay_semantics": {
+          "const": "state_affecting"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "initial_state": {
+              "const": "CREATED"
+            }
+          },
+          "required": [
+            "initial_state"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "event_type": {
+          "const": "run.transition"
+        },
+        "replay_semantics": {
+          "const": "state_affecting"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "from_state": {
+              "enum": [
+                "CREATED",
+                "PLANNING",
+                "RUNNING",
+                "WAITING_APPROVAL",
+                "PAUSED",
+                "CANCELLING",
+                "COMPLETED",
+                "FAILED",
+                "CANCELLED"
+              ]
+            },
+            "to_state": {
+              "enum": [
+                "CREATED",
+                "PLANNING",
+                "RUNNING",
+                "WAITING_APPROVAL",
+                "PAUSED",
+                "CANCELLING",
+                "COMPLETED",
+                "FAILED",
+                "CANCELLED"
+              ]
+            },
+            "reason": {
+              "enum": [
+                "user",
+                "background",
+                "thermal",
+                "resource_pressure",
+                "source_unavailable",
+                "network_policy",
+                "effect_outcome_unknown",
+                "cancellation_unacknowledged",
+                "start",
+                "complete",
+                "error",
+                "cancel_requested",
+                "cancel_acknowledged",
+                "resume",
+                "approval_resolved"
+              ]
+            },
+            "cancellation_proof": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "provider_ack",
+                    "executor_exit_verified"
+                  ]
+                },
+                "evidence_ref": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                }
+              },
+              "required": [
+                "kind",
+                "evidence_ref"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "from_state",
+            "to_state",
+            "reason"
+          ],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "to_state": {
+                    "const": "PAUSED"
+                  }
+                },
+                "required": [
+                  "to_state"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "reason": {
+                    "enum": [
+                      "user",
+                      "background",
+                      "thermal",
+                      "resource_pressure",
+                      "source_unavailable",
+                      "network_policy",
+                      "effect_outcome_unknown",
+                      "cancellation_unacknowledged"
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "to_state": {
+                    "const": "CANCELLED"
+                  }
+                },
+                "required": [
+                  "to_state"
+                ]
+              },
+              "then": {
+                "required": [
+                  "cancellation_proof"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "event_type": {
+          "const": "run.budget"
+        },
+        "replay_semantics": {
+          "const": "state_affecting"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "budget_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+            },
+            "limit_kind": {
+              "enum": [
+                "active_time",
+                "steps",
+                "tools",
+                "context"
+              ]
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "budget_id",
+            "limit_kind",
+            "limit"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "event_type": {
+          "const": "lease.acquired"
+        },
+        "replay_semantics": {
+          "const": "authority_affecting"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "owner_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+            },
+            "expires_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "required": [
+            "owner_id",
+            "expires_at"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "event_type": {
+          "const": "lease.released"
+        },
+        "replay_semantics": {
+          "const": "authority_affecting"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "owner_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+            }
+          },
+          "required": [
+            "owner_id"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "event_type": {
+          "const": "effect.recorded"
+        },
+        "replay_semantics": {
+          "const": "authority_affecting"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "effect_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+            },
+            "effect_state": {
+              "enum": [
+                "prepared",
+                "dispatched",
+                "committed",
+                "outcome_unknown",
+                "aborted"
+              ]
+            }
+          },
+          "required": [
+            "effect_id",
+            "effect_state"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "event_type": {
+          "const": "approval.recorded"
+        },
+        "replay_semantics": {
+          "const": "authority_affecting"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "receipt_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+            },
+            "decision": {
+              "enum": [
+                "approved",
+                "denied",
+                "expired"
+              ]
+            }
+          },
+          "required": [
+            "receipt_id",
+            "decision"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "event_type": {
+          "not": {
+            "enum": [
+              "run.created",
+              "run.transition",
+              "run.budget",
+              "lease.acquired",
+              "lease.released",
+              "effect.recorded",
+              "approval.recorded"
+            ]
+          }
+        },
+        "replay_semantics": {
+          "const": "ignorable_display"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "detail": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      }
+    }
+  ],
+  "allOf": [
+    {
+      "if": {
+        "anyOf": [
+          {
+            "properties": {
+              "actor": {
+                "const": "executor"
+              }
+            }
+          },
+          {
+            "properties": {
+              "replay_semantics": {
+                "enum": ["state_affecting", "authority_affecting"]
+              }
+            }
+          }
+        ]
+      },
+      "then": {
+        "required": [
+          "lease_generation"
+        ]
+      }
+    }
+  ]
+}

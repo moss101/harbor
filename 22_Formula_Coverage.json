@@ -1,0 +1,396 @@
+{
+  "schema_version": "2.0",
+  "authority": "Harbor Office formula qualification",
+  "adapter": "harbor_formula",
+  "selected_engine": {
+    "family": "Formualizer",
+    "candidate_version": "0.9.0",
+    "production_source_revision": "MUST_BE_PINNED_BY_HBR-153",
+    "production_integrity_hash": "MUST_BE_RECORDED_BY_HBR-153",
+    "license_review": "REQUIRED"
+  },
+  "verification_rule": "Only entries with qualification_status=PASS for the exact engine source revision, Harbor adapter revision, fixture corpus version and platform set are verified. Presence in this file is not itself evidence.",
+  "qualified_platform_set": [
+    "iOS/iPadOS arm64",
+    "Android arm64-v8a",
+    "macOS Apple Silicon",
+    "Windows x64",
+    "Windows arm64"
+  ],
+  "required_fixture_dimensions": [
+    "Excel-compatible expected values",
+    "error semantics",
+    "coercion",
+    "blank/null handling",
+    "cross-sheet dependencies",
+    "recalc after edit",
+    "save-reload consistency",
+    "deterministic clock/timezone where relevant"
+  ],
+  "target_groups": [
+    {
+      "group": "arithmetic_reference",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "functions": [
+        {
+          "name": "ARITHMETIC_OPERATORS",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "COMPARISON_OPERATORS",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SAME_SHEET_REFERENCES",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CROSS_SHEET_REFERENCES",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "RANGES",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "aggregation",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "functions": [
+        {
+          "name": "SUM",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "AVERAGE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "MIN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "MAX",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "COUNT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "COUNTA",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "PRODUCT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SUBTOTAL",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "conditional",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "functions": [
+        {
+          "name": "IF",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IFS",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "AND",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "OR",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "NOT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IFERROR",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IFNA",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "conditional_aggregation",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "functions": [
+        {
+          "name": "COUNTIF",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "COUNTIFS",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SUMIF",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SUMIFS",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "AVERAGEIF",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "AVERAGEIFS",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "lookup",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "functions": [
+        {
+          "name": "VLOOKUP",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "HLOOKUP",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "XLOOKUP",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "INDEX",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "MATCH",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "numeric",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "functions": [
+        {
+          "name": "ABS",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "INT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "MOD",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ROUND",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ROUNDUP",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ROUNDDOWN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CEILING",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "FLOOR",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "POWER",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SQRT",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "text",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "functions": [
+        {
+          "name": "LEFT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "RIGHT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "MID",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "LEN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TRIM",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "UPPER",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "LOWER",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CONCAT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CONCATENATE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TEXTJOIN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "VALUE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TEXT",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "date_time",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "functions": [
+        {
+          "name": "DATE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "YEAR",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "MONTH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DAY",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DAYS",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "EDATE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "EOMONTH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "WORKDAY",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "NETWORKDAYS",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TODAY",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "NOW",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "statistics_basic",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "functions": [
+        {
+          "name": "MEDIAN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "STDEV.S",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "STDEV.P",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "VAR.S",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "VAR.P",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "RANK.EQ",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "PERCENTILE.INC",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    }
+  ],
+  "preserve_only_until_separately_qualified": [
+    "dynamic arrays/spill behavior",
+    "volatile RAND/RANDBETWEEN",
+    "cube functions",
+    "database connections",
+    "external workbook references",
+    "Power Query",
+    "pivot calculated fields",
+    "user-defined functions"
+  ],
+  "unsupported_for_execution": [
+    "VBA/UDF code execution",
+    "XLM macros",
+    "ActiveX",
+    "DDE/external command execution"
+  ],
+  "qualification_profile": "office-core-v1",
+  "qualification_bindings_required": [
+    "engine_source_revision",
+    "engine_sha256",
+    "adapter_revision",
+    "fixture_bundle_sha256",
+    "platform_architecture_set",
+    "evidence_sha256"
+  ],
+  "qualification_results": []
+}

@@ -1,0 +1,356 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harbor.invalid/schemas/model_package.schema.json",
+  "title": "Harbor model reference",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "harbor.model/v3"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "reference_type": {
+      "enum": [
+        "installed_package",
+        "system_managed",
+        "remote_endpoint"
+      ]
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "chat",
+          "tools",
+          "structured_output",
+          "embeddings",
+          "vision",
+          "audio"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 6,
+      "uniqueItems": true
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "enum": [
+              "weights",
+              "weights_shard",
+              "mmproj",
+              "tokenizer",
+              "config",
+              "license",
+              "other_data"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*\\\\)(?!.*:)[^\\x00-\\x1f]+$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1099511627776
+          }
+        },
+        "required": [
+          "role",
+          "path",
+          "sha256",
+          "size_bytes"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 10000
+    },
+    "provider": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "provider_model_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "endpoint_profile_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "catalog",
+            "hf_public",
+            "hf_private",
+            "local_import"
+          ]
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "origin": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "kind",
+        "revision",
+        "origin"
+      ],
+      "additionalProperties": false
+    },
+    "license": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "accepted_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "identifier",
+        "accepted_at"
+      ],
+      "additionalProperties": false
+    },
+    "storage_class": {
+      "enum": [
+        "public_model",
+        "private_workspace_model"
+      ]
+    },
+    "workspace_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "catalog_epoch": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "signing_key_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    }
+  },
+  "required": [
+    "schema",
+    "id",
+    "reference_type",
+    "capabilities"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "reference_type": {
+            "const": "installed_package"
+          }
+        },
+        "required": [
+          "reference_type"
+        ]
+      },
+      "then": {
+        "required": [
+          "files",
+          "source",
+          "license",
+          "storage_class"
+        ],
+        "properties": {
+          "files": {
+            "contains": {
+              "properties": {
+                "role": {
+                  "enum": [
+                    "weights",
+                    "weights_shard"
+                  ]
+                }
+              }
+            },
+            "minContains": 1
+          }
+        },
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "endpoint_profile_id"
+              ]
+            },
+            {
+              "required": [
+                "provider_model_id"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "reference_type": {
+            "const": "system_managed"
+          }
+        },
+        "required": [
+          "reference_type"
+        ]
+      },
+      "then": {
+        "required": [
+          "provider",
+          "provider_model_id"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "files"
+              ]
+            },
+            {
+              "required": [
+                "endpoint_profile_id"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "reference_type": {
+            "const": "remote_endpoint"
+          }
+        },
+        "required": [
+          "reference_type"
+        ]
+      },
+      "then": {
+        "required": [
+          "provider",
+          "provider_model_id",
+          "endpoint_profile_id"
+        ],
+        "not": {
+          "required": [
+            "files"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "storage_class": {
+            "const": "private_workspace_model"
+          }
+        },
+        "required": [
+          "storage_class"
+        ]
+      },
+      "then": {
+        "required": [
+          "workspace_id"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "source": {
+            "properties": {
+              "kind": {
+                "const": "catalog"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          }
+        },
+        "required": [
+          "source"
+        ]
+      },
+      "then": {
+        "required": [
+          "catalog_epoch",
+          "signing_key_id"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "source": {
+            "properties": {
+              "kind": {
+                "const": "hf_private"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          }
+        },
+        "required": [
+          "source"
+        ]
+      },
+      "then": {
+        "properties": {
+          "storage_class": {
+            "const": "private_workspace_model"
+          }
+        },
+        "required": [
+          "workspace_id"
+        ]
+      }
+    }
+  ]
+}

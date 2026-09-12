@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harbor.invalid/schemas/release_descriptor.schema.json",
+  "title": "Harbor release descriptor",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "harbor.release/v1"
+    },
+    "release_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "milestone": {
+      "enum": [
+        "M0_CONTRACT",
+        "M1_LOCAL_REFERENCE",
+        "M2_PLATFORM_BETA",
+        "M3_GA_CORE",
+        "M4_OPTIONAL_SERVICES"
+      ]
+    },
+    "target": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "enum": [
+            "iOS",
+            "Android",
+            "macOS",
+            "Windows"
+          ]
+        },
+        "architecture": {
+          "enum": [
+            "arm64",
+            "arm64-v8a",
+            "x64"
+          ]
+        },
+        "os_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "device_class": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+        },
+        "qualification_profile": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+        }
+      },
+      "required": [
+        "platform",
+        "architecture",
+        "os_version",
+        "device_class",
+        "qualification_profile"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "platform": {
+                "const": "iOS"
+              }
+            },
+            "required": [
+              "platform"
+            ]
+          },
+          "then": {
+            "properties": {
+              "architecture": {
+                "const": "arm64"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "platform": {
+                "const": "Android"
+              }
+            },
+            "required": [
+              "platform"
+            ]
+          },
+          "then": {
+            "properties": {
+              "architecture": {
+                "const": "arm64-v8a"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "platform": {
+                "const": "macOS"
+              }
+            },
+            "required": [
+              "platform"
+            ]
+          },
+          "then": {
+            "properties": {
+              "architecture": {
+                "const": "arm64"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "platform": {
+                "const": "Windows"
+              }
+            },
+            "required": [
+              "platform"
+            ]
+          },
+          "then": {
+            "properties": {
+              "architecture": {
+                "enum": [
+                  "x64",
+                  "arm64"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(feature|provider):[a-z][a-z0-9_]*$"
+      },
+      "minItems": 0,
+      "maxItems": 64,
+      "uniqueItems": true
+    },
+    "commit_sha": {
+      "type": "string",
+      "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$"
+    },
+    "build_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "gate_catalog_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "feature_registry_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "schema",
+    "release_id",
+    "milestone",
+    "target",
+    "features",
+    "commit_sha",
+    "build_sha256",
+    "gate_catalog_sha256",
+    "feature_registry_sha256",
+    "created_at"
+  ],
+  "additionalProperties": false
+}
