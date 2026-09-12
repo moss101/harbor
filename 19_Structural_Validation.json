@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "23b70c28c4f8ef495a52b636c316e5738c458a37065cae1e1c1d10f9cb175537",
+  "input_manifest_sha256": "1993933bb2987b86f7d27f29fdfff6787052a83261cb1841ac22a4ef8fd28c8d",
   "input_files": [
     {
       "path": "00_README.md",
@@ -6046,8 +6046,8 @@
     },
     {
       "path": "apps/harbor_app/build/test_cache/build/394af582a92e29ee2992952af39c9aac.cache.dill.track.dill",
-      "bytes": 53834840,
-      "sha256": "5f0cd9909dad617d08040969d61099831193a434dcd33834b309639c539cbe5e"
+      "bytes": 53855688,
+      "sha256": "610793769ad11d57ef8efd39cfb81d767254148121ff4294536d975b6e98c093"
     },
     {
       "path": "apps/harbor_app/build/unit_test_assets/AssetManifest.bin",
@@ -6336,28 +6336,28 @@
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_ar.arb",
-      "bytes": 2000,
-      "sha256": "c1d92183fb0bb82a64e03d6bd0c913b4dab7c4fb5bd3ffd4520fd9b54b6559ed"
+      "bytes": 5834,
+      "sha256": "265eafce236e82f57f7534342a843c3b4ffc13536e55b9df964d8d52bad42969"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_en.arb",
-      "bytes": 2383,
-      "sha256": "2023ddd198e75d90e1923053f204bddd49ac8ef4a3083c4678efc36684153421"
+      "bytes": 5696,
+      "sha256": "f76cce288b4bdce7d5cc69aa115fedd4aa3c66b97c172f1567a6afb93c0fae5e"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations.dart",
-      "bytes": 12663,
-      "sha256": "15634c31eeefb91773e636d0b5d9c3fcd032eeca09f1a94b394812f606887cc3"
+      "bytes": 17795,
+      "sha256": "f3bdc40da70a83396e8ea3a364d00c956ccc0882391781a33e7d1895ab941cef"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations_ar.dart",
-      "bytes": 4248,
-      "sha256": "6a4a8905ae37a1aadc81db25acaa3a5577f4df5411dfb67d33d5796fa54cdc6e"
+      "bytes": 7804,
+      "sha256": "160ea4b13e3f6b9cc7e74b101ca06cb789b8fb41ce1c0fe5fe20433be976cdf7"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations_en.dart",
-      "bytes": 3860,
-      "sha256": "a413ca194bc651ea32a8e348ba3da2edfc34f4461d1b35dfcf406795384d56d6"
+      "bytes": 6676,
+      "sha256": "c9369b3fb2a49c66eb6fc41bbd381270848d0327ff40e3bc5c3dc6a3cc7d1e28"
     },
     {
       "path": "apps/harbor_app/lib/main.dart",
@@ -6371,23 +6371,23 @@
     },
     {
       "path": "apps/harbor_app/lib/shell/adaptive_shell.dart",
-      "bytes": 4440,
-      "sha256": "af0866e8a0fd585afed4f91ca8eb092ad42871b8caf650be1710655153567710"
+      "bytes": 4775,
+      "sha256": "5f39f3ccf322cce96f0f0094da6f7c8cea17b0390b7b986bdaa6b173be7f3bc5"
     },
     {
       "path": "apps/harbor_app/lib/surfaces/ask_surface.dart",
-      "bytes": 3755,
-      "sha256": "388a2a88cf791b56494d67acd53356e4d22a1aee964107a50e7d31340eaeafa4"
+      "bytes": 3551,
+      "sha256": "1801eb63d7026055674764fb780661b4b6ef6d896da865dc42d034072f6d6236"
     },
     {
       "path": "apps/harbor_app/lib/surfaces/surfaces.dart",
-      "bytes": 15362,
-      "sha256": "30607ec19a1551f98cdc0c86d12ea865b4fe7e428ac0ec64939b1a0f03971f80"
+      "bytes": 14927,
+      "sha256": "fad274454e06a9309acffe2bb9c81c89c324e11f382f4d881119e26903f757a3"
     },
     {
       "path": "apps/harbor_app/lib/surfaces/work_surface.dart",
-      "bytes": 3706,
-      "sha256": "e9dce46c666eb063b7660f1cd81772c1e787f9eca4b98464d861aab3eb6c0cf3"
+      "bytes": 3748,
+      "sha256": "53d8bc6befbdbdea9b4998df3ff13e17c99df16c59303dc7bd26e6c1c51c45b4"
     },
     {
       "path": "apps/harbor_app/macos/Flutter/Flutter-Debug.xcconfig",
@@ -6575,9 +6575,14 @@
       "sha256": "172bf713cedd402ba5992ad8e0d965462b452d6c08d1698823aa33454d1f3197"
     },
     {
+      "path": "apps/harbor_app/test/l10n_coverage_test.dart",
+      "bytes": 2860,
+      "sha256": "5ed06125c2da4008828c81d0e509b99fc6d5a4d4f2b7c32492c873ce47f0dd8f"
+    },
+    {
       "path": "apps/harbor_app/test/shell_test.dart",
-      "bytes": 14796,
-      "sha256": "c863eb3c5fe3a9e3b55abe5371a61282f5461bb4e811dd0b7fb200ff556aceef"
+      "bytes": 14917,
+      "sha256": "7d4cb9199792debf1399ec6efbe7a04390fb32360476eefd9b8b603eef7d8d93"
     },
     {
       "path": "apps/harbor_app/windows/CMakeLists.txt",
@@ -203038,6 +203043,11 @@
       "path": "docs/decisions/0002-llama-cpp-runtime-pin.md",
       "bytes": 1636,
       "sha256": "21841ea5091dd12ebadb0abc259f703635f83b3a17af890e1fd2fcc2e7a7dc33"
+    },
+    {
+      "path": "docs/release_checklist_status.md",
+      "bytes": 5631,
+      "sha256": "2af2f41998f4133b150b0ae19b218b364e3fca5e9b3e282e25b21bca365bdb79"
     },
     {
       "path": "evals/ar/corpus.json",
