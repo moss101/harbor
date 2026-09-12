@@ -126,3 +126,43 @@ fn xlsx_merged_cells_survive_edit_recalc_save() {
         Some(&harbor_formula::value::CellValue::Number(2.0))
     );
 }
+
+#[test]
+fn docx_same_length_replacement_preserves_run_formatting() {
+    // Paragraph: bold run "Bold" + normal run " rest" (9 graphemes total).
+    let document = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
+<w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Bold</w:t></w:r><w:r><w:t> rest</w:t></w:r></w:p>
+</w:body></w:document>"#;
+    let bytes = minimal_docx(document.to_string());
+    let doc = harbor_artifacts::DocxDocument::load(&bytes).unwrap();
+    assert_eq!(doc.paragraphs[0].text, "Bold rest");
+
+    // Same-length replacement: 9 graphemes ("Kept  tail" = 10? count:
+    // "Kept tail" is 9). The bold run keeps its formatting and the text
+    // distributes across the runs at their original spans.
+    let out = doc
+        .apply(
+            &bytes,
+            &[harbor_artifacts::DocxOp::TextReplace {
+                index: 1,
+                new_text: "Kept tail".into(),
+            }],
+        )
+        .unwrap();
+    let reloaded = harbor_artifacts::DocxDocument::load(&out).unwrap();
+    assert_eq!(reloaded.paragraphs[0].text, "Kept tail");
+
+    // The bold run element (<w:b/>) must still be present in the XML and
+    // must precede the run carrying the first part of the new text.
+    let mut ar = zip::ZipArchive::new(Cursor::new(out.as_slice())).unwrap();
+    let mut xml = String::new();
+    use std::io::Read as _;
+    ar.by_name("word/document.xml")
+        .unwrap()
+        .read_to_string(&mut xml)
+        .unwrap();
+    assert!(xml.contains("<w:b/>"), "bold run formatting must survive");
+    assert!(xml.contains("Kept"), "first run carries the replacement head");
+    assert!(xml.contains("tail"), "second run carries the replacement tail");
+}

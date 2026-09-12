@@ -8,6 +8,7 @@ same locks -> byte-identical SBOM (sorted, stable serialization).
 Usage: python3 tools/generate_sbom.py [--write]
 """
 import json
+import subprocess
 import sys
 import uuid
 from datetime import datetime, timezone
@@ -86,6 +87,15 @@ def yamlish_parse(text: str) -> dict:
     return result
 
 
+def git_commit() -> str:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+        ).strip()
+    except Exception:
+        return "unknown"
+
+
 def main() -> None:
     components = cargo_components() + dart_components()
     seen = set()
@@ -96,6 +106,7 @@ def main() -> None:
         seen.add(c["bom-ref"])
         unique.append(c)
     unique.sort(key=lambda c: c["bom-ref"])
+    commit = git_commit()
     bom = {
         "bomFormat": "CycloneDX",
         "specVersion": "1.5",
@@ -105,9 +116,14 @@ def main() -> None:
             "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "component": {
                 "type": "application",
+                "bom-ref": "harbor:application",
                 "name": "harbor",
-                "version": VERSION,
+                "version": f"{VERSION}+{commit[:12]}",
             },
+            "properties": [
+                {"name": "harbor:git_commit", "value": commit},
+                {"name": "harbor:build_profile", "value": "release"},
+            ],
         },
         "components": unique,
     }

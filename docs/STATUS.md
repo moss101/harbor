@@ -163,6 +163,18 @@ harbor_sync/src/snapshot.rs:
   device while compliant devices continue on the new epoch; signature +
   tamper + stale-restore negatives
 
+## Session 20 additions (DOCX formatting preservation, SBOM versioning)
+
+1. **Formatting-preserving DOCX replacement**: same-grapheme-length
+   `text.replace` operations now distribute the new text across the
+   paragraph's existing RUNS at their original character spans, so per-run
+   formatting (bold/italic spans) SURVIVES the edit. Different-length
+   replacements keep the documented first-run behavior. Widget-visible
+   via the artifact engine; conformance-tested.
+2. **SBOM commit versioning**: the CycloneDX document now carries the git
+   commit (harbor:git_commit property, version suffix) and build profile;
+   deterministic given identical tree + commit.
+
 ## Session 16 additions (PDF extraction, iOS launch evidence)
 
 1. **PDF text extraction with page mapping** (harbor_render::pdf +

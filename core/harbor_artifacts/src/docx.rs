@@ -221,38 +221,72 @@ fn rewrite_paragraph_texts(xml: &str, replacement: &BTreeMap<usize, String>) -> 
     Ok(out)
 }
 
+/// Same-grapheme-length replacements are distributed across the existing
+/// runs at their original character spans, PRESERVING per-run formatting
+/// (bold/italic spans survive). Different-length replacements keep the
+/// first run's formatting for the whole new text (documented behavior).
 fn replace_para_text(para: &str, new_text: &str) -> Result<String, DocxError> {
-    // Replace contents of the FIRST w:t and blank all following w:t in this
-    // paragraph. XML-escape the new text.
+    use unicode_segmentation::UnicodeSegmentation;
+
     let escaped = new_text
         .replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('>', "&gt;")
         .replace('"', "&quot;");
-    let mut out = String::with_capacity(para.len() + escaped.len());
-    let mut rest = para;
-    let mut first_done = false;
-    while let Some(open_idx) = find_wt(rest) {
-        let (pre, after_open) = split_at_idx(rest, open_idx);
-        let content_start = after_open.find('>').ok_or_else(|| DocxError::Malformed("w:t open".into()))? + 1;
-        let close_idx = after_open[content_start..]
+    let new_graphemes: Vec<&str> = new_text.graphemes(true).collect();
+
+    // Collect (content_start, content_end, grapheme_len) for every w:t.
+    let mut spans: Vec<(usize, usize, usize)> = Vec::new();
+    let mut i = 0usize;
+    while let Some(off) = find_wt(&para[i..]) {
+        let open = i + off;
+        let content_start = para[open..].find('>').ok_or_else(|| {
+            DocxError::Malformed("w:t open".into())
+        })? + open + 1;
+        let content_end = para[content_start..]
             .find("</w:t>")
             .ok_or_else(|| DocxError::Malformed("w:t close".into()))?
             + content_start;
-        out.push_str(pre);
-        if !first_done {
-            out.push_str(&after_open[..content_start]);
-            out.push_str(&escaped);
-            out.push_str("</w:t>");
-            first_done = true;
-        } else {
-            // blank additional text nodes
-            out.push_str(&after_open[..content_start]);
-            out.push_str("</w:t>");
-        }
-        rest = &after_open[close_idx + 6..];
+        let raw = &para[content_start..content_end];
+        let unescaped = raw
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&quot;", "\"")
+            .replace("&amp;", "&");
+        let gcount = unescaped.graphemes(true).count();
+        spans.push((content_start, content_end, gcount));
+        i = content_end + 6;
     }
-    out.push_str(rest);
+    if spans.is_empty() {
+        return Err(DocxError::Malformed("paragraph has no w:t".into()));
+    }
+    let total: usize = spans.iter().map(|(_, _, g)| *g).sum();
+    let new_len = new_text.graphemes(true).count();
+
+    let mut out = String::with_capacity(para.len() + escaped.len());
+    let mut last = 0usize;
+    let mut grapheme_pos = 0usize;
+    for (idx, (cs, ce, gcount)) in spans.iter().enumerate() {
+        out.push_str(&para[last..*cs]);
+        let slice: String = if total == new_len {
+            // Formatting-preserving distribution.
+            new_graphemes
+                .iter()
+                .skip(grapheme_pos)
+                .take(*gcount)
+                .map(|g| g.to_string())
+                .collect::<Vec<String>>()
+                .concat()
+        } else if idx == 0 {
+            escaped.clone()
+        } else {
+            String::new()
+        };
+        out.push_str(&slice);
+        grapheme_pos += slice.graphemes(true).count();
+        last = *ce;
+    }
+    out.push_str(&para[last..]);
     Ok(out)
 }
 
@@ -267,29 +301,6 @@ fn find_wt(s: &str) -> Option<usize> {
 
 fn split_at_idx<'a>(s: &'a str, idx: usize) -> (&'a str, &'a str) {
     (&s[..idx], &s[idx..])
-}
-
-impl DocxDocument {
-    /// Diff summary entries for ops (Artifact Diff building block).
-    pub fn diff_entries(ops: &[DocxOp], paragraphs: &[DocxParagraph]) -> Vec<JsonValue> {
-        use harbor_canonical::JsonValue as V;
-        ops.iter()
-            .map(|op| {
-                let DocxOp::TextReplace { index, new_text } = op;
-                let before = paragraphs
-                    .iter()
-                    .find(|p| p.index == *index)
-                    .map(|p| p.text.clone())
-                    .unwrap_or_default();
-                V::object([
-                    ("target_id", V::str(format!("paragraph-{index}"))),
-                    ("kind", V::str("text.replace")),
-                    ("before", V::str(before)),
-                    ("after", V::str(new_text.clone())),
-                ])
-            })
-            .collect()
-    }
 }
 
 #[cfg(test)]
