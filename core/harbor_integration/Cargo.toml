@@ -11,9 +11,15 @@ harbor_store = { workspace = true }
 harbor_security = { workspace = true }
 harbor_agent = { workspace = true }
 harbor_formula = { workspace = true }
+harbor_modelhub = { workspace = true }
 harbor_artifacts = { workspace = true }
+harbor_inference = { workspace = true }
 rusqlite = { workspace = true }
+serde_json = { workspace = true }
 chrono = { workspace = true }
+
+[features]
+gguf-backend = ["harbor_inference/gguf-backend"]
 
 [dev-dependencies]
 tempfile = "3"

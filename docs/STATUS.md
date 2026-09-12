@@ -80,6 +80,26 @@ can bind to a commit).
    `cargo test --workspace -- --ignored` (4 tests), which CI now does as a
    separate step.
 
+## Session 15 additions (performance baselines measured)
+
+First execution of the 15_Performance_Qualification.yaml protocol on the
+qualified reference device: `cargo run -p harbor_integration --example
+perf_baseline --features gguf-backend -- <repo> <models-store>` writes
+evidence/perf_baseline.json with RAW samples + derived p50/p95 and full
+protocol identity (device manifest, model hash 6a1a2eb6…, runtime
+llama.cpp/llama-cpp-sys-2@0.1.156).
+
+Measured (Apple M5 Pro, Metal, Qwen2.5-1.5B Q4_K_M):
+- model load: 153ms p50 / 169ms p95
+- first-token latency: 53ms p50 / 60ms p95
+- generation throughput: 148 tok/s
+- artifact open 1ms / recalc 7ms / save 3ms (p50, board_demo fixture)
+- RAG indexing: 21,277 docs/min (bge-small 384-dim embeddings)
+- cancellation SLOs (250ms ack / 5s unack-pause): protocol-bound, test-covered
+
+These are BASELINE measurements, not the independent qualification run:
+GA still requires freezing approved thresholds and minimum-device runs.
+
 ## Session 14 additions (key ceremony, launch verification)
 
 1. **Catalog key ceremony executed** (harbor_modelhub example

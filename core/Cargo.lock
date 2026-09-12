@@ -1575,9 +1575,12 @@ dependencies = [
  "harbor_artifacts",
  "harbor_canonical",
  "harbor_formula",
+ "harbor_inference",
+ "harbor_modelhub",
  "harbor_security",
  "harbor_store",
  "rusqlite",
+ "serde_json",
  "tempfile",
 ]
 
