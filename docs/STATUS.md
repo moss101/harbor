@@ -137,6 +137,17 @@ same tree state).
   (pixel-diff) Office fixtures need a rendering stack; store/privacy
   declarations need signed distribution.
 
+### Next dependency-ready task
+
+Expand the evaluation corpus (`evals/{en,ar,mixed}/corpus.json`) toward the
+100-cases/language / 20-per-behavior minimum with real graded expectations
+(behaviors and thresholds already fixed in
+`26_Qualification_Profiles.evaluation`), then bind the expanded corpus hash
+in the dossier. This is machine-doable now and unblocks RAG quality gates
+(ACC-014/ACC-055 family). After that: iOS native core build (rustup target
+aarch64-apple-ios + cargo build -p harbor_ffi) to replace the iOS
+simulator's degraded state with a live core.
+
 ### Reproduce the evidence
 
 ```bash
