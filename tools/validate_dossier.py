@@ -23,7 +23,7 @@ def rows(name,root=ROOT):
     with (root/name).open(newline='',encoding='utf-8-sig') as f:return list(csv.DictReader(f))
 def refs(s):return [x for x in s.split(';') if x]
 def package_paths(root=ROOT):
-    return sorted(p for p in root.rglob('*') if p.is_file() and not any(part.startswith('.') or part=='__pycache__' for part in p.relative_to(root).parts) and p.relative_to(root).parts[0] not in {'reviews','outputs'} and p.name!='24_PACKAGE_MANIFEST.json')
+    return sorted(p for p in root.rglob('*') if p.is_file() and not any(part.startswith('.') or part=='__pycache__' or part=='target' or part=='build' for part in p.relative_to(root).parts) and p.relative_to(root).parts[0] not in {'reviews','outputs','evidence'} and p.name!='24_PACKAGE_MANIFEST.json')
 def inventory(paths,root=ROOT):
     return [{'path':str(p.relative_to(root)),'bytes':p.stat().st_size,'sha256':sha(p.read_bytes())} for p in paths]
 def input_digest(root=ROOT):
