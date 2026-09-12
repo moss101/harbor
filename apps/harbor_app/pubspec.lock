@@ -80,6 +80,13 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  harbor_domain:
+    dependency: transitive
+    description:
+      path: "../../packages/harbor_domain"
+      relative: true
+    source: path
+    version: "0.1.0"
   harbor_native:
     dependency: "direct main"
     description:

@@ -268,34 +268,36 @@ class SkillsSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final skills = [
-      ('Document Intelligence', Icons.description_outlined),
-      ('Spreadsheet Analyst', Icons.table_chart_outlined),
-      ('Presentation Builder', Icons.slideshow_outlined),
-      ('PDF Research', Icons.picture_as_pdf_outlined),
-      ('Research Synthesis', Icons.travel_explore_outlined),
-      ('Meeting Notes', Icons.groups_outlined),
-      ('Bilingual Writing', Icons.translate_outlined),
-      ('Model Advisor', Icons.memory_outlined),
-    ];
     final t = HarborTheme.of(context);
-    return ListView(
-      padding: const EdgeInsets.all(HarborSpace.s4),
-      children: [
-        Text(l10n.skillsEmptyBody, style: t.text.smallOf(t.colors.inkMuted)),
-        const SizedBox(height: HarborSpace.s4),
-        for (final (name, icon) in skills)
-          Card(
-            margin: const EdgeInsets.only(bottom: HarborSpace.s2),
-            child: ListTile(
-              leading: Icon(icon, color: t.colors.brand),
-              title: Text(name),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {},
+    return Builder(builder: (context) {
+      final sp = HarborServiceProvider.of(context);
+      final service = sp.notifier;
+      if (sp.failed || service == null) {
+        return HarborErrorState(
+          message: 'Native core not loaded; skills are declared in the core '
+              'and cannot be listed.',
+        );
+      }
+      final skills = service.skills;
+      return ListView(
+        padding: const EdgeInsets.all(HarborSpace.s4),
+        children: [
+          Text(l10n.skillsEmptyBody, style: t.text.smallOf(t.colors.inkMuted)),
+          const SizedBox(height: HarborSpace.s4),
+          for (final s in skills)
+            Card(
+              margin: const EdgeInsets.only(bottom: HarborSpace.s2),
+              child: ListTile(
+                title: Text(s.title),
+                subtitle: Text(s.description,
+                    maxLines: 2, overflow: TextOverflow.ellipsis),
+                trailing: Text('${s.tools.length} tools',
+                    style: t.text.captionOf(t.colors.inkMuted)),
+              ),
             ),
-          ),
-      ],
-    );
+        ],
+      );
+    });
   }
 }
 

@@ -1422,6 +1422,8 @@ dependencies = [
  "harbor_security",
  "harbor_store",
  "rusqlite",
+ "serde",
+ "serde_json",
  "tempfile",
  "thiserror 2.0.20",
 ]
@@ -1437,6 +1439,7 @@ dependencies = [
  "harbor_canonical",
  "harbor_core",
  "harbor_formula",
+ "harbor_knowledge",
  "harbor_modelhub",
  "harbor_net",
  "harbor_render",

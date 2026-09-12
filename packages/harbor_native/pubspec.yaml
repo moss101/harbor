@@ -7,6 +7,8 @@ environment:
 
 dependencies:
   ffi: ^2.1.0
+  harbor_domain:
+    path: ../harbor_domain
 
 dev_dependencies:
   lints: ^4.0.0

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
+import 'package:harbor_domain/harbor_domain.dart';
 import 'package:harbor_native/harbor_ffi.dart' as ffi;
 
 /// Bridge between the Flutter layer and Harbor Core. Policy and runtime
@@ -25,12 +26,14 @@ class HarborService extends ChangeNotifier {
   List<Map<String, dynamic>> _installedModels = [];
   List<Map<String, dynamic>> _runs = [];
   Map<String, dynamic>? _preview;
+  List<SkillSummary> _skills = [];
 
   String get policy => _policy;
   String get execution => _execution;
   List<Map<String, dynamic>> get installedModels => _installedModels;
   List<Map<String, dynamic>> get runs => _runs;
   Map<String, dynamic>? get preview => _preview;
+  List<SkillSummary> get skills => _skills;
 
   /// Load Trust Pulse facts, installed models and durable runs from core.
   Future<void> refresh() async {
@@ -46,6 +49,11 @@ class HarborService extends ChangeNotifier {
       _runs = _client.listRuns();
     } on ffi.HarborCoreException {
       _runs = [];
+    }
+    try {
+      _skills = _client.listSkills();
+    } on ffi.HarborCoreException {
+      _skills = [];
     }
     notifyListeners();
   }

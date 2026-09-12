@@ -337,6 +337,44 @@ fn dispatch(ws: &mut WorkspaceHandle, method: &str, args: &serde_json::Value) ->
                 }))
             }
         }
+        // --- skills -----------------------------------------------------
+        "skills.list" => {
+            let skills = harbor_core::skills::builtin_skills()
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let catalog = harbor_core::skills::CapabilityCatalog::default();
+            let mut out = Vec::new();
+            for s in &skills {
+                s.validate(&catalog)
+                    .map_err(|e| HarborError::Other(e.to_string()))?;
+                out.push(serde_json::json!({
+                    "id": s.id,
+                    "title": s.title,
+                    "family": s.family,
+                    "description": s.description,
+                    "tools": s.tools,
+                }));
+            }
+            Ok(serde_json::json!({ "skills": out }))
+        }
+        // --- evaluation -------------------------------------------------
+        "eval.run" => {
+            let (hash, reports) = harbor_knowledge::run_pinned_evals()
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let langs: Vec<serde_json::Value> = reports
+                .iter()
+                .map(|(lang, r)| {
+                    serde_json::json!({
+                        "language": lang,
+                        "passed": r.passed,
+                        "failed": r.failed,
+                    })
+                })
+                .collect();
+            Ok(serde_json::json!({
+                "corpus_sha256": hash,
+                "languages": langs,
+            }))
+        }
         // --- activity ---------------------------------------------------
         "runs.list" => {
             let conn = rusqlite::Connection::open(ws.data_root.join("db").join("agent.db"))

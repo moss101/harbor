@@ -14,11 +14,13 @@
 //!   evaluation-gated (EN / AR / mixed).
 
 pub mod chunk;
+pub mod corpus;
 pub mod eval;
 pub mod identity;
 pub mod index;
 
 pub use chunk::{Chunker, ChunkerConfig};
+pub use corpus::{evaluation_corpus_sha256, run_pinned_evals};
 pub use eval::{EvalCase, EvalReport, run_eval};
 pub use identity::{IndexIdentity, Normalization, embed_model_identity};
 pub use index::{Citation, KnowledgeIndex, Source, SourceChunk, SourceVersionState};

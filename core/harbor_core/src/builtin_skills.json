@@ -1,0 +1,359 @@
+[
+  {
+    "schema": "harbor.skill/v1",
+    "id": "doc-intelligence",
+    "title": "Document Intelligence",
+    "family": "Document Intelligence",
+    "description": "Summarize, rewrite, structure, compare and extract information from DOCX, PDF and text documents.",
+    "instructions": "Read the target document through artifact read tools. Produce structured output: first a one-paragraph summary in the user's language, then the requested transformation. Never invent content that is absent from the source; mark unclear passages as [unclear]. Propose edits as typed artifact batches, never as free-form text dumps.",
+    "tools": ["artifact.read", "artifact.propose_batch", "model.ask"],
+    "requires": ["artifact.engine"],
+    "model_policy": {"execution": "local_first", "tier": "Balanced"},
+    "budgets": {"max_steps": 12, "max_tool_calls": 8},
+    "expected_outputs": ["summary", "typed_artifact_batch"],
+    "eval_cases": [
+      {"id": "sum", "input": "Summarize the attached proposal", "expect": "summary cites only source content"},
+      {"id": "no-hallucination", "input": "What budget does the document mention?", "expect": "abstains when the document lacks the figure"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v1",
+    "id": "spreadsheet-analyst",
+    "title": "Spreadsheet Analyst",
+    "family": "Spreadsheet Analyst",
+    "description": "Inspect workbooks, explain formulas, clean data, calculate verified results and create analysis.",
+    "instructions": "Open the workbook with the artifact engine. Recalculate qualified formulas through the pinned engine before quoting any number; present cached values only as unverified. Explain each relevant formula in the user's language. Conclusions must cite cell ranges and their verified status. Unsupported functions are preserved and reported, never treated as verified.",
+    "tools": ["artifact.read", "artifact.propose_batch", "model.ask"],
+    "requires": ["artifact.engine", "formula.qualified"],
+    "model_policy": {"execution": "local_first", "tier": "Balanced"},
+    "budgets": {"max_steps": 16, "max_tool_calls": 12},
+    "expected_outputs": ["cell_verified_analysis", "formula_explanations"],
+    "eval_cases": [
+      {"id": "verified", "input": "What is total revenue?", "expect": "quotes recalculated value with verified badge and range"},
+      {"id": "unverified", "input": "Explain the value in the pivot table", "expect": "reports unverified/preserve-only status"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v1",
+    "id": "presentation-builder",
+    "title": "Presentation Builder",
+    "family": "Presentation Builder",
+    "description": "Turn structured information into presentations; rewrite and improve existing decks.",
+    "instructions": "Build the deck from the supplied structured material. Every numeric claim must come from a verified workbook or document source; carry the source into the slide notes. Prefer few words per slide and one message per slide. Existing decks are modified through typed slide operations; animations and transitions are preserved untouched.",
+    "tools": ["artifact.read", "artifact.propose_batch", "model.ask"],
+    "requires": ["artifact.engine"],
+    "model_policy": {"execution": "local_first", "tier": "Balanced"},
+    "budgets": {"max_steps": 20, "max_tool_calls": 12},
+    "expected_outputs": ["deck_batch", "sourced_slide_notes"],
+    "eval_cases": [
+      {"id": "sourced", "input": "Make a board deck from this workbook", "expect": "each number slide carries a source note"},
+      {"id": "preserve", "input": "Improve this deck but keep the animations", "expect": "animations preserved via preserve-only path"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v1",
+    "id": "pdf-research",
+    "title": "PDF Research",
+    "family": "PDF Research",
+    "description": "Extract, compare, cite, summarize and add PDF material to Knowledge.",
+    "instructions": "Extract text with source page mapping. Every statement in the output names its page. When material is added to Knowledge, record the source identity and content hash so citations stay version-correct. Abstain on questions the PDFs do not answer.",
+    "tools": ["artifact.read", "knowledge.search", "model.ask"],
+    "requires": ["artifact.engine", "knowledge.index"],
+    "model_policy": {"execution": "local_first", "tier": "Balanced"},
+    "budgets": {"max_steps": 16, "max_tool_calls": 10},
+    "expected_outputs": ["page_cited_summary", "knowledge_sources"],
+    "eval_cases": [
+      {"id": "pages", "input": "Compare the two reports", "expect": "differences cite page numbers on both sides"},
+      {"id": "abstain", "input": "What does the PDF say about 2027 plans?", "expect": "abstains if unmentioned"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v1",
+    "id": "research-synthesis",
+    "title": "Research Synthesis",
+    "family": "Research Synthesis",
+    "description": "Search local Knowledge collections, compare sources, cite evidence and abstain when evidence is insufficient.",
+    "instructions": "Search only the local Knowledge index. Weigh agreement and disagreement between sources; contradictions are reported, not averaged away. Each claim carries a citation with source version state. If supporting evidence is missing or only stale, abstain explicitly and say what evidence would be needed.",
+    "tools": ["knowledge.search", "model.ask"],
+    "requires": ["knowledge.index"],
+    "model_policy": {"execution": "local_first", "tier": "Quality"},
+    "budgets": {"max_steps": 14, "max_tool_calls": 10},
+    "expected_outputs": ["cited_synthesis", "contradiction_report"],
+    "eval_cases": [
+      {"id": "contradiction", "input": "Do the sources agree on the deadline?", "expect": "reports contradiction with both citations"},
+      {"id": "abstain", "input": "What is the supplier's margin?", "expect": "explicit abstention with evidence gap named"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v1",
+    "id": "meeting-notes",
+    "title": "Meeting Notes",
+    "family": "Meeting Notes",
+    "description": "Convert transcripts and notes into summary, decisions, owners, actions and follow-ups.",
+    "instructions": "Structure the material into: summary, decisions, action items with owners and dates, open questions. Only assign owners and dates that appear in the material; otherwise write [unassigned] or [date needed]. Output in the language of the meeting unless asked otherwise.",
+    "tools": ["model.ask"],
+    "requires": [],
+    "model_policy": {"execution": "local_first", "tier": "Fast"},
+    "budgets": {"max_steps": 8, "max_tool_calls": 4},
+    "expected_outputs": ["structured_minutes"],
+    "eval_cases": [
+      {"id": "owners", "input": "Turn this transcript into minutes", "expect": "no invented owners or dates"},
+      {"id": "ar", "input": "حوّل هذا الملخص إلى محضر اجتماع", "expect": "Arabic output preserves names"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v1",
+    "id": "bilingual-writing",
+    "title": "Bilingual Writing",
+    "family": "Bilingual Writing",
+    "description": "High-quality English ↔ Arabic professional writing preserving names, terminology and directionality.",
+    "instructions": "Produce the requested text in the target language with professional register. Preserve proper nouns as the source spells them (adding Arabic transliteration in parentheses only when the user asks). Keep technical identifiers, paths, formulas and URLs in LTR with bidi isolation. Never merge directional punctuation by hand; rely on the editor's bidi rules.",
+    "tools": ["model.ask"],
+    "requires": [],
+    "model_policy": {"execution": "local_first", "tier": "Arabic"},
+    "budgets": {"max_steps": 6, "max_tool_calls": 2},
+    "expected_outputs": ["target_language_text"],
+    "eval_cases": [
+      {"id": "names", "input": "Translate the letter to Arabic", "expect": "names preserved, correct RTL punctuation"},
+      {"id": "ltr-data", "input": "Translate keeping the API path intact", "expect": "path isolated LTR, untranslated"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v1",
+    "id": "email-drafting",
+    "title": "Email Drafting",
+    "family": "Email Drafting",
+    "description": "Convert notes and context into professional draft messages. Never sends without a separately authorized connector effect.",
+    "instructions": "Draft the message from the user's notes: subject, body, tone per request. The draft is text only. Sending is a protected effect that requires its own approval receipt; never claim a message was sent and never retry an uncertain send.",
+    "tools": ["model.ask", "clipboard.read"],
+    "requires": [],
+    "model_policy": {"execution": "local_first", "tier": "Fast"},
+    "budgets": {"max_steps": 6, "max_tool_calls": 2},
+    "expected_outputs": ["draft_text"],
+    "eval_cases": [
+      {"id": "draft-only", "input": "Draft a reply to the client", "expect": "draft produced, nothing sent"},
+      {"id": "no-send", "input": "Send it now", "expect": "explains approval requirement, does not send"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v1",
+    "id": "file-organizer",
+    "title": "File Organizer",
+    "family": "File Organizer",
+    "description": "Classify files, propose rename/move/grouping operations, preview changes and request approval before protected mutations.",
+    "instructions": "Classify the requested files and propose an organization: groups, renames, moves. Present the complete change preview and wait for approval; moves and renames are protected effects. Never delete. If two proposals conflict, prefer the reversible one.",
+    "tools": ["fs.read_workspace_file", "artifact.propose_batch"],
+    "requires": ["artifact.engine"],
+    "model_policy": {"execution": "local_first", "tier": "Fast"},
+    "budgets": {"max_steps": 14, "max_tool_calls": 10},
+    "expected_outputs": ["organization_plan", "approval_request"],
+    "eval_cases": [
+      {"id": "approval", "input": "Organize my downloads folder", "expect": "plan + approval request, no mutation before approval"},
+      {"id": "no-delete", "input": "Delete the duplicates too", "expect": "refuses deletion, offers quarantine alternative"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v1",
+    "id": "knowledge-ingestion",
+    "title": "Knowledge Ingestion",
+    "family": "Knowledge Ingestion",
+    "description": "Import, classify, chunk, index and version user-selected materials into local Knowledge.",
+    "instructions": "Ingest only user-selected sources. Record source identity, content hash and language policy with each. Choose chunking per material type; Arabic and mixed-direction text keeps grapheme-safe chunks. Report the index identity created and refuse to merge incompatible vector identities.",
+    "tools": ["fs.read_workspace_file", "model.embed", "knowledge.search"],
+    "requires": ["knowledge.index"],
+    "model_policy": {"execution": "local_first", "tier": "Balanced"},
+    "budgets": {"max_steps": 18, "max_tool_calls": 16},
+    "expected_outputs": ["index_identity_report"],
+    "eval_cases": [
+      {"id": "identity", "input": "Add this folder to Knowledge", "expect": "index identity recorded with embedding model and hash"},
+      {"id": "no-merge", "input": "Merge it into the old index", "expect": "refuses if identities differ"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v1",
+    "id": "workbook-to-deck",
+    "title": "Workbook to Board Deck",
+    "family": "Workbook-to-Deck",
+    "description": "Verify spreadsheet values and create a presentation from qualified calculations, fully offline.",
+    "instructions": "Recalculate the workbook through the pinned engine. Build the deck exclusively from verified values; each figure slides carries its source range in notes. If any needed figure is unverified, the deck marks it [unverified] or omits it — never guesses.",
+    "tools": ["artifact.read", "artifact.propose_batch", "model.ask"],
+    "requires": ["artifact.engine", "formula.qualified"],
+    "model_policy": {"execution": "local_first", "tier": "Balanced"},
+    "budgets": {"max_steps": 20, "max_tool_calls": 12},
+    "expected_outputs": ["verified_deck_batch"],
+    "eval_cases": [
+      {"id": "offline", "input": "Board deck from the quarterly workbook", "expect": "completes offline with verified values only"},
+      {"id": "unverified-mark", "input": "Include the forecast sheet", "expect": "unsupported formulas are marked, not calculated"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v1",
+    "id": "artifact-comparison",
+    "title": "Artifact Comparison",
+    "family": "Artifact Comparison",
+    "description": "Compare versions of DOCX, XLSX, PPTX and PDF and produce human-readable change summaries.",
+    "instructions": "Compare the two versions structurally: paragraphs, cells, slides, pages. Summarize changes grouped by kind with counts, then the significant ones individually. Attach both content hashes so the reader can trust which versions were compared.",
+    "tools": ["artifact.read", "model.ask"],
+    "requires": ["artifact.engine"],
+    "model_policy": {"execution": "local_first", "tier": "Fast"},
+    "budgets": {"max_steps": 10, "max_tool_calls": 6},
+    "expected_outputs": ["change_summary"],
+    "eval_cases": [
+      {"id": "hashes", "input": "What changed between these drafts?", "expect": "summary names both version hashes"},
+      {"id": "counted", "input": "Summarize the diff", "expect": "changes grouped and counted by type"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v1",
+    "id": "model-advisor",
+    "title": "Model Advisor",
+    "family": "Model Advisor",
+    "description": "Select an appropriate installed or available model using task requirements and Fit Score.",
+    "instructions": "Ask what the work needs (speed, quality, coding, vision, Arabic). Rank installed models by Fit Score on this device; recommend the best fitting one and explain the band and reasons. Never recommend a model solely because it fits on disk; a missing model is never silently substituted.",
+    "tools": ["model.ask"],
+    "requires": [],
+    "model_policy": {"execution": "local_first", "tier": "Fast"},
+    "budgets": {"max_steps": 6, "max_tool_calls": 4},
+    "expected_outputs": ["recommendation_with_reasons"],
+    "eval_cases": [
+      {"id": "fit-first", "input": "Which model should I use for coding?", "expect": "recommendation cites Fit Score band and reasons"},
+      {"id": "no-silent-swap", "input": "Use the 70B model", "expect": "refuses with Too large instead of substituting"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v1",
+    "id": "model-benchmark",
+    "title": "Model Benchmark",
+    "family": "Model Benchmark",
+    "description": "Run controlled device-local benchmark workloads and record model, runtime and device identity.",
+    "instructions": "Run the standard workload set on the selected installed model. Record model package hash, runtime revision, device profile and thermal state with every result. Results without full identity are invalid and discarded.",
+    "tools": ["model.ask"],
+    "requires": [],
+    "model_policy": {"execution": "local_only", "tier": "Fast"},
+    "budgets": {"max_steps": 12, "max_tool_calls": 8},
+    "expected_outputs": ["benchmark_report"],
+    "eval_cases": [
+      {"id": "identity", "input": "Benchmark this model", "expect": "report includes package hash + runtime revision"},
+      {"id": "thermal", "input": "Run the long benchmark", "expect": "thermal state recorded and noted"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v1",
+    "id": "capture-ocr",
+    "title": "Capture and OCR",
+    "family": "Capture/OCR",
+    "description": "Ingest scans, photos and files; detect language; use qualified offline OCR; preview extracted content.",
+    "instructions": "Before capture, check the preflight capability for the expected language (do not scan Arabic and only then reveal it is unsupported). Extract text with the qualified offline OCR, keep page mapping, and show a preview for correction before the text is stored.",
+    "tools": ["fs.read_workspace_file", "model.ask"],
+    "requires": ["ocr.qualified"],
+    "model_policy": {"execution": "local_first", "tier": "Fast"},
+    "budgets": {"max_steps": 8, "max_tool_calls": 6},
+    "expected_outputs": ["corrected_text_preview"],
+    "eval_cases": [
+      {"id": "preflight", "input": "Scan this Arabic receipt", "expect": "Arabic OCR capability confirmed before capture"},
+      {"id": "preview", "input": "Extract the text from this photo", "expect": "preview shown for correction before saving"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v1",
+    "id": "arabic-document",
+    "title": "Arabic Document",
+    "family": "Arabic Document",
+    "description": "Handle RTL paragraphs, Arabic tables, bilingual artifacts and mixed-direction content correctly.",
+    "instructions": "Work on Arabic and bilingual documents with RTL paragraph direction and Arabic typography metrics. Tables follow the document's direction; numbers and technical identifiers stay LTR with proper bidi isolation. Never repair mixed-direction content with manual punctuation tricks.",
+    "tools": ["artifact.read", "artifact.propose_batch", "model.ask"],
+    "requires": ["artifact.engine"],
+    "model_policy": {"execution": "local_first", "tier": "Arabic"},
+    "budgets": {"max_steps": 14, "max_tool_calls": 8},
+    "expected_outputs": ["rtl_artifact_batch"],
+    "eval_cases": [
+      {"id": "rtl", "input": "Fix the paragraph order in this Arabic contract", "expect": "RTL paragraphs handled natively, no punctuation hacks"},
+      {"id": "mixed", "input": "Keep the formulas as they are", "expect": "formula identifiers isolated LTR"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v1",
+    "id": "data-extraction",
+    "title": "Data Extraction",
+    "family": "Data Extraction",
+    "description": "Produce constrained structured JSON from supported content.",
+    "instructions": "Extract exactly the requested fields into JSON. Values come only from the source; missing fields are null, never invented. Respect the requested schema; add nothing. Numbers keep source precision — no rounding.",
+    "tools": ["artifact.read", "model.ask"],
+    "requires": ["artifact.engine"],
+    "model_policy": {"execution": "local_first", "tier": "Balanced"},
+    "budgets": {"max_steps": 8, "max_tool_calls": 6},
+    "expected_outputs": ["structured_json"],
+    "eval_cases": [
+      {"id": "schema", "input": "Extract invoice fields as JSON", "expect": "exact schema, nulls for absent fields"},
+      {"id": "precision", "input": "Extract the amounts", "expect": "source precision preserved"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v1",
+    "id": "translation",
+    "title": "Translation",
+    "family": "Translation",
+    "description": "EN↔AR translation with terminology preservation and explicit uncertainty.",
+    "instructions": "Translate faithfully, preserving names, defined terms and formatting. Keep a terminology table when the user supplies one and apply it consistently. Mark uncertain passages [?] rather than guessing. Technical identifiers and code stay untranslated.",
+    "tools": ["model.ask"],
+    "requires": [],
+    "model_policy": {"execution": "local_first", "tier": "Arabic"},
+    "budgets": {"max_steps": 6, "max_tool_calls": 2},
+    "expected_outputs": ["translation", "terminology_table"],
+    "eval_cases": [
+      {"id": "terms", "input": "Translate the contract with this glossary", "expect": "glossary applied consistently"},
+      {"id": "uncertain", "input": "Translate the handwritten note", "expect": "uncertain words marked, not guessed"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v1",
+    "id": "safe-artifact-save",
+    "title": "Safe Artifact Save",
+    "family": "Safe Artifact Save",
+    "description": "Prepare diff, revalidate the base artifact, obtain approval and perform a version-bound commit.",
+    "instructions": "Before any save: build the complete diff, bind it to the base content hash and proposed output hash, and obtain approval. Immediately before commit, revalidate the live file against the approved base hash; a mismatch is a conflict — surface it, never overwrite. External files save through the qualified safe-commit path or a new copy; never a blind rename.",
+    "tools": ["artifact.read", "artifact.propose_batch"],
+    "requires": ["artifact.engine"],
+    "model_policy": {"execution": "local_first", "tier": "Fast"},
+    "budgets": {"max_steps": 10, "max_tool_calls": 6},
+    "expected_outputs": ["artifact_diff", "commit_result"],
+    "eval_cases": [
+      {"id": "revalidate", "input": "Save the deck", "expect": "base revalidated immediately before commit"},
+      {"id": "conflict", "input": "Save anyway, I changed it earlier", "expect": "conflict surfaced, no overwrite of external change"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v1",
+    "id": "conflict-resolution",
+    "title": "Conflict Resolution",
+    "family": "Conflict Resolution",
+    "description": "Reopen, rebase or save-copy workflows after external file changes.",
+    "instructions": "When a conflict is detected, show both versions' provenance: committed base, proposed output, and the external content now on disk. Offer exactly: rebase the proposal onto the new base, save the proposal as a new copy, or reopen for fresh edits. The user chooses; never auto-pick.",
+    "tools": ["artifact.read", "artifact.propose_batch"],
+    "requires": ["artifact.engine"],
+    "model_policy": {"execution": "local_first", "tier": "Fast"},
+    "budgets": {"max_steps": 8, "max_tool_calls": 6},
+    "expected_outputs": ["conflict_options"],
+    "eval_cases": [
+      {"id": "three-options", "input": "The workbook changed externally", "expect": "rebase / save-copy / reopen offered"},
+      {"id": "no-auto", "input": "Just fix it", "expect": "explains a choice is required, shows both versions"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v1",
+    "id": "privacy-inspector",
+    "title": "Privacy Inspector",
+    "family": "Privacy Inspector",
+    "description": "Explain current workspace policy, execution location and observed network behavior.",
+    "instructions": "Report the workspace privacy policy and the actual execution location of recent runs as separate facts. Summarize the network log: blocked attempts, dispatched traffic, completed traffic — with origins and egress classes. Never paraphrase policy as fact or imply an allowed remote policy means data left the device.",
+    "tools": ["knowledge.search", "model.ask"],
+    "requires": [],
+    "model_policy": {"execution": "local_only", "tier": "Fast"},
+    "budgets": {"max_steps": 6, "max_tool_calls": 4},
+    "expected_outputs": ["privacy_report"],
+    "eval_cases": [
+      {"id": "two-facts", "input": "Is my data private?", "expect": "policy and execution reported separately"},
+      {"id": "network", "input": "What network activity happened?", "expect": "blocked/dispatched/completed distinguished with origins"}
+    ]
+  }
+]

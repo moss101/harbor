@@ -10,6 +10,7 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:ffi/ffi.dart';
+import 'package:harbor_domain/harbor_domain.dart';
 
 typedef _OpenNative = Pointer<Void> Function(Pointer<Utf8>, Pointer<Utf8>, Uint8);
 typedef _OpenDart = Pointer<Void> Function(Pointer<Utf8>, Pointer<Utf8>, int);
@@ -133,6 +134,14 @@ class HarborCoreClient {
   /// Work Canvas preview IR for artifact bytes (xlsx/pptx sniffed by core).
   Map<String, dynamic> previewArtifact(List<int> bytes) =>
       call('artifact.preview', {'data_b64': base64Encode(bytes)});
+
+  List<SkillSummary> listSkills() {
+    final r = call('skills.list');
+    return (r['skills'] as List)
+        .cast<Map>()
+        .map((m) => SkillSummary.fromMap(m.cast<String, dynamic>()))
+        .toList();
+  }
 
   void close() {
     final closeFn =

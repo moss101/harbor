@@ -16,6 +16,7 @@ harbor_canonical = { workspace = true }
 harbor_formula = { workspace = true }
 harbor_modelhub = { workspace = true }
 harbor_render = { workspace = true }
+harbor_knowledge = { workspace = true }
 harbor_net = { workspace = true }
 harbor_security = { workspace = true }
 harbor_store = { workspace = true }

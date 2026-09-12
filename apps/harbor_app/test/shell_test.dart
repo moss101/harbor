@@ -67,6 +67,7 @@ Future<void> pumpApp(
 void main() {
   _appendLiveTests();
   _appendPreviewTest();
+  _appendSkillsTest();
   testWidgets('home shows work-first headline and quick actions',
       (tester) async {
     await pumpApp(tester);
@@ -226,5 +227,30 @@ void _appendPreviewTest() {
     // OOXML stores formulas without the leading '='.
     expect(find.textContaining('SUM(B2:B5)'), findsOneWidget);
     service!.close();
+  });
+}
+
+void _appendSkillsTest() {
+  testWidgets('skills surface lists the real builtin skills from core',
+      (tester) async {
+    await pumpApp(tester);
+    if (!coreAvailable) {
+      expect(find.textContaining('Native core not loaded'), findsNothing);
+      return;
+    }
+    await tester.tap(find.text('Skills').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    // The 21 authority skill families come through the live boundary.
+    final sp = HarborServiceProvider.of(
+        tester.element(find.textContaining('tools').first));
+    expect(sp.notifier!.skills.length, greaterThanOrEqualTo(21));
+    expect(find.text('Document Intelligence'), findsOneWidget);
+    expect(find.text('Spreadsheet Analyst'), findsOneWidget);
+    // The list is lazy: scroll to the last family.
+    await tester.scrollUntilVisible(
+        find.text('Privacy Inspector'), 300,
+        scrollable: find.byType(Scrollable).first);
+    expect(find.text('Privacy Inspector'), findsOneWidget);
   });
 }

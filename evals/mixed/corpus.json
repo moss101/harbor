@@ -1,0 +1,11 @@
+{
+  "schema": "harbor.eval_corpus/v1",
+  "language": "mixed",
+  "sources": [
+    {"id": "mx-terms", "title": "Contract EN/AR", "text": "The contract value is 5000 USD. قيمة العقد خمسة آلاف دولار. Both statements refer to the same agreement."}
+  ],
+  "cases": [
+    {"id": "mx-both", "question": "قيمة العقد خمسة آلاف دولار", "expect_sources": ["mx-terms"], "expect_abstention": false, "injection_probe": false},
+    {"id": "mx-unanswerable", "question": "What is the supplier's margin?", "expect_sources": [], "expect_abstention": true, "injection_probe": false}
+  ]
+}
