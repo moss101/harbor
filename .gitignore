@@ -27,3 +27,4 @@ fixtures/models/qwen2.5-1.5b-instruct-q4_k_m.gguf
 
 # Bulk model store: re-acquire via the perf example or brokered acquisition
 fixtures/models-store/
+core/harbor_artifacts/tests/dbg_map.rs
