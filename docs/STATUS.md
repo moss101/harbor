@@ -79,6 +79,28 @@ iOS CFBundleShortVersionString 1.0.0).
    store-distributable), release_gate_report (25 gates; PASS emitted only
    when backing evidence exists at the same commit; assembler:
    `tools/assemble_release_evidence.py`).
+7. **§10 reduced post-packaging suite on the RC Android APK (emulator
+   tier).** v1.0.0(1) release APK installed → launched → fresh live
+   workspace (agent.db+WAL/SHM, store.db, network_audit.db) → force-stop →
+   relaunch live again; screenshots EN + AR/RTL with the LOCAL ONLY badge
+   and Arabic-surfaced core policy (`post_packaging_requalification.
+   android_rc_apk_emulator`). Artifact integrity checks: iOS+macOS
+   CFBundleShortVersionString 1.0.0; privacy manifests present in both
+   Apple bundles; INTERNET present in APK+AAB;
+   ITSAppUsesNonExemptEncryption=false; macOS dylib present. Gotcha
+   recorded: release builds set extractNativeLibs=false, so native libs
+   demand-page from base.apk and never appear as libharbor_ffi.so paths in
+   /proc/PID/maps — absence there is NOT a load failure.
+8. **§17 EN/AR store screenshots** captured from the RC builds →
+   `docs/release/store/screenshots/` (Android EN home/models/settings +
+   AR RTL home/settings from the release APK; iOS EN home). One manual
+   step remains for the iOS AR listing screenshot (the app takes locale
+   from the in-app toggle by design and the simulator has no CLI tap
+   injection) — documented in screenshots/README.md.
+9. **Network capture rebound at the RC tree**: the real-HF test re-ran
+   clean (`real_hf_capture_matches_broker_audit_one_to_one ... ok`) →
+   `evidence/network_capture.json` now binds to the RC commit directly
+   (no compatible-build caveat).
 
 ### Test results (all regenerated at commit 1415e79)
 
@@ -90,7 +112,7 @@ iOS CFBundleShortVersionString 1.0.0).
 | Plaintext-at-rest inspection | PASS (rerun at 1415e79 → `evidence/plaintext_at_rest.json`) |
 | Optional capabilities disabled | N/A_DISABLED, zero violations |
 | Performance qualification | PASS_WITH_BLOCKED_CLASSES (reference metrics all PASS: TTFT p95 ≤ 100, ≥ 100 tok/s, artifact open/recalc/save within thresholds, RAG 25 777 docs/min; min-device/Windows classes BLOCKED_DEVICE_EVIDENCE) |
-| Network capture (offline + real-HF) | PASS evidence from session 27 (commit-identified inside `evidence/network_capture.json`; real-network rerun deliberately not repeated — HF egress behavior unchanged this session) |
+| Network capture (offline + real-HF) | PASS — real-HF re-run at the RC tree (`evidence/network_capture.json` binds to the RC commit) |
 
 ### RC freeze rules now in force (goal §19)
 
