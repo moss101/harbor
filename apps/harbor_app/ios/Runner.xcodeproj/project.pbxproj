@@ -154,6 +154,7 @@
 			buildPhases = (
 				9740EEB61CF901F6004384FC /* Run Script */,
 				97C146EA1CF9000F007C117D /* Sources */,
+				74B0F1A12B7F000000000002 /* Stage Harbor Native Archive */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
@@ -280,7 +281,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ \"$PLATFORM_NAME\" = \"iphonesimulator\" ]; then\nFFI_LIB=\"$SRCROOT/../../../core/target/aarch64-apple-ios-sim/release/libharbor_ffi.dylib\"\nif [ ! -f \"$FFI_LIB\" ]; then\necho \"harbor_ffi: building libharbor_ffi.dylib (aarch64-apple-ios-sim)...\"\n(cd \"$SRCROOT/../../../core\" && \"$HOME/.cargo/bin/cargo\" build --release -p harbor_ffi --target aarch64-apple-ios-sim) || exit 1\nfi\ncp -f \"$FFI_LIB\" \"$BUILT_PRODUCTS_DIR/$PRODUCT_NAME.app/libharbor_ffi.dylib\" || exit 1\ncodesign --force --sign - \"$BUILT_PRODUCTS_DIR/$PRODUCT_NAME.app/libharbor_ffi.dylib\" || exit 1\necho \"harbor_ffi: embedded into $PRODUCT_NAME.app\"\nelse\necho \"harbor_ffi: skipping (simulator embedding only; device uses static-link)\"\nfi";
+			shellScript = "if [ \"$PLATFORM_NAME\" = \"iphonesimulator\" ]; then\nFFI_LIB=\"$SRCROOT/../../../core/target/aarch64-apple-ios-sim/release/libharbor_ffi.dylib\"\nif [ ! -f \"$FFI_LIB\" ]; then\necho \"harbor_ffi: building libharbor_ffi.dylib (aarch64-apple-ios-sim)...\"\n(cd \"$SRCROOT/../../../core\" && \"$HOME/.cargo/bin/cargo\" build --release -p harbor_ffi --target aarch64-apple-ios-sim) || exit 1\nfi\ncp -f \"$FFI_LIB\" \"$BUILT_PRODUCTS_DIR/$PRODUCT_NAME.app/libharbor_ffi.dylib\" || exit 1\ncodesign --force --sign - \"$BUILT_PRODUCTS_DIR/$PRODUCT_NAME.app/libharbor_ffi.dylib\" || exit 1\necho \"harbor_ffi: embedded into $PRODUCT_NAME.app\"\nelse\necho \"harbor_ffi: device build links the static archive staged by Stage Harbor Native Archive\"\nfi\ncp -f \"$SRCROOT/Runner/PrivacyInfo.xcprivacy\" \"$BUILT_PRODUCTS_DIR/$PRODUCT_NAME.app/PrivacyInfo.xcprivacy\" || exit 1\necho \"privacy manifest: bundled into $PRODUCT_NAME.app\"";
+		};
+		74B0F1A12B7F000000000002 /* Stage Harbor Native Archive */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Stage Harbor Native Archive";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"$PLATFORM_NAME\" = \"iphoneos\" ]; then\nFFI_LIB=\"$SRCROOT/../../../core/target/aarch64-apple-ios/release/libharbor_ffi.a\"\nif [ ! -f \"$FFI_LIB\" ]; then\nNOTE=\"the xcodebuild dependency scanner validates the force_load input before any script phase runs, so a fresh machine must build the archive first: run scripts/package_apple.sh, or: (cd core && cargo rustc --release -p harbor_ffi --target aarch64-apple-ios --crate-type staticlib)\"\necho \"harbor_ffi: $NOTE\" >&2\n(cd \"$SRCROOT/../../../core\" && \"$HOME/.cargo/bin/cargo\" rustc --release -p harbor_ffi --target aarch64-apple-ios --crate-type staticlib) || exit 1\nfi\ncp -f \"$FFI_LIB\" \"$BUILT_PRODUCTS_DIR/libharbor_ffi.a\" || exit 1\necho \"harbor_ffi: staged static archive for device link at $BUILT_PRODUCTS_DIR/libharbor_ffi.a\"\nelse\necho \"harbor_ffi: no device archive stage needed for $PLATFORM_NAME\"\nfi";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -398,6 +414,20 @@
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
+				);
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = (
+					"-force_load",
+					"$(SRCROOT)/../../../core/target/aarch64-apple-ios/release/libharbor_ffi.a",
+					"-Wl,-u,_harbor_core_open",
+					"-Wl,-u,_harbor_core_call",
+					"-Wl,-u,_harbor_core_close",
+					"-Wl,-u,_harbor_core_string_free",
+					"-framework",
+					Accelerate,
+					"-framework",
+					Metal,
+					"-framework",
+					MetalKit,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = dev.harbor.harborApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -580,6 +610,20 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = (
+					"-force_load",
+					"$(SRCROOT)/../../../core/target/aarch64-apple-ios/release/libharbor_ffi.a",
+					"-Wl,-u,_harbor_core_open",
+					"-Wl,-u,_harbor_core_call",
+					"-Wl,-u,_harbor_core_close",
+					"-Wl,-u,_harbor_core_string_free",
+					"-framework",
+					Accelerate,
+					"-framework",
+					Metal,
+					"-framework",
+					MetalKit,
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = dev.harbor.harborApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -601,6 +645,20 @@
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
+				);
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = (
+					"-force_load",
+					"$(SRCROOT)/../../../core/target/aarch64-apple-ios/release/libharbor_ffi.a",
+					"-Wl,-u,_harbor_core_open",
+					"-Wl,-u,_harbor_core_call",
+					"-Wl,-u,_harbor_core_close",
+					"-Wl,-u,_harbor_core_string_free",
+					"-framework",
+					Accelerate,
+					"-framework",
+					Metal,
+					"-framework",
+					MetalKit,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = dev.harbor.harborApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";

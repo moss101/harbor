@@ -38,9 +38,11 @@ echo "-- bundle the native core into the app (Contents/Frameworks) --"
 # bundle Frameworks dir only when the dylib is actually there.
 (cd "$repo/core" && cargo build --release -p harbor_ffi)
 cp "$repo/core/target/release/libharbor_ffi.dylib" "$macos_app/Contents/Frameworks/"
+cp "$app/macos/Runner/PrivacyInfo.xcprivacy" "$macos_app/Contents/Resources/"
 codesign --force --sign - "$macos_app/Contents/Frameworks/libharbor_ffi.dylib"
 codesign --force --sign - "$macos_app"
 echo "   dylib bundled: Contents/Frameworks/libharbor_ffi.dylib"
+echo "   privacy manifest bundled: Contents/Resources/PrivacyInfo.xcprivacy"
 
 if [[ -n "${HARBOR_APPLE_SIGNING_IDENTITY:-}" ]]; then
   echo "-- signing macOS app with OPERATOR identity (keychain-provided) --"
@@ -52,7 +54,24 @@ else
 fi
 
 echo "-- iOS simulator build (compilation proof; not a store artifact) --"
-flutter build ios --simulator --release || echo "NOTE: simulator build skipped (no iOS toolchain)"
+# Current Flutter rejects --release/--profile for simulators; debug proves
+# compilation and is what the live simulator verification installs.
+flutter build ios --simulator --debug \
+  || echo "NOTE: simulator build skipped (no iOS toolchain)"
+
+echo "-- iOS device static core (production embedding; install/launch needs hardware) --"
+# The Runner target force-loads this archive via OTHER_LDFLAGS[sdk=iphoneos*].
+# Build it BEFORE the xcodebuild step so the link input exists deterministically.
+(cd "$repo/core" && PATH="$HOME/.cargo/bin:$PATH" cargo rustc --release \
+  -p harbor_ffi --target aarch64-apple-ios --crate-type staticlib)
+lipo -info "$repo/core/target/aarch64-apple-ios/release/libharbor_ffi.a"
+# nm errors on LLVM-bitcode members (compiler_builtins); the Rust FFI symbols
+# live in regular Mach-O members, so tolerate member-level errors.
+symbols="$(nm -gU "$repo/core/target/aarch64-apple-ios/release/libharbor_ffi.a" 2>/dev/null || true)"
+echo "$symbols" | grep "_harbor_core_open" >/dev/null \
+  || { echo "FAIL: harbor_core_open missing from device archive"; exit 1; }
+echo "   archive ready: core/target/aarch64-apple-ios/release/libharbor_ffi.a"
+flutter build ios --release --no-codesign || echo "NOTE: device build skipped (no iOS toolchain)"
 
 cat <<'EOF'
 

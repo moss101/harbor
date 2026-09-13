@@ -42,9 +42,12 @@ EOF
   flutter build apk --release
 else
   echo "-- release build with DEBUG key (NOT store-distributable) --"
+  flutter build appbundle --release
   flutter build apk --release
-  echo "   artifact: build/app/outputs/flutter-apk/app-release.apk"
-  echo "   signing:  debug key — evidence value is reproducible-release only"
+  echo "   artifacts: build/app/outputs/bundle/release/app-release.aab (debug-key signed)"
+  echo "            : build/app/outputs/flutter-apk/app-release.apk (debug-key signed)"
+  echo "   signing:   debug key — evidence value is reproducible-release only;"
+  echo "              the store-ready AAB requires the operator upload key (env vars)"
 fi
 
 cat <<'EOF'

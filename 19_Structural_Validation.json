@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "b65b9dbcc2301151da10cbf16b5e600f345f043f44751599b11f9247299650a5",
+  "input_manifest_sha256": "6707cdb8bf2d5efc0ae4ed5a78b85674543ae30214c997663695c36d2a7ed989",
   "input_files": [
     {
       "path": "00_README.md",
@@ -161,8 +161,8 @@
     },
     {
       "path": "apps/harbor_app/android/app/src/main/AndroidManifest.xml",
-      "bytes": 2198,
-      "sha256": "1826f3f242becee965c3865af963557031b323954dbf1883ad33895340d3a320"
+      "bytes": 2780,
+      "sha256": "e78a1a5adea3dcd5b8a5ac645415a0e2d4ee55a82070d85e17693d24d799d69d"
     },
     {
       "path": "apps/harbor_app/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java",
@@ -271,8 +271,8 @@
     },
     {
       "path": "apps/harbor_app/android/local.properties",
-      "bytes": 140,
-      "sha256": "c08a27241a4af9635ee5844bf9b2299597ff49785ee8d0ad91f8c318702bd0c5"
+      "bytes": 162,
+      "sha256": "ffc61f7d6cd059e6300098ef9d1966a318fbb3e1466b6498cf0a3ac4e2248dd8"
     },
     {
       "path": "apps/harbor_app/android/settings.gradle.kts",
@@ -296,8 +296,8 @@
     },
     {
       "path": "apps/harbor_app/ios/Flutter/Generated.xcconfig",
-      "bytes": 1039,
-      "sha256": "6ced55cb5b668ab8f9a1d1a43c4f20aab5c8dc7b79449d778c788586fdd7877a"
+      "bytes": 1068,
+      "sha256": "c913fd38c49d036b2ebd9cd59daac0865f4e720c2f4437f03c9b9384b6824aff"
     },
     {
       "path": "apps/harbor_app/ios/Flutter/Release.xcconfig",
@@ -326,13 +326,13 @@
     },
     {
       "path": "apps/harbor_app/ios/Flutter/ephemeral/flutter_native_integration.env",
-      "bytes": 889,
-      "sha256": "22ebd2adafd2f9a80287c2d76cb0388c636cb75546a115dd1f46e22369be4f6f"
+      "bytes": 918,
+      "sha256": "0d3ac897dd2569cc5e346ceae8509349b1bab092e995cca26c690817af017780"
     },
     {
       "path": "apps/harbor_app/ios/Flutter/flutter_export_environment.sh",
-      "bytes": 1087,
-      "sha256": "41a875a8cd1af677fd567cb7eabe32ebc7f8c38185ae62bb5887e7104c2af231"
+      "bytes": 1116,
+      "sha256": "ee43375a05a3adfb3463ebec94a3f3af5d1ef38a1ba09300bb9fdc3e9c237c84"
     },
     {
       "path": "apps/harbor_app/ios/Runner/AppDelegate.swift",
@@ -466,8 +466,13 @@
     },
     {
       "path": "apps/harbor_app/ios/Runner/Info.plist",
-      "bytes": 2218,
-      "sha256": "0f1736a66650138d783cf5a2393078f8212d33fafe06ec96cee1b5add1f952aa"
+      "bytes": 2270,
+      "sha256": "b3711cfa832936376534e2ea42a6dabdf51aba770fd5024c5ddcfc56023df3d3"
+    },
+    {
+      "path": "apps/harbor_app/ios/Runner/PrivacyInfo.xcprivacy",
+      "bytes": 812,
+      "sha256": "61c603995d6e5a2ca312fb4cb2f58f692bc88627b67ece2dd76da14213cb174f"
     },
     {
       "path": "apps/harbor_app/ios/Runner/Runner-Bridging-Header.h",
@@ -481,8 +486,8 @@
     },
     {
       "path": "apps/harbor_app/ios/Runner.xcodeproj/project.pbxproj",
-      "bytes": 26883,
-      "sha256": "09291e7cfd388e2093e2238e78494ef2246ad299e3f003c44abdaf0dda73f888"
+      "bytes": 29560,
+      "sha256": "6999a2531bfd02e997fb0bee89b1a4ff4363caad8ae9978513ff7c5dac2612c1"
     },
     {
       "path": "apps/harbor_app/ios/Runner.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
@@ -561,8 +566,8 @@
     },
     {
       "path": "apps/harbor_app/lib/services/harbor_service.dart",
-      "bytes": 6938,
-      "sha256": "51b016023f1aa0bc879b287529762834a9585f888672e4ec4e5b4edf773796dd"
+      "bytes": 7117,
+      "sha256": "3a083b1bce12d11c345df2e95871ba104c89f29c35da615d535b71ef5a1fe24c"
     },
     {
       "path": "apps/harbor_app/lib/shell/adaptive_shell.dart",
@@ -601,8 +606,8 @@
     },
     {
       "path": "apps/harbor_app/macos/Flutter/ephemeral/Flutter-Generated.xcconfig",
-      "bytes": 961,
-      "sha256": "34c3f7ef4c7b1fc27aaba3d6549b9b3b14e26f035013759969c3c725847fef99"
+      "bytes": 990,
+      "sha256": "c812316de3543388849fdd4917d69883e19a22d40463616c162cbc6c82a7c88d"
     },
     {
       "path": "apps/harbor_app/macos/Flutter/ephemeral/FlutterInputs.xcfilelist",
@@ -626,13 +631,13 @@
     },
     {
       "path": "apps/harbor_app/macos/Flutter/ephemeral/flutter_export_environment.sh",
-      "bytes": 1087,
-      "sha256": "0f0aed94f634246fef468592546d9b048bf1d3b13a849d5b9480bad0a391a1e2"
+      "bytes": 1116,
+      "sha256": "512e31aa26ce2830e75b2c5f7a9b15a392b3c719c7612860453bacaa42af0b22"
     },
     {
       "path": "apps/harbor_app/macos/Flutter/ephemeral/flutter_native_integration.env",
-      "bytes": 889,
-      "sha256": "38aeb222bf94ca3002953f6d56860101315058025d245cee204804537654149d"
+      "bytes": 918,
+      "sha256": "2fd4c2a36ac0fccfe65e35b85a3e9bbfb4548fe5ca209eb760bb47a3936d1299"
     },
     {
       "path": "apps/harbor_app/macos/Flutter/ephemeral/tripwire",
@@ -725,6 +730,11 @@
       "sha256": "65c9613c11bcedfa51416b16c975d8ba6ff12b405fc19d60db8755d92e86d9fe"
     },
     {
+      "path": "apps/harbor_app/macos/Runner/PrivacyInfo.xcprivacy",
+      "bytes": 812,
+      "sha256": "61c603995d6e5a2ca312fb4cb2f58f692bc88627b67ece2dd76da14213cb174f"
+    },
+    {
       "path": "apps/harbor_app/macos/Runner/Release.entitlements",
       "bytes": 240,
       "sha256": "b746c74b201e6af4e0864fbd1f4f629f96156a7ec4b7208bc995d0a5089bb592"
@@ -766,8 +776,8 @@
     },
     {
       "path": "apps/harbor_app/pubspec.yaml",
-      "bytes": 480,
-      "sha256": "172bf713cedd402ba5992ad8e0d965462b452d6c08d1698823aa33454d1f3197"
+      "bytes": 482,
+      "sha256": "05cd53e74f9e313bb7eb5e5b59d9062b9a1cfb94116a52319a594b56ba91bc9c"
     },
     {
       "path": "apps/harbor_app/test/accessibility_audit_test.dart",
@@ -1495,9 +1505,74 @@
       "sha256": "35fd6603decac984682d03ffbab97ef64e67e1987360d01e009730522cb0c19c"
     },
     {
+      "path": "docs/release/THIRD_PARTY_NOTICES.md",
+      "bytes": 37369,
+      "sha256": "a8b60c8fd7ccd6690b9bb45360ed065ceb88bb68c4072b811a4f002bd9d09390"
+    },
+    {
       "path": "docs/release/migration_rollback.md",
       "bytes": 4714,
       "sha256": "4a6defa32cbfe520c296b9c30ad7c8a8680cd7db9e50cc6f0d8207536b343eae"
+    },
+    {
+      "path": "docs/release/store/README.md",
+      "bytes": 1566,
+      "sha256": "fca0d3610ed442b3a2172983f76c36d2358fade179a6dc14dbd237b1f5db8420"
+    },
+    {
+      "path": "docs/release/store/apple_export_compliance.md",
+      "bytes": 1750,
+      "sha256": "2019724e3f1c539802f3726afc7fd75e63c9b24a23e4dfb4470f13abf87d1950"
+    },
+    {
+      "path": "docs/release/store/changelog.md",
+      "bytes": 2569,
+      "sha256": "86b1c1114105dfdae5b690a4909376ea74e520566be08d9fb087b0681ce1e64e"
+    },
+    {
+      "path": "docs/release/store/faq.md",
+      "bytes": 2278,
+      "sha256": "7c2a29e29a33bce96bb148b3b4dc9516a3b26a7c1bf51d00b3b20b1f3e3c78b0"
+    },
+    {
+      "path": "docs/release/store/local_first_explained.md",
+      "bytes": 1812,
+      "sha256": "8ac3e9e8f45f10ee97b4aeb14928d3cc9f7d598e8fc5e3d2ea268501748110aa"
+    },
+    {
+      "path": "docs/release/store/model_compatibility.md",
+      "bytes": 1536,
+      "sha256": "a5b113bbfe0a8a6522305100fec9d6ad43cab5eda48bd7151f4cc6770e5b5363"
+    },
+    {
+      "path": "docs/release/store/model_licenses.md",
+      "bytes": 1307,
+      "sha256": "748ef7f315ebdb4214e44d16ef0b8cb2f107ad6dac8142da8d08d71750089e30"
+    },
+    {
+      "path": "docs/release/store/privacy_statement.md",
+      "bytes": 4771,
+      "sha256": "eae060f1ea6b45a60f4ae09050fdcc73042b7994c90242997722d49763eac407"
+    },
+    {
+      "path": "docs/release/store/product_description.md",
+      "bytes": 4123,
+      "sha256": "d6b410437f41a1fb88640f71b55b68ebb3a0b5c71b009afeb42d3020680044fb"
+    },
+    {
+      "path": "docs/release/store/release_notes.md",
+      "bytes": 3807,
+      "sha256": "6f69ebc1e533923c0e9aac33e34babe88610b6f2bcfa78718a160cbff1844663"
+    },
+    {
+      "path": "docs/release/store/security.md",
+      "bytes": 1661,
+      "sha256": "461671945ed716ef9ef620d4e57a25df59ba27aedfff451137a5b2b125bbf947"
+    },
+    {
+      "path": "docs/release/store/supported_devices.md",
+      "bytes": 1878,
+      "sha256": "8d7acb650aa4fd5fd8ebe70b3f3ce4d0107bb2e97cd2035290490de46b796336"
     },
     {
       "path": "docs/release/windows_qualification.md",
@@ -1575,6 +1650,11 @@
       "sha256": "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e"
     },
     {
+      "path": "fixtures/notices_static.json",
+      "bytes": 1677,
+      "sha256": "d7bf3aaa118c810d9d3071280120feb6edbdd8d9503e9ce0b667b1617400bd8a"
+    },
+    {
       "path": "fixtures/office/board_demo.xlsx",
       "bytes": 5721,
       "sha256": "1dbd1df1428b58a70b4d80e06aa483b9488b9cba4fbf74f57dd741caf4da982e"
@@ -1641,8 +1721,8 @@
     },
     {
       "path": "packages/harbor_native/lib/harbor_ffi.dart",
-      "bytes": 7125,
-      "sha256": "3f02bbba4cb83f53dff1000a1edb94fa47c5d08a0a9d4f3eec0d202e240be7cb"
+      "bytes": 7665,
+      "sha256": "eb9c2aa8101cc9e164d1775f42e8a272b0a5d8460562e79f7a2bb7877be5dba3"
     },
     {
       "path": "packages/harbor_native/pubspec.lock",
@@ -1751,18 +1831,23 @@
     },
     {
       "path": "scripts/package_android.sh",
-      "bytes": 2443,
-      "sha256": "fbdc23413c2b9932e8eb26b04557b9e34cebd167244eacb271200c2d213aabc2"
+      "bytes": 2679,
+      "sha256": "0c0c39d77d5b13c10b90342330b92d2ed28e9e6adc56fa6ccfd6f2d900b78888"
     },
     {
       "path": "scripts/package_apple.sh",
-      "bytes": 3148,
-      "sha256": "36e00198a394eab22b3fe266b2e58776b89fc0471cab9127713c2bfe6e72df4c"
+      "bytes": 4470,
+      "sha256": "31ee6312f80be32ce9f00de140271e2abb4b726c4b24d8389771a18bbc0182fa"
     },
     {
       "path": "tools/README.md",
       "bytes": 3185,
       "sha256": "0b84f79f9740249f6d1b44417ef77fe6061152d338ad095e344f9bcffdef2920"
+    },
+    {
+      "path": "tools/assemble_release_evidence.py",
+      "bytes": 17224,
+      "sha256": "6f0477a2f6e0dc90e09a2558b9400422faca7655ea28f5aa7dfdc40c411a02f0"
     },
     {
       "path": "tools/check_contrast.py",
@@ -1793,6 +1878,11 @@
       "path": "tools/generate_sbom.py",
       "bytes": 4536,
       "sha256": "b64bcdb42d0aeeff5d03a840d093dcca7fbbef6bea4a2e02289127c2a665958e"
+    },
+    {
+      "path": "tools/generate_third_party_notices.py",
+      "bytes": 4085,
+      "sha256": "8c702aa219c185e211d13d8263294e82b68b707a59d26a9fb553a53b08a20041"
     },
     {
       "path": "tools/pin_engine.py",

@@ -1,0 +1,33 @@
+{
+  "sections": [
+    {
+      "title": "Vendored native components",
+      "entries": [
+        "llama.cpp (vendored snapshot via llama-cpp-2 0.1.156) — MIT — https://github.com/ggerganov/llama.cpp. Used for on-device GGUF inference.",
+        "ggml (vendored within llama.cpp) — MIT — https://github.com/ggerganov/ggml."
+      ]
+    },
+    {
+      "title": "Flutter / Dart components",
+      "entries": [
+        "Flutter engine and framework (3.47.4 stable) — BSD-3-Clause — https://github.com/flutter/flutter. Distributed as the platform runtime, not modified by Harbor.",
+        "flutter_localizations and Dart 'packages' SDK libraries used by the app — BSD-3-Clause — https://github.com/flutter/flutter.",
+        "package:ffi and package:lints (Dart packages locked by pubspec.lock) — Apache-2.0 / BSD-3-Clause respectively — https://pub.dev."
+      ]
+    },
+    {
+      "title": "Bundled model packages (downloaded on demand, not shipped in the binary)",
+      "entries": [
+        "Qwen2.5-1.5B-Instruct (GGUF quantizations) — Apache-2.0 — © Alibaba Cloud — https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct.",
+        "bge-small-en-v1.5 (embedding model) — MIT — © BAAI — https://huggingface.co/BAAI/bge-small-en-v1.5.",
+        "stories260K (tinyllamas GGUF) — Apache-2.0 — acquired as tinyllamas/stories260K.gguf per the signed catalog (fixtures/catalog/signed_catalog.json)."
+      ]
+    },
+    {
+      "title": "Fonts and design assets",
+      "entries": [
+        "Platform system fonts only; Harbor does not bundle third-party font binaries. Harbor Current 2 design tokens are original to the project."
+      ]
+    }
+  ]
+}

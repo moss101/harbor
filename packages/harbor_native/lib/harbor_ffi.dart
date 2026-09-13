@@ -43,9 +43,24 @@ class HarborCoreClient {
       _lib.lookupFunction<_StringFreeNative, _StringFreeDart>('harbor_core_string_free');
 
   /// Open a library at [path] and a workspace handle.
+  ///
+  /// If [path] cannot be opened, symbols are looked up in the running
+  /// process instead: production iOS device builds force-load the
+  /// `libharbor_ffi.a` static archive into the main executable, so the
+  /// core resolves without any bundled dynamic library. Simulator and
+  /// macOS builds keep the bundled-dylib path.
   factory HarborCoreClient.open(String libraryPath, String dataRoot,
       String workspaceId, HarborPrivacyMode mode) {
-    final lib = DynamicLibrary.open(libraryPath);
+    DynamicLibrary lib;
+    try {
+      lib = DynamicLibrary.open(libraryPath);
+    } catch (_) {
+      final process = DynamicLibrary.process();
+      if (!process.providesSymbol('harbor_core_open')) {
+        rethrow;
+      }
+      lib = process;
+    }
     final openFn = lib.lookupFunction<_OpenNative, _OpenDart>('harbor_core_open');
     final handle = openFn(
       dataRoot.toNativeUtf8(),

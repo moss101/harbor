@@ -1,4 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Harbor is local-first: INTERNET is the ONLY permission the app
+         requests. It enables the user-authorized Hugging Face model
+         acquisition through the Egress Broker (per-request authorization,
+         hash verification against the signed catalog, hash-chained audit
+         log). Offline runtime (chat, artifacts, RAG, durable runs) makes no
+         network requests; Local Only is the default. No other permissions
+         are required: all storage is app-private, encrypted at rest. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="harbor_app"
         android:name="${applicationName}"
