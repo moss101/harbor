@@ -168,9 +168,13 @@ impl KnowledgeStore {
         for row in rows {
             let (sid, cid, title, hash, ordinal, text, vec_bytes) =
                 row.map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
-            let vector: Vec<f32> = vec_bytes
-                .chunks_exact(4)
-                .map(|b| f32::from_le_bytes(b.try_into().unwrap()))
+            let (vector_chunks, vector_remainder) = vec_bytes.as_chunks::<4>();
+            if !vector_remainder.is_empty() {
+                return Err(KnowledgeFfiError::Crypto);
+            }
+            let vector: Vec<f32> = vector_chunks
+                .iter()
+                .map(|b| f32::from_le_bytes(*b))
                 .collect();
             let text_sealed = harbor_store::kcipher::seal_text(&self.key, &sid, &cid, &text)
                 .map_err(|_| KnowledgeFfiError::Crypto)?;

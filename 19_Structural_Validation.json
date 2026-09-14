@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "4dd7c3256dc7e5aa286a9e71d197e8658cb14ccb4e4653ca45d61fe8ca30dc3b",
+  "input_manifest_sha256": "2f464ce65f808694ce08fe996d8d9f8e2aa3fdaa50769ceefa39126b723736bc",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -1016,8 +1016,8 @@
     },
     {
       "path": "core/harbor_ffi/src/knowledge.rs",
-      "bytes": 29386,
-      "sha256": "662709fbecf75bd1cbe38f64b09082afc595e41399f2dd4ed5625ab67e1120ba"
+      "bytes": 29557,
+      "sha256": "4f9161c7195b9ac001ec8f99d6036d2acdc35f01285fd24261eca8be84a08e40"
     },
     {
       "path": "core/harbor_ffi/src/lib.rs",
@@ -1346,8 +1346,8 @@
     },
     {
       "path": "core/harbor_store/src/kcipher.rs",
-      "bytes": 5175,
-      "sha256": "115f0197f05eef184b1c84917695f8139415ed6d728c698d1d52fb4ff7dbc2fc"
+      "bytes": 5179,
+      "sha256": "6cf05a6cb70af58a3aa89de62e7f5afc801315274564cf97ce7fbedc98679ded"
     },
     {
       "path": "core/harbor_store/src/keys.rs",
@@ -1361,8 +1361,8 @@
     },
     {
       "path": "core/harbor_store/src/native_keystore.rs",
-      "bytes": 9186,
-      "sha256": "4d0b53135670d87e170d8501c0356a0e6dfc04a73f5d1ce10c4ff4f56873b09e"
+      "bytes": 9561,
+      "sha256": "74556bf7a355b83ddeb33e79243ab348ab67cce53c9dd5c0e40331b7c7dfaab3"
     },
     {
       "path": "core/harbor_store/src/settings.rs",
