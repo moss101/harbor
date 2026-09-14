@@ -13,8 +13,13 @@ void main() {
     }
     final dir = Directory.systemTemp.createTempSync('harbor-ffi-dart-');
     addTearDown(() => dir.deleteSync(recursive: true));
-    final client = HarborCoreClient.open(
-        dylibPath, dir.path, 'ws-dart-1', HarborPrivacyMode.localOnly);
+    // Injected root: the test stays hermetic (no login-keychain contact).
+    final client = HarborCoreClient.openEx(
+        dylibPath,
+        dir.path,
+        'ws-dart-1',
+        HarborPrivacyMode.localOnly,
+        '5e176240cb67410bee183b15382b02d2bca94e8f1a0c43bb617eb2aafe4ae1b6');
     addTearDown(client.close);
 
     // Trust Pulse facts come from the core, not the UI.

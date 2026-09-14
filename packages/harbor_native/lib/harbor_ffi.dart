@@ -13,9 +13,10 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 import 'package:harbor_domain/harbor_domain.dart';
 
-typedef _OpenNative = Pointer<Void> Function(
-    Pointer<Utf8>, Pointer<Utf8>, Uint8);
-typedef _OpenDart = Pointer<Void> Function(Pointer<Utf8>, Pointer<Utf8>, int);
+typedef _OpenExNative = Pointer<Void> Function(
+    Pointer<Utf8>, Pointer<Utf8>, Uint8, Pointer<Utf8>);
+typedef _OpenExDart = Pointer<Void> Function(
+    Pointer<Utf8>, Pointer<Utf8>, int, Pointer<Utf8>);
 typedef _CallNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>);
 typedef _CallDart = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>);
 typedef _StringFreeNative = Void Function(Pointer<Utf8>);
@@ -51,9 +52,20 @@ class HarborCoreClient {
   /// process instead: production iOS device builds force-load the
   /// `libharbor_ffi.a` static archive into the main executable, so the
   /// core resolves without any bundled dynamic library. Simulator and
-  /// macOS builds keep the bundled-dylib path.
+  /// macOS builds keep the bundled-dylib path. Keystore selection is the
+  /// core's platform default (Keychain / DPAPI); see [openEx] for the
+  /// injected-root path.
   factory HarborCoreClient.open(String libraryPath, String dataRoot,
       String workspaceId, HarborPrivacyMode mode) {
+    return HarborCoreClient.openEx(
+        libraryPath, dataRoot, workspaceId, mode, null);
+  }
+
+  /// Open with an OPTIONAL injected device root (64 hex chars = 32
+  /// bytes), the Android Keystore unseal path; null selects the platform
+  /// keystore adapter inside the core.
+  factory HarborCoreClient.openEx(String libraryPath, String dataRoot,
+      String workspaceId, HarborPrivacyMode mode, String? deviceRootHex) {
     DynamicLibrary lib;
     try {
       lib = DynamicLibrary.open(libraryPath);
@@ -65,12 +77,16 @@ class HarborCoreClient {
       lib = process;
     }
     final openFn =
-        lib.lookupFunction<_OpenNative, _OpenDart>('harbor_core_open');
-    final handle = openFn(
-      dataRoot.toNativeUtf8(),
-      workspaceId.toNativeUtf8(),
-      mode.index,
-    );
+        lib.lookupFunction<_OpenExNative, _OpenExDart>('harbor_core_open_ex');
+    final dataPtr = dataRoot.toNativeUtf8();
+    final wsPtr = workspaceId.toNativeUtf8();
+    final rootPtr =
+        deviceRootHex == null ? nullptr : deviceRootHex.toNativeUtf8();
+    final handle = openFn(dataPtr, wsPtr, mode.index, rootPtr);
+    malloc
+      ..free(dataPtr)
+      ..free(wsPtr);
+    if (rootPtr != nullptr) malloc.free(rootPtr);
     if (handle == Pointer<Void>.fromAddress(0)) {
       throw HarborCoreException('harbor_core_open failed');
     }

@@ -178,9 +178,10 @@ class HarborCoreWorker {
         throw HarborCoreException('harbor_core_open failed');
       }
       call = lib.lookupFunction<_CallNative, _CallDart>('harbor_core_call');
-      stringFree = lib
-          .lookupFunction<_StringFreeNative, _StringFreeDart>('harbor_core_string_free');
-      closeFn = lib.lookupFunction<_CloseNative, _CloseDart>('harbor_core_close');
+      stringFree = lib.lookupFunction<_StringFreeNative, _StringFreeDart>(
+          'harbor_core_string_free');
+      closeFn =
+          lib.lookupFunction<_CloseNative, _CloseDart>('harbor_core_close');
       commands.listen((message) {
         if (message is! Map) return;
         final id = message['id'] as int?;
@@ -202,8 +203,11 @@ class HarborCoreWorker {
         final resp = call!(handle, reqPtr);
         malloc.free(reqPtr);
         if (resp == Pointer.fromAddress(0)) {
-          config.responses
-              .send({'id': id, 'ok': false, 'error': 'harbor_core_call returned null'});
+          config.responses.send({
+            'id': id,
+            'ok': false,
+            'error': 'harbor_core_call returned null'
+          });
           return;
         }
         final text = resp.toDartString();
@@ -221,7 +225,8 @@ class HarborCoreWorker {
             });
           }
         } catch (e) {
-          config.responses.send({'id': id, 'ok': false, 'error': 'bad envelope: $e'});
+          config.responses
+              .send({'id': id, 'ok': false, 'error': 'bad envelope: $e'});
         }
       });
       config.ready.send(commands.sendPort);
