@@ -124,10 +124,18 @@ operator credentials, unchanged from rc1.
    repackaged (APK v1.0.0(1), AAB, macOS app, iOS static-archive path
    verified at link level with Security.framework). Evidence bundle
    reassembled as `1.0.0-rc2` (tag `harbor-v1.0.0-rc2`).
-9. **CI gates — ADDED.** `.github/workflows/ci.yml` now gates: rustfmt,
-   clippy `-D warnings` (plus a windows-latest job for the DPAPI/cdylib
-   paths), dart format, flutter analyze, package tests, and the app
-   suite against the LIVE core (the job builds `libharbor_ffi` first).
+9. **CI gates — ADDED and GREEN.** `.github/workflows/ci.yml` now gates:
+   rustfmt, clippy `-D warnings` (plus a windows-latest job for the
+   DPAPI/cdylib paths), dart format, flutter analyze, package tests, and
+   the app suite against the LIVE core (the job builds `libharbor_ffi`
+   first). Fully green on the session-29 HEAD (`run 34877254045`: rust ✓
+   flutter ✓ dossier ✓ windows-core ✓). Two CI findings fixed along the
+   way: the dossier manifest now seals exactly the git-tracked file set
+   (gitignored generated files previously made the seal irreproducible),
+   and the real-network test tier is qualification-machine-local — HF's
+   edge resets shared runner IPs, so runner runs are not meaningful
+   evidence; the tier passes on this machine and is recorded
+   commit-bound in evidence/.
 10. **External qualification — UNCHANGED blockers, machine part done.**
     Android emulator tier requalified on the NEW release APK (see below);
     physical iPhone/Android hardware, Apple identity + notarization, Play
