@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "e8b2df40eece42f11f1e5f10aa4a3e36267d1acff88fc48d003aba978932452d",
+  "input_manifest_sha256": "14e91ef29bdc99820296c295909314e796b80055bbc7622dc5547a47dc9054cd",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -1021,8 +1021,8 @@
     },
     {
       "path": "core/harbor_ffi/src/lib.rs",
-      "bytes": 84217,
-      "sha256": "2df32e3b135026383677636ee6513073acb1a23cfc630336abf1df332e03a6b4"
+      "bytes": 84201,
+      "sha256": "a957fb8895b7301feb21b560b157dec9ada3d26a002804451714d86de7fadd24"
     },
     {
       "path": "core/harbor_formula/Cargo.toml",
@@ -1131,8 +1131,8 @@
     },
     {
       "path": "core/harbor_integration/tests/plaintext_at_rest_inspection.rs",
-      "bytes": 11437,
-      "sha256": "ca5460996faf3010a49178024488d6b812403228075045ba4ce8b1b084012acf"
+      "bytes": 11508,
+      "sha256": "8d486ef85eafa129c0684a0dfbf6a6d361195baef71d8cd4056db71d7de1ed48"
     },
     {
       "path": "core/harbor_knowledge/Cargo.toml",

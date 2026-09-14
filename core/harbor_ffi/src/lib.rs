@@ -189,17 +189,17 @@ fn build_keystore(
     }
     #[cfg(windows)]
     {
-        return Ok(Arc::new(
+        Ok(Arc::new(
             harbor_store::native_keystore::DpapiKeyStore::new(data_root.join("keys"))
                 .map_err(HarborError::Store)?,
-        ));
+        ))
     }
     #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "windows")))]
     {
-        return Ok(Arc::new(
+        Ok(Arc::new(
             harbor_store::keys::FileKeyStore::new(data_root.join("keys"))
                 .map_err(HarborError::Store)?,
-        ));
+        ))
     }
 }
 

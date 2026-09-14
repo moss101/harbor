@@ -268,6 +268,7 @@ fn plaintext_at_rest_full_inspection() {
     });
     let evidence_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../evidence/plaintext_at_rest.json");
+    std::fs::create_dir_all(evidence_path.parent().unwrap()).unwrap();
     std::fs::write(
         &evidence_path,
         serde_json::to_string_pretty(&evidence).unwrap(),
