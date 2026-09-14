@@ -42,12 +42,17 @@ impl KeyStore for InjectedKeyStore {
 }
 
 /// Keychain-backed store (macOS + iOS). One generic-password item per
-/// service under a shared Harbor service namespace.
+/// service under a shared Harbor service namespace. The type exists on
+/// every target so callers compile uniformly; on platforms without the
+/// Security framework its storage fields/methods are intentionally
+/// unused (the KeyStore impl is the error stub below).
+#[cfg_attr(not(any(target_os = "macos", target_os = "ios")), allow(dead_code))]
 #[derive(Debug, Clone)]
 pub struct KeychainKeyStore {
     service_namespace: String,
 }
 
+#[cfg_attr(not(any(target_os = "macos", target_os = "ios")), allow(dead_code))]
 impl KeychainKeyStore {
     pub fn new() -> Result<Self> {
         Ok(KeychainKeyStore {

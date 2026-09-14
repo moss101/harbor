@@ -66,13 +66,11 @@ pub fn open_vector(
 ) -> Result<Vec<f32>> {
     let aad = chunk_aad(source_id, chunk_id, "vector");
     let pt = open_value(key, &aad, sealed)?;
-    if pt.len() % 4 != 0 {
+    let (chunks, remainder) = pt.as_chunks::<4>();
+    if !remainder.is_empty() {
         return Err(StoreError::Crypto);
     }
-    Ok(pt
-        .chunks_exact(4)
-        .map(|b| f32::from_le_bytes(b.try_into().unwrap()))
-        .collect())
+    Ok(chunks.iter().map(|b| f32::from_le_bytes(*b)).collect())
 }
 
 fn chunk_aad(source_id: &str, chunk_id: &str, field: &str) -> Vec<u8> {
