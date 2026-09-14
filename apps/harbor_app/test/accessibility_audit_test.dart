@@ -31,7 +31,8 @@ Future<void> pumpApp(
           libraryPath: dylibPath,
           dataRoot: dir.path,
           workspaceId: 'ws-a11y',
-          deviceRootHex: 'f47973db602cbd13c408a3a5cdf3a8eeaa3bd6870b76607542d75ff568526c3c05');
+          deviceRootHex:
+              '49387c936d072910d8a5404a96a1ac272296eb3270c694aaec11f9805c875205');
       await s.refresh();
       service = s;
     });

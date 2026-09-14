@@ -179,7 +179,9 @@ void _appendLiveTests() {
       final s = await HarborService.open(
           libraryPath: dylibPath,
           dataRoot: dir.path,
-          workspaceId: 'ws-activity');
+          workspaceId: 'ws-activity',
+          deviceRootHex:
+              '02235e07dcc1083f22170c8d10ef3574f99a42f85ecbbc1402ab12afd8088493');
       await s.createRun('run-visible-1');
       await s.refresh();
       service = s;
@@ -216,7 +218,8 @@ void _appendPreviewTest() {
           libraryPath: dylibPath,
           dataRoot: dir.path,
           workspaceId: 'ws-canvas',
-          deviceRootHex: 'f47973db602cbd13c408a3a5cdf3a8eeaa3bd6870b76607542d75ff568526c3c02');
+          deviceRootHex:
+              '9f112e8df52dc050b9277024c181670c449b0aa0139c4846d5ca892fbf933056');
       await s.loadPreviewFromBytes(bytes);
       service = s;
     });
@@ -285,7 +288,8 @@ void _appendKnowledgeTest() {
           libraryPath: dylibPath,
           dataRoot: dir.path,
           workspaceId: 'ws-know',
-          deviceRootHex: 'f47973db602cbd13c408a3a5cdf3a8eeaa3bd6870b76607542d75ff568526c3c03');
+          deviceRootHex:
+              '12721f8a3480ca77d995c914cb6dbc50f401e82e317b3b96e0b0e2b01747ca10');
       // Install the REAL bge-small-en-v1.5 embedding model through the
       // staged-install path, then open the durable index over it.
       opened = await s.installModelFromPath(
@@ -372,7 +376,8 @@ void _appendRagTest() {
           libraryPath: dylibPath,
           dataRoot: dir.path,
           workspaceId: 'ws-rag',
-          deviceRootHex: 'f47973db602cbd13c408a3a5cdf3a8eeaa3bd6870b76607542d75ff568526c3c04');
+          deviceRootHex:
+              '57ebfb10cdada18503fb8d0195b9055ffc3dab57cfb888620aca640dd5aa056c');
       // Install BOTH models through the real staged-install path:
       // the chat model and the embedding model.
       await s.installModelFromPath(
