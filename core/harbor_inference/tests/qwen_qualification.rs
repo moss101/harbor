@@ -11,12 +11,12 @@ use harbor_canonical::JsonValue;
 use harbor_inference::provider::{Capabilities, ChatRequest, ModelProvider, ModelRef};
 use harbor_inference::GgufLlamaCppProvider;
 use harbor_modelhub::acquire::{HfAcquirer, HF_CDN_ORIGINS};
-use harbor_modelhub::install::{PackageFile, PackageInstaller, PackageManifest, RuntimeBinding};
 use harbor_modelhub::catalog_signing::{sign_catalog, CatalogSigningKey, CatalogVerifier};
-use harbor_net::AuditSink;
+use harbor_modelhub::install::{PackageFile, PackageInstaller, PackageManifest, RuntimeBinding};
 use harbor_net::audit::SqliteAuditSink;
 use harbor_net::broker::{EgressBroker, EgressClass};
 use harbor_net::transport::UreqTransport;
+use harbor_net::AuditSink;
 use harbor_security::policy::PrivacyMode;
 
 /// The package hash recorded from the executed acquisition run (see
@@ -26,9 +26,20 @@ pub const QWEN_SIZE: u64 = 1_117_320_736;
 
 fn sessions_for(broker: &EgressBroker) -> BTreeMap<String, harbor_net::broker::EgressSession> {
     let mut sessions = BTreeMap::new();
-    for origin in ["https://huggingface.co", HF_CDN_ORIGINS[0], HF_CDN_ORIGINS[1], HF_CDN_ORIGINS[2], HF_CDN_ORIGINS[3]] {
+    for origin in [
+        "https://huggingface.co",
+        HF_CDN_ORIGINS[0],
+        HF_CDN_ORIGINS[1],
+        HF_CDN_ORIGINS[2],
+        HF_CDN_ORIGINS[3],
+    ] {
         let s = broker
-            .open_session(EgressClass::WeightTransfer, origin, chrono::Duration::minutes(30), PrivacyMode::LocalOnly)
+            .open_session(
+                EgressClass::WeightTransfer,
+                origin,
+                chrono::Duration::minutes(30),
+                PrivacyMode::LocalOnly,
+            )
             .unwrap();
         sessions.insert(origin.to_string(), s);
     }
@@ -68,9 +79,15 @@ fn acquire_streaming_and_install_production_model() {
         )
         .unwrap();
     assert_eq!(result["installed"], "qwen2.5-1.5b-instruct");
-    assert_eq!(installer.installed_packages().unwrap(), vec!["qwen2.5-1.5b-instruct".to_string()]);
+    assert_eq!(
+        installer.installed_packages().unwrap(),
+        vec!["qwen2.5-1.5b-instruct".to_string()]
+    );
     // Brokered evidence.
-    assert!(sink.entries().iter().any(|e| e.kind == harbor_net::NetworkEventKind::Completed));
+    assert!(sink
+        .entries()
+        .iter()
+        .any(|e| e.kind == harbor_net::NetworkEventKind::Completed));
 }
 
 #[test]
@@ -82,9 +99,12 @@ fn qualify_installed_production_model_chat() {
     let installer = PackageInstaller::new(dir.path().join("models"));
     // Install from the already-downloaded fixture if present (offline
     // re-qualification); otherwise acquire through the broker.
-    let fixture =
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap().parent().unwrap()
-            .join("fixtures/models/qwen2.5-1.5b-instruct-q4_k_m.gguf");
+    let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("fixtures/models/qwen2.5-1.5b-instruct-q4_k_m.gguf");
     if fixture.exists() {
         let bytes = std::fs::read(&fixture).unwrap();
         let manifest = PackageManifest {
@@ -104,8 +124,12 @@ fn qualify_installed_production_model_chat() {
             },
         };
         let mut staged = installer.begin("qwen2.5-1.5b-instruct").unwrap();
-        installer.ingest_file(&mut staged, &manifest.files[0], &bytes).unwrap();
-        installer.commit(&mut staged, &manifest, chrono::Utc::now()).unwrap();
+        installer
+            .ingest_file(&mut staged, &manifest.files[0], &bytes)
+            .unwrap();
+        installer
+            .commit(&mut staged, &manifest, chrono::Utc::now())
+            .unwrap();
     } else {
         let sink = std::sync::Arc::new(SqliteAuditSink::open_in_memory().unwrap());
         let broker = EgressBroker::new(Box::new(sink));
@@ -117,7 +141,7 @@ fn qualify_installed_production_model_chat() {
             installer: &installer,
             sessions,
             auth_token: None,
-        progress: None,
+            progress: None,
         };
         // First acquisition: identity recorded from the downloaded bytes.
         acquirer
@@ -138,7 +162,9 @@ fn qualify_installed_production_model_chat() {
     let provider = GgufLlamaCppProvider::new(dir.path().join("models"))
         .unwrap()
         .with_context_tokens(2048);
-    let m = ModelRef::InstalledPackage { package_id: "qwen2.5-1.5b-instruct".into() };
+    let m = ModelRef::InstalledPackage {
+        package_id: "qwen2.5-1.5b-instruct".into(),
+    };
     provider.load(&m).unwrap();
     assert!(provider.supports(&m, &Capabilities::Chat));
 
@@ -164,7 +190,10 @@ fn qualify_installed_production_model_chat() {
     assert_eq!(r1.content, r2.content);
     assert!(!r1.content.trim().is_empty());
     println!("qwen answer: {:?}", r1.content);
-    println!("usage: {} prompt / {} completion", r1.usage.prompt_tokens, r1.usage.completion_tokens);
+    println!(
+        "usage: {} prompt / {} completion",
+        r1.usage.prompt_tokens, r1.usage.completion_tokens
+    );
     assert!(r1.usage.prompt_tokens > 0);
     assert_eq!(r1.executed_on, "qwen2.5-1.5b-instruct");
     assert_eq!(
@@ -185,8 +214,7 @@ fn signed_catalog_entry_carries_the_pinned_model_hash() {
     let signed = sign_catalog(&key, 1, "2026-09-12T00:00:00Z", entries).unwrap();
     let mut verifier = CatalogVerifier::new(&hex_encode(&key.public_bytes())).unwrap();
     verifier.verify(&signed).unwrap();
-    let packages =
-        harbor_modelhub::acquire::parse_catalog_document(&signed.entries).unwrap();
+    let packages = harbor_modelhub::acquire::parse_catalog_document(&signed.entries).unwrap();
     assert_eq!(packages[0].id, "qwen2.5-1.5b-instruct");
     assert_eq!(packages[0].files[0].2, QWEN_SHA256);
 }

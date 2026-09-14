@@ -20,7 +20,7 @@ pub mod snapshot;
 pub mod transfer;
 
 pub use bundle::{open_bundle, seal_bundle, BundleError, SealedSnapshotBundle};
-pub use envelope::{RecordEnvelope, SyncGroup, SyncIdentity, SyncRecordType, SyncError};
-pub use lww::{lww_merge, is_lww_safe_field, LwwField};
+pub use envelope::{RecordEnvelope, SyncError, SyncGroup, SyncIdentity, SyncRecordType};
+pub use lww::{is_lww_safe_field, lww_merge, LwwField};
 pub use snapshot::{sign_snapshot, verify_snapshot, SnapshotError, SyncSnapshot};
 pub use transfer::{TransferCoordinator, TransferState, TransferStatus, TRANSFER_ACK_TIMEOUT_DAYS};

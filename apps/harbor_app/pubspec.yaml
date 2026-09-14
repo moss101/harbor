@@ -15,6 +15,10 @@ dependencies:
     path: ../../packages/harbor_ui
   harbor_native:
     path: ../../packages/harbor_native
+  harbor_domain:
+    path: ../../packages/harbor_domain
+  path_provider: ^2.1.0
+  file_selector: ^1.0.3
 
 dev_dependencies:
   flutter_test:

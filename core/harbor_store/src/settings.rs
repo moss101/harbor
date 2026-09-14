@@ -18,7 +18,10 @@ pub struct SettingsDocument {
 
 impl SettingsDocument {
     pub fn empty() -> Self {
-        SettingsDocument { schema_version: SETTINGS_SCHEMA_VERSION, values: BTreeMap::new() }
+        SettingsDocument {
+            schema_version: SETTINGS_SCHEMA_VERSION,
+            values: BTreeMap::new(),
+        }
     }
 }
 
@@ -32,7 +35,10 @@ pub struct SettingsStore {
 
 impl SettingsStore {
     pub fn new(path: impl Into<PathBuf>) -> Self {
-        SettingsStore { path: path.into(), upgrades: Vec::new() }
+        SettingsStore {
+            path: path.into(),
+            upgrades: Vec::new(),
+        }
     }
 
     /// Register the ordered upgrade chain (index i upgrades version i+1 -> i+2).
@@ -45,7 +51,12 @@ impl SettingsStore {
         let values: serde_json::Map<String, serde_json::Value> = doc
             .values
             .iter()
-            .map(|(k, v)| (k.clone(), serde_json::to_value(v).expect("canonical value serializes")))
+            .map(|(k, v)| {
+                (
+                    k.clone(),
+                    serde_json::to_value(v).expect("canonical value serializes"),
+                )
+            })
             .collect();
         let obj = serde_json::json!({
             "schema_version": doc.schema_version,
@@ -67,7 +78,10 @@ impl SettingsStore {
                 values.insert(k.clone(), harbor_canonical::convert(val.clone())?);
             }
         }
-        Ok(SettingsDocument { schema_version, values })
+        Ok(SettingsDocument {
+            schema_version,
+            values,
+        })
     }
 
     /// Load settings, running pending upgrades. A downgrade attempt leaves
@@ -86,12 +100,9 @@ impl SettingsStore {
         }
         let mut version = doc.schema_version;
         while version < SETTINGS_SCHEMA_VERSION {
-            let step = self
-                .upgrades
-                .get(version as usize)
-                .ok_or_else(|| {
-                    StoreError::Other(format!("missing upgrade step for schema {version}"))
-                })?;
+            let step = self.upgrades.get(version as usize).ok_or_else(|| {
+                StoreError::Other(format!("missing upgrade step for schema {version}"))
+            })?;
             doc = step(doc)?;
             doc.schema_version = version + 1;
             version += 1;
@@ -114,6 +125,9 @@ impl SettingsStore {
     }
 }
 
+// Registered as the v0 -> v1 migration step; no transforms exist yet,
+// but the step itself is part of the durable migration history.
+#[allow(dead_code)]
 fn v1(doc: SettingsDocument) -> Result<SettingsDocument> {
     // Example v0 -> v1 step: no transforms defined yet at schema v0.
     Ok(doc)
@@ -131,7 +145,8 @@ mod tests {
         let store = SettingsStore::new(&path).with_upgrades(vec![v1]);
         let mut doc = SettingsDocument::empty();
         doc.values.insert("ui.theme".into(), JsonValue::str("dark"));
-        doc.values.insert("run.budget_ms".into(), JsonValue::int(120_000).unwrap());
+        doc.values
+            .insert("run.budget_ms".into(), JsonValue::int(120_000).unwrap());
         store.save(&doc).unwrap();
         let loaded = store.load().unwrap();
         assert_eq!(loaded, doc);
@@ -145,8 +160,18 @@ mod tests {
         std::fs::write(&path, bytes).unwrap();
         let store = SettingsStore::new(&path);
         let err = store.load().unwrap_err();
-        assert!(matches!(err, StoreError::SettingsDowngrade { found: 99, target: 1 }));
-        assert_eq!(std::fs::read(&path).unwrap(), bytes, "file must be untouched");
+        assert!(matches!(
+            err,
+            StoreError::SettingsDowngrade {
+                found: 99,
+                target: 1
+            }
+        ));
+        assert_eq!(
+            std::fs::read(&path).unwrap(),
+            bytes,
+            "file must be untouched"
+        );
     }
 
     #[test]

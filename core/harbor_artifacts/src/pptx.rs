@@ -3,8 +3,7 @@
 //! boxes/shapes with titles and content, speaker notes, basic theme.
 //! Animations/transitions are PRESERVE_ONLY (we never emit them).
 
-use std::collections::BTreeMap;
-use std::io::{Cursor, Write, Read};
+use std::io::{Cursor, Read, Write};
 
 use zip::write::SimpleFileOptions;
 
@@ -71,7 +70,11 @@ pub enum PptxError {
 }
 
 pub enum PptxOp {
-    SlideTextSet { slide: usize, placeholder: Placeholder, text: String },
+    SlideTextSet {
+        slide: usize,
+        placeholder: Placeholder,
+        text: String,
+    },
     SlideAppend(SlideContent),
 }
 
@@ -81,14 +84,7 @@ pub enum Placeholder {
     Body,
 }
 
-impl Placeholder {
-    fn idx(self) -> u32 {
-        match self {
-            Placeholder::Title => 0,
-            Placeholder::Body => 1,
-        }
-    }
-}
+impl Placeholder {}
 
 fn xml_escape(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
@@ -121,9 +117,7 @@ fn slide_xml(slide: &SlideContent) -> String {
         .chart
         .as_ref()
         .map(|_| {
-            format!(
-                r#"<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="4" name="Chart 3"/><p:cNvGraphicFramePr/><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="838200" y="3600000"/><a:ext cx="7200000" cy="3000000"/></p:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId3"/></a:graphicData></a:graphic></p:graphicFrame>"#
-            )
+            r#"<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="4" name="Chart 3"/><p:cNvGraphicFramePr/><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="838200" y="3600000"/><a:ext cx="7200000" cy="3000000"/></p:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId3"/></a:graphicData></a:graphic></p:graphicFrame>"#.to_string()
         })
         .unwrap_or_default();
     // An inline picture becomes a p:pic shape referencing the media part.
@@ -223,11 +217,9 @@ const THEME_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"
 </a:theme>"#;
 
 fn rels_for_slide(n: usize, with_notes: bool, with_chart: bool, image_ext: Option<&str>) -> String {
-    let mut rels = format!(
-        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    let mut rels = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>"#
-    );
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>"#.to_string();
     if with_notes {
         rels.push_str(&format!(
             "<Relationship Id=\"rId2\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide\" Target=\"../notesSlides/notesSlide{n}.xml\"/>"
@@ -269,18 +261,20 @@ impl PptxDeck {
             ct.push_str("<Default Extension=\"xlsx\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\"/>");
         }
         // Image media defaults (matrix row 17): PNG and JPEG.
-        if self
-            .slides
-            .iter()
-            .any(|s| s.image.as_ref().map(|i| i.extension == "png").unwrap_or(false))
-        {
+        if self.slides.iter().any(|s| {
+            s.image
+                .as_ref()
+                .map(|i| i.extension == "png")
+                .unwrap_or(false)
+        }) {
             ct.push_str("<Default Extension=\"png\" ContentType=\"image/png\"/>");
         }
-        if self
-            .slides
-            .iter()
-            .any(|s| s.image.as_ref().map(|i| i.extension == "jpg").unwrap_or(false))
-        {
+        if self.slides.iter().any(|s| {
+            s.image
+                .as_ref()
+                .map(|i| i.extension == "jpg")
+                .unwrap_or(false)
+        }) {
             ct.push_str("<Default Extension=\"jpg\" ContentType=\"image/jpeg\"/>");
         }
         ct.push_str("</Types>");
@@ -300,7 +294,11 @@ impl PptxDeck {
         // presentation.xml + rels
         let mut sld_ids = String::new();
         for i in 1..=self.slides.len() {
-            sld_ids.push_str(&format!("<p:sldId id=\"{}\" r:id=\"rId{}\"/>", 255 + i, i + 1));
+            sld_ids.push_str(&format!(
+                "<p:sldId id=\"{}\" r:id=\"rId{}\"/>",
+                255 + i,
+                i + 1
+            ));
         }
         let presentation = format!(
             r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -369,7 +367,10 @@ impl PptxDeck {
             )?;
             zip.start_file(format!("ppt/notesSlides/notesSlide{n}.xml"), opts)?;
             zip.write_all(notes_xml(slide).as_bytes())?;
-            zip.start_file(format!("ppt/notesSlides/_rels/notesSlide{n}.xml.rels"), opts)?;
+            zip.start_file(
+                format!("ppt/notesSlides/_rels/notesSlide{n}.xml.rels"),
+                opts,
+            )?;
             zip.write_all(
                 br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
@@ -380,12 +381,8 @@ impl PptxDeck {
             // Embedded chart: chart part + rels to the embedded workbook +
             // the workbook itself (minimal; cached values live in the XML).
             if let Some(spec) = &slide.chart {
-                let chart_xml = chart_space_xml(
-                    spec.kind,
-                    &spec.title,
-                    &spec.categories,
-                    &spec.series,
-                );
+                let chart_xml =
+                    chart_space_xml(spec.kind, &spec.title, &spec.categories, &spec.series);
                 zip.start_file(format!("ppt/charts/chart{n}.xml"), opts)?;
                 zip.write_all(chart_xml.as_bytes())?;
                 zip.start_file(format!("ppt/charts/_rels/chart{n}.xml.rels"), opts)?;
@@ -483,7 +480,9 @@ fn read_notes_via_rels(
         }
         Err(_) => None,
     };
-    let Some(target) = target else { return Ok(None) };
+    let Some(target) = target else {
+        return Ok(None);
+    };
     // Target is relative to ppt/slides/ (e.g. "../notesSlides/notesSlide1.xml").
     let part = normalize_rel_path("ppt/slides", &target);
     let Ok(mut f) = archive.by_name(&part) else {
@@ -493,8 +492,7 @@ fn read_notes_via_rels(
     };
     let mut xml = String::new();
     f.read_to_string(&mut xml)?;
-    let doc = roxmltree::Document::parse(&xml)
-        .map_err(|e| PptxError::Malformed(e.to_string()))?;
+    let doc = roxmltree::Document::parse(&xml).map_err(|e| PptxError::Malformed(e.to_string()))?;
     let mut text = String::new();
     for t in doc.descendants().filter(|n| n.has_tag_name("t")) {
         text.push_str(t.text().unwrap_or_default());
@@ -506,7 +504,9 @@ fn find_notes_slide_target(rels_xml: &str) -> Option<String> {
     let doc = roxmltree::Document::parse(rels_xml).ok()?;
     for rel in doc.descendants().filter(|n| n.has_tag_name("Relationship")) {
         if rel.attribute("Type")
-            == Some("http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide")
+            == Some(
+                "http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide",
+            )
         {
             return rel.attribute("Target").map(|s| s.to_string());
         }
@@ -547,8 +547,7 @@ fn read_title(archive: &mut zip::ZipArchive<Cursor<&[u8]>>) -> Result<String, Pp
 }
 
 fn parse_slide_texts(xml: &str) -> Result<SlideContent, PptxError> {
-    let doc = roxmltree::Document::parse(xml)
-        .map_err(|e| PptxError::Malformed(e.to_string()))?;
+    let doc = roxmltree::Document::parse(xml).map_err(|e| PptxError::Malformed(e.to_string()))?;
     let mut title = String::new();
     let mut bullets = Vec::new();
     for sp in doc.descendants().filter(|n| n.has_tag_name("sp")) {
@@ -569,52 +568,13 @@ fn parse_slide_texts(xml: &str) -> Result<SlideContent, PptxError> {
             bullets.extend(texts);
         }
     }
-    Ok(SlideContent { title, bullets, notes: None, chart: None, image: None })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn generate_and_read_back_deck() {
-        let deck = PptxDeck {
-            title: "Q3 Board Review".into(),
-            slides: vec![
-                SlideContent {
-                    title: "Revenue".into(),
-                    bullets: vec!["Revenue grew 12% QoQ".into(), "EMEA leads growth".into()],
-                    notes: Some("Source: verified workbook recalc".into()),
-                    chart: None,
-                image: None,
-                },
-                SlideContent {
-                    title: "Outlook".into(),
-                    bullets: vec!["Pipeline strong".into()],
-                    notes: None,
-                    chart: None,
-                image: None,
-                },
-            ],
-        };
-        let bytes = deck.to_pptx_bytes().unwrap();
-        assert!(bytes.len() > 2000);
-        // It is a valid zip with OOXML content types.
-        let mut ar = zip::ZipArchive::new(Cursor::new(bytes.as_slice())).unwrap();
-        assert!(ar.by_name("[Content_Types].xml").is_ok());
-        assert!(ar.by_name("ppt/slides/slide1.xml").is_ok());
-        assert!(ar.by_name("ppt/slides/slide2.xml").is_ok());
-        let back = PptxDeck::from_pptx_bytes(&bytes).unwrap();
-        assert_eq!(back.title, "Q3 Board Review");
-        assert_eq!(back.slides.len(), 2);
-        assert_eq!(back.slides[0].title, "Revenue");
-        assert!(back.slides[0].bullets.contains(&"Revenue grew 12% QoQ".to_string()));
-    }
-
-    #[test]
-    fn xml_escaping() {
-        assert_eq!(xml_escape("a<b>&\"c\""), "a&lt;b&gt;&amp;&quot;c&quot;");
-    }
+    Ok(SlideContent {
+        title,
+        bullets,
+        notes: None,
+        chart: None,
+        image: None,
+    })
 }
 
 /// Build a c:chartSpace document for a basic bar/column, line, pie or
@@ -642,9 +602,7 @@ pub fn chart_space_xml(
             ));
         }
         for (j, v) in values.iter().enumerate() {
-            vals.push_str(&format!(
-                "<c:pt idx=\"{j}\"><c:v>{v}</c:v></c:pt>"
-            ));
+            vals.push_str(&format!("<c:pt idx=\"{j}\"><c:v>{v}</c:v></c:pt>"));
         }
         let series_name = format!(
             r#"<c:tx><c:strRef><c:f>Sheet1!$A$1</c:f><c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>{}</c:v></c:pt></c:strCache></c:strRef></c:tx>"#,
@@ -673,9 +631,9 @@ pub fn chart_space_xml(
         sers.push_str(&ser);
     }
     let axes = match kind {
-        ChartKind::Bar | ChartKind::Line | ChartKind::Scatter => format!(
-            r#"<c:axId val="111111111"/><c:axId val="222222222"/>"#
-        ),
+        ChartKind::Bar | ChartKind::Line | ChartKind::Scatter => {
+            r#"<c:axId val="111111111"/><c:axId val="222222222"/>"#.to_string()
+        }
         ChartKind::Pie => String::new(),
     };
     let axes_xml = match kind {
@@ -727,4 +685,51 @@ pub fn minimal_embedded_xlsx(series: &[(String, Vec<f64>)]) -> Vec<u8> {
     let _ = series;
     zip.write_all(br#"<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData/></worksheet>"#).unwrap();
     zip.finish().unwrap().into_inner()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn generate_and_read_back_deck() {
+        let deck = PptxDeck {
+            title: "Q3 Board Review".into(),
+            slides: vec![
+                SlideContent {
+                    title: "Revenue".into(),
+                    bullets: vec!["Revenue grew 12% QoQ".into(), "EMEA leads growth".into()],
+                    notes: Some("Source: verified workbook recalc".into()),
+                    chart: None,
+                    image: None,
+                },
+                SlideContent {
+                    title: "Outlook".into(),
+                    bullets: vec!["Pipeline strong".into()],
+                    notes: None,
+                    chart: None,
+                    image: None,
+                },
+            ],
+        };
+        let bytes = deck.to_pptx_bytes().unwrap();
+        assert!(bytes.len() > 2000);
+        // It is a valid zip with OOXML content types.
+        let mut ar = zip::ZipArchive::new(Cursor::new(bytes.as_slice())).unwrap();
+        assert!(ar.by_name("[Content_Types].xml").is_ok());
+        assert!(ar.by_name("ppt/slides/slide1.xml").is_ok());
+        assert!(ar.by_name("ppt/slides/slide2.xml").is_ok());
+        let back = PptxDeck::from_pptx_bytes(&bytes).unwrap();
+        assert_eq!(back.title, "Q3 Board Review");
+        assert_eq!(back.slides.len(), 2);
+        assert_eq!(back.slides[0].title, "Revenue");
+        assert!(back.slides[0]
+            .bullets
+            .contains(&"Revenue grew 12% QoQ".to_string()));
+    }
+
+    #[test]
+    fn xml_escaping() {
+        assert_eq!(xml_escape("a<b>&\"c\""), "a&lt;b&gt;&amp;&quot;c&quot;");
+    }
 }

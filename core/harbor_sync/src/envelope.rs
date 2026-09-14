@@ -14,9 +14,8 @@ use chacha20poly1305::{
 use chrono::{DateTime, Utc};
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 
-use harbor_store::keys::{KeyMaterial, WrappedKey};
+use harbor_store::keys::KeyMaterial;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SyncRecordType {
@@ -91,7 +90,7 @@ pub const DEVICE_HORIZON_DAYS: chrono::Duration = chrono::Duration::days(90);
 pub const TOMBSTONE_RETENTION_DAYS: chrono::Duration = chrono::Duration::days(120);
 
 impl SyncGroup {
-    pub fn create(group_id: &str, now: DateTime<Utc>) -> Self {
+    pub fn create(group_id: &str, _now: DateTime<Utc>) -> Self {
         let mut epoch_keys = BTreeMap::new();
         epoch_keys.insert(1u64, KeyMaterial::random());
         SyncGroup {
@@ -130,7 +129,9 @@ impl SyncGroup {
     }
 
     pub fn epoch_key_current(&self) -> &KeyMaterial {
-        self.epoch_keys.get(&self.current_epoch).expect("current epoch key")
+        self.epoch_keys
+            .get(&self.current_epoch)
+            .expect("current epoch key")
     }
 }
 
@@ -146,8 +147,14 @@ pub struct Hlc {
 impl Hlc {
     pub fn now(physical_ms: u64, last: Option<Hlc>) -> Hlc {
         match last {
-            Some(l) if physical_ms <= l.physical_ms => Hlc { physical_ms: l.physical_ms, counter: l.counter + 1 },
-            _ => Hlc { physical_ms, counter: 0 },
+            Some(l) if physical_ms <= l.physical_ms => Hlc {
+                physical_ms: l.physical_ms,
+                counter: l.counter + 1,
+            },
+            _ => Hlc {
+                physical_ms,
+                counter: 0,
+            },
         }
     }
 }
@@ -189,6 +196,7 @@ impl RecordEnvelope {
 
     /// Seal plaintext into an authenticated envelope under the group's
     /// CURRENT epoch key.
+    #[allow(clippy::too_many_arguments)] // wide durable bindings are the contract here
     pub fn seal(
         group: &SyncGroup,
         device_id: &str,
@@ -227,7 +235,10 @@ impl RecordEnvelope {
         env.ciphertext = cipher
             .encrypt(
                 Nonce::from_slice(&nonce),
-                Payload { msg: plaintext, aad: &env.aad() },
+                Payload {
+                    msg: plaintext,
+                    aad: &env.aad(),
+                },
             )
             .map_err(|_| SyncError::AuthFailed)?;
         Ok(env)
@@ -239,12 +250,18 @@ impl RecordEnvelope {
     pub fn open(&self, group: &SyncGroup) -> Result<Vec<u8>, SyncError> {
         let key = group
             .epoch_key(self.key_epoch)
-            .ok_or(SyncError::InvalidEpoch { got: self.key_epoch, current: group.current_epoch })?;
+            .ok_or(SyncError::InvalidEpoch {
+                got: self.key_epoch,
+                current: group.current_epoch,
+            })?;
         let cipher = ChaCha20Poly1305::new(Key::from_slice(&key.0));
         cipher
             .decrypt(
                 Nonce::from_slice(&self.nonce),
-                Payload { msg: &self.ciphertext, aad: &self.aad() },
+                Payload {
+                    msg: &self.ciphertext,
+                    aad: &self.aad(),
+                },
             )
             .map_err(|_| SyncError::AuthFailed)
     }
@@ -262,7 +279,11 @@ pub struct SyncReceiver {
 
 impl SyncReceiver {
     pub fn new(group: SyncGroup) -> Self {
-        SyncReceiver { group, last_seq: BTreeMap::new(), last_hash: BTreeMap::new() }
+        SyncReceiver {
+            group,
+            last_seq: BTreeMap::new(),
+            last_hash: BTreeMap::new(),
+        }
     }
 
     /// Accept one envelope: member check, epoch check (only CURRENT-epoch

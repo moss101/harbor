@@ -16,15 +16,15 @@ pub enum CellValue {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CellError {
-    DivZero,   // #DIV/0!
-    Value,     // #VALUE!
-    Ref,       // #REF!
-    Name,      // #NAME?
-    Num,       // #NUM!
-    NA,        // #N/A
-    Null,      // #NULL!
-    Spill,     // #SPILL!
-    Calc,      // #CALC!
+    DivZero, // #DIV/0!
+    Value,   // #VALUE!
+    Ref,     // #REF!
+    Name,    // #NAME?
+    Num,     // #NUM!
+    NA,      // #N/A
+    Null,    // #NULL!
+    Spill,   // #SPILL!
+    Calc,    // #CALC!
     GettingData,
 }
 
@@ -123,7 +123,9 @@ mod tests {
 
     #[test]
     fn error_codes_roundtrip() {
-        for code in ["#DIV/0!", "#VALUE!", "#REF!", "#NAME?", "#NUM!", "#N/A", "#NULL!"] {
+        for code in [
+            "#DIV/0!", "#VALUE!", "#REF!", "#NAME?", "#NUM!", "#N/A", "#NULL!",
+        ] {
             assert_eq!(CellError::from_code(code).unwrap().code(), code);
         }
         assert!(CellError::from_code("#NOPE").is_none());

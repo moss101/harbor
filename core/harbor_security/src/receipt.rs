@@ -130,9 +130,11 @@ impl ApprovalReceipt {
                 return Err(ReceiptError::ConsumedOutsideValidity);
             }
         }
-        validate_hash(&self.canonical_args_hash).map_err(|_| ReceiptError::Hash("canonical_args_hash".into()))?;
+        validate_hash(&self.canonical_args_hash)
+            .map_err(|_| ReceiptError::Hash("canonical_args_hash".into()))?;
         if let Some(b) = &self.batch_binding {
-            validate_hash(&b.base_content_hash).map_err(|_| ReceiptError::Hash("base_content_hash".into()))?;
+            validate_hash(&b.base_content_hash)
+                .map_err(|_| ReceiptError::Hash("base_content_hash".into()))?;
             validate_hash(&b.proposed_output_hash)
                 .map_err(|_| ReceiptError::Hash("proposed_output_hash".into()))?;
         }
@@ -152,8 +154,8 @@ impl ApprovalReceipt {
         if self.decision != Decision::Approved {
             return Err(ReceiptError::Denied);
         }
-        if self.consumed_at.is_some() {
-            return Err(ReceiptError::Consumed(self.consumed_at.unwrap()));
+        if let Some(consumed_at) = self.consumed_at {
+            return Err(ReceiptError::Consumed(consumed_at));
         }
         if run_terminated {
             return Err(ReceiptError::Terminated);
@@ -175,6 +177,7 @@ impl ApprovalReceipt {
 
     /// Check the full effect-binding: the receipt must match every durable
     /// field of the effect intent it authorizes.
+    #[allow(clippy::too_many_arguments)] // wide durable bindings are the contract here
     pub fn check_effect_binding(
         &self,
         run_id: &HarborId,
@@ -205,7 +208,10 @@ impl ApprovalReceipt {
         }
         if effect_class == EffectClass::FileWrite {
             let b = batch.ok_or(ReceiptError::MissingBatch)?;
-            let binding = self.batch_binding.as_ref().ok_or(ReceiptError::MissingBatch)?;
+            let binding = self
+                .batch_binding
+                .as_ref()
+                .ok_or(ReceiptError::MissingBatch)?;
             if &binding.batch_id != b.0 {
                 return Err(ReceiptError::Binding("batch_id"));
             }
@@ -270,9 +276,15 @@ mod tests {
     fn lifetime_bounds() {
         let mut r = receipt();
         r.expires_at = r.issued_at + Duration::minutes(16);
-        assert!(matches!(r.validate_invariants(), Err(ReceiptError::Lifetime)));
+        assert!(matches!(
+            r.validate_invariants(),
+            Err(ReceiptError::Lifetime)
+        ));
         r.expires_at = r.issued_at + Duration::seconds(0);
-        assert!(matches!(r.validate_invariants(), Err(ReceiptError::Lifetime)));
+        assert!(matches!(
+            r.validate_invariants(),
+            Err(ReceiptError::Lifetime)
+        ));
     }
 
     #[test]

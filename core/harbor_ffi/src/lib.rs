@@ -150,7 +150,9 @@ fn ensure_device_identity(data_root: &std::path::Path) -> Result<String, HarborE
     )
     .map_err(|e| HarborError::Other(format!("store: {e}")))?;
     let existing: Option<String> = conn
-        .query_row("SELECT v FROM device_meta WHERE k = 'device_id'", [], |r| r.get(0))
+        .query_row("SELECT v FROM device_meta WHERE k = 'device_id'", [], |r| {
+            r.get(0)
+        })
         .ok();
     if let Some(id) = existing {
         return Ok(id);
@@ -174,14 +176,16 @@ fn build_keystore(
     injected: Option<KeyMaterial>,
 ) -> Result<Arc<dyn KeyStore>, HarborError> {
     if let Some(root) = injected {
-        return Ok(Arc::new(harbor_store::native_keystore::InjectedKeyStore::new(root)));
+        return Ok(Arc::new(
+            harbor_store::native_keystore::InjectedKeyStore::new(root),
+        ));
     }
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     {
         let _ = data_root;
-        return Ok(Arc::new(
+        Ok(Arc::new(
             harbor_store::native_keystore::KeychainKeyStore::new().map_err(HarborError::Store)?,
-        ));
+        ))
     }
     #[cfg(windows)]
     {
@@ -214,8 +218,12 @@ fn rotate_file_root_to_native(
     }
     // Comparing materials requires reading both roots; if the native root
     // IS the file root (plain FileKeyStore path), there is nothing to do.
-    let old_root = file_ks.device_root_key("harbor.device").map_err(HarborError::Store)?;
-    let new_root = native.device_root_key("harbor.device").map_err(HarborError::Store)?;
+    let old_root = file_ks
+        .device_root_key("harbor.device")
+        .map_err(HarborError::Store)?;
+    let new_root = native
+        .device_root_key("harbor.device")
+        .map_err(HarborError::Store)?;
     if old_root == new_root {
         return Ok(());
     }
@@ -237,7 +245,9 @@ fn rotate_file_root_to_native(
                     .prepare("SELECT workspace_id, wrapped_key FROM workspace_keys")
                     .map_err(harbor_store::StoreError::Db)?;
                 let mapped = stmt
-                    .query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, Vec<u8>>(1)?)))
+                    .query_map([], |r| {
+                        Ok((r.get::<_, String>(0)?, r.get::<_, Vec<u8>>(1)?))
+                    })
                     .map_err(harbor_store::StoreError::Db)?;
                 mapped
                     .collect::<std::result::Result<Vec<_>, _>>()
@@ -260,14 +270,13 @@ fn rotate_file_root_to_native(
     }
     // Root rotation complete: erase the file root. Any data that could not
     // be rewrapped above has already failed the open with an error.
-    file_ks.remove("harbor.device").map_err(HarborError::Store)?;
+    file_ks
+        .remove("harbor.device")
+        .map_err(HarborError::Store)?;
     Ok(())
 }
 
-fn load_hub_token(
-    data_root: &std::path::Path,
-    keystore: &Arc<dyn KeyStore>,
-) -> Option<String> {
+fn load_hub_token(data_root: &std::path::Path, keystore: &Arc<dyn KeyStore>) -> Option<String> {
     // The token is stored wrapped by the device root key (encrypted at
     // rest); the plaintext never crosses the FFI boundary outward.
     let root = keystore.device_root_key("harbor.device").ok()?;
@@ -324,7 +333,9 @@ fn load_catalog_state(
 )> {
     let conn = rusqlite::Connection::open(data_root.join("db").join("store.db")).ok()?;
     let state: String = conn
-        .query_row("SELECT state FROM catalog_trust WHERE id = 1", [], |r| r.get(0))
+        .query_row("SELECT state FROM catalog_trust WHERE id = 1", [], |r| {
+            r.get(0)
+        })
         .ok()?;
     let v: serde_json::Value = serde_json::from_str(&state).ok()?;
     let mut trusted = std::collections::BTreeMap::new();
@@ -460,16 +471,23 @@ pub extern "C" fn harbor_core_open(
 }
 
 /// Close a workspace handle.
+///
+/// # Safety
+/// `handle` must be a live pointer from [`harbor_core_open_ex`] and must
+/// not be used again after this call.
 #[no_mangle]
-pub extern "C" fn harbor_core_close(handle: *mut WorkspaceHandle) {
+pub unsafe extern "C" fn harbor_core_close(handle: *mut WorkspaceHandle) {
     if !handle.is_null() {
         unsafe { drop(Box::from_raw(handle)) };
     }
 }
 
 /// Free a string returned by [`harbor_core_call`].
+///
+/// # Safety
+/// `s` must be a pointer handed out by this library and not freed before.
 #[no_mangle]
-pub extern "C" fn harbor_core_string_free(s: *mut c_char) {
+pub unsafe extern "C" fn harbor_core_string_free(s: *mut c_char) {
     if !s.is_null() {
         unsafe { drop(CString::from_raw(s)) };
     }
@@ -509,16 +527,25 @@ fn append_run_event(
         harbor_core::Workspace::now(),
     )?;
     let stream = agent_log.load_stream(run_id)?;
-    let head = stream.last().ok_or_else(|| HarborError::Other("run missing".into()))?;
-    let head_hash = head.hash().map_err(|e| HarborError::Other(format!("hash: {e}")))?;
+    let head = stream
+        .last()
+        .ok_or_else(|| HarborError::Other("run missing".into()))?;
+    let head_hash = head
+        .hash()
+        .map_err(|e| HarborError::Other(format!("hash: {e}")))?;
     let counters = head.counters;
     let event = RunEvent {
         run_id: run_id.to_string(),
         event_id: format!(
             "evt-{}",
             harbor_canonical::sha256_hex(
-                format!("{run_id}-{}-{}-{}", event_type.as_str(), stream.len(), chrono::Utc::now().to_rfc3339())
-                    .as_bytes()
+                format!(
+                    "{run_id}-{}-{}-{}",
+                    event_type.as_str(),
+                    stream.len(),
+                    chrono::Utc::now().to_rfc3339()
+                )
+                .as_bytes()
             )
             .get(..16)
             .unwrap_or("evt")
@@ -553,16 +580,21 @@ fn open_weight_sessions(
         .iter()
         .chain(harbor_modelhub::HF_CDN_ORIGINS.iter())
     {
-        if let Ok(sess) =
-            broker.open_session(harbor_net::broker::EgressClass::WeightTransfer, origin, ttl, mode)
-        {
+        if let Ok(sess) = broker.open_session(
+            harbor_net::broker::EgressClass::WeightTransfer,
+            origin,
+            ttl,
+            mode,
+        ) {
             sessions.insert(origin.to_string(), sess);
         }
     }
     sessions
 }
 
-fn parse_acquire_files(args: &serde_json::Value) -> Result<Vec<(String, String, String)>, HarborError> {
+fn parse_acquire_files(
+    args: &serde_json::Value,
+) -> Result<Vec<(String, String, String)>, HarborError> {
     Ok(args
         .get("files")
         .and_then(|v| v.as_array())
@@ -570,9 +602,18 @@ fn parse_acquire_files(args: &serde_json::Value) -> Result<Vec<(String, String, 
         .iter()
         .map(|f| {
             (
-                f.get("path").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
-                f.get("role").and_then(|v| v.as_str()).unwrap_or("weights").to_string(),
-                f.get("sha256").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+                f.get("path")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default()
+                    .to_string(),
+                f.get("role")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("weights")
+                    .to_string(),
+                f.get("sha256")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default()
+                    .to_string(),
             )
         })
         .collect())
@@ -580,6 +621,7 @@ fn parse_acquire_files(args: &serde_json::Value) -> Result<Vec<(String, String, 
 
 /// The synchronous acquisition body, shared by `models.acquire_hf` and
 /// the background op thread.
+#[allow(clippy::too_many_arguments)] // explicit acquisition parameters
 fn acquire_model(
     data_root: &std::path::Path,
     broker: &harbor_net::broker::EgressBroker,
@@ -606,7 +648,13 @@ fn acquire_model(
         acquirer = acquirer.with_progress(p);
     }
     acquirer
-        .acquire(package_id, repo_id, revision, files, harbor_core::Workspace::now())
+        .acquire(
+            package_id,
+            repo_id,
+            revision,
+            files,
+            harbor_core::Workspace::now(),
+        )
         .map_err(|e| HarborError::Other(e.to_string()))
 }
 
@@ -624,9 +672,11 @@ fn dispatch(
                 Some(r) if !r.is_empty() => r.to_string(),
                 _ => harbor_security::HarborId::generate("run").to_string(),
             };
-            ws.inner
-                .agent_log
-                .create_run(&run_id, &ws.inner.workspace_id, harbor_core::Workspace::now())?;
+            ws.inner.agent_log.create_run(
+                &run_id,
+                &ws.inner.workspace_id,
+                harbor_core::Workspace::now(),
+            )?;
             Ok(serde_json::json!({ "run_id": run_id }))
         }
         "run.state" => {
@@ -646,7 +696,10 @@ fn dispatch(
         "run.pause" => {
             // RUNNING -> PAUSED with a durable reason, under a lease.
             let run_id = args.get("run_id").and_then(|v| v.as_str()).unwrap_or("");
-            let reason_s = args.get("reason").and_then(|v| v.as_str()).unwrap_or("user");
+            let reason_s = args
+                .get("reason")
+                .and_then(|v| v.as_str())
+                .unwrap_or("user");
             let reason = PauseReason::parse(reason_s)
                 .ok_or_else(|| HarborError::Other(format!("bad pause reason {reason_s}")))?;
             let stream = ws.inner.agent_log.load_stream(run_id)?;
@@ -659,10 +712,22 @@ fn dispatch(
                 .map_err(|e| HarborError::Other(format!("hash: {e}")))?;
             let counters = head.counters;
             let mut mgr = LeaseManager::open(ws.data_root.join("db").join("agent.db"))?;
-            let lease = mgr.acquire(run_id, "ffi-executor", chrono::Duration::minutes(10), harbor_core::Workspace::now())?;
+            let lease = mgr.acquire(
+                run_id,
+                "ffi-executor",
+                chrono::Duration::minutes(10),
+                harbor_core::Workspace::now(),
+            )?;
             let event = RunEvent {
                 run_id: run_id.to_string(),
-                event_id: format!("evt-{}", harbor_canonical::sha256_hex(format!("{run_id}-pause-{}", chrono::Utc::now()).as_bytes()).get(..16).unwrap_or("evt")),
+                event_id: format!(
+                    "evt-{}",
+                    harbor_canonical::sha256_hex(
+                        format!("{run_id}-pause-{}", chrono::Utc::now()).as_bytes()
+                    )
+                    .get(..16)
+                    .unwrap_or("evt")
+                ),
                 seq: stream.len() as u64,
                 event_type: EventType::RunTransition,
                 replay_semantics: ReplaySemantics::StateAffecting,
@@ -719,8 +784,8 @@ fn dispatch(
         }
         // --- formula qualification -------------------------------------
         "formula.qualify" => {
-            let report = harbor_formula::qualify::run_qualification()
-                .map_err(HarborError::Other)?;
+            let report =
+                harbor_formula::qualify::run_qualification().map_err(HarborError::Other)?;
             Ok(serde_json::json!({
                 "engine": format!("{}/{}", report.engine_family, report.engine_version),
                 "source_revision": report.engine_source_revision,
@@ -745,9 +810,8 @@ fn dispatch(
         })),
         // --- models -----------------------------------------------------
         "models.installed" => {
-            let installer = harbor_modelhub::install::PackageInstaller::new(
-                ws.data_root.join("models"),
-            );
+            let installer =
+                harbor_modelhub::install::PackageInstaller::new(ws.data_root.join("models"));
             let ids = installer
                 .installed_packages()
                 .map_err(|e| HarborError::Other(format!("models: {e}")))?;
@@ -774,9 +838,8 @@ fn dispatch(
                 .get("package_id")
                 .and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing package_id".into()))?;
-            let installer = harbor_modelhub::install::PackageInstaller::new(
-                ws.data_root.join("models"),
-            );
+            let installer =
+                harbor_modelhub::install::PackageInstaller::new(ws.data_root.join("models"));
             let manifest = installer
                 .load_manifest(package_id)
                 .map_err(|e| HarborError::Other(format!("manifest: {e}")))?;
@@ -792,8 +855,14 @@ fn dispatch(
                     .and_then(|v| v.as_str())
                     .unwrap_or(std::env::consts::ARCH)
                     .to_string(),
-                physical_ram: args.get("physical_ram").and_then(|v| v.as_u64()).unwrap_or(8 << 30),
-                available_ram: args.get("available_ram").and_then(|v| v.as_u64()).unwrap_or(4 << 30),
+                physical_ram: args
+                    .get("physical_ram")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(8 << 30),
+                available_ram: args
+                    .get("available_ram")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(4 << 30),
                 gpu_backend: if args.get("gpu_backend").and_then(|v| v.as_bool()) == Some(true) {
                     Some("Metal".to_string())
                 } else {
@@ -814,7 +883,10 @@ fn dispatch(
                 weights_bytes: weights,
                 peak_memory_bytes: weights + weights / 8,
                 kv_cache_per_1k_tokens: 8 << 20,
-                context_tokens: args.get("context_tokens").and_then(|v| v.as_u64()).unwrap_or(2048),
+                context_tokens: args
+                    .get("context_tokens")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(2048),
                 quantization: "Q4_K_M".to_string(),
                 multimodal: false,
                 runtime_kind: manifest.runtime.kind,
@@ -834,7 +906,6 @@ fn dispatch(
                 .ok_or_else(|| HarborError::Other("missing data_b64".into()))?;
             use base64::Engine as _;
             let bytes = base64::engine::general_purpose::STANDARD
-
                 .decode(data_b64)
                 .map_err(|e| HarborError::Other(format!("b64: {e}")))?;
             // Dispatch by OOXML content types (a workbook has no slide
@@ -949,10 +1020,14 @@ fn dispatch(
         }
         // Log the user's request as the first step of a run (Home composer).
         "run.log_request" => {
-            let run_id = args.get("run_id").and_then(|v| v.as_str())
+            let run_id = args
+                .get("run_id")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing run_id".into()))?
                 .to_string();
-            let text = args.get("text").and_then(|v| v.as_str())
+            let text = args
+                .get("text")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing text".into()))?
                 .to_string();
             append_run_event(
@@ -963,7 +1038,10 @@ fn dispatch(
                 EventPayload::StepStarted {
                     step_id: format!("step-{}", {
                         let stream = ws.inner.agent_log.load_stream(&run_id)?;
-                        stream.last().map(|h| h.counters.step_count_total + 1).unwrap_or(1)
+                        stream
+                            .last()
+                            .map(|h| h.counters.step_count_total + 1)
+                            .unwrap_or(1)
                     }),
                     description: text,
                 },
@@ -973,7 +1051,9 @@ fn dispatch(
         }
         // --- hub auth (M4: gated/private repos) ---------------------------
         "hub.set_token" => {
-            let token = args.get("token").and_then(|v| v.as_str())
+            let token = args
+                .get("token")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing token".into()))?;
             save_hub_token(&ws.data_root, &ws.keystore, Some(token))?;
             ws.hub_token = Some(token.to_string());
@@ -986,17 +1066,22 @@ fn dispatch(
         }
         // --- acquisition -------------------------------------------------
         "models.search_hf" => {
-            let query = args.get("query").and_then(|v| v.as_str())
+            let query = args
+                .get("query")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing query".into()))?;
             let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(8) as usize;
-            let session = ws.inner.broker.open_session(
-                harbor_net::broker::EgressClass::AcquisitionMetadata,
-                "https://huggingface.co",
-                harbor_core::Workspace::acquisition_session_ttl(),
-                ws.inner.privacy_mode,
-            ).map_err(|e| HarborError::Other(e.to_string()))?;
-            let discovery = harbor_modelhub::hf::HfDiscovery::new(
-                &ws.inner.broker, &*ws.transport)
+            let session = ws
+                .inner
+                .broker
+                .open_session(
+                    harbor_net::broker::EgressClass::AcquisitionMetadata,
+                    "https://huggingface.co",
+                    harbor_core::Workspace::acquisition_session_ttl(),
+                    ws.inner.privacy_mode,
+                )
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let discovery = harbor_modelhub::hf::HfDiscovery::new(&ws.inner.broker, &*ws.transport)
                 .with_token(ws.hub_token.clone());
             let models = discovery
                 .search(&session, query, limit.min(20))
@@ -1005,14 +1090,85 @@ fn dispatch(
             // result stays a JSON map across the boundary.
             Ok(serde_json::json!({ "models": models }))
         }
+        "models.hf_files" => {
+            // Resolve a repo's weight files (brokered metadata read) so
+            // acquisition can be launched with a real file set.
+            let repo_id = args
+                .get("repo_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing repo_id".into()))?;
+            let revision = args
+                .get("revision")
+                .and_then(|v| v.as_str())
+                .unwrap_or("main");
+            let session = ws
+                .inner
+                .broker
+                .open_session(
+                    harbor_net::broker::EgressClass::AcquisitionMetadata,
+                    "https://huggingface.co",
+                    harbor_core::Workspace::acquisition_session_ttl(),
+                    ws.inner.privacy_mode,
+                )
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let installer =
+                harbor_modelhub::install::PackageInstaller::new(ws.data_root.join("models"));
+            let acquirer = harbor_modelhub::acquire::HfAcquirer {
+                broker: &ws.inner.broker,
+                transport: &*ws.transport,
+                installer: &installer,
+                sessions: {
+                    let mut m = std::collections::BTreeMap::new();
+                    m.insert("https://huggingface.co".to_string(), session);
+                    m
+                },
+                auth_token: ws.hub_token.clone(),
+                progress: None,
+            };
+            let tree_url = format!("https://huggingface.co/api/models/{repo_id}/tree/{revision}");
+            let body = acquirer
+                .fetch(&tree_url, None)
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let tree: serde_json::Value = serde_json::from_slice(&body)
+                .map_err(|e| HarborError::Other(format!("tree: {e}")))?;
+            let files: Vec<serde_json::Value> = tree
+                .as_array()
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|f| {
+                            let path = f.get("path")?.as_str()?;
+                            // Weight files only: the acquirer installs data,
+                            // never repository code.
+                            if !path.to_lowercase().ends_with(".gguf") {
+                                return None;
+                            }
+                            Some(serde_json::json!({
+                                "path": path,
+                                "role": "weights",
+                                "size": f.get("size").and_then(|v| v.as_u64()).unwrap_or(0),
+                            }))
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            Ok(serde_json::json!({ "files": files }))
+        }
         "models.acquire_hf" => {
-            let package_id = args.get("package_id").and_then(|v| v.as_str())
+            let package_id = args
+                .get("package_id")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing package_id".into()))?
                 .to_string();
-            let repo_id = args.get("repo_id").and_then(|v| v.as_str())
+            let repo_id = args
+                .get("repo_id")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing repo_id".into()))?
                 .to_string();
-            let revision = args.get("revision").and_then(|v| v.as_str()).unwrap_or("main").to_string();
+            let revision = args
+                .get("revision")
+                .and_then(|v| v.as_str())
+                .unwrap_or("main")
+                .to_string();
             let files = parse_acquire_files(args)?;
             acquire_model(
                 &ws.data_root,
@@ -1030,15 +1186,25 @@ fn dispatch(
         // --- signed catalog ------------------------------------------------
         "catalog.import" => {
             // Signed catalog document (harbor.catalog/v1 envelope).
-            let key = args.get("key_id").and_then(|v| v.as_str())
+            let key = args
+                .get("key_id")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing key_id".into()))?;
-            let sig = args.get("signature").and_then(|v| v.as_str())
+            let sig = args
+                .get("signature")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing signature".into()))?;
-            let epoch = args.get("epoch").and_then(|v| v.as_u64())
+            let epoch = args
+                .get("epoch")
+                .and_then(|v| v.as_u64())
                 .ok_or_else(|| HarborError::Other("missing epoch".into()))?;
-            let published_at = args.get("published_at").and_then(|v| v.as_str())
+            let published_at = args
+                .get("published_at")
+                .and_then(|v| v.as_str())
                 .unwrap_or_default();
-            let entries = args.get("entries").cloned()
+            let entries = args
+                .get("entries")
+                .cloned()
                 .ok_or_else(|| HarborError::Other("missing entries".into()))?;
             let entries_canonical = harbor_canonical::convert(entries.clone())
                 .map_err(|e| HarborError::Other(e.to_string()))?;
@@ -1055,34 +1221,33 @@ fn dispatch(
             let root_hex = args.get("root_public_hex").and_then(|v| v.as_str());
             let (verifier, stored_entries) = ws.catalog.get_or_insert_with(|| {
                 // Bootstrap with the caller-pinned root key on first import.
-                let root = root_hex
-                    .map(str::to_string)
-                    .unwrap_or_default();
-                (harbor_modelhub::catalog_signing::CatalogVerifier::new(&root)
-                    .expect("bootstrap root key"), harbor_canonical::parse("{}").unwrap())
+                let root = root_hex.map(str::to_string).unwrap_or_default();
+                (
+                    harbor_modelhub::catalog_signing::CatalogVerifier::new(&root)
+                        .expect("bootstrap root key"),
+                    harbor_canonical::parse("{}").unwrap(),
+                )
             });
             if let Some(root) = root_hex {
                 harbor_modelhub::catalog_signing::CatalogVerifier::new(root)
-                        .map_err(|e| HarborError::Other(e.to_string()))?;
+                    .map_err(|e| HarborError::Other(e.to_string()))?;
             }
             let _ = root_hex;
             verifier
                 .verify(&signed)
                 .map_err(|e| HarborError::Other(e.to_string()))?;
-            *stored_entries =
-                harbor_canonical::convert(entries).map_err(|e| HarborError::Other(e.to_string()))?;
+            *stored_entries = harbor_canonical::convert(entries)
+                .map_err(|e| HarborError::Other(e.to_string()))?;
             // Trust state survives process death: epochs stay monotonic
             // across restarts (rollback protection is durable, not
             // session-local).
-            persist_catalog_state(
-                &ws.data_root,
-                verifier,
-                stored_entries,
-            )?;
+            persist_catalog_state(&ws.data_root, verifier, stored_entries)?;
             Ok(serde_json::json!({ "accepted_epoch": epoch }))
         }
         "models.acquire_catalog" => {
-            let package_id = args.get("package_id").and_then(|v| v.as_str())
+            let package_id = args
+                .get("package_id")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing package_id".into()))?;
             let Some((verifier, entries)) = ws.catalog.as_ref() else {
                 return Err(HarborError::Other(
@@ -1095,7 +1260,10 @@ fn dispatch(
                 epoch: verifier.accepted_epoch,
                 published_at: String::new(),
                 entries: entries.clone(),
-                key_id: harbor_security::HarborId::new("x").map_err(|e| HarborError::Other(e.to_string()))?.as_str().to_string(),
+                key_id: harbor_security::HarborId::new("x")
+                    .map_err(|e| HarborError::Other(e.to_string()))?
+                    .as_str()
+                    .to_string(),
                 signature: String::new(),
             };
             let _ = signed; // verification happens in acquire_signed below
@@ -1104,7 +1272,14 @@ fn dispatch(
             let package = packages
                 .iter()
                 .find(|p| p.id == package_id)
-                .ok_or_else(|| HarborError::Other(harbor_modelhub::acquire::AcquireError::PackageNotInCatalog(package_id.to_string()).to_string()))?;
+                .ok_or_else(|| {
+                    HarborError::Other(
+                        harbor_modelhub::acquire::AcquireError::PackageNotInCatalog(
+                            package_id.to_string(),
+                        )
+                        .to_string(),
+                    )
+                })?;
             acquire_model(
                 &ws.data_root,
                 &ws.inner.broker,
@@ -1114,26 +1289,38 @@ fn dispatch(
                 &package.id,
                 &package.repo_id,
                 &package.revision,
-                &package.files.iter().map(|(p, r, h)| (p.clone(), r.clone(), h.clone())).collect::<Vec<_>>(),
+                &package
+                    .files
+                    .iter()
+                    .map(|(p, r, h)| (p.clone(), r.clone(), h.clone()))
+                    .collect::<Vec<_>>(),
                 None,
             )
         }
         // --- model install (local file) -----------------------------------
         "models.install_file" => {
-            let package_id = args.get("package_id").and_then(|v| v.as_str())
+            let package_id = args
+                .get("package_id")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing package_id".into()))?;
-            let path = args.get("path").and_then(|v| v.as_str())
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing path".into()))?;
-            let role = args.get("role").and_then(|v| v.as_str()).unwrap_or("weights");
-            let data_b64 = args.get("data_b64").and_then(|v| v.as_str())
+            let role = args
+                .get("role")
+                .and_then(|v| v.as_str())
+                .unwrap_or("weights");
+            let data_b64 = args
+                .get("data_b64")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing data_b64".into()))?;
             use base64::Engine as _;
             let bytes = base64::engine::general_purpose::STANDARD
                 .decode(data_b64)
                 .map_err(|e| HarborError::Other(format!("b64: {e}")))?;
-            let installer = harbor_modelhub::install::PackageInstaller::new(
-                ws.data_root.join("models"),
-            );
+            let installer =
+                harbor_modelhub::install::PackageInstaller::new(ws.data_root.join("models"));
             let file = harbor_modelhub::install::PackageFile {
                 role: role.to_string(),
                 path: path.to_string(),
@@ -1162,7 +1349,8 @@ fn dispatch(
                 .map_err(|e| HarborError::Other(format!("validate: {e}")))?;
             if !report.ok {
                 return Err(HarborError::Other(format!(
-                    "package invalid: {:?}", report.problems
+                    "package invalid: {:?}",
+                    report.problems
                 )));
             }
             installer
@@ -1173,21 +1361,27 @@ fn dispatch(
         // Local install straight from a picked file path: the core reads
         // the bytes itself (no base64 round trip through the boundary).
         "models.install_from_path" => {
-            let package_id = args.get("package_id").and_then(|v| v.as_str())
+            let package_id = args
+                .get("package_id")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing package_id".into()))?;
-            let path = args.get("path").and_then(|v| v.as_str())
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing path".into()))?;
-            let role = args.get("role").and_then(|v| v.as_str()).unwrap_or("weights");
-            let bytes = std::fs::read(path)
-                .map_err(|e| HarborError::Other(format!("read {path}: {e}")))?;
+            let role = args
+                .get("role")
+                .and_then(|v| v.as_str())
+                .unwrap_or("weights");
+            let bytes =
+                std::fs::read(path).map_err(|e| HarborError::Other(format!("read {path}: {e}")))?;
             let file_name = std::path::Path::new(path)
                 .file_name()
                 .and_then(|n| n.to_str())
                 .ok_or_else(|| HarborError::Other("bad file name".into()))?
                 .to_string();
-            let installer = harbor_modelhub::install::PackageInstaller::new(
-                ws.data_root.join("models"),
-            );
+            let installer =
+                harbor_modelhub::install::PackageInstaller::new(ws.data_root.join("models"));
             let file = harbor_modelhub::install::PackageFile {
                 role: role.to_string(),
                 path: file_name,
@@ -1216,7 +1410,8 @@ fn dispatch(
                 .map_err(|e| HarborError::Other(format!("validate: {e}")))?;
             if !report.ok {
                 return Err(HarborError::Other(format!(
-                    "package invalid: {:?}", report.problems
+                    "package invalid: {:?}",
+                    report.problems
                 )));
             }
             installer
@@ -1226,13 +1421,16 @@ fn dispatch(
         }
         // --- knowledge ---------------------------------------------------
         "knowledge.open" => {
-            let package_id = args.get("package_id").and_then(|v| v.as_str())
+            let package_id = args
+                .get("package_id")
+                .and_then(|v| v.as_str())
                 .unwrap_or("bge-small-en-v1.5");
             // Chunks are private workspace content: seal them under the
             // workspace-derived knowledge key.
             let chunk_key = ws.inner.knowledge_chunk_key()?;
-            let svc = crate::knowledge::KnowledgeService::open(&ws.data_root, package_id, chunk_key)
-                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let svc =
+                crate::knowledge::KnowledgeService::open(&ws.data_root, package_id, chunk_key)
+                    .map_err(|e| HarborError::Other(e.to_string()))?;
             let identity = svc.identity_hash();
             let dimension = svc.embedding_dimension();
             ws.knowledge = Some(Arc::new(svc));
@@ -1240,38 +1438,60 @@ fn dispatch(
         }
         "knowledge.ingest" => {
             let sources = parse_sources(args)?;
-            let ks = ws.knowledge.as_ref()
+            let ks = ws
+                .knowledge
+                .as_ref()
                 .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
-            ks.ingest(&sources).map_err(|e| HarborError::Other(e.to_string()))
+            ks.ingest(&sources)
+                .map_err(|e| HarborError::Other(e.to_string()))
         }
         "knowledge.remove_source" => {
-            let source_id = args.get("source_id").and_then(|v| v.as_str())
+            let source_id = args
+                .get("source_id")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing source_id".into()))?;
-            let ks = ws.knowledge.as_ref()
+            let ks = ws
+                .knowledge
+                .as_ref()
                 .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
-            ks.remove_source(source_id).map_err(|e| HarborError::Other(e.to_string()))
+            ks.remove_source(source_id)
+                .map_err(|e| HarborError::Other(e.to_string()))
         }
         "knowledge.sources" => {
-            let ks = ws.knowledge.as_ref()
+            let ks = ws
+                .knowledge
+                .as_ref()
                 .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
             ks.sources().map_err(|e| HarborError::Other(e.to_string()))
         }
         "knowledge.search" => {
-            let ks = ws.knowledge.as_ref()
+            let ks = ws
+                .knowledge
+                .as_ref()
                 .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
-            let question = args.get("question").and_then(|v| v.as_str())
+            let question = args
+                .get("question")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing question".into()))?;
             let top_k = args.get("top_k").and_then(|v| v.as_u64()).unwrap_or(5) as usize;
-            ks.search(question, top_k).map_err(|e| HarborError::Other(e.to_string()))
+            ks.search(question, top_k)
+                .map_err(|e| HarborError::Other(e.to_string()))
         }
         // --- ask: retrieve -> augment -> generate (synchronous form) -----
         "ask.generate" => {
-            let question = args.get("question").and_then(|v| v.as_str())
+            let question = args
+                .get("question")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing question".into()))?;
-            let chat_package = args.get("chat_package").and_then(|v| v.as_str())
+            let chat_package = args
+                .get("chat_package")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing chat_package".into()))?
                 .to_string();
-            let max_tokens = args.get("max_tokens").and_then(|v| v.as_u64()).unwrap_or(64) as u32;
+            let max_tokens = args
+                .get("max_tokens")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(64) as u32;
             // 1. Retrieve grounding (may be absent: generation still runs
             //    but the answer carries no citations, so the UI cannot pass
             //    generated text off as evidence-backed).
@@ -1279,17 +1499,24 @@ fn dispatch(
                 .knowledge
                 .as_ref()
                 .and_then(|ks| ks.search(question, 3).ok())
-                .map(|v| {
-                    v.get("citations").cloned().unwrap_or(serde_json::json!([]))
-                })
+                .map(|v| v.get("citations").cloned().unwrap_or(serde_json::json!([])))
                 .unwrap_or_else(|| serde_json::json!([]));
             // 2. Generate on-device with the model-native template.
             let chat = ws.chat.get_or_insert_with(|| {
-                Arc::new(crate::knowledge::ChatHandle::new(&ws.data_root.join("models")))
+                Arc::new(crate::knowledge::ChatHandle::new(
+                    &ws.data_root.join("models"),
+                ))
             });
             let never = AtomicBool::new(false);
             let answer = chat
-                .generate_rag_cancellable(&chat_package, question, citations.as_array().cloned().unwrap_or_default(), max_tokens, &never, None)
+                .generate_rag_cancellable(
+                    &chat_package,
+                    question,
+                    citations.as_array().cloned().unwrap_or_default(),
+                    max_tokens,
+                    &never,
+                    None,
+                )
                 .map_err(|e| HarborError::Other(e.to_string()))?;
             Ok(serde_json::json!({
                 "answer": answer.answer,
@@ -1304,11 +1531,21 @@ fn dispatch(
         }
         // --- background ops ----------------------------------------------
         "op.start_acquire" => {
-            let package_id = args.get("package_id").and_then(|v| v.as_str())
-                .ok_or_else(|| HarborError::Other("missing package_id".into()))?.to_string();
-            let repo_id = args.get("repo_id").and_then(|v| v.as_str())
-                .ok_or_else(|| HarborError::Other("missing repo_id".into()))?.to_string();
-            let revision = args.get("revision").and_then(|v| v.as_str()).unwrap_or("main").to_string();
+            let package_id = args
+                .get("package_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing package_id".into()))?
+                .to_string();
+            let repo_id = args
+                .get("repo_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing repo_id".into()))?
+                .to_string();
+            let revision = args
+                .get("revision")
+                .and_then(|v| v.as_str())
+                .unwrap_or("main")
+                .to_string();
             let files = parse_acquire_files(args)?;
             let (op_id, entry) = register_op("acquire");
             let data_root = ws.data_root.clone();
@@ -1320,8 +1557,16 @@ fn dispatch(
             let entry_clone = entry.clone();
             std::thread::spawn(move || {
                 let result = acquire_model(
-                    &data_root, &broker, &transport, mode, hub_token,
-                    &package_id, &repo_id, &revision, &files, Some(progress.clone()),
+                    &data_root,
+                    &broker,
+                    &transport,
+                    mode,
+                    hub_token,
+                    &package_id,
+                    &repo_id,
+                    &revision,
+                    &files,
+                    Some(progress.clone()),
                 );
                 let cancelled = matches!(&result, Err(e) if e.to_string().contains("cancelled"));
                 complete_op(&entry_clone, result.map_err(|e| e.to_string()), cancelled);
@@ -1329,17 +1574,34 @@ fn dispatch(
             Ok(serde_json::json!({ "op_id": op_id }))
         }
         "op.start_generate" => {
-            let question = args.get("question").and_then(|v| v.as_str())
-                .ok_or_else(|| HarborError::Other("missing question".into()))?.to_string();
-            let chat_package = args.get("chat_package").and_then(|v| v.as_str())
-                .ok_or_else(|| HarborError::Other("missing chat_package".into()))?.to_string();
-            let max_tokens = args.get("max_tokens").and_then(|v| v.as_u64()).unwrap_or(256) as u32;
-            let run_id = args.get("run_id").and_then(|v| v.as_str()).map(str::to_string);
+            let question = args
+                .get("question")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing question".into()))?
+                .to_string();
+            let chat_package = args
+                .get("chat_package")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing chat_package".into()))?
+                .to_string();
+            let max_tokens = args
+                .get("max_tokens")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(256) as u32;
+            let run_id = args
+                .get("run_id")
+                .and_then(|v| v.as_str())
+                .map(str::to_string);
             let (op_id, entry) = register_op("generate");
             let knowledge = ws.knowledge.clone();
-            let chat = ws.chat.get_or_insert_with(|| {
-                Arc::new(crate::knowledge::ChatHandle::new(&ws.data_root.join("models")))
-            }).clone();
+            let chat = ws
+                .chat
+                .get_or_insert_with(|| {
+                    Arc::new(crate::knowledge::ChatHandle::new(
+                        &ws.data_root.join("models"),
+                    ))
+                })
+                .clone();
             let agent_log = ws.inner.agent_log.clone();
             let data_root = ws.data_root.clone();
             let progress = entry.progress.clone();
@@ -1359,7 +1621,10 @@ fn dispatch(
                         .and_then(|s| s.last().map(|h| h.counters.step_count_total))
                         .unwrap_or(0);
                     let _ = append_run_event(
-                        &agent_log, &data_root, run, EventType::RunStepStarted,
+                        &agent_log,
+                        &data_root,
+                        run,
+                        EventType::RunStepStarted,
                         EventPayload::StepStarted {
                             step_id: format!("step-{}", step_seq + 1),
                             description: question.clone(),
@@ -1370,9 +1635,12 @@ fn dispatch(
                 // 3. Generate on-device (cooperatively cancellable).
                 let never = AtomicBool::new(false);
                 let result = chat.generate_rag_cancellable(
-                    &chat_package, &question,
+                    &chat_package,
+                    &question,
                     citations.as_array().cloned().unwrap_or_default(),
-                    max_tokens, &never, Some(&progress),
+                    max_tokens,
+                    &never,
+                    Some(&progress),
                 );
                 match result {
                     Ok(answer) => {
@@ -1389,7 +1657,10 @@ fn dispatch(
                                 answer.used_citations,
                             );
                             let _ = append_run_event(
-                                &agent_log, &data_root, run, EventType::RunStepCompleted,
+                                &agent_log,
+                                &data_root,
+                                run,
+                                EventType::RunStepCompleted,
                                 EventPayload::StepCompleted {
                                     step_id: format!("step-{step_seq}"),
                                     summary,
@@ -1397,25 +1668,32 @@ fn dispatch(
                                 false,
                             );
                         }
-                        complete_op(&entry_clone, Ok(serde_json::json!({
-                            "answer": answer.answer,
-                            "used_citations": answer.used_citations,
-                            "executed_on": answer.executed_on,
-                            "execution": "ON_DEVICE",
-                            "usage": {
-                                "prompt_tokens": answer.prompt_tokens,
-                                "completion_tokens": answer.completion_tokens,
-                            },
-                        })), false);
+                        complete_op(
+                            &entry_clone,
+                            Ok(serde_json::json!({
+                                "answer": answer.answer,
+                                "used_citations": answer.used_citations,
+                                "executed_on": answer.executed_on,
+                                "execution": "ON_DEVICE",
+                                "citations": citations,
+                                "usage": {
+                                    "prompt_tokens": answer.prompt_tokens,
+                                    "completion_tokens": answer.completion_tokens,
+                                },
+                            })),
+                            false,
+                        );
                     }
                     Err(e) => {
-                        let cancelled = e == "cancelled"
-                            || e.to_lowercase().contains("cancelled");
+                        let cancelled = e == "cancelled" || e.to_lowercase().contains("cancelled");
                         if cancelled {
                             if let Some(run) = &run_id {
                                 // Durable trace of the user-driven stop.
                                 let _ = append_run_event(
-                                    &agent_log, &data_root, run, EventType::RunTransition,
+                                    &agent_log,
+                                    &data_root,
+                                    run,
+                                    EventType::RunTransition,
                                     EventPayload::Transition {
                                         from_state: RunState::Running,
                                         to_state: RunState::Paused,
@@ -1434,7 +1712,9 @@ fn dispatch(
         "op.start_ingest" => {
             let sources = parse_sources(args)?;
             let (op_id, entry) = register_op("ingest");
-            let knowledge = ws.knowledge.clone()
+            let knowledge = ws
+                .knowledge
+                .clone()
                 .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
             let progress = entry.progress.clone();
             let entry_clone = entry.clone();
@@ -1449,7 +1729,9 @@ fn dispatch(
             Ok(serde_json::json!({ "op_id": op_id }))
         }
         "op.status" => {
-            let op_id = args.get("op_id").and_then(|v| v.as_str())
+            let op_id = args
+                .get("op_id")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing op_id".into()))?;
             let ops = ops_registry().lock().unwrap();
             let entry = ops
@@ -1458,7 +1740,9 @@ fn dispatch(
             Ok(op_status_json(op_id, entry))
         }
         "op.cancel" => {
-            let op_id = args.get("op_id").and_then(|v| v.as_str())
+            let op_id = args
+                .get("op_id")
+                .and_then(|v| v.as_str())
                 .ok_or_else(|| HarborError::Other("missing op_id".into()))?;
             let ops = ops_registry().lock().unwrap();
             let entry = ops
@@ -1469,10 +1753,8 @@ fn dispatch(
         }
         "op.list" => {
             let ops = ops_registry().lock().unwrap();
-            let list: Vec<serde_json::Value> = ops
-                .iter()
-                .map(|(id, e)| op_status_json(id, e))
-                .collect();
+            let list: Vec<serde_json::Value> =
+                ops.iter().map(|(id, e)| op_status_json(id, e)).collect();
             Ok(serde_json::json!({ "ops": list }))
         }
         // --- activity ---------------------------------------------------
@@ -1491,8 +1773,7 @@ fn dispatch(
                     }))
                 })
                 .map_err(|e| HarborError::Other(format!("db: {e}")))?;
-            let runs: Vec<serde_json::Value> =
-                rows.filter_map(|r| r.ok()).collect();
+            let runs: Vec<serde_json::Value> = rows.filter_map(|r| r.ok()).collect();
             Ok(serde_json::json!({ "runs": runs }))
         }
         "run.replay" => {
@@ -1543,7 +1824,9 @@ fn truncate_for_trail(s: &str, max: usize) -> String {
     }
 }
 
-fn parse_sources(args: &serde_json::Value) -> Result<Vec<crate::knowledge::SourceInput>, HarborError> {
+fn parse_sources(
+    args: &serde_json::Value,
+) -> Result<Vec<crate::knowledge::SourceInput>, HarborError> {
     Ok(args
         .get("sources")
         .and_then(|v| v.as_array())
@@ -1551,9 +1834,18 @@ fn parse_sources(args: &serde_json::Value) -> Result<Vec<crate::knowledge::Sourc
         .iter()
         .map(|s| {
             (
-                s.get("id").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
-                s.get("title").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
-                s.get("text").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
+                s.get("id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default()
+                    .to_string(),
+                s.get("title")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default()
+                    .to_string(),
+                s.get("text")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default()
+                    .to_string(),
             )
         })
         .collect())
@@ -1599,9 +1891,8 @@ mod trust_persistence_tests {
     fn hub_token_and_catalog_trust_survive_restart() {
         let dir = tempfile::tempdir().unwrap();
         let root = dir.path();
-        let ks: Arc<dyn KeyStore> = Arc::new(
-            harbor_store::keys::FileKeyStore::new(root.join("keys")).unwrap(),
-        );
+        let ks: Arc<dyn KeyStore> =
+            Arc::new(harbor_store::keys::FileKeyStore::new(root.join("keys")).unwrap());
 
         // Hub token round-trip: stored wrapped, loaded decrypted.
         save_hub_token(root, &ks, Some("hf_tok_123")).unwrap();
@@ -1612,10 +1903,14 @@ mod trust_persistence_tests {
         // Catalog trust round-trip: epoch monotonicity survives restarts.
         let key = harbor_modelhub::catalog_signing::CatalogSigningKey::from_secret_bytes(&[7; 32]);
         let root_hex = hex_encode(&key.public_bytes());
-        let mut verifier = harbor_modelhub::catalog_signing::CatalogVerifier::new(&root_hex).unwrap();
+        let mut verifier =
+            harbor_modelhub::catalog_signing::CatalogVerifier::new(&root_hex).unwrap();
         let entries = harbor_canonical::parse(r#"{"packages":[]}"#).unwrap();
         let catalog = harbor_modelhub::catalog_signing::sign_catalog(
-            &key, 4, "2026-09-12T00:00:00Z", entries.clone(),
+            &key,
+            4,
+            "2026-09-12T00:00:00Z",
+            entries.clone(),
         )
         .unwrap();
         verifier.verify(&catalog).unwrap();
@@ -1627,7 +1922,10 @@ mod trust_persistence_tests {
         assert_eq!(restored.accepted_epoch, 4);
         assert_eq!(restored_entries, entries);
         let stale = harbor_modelhub::catalog_signing::sign_catalog(
-            &key, 2, "2026-09-12T00:00:00Z", entries,
+            &key,
+            2,
+            "2026-09-12T00:00:00Z",
+            entries,
         )
         .unwrap();
         assert!(matches!(
@@ -1643,7 +1941,10 @@ mod trust_persistence_tests {
         let b = ensure_device_identity(dir.path()).unwrap();
         assert_eq!(a, b, "device id must be stable across opens");
         assert!(a.starts_with("device-"));
-        assert_ne!(a, ensure_device_identity(&tempfile::tempdir().unwrap().path()).unwrap());
+        assert_ne!(
+            a,
+            ensure_device_identity(tempfile::tempdir().unwrap().path()).unwrap()
+        );
     }
 
     #[test]
@@ -1664,22 +1965,32 @@ mod trust_persistence_tests {
         }
         // Upgrade: the embedding layer injects an OS-keystore root.
         let new_root = harbor_store::keys::KeyMaterial::random();
-        let injected: Arc<dyn KeyStore> =
-            Arc::new(harbor_store::native_keystore::InjectedKeyStore::new(new_root));
+        let injected: Arc<dyn KeyStore> = Arc::new(
+            harbor_store::native_keystore::InjectedKeyStore::new(new_root),
+        );
         rotate_file_root_to_native(root, &injected).unwrap();
         // The file root is gone; the workspace opens under the injected
         // root and the blob is still readable.
-        assert!(!FileKeyStore::new(root.join("keys")).unwrap().exists("harbor.device"));
+        assert!(!FileKeyStore::new(root.join("keys"))
+            .unwrap()
+            .exists("harbor.device"));
         let opts = OpenOptions {
             data_root: root.to_path_buf(),
             device_id: "dev".into(),
         };
-        let ws = harbor_core::Workspace::open_with_keystore(&opts, "ws-rot", PrivacyMode::LocalOnly, injected)
-            .unwrap();
+        let ws = harbor_core::Workspace::open_with_keystore(
+            &opts,
+            "ws-rot",
+            PrivacyMode::LocalOnly,
+            injected,
+        )
+        .unwrap();
         let blob = ws.blobs().list("ws-rot").unwrap();
         assert_eq!(blob.len(), 1);
         assert_eq!(
-            ws.blobs().get("ws-rot", &blob[0], &Default::default()).unwrap(),
+            ws.blobs()
+                .get("ws-rot", &blob[0], &Default::default())
+                .unwrap(),
             b"precious"
         );
     }
@@ -1689,12 +2000,12 @@ mod trust_persistence_tests {
         // The dispatcher mints random ids; two calls never collide.
         let args_missing = serde_json::json!({});
         let generated: Vec<String> = (0..2)
-            .map(|_| {
-                match args_missing.get("run_id").and_then(|v| v.as_str()) {
+            .map(
+                |_| match args_missing.get("run_id").and_then(|v| v.as_str()) {
                     Some(r) if !r.is_empty() => r.to_string(),
                     _ => harbor_security::HarborId::generate("run").to_string(),
-                }
-            })
+                },
+            )
             .collect();
         assert_ne!(generated[0], generated[1]);
         assert!(generated[0].starts_with("run-"));

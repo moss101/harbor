@@ -37,6 +37,7 @@ harbor_modelhub = { path = "harbor_modelhub" }
 harbor_inference = { path = "harbor_inference" }
 harbor_render = { path = "harbor_render" }
 harbor_core = { path = "harbor_core" }
+harbor_ffi = { path = "harbor_ffi" }
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

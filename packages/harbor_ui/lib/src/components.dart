@@ -22,7 +22,8 @@ class StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = HarborTheme.of(context);
-    final (Color text, Color fill, Color border, IconData icon) = switch (semantic) {
+    final (Color text, Color fill, Color border, IconData icon) =
+        switch (semantic) {
       ExecutionSemantic.local => (
           t.colors.statusLocalText,
           t.colors.statusLocalFill,
@@ -113,7 +114,8 @@ class TrustPulse extends StatelessWidget {
           Row(children: [
             Icon(Icons.shield_outlined, size: 14, color: t.colors.inkMuted),
             const SizedBox(width: HarborSpace.s1),
-            Expanded(child: Text(policyLabel, style: t.text.smallOf(t.colors.ink))),
+            Expanded(
+                child: Text(policyLabel, style: t.text.smallOf(t.colors.ink))),
           ]),
           const SizedBox(height: HarborSpace.s2),
           StatusBadge(semantic: executionSemantic, label: executionLabel),
@@ -149,23 +151,24 @@ class HarborRail extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.all(HarborSpace.s4),
-            child: Text('Harbor',
-                style: t.text.h2Of(t.colors.brand)),
+            child: Text('Harbor', style: t.text.h2Of(t.colors.brand)),
           ),
           for (final (i, d) in destinations.indexed)
             Padding(
               padding: const EdgeInsets.symmetric(
                   horizontal: HarborSpace.s2, vertical: 2),
               child: Material(
-                color: i == selectedIndex ? t.colors.brandSoft : Colors.transparent,
+                color: i == selectedIndex
+                    ? t.colors.brandSoft
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(HarborRadius.sm),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(HarborRadius.sm),
                   onTap: () => onSelected(i),
                   child: Container(
                     constraints: const BoxConstraints(minHeight: 44),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: HarborSpace.s3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: HarborSpace.s3),
                     child: Row(children: [
                       Icon(d.icon,
                           size: 18,
@@ -218,7 +221,9 @@ class RunTrail extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: HarborSpace.s3),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Column(children: [
-                Icon(e.icon, size: 15, color: e.failed ? t.colors.danger : t.colors.brand),
+                Icon(e.icon,
+                    size: 15,
+                    color: e.failed ? t.colors.danger : t.colors.brand),
                 if (i != entries.length - 1)
                   Container(
                     width: 1,
@@ -233,7 +238,8 @@ class RunTrail extends StatelessWidget {
                   children: [
                     Text(e.text, style: t.text.smallOf(t.colors.ink)),
                     if (e.detail != null)
-                      Text(e.detail!, style: t.text.captionOf(t.colors.inkMuted)),
+                      Text(e.detail!,
+                          style: t.text.captionOf(t.colors.inkMuted)),
                   ],
                 ),
               ),
@@ -245,7 +251,8 @@ class RunTrail extends StatelessWidget {
 }
 
 class RunTrailEntry {
-  const RunTrailEntry(this.text, {this.detail, this.failed = false, this.icon = Icons.circle_outlined});
+  const RunTrailEntry(this.text,
+      {this.detail, this.failed = false, this.icon = Icons.circle_outlined});
   final String text;
   final String? detail;
   final bool failed;
@@ -411,7 +418,8 @@ class HarborEmptyState extends StatelessWidget {
     // Scrollable so 200% scaled text never clips (accessibility §27).
     return SingleChildScrollView(
       child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height * 0.4),
+        constraints:
+            BoxConstraints(minHeight: MediaQuery.of(context).size.height * 0.4),
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(HarborSpace.s8),
@@ -420,7 +428,9 @@ class HarborEmptyState extends StatelessWidget {
               children: [
                 Icon(Icons.inbox_outlined, size: 32, color: t.colors.inkMuted),
                 const SizedBox(height: HarborSpace.s3),
-                Text(title, style: t.text.h2Of(t.colors.ink), textAlign: TextAlign.center),
+                Text(title,
+                    style: t.text.h2Of(t.colors.ink),
+                    textAlign: TextAlign.center),
                 const SizedBox(height: HarborSpace.s2),
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
@@ -455,7 +465,8 @@ class HarborErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            StatusBadge(semantic: ExecutionSemantic.danger, label: 'Something failed'),
+            const StatusBadge(
+                semantic: ExecutionSemantic.danger, label: 'Something failed'),
             const SizedBox(height: HarborSpace.s3),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
@@ -509,7 +520,8 @@ class ArtifactDiffView extends StatelessWidget {
                 spacing: HarborSpace.s4,
                 children: [
                   Text('base: $baseVersion'),
-                  Text('proposed: ${proposedHash.length >= 16 ? proposedHash.substring(0, 16) : proposedHash}…'),
+                  Text(
+                      'proposed: ${proposedHash.length >= 16 ? proposedHash.substring(0, 16) : proposedHash}…'),
                 ],
               ),
             ),
@@ -526,19 +538,24 @@ class ArtifactDiffView extends StatelessWidget {
                         size: 14, color: t.colors.brand),
                     const SizedBox(width: HarborSpace.s2),
                     Expanded(
-                        child: Text(e.summary, style: t.text.smallOf(t.colors.ink))),
+                        child: Text(e.summary,
+                            style: t.text.smallOf(t.colors.ink))),
                   ]),
                   if (e.before != null)
                     Padding(
-                      padding: const EdgeInsets.only(left: HarborSpace.s5, top: 2),
+                      padding:
+                          const EdgeInsets.only(left: HarborSpace.s5, top: 2),
                       child: Text('- ${e.before}',
-                          style: t.text.monoOf(t.colors.statusDangerText, size: 12)),
+                          style: t.text
+                              .monoOf(t.colors.statusDangerText, size: 12)),
                     ),
                   if (e.after != null)
                     Padding(
-                      padding: const EdgeInsets.only(left: HarborSpace.s5, top: 2),
+                      padding:
+                          const EdgeInsets.only(left: HarborSpace.s5, top: 2),
                       child: Text('+ ${e.after}',
-                          style: t.text.monoOf(t.colors.statusLocalText, size: 12)),
+                          style: t.text
+                              .monoOf(t.colors.statusLocalText, size: 12)),
                     ),
                 ],
               ),

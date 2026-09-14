@@ -44,7 +44,10 @@ impl RunState {
     }
 
     pub fn is_terminal(self) -> bool {
-        matches!(self, RunState::Completed | RunState::Failed | RunState::Cancelled)
+        matches!(
+            self,
+            RunState::Completed | RunState::Failed | RunState::Cancelled
+        )
     }
 
     /// Closed transition graph from the authority.
@@ -120,7 +123,10 @@ impl PauseReason {
 #[derive(Debug, thiserror::Error)]
 pub enum StateError {
     #[error("illegal run transition {from} -> {to}")]
-    IllegalTransition { from: &'static str, to: &'static str },
+    IllegalTransition {
+        from: &'static str,
+        to: &'static str,
+    },
     #[error("pause requires a persisted reason; {from} -> PAUSED missing/invalid reason")]
     MissingPauseReason { from: &'static str },
     #[error("CANCELLING -> PAUSED requires reason cancellation_unacknowledged, got {0}")]

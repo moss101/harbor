@@ -37,10 +37,6 @@ fn thermal_sample() -> (u32, String) {
     (100, "no CPU power status recorded (unthrottled)".into())
 }
 
-fn thermal_cpu_limit() -> u32 {
-    thermal_sample().0
-}
-
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let repo_root = args.get(1).expect("repo_root").clone();
@@ -55,7 +51,9 @@ fn main() {
     {
         let file = "qwen2.5-1.5b-instruct-q4_k_m.gguf";
         let bytes = std::fs::read(
-            std::path::Path::new(&repo_root).join("fixtures/models").join(file),
+            std::path::Path::new(&repo_root)
+                .join("fixtures/models")
+                .join(file),
         )
         .expect("qwen fixture");
         let manifest = harbor_modelhub::install::PackageManifest {
@@ -75,12 +73,18 @@ fn main() {
             },
         };
         let mut staged = installer.begin("qwen2.5-1.5b-instruct").unwrap();
-        installer.ingest_file(&mut staged, &manifest.files[0], &bytes).unwrap();
-        installer.commit(&mut staged, &manifest, chrono::Utc::now()).unwrap();
+        installer
+            .ingest_file(&mut staged, &manifest.files[0], &bytes)
+            .unwrap();
+        installer
+            .commit(&mut staged, &manifest, chrono::Utc::now())
+            .unwrap();
     }
 
     let provider = GgufLlamaCppProvider::new(&models_root).unwrap();
-    let m = ModelRef::InstalledPackage { package_id: "qwen2.5-1.5b-instruct".into() };
+    let m = ModelRef::InstalledPackage {
+        package_id: "qwen2.5-1.5b-instruct".into(),
+    };
     provider.load(&m).unwrap();
 
     let run_duration = Duration::from_secs(600);
@@ -96,7 +100,10 @@ fn main() {
             model: m.clone(),
             messages: vec![JsonValue::object([
                 ("role", JsonValue::str("user")),
-                ("content", JsonValue::str("Write a short story about a dog who sails the sea.")),
+                (
+                    "content",
+                    JsonValue::str("Write a short story about a dog who sails the sea."),
+                ),
             ])],
             max_tokens: 128,
             temperature: 0.0,
@@ -137,5 +144,8 @@ fn main() {
     let out = std::path::Path::new(&repo_root).join("evidence/thermal_baseline.json");
     std::fs::write(&out, serde_json::to_string_pretty(&report).unwrap()).unwrap();
     println!("written {}", out.display());
-    println!("min CPU speed limit: {min_limit}% over {} generations", generations);
+    println!(
+        "min CPU speed limit: {min_limit}% over {} generations",
+        generations
+    );
 }

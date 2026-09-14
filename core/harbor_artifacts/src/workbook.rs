@@ -90,19 +90,26 @@ impl WorkbookDoc {
     pub fn load(bytes: &[u8]) -> Result<Self, WorkbookError> {
         let book = xlsx_reader::read_reader(&mut Cursor::new(bytes), true)
             .map_err(|e| WorkbookError::Load(e.to_string()))?;
-        let mut archive =
-            zip::ZipArchive::new(Cursor::new(bytes)).map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+        let mut archive = zip::ZipArchive::new(Cursor::new(bytes))
+            .map_err(|e| WorkbookError::BadZip(e.to_string()))?;
         let mut sheets = BTreeMap::new();
-        for name in book.get_sheet_collection().iter().map(|s| s.get_name().to_string()) {
-            let mut data = SheetData { name: name.clone(), cells: BTreeMap::new() };
-            if let Ok(sheet) = book.get_sheet_by_name(&name) {
-                let (max_col, max_row) = sheet.get_highest_column_and_row();
+        for name in book.sheet_collection().iter().map(|s| s.name().to_string()) {
+            let mut data = SheetData {
+                name: name.clone(),
+                cells: BTreeMap::new(),
+            };
+            if let Ok(sheet) = book.sheet_by_name(&name) {
+                let (max_col, max_row) = sheet.highest_column_and_row();
                 for row in 1..=max_row {
                     for col in 1..=max_col {
-                        if let Some(cell) = sheet.get_cell((col, row)) {
-                            let f: &str = cell.get_formula();
-                            let formula = if f.is_empty() { None } else { Some(f.to_string()) };
-                            let value = cell.get_value();
+                        if let Some(cell) = sheet.cell((col, row)) {
+                            let f: &str = cell.formula();
+                            let formula = if f.is_empty() {
+                                None
+                            } else {
+                                Some(f.to_string())
+                            };
+                            let value = cell.value();
                             let cached = if value.is_empty() {
                                 None
                             } else {
@@ -133,19 +140,23 @@ impl WorkbookDoc {
             }
         }
         drop(archive);
-        Ok(WorkbookDoc { book, sheets, original })
+        Ok(WorkbookDoc {
+            book,
+            sheets,
+            original,
+        })
     }
 
     /// Parts of the loaded package the edit backend does not model (they
     /// will be carried over verbatim on save).
     pub fn unmodeled_parts(&self) -> Vec<String> {
-        unmodeled_candidates(&self.original)
-            .into_keys()
-            .collect()
+        unmodeled_candidates(&self.original).into_keys().collect()
     }
 
     pub fn sheet(&self, name: &str) -> Result<&SheetData, WorkbookError> {
-        self.sheets.get(name).ok_or_else(|| WorkbookError::SheetNotFound(name.into()))
+        self.sheets
+            .get(name)
+            .ok_or_else(|| WorkbookError::SheetNotFound(name.into()))
     }
 
     pub fn sheet_names(&self) -> Vec<String> {
@@ -163,28 +174,41 @@ impl WorkbookDoc {
     ) -> Result<CellValue, WorkbookError> {
         let idx = self
             .book
-            .get_sheet_collection()
+            .sheet_collection()
             .iter()
-            .position(|s| s.get_name() == sheet)
+            .position(|s| s.name() == sheet)
             .ok_or_else(|| WorkbookError::SheetNotFound(sheet.into()))?;
-        let s = self.book.get_sheet_mut(&idx).map_err(|e| WorkbookError::Load(e.to_string()))?;
+        let s = self
+            .book
+            .sheet_mut(idx)
+            .map_err(|e| WorkbookError::Load(e.to_string()))?;
         match &set {
             CellSet::Formula(f) => {
-                s.get_cell_mut((col, row)).set_formula(f);
+                s.cell_mut((col, row)).set_formula(f);
             }
             CellSet::Value(v) => {
-                let mut cell = s.get_cell_mut((col, row));
+                let cell = s.cell_mut((col, row));
                 match v {
-                    CellValue::Blank => { cell.set_value(""); }
-                    CellValue::Number(n) => { cell.set_value_number(*n); }
-                    CellValue::Text(t) => { cell.set_value(t); }
-                    CellValue::Bool(b) => { cell.set_value(if *b { "TRUE" } else { "FALSE" }); }
-                    CellValue::Error(_) => return Err(WorkbookError::BadRef("error literal set".into())),
+                    CellValue::Blank => {
+                        cell.set_value("");
+                    }
+                    CellValue::Number(n) => {
+                        cell.set_value_number(*n);
+                    }
+                    CellValue::Text(t) => {
+                        cell.set_value(t);
+                    }
+                    CellValue::Bool(b) => {
+                        cell.set_value(if *b { "TRUE" } else { "FALSE" });
+                    }
+                    CellValue::Error(_) => {
+                        return Err(WorkbookError::BadRef("error literal set".into()))
+                    }
                 }
             }
         }
         // Recalculate through the pinned engine on an in-memory copy.
-        let bytes = self.to_bytes()?;
+        let _bytes = self.to_bytes()?;
         let mut calc = harbor_formula::engine::HarborWorkbook::new();
         calc.add_sheet(sheet);
         // Rebuild the engine inputs from the loaded workbook for the target
@@ -224,18 +248,31 @@ impl WorkbookDoc {
             let keep_formula = set.clone();
             let idx = self
                 .book
-                .get_sheet_collection()
+                .sheet_collection()
                 .iter()
-                .position(|s| s.get_name() == sheet)
+                .position(|s| s.name() == sheet)
                 .ok_or_else(|| WorkbookError::SheetNotFound(sheet.into()))?;
-            let cell_ref = self.book.get_sheet_mut(&idx).map_err(|e| WorkbookError::Load(e.to_string()))?;
-            let cell = cell_ref.get_cell_mut((col, row));
+            let cell_ref = self
+                .book
+                .sheet_mut(idx)
+                .map_err(|e| WorkbookError::Load(e.to_string()))?;
+            let cell = cell_ref.cell_mut((col, row));
             match &computed {
-                CellValue::Blank => { cell.set_value(""); }
-                CellValue::Number(n) => { cell.set_value(format!("{n}")); }
-                CellValue::Text(t) => { cell.set_value(t); }
-                CellValue::Bool(b) => { cell.set_value(if *b { "TRUE" } else { "FALSE" }); }
-                CellValue::Error(e) => { cell.set_value(e.code()); }
+                CellValue::Blank => {
+                    cell.set_value("");
+                }
+                CellValue::Number(n) => {
+                    cell.set_value(format!("{n}"));
+                }
+                CellValue::Text(t) => {
+                    cell.set_value(t);
+                }
+                CellValue::Bool(b) => {
+                    cell.set_value(if *b { "TRUE" } else { "FALSE" });
+                }
+                CellValue::Error(e) => {
+                    cell.set_value(e.code());
+                }
             }
             // umya's set_value clears the formula; re-apply it so the cell
             // remains a formula cell with a cached value.
@@ -258,7 +295,9 @@ impl WorkbookDoc {
         let mut buf = std::io::BufWriter::new(Cursor::new(Vec::new()));
         xlsx_writer::write_writer(&self.book, &mut buf)
             .map_err(|e| WorkbookError::Load(e.to_string()))?;
-        let inner = buf.into_inner().map_err(|e| WorkbookError::Load(e.to_string()))?;
+        let inner = buf
+            .into_inner()
+            .map_err(|e| WorkbookError::Load(e.to_string()))?;
         let emitted = inner.into_inner();
         merge_carried_parts(emitted, &self.original)
     }
@@ -270,7 +309,9 @@ impl WorkbookDoc {
     /// Recalculate EVERY formula cell through the pinned engine and persist
     /// the results as cached values (recalc + save-reload consistency).
     /// Returns (cell -> value) for all formula cells.
-    pub fn recalculate_all(&mut self) -> Result<BTreeMap<(String, u32, u32), CellValue>, WorkbookError> {
+    pub fn recalculate_all(
+        &mut self,
+    ) -> Result<BTreeMap<(String, u32, u32), CellValue>, WorkbookError> {
         // Refresh the sheet snapshot from the live book first.
         self.refresh_snapshot()?;
         let bytes = self.to_bytes()?;
@@ -318,18 +359,31 @@ impl WorkbookDoc {
             let v = calc.evaluate_cell(name, *r, *c);
             let i = self
                 .book
-                .get_sheet_collection()
+                .sheet_collection()
                 .iter()
-                .position(|s| s.get_name() == name)
+                .position(|s| s.name() == name)
                 .ok_or_else(|| WorkbookError::SheetNotFound(name.into()))?;
-            let sheet = self.book.get_sheet_mut(&i).map_err(|e| WorkbookError::Load(e.to_string()))?;
-            let cell = sheet.get_cell_mut((*c, *r));
+            let sheet = self
+                .book
+                .sheet_mut(i)
+                .map_err(|e| WorkbookError::Load(e.to_string()))?;
+            let cell = sheet.cell_mut((*c, *r));
             match &v {
-                CellValue::Blank => { cell.set_value(""); }
-                CellValue::Number(n) => { cell.set_value(format!("{n}")); }
-                CellValue::Text(t) => { cell.set_value(t); }
-                CellValue::Bool(b) => { cell.set_value(if *b { "TRUE" } else { "FALSE" }); }
-                CellValue::Error(e) => { cell.set_value(e.code()); }
+                CellValue::Blank => {
+                    cell.set_value("");
+                }
+                CellValue::Number(n) => {
+                    cell.set_value(format!("{n}"));
+                }
+                CellValue::Text(t) => {
+                    cell.set_value(t);
+                }
+                CellValue::Bool(b) => {
+                    cell.set_value(if *b { "TRUE" } else { "FALSE" });
+                }
+                CellValue::Error(e) => {
+                    cell.set_value(e.code());
+                }
             }
             if !formula.is_empty() {
                 cell.set_formula(&formula);
@@ -354,13 +408,16 @@ impl WorkbookDoc {
     ) -> Result<(), WorkbookError> {
         let idx = self
             .book
-            .get_sheet_collection()
+            .sheet_collection()
             .iter()
-            .position(|s| s.get_name() == sheet)
+            .position(|s| s.name() == sheet)
             .ok_or_else(|| WorkbookError::SheetNotFound(sheet.into()))?;
-        let s = self.book.get_sheet_mut(&idx).map_err(|e| WorkbookError::Load(e.to_string()))?;
-        use umya_spreadsheet::structs::{Chart, ChartType};
+        let s = self
+            .book
+            .sheet_mut(idx)
+            .map_err(|e| WorkbookError::Load(e.to_string()))?;
         use umya_spreadsheet::structs::drawing::spreadsheet::MarkerType;
+        use umya_spreadsheet::structs::{Chart, ChartType};
         let mut from_marker = MarkerType::default();
         from_marker.set_coordinate(from);
         let mut to_marker = MarkerType::default();
@@ -394,8 +451,8 @@ impl WorkbookDoc {
 
     /// Count chart parts in raw xlsx bytes (round-trip conformance check).
     pub fn count_charts_in_bytes(bytes: &[u8]) -> Result<usize, WorkbookError> {
-        let mut ar =
-            zip::ZipArchive::new(Cursor::new(bytes)).map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+        let mut ar = zip::ZipArchive::new(Cursor::new(bytes))
+            .map_err(|e| WorkbookError::BadZip(e.to_string()))?;
         let mut count = 0usize;
         for i in 0..ar.len() {
             let name = ar
@@ -412,17 +469,33 @@ impl WorkbookDoc {
 
     fn refresh_snapshot(&mut self) -> Result<(), WorkbookError> {
         let mut sheets = BTreeMap::new();
-        for name in self.book.get_sheet_collection().iter().map(|s| s.get_name().to_string()) {
-            let mut data = SheetData { name: name.clone(), cells: BTreeMap::new() };
-            if let Ok(sheet) = self.book.get_sheet_by_name(&name) {
-                let (max_col, max_row) = sheet.get_highest_column_and_row();
+        for name in self
+            .book
+            .sheet_collection()
+            .iter()
+            .map(|s| s.name().to_string())
+        {
+            let mut data = SheetData {
+                name: name.clone(),
+                cells: BTreeMap::new(),
+            };
+            if let Ok(sheet) = self.book.sheet_by_name(&name) {
+                let (max_col, max_row) = sheet.highest_column_and_row();
                 for row in 1..=max_row {
                     for col in 1..=max_col {
-                        if let Some(cell) = sheet.get_cell((col, row)) {
-                            let f: &str = cell.get_formula();
-                            let formula = if f.is_empty() { None } else { Some(f.to_string()) };
-                            let value = cell.get_value();
-                            let cached = if value.is_empty() { None } else { Some(string_to_value(&value)) };
+                        if let Some(cell) = sheet.cell((col, row)) {
+                            let f: &str = cell.formula();
+                            let formula = if f.is_empty() {
+                                None
+                            } else {
+                                Some(f.to_string())
+                            };
+                            let value = cell.value();
+                            let cached = if value.is_empty() {
+                                None
+                            } else {
+                                Some(string_to_value(&value))
+                            };
                             if formula.is_some() || cached.is_some() {
                                 data.cells.insert((col, row), SheetCell { formula, cached });
                             }
@@ -444,7 +517,12 @@ pub enum CellSet {
 }
 
 pub enum WorkbookOp {
-    CellSet { sheet: String, row: u32, col: u32, set: CellSet },
+    CellSet {
+        sheet: String,
+        row: u32,
+        col: u32,
+        set: CellSet,
+    },
 }
 
 fn string_to_value(s: &str) -> CellValue {
@@ -494,11 +572,7 @@ const MODELED_PREFIXES: &[&str] = &[
 fn unmodeled_candidates(original: &BTreeMap<String, Vec<u8>>) -> BTreeMap<String, Vec<u8>> {
     original
         .iter()
-        .filter(|(name, _)| {
-            !MODELED_PREFIXES
-                .iter()
-                .any(|p| name.starts_with(p))
-        })
+        .filter(|(name, _)| !MODELED_PREFIXES.iter().any(|p| name.starts_with(p)))
         .map(|(k, v)| (k.clone(), v.clone()))
         .collect()
 }
@@ -546,7 +620,10 @@ fn merge_carried_parts(
             Some((dir, _)) => dir.trim_end_matches('/').to_string(),
             None => continue,
         };
-        for rel in doc.descendants().filter(|n| n.tag_name().name() == "Relationship") {
+        for rel in doc
+            .descendants()
+            .filter(|n| n.tag_name().name() == "Relationship")
+        {
             if rel.attribute("TargetMode") == Some("External") {
                 continue;
             }
@@ -568,10 +645,11 @@ fn merge_carried_parts(
                 }
             }
             let rtype = rel.attribute("Type").unwrap_or("").to_string();
-            restorations
-                .entry(rels_name.clone())
-                .or_default()
-                .push((id.to_string(), rtype, target.to_string()));
+            restorations.entry(rels_name.clone()).or_default().push((
+                id.to_string(),
+                rtype,
+                target.to_string(),
+            ));
         }
     }
     for (rels_name, entries) in &restorations {
@@ -584,9 +662,7 @@ fn merge_carried_parts(
 
     let carried: Vec<(String, Vec<u8>)> = original
         .iter()
-        .filter(|(name, _)| {
-            !out_names.contains(*name) && !restorations.contains_key(*name)
-        })
+        .filter(|(name, _)| !out_names.contains(*name) && !restorations.contains_key(*name))
         .map(|(k, v)| (k.clone(), v.clone()))
         .collect();
     if carried.is_empty() && restorations.is_empty() {
@@ -601,7 +677,8 @@ fn merge_carried_parts(
             .by_name("[Content_Types].xml")
             .map_err(zip_err)?;
         let mut s = String::new();
-        f.read_to_string(&mut s).map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+        f.read_to_string(&mut s)
+            .map_err(|e| WorkbookError::BadZip(e.to_string()))?;
         s
     };
     if let Some(orig_ct) = original.get("[Content_Types].xml") {
@@ -659,11 +736,11 @@ fn merge_carried_parts(
             let mut merged = existing.clone();
             if let Some(entries) = restorations.get(&name) {
                 for (id, rtype, target) in entries {
-                    let tag = format!(
-                        "<Relationship Id=\"{id}\" Type=\"{rtype}\" Target=\"{target}\"/>"
-                    );
+                    let tag =
+                        format!("<Relationship Id=\"{id}\" Type=\"{rtype}\" Target=\"{target}\"/>");
                     if !merged.contains(&format!("Id=\"{id}\"")) {
-                        merged = merged.replace("</Relationships>", &format!("{tag}</Relationships>"));
+                        merged =
+                            merged.replace("</Relationships>", &format!("{tag}</Relationships>"));
                     }
                 }
             }
@@ -698,7 +775,9 @@ fn merge_carried_parts(
     }
     for (name, bytes) in &carried {
         writer.start_file(name.clone(), opts).map_err(zip_err)?;
-        writer.write_all(bytes).map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+        writer
+            .write_all(bytes)
+            .map_err(|e| WorkbookError::BadZip(e.to_string()))?;
     }
     let report = PreservationReport {
         carried_parts: carried.iter().map(|(n, _)| n.clone()).collect(),
@@ -761,7 +840,12 @@ fn replace_override_content_type(xml: &str, part_name: &str, new_ct: &str) -> St
         }
         None => tag.to_string(),
     };
-    format!("{}{}{}", &xml[..start], rebuilt, &xml[start + tag_end_off..])
+    format!(
+        "{}{}{}",
+        &xml[..start],
+        rebuilt,
+        &xml[start + tag_end_off..]
+    )
 }
 
 #[cfg(test)]
@@ -803,7 +887,13 @@ mod tests {
         // Save and reload: recalculated cached values persist.
         let out = doc.to_bytes().unwrap();
         let reloaded = WorkbookDoc::load(&out).unwrap();
-        let cell = reloaded.sheet("Sheet1").unwrap().cells.get(&(1, 3)).unwrap().clone();
+        let cell = reloaded
+            .sheet("Sheet1")
+            .unwrap()
+            .cells
+            .get(&(1, 3))
+            .unwrap()
+            .clone();
         assert_eq!(cell.cached, Some(CellValue::Number(35.0)));
     }
 

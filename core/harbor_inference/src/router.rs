@@ -2,7 +2,7 @@
 //! Substitution of a missing model/provider requires explicit policy AND
 //! is surfaced visibly (Substitution record the UI must show).
 
-use crate::provider::{Capabilities, ChatRequest, ChatResponse, ModelProvider, ModelRef, ProviderError};
+use crate::provider::{ChatRequest, ChatResponse, ModelProvider, ModelRef, ProviderError};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Substitution {
@@ -26,7 +26,10 @@ pub struct Router {
 
 impl Router {
     pub fn new(policy: RouterPolicy) -> Self {
-        Router { policy, providers: Vec::new() }
+        Router {
+            policy,
+            providers: Vec::new(),
+        }
     }
 
     pub fn register(&mut self, provider: Box<dyn ModelProvider>) {
@@ -54,10 +57,8 @@ impl Router {
                     if candidate == req.model {
                         continue;
                     }
-                    let all_supported = req
-                        .requires
-                        .iter()
-                        .all(|need| p.supports(&candidate, need));
+                    let all_supported =
+                        req.requires.iter().all(|need| p.supports(&candidate, need));
                     if all_supported && p.load(&candidate).is_ok() {
                         let mut executed_req = req.clone();
                         executed_req.model = candidate.clone();
@@ -96,12 +97,16 @@ fn candidate_refs(req: &ChatRequest) -> Vec<ModelRef> {
 mod tests {
     use super::*;
     use crate::backend::TestBackend;
+    use crate::provider::Capabilities;
     use harbor_canonical::JsonValue;
 
     fn req(model: ModelRef) -> ChatRequest {
         ChatRequest {
             model,
-            messages: vec![JsonValue::object([("role", JsonValue::str("user")), ("content", JsonValue::str("summarize"))])],
+            messages: vec![JsonValue::object([
+                ("role", JsonValue::str("user")),
+                ("content", JsonValue::str("summarize")),
+            ])],
             max_tokens: 64,
             temperature: 0.2,
             requires: vec![Capabilities::Chat],
@@ -112,9 +117,16 @@ mod tests {
     fn exact_policy_never_substitutes() {
         let mut r = Router::new(RouterPolicy::ExactOnly);
         r.register(Box::new(TestBackend::default().with_packages(&["pkg-a"])));
-        let missing = req(ModelRef::InstalledPackage { package_id: "pkg-z".into() });
-        assert!(matches!(r.chat(missing), Err(ProviderError::ModelNotFound(_))));
-        let present = req(ModelRef::InstalledPackage { package_id: "pkg-a".into() });
+        let missing = req(ModelRef::InstalledPackage {
+            package_id: "pkg-z".into(),
+        });
+        assert!(matches!(
+            r.chat(missing),
+            Err(ProviderError::ModelNotFound(_))
+        ));
+        let present = req(ModelRef::InstalledPackage {
+            package_id: "pkg-a".into(),
+        });
         let (resp, sub) = r.chat(present).unwrap();
         assert!(sub.is_none());
         assert_eq!(resp.executed_on, "pkg-a");
@@ -124,14 +136,22 @@ mod tests {
     fn substitution_is_visible_not_silent() {
         let mut r = Router::new(RouterPolicy::AllowSubstitution);
         // Provider knows pkg-a-alt only; request pkg-b -> substituted.
-        r.register(Box::new(TestBackend::default().with_packages(&["pkg-b-alt"])));
-        let ask = req(ModelRef::InstalledPackage { package_id: "pkg-b".into() });
+        r.register(Box::new(
+            TestBackend::default().with_packages(&["pkg-b-alt"]),
+        ));
+        let ask = req(ModelRef::InstalledPackage {
+            package_id: "pkg-b".into(),
+        });
         let (resp, sub) = r.chat(ask).unwrap();
         let sub = sub.expect("substitution must be surfaced");
-        assert_eq!(sub.requested, ModelRef::InstalledPackage { package_id: "pkg-b".into() });
         assert_eq!(
-            resp.executed_on,
-            "pkg-b-alt",
+            sub.requested,
+            ModelRef::InstalledPackage {
+                package_id: "pkg-b".into()
+            }
+        );
+        assert_eq!(
+            resp.executed_on, "pkg-b-alt",
             "executed_on must reflect reality for Trust Pulse"
         );
     }
@@ -141,8 +161,12 @@ mod tests {
         // When NO candidate is available the router errors: a missing
         // model/provider is never silently replaced (goal §23).
         let mut r = Router::new(RouterPolicy::AllowSubstitution);
-        r.register(Box::new(TestBackend::default().with_packages(&["something-else"])));
-        let ask = req(ModelRef::InstalledPackage { package_id: "unheard-of".into() });
+        r.register(Box::new(
+            TestBackend::default().with_packages(&["something-else"]),
+        ));
+        let ask = req(ModelRef::InstalledPackage {
+            package_id: "unheard-of".into(),
+        });
         assert!(r.chat(ask).is_err());
     }
 }

@@ -14,7 +14,6 @@ use std::time::Duration;
 use chrono::{DateTime, Duration as ChronoDuration, Utc};
 
 use crate::audit::{AuditSink, NetworkAuditEntry, NetworkEventKind};
-use harbor_security::policy::EgressClass as PolicyEgressClass;
 pub use harbor_security::policy::EgressClass;
 
 /// An authorized egress window: one class, one origin, expiring.
@@ -74,7 +73,11 @@ impl TransportResponse {
 /// Transport abstraction. Implementations must NOT follow redirects
 /// themselves; the broker drives each hop.
 pub trait Transport: Send + Sync {
-    fn execute(&self, req: &TransportRequest, timeout: Duration) -> std::io::Result<TransportResponse>;
+    fn execute(
+        &self,
+        req: &TransportRequest,
+        timeout: Duration,
+    ) -> std::io::Result<TransportResponse>;
 
     /// Streaming variant for large bodies: each chunk is handed to `sink`
     /// as it arrives. Default delegates to the buffered [`Self::execute`];
@@ -114,7 +117,12 @@ pub struct EgressBroker {
 }
 
 /// Header names treated as credentials for cross-origin stripping.
-const CREDENTIAL_HEADERS: &[&str] = &["authorization", "cookie", "proxy-authorization", "x-api-key"];
+const CREDENTIAL_HEADERS: &[&str] = &[
+    "authorization",
+    "cookie",
+    "proxy-authorization",
+    "x-api-key",
+];
 
 impl EgressBroker {
     pub fn new(sink: Box<dyn AuditSink>) -> Self {
@@ -150,7 +158,12 @@ impl EgressBroker {
         }
         let now = Utc::now();
         let session = EgressSession {
-            session_id: format!("egress-{}", harbor_canonical::sha256_hex(format!("{class:?}{origin}{now}").as_bytes()).get(..16).unwrap_or("s")),
+            session_id: format!(
+                "egress-{}",
+                harbor_canonical::sha256_hex(format!("{class:?}{origin}{now}").as_bytes())
+                    .get(..16)
+                    .unwrap_or("s")
+            ),
             class,
             origin: origin.to_string(),
             rebind_credentials_cross_origin: false,
@@ -188,10 +201,14 @@ impl EgressBroker {
             _ => return RedirectDecision::Blocked,
         };
         if to_origin == from_origin {
-            return RedirectDecision::Follow { strip_credentials: false };
+            return RedirectDecision::Follow {
+                strip_credentials: false,
+            };
         }
         if session.allows_origin(&to_origin, now) {
-            return RedirectDecision::Follow { strip_credentials: !session.rebind_credentials_cross_origin };
+            return RedirectDecision::Follow {
+                strip_credentials: !session.rebind_credentials_cross_origin,
+            };
         }
         RedirectDecision::Blocked
     }
@@ -281,13 +298,12 @@ impl EgressBroker {
                         };
                         if strip_credentials {
                             next_req.headers.retain(|(k, _)| {
-                                !CREDENTIAL_HEADERS
-                                    .contains(&k.to_ascii_lowercase().as_str())
+                                !CREDENTIAL_HEADERS.contains(&k.to_ascii_lowercase().as_str())
                             });
                         }
                         current = next_req;
-                        current_origin =
-                            request_origin(&next).ok_or(BrokerError::InvalidRequest("no origin"))?;
+                        current_origin = request_origin(&next)
+                            .ok_or(BrokerError::InvalidRequest("no origin"))?;
                         hops += 1;
                         if hops > 10 {
                             return Err(BrokerError::TooManyRedirects);
@@ -343,8 +359,7 @@ impl EgressBroker {
             .url
             .parse()
             .map_err(|_| BrokerError::InvalidRequest("unparseable url"))?;
-        let origin =
-            request_origin(&parsed).ok_or(BrokerError::InvalidRequest("no origin"))?;
+        let origin = request_origin(&parsed).ok_or(BrokerError::InvalidRequest("no origin"))?;
         if !session.allows_origin(&origin, now) {
             self.log(
                 NetworkEventKind::Blocked,
@@ -409,8 +424,7 @@ impl EgressBroker {
                         };
                         if strip_credentials {
                             next_req.headers.retain(|(k, _)| {
-                                !CREDENTIAL_HEADERS
-                                    .contains(&k.to_ascii_lowercase().as_str())
+                                !CREDENTIAL_HEADERS.contains(&k.to_ascii_lowercase().as_str())
                             });
                         }
                         current = next_req;
@@ -548,7 +562,11 @@ mod tests {
     }
 
     impl Transport for RedirectThenOk {
-        fn execute(&self, _req: &TransportRequest, _t: Duration) -> std::io::Result<TransportResponse> {
+        fn execute(
+            &self,
+            _req: &TransportRequest,
+            _t: Duration,
+        ) -> std::io::Result<TransportResponse> {
             let n = self.redirects.fetch_add(1, Ordering::SeqCst);
             if n == 0 {
                 Ok(TransportResponse {
@@ -570,8 +588,17 @@ mod tests {
 
     struct AlwaysBlocked;
     impl Transport for AlwaysBlocked {
-        fn execute(&self, _req: &TransportRequest, _t: Duration) -> std::io::Result<TransportResponse> {
-            Ok(TransportResponse { status: 403, headers: Vec::new(), body: Vec::new(), final_url: String::new() })
+        fn execute(
+            &self,
+            _req: &TransportRequest,
+            _t: Duration,
+        ) -> std::io::Result<TransportResponse> {
+            Ok(TransportResponse {
+                status: 403,
+                headers: Vec::new(),
+                body: Vec::new(),
+                final_url: String::new(),
+            })
         }
     }
 
@@ -628,7 +655,9 @@ mod tests {
             Err(BrokerError::PolicyDenied)
         ));
         let entries = b.sink.entries();
-        assert!(entries.iter().any(|e| e.kind == NetworkEventKind::Blocked && e.origin == "https://evil.test"));
+        assert!(entries
+            .iter()
+            .any(|e| e.kind == NetworkEventKind::Blocked && e.origin == "https://evil.test"));
     }
 
     #[test]
@@ -672,6 +701,8 @@ mod tests {
             Err(BrokerError::RedirectDenied(_))
         ));
         let entries = b.sink.entries();
-        assert!(entries.iter().any(|e| e.kind == NetworkEventKind::RedirectBlocked));
+        assert!(entries
+            .iter()
+            .any(|e| e.kind == NetworkEventKind::RedirectBlocked));
     }
 }

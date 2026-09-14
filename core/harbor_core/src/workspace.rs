@@ -9,10 +9,10 @@ use chrono::{Duration, Utc};
 use harbor_agent::EventLog;
 use harbor_net::audit::SqliteAuditSink;
 use harbor_net::broker::EgressBroker;
+use harbor_security::policy::PrivacyMode;
 use harbor_store::blob::BlobStore;
 use harbor_store::keys::{FileKeyStore, KeyStore, WorkspaceKey};
 use harbor_store::Database;
-use harbor_security::policy::PrivacyMode;
 
 use crate::HarborError;
 
@@ -38,9 +38,13 @@ impl Workspace {
     /// Open or create a workspace with the platform dev keystore
     /// (file-backed). Production callers go through
     /// [`Workspace::open_with_keystore`] with an OS keystore adapter.
-    pub fn open(opts: &OpenOptions, workspace_id: &str, mode: PrivacyMode) -> Result<Workspace, HarborError> {
-        let key_source = FileKeyStore::new(opts.data_root.join("keys"))
-            .map_err(HarborError::Store)?;
+    pub fn open(
+        opts: &OpenOptions,
+        workspace_id: &str,
+        mode: PrivacyMode,
+    ) -> Result<Workspace, HarborError> {
+        let key_source =
+            FileKeyStore::new(opts.data_root.join("keys")).map_err(HarborError::Store)?;
         Self::open_with_keystore(opts, workspace_id, mode, Arc::new(key_source))
     }
 
@@ -158,9 +162,7 @@ impl Workspace {
 
     /// Key for sealing knowledge chunks at rest, derived from the
     /// workspace key (domain-separated). Never persisted.
-    pub fn knowledge_chunk_key(
-        &self,
-    ) -> Result<harbor_store::keys::KeyMaterial, HarborError> {
+    pub fn knowledge_chunk_key(&self) -> Result<harbor_store::keys::KeyMaterial, HarborError> {
         Ok(harbor_store::kcipher::knowledge_chunk_key(
             self.workspace_key.kek_material(),
         ))
@@ -184,12 +186,17 @@ mod tests {
     #[test]
     fn open_creates_keys_blobs_and_log() {
         let dir = tempfile::tempdir().unwrap();
-        let opts = OpenOptions { data_root: dir.path().to_path_buf(), device_id: "dev-1".into() };
+        let opts = OpenOptions {
+            data_root: dir.path().to_path_buf(),
+            device_id: "dev-1".into(),
+        };
         let ws = Workspace::open(&opts, "ws-1", PrivacyMode::LocalOnly).unwrap();
         assert_eq!(ws.privacy_mode.as_str(), "LOCAL_ONLY");
         assert!(ws.trust_pulse_policy().contains("LOCAL_ONLY"));
         // Runs can be created through the facade's durable log.
-        ws.agent_log.create_run("run-1", "ws-1", Workspace::now()).unwrap();
+        ws.agent_log
+            .create_run("run-1", "ws-1", Workspace::now())
+            .unwrap();
         let (state, _, _) = ws.agent_log.run_state("run-1").unwrap();
         assert_eq!(state, harbor_agent::RunState::Created);
         // Blobs are bound and private.
@@ -200,20 +207,23 @@ mod tests {
         assert_eq!(ws.blobs().list("ws-1").unwrap(), vec![r.id.clone()]);
         // Second open: same key context (idempotent creation).
         let ws2 = Workspace::open(&opts, "ws-1", PrivacyMode::LocalOnly).unwrap();
-        let out = ws2
-            .blobs()
-            .get("ws-1", &r.id, &Default::default())
-            .unwrap();
+        let out = ws2.blobs().get("ws-1", &r.id, &Default::default()).unwrap();
         assert_eq!(out, b"private payload");
     }
 
     #[test]
     fn workspaces_have_separate_keys() {
         let dir = tempfile::tempdir().unwrap();
-        let opts = OpenOptions { data_root: dir.path().to_path_buf(), device_id: "dev-1".into() };
+        let opts = OpenOptions {
+            data_root: dir.path().to_path_buf(),
+            device_id: "dev-1".into(),
+        };
         let a = Workspace::open(&opts, "ws-a", PrivacyMode::LocalOnly).unwrap();
         let _b = Workspace::open(&opts, "ws-b", PrivacyMode::Hybrid).unwrap();
-        let r = a.blobs().put("ws-a", b"secret-a", &Default::default()).unwrap();
+        let r = a
+            .blobs()
+            .put("ws-a", b"secret-a", &Default::default())
+            .unwrap();
         // Cross-workspace read must be impossible (no key bound for ws-a on b).
         assert!(a.blobs().get("ws-b", &r.id, &Default::default()).is_err());
     }

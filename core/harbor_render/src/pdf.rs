@@ -29,8 +29,8 @@ pub enum PdfError {
 /// Extract text page-by-page. Page mapping is the citation basis for the
 /// PDF Research skill: every claim names its page.
 pub fn extract_pages(bytes: &[u8]) -> Result<PdfPreview, PdfError> {
-    let text = pdf_extract::extract_text_from_mem(bytes)
-        .map_err(|e| PdfError::Extract(e.to_string()))?;
+    let text =
+        pdf_extract::extract_text_from_mem(bytes).map_err(|e| PdfError::Extract(e.to_string()))?;
     // pdf-extract emits form feeds (\x0c) between pages.
     let pages: Vec<PdfPage> = text
         .split('\u{0c}')
@@ -42,7 +42,11 @@ pub fn extract_pages(bytes: &[u8]) -> Result<PdfPreview, PdfError> {
         })
         .collect();
     let page_count = pages.len();
-    Ok(PdfPreview { kind: "pdf".into(), page_count, pages })
+    Ok(PdfPreview {
+        kind: "pdf".into(),
+        page_count,
+        pages,
+    })
 }
 
 #[cfg(test)]
@@ -51,7 +55,10 @@ mod tests {
 
     fn fixture() -> Vec<u8> {
         let p = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent().unwrap().parent().unwrap()
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
             .join("fixtures/office/hello.pdf");
         std::fs::read(p).expect("pdf fixture")
     }
@@ -61,7 +68,11 @@ mod tests {
         let pdf = extract_pages(&fixture()).unwrap();
         assert_eq!(pdf.kind, "pdf");
         assert_eq!(pdf.page_count, 1);
-        let joined = pdf.pages.iter().map(|p| p.text.as_str()).collect::<String>();
+        let joined = pdf
+            .pages
+            .iter()
+            .map(|p| p.text.as_str())
+            .collect::<String>();
         assert!(joined.contains("hello harbor"), "text: {joined}");
         let json = serde_json::to_string(&pdf).unwrap();
         assert!(json.contains("\"pages\""));

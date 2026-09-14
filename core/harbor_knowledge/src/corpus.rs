@@ -9,7 +9,7 @@ use harbor_inference::provider::{ModelProvider, ModelRef};
 
 use crate::chunk::Chunker;
 use crate::chunk::ChunkerConfig;
-use crate::eval::{run_eval, AnswerPipeline, EvalCase, EvalReport, GroundedExtractor};
+use crate::eval::{run_eval, EvalCase, EvalReport, GroundedExtractor};
 use crate::identity::{embed_model_identity, ChunkerConfig as CC, IndexIdentity, Normalization};
 use crate::index::{KnowledgeIndex, Source, SourceChunk};
 
@@ -47,7 +47,8 @@ pub struct PinnedCorpus {
 }
 
 fn parse_corpus(json: &str) -> Result<PinnedCorpus, CorpusError> {
-    let v: serde_json::Value = serde_json::from_str(json).map_err(|e| CorpusError::Json(e.to_string()))?;
+    let v: serde_json::Value =
+        serde_json::from_str(json).map_err(|e| CorpusError::Json(e.to_string()))?;
     let language = v["language"].as_str().unwrap_or_default().to_string();
     let mut sources = Vec::new();
     for s in v["sources"].as_array().expect("sources") {
@@ -65,14 +66,22 @@ fn parse_corpus(json: &str) -> Result<PinnedCorpus, CorpusError> {
             question: c["question"].as_str().unwrap_or_default().into(),
             expect_sources: c["expect_sources"]
                 .as_array()
-                .map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect())
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|x| x.as_str().map(String::from))
+                        .collect()
+                })
                 .unwrap_or_default(),
             must_include: vec![],
             expect_abstention: c["expect_abstention"].as_bool().unwrap_or(false),
             injection_probe: c["injection_probe"].as_bool().unwrap_or(false),
         });
     }
-    Ok(PinnedCorpus { language, sources, cases })
+    Ok(PinnedCorpus {
+        language,
+        sources,
+        cases,
+    })
 }
 
 /// Build an index over a pinned corpus with the deterministic test
@@ -81,15 +90,25 @@ pub fn build_index(corpus: &PinnedCorpus, provider: &TestBackend) -> KnowledgeIn
     let identity = IndexIdentity {
         embedding: embed_model_identity("test-hash", "v1", 8),
         chunker: "paragraph-window/1".into(),
-        chunker_config: CC { target_graphemes: 800, overlap_graphemes: 80, respect_paragraphs: true },
+        chunker_config: CC {
+            target_graphemes: 800,
+            overlap_graphemes: 80,
+            respect_paragraphs: true,
+        },
         tokenizer: "grapheme/1".into(),
         normalization: Normalization::Nfc,
         language_policy: "en,ar,mixed".into(),
         encryption_scope: "eval".into(),
     };
     let mut index = KnowledgeIndex::new(identity);
-    let model = ModelRef::InstalledPackage { package_id: "eval-embed".into() };
-    let cfg = ChunkerConfig { target_graphemes: 800, overlap_graphemes: 80, respect_paragraphs: true };
+    let model = ModelRef::InstalledPackage {
+        package_id: "eval-embed".into(),
+    };
+    let cfg = ChunkerConfig {
+        target_graphemes: 800,
+        overlap_graphemes: 80,
+        respect_paragraphs: true,
+    };
     for s in &corpus.sources {
         let chunks = Chunker::chunk(&s.text, &cfg);
         let sc: Vec<SourceChunk> = chunks
@@ -100,7 +119,7 @@ pub fn build_index(corpus: &PinnedCorpus, provider: &TestBackend) -> KnowledgeIn
                 ordinal: c.ordinal,
                 text: c.text.clone(),
                 vector: provider
-                    .embed(&model, &[c.text.clone()])
+                    .embed(&model, std::slice::from_ref(&c.text))
                     .expect("deterministic embed")
                     .into_iter()
                     .next()
@@ -125,14 +144,22 @@ pub fn build_index(corpus: &PinnedCorpus, provider: &TestBackend) -> KnowledgeIn
 /// Run all three pinned corpora end-to-end.
 pub fn run_pinned_evals() -> Result<(String, Vec<(String, EvalReport)>), CorpusError> {
     let provider = TestBackend::default();
-    let model = ModelRef::InstalledPackage { package_id: "eval-embed".into() };
-    let pipeline = GroundedExtractor { provider: &provider, model: model.clone() };
+    let model = ModelRef::InstalledPackage {
+        package_id: "eval-embed".into(),
+    };
+    let pipeline = GroundedExtractor {
+        provider: &provider,
+        model: model.clone(),
+    };
     let mut out = Vec::new();
     for json in [CORPUS_EN, CORPUS_AR, CORPUS_MIXED] {
         let corpus = parse_corpus(json)?;
         let index = build_index(&corpus, &provider);
         let embed = |q: &str| -> Option<Vec<f32>> {
-            provider.embed(&model, &[q.to_string()]).ok().and_then(|v| v.into_iter().next())
+            provider
+                .embed(&model, &[q.to_string()])
+                .ok()
+                .and_then(|v| v.into_iter().next())
         };
         let report = run_eval(&index, &pipeline, &embed, &corpus.cases);
         out.push((corpus.language, report));
@@ -153,21 +180,27 @@ mod tests {
                 assert!(
                     case.passed,
                     "{lang}/{} failed: retrieval={} citation={} abstain={} injection={}",
-                    case.case_id, case.retrieval_hit, case.citation_supported, case.abstained_correctly, case.injection_resisted
+                    case.case_id,
+                    case.retrieval_hit,
+                    case.citation_supported,
+                    case.abstained_correctly,
+                    case.injection_resisted
                 );
             }
             assert_eq!(report.failed, 0, "{lang}: {} failures", report.failed);
         }
-        let total: usize = reports.iter().map(|(_, r)| r.passed as usize).sum();
+        let total: usize = reports.iter().map(|(_, r)| r.passed).sum();
         // Every case in every pinned corpus must pass; the expected total
         // is derived from the corpora themselves (not hardcoded), so
         // corpus expansion cannot silently skip cases.
         let expected: usize = [CORPUS_EN, CORPUS_AR, CORPUS_MIXED]
             .iter()
-            .map(|j| serde_json::from_str::<serde_json::Value>(j).unwrap()["cases"]
-                .as_array()
-                .unwrap()
-                .len())
+            .map(|j| {
+                serde_json::from_str::<serde_json::Value>(j).unwrap()["cases"]
+                    .as_array()
+                    .unwrap()
+                    .len()
+            })
             .sum();
         assert_eq!(total, expected, "all pinned corpus cases must pass");
     }

@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use crate::error::{Result, StoreError};
-use crate::keys::{aead_open, aead_seal, KeyMaterial, WrappedKey, WorkspaceKey};
+use crate::keys::{aead_open, aead_seal, WorkspaceKey, WrappedKey};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BlobRef {
@@ -39,7 +39,10 @@ impl BlobStore {
     pub fn new(root: impl Into<PathBuf>) -> Result<Self> {
         let root = root.into();
         std::fs::create_dir_all(root.join("blobs"))?;
-        Ok(BlobStore { root, keys: std::sync::Mutex::new(HashMap::new()) })
+        Ok(BlobStore {
+            root,
+            keys: std::sync::Mutex::new(HashMap::new()),
+        })
     }
 
     pub fn root(&self) -> &Path {
@@ -69,7 +72,11 @@ impl BlobStore {
     }
 
     fn path_for(&self, workspace_id: &str, id: &str) -> PathBuf {
-        self.root.join("blobs").join(workspace_id).join(&id[..2]).join(format!("{id}.hblob"))
+        self.root
+            .join("blobs")
+            .join(workspace_id)
+            .join(&id[..2])
+            .join(format!("{id}.hblob"))
     }
 
     /// Encrypt and store `plaintext`; returns its content address. Storing
@@ -81,7 +88,10 @@ impl BlobStore {
             // Idempotent write of identical bytes.
             let (size, _) = self.read_raw(workspace_id, &id)?;
             if size == plaintext.len() as u64 {
-                return Ok(BlobRef { id, size: plaintext.len() as u64 });
+                return Ok(BlobRef {
+                    id,
+                    size: plaintext.len() as u64,
+                });
             }
             return Err(StoreError::Integrity(id));
         }
@@ -105,7 +115,10 @@ impl BlobStore {
         std::fs::write(&tmp, &file)?;
         std::fs::rename(&tmp, &path)?;
         let _ = std::fs::remove_file(tmp.with_extension("tmp")); // no-op guard
-        Ok(BlobRef { id, size: plaintext.len() as u64 })
+        Ok(BlobRef {
+            id,
+            size: plaintext.len() as u64,
+        })
     }
 
     /// Decrypt and return the plaintext bytes for a blob id.
@@ -138,7 +151,8 @@ impl BlobStore {
         let ct = &file[off..];
         let (key, _wrapped) = self.key_for(workspace_id)?;
         let dek = key.unwrap_blob_key(&wrapped_dek)?;
-        let plaintext = aead_open(&dek, &nonce, ct, &[]).map_err(|_| StoreError::Integrity(id.to_string()))?;
+        let plaintext =
+            aead_open(&dek, &nonce, ct, &[]).map_err(|_| StoreError::Integrity(id.to_string()))?;
         let got = harbor_canonical::sha256_hex(&plaintext);
         if got != id {
             return Err(StoreError::Integrity(id.to_string()));
@@ -277,12 +291,22 @@ mod tests {
     #[test]
     fn tampered_file_fails_integrity() {
         let (_dir, store, ws) = setup();
-        let r = store.put(&ws, b"tamper target", &PutOptions::default()).unwrap();
-        let path = store.root().join("blobs").join(&ws).join(&r.id[..2]).join(format!("{}.hblob", r.id));
+        let r = store
+            .put(&ws, b"tamper target", &PutOptions::default())
+            .unwrap();
+        let path = store
+            .root()
+            .join("blobs")
+            .join(&ws)
+            .join(&r.id[..2])
+            .join(format!("{}.hblob", r.id));
         let mut bytes = std::fs::read(&path).unwrap();
         let last = bytes.len() - 1;
         bytes[last] ^= 0x01;
         std::fs::write(&path, &bytes).unwrap();
-        assert!(matches!(store.get(&ws, &r.id, &PutOptions::default()), Err(StoreError::Integrity(_))));
+        assert!(matches!(
+            store.get(&ws, &r.id, &PutOptions::default()),
+            Err(StoreError::Integrity(_))
+        ));
     }
 }

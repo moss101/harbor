@@ -32,7 +32,10 @@ impl Chunker {
         for para in paragraphs {
             let g: Vec<&str> = para.graphemes(true).collect();
             if g.len() <= config.target_graphemes {
-                out.push(Chunk { text: para.to_string(), ordinal });
+                out.push(Chunk {
+                    text: para.to_string(),
+                    ordinal,
+                });
                 ordinal += 1;
                 continue;
             }
@@ -41,7 +44,10 @@ impl Chunker {
             while start < g.len() {
                 let end = (start + config.target_graphemes).min(g.len());
                 let window: String = g[start..end].concat();
-                out.push(Chunk { text: window, ordinal });
+                out.push(Chunk {
+                    text: window,
+                    ordinal,
+                });
                 ordinal += 1;
                 if end == g.len() {
                     break;
@@ -82,7 +88,10 @@ mod tests {
         // Overlap: chunk[1] starts before chunk[0] ended.
         let first_end_is_x = chunks[0].text.ends_with('x');
         assert!(first_end_is_x);
-        assert_eq!(chunks[0].text, chunks[1].text, "window content repeats due to overlap on uniform input");
+        assert_eq!(
+            chunks[0].text, chunks[1].text,
+            "window content repeats due to overlap on uniform input"
+        );
     }
 
     #[test]

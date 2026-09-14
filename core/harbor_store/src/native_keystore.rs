@@ -82,12 +82,8 @@ mod imp {
                 Err(_) => {
                     // First use on this device: generate and store.
                     let key = KeyMaterial::random();
-                    passwords::set_generic_password(
-                        &self.service_namespace,
-                        &account,
-                        &key.0,
-                    )
-                    .map_err(|_| StoreError::Crypto)?;
+                    passwords::set_generic_password(&self.service_namespace, &account, &key.0)
+                        .map_err(|_| StoreError::Crypto)?;
                     Ok(key)
                 }
             }
@@ -104,8 +100,6 @@ mod imp {
         }
     }
 }
-
-pub use imp::*;
 
 /// DPAPI-backed store (Windows). The root key is stored
 /// `CryptProtectData`-sealed (user scope) in the keys directory.
@@ -154,7 +148,10 @@ mod dpapi {
     const CRYPTPROTECT_UI_FORBIDDEN: u32 = 0x1;
 
     pub fn protect(plaintext: &[u8]) -> Result<Vec<u8>> {
-        let mut out = CryptBlob { cb_data: 0, pb_data: std::ptr::null_mut() };
+        let mut out = CryptBlob {
+            cb_data: 0,
+            pb_data: std::ptr::null_mut(),
+        };
         let input = CryptBlob {
             cb_data: plaintext.len() as u32,
             pb_data: plaintext.as_ptr() as *mut u8,
@@ -182,7 +179,10 @@ mod dpapi {
     }
 
     pub fn unprotect(sealed: &[u8]) -> Result<Vec<u8>> {
-        let mut out = CryptBlob { cb_data: 0, pb_data: std::ptr::null_mut() };
+        let mut out = CryptBlob {
+            cb_data: 0,
+            pb_data: std::ptr::null_mut(),
+        };
         let input = CryptBlob {
             cb_data: sealed.len() as u32,
             pb_data: sealed.as_ptr() as *mut u8,
@@ -218,10 +218,8 @@ impl DpapiKeyStore {
     }
 
     fn key_path(&self, service: &str) -> std::path::PathBuf {
-        self.dir.join(format!(
-            "{}.dpapi",
-            service.replace(['/', '\\', ':'], "_")
-        ))
+        self.dir
+            .join(format!("{}.dpapi", service.replace(['/', '\\', ':'], "_")))
     }
 }
 
@@ -258,13 +256,13 @@ mod tests {
         let k1 = ks.device_root_key(&unique).unwrap();
         let ks2 = KeychainKeyStore::new().unwrap();
         let k2 = ks2.device_root_key(&unique).unwrap();
-        assert_eq!(k1, k2, "same service must return the persisted keychain key");
+        assert_eq!(
+            k1, k2,
+            "same service must return the persisted keychain key"
+        );
         let other = ks.device_root_key(&format!("{unique}.other")).unwrap();
         assert_ne!(k1, other);
-        let _ = passwords::delete_generic_password(
-            &ks.service_namespace,
-            &ks.account(&unique),
-        );
+        let _ = passwords::delete_generic_password(&ks.service_namespace, &ks.account(&unique));
         let _ = passwords::delete_generic_password(
             &ks.service_namespace,
             &ks.account(&format!("{unique}.other")),

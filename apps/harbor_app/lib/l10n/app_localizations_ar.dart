@@ -272,4 +272,171 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get statusInstalled => 'مثبت';
+
+  @override
+  String get cancelAction => 'إلغاء';
+
+  @override
+  String get askGenerateTooltip => 'توليد الإجابة';
+
+  @override
+  String get askAnswerHeading => 'الإجابة';
+
+  @override
+  String get askCitationsHeading => 'المصادر المستشهد بها';
+
+  @override
+  String askExecutedOnLine(String model, int tokens) {
+    return 'نُفِّذت على $model · $tokens رمزاً على الجهاز';
+  }
+
+  @override
+  String get askGenerating => 'جارٍ التوليد على الجهاز…';
+
+  @override
+  String askGenerationProgress(int tokens) {
+    return '$tokens رمز مولّد';
+  }
+
+  @override
+  String get askInsufficientNote =>
+      'يفيد النموذج بأن الأدلة غير كافية — هذه الإجابة غير مستندة إلى مصادرك.';
+
+  @override
+  String get askNoChatModel =>
+      'لا يوجد نموذج محادثة مثبّت. تحتاج الإجابات إلى نموذج محادثة (النماذج ← Hugging Face)؛ وعند فتح المعرفة تبقى الاستشهادات المسترجَعة متاحة.';
+
+  @override
+  String get askSearchOnly => 'بحث في المعرفة';
+
+  @override
+  String get knowledgeSourcesHeading => 'المصادر المفهرسة';
+
+  @override
+  String knowledgeChunksCount(int count) {
+    return '$count مقاطع';
+  }
+
+  @override
+  String get knowledgeRemoveAction => 'إزالة';
+
+  @override
+  String knowledgeIngesting(int done, int total) {
+    return 'جارٍ فهرسة المقاطع $done/$total';
+  }
+
+  @override
+  String get knowledgeOpenNeedsModel =>
+      'ثبّت نموذج التضمين bge-small-en-v1.5 (تبويب النماذج) لبناء الفهرس المحلي.';
+
+  @override
+  String get knowledgeAddFilesTooltip => 'إضافة ملفات إلى الفهرس المحلي';
+
+  @override
+  String get knowledgeAddTextAction => 'لصق نص';
+
+  @override
+  String get knowledgeAddTextTitle => 'فهرسة نص ملصوق';
+
+  @override
+  String get knowledgeAddTextTitleHint => 'العنوان';
+
+  @override
+  String get knowledgeAddTextBodyHint => 'الصق النص المراد فهرسته';
+
+  @override
+  String get knowledgeAddTextConfirm => 'فهرسة';
+
+  @override
+  String knowledgeSourceAdded(String title) {
+    return 'تمت فهرسة $title';
+  }
+
+  @override
+  String knowledgeAttachUnsupported(String kind) {
+    return 'لا يمكن فهرسة ملفات $kind في هذا الإصدار';
+  }
+
+  @override
+  String get knowledgeNoSources => 'لا توجد مصادر مفهرسة بعد.';
+
+  @override
+  String knowledgeRemoved(String title) {
+    return 'تمت إزالة $title';
+  }
+
+  @override
+  String get agentsUnavailableBody =>
+      'تنسيق الوكلاء غير مُفعّل في هذا الإصدار. عائلات المهارات المدمجة (تبويب المهارات) متاحة اليوم.';
+
+  @override
+  String get modelInstallAction => 'تثبيت';
+
+  @override
+  String get modelInstalling => 'جارٍ التثبيت…';
+
+  @override
+  String get modelInstallFailed => 'فشل التثبيت';
+
+  @override
+  String get modelInstallCancelled => 'أُلغي التثبيت';
+
+  @override
+  String get modelsHfSearchFailed =>
+      'فشل البحث — رفضت الشبكة الاستعلام. أعد المحاولة بعد قليل.';
+
+  @override
+  String get importModelTooltip => 'تثبيت ملف GGUF محلي';
+
+  @override
+  String importModelInstalled(String package) {
+    return 'تم تثبيت $package';
+  }
+
+  @override
+  String get importModelFailed => 'فشل التثبيت المحلي';
+
+  @override
+  String get settingsIdentity => 'هوية الجهاز';
+
+  @override
+  String get settingsWorkspaceId => 'مساحة العمل';
+
+  @override
+  String get opResolving => 'جارٍ تحليل الحزمة…';
+
+  @override
+  String opDownloading(int done, int total) {
+    return '$done من $total';
+  }
+
+  @override
+  String get opVerifying => 'جارٍ التحقق من البصمات…';
+
+  @override
+  String get opInstalling => 'جارٍ التثبيت…';
+
+  @override
+  String get opLoadingModel => 'جارٍ تحميل النموذج…';
+
+  @override
+  String get opGenerating => 'جارٍ التوليد…';
+
+  @override
+  String get opIngesting => 'جارٍ الفهرسة…';
+
+  @override
+  String opBytesMib(int done, int total) {
+    return '$done من $total ميبيبايت';
+  }
+
+  @override
+  String get appStarting => 'جارٍ تشغيل النواة المحلية…';
+
+  @override
+  String get coreStartFailed =>
+      'تعذّر تحميل النواة الأصلية. يعمل Harbor بشكل محدود بدونها.';
+
+  @override
+  String get knowledgeIngestFailed => 'فشلت الفهرسة';
 }

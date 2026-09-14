@@ -74,7 +74,10 @@ pub fn validate_id(s: &str, max: usize) -> Result<(), IdError> {
 
 /// Validate a lowercase SHA-256 hex string.
 pub fn validate_hash(s: &str) -> Result<(), IdError> {
-    if s.len() == 64 && s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) {
+    if s.len() == 64
+        && s.bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    {
         Ok(())
     } else {
         Err(IdError::Hash)

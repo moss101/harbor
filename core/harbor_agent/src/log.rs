@@ -17,11 +17,10 @@ use rusqlite::Connection;
 use crate::event::{Actor, EventError, EventPayload, EventType, ReplaySemantics, RunEvent};
 use crate::state::{PauseReason, RunState};
 
-pub const MIGRATIONS: &[harbor_store::Migration] = &[
-    harbor_store::Migration {
-        version: 1,
-        name: "agent_runs_and_events",
-        sql: "CREATE TABLE runs (
+pub const MIGRATIONS: &[harbor_store::Migration] = &[harbor_store::Migration {
+    version: 1,
+    name: "agent_runs_and_events",
+    sql: "CREATE TABLE runs (
                 run_id TEXT PRIMARY KEY,
                 workspace_id TEXT NOT NULL,
                 state TEXT NOT NULL,
@@ -53,8 +52,14 @@ pub const MIGRATIONS: &[harbor_store::Migration] = &[
                 PRIMARY KEY (run_id, seq)
               );
               CREATE INDEX idx_run_events_run ON run_events(run_id, seq);",
-    },
-];
+}];
+
+/// Durable head state: (state, counters, last event tuple).
+type HeadRow = (
+    String,
+    crate::event::Counters,
+    Option<(u64, String, String, i64)>,
+);
 
 #[derive(Debug, thiserror::Error)]
 pub enum LogError {
@@ -147,7 +152,10 @@ impl EventLog {
                 )?;
             }
         }
-        Ok(EventLog { conn: std::sync::Mutex::new(conn), payload_key })
+        Ok(EventLog {
+            conn: std::sync::Mutex::new(conn),
+            payload_key,
+        })
     }
 
     /// Create a run with its `run.created` event. Transactional.
@@ -163,7 +171,12 @@ impl EventLog {
         }
         let event = RunEvent {
             run_id: run_id.into(),
-            event_id: format!("evt-{}", harbor_canonical::sha256_hex(format!("{run_id}-0").as_bytes()).get(..16).unwrap_or("evt")),
+            event_id: format!(
+                "evt-{}",
+                harbor_canonical::sha256_hex(format!("{run_id}-0").as_bytes())
+                    .get(..16)
+                    .unwrap_or("evt")
+            ),
             seq: 0,
             event_type: EventType::RunCreated,
             replay_semantics: ReplaySemantics::StateAffecting,
@@ -202,18 +215,18 @@ impl EventLog {
             });
         }
         let authoritative = event.replay_semantics.is_authoritative();
-        if authoritative || event.actor == Actor::Executor {
-            if event.lease_generation != current_generation || current_generation == 0 {
-                return Err(LogError::LeaseFence {
-                    gen: event.lease_generation,
-                    cur: current_generation,
-                    seq: event.seq,
-                });
-            }
+        if (authoritative || event.actor == Actor::Executor)
+            && (event.lease_generation != current_generation || current_generation == 0)
+        {
+            return Err(LogError::LeaseFence {
+                gen: event.lease_generation,
+                cur: current_generation,
+                seq: event.seq,
+            });
         }
         let conn = self.conn.lock().unwrap();
         // Load current durable state.
-        let (state, counters, last): (String, crate::event::Counters, Option<(u64, String, String, i64)>) = load_head(&conn, &event.run_id)?;
+        let (state, counters, last): HeadRow = load_head(&conn, &event.run_id)?;
         let Some((_last_seq, _last_id, last_hash, _last_gen)) = last else {
             return Err(LogError::RunNotFound(event.run_id.clone()));
         };
@@ -222,8 +235,14 @@ impl EventLog {
             return Err(LogError::ChainBroken(event.seq));
         }
         // Transition validation.
-        if let EventPayload::Transition { from_state, to_state, reason } = &event.payload {
-            let current = RunState::parse(&state).ok_or_else(|| LogError::Payload("bad state".into()))?;
+        if let EventPayload::Transition {
+            from_state,
+            to_state,
+            reason,
+        } = &event.payload
+        {
+            let current =
+                RunState::parse(&state).ok_or_else(|| LogError::Payload("bad state".into()))?;
             if *from_state != current {
                 return Err(LogError::TransitionMismatch(event.seq));
             }
@@ -236,17 +255,29 @@ impl EventLog {
             }
             if *to_state == RunState::Paused {
                 let Some(r) = reason else {
-                    return Err(crate::state::StateError::MissingPauseReason { from: current.as_str() }.into());
+                    return Err(crate::state::StateError::MissingPauseReason {
+                        from: current.as_str(),
+                    }
+                    .into());
                 };
-                if current == RunState::Cancelling && *r != PauseReason::CancellationUnacknowledged {
-                    return Err(crate::state::StateError::CancellationPauseRequiresUnacknowledged(r.as_str().to_string()).into());
+                if current == RunState::Cancelling && *r != PauseReason::CancellationUnacknowledged
+                {
+                    return Err(
+                        crate::state::StateError::CancellationPauseRequiresUnacknowledged(
+                            r.as_str().to_string(),
+                        )
+                        .into(),
+                    );
                 }
             }
         }
         // Counter monotonicity vs durable totals.
         let new_counters = event.counters;
         if new_counters.active_compute_ms_total < counters.active_compute_ms_total {
-            return Err(LogError::CounterRegressed(event.seq, "active_compute_ms_total"));
+            return Err(LogError::CounterRegressed(
+                event.seq,
+                "active_compute_ms_total",
+            ));
         }
         if new_counters.step_count_total < counters.step_count_total {
             return Err(LogError::CounterRegressed(event.seq, "step_count_total"));
@@ -255,7 +286,10 @@ impl EventLog {
             return Err(LogError::CounterRegressed(event.seq, "tool_count_total"));
         }
         if new_counters.context_tokens_total < counters.context_tokens_total {
-            return Err(LogError::CounterRegressed(event.seq, "context_tokens_total"));
+            return Err(LogError::CounterRegressed(
+                event.seq,
+                "context_tokens_total",
+            ));
         }
         // Budget admission inside the same transaction.
         if let Some(delta) = &budget_delta {
@@ -269,7 +303,10 @@ impl EventLog {
         conn.execute_batch("BEGIN IMMEDIATE;")?;
         let result = (|| -> Result<(), LogError> {
             insert_event(&conn, &event, &hash, self.payload_key.as_ref())?;
-            if let EventPayload::Transition { to_state, reason, .. } = &event.payload {
+            if let EventPayload::Transition {
+                to_state, reason, ..
+            } = &event.payload
+            {
                 conn.execute(
                     "UPDATE runs SET state = ?2, pause_reason = ?3, updated_at = ?4 WHERE run_id = ?1",
                     rusqlite::params![
@@ -282,7 +319,12 @@ impl EventLog {
             } else {
                 conn.execute(
                     "UPDATE runs SET updated_at = ?2 WHERE run_id = ?1",
-                    rusqlite::params![event.run_id, event.created_at.to_rfc3339_opts(chrono::SecondsFormat::Micros, true)],
+                    rusqlite::params![
+                        event.run_id,
+                        event
+                            .created_at
+                            .to_rfc3339_opts(chrono::SecondsFormat::Micros, true)
+                    ],
                 )?;
             }
             conn.execute(
@@ -361,7 +403,14 @@ impl EventLog {
                     }
                     state = Some(RunState::Created);
                 }
-                (EventPayload::Transition { from_state, to_state, .. }, EventType::RunTransition) => {
+                (
+                    EventPayload::Transition {
+                        from_state,
+                        to_state,
+                        ..
+                    },
+                    EventType::RunTransition,
+                ) => {
                     if state.as_ref() != Some(from_state) {
                         return Err(LogError::TransitionMismatch(event.seq));
                     }
@@ -391,14 +440,15 @@ impl EventLog {
         })
     }
 
-    pub fn run_state(&self, run_id: &str) -> Result<(RunState, crate::event::Counters, u64), LogError> {
+    pub fn run_state(
+        &self,
+        run_id: &str,
+    ) -> Result<(RunState, crate::event::Counters, u64), LogError> {
         let conn = self.conn.lock().unwrap();
         let state: String = conn
-            .query_row(
-                "SELECT state FROM runs WHERE run_id = ?1",
-                [run_id],
-                |r| r.get(0),
-            )
+            .query_row("SELECT state FROM runs WHERE run_id = ?1", [run_id], |r| {
+                r.get(0)
+            })
             .map_err(|_| LogError::RunNotFound(run_id.into()))?;
         let counters = load_counters(&conn, run_id)?;
         let gen: i64 = conn.query_row(
@@ -420,16 +470,6 @@ pub struct ReplayReport {
     pub counters: crate::event::Counters,
     pub skipped_display_events: usize,
     pub verified_events: usize,
-}
-
-
-/// Normalize a timestamp to the precision the event log persists
-/// (microseconds) so hash recomputation after reload is stable.
-fn normalize_time(t: chrono::DateTime<chrono::Utc>) -> chrono::DateTime<chrono::Utc> {
-    let s = t.to_rfc3339_opts(chrono::SecondsFormat::Micros, true);
-    chrono::DateTime::parse_from_rfc3339(&s)
-        .expect("micros rfc3339 reparse")
-        .with_timezone(&chrono::Utc)
 }
 
 fn run_exists(conn: &Connection, run_id: &str) -> Result<bool, LogError> {
@@ -466,7 +506,11 @@ fn seal_payload(
     let aad = format!("{}:{}:{}", event.run_id, event.seq, event.event_id);
     let ct = harbor_store::keys::aead_seal(key, &nonce, plaintext, aad.as_bytes())
         .map_err(|_| LogError::Payload("seal failed".into()))?;
-    Ok(format!("{SEALED_PREFIX}{}{}", hex_encode(&nonce), hex_encode(&ct)))
+    Ok(format!(
+        "{SEALED_PREFIX}{}{}",
+        hex_encode(&nonce),
+        hex_encode(&ct)
+    ))
 }
 
 fn open_payload(
@@ -483,7 +527,11 @@ fn open_payload(
         return Err(LogError::Payload("bad seal body".into()));
     }
     let mut nonce = [0u8; 12];
-    for (i, b) in hex_decode(&body[..24]).unwrap_or_default().into_iter().enumerate() {
+    for (i, b) in hex_decode(&body[..24])
+        .unwrap_or_default()
+        .into_iter()
+        .enumerate()
+    {
         nonce[i] = b;
     }
     let ct = hex_decode(&body[24..]).ok_or_else(|| LogError::Payload("bad ct hex".into()))?;
@@ -536,7 +584,9 @@ fn load_head(
     run_id: &str,
 ) -> Result<(String, crate::event::Counters, HeadInfo), LogError> {
     let state: String = conn
-        .query_row("SELECT state FROM runs WHERE run_id = ?1", [run_id], |r| r.get(0))
+        .query_row("SELECT state FROM runs WHERE run_id = ?1", [run_id], |r| {
+            r.get(0)
+        })
         .map_err(|_| LogError::RunNotFound(run_id.into()))?;
     let counters = load_counters(conn, run_id)?;
     let head = conn
@@ -612,7 +662,8 @@ fn load_stream(
     })?;
     let mut out = Vec::new();
     for row in rows {
-        let (seq, event_id, etype_s, sem_s, actor_s, gen, a, s, t, c, payload_s, created_s, prev) = row?;
+        let (seq, event_id, etype_s, sem_s, actor_s, gen, a, s, t, c, payload_s, created_s, prev) =
+            row?;
         let etype = EventType::parse(&etype_s);
         let payload_text = if payload_s.starts_with(SEALED_PREFIX) {
             let key = payload_key
@@ -665,22 +716,6 @@ mod at_rest_tests {
     use super::*;
     use harbor_store::keys::KeyMaterial;
 
-    fn event(run_id: &str, seq: u64, prev: Option<String>) -> RunEvent {
-        RunEvent {
-            run_id: run_id.into(),
-            event_id: format!("evt-{run_id}-{seq}"),
-            seq,
-            event_type: EventType::RunCreated,
-            replay_semantics: ReplaySemantics::StateAffecting,
-            actor: Actor::System,
-            lease_generation: 0,
-            counters: Default::default(),
-            payload: EventPayload::Created,
-            created_at: chrono::Utc::now(),
-            prev_event_hash: prev,
-        }
-    }
-
     #[test]
     fn encrypted_payloads_roundtrip_across_reopen() {
         let dir = tempfile::tempdir().unwrap();
@@ -707,7 +742,7 @@ mod at_rest_tests {
         // The run id rides in several columns, so search for something
         // only the payload would carry.
         drop(log);
-        let raw = std::fs::read(&db).unwrap();
+        let _raw = std::fs::read(&db).unwrap();
         // The Created payload's JSON would contain e.g. {"v":1,...} — not
         // distinctive. Append a StepStarted with a sentinel description.
         let log = EventLog::open_with_payload_key(&db, key.clone()).unwrap();
@@ -737,7 +772,11 @@ mod at_rest_tests {
         let mut scanned = 0;
         for entry in std::fs::read_dir(dir.path()).unwrap() {
             let p = entry.unwrap().path();
-            if p.file_name().unwrap_or_default().to_string_lossy().starts_with("agent.db") {
+            if p.file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .starts_with("agent.db")
+            {
                 let bytes = std::fs::read(&p).unwrap();
                 assert!(
                     !windows_or_bytes_contains(&bytes, needle.as_bytes()),

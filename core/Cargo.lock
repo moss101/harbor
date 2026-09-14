@@ -1622,6 +1622,7 @@ dependencies = [
  "harbor_artifacts",
  "harbor_canonical",
  "harbor_core",
+ "harbor_ffi",
  "harbor_formula",
  "harbor_inference",
  "harbor_modelhub",

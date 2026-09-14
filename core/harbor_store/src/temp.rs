@@ -69,7 +69,10 @@ impl TempRegistry {
             perms.set_mode(0o700);
             std::fs::set_permissions(&dir, perms)?;
         }
-        Ok(TempRegistry { dir, open: std::sync::Mutex::new(Vec::new()) })
+        Ok(TempRegistry {
+            dir,
+            open: std::sync::Mutex::new(Vec::new()),
+        })
     }
 
     /// Open an operation-bound plaintext window containing `bytes`.
@@ -77,7 +80,9 @@ impl TempRegistry {
         let name = format!(
             "{}-{}.tmp",
             uuidv4(),
-            harbor_canonical::sha256_hex(operation.as_bytes()).get(..12).unwrap_or("op").to_string()
+            harbor_canonical::sha256_hex(operation.as_bytes())
+                .get(..12)
+                .unwrap_or("op")
         );
         let path = self.dir.join(name);
         std::fs::write(&path, bytes)?;
@@ -88,7 +93,12 @@ impl TempRegistry {
             perms.set_mode(0o600);
             std::fs::set_permissions(&path, perms)?;
         }
-        let handle = TempHandle { path, operation: operation.to_string(), opened: Instant::now(), removed: false };
+        let handle = TempHandle {
+            path,
+            operation: operation.to_string(),
+            opened: Instant::now(),
+            removed: false,
+        };
         self.open.lock().unwrap().push(TempHandle {
             path: handle.path.clone(),
             operation: handle.operation.clone(),
@@ -112,7 +122,9 @@ impl TempRegistry {
                 }
             }
         }
-        Ok(ResidueReport { removed_files: removed })
+        Ok(ResidueReport {
+            removed_files: removed,
+        })
     }
 
     pub fn open_count(&self) -> usize {

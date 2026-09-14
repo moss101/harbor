@@ -85,7 +85,9 @@ impl Database {
                     )
                 })
                 .and_then(|_| tx.commit());
-            outcome.map_err(|e| StoreError::MigrationFailed(m.version, format!("{}: {}", m.name, e)))?;
+            outcome.map_err(|e| {
+                StoreError::MigrationFailed(m.version, format!("{}: {}", m.name, e))
+            })?;
             applied.push(m.version);
         }
         Ok(applied)
@@ -118,8 +120,16 @@ mod tests {
     fn applies_migrations_once_and_in_order() {
         let mut db = Database::open_in_memory().unwrap();
         let migrations = vec![
-            Migration { version: 1, name: "base", sql: "CREATE TABLE t (id INTEGER PRIMARY KEY);" },
-            Migration { version: 2, name: "add_col", sql: "ALTER TABLE t ADD COLUMN v TEXT;" },
+            Migration {
+                version: 1,
+                name: "base",
+                sql: "CREATE TABLE t (id INTEGER PRIMARY KEY);",
+            },
+            Migration {
+                version: 2,
+                name: "add_col",
+                sql: "ALTER TABLE t ADD COLUMN v TEXT;",
+            },
         ];
         let applied = db.migrate(&migrations).unwrap();
         assert_eq!(applied, vec![1, 2]);
@@ -132,7 +142,8 @@ mod tests {
         .unwrap();
         let n: i64 = db
             .read(|c| {
-                c.query_row("SELECT COUNT(*) FROM t", [], |r| r.get(0)).map_err(StoreError::Db)
+                c.query_row("SELECT COUNT(*) FROM t", [], |r| r.get(0))
+                    .map_err(StoreError::Db)
             })
             .unwrap();
         assert_eq!(n, 1);
@@ -141,15 +152,20 @@ mod tests {
     #[test]
     fn failed_migration_rolls_back() {
         let mut db = Database::open_in_memory().unwrap();
-        let bad = vec![Migration { version: 1, name: "bad", sql: "CREATE TABLE ( oops;" }];
-        assert!(matches!(db.migrate(&bad), Err(StoreError::MigrationFailed(1, _))));
+        let bad = vec![Migration {
+            version: 1,
+            name: "bad",
+            sql: "CREATE TABLE ( oops;",
+        }];
+        assert!(matches!(
+            db.migrate(&bad),
+            Err(StoreError::MigrationFailed(1, _))
+        ));
         let count: i64 = db
             .read(|c| {
-                c.query_row(
-                    "SELECT COUNT(*) FROM harbor_schema_migrations",
-                    [],
-                    |r| r.get(0),
-                )
+                c.query_row("SELECT COUNT(*) FROM harbor_schema_migrations", [], |r| {
+                    r.get(0)
+                })
                 .map_err(StoreError::Db)
             })
             .unwrap();
@@ -160,18 +176,21 @@ mod tests {
     fn write_error_rolls_back() {
         let mut db = Database::open_in_memory().unwrap();
         db.write(|c| {
-            c.execute_batch("CREATE TABLE t (x INTEGER);").map_err(StoreError::Db)?;
+            c.execute_batch("CREATE TABLE t (x INTEGER);")
+                .map_err(StoreError::Db)?;
             Ok(())
         })
         .unwrap();
         let err = db.write(|c| {
-            c.execute("INSERT INTO t VALUES (1)", []).map_err(StoreError::Db)?;
+            c.execute("INSERT INTO t VALUES (1)", [])
+                .map_err(StoreError::Db)?;
             Err::<(), _>(StoreError::Other("boom".into()))
         });
         assert!(err.is_err());
         let n: i64 = db
             .read(|c| {
-                c.query_row("SELECT COUNT(*) FROM t", [], |r| r.get(0)).map_err(StoreError::Db)
+                c.query_row("SELECT COUNT(*) FROM t", [], |r| r.get(0))
+                    .map_err(StoreError::Db)
             })
             .unwrap();
         assert_eq!(n, 0, "rolled back insert must not persist");

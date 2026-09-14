@@ -25,9 +25,20 @@ fn main() {
     let transport = UreqTransport::new();
     let installer = PackageInstaller::new(dir.path().join("models"));
     let mut sessions = BTreeMap::new();
-    for origin in ["https://huggingface.co", HF_CDN_ORIGINS[0], HF_CDN_ORIGINS[1], HF_CDN_ORIGINS[2], HF_CDN_ORIGINS[3]] {
+    for origin in [
+        "https://huggingface.co",
+        HF_CDN_ORIGINS[0],
+        HF_CDN_ORIGINS[1],
+        HF_CDN_ORIGINS[2],
+        HF_CDN_ORIGINS[3],
+    ] {
         let s = broker
-            .open_session(EgressClass::WeightTransfer, origin, chrono::Duration::minutes(60), PrivacyMode::LocalOnly)
+            .open_session(
+                EgressClass::WeightTransfer,
+                origin,
+                chrono::Duration::minutes(60),
+                PrivacyMode::LocalOnly,
+            )
             .unwrap();
         sessions.insert(origin.to_string(), s);
     }
@@ -53,7 +64,9 @@ fn main() {
         )
         .unwrap();
     println!("installed: {}", result["installed"].as_str().unwrap());
-    let installed_path = dir.path().join("models/qwen2.5-1.5b-instruct/qwen2.5-1.5b-instruct-q4_k_m.gguf");
+    let installed_path = dir
+        .path()
+        .join("models/qwen2.5-1.5b-instruct/qwen2.5-1.5b-instruct-q4_k_m.gguf");
     let bytes_len = std::fs::metadata(&installed_path).unwrap().len();
     println!("size: {bytes_len}");
     std::fs::copy(&installed_path, &out_fixture).unwrap();

@@ -16,14 +16,16 @@
 //! source in the live index, so previously cited chunks report `Removed`.
 
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 
 use harbor_canonical::JsonValue;
 use harbor_inference::gguf::GgufLlamaCppProvider;
 use harbor_inference::provider::{Capabilities, ModelProvider, ModelRef};
 use harbor_knowledge::chunk::{Chunker, ChunkerConfig};
-use harbor_knowledge::identity::{embed_model_identity, ChunkerConfig as CC, IndexIdentity, Normalization};
+use harbor_knowledge::identity::{
+    embed_model_identity, ChunkerConfig as CC, IndexIdentity, Normalization,
+};
 use harbor_knowledge::index::{KnowledgeIndex, Source, SourceChunk};
 use harbor_store::keys::KeyMaterial;
 use rusqlite::Connection;
@@ -70,6 +72,9 @@ pub enum KnowledgeFfiError {
 /// Sealed persistence layer for the knowledge database. Independent of
 /// the embedding provider so the real on-disk format is unit-testable
 /// and qualifies for the plaintext-at-rest inspection.
+/// One legacy plaintext row re-sealed during migration.
+type SealedLegacyRow = (String, String, String, String, i64, Vec<u8>, Vec<u8>);
+
 pub struct KnowledgeStore {
     db_path: PathBuf,
     key: KeyMaterial,
@@ -78,10 +83,12 @@ pub struct KnowledgeStore {
 impl KnowledgeStore {
     pub fn open(db_path: &Path, key: KeyMaterial) -> Result<Self, KnowledgeFfiError> {
         if let Some(parent) = db_path.parent() {
-            std::fs::create_dir_all(parent)
-                .map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
+            std::fs::create_dir_all(parent).map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
         }
-        let store = KnowledgeStore { db_path: db_path.to_path_buf(), key };
+        let store = KnowledgeStore {
+            db_path: db_path.to_path_buf(),
+            key,
+        };
         store.init_db()?;
         Ok(store)
     }
@@ -157,8 +164,7 @@ impl KnowledgeStore {
                 ))
             })
             .map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
-        let mut sealed_rows: Vec<(String, String, String, String, i64, Vec<u8>, Vec<u8>)> =
-            Vec::new();
+        let mut sealed_rows: Vec<SealedLegacyRow> = Vec::new();
         for row in rows {
             let (sid, cid, title, hash, ordinal, text, vec_bytes) =
                 row.map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
@@ -168,9 +174,8 @@ impl KnowledgeStore {
                 .collect();
             let text_sealed = harbor_store::kcipher::seal_text(&self.key, &sid, &cid, &text)
                 .map_err(|_| KnowledgeFfiError::Crypto)?;
-            let vector_sealed =
-                harbor_store::kcipher::seal_vector(&self.key, &sid, &cid, &vector)
-                    .map_err(|_| KnowledgeFfiError::Crypto)?;
+            let vector_sealed = harbor_store::kcipher::seal_vector(&self.key, &sid, &cid, &vector)
+                .map_err(|_| KnowledgeFfiError::Crypto)?;
             sealed_rows.push((sid, cid, title, hash, ordinal, text_sealed, vector_sealed));
         }
         drop(stmt);
@@ -231,9 +236,8 @@ impl KnowledgeStore {
                 row.map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
             let text = harbor_store::kcipher::open_text(&self.key, &sid, &cid, &text_sealed)
                 .map_err(|_| KnowledgeFfiError::Crypto)?;
-            let vector =
-                harbor_store::kcipher::open_vector(&self.key, &sid, &cid, &vector_sealed)
-                    .map_err(|_| KnowledgeFfiError::Crypto)?;
+            let vector = harbor_store::kcipher::open_vector(&self.key, &sid, &cid, &vector_sealed)
+                .map_err(|_| KnowledgeFfiError::Crypto)?;
             out.push(PersistedChunk {
                 source_id: sid,
                 chunk_id: cid,
@@ -261,8 +265,11 @@ impl KnowledgeStore {
         let tx = conn
             .transaction()
             .map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
-        tx.execute("DELETE FROM knowledge_chunks WHERE source_id = ?1", [source_id])
-            .map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
+        tx.execute(
+            "DELETE FROM knowledge_chunks WHERE source_id = ?1",
+            [source_id],
+        )
+        .map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
         for (ordinal, text, vector) in chunks {
             let cid = format!("{source_id}-{ordinal}");
             let text_sealed = harbor_store::kcipher::seal_text(&self.key, source_id, &cid, text)
@@ -274,11 +281,20 @@ impl KnowledgeStore {
                 "INSERT INTO knowledge_chunks
                  (source_id, chunk_id, title, content_hash, ordinal, text_sealed, vector_sealed)
                  VALUES (?1,?2,?3,?4,?5,?6,?7)",
-                rusqlite::params![source_id, cid, title, content_hash, *ordinal as i64, text_sealed, vector_sealed],
+                rusqlite::params![
+                    source_id,
+                    cid,
+                    title,
+                    content_hash,
+                    *ordinal as i64,
+                    text_sealed,
+                    vector_sealed
+                ],
             )
             .map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
         }
-        tx.commit().map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
+        tx.commit()
+            .map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
         Ok(())
     }
 
@@ -286,7 +302,10 @@ impl KnowledgeStore {
     pub fn remove_source(&self, source_id: &str) -> Result<bool, KnowledgeFfiError> {
         let conn = self.connect()?;
         let deleted = conn
-            .execute("DELETE FROM knowledge_chunks WHERE source_id = ?1", [source_id])
+            .execute(
+                "DELETE FROM knowledge_chunks WHERE source_id = ?1",
+                [source_id],
+            )
             .map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
         Ok(deleted > 0)
     }
@@ -347,11 +366,13 @@ impl KnowledgeService {
         let db_path = data_root.join("db").join("knowledge.db");
         let provider = GgufLlamaCppProvider::new(data_root.join("models"))
             .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?;
-        let model_ref = ModelRef::InstalledPackage { package_id: embedding_package.into() };
+        let model_ref = ModelRef::InstalledPackage {
+            package_id: embedding_package.into(),
+        };
         // The embedding model must be loadable before we can accept sources.
-        provider
-            .load(&model_ref)
-            .map_err(|e| KnowledgeFfiError::NoEmbeddingModel(format!("{embedding_package}: {e}")))?;
+        provider.load(&model_ref).map_err(|e| {
+            KnowledgeFfiError::NoEmbeddingModel(format!("{embedding_package}: {e}"))
+        })?;
         // Identity from the REAL model: embed a probe to learn the dimension.
         let probe = provider
             .embed(&model_ref, &["identity probe".to_string()])
@@ -359,7 +380,8 @@ impl KnowledgeService {
         let dimension = probe
             .first()
             .map(|v| v.len())
-            .ok_or_else(|| KnowledgeFfiError::Provider("empty embedding".into()))? as u32;
+            .ok_or_else(|| KnowledgeFfiError::Provider("empty embedding".into()))?
+            as u32;
         let identity = IndexIdentity {
             embedding: embed_model_identity(
                 embedding_package,
@@ -367,7 +389,11 @@ impl KnowledgeService {
                 dimension,
             ),
             chunker: "paragraph-window/1".into(),
-            chunker_config: CC { target_graphemes: 800, overlap_graphemes: 80, respect_paragraphs: true },
+            chunker_config: CC {
+                target_graphemes: 800,
+                overlap_graphemes: 80,
+                respect_paragraphs: true,
+            },
             tokenizer: "grapheme/1".into(),
             normalization: Normalization::Nfc,
             language_policy: "en,ar,mixed".into(),
@@ -396,7 +422,8 @@ impl KnowledgeService {
     fn load_persisted(&self) -> Result<(), KnowledgeFfiError> {
         let persisted = self.store.load_chunks()?;
         let mut index = self.index.lock().unwrap();
-        let mut seen_sources: std::collections::BTreeMap<String, (String, String)> = Default::default();
+        let mut seen_sources: std::collections::BTreeMap<String, (String, String)> =
+            Default::default();
         for c in &persisted {
             seen_sources
                 .entry(c.source_id.clone())
@@ -415,7 +442,15 @@ impl KnowledgeService {
                 })
                 .collect();
             index
-                .add_source(Source { source_id: sid, title, content_hash: hash, indexed_at: chrono::Utc::now() }, sc)
+                .add_source(
+                    Source {
+                        source_id: sid,
+                        title,
+                        content_hash: hash,
+                        indexed_at: chrono::Utc::now(),
+                    },
+                    sc,
+                )
                 .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?;
         }
         Ok(())
@@ -435,8 +470,14 @@ impl KnowledgeService {
         cancel: &AtomicBool,
         progress: Option<&harbor_modelhub::progress::AcquireProgress>,
     ) -> Result<serde_json::Value, KnowledgeFfiError> {
-        let model_ref = ModelRef::InstalledPackage { package_id: self.embedding_package.clone() };
-        let cfg = ChunkerConfig { target_graphemes: 800, overlap_graphemes: 80, respect_paragraphs: true };
+        let model_ref = ModelRef::InstalledPackage {
+            package_id: self.embedding_package.clone(),
+        };
+        let cfg = ChunkerConfig {
+            target_graphemes: 800,
+            overlap_graphemes: 80,
+            respect_paragraphs: true,
+        };
         // Total chunk count for honest progress: chunk everything first.
         let planned: Vec<(String, String, String, Vec<String>)> = sources
             .iter()
@@ -480,8 +521,7 @@ impl KnowledgeService {
                     vector: vector.clone(),
                 })
                 .collect();
-            self.store
-                .replace_source(id, title, &content_hash, &rows)?;
+            self.store.replace_source(id, title, &content_hash, &rows)?;
             {
                 let mut index = self.index.lock().unwrap();
                 // Versioned replacement in the live index too.
@@ -545,13 +585,22 @@ impl KnowledgeService {
 
     /// Search: embed the question with the SAME model (identity-checked),
     /// return top-k citations with source states.
-    pub fn search(&self, question: &str, top_k: usize) -> Result<serde_json::Value, KnowledgeFfiError> {
-        let model_ref = ModelRef::InstalledPackage { package_id: self.embedding_package.clone() };
+    pub fn search(
+        &self,
+        question: &str,
+        top_k: usize,
+    ) -> Result<serde_json::Value, KnowledgeFfiError> {
+        let model_ref = ModelRef::InstalledPackage {
+            package_id: self.embedding_package.clone(),
+        };
         let qv = self
             .provider
             .embed(&model_ref, &[question.to_string()])
             .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?;
-        let q = qv.into_iter().next().ok_or_else(|| KnowledgeFfiError::Provider("empty query vector".into()))?;
+        let q = qv
+            .into_iter()
+            .next()
+            .ok_or_else(|| KnowledgeFfiError::Provider("empty query vector".into()))?;
         let index = self.index.lock().unwrap();
         let hits = index.search_with_text(&q, top_k);
         let citations: Vec<serde_json::Value> = hits
@@ -575,7 +624,9 @@ impl KnowledgeService {
     }
 
     pub fn supports_chat(&self) -> bool {
-        let model_ref = ModelRef::InstalledPackage { package_id: self.embedding_package.clone() };
+        let model_ref = ModelRef::InstalledPackage {
+            package_id: self.embedding_package.clone(),
+        };
         self.provider.supports(&model_ref, &Capabilities::Chat)
     }
 
@@ -602,8 +653,7 @@ pub struct RagAnswer {
 impl ChatHandle {
     pub fn new(models_root: &Path) -> Self {
         ChatHandle {
-            provider: GgufLlamaCppProvider::new(models_root)
-                .expect("chat provider init"),
+            provider: GgufLlamaCppProvider::new(models_root).expect("chat provider init"),
             loaded: std::sync::Mutex::new(Default::default()),
         }
     }
@@ -631,7 +681,9 @@ impl ChatHandle {
                     p.set_detail(package_id);
                 }
                 self.provider
-                    .load(&ModelRef::InstalledPackage { package_id: package_id.into() })
+                    .load(&ModelRef::InstalledPackage {
+                        package_id: package_id.into(),
+                    })
                     .map_err(|e| e.to_string())?;
             }
         }
@@ -657,7 +709,9 @@ impl ChatHandle {
             .provider
             .generate_cancellable(
                 ChatRequest {
-                    model: ModelRef::InstalledPackage { package_id: package_id.into() },
+                    model: ModelRef::InstalledPackage {
+                        package_id: package_id.into(),
+                    },
                     messages: vec![JsonValue::object([
                         ("role", JsonValue::str("user")),
                         ("content", JsonValue::str(&context)),

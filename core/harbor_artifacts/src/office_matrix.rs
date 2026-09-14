@@ -94,7 +94,10 @@ pub fn classify_part(format: OfficeFormat, part: &str) -> Classification {
         || p.contains("embeddings/oleObject")
         || p.ends_with(".bin")
     {
-        return class_reason(MatrixClass::PreserveNoExecute, "macros/OLE/active content — never execute; warn before export");
+        return class_reason(
+            MatrixClass::PreserveNoExecute,
+            "macros/OLE/active content — never execute; warn before export",
+        );
     }
     match format {
         OfficeFormat::Docx => classify_docx_part(p, class_reason),
@@ -103,7 +106,10 @@ pub fn classify_part(format: OfficeFormat, part: &str) -> Classification {
     }
 }
 
-fn classify_docx_part(p: &str, class_reason: impl Fn(MatrixClass, &'static str) -> Classification) -> Classification {
+fn classify_docx_part(
+    p: &str,
+    class_reason: impl Fn(MatrixClass, &'static str) -> Classification,
+) -> Classification {
     // Matrix row 5: headers/footers/settings/styles are supported scope.
     if p == "word/document.xml"
         || p.starts_with("word/media/")
@@ -115,14 +121,20 @@ fn classify_docx_part(p: &str, class_reason: impl Fn(MatrixClass, &'static str) 
         || p.starts_with("word/_rels/")
         || p.starts_with("word/theme/")
     {
-        return class_reason(MatrixClass::SupportedGa, "core document, media, headers/footers, styles (rows 1-5)");
+        return class_reason(
+            MatrixClass::SupportedGa,
+            "core document, media, headers/footers, styles (rows 1-5)",
+        );
     }
     // Row 7: fields/TOC live inside document.xml (classified at feature
     // level by classify_docx_features); no dedicated part in the matrix.
     unknown_part(p)
 }
 
-fn classify_xlsx_part(p: &str, class_reason: impl Fn(MatrixClass, &'static str) -> Classification) -> Classification {
+fn classify_xlsx_part(
+    p: &str,
+    class_reason: impl Fn(MatrixClass, &'static str) -> Classification,
+) -> Classification {
     if p == "xl/workbook.xml"
         || p.starts_with("xl/worksheets/")
         || p.starts_with("xl/styles")
@@ -132,25 +144,40 @@ fn classify_xlsx_part(p: &str, class_reason: impl Fn(MatrixClass, &'static str) 
         || p.starts_with("xl/tables/")
         || p.starts_with("xl/_rels/")
     {
-        return class_reason(MatrixClass::SupportedGa, "values, formulas, styles, merges, dimensions (rows 9-10)");
+        return class_reason(
+            MatrixClass::SupportedGa,
+            "values, formulas, styles, merges, dimensions (rows 9-10)",
+        );
     }
     if p.starts_with("xl/charts/") || p.starts_with("xl/drawings/") {
-        return class_reason(MatrixClass::RequiredUnqualified, "charts: bar/column/line/pie/scatter basic series pending qualification (row 13)");
+        return class_reason(
+            MatrixClass::RequiredUnqualified,
+            "charts: bar/column/line/pie/scatter basic series pending qualification (row 13)",
+        );
     }
     if p.starts_with("xl/pivotTables/")
         || p.starts_with("xl/pivotCache/")
         || p == "xl/connections.xml"
         || p.starts_with("xl/customXml")
     {
-        return class_reason(MatrixClass::PreserveOnly, "pivot tables / slicers / Power Query — never recalc; carried verbatim (row 14)");
+        return class_reason(
+            MatrixClass::PreserveOnly,
+            "pivot tables / slicers / Power Query — never recalc; carried verbatim (row 14)",
+        );
     }
     if p.starts_with("xl/externalLinks/") {
-        return class_reason(MatrixClass::PreserveOnly, "external workbook/data links — no automatic fetch (row 15)");
+        return class_reason(
+            MatrixClass::PreserveOnly,
+            "external workbook/data links — no automatic fetch (row 15)",
+        );
     }
     unknown_part(p)
 }
 
-fn classify_pptx_part(p: &str, class_reason: impl Fn(MatrixClass, &'static str) -> Classification) -> Classification {
+fn classify_pptx_part(
+    p: &str,
+    class_reason: impl Fn(MatrixClass, &'static str) -> Classification,
+) -> Classification {
     if p == "ppt/presentation.xml"
         || p.starts_with("ppt/slides/")
         || p.starts_with("ppt/notesSlides/")
@@ -162,10 +189,16 @@ fn classify_pptx_part(p: &str, class_reason: impl Fn(MatrixClass, &'static str) 
         || p.starts_with("docProps/")
         || p.starts_with("ppt/_rels/")
     {
-        return class_reason(MatrixClass::SupportedGa, "slides, shapes, images, themes, speaker notes (rows 17-18)");
+        return class_reason(
+            MatrixClass::SupportedGa,
+            "slides, shapes, images, themes, speaker notes (rows 17-18)",
+        );
     }
     if p.starts_with("ppt/charts/") || p.starts_with("ppt/embeddings/") {
-        return class_reason(MatrixClass::RequiredUnqualified, "charts from Harbor IR pending qualification (row 19)");
+        return class_reason(
+            MatrixClass::RequiredUnqualified,
+            "charts from Harbor IR pending qualification (row 19)",
+        );
     }
     unknown_part(p)
 }
@@ -216,19 +249,35 @@ pub fn classify_docx_feature(f: DocxFeature) -> Classification {
             "alternate content — preserved, mode not resolved (rows 6/7/23)",
         ),
     };
-    Classification { part: marker.to_string(), class, reason }
+    Classification {
+        part: marker.to_string(),
+        class,
+        reason,
+    }
 }
 
 /// Build a compatibility report for a DOCX/XLSX/PPTX package: classify
 /// every part, scan document XML for feature markers, and collect
 /// unknown parts (row 23).
-pub fn compatibility_report(format: OfficeFormat, bytes: &[u8]) -> Result<CompatibilityReport, String> {
+pub fn compatibility_report(
+    format: OfficeFormat,
+    bytes: &[u8],
+) -> Result<CompatibilityReport, String> {
     let mut archive =
         zip::ZipArchive::new(Cursor::new(bytes)).map_err(|e| format!("bad package: {e}"))?;
-    let mut report = CompatibilityReport { format, ..Default::default() };
+    let mut report = CompatibilityReport {
+        format,
+        ..Default::default()
+    };
     let mut names: Vec<String> = Vec::new();
     for i in 0..archive.len() {
-        names.push(archive.by_index(i).map_err(|e| format!("bad package: {e}"))?.name().to_string());
+        names.push(
+            archive
+                .by_index(i)
+                .map_err(|e| format!("bad package: {e}"))?
+                .name()
+                .to_string(),
+        );
     }
     for name in &names {
         // Relationship/content-type plumbing is package infrastructure,
@@ -255,19 +304,29 @@ pub fn compatibility_report(format: OfficeFormat, bytes: &[u8]) -> Result<Compat
             let mut xml = String::new();
             let _ = f.read_to_string(&mut xml);
             if xml.contains("<wp:anchor") {
-                report.entries.push(classify_docx_feature(DocxFeature::FloatingDrawing));
+                report
+                    .entries
+                    .push(classify_docx_feature(DocxFeature::FloatingDrawing));
             }
             if xml.contains("fldChar") || xml.contains("instrText") {
-                report.entries.push(classify_docx_feature(DocxFeature::FieldOrToc));
+                report
+                    .entries
+                    .push(classify_docx_feature(DocxFeature::FieldOrToc));
             }
             if xml.contains("oMath") {
-                report.entries.push(classify_docx_feature(DocxFeature::Equation));
+                report
+                    .entries
+                    .push(classify_docx_feature(DocxFeature::Equation));
             }
             if xml.contains("w:object") || xml.contains("oleObject") {
-                report.entries.push(classify_docx_feature(DocxFeature::OleObject));
+                report
+                    .entries
+                    .push(classify_docx_feature(DocxFeature::OleObject));
             }
             if xml.contains("mc:AlternateContent") {
-                report.entries.push(classify_docx_feature(DocxFeature::AlternateContent));
+                report
+                    .entries
+                    .push(classify_docx_feature(DocxFeature::AlternateContent));
             }
         }
     }
@@ -309,7 +368,10 @@ mod tests {
 
     #[test]
     fn unknown_part_is_reject_or_preserve_only() {
-        let c = classify_part(OfficeFormat::Docx, "word/exoticWidget.bin".to_string().as_str());
+        let c = classify_part(
+            OfficeFormat::Docx,
+            "word/exoticWidget.bin".to_string().as_str(),
+        );
         assert_eq!(c.class, MatrixClass::PreserveNoExecute); // .bin → security row
         let c = classify_part(OfficeFormat::Docx, "word/exoticWidget.xml");
         assert_eq!(c.class, MatrixClass::Unknown);
@@ -319,8 +381,17 @@ mod tests {
 
     #[test]
     fn docx_feature_markers_classified() {
-        assert_eq!(classify_docx_feature(DocxFeature::FloatingDrawing).class, MatrixClass::PreserveOnly);
-        assert_eq!(classify_docx_feature(DocxFeature::FieldOrToc).class, MatrixClass::PreserveOnly);
-        assert_eq!(classify_docx_feature(DocxFeature::OleObject).class, MatrixClass::PreserveNoExecute);
+        assert_eq!(
+            classify_docx_feature(DocxFeature::FloatingDrawing).class,
+            MatrixClass::PreserveOnly
+        );
+        assert_eq!(
+            classify_docx_feature(DocxFeature::FieldOrToc).class,
+            MatrixClass::PreserveOnly
+        );
+        assert_eq!(
+            classify_docx_feature(DocxFeature::OleObject).class,
+            MatrixClass::PreserveNoExecute
+        );
     }
 }

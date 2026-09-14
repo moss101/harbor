@@ -9,7 +9,9 @@
 pub mod skills;
 pub mod workspace;
 
-pub use skills::{builtin_skills, CapabilityCatalog, SkillError, SkillManifest, SCHEMA as SKILL_SCHEMA};
+pub use skills::{
+    builtin_skills, CapabilityCatalog, SkillError, SkillManifest, SCHEMA as SKILL_SCHEMA,
+};
 pub use workspace::{OpenOptions, Workspace};
 
 #[derive(Debug, thiserror::Error)]

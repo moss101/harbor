@@ -13,13 +13,16 @@ use harbor_security::policy::PrivacyMode;
 const RUN_SENTINEL: &str = "HARBOR-PLAINTEXT-PROBE-RUN-7c1e4a";
 const DOC_SENTINEL: &str = "HARBOR-PLAINTEXT-PROBE-DOC-92b8d3";
 const TEMP_SENTINEL: &str = "HARBOR-PLAINTEXT-PROBE-TEMP-55aa01";
+const KNOWLEDGE_SENTINEL: &str = "HARBOR-PLAINTEXT-PROBE-KNOW-4d11ef";
 
 fn scan_dir_for(root: &std::path::Path, needle: &str) -> Vec<std::path::PathBuf> {
     let mut hits = Vec::new();
     let needle = needle.as_bytes();
     let mut stack = vec![root.to_path_buf()];
     while let Some(dir) = stack.pop() {
-        let Ok(entries) = std::fs::read_dir(&dir) else { continue };
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            continue;
+        };
         for entry in entries.flatten() {
             let p = entry.path();
             if p.is_dir() {
@@ -54,11 +57,16 @@ fn plaintext_at_rest_full_inspection() {
     std::fs::create_dir_all(&export_root).unwrap();
 
     // ---- Open a real workspace (keys, blobs, db, agent log, broker). ----
-    let opts = OpenOptions { data_root: data_root.clone(), device_id: "inspect-device".into() };
+    let opts = OpenOptions {
+        data_root: data_root.clone(),
+        device_id: "inspect-device".into(),
+    };
     let ws = Workspace::open(&opts, "ws-inspect", PrivacyMode::LocalOnly).unwrap();
 
     // 1. Durable run log: a step description carrying private content.
-    ws.agent_log.create_run("run-inspect", "ws-inspect", Workspace::now()).unwrap();
+    ws.agent_log
+        .create_run("run-inspect", "ws-inspect", Workspace::now())
+        .unwrap();
     let stream = ws.agent_log.load_stream("run-inspect").unwrap();
     let head = stream.last().unwrap();
     let head_hash = head.hash().unwrap();
@@ -111,14 +119,25 @@ fn plaintext_at_rest_full_inspection() {
     // 4. Exported artifact via qualified safe commit (New Copy): the one
     // designated plaintext surface — a user-visible file outside the
     // Harbor data root.
-    let committer = harbor_artifacts::SafeCommitter::new(data_root.join("db").join("commit_journal.db")).unwrap();
+    let committer =
+        harbor_artifacts::SafeCommitter::new(data_root.join("db").join("commit_journal.db"))
+            .unwrap();
     let export_path = export_root.join("report.docx");
     let output = format!("<doc>{DOC_SENTINEL}</doc>").into_bytes();
     let out_hash = harbor_canonical::sha256_hex(&output);
     let outcome = committer
-        .commit_new_copy("batch-inspect-1", "art-inspect", &export_path, &out_hash, &output)
+        .commit_new_copy(
+            "batch-inspect-1",
+            "art-inspect",
+            &export_path,
+            &out_hash,
+            &output,
+        )
         .unwrap();
-    assert!(matches!(outcome, harbor_artifacts::CommitOutcome::CopiedNew { .. }));
+    assert!(matches!(
+        outcome,
+        harbor_artifacts::CommitOutcome::CopiedNew { .. }
+    ));
 
     // 5. Recovery path: classify the committed journal entry.
     let action = committer.recover("batch-inspect-1").unwrap();
@@ -127,21 +146,51 @@ fn plaintext_at_rest_full_inspection() {
         harbor_artifacts::commit::RecoveryAction::AlreadyCommitted { .. }
     ));
 
+    // 6. Knowledge index: chunk text + embedding vectors are private
+    // workspace content, persisted ONLY sealed (ChaCha20-Poly1305 under a
+    // workspace-derived key). This drives the REAL persistence path
+    // (harbor_ffi::knowledge::KnowledgeStore) with a sentinel chunk.
+    let chunk_key = ws.knowledge_chunk_key().unwrap();
+    let store = harbor_ffi::knowledge::KnowledgeStore::open(
+        &data_root.join("db").join("knowledge.db"),
+        chunk_key,
+    )
+    .unwrap();
+    let vector: Vec<f32> = (0..384).map(|i| (i as f32) * 0.5).collect();
+    store
+        .replace_source(
+            "sentinel-source",
+            "Sentinel Document",
+            "hash-sentinel",
+            &[(0, KNOWLEDGE_SENTINEL.to_string(), vector)],
+        )
+        .unwrap();
+    let knowledge_db = data_root.join("db").join("knowledge.db");
+
     // Force WAL content into every possible resting place (the inspection
     // must see the checkpointed main DB too, not just the live WAL).
     let agent_db = data_root.join("db").join("agent.db");
     let store_db = data_root.join("db").join("store.db");
-    for db in [&agent_db, &store_db] {
+    for db in [&agent_db, &store_db, &knowledge_db] {
         let conn = rusqlite::Connection::open(db).unwrap();
-        conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);").unwrap();
+        conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);")
+            .unwrap();
     }
     drop(ws); // release WAL file locks before scanning
 
     // ---- Assertions ----
     // No sentinel anywhere in the Harbor data root.
-    for needle in [RUN_SENTINEL, DOC_SENTINEL, TEMP_SENTINEL] {
+    for needle in [
+        RUN_SENTINEL,
+        DOC_SENTINEL,
+        TEMP_SENTINEL,
+        KNOWLEDGE_SENTINEL,
+    ] {
         let hits = scan_dir_for(&data_root, needle);
-        assert!(hits.is_empty(), "plaintext leak: {needle} found in {hits:?}");
+        assert!(
+            hits.is_empty(),
+            "plaintext leak: {needle} found in {hits:?}"
+        );
     }
     // WAL/SHM siblings are covered by the scan above (scan_dir_for walks
     // the whole tree); assert they existed so the scan was not vacuous.
@@ -158,8 +207,20 @@ fn plaintext_at_rest_full_inspection() {
         }
         other => panic!("unexpected {other:?}"),
     }
-    let doc = ws2.blobs().get("ws-inspect", &blob_ref.id, &Default::default()).unwrap();
+    let doc = ws2
+        .blobs()
+        .get("ws-inspect", &blob_ref.id, &Default::default())
+        .unwrap();
     assert_eq!(doc, DOC_SENTINEL.as_bytes());
+    // Knowledge chunk: recoverable through the sealed-store API only.
+    let chunk_key2 = ws2.knowledge_chunk_key().unwrap();
+    let store2 = harbor_ffi::knowledge::KnowledgeStore::open(&knowledge_db, chunk_key2).unwrap();
+    let chunks = store2.load_chunks().unwrap();
+    assert_eq!(chunks.len(), 1);
+    assert_eq!(chunks[0].text, KNOWLEDGE_SENTINEL);
+    // The embedding vector round-trips exactly.
+    assert_eq!(chunks[0].vector.len(), 384);
+    assert_eq!(chunks[0].vector[0], 0.0);
     // And the exported copy is exactly the designated plaintext.
     assert_eq!(std::fs::read(&export_path).unwrap(), output);
 
@@ -192,6 +253,7 @@ fn plaintext_at_rest_full_inspection() {
         "surfaces": {
             "sqlite_main_and_wal": "no plaintext sentinel (run payloads sealed AEAD)",
             "encrypted_blob_store": "no plaintext sentinel (ChaCha20-Poly1305 per-workspace)",
+            "knowledge_db": "no plaintext sentinel (chunk text + vectors sealed AEAD under workspace-derived key)",
             "key_store": "wrapped keys only; no raw key material on disk",
             "temp_working_windows": "removed on completion; crash residue swept on restart",
             "run_event_log": "payloads sealed; sentinel recoverable only through API",
@@ -201,10 +263,15 @@ fn plaintext_at_rest_full_inspection() {
             "exported_copy": "designated plaintext outside data root (user-visible output)"
         },
         "files_scanned": files_scanned,
-        "sentinels": [RUN_SENTINEL, DOC_SENTINEL, TEMP_SENTINEL],
+        "sentinels": [RUN_SENTINEL, DOC_SENTINEL, TEMP_SENTINEL, KNOWLEDGE_SENTINEL],
         "exported_copy_path": export_path.to_string_lossy(),
     });
-    let evidence_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../evidence/plaintext_at_rest.json");
-    std::fs::write(&evidence_path, serde_json::to_string_pretty(&evidence).unwrap()).unwrap();
+    let evidence_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../evidence/plaintext_at_rest.json");
+    std::fs::write(
+        &evidence_path,
+        serde_json::to_string_pretty(&evidence).unwrap(),
+    )
+    .unwrap();
     println!("evidence written to {}", evidence_path.display());
 }

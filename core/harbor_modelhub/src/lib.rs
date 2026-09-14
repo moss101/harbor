@@ -19,9 +19,12 @@ pub mod hf;
 pub mod install;
 pub mod progress;
 
-pub use catalog::{CatalogEntry, RecommendedTier};
 pub use acquire::{AcquireError, HfAcquirer, HF_CDN_ORIGINS};
-pub use catalog_signing::{sign_catalog, sign_rotation, CatalogSignError, CatalogSigningKey, CatalogVerifier, SignedCatalog, SignedRotation};
+pub use catalog::{CatalogEntry, RecommendedTier};
+pub use catalog_signing::{
+    sign_catalog, sign_rotation, CatalogSignError, CatalogSigningKey, CatalogVerifier,
+    SignedCatalog, SignedRotation,
+};
 pub use fit::{DeviceProfile, FitBand, FitScore, ModelFootprint, Thermal};
 pub use hf::{HfDiscovery, HfFile};
 pub use install::{InstallStage, PackageInstaller, StagedInstall, ValidationReport};

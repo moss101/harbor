@@ -75,9 +75,16 @@ impl FitScore {
         let mut reasons = Vec::new();
         if model.format != "GGUF" && model.runtime_kind.starts_with("gguf/") {
             reasons.push("format not supported by this runtime".into());
-            return FitScore { band: FitBand::Unsupported, reasons, estimated_peak_bytes: model.peak_memory_bytes };
+            return FitScore {
+                band: FitBand::Unsupported,
+                reasons,
+                estimated_peak_bytes: model.peak_memory_bytes,
+            };
         }
-        if model.multimodal && device.gpu_backend.is_none() && model.runtime_kind.starts_with("gguf/") {
+        if model.multimodal
+            && device.gpu_backend.is_none()
+            && model.runtime_kind.starts_with("gguf/")
+        {
             reasons.push("multimodal without accelerator is slow".into());
         }
         // KV cache at the requested context.
@@ -88,11 +95,19 @@ impl FitScore {
         let physical_limit = (device.physical_ram as f64 * 0.7) as u64;
         if model.format != "GGUF" {
             reasons.push("unsupported model format".into());
-            return FitScore { band: FitBand::Unsupported, reasons, estimated_peak_bytes: peak };
+            return FitScore {
+                band: FitBand::Unsupported,
+                reasons,
+                estimated_peak_bytes: peak,
+            };
         }
         if peak > physical_limit {
             reasons.push("exceeds physical memory even with nothing else running".into());
-            return FitScore { band: FitBand::TooLarge, reasons, estimated_peak_bytes: peak };
+            return FitScore {
+                band: FitBand::TooLarge,
+                reasons,
+                estimated_peak_bytes: peak,
+            };
         }
         let thermal_note = match device.thermal {
             Thermal::Critical => Some("device thermally throttled".into()),
@@ -119,15 +134,24 @@ impl FitScore {
         };
         if let Some(gpu) = &device.gpu_backend {
             if !device.accelerated_gguf_supported {
-                reasons.push(format!("{gpu} present but runtime build lacks acceleration"));
+                reasons.push(format!(
+                    "{gpu} present but runtime build lacks acceleration"
+                ));
             }
         } else {
             reasons.push("CPU-only execution".into());
         }
-        if model.quantization == "Q8_0" || model.quantization == "f16" || model.quantization == "bf16" {
+        if model.quantization == "Q8_0"
+            || model.quantization == "f16"
+            || model.quantization == "bf16"
+        {
             reasons.push("high-precision quantization increases memory and slows inference".into());
         }
-        FitScore { band, reasons, estimated_peak_bytes: peak }
+        FitScore {
+            band,
+            reasons,
+            estimated_peak_bytes: peak,
+        }
     }
 }
 
@@ -186,12 +210,19 @@ mod tests {
         // 7B @ Q4_K_M ~ 4.8 GB peak: genuinely too large for an 8 GB phone
         // (the result must be TooLarge there), Limited on a 16 GB device
         // with 8 GB free.
-        assert_eq!(FitScore::evaluate(&phone(), &gguf(7.0, "Q4_K_M")).band, FitBand::TooLarge);
+        assert_eq!(
+            FitScore::evaluate(&phone(), &gguf(7.0, "Q4_K_M")).band,
+            FitBand::TooLarge
+        );
         let mut big = phone();
         big.physical_ram = 16 * GB;
         big.available_ram = 8 * GB;
         let s = FitScore::evaluate(&big, &gguf(7.0, "Q4_K_M"));
-        assert!(matches!(s.band, FitBand::Good | FitBand::Limited), "got {:?}", s.band);
+        assert!(
+            matches!(s.band, FitBand::Good | FitBand::Limited),
+            "got {:?}",
+            s.band
+        );
     }
 
     #[test]

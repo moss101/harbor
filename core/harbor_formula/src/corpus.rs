@@ -2,8 +2,8 @@
 
 use std::collections::BTreeMap;
 
-use crate::value::{CellError, CellValue};
 use crate::fixtures::CORPUS_JSON;
+use crate::value::{CellError, CellValue};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum FixtureValue {
@@ -78,23 +78,43 @@ pub fn load_corpus() -> Result<Vec<FixtureCase>, CorpusError> {
             .and_then(|v| v.as_str())
             .ok_or_else(|| CorpusError::Json("case missing id".into()))?
             .to_string();
-        let cells = c
-            .get("cells")
-            .and_then(|v| v.as_array())
-            .map(|arr| {
-                arr.iter()
-                    .map(|cell| {
-                        let a = cell.as_array().ok_or_else(|| CorpusError::Case(id.clone(), "cell not array".into()))?;
-                        let sheet = a.first().and_then(|v| v.as_str()).ok_or_else(|| CorpusError::Case(id.clone(), "cell sheet".into()))?;
-                        let row = a.get(1).and_then(|v| v.as_u64()).ok_or_else(|| CorpusError::Case(id.clone(), "cell row".into()))? as u32;
-                        let col = a.get(2).and_then(|v| v.as_u64()).ok_or_else(|| CorpusError::Case(id.clone(), "cell col".into()))? as u32;
-                        let val = a.get(3).cloned().unwrap_or(serde_json::Value::Object(Default::default()));
-                        FixtureValue::from_serde(&val).ok_or_else(|| CorpusError::Case(id.clone(), "cell value".into()))?;
-                        Ok((sheet.to_string(), row, col, FixtureValue::from_serde(&val).unwrap()))
-                    })
-                    .collect::<Result<Vec<_>, CorpusError>>()
-            })
-            .unwrap_or_else(|| Ok(Vec::new()))?;
+        let cells =
+            c.get("cells")
+                .and_then(|v| v.as_array())
+                .map(|arr| {
+                    arr.iter()
+                        .map(|cell| {
+                            let a = cell.as_array().ok_or_else(|| {
+                                CorpusError::Case(id.clone(), "cell not array".into())
+                            })?;
+                            let sheet = a.first().and_then(|v| v.as_str()).ok_or_else(|| {
+                                CorpusError::Case(id.clone(), "cell sheet".into())
+                            })?;
+                            let row =
+                                a.get(1).and_then(|v| v.as_u64()).ok_or_else(|| {
+                                    CorpusError::Case(id.clone(), "cell row".into())
+                                })? as u32;
+                            let col =
+                                a.get(2).and_then(|v| v.as_u64()).ok_or_else(|| {
+                                    CorpusError::Case(id.clone(), "cell col".into())
+                                })? as u32;
+                            let val = a
+                                .get(3)
+                                .cloned()
+                                .unwrap_or(serde_json::Value::Object(Default::default()));
+                            FixtureValue::from_serde(&val).ok_or_else(|| {
+                                CorpusError::Case(id.clone(), "cell value".into())
+                            })?;
+                            Ok((
+                                sheet.to_string(),
+                                row,
+                                col,
+                                FixtureValue::from_serde(&val).unwrap(),
+                            ))
+                        })
+                        .collect::<Result<Vec<_>, CorpusError>>()
+                })
+                .unwrap_or_else(|| Ok(Vec::new()))?;
         let formula = c
             .get("formula")
             .and_then(|v| v.as_str())
@@ -136,8 +156,9 @@ pub fn load_corpus() -> Result<Vec<FixtureCase>, CorpusError> {
                         Ok(FixtureEdit {
                             cells,
                             expect: FixtureExpectation {
-                                value: FixtureValue::from_serde(&er)
-                                    .ok_or_else(|| CorpusError::Case(id.clone(), "bad edit expect".into()))?,
+                                value: FixtureValue::from_serde(&er).ok_or_else(|| {
+                                    CorpusError::Case(id.clone(), "bad edit expect".into())
+                                })?,
                                 tolerance: er.get("tol").and_then(|v| v.as_f64()),
                             },
                         })
@@ -147,9 +168,21 @@ pub fn load_corpus() -> Result<Vec<FixtureCase>, CorpusError> {
             .unwrap_or_else(|| Ok(Vec::new()))?;
         out.push(FixtureCase {
             id: id.clone(),
-            group: c.get("group").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
-            target: c.get("target").and_then(|v| v.as_str()).unwrap_or_default().to_string(),
-            dimension: c.get("dimension").and_then(|v| v.as_str()).unwrap_or("values").to_string(),
+            group: c
+                .get("group")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default()
+                .to_string(),
+            target: c
+                .get("target")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default()
+                .to_string(),
+            dimension: c
+                .get("dimension")
+                .and_then(|v| v.as_str())
+                .unwrap_or("values")
+                .to_string(),
             cells,
             formula,
             expect,

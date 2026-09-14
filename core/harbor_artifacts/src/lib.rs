@@ -22,11 +22,12 @@ pub mod pptx;
 pub mod workbook;
 
 pub use batch::{ArtifactBatch, OpKind, Operation, Precondition};
-pub use commit::{
-    CommitJournal, CommitMode, CommitOutcome, SafeCommitError, SafeCommitter,
-};
+pub use commit::{CommitJournal, CommitMode, CommitOutcome, SafeCommitError, SafeCommitter};
 pub use diff::{ArtifactDiff, DiffEntry};
 pub use docx::{DocxDocument, DocxError, DocxOp};
-pub use office_matrix::{classify_part, compatibility_report, Classification, CompatibilityReport, MatrixClass, OfficeFormat};
+pub use office_matrix::{
+    classify_part, compatibility_report, Classification, CompatibilityReport, MatrixClass,
+    OfficeFormat,
+};
 pub use pptx::{ChartKind, ChartSpec, PptxDeck, PptxError, PptxOp, SlideContent, SlideImage};
-pub use workbook::{SheetData, WorkbookDoc, WorkbookOp, XlsxChartKind, PreservationReport};
+pub use workbook::{PreservationReport, SheetData, WorkbookDoc, WorkbookOp, XlsxChartKind};

@@ -21,12 +21,12 @@ fn ms(t: Instant) -> u128 {
     t.elapsed().as_millis()
 }
 
-fn p50(samples: &mut Vec<u128>) -> u128 {
+fn p50(samples: &mut [u128]) -> u128 {
     samples.sort();
     samples[samples.len() / 2]
 }
 
-fn p95(samples: &mut Vec<u128>) -> u128 {
+fn p95(samples: &mut [u128]) -> u128 {
     samples.sort();
     samples[(samples.len() as f64 * 0.95) as usize % samples.len()]
 }
@@ -55,11 +55,18 @@ fn main() {
         ),
     ] {
         let installer = PackageInstaller::new(&store);
-        if installer.installed_packages().unwrap_or_default().iter().any(|p| p == id) {
+        if installer
+            .installed_packages()
+            .unwrap_or_default()
+            .iter()
+            .any(|p| p == id)
+        {
             continue;
         }
         let bytes = std::fs::read(
-            std::path::Path::new(&repo_root).join("fixtures/models").join(file),
+            std::path::Path::new(&repo_root)
+                .join("fixtures/models")
+                .join(file),
         )
         .unwrap_or_else(|e| panic!("model fixture {file}: {e}"));
         let got = harbor_canonical::sha256_hex(&bytes);
@@ -83,15 +90,21 @@ fn main() {
         assert_eq!(manifest.files[0].sha256, expected_sha);
         assert_eq!(manifest.files[0].sha256, got);
         let mut staged = installer.begin(id).unwrap();
-        installer.ingest_file(&mut staged, &manifest.files[0], &bytes).unwrap();
-        installer.commit(&mut staged, &manifest, chrono::Utc::now()).unwrap();
+        installer
+            .ingest_file(&mut staged, &manifest.files[0], &bytes)
+            .unwrap();
+        installer
+            .commit(&mut staged, &manifest, chrono::Utc::now())
+            .unwrap();
     }
 
     // ---- model load (Qwen2.5-1.5B, the bound production package) ----
     let mut load_samples = Vec::new();
     let mut load_cold_ms: u128 = 0;
     let provider = GgufLlamaCppProvider::new(&models_root).unwrap();
-    let model = ModelRef::InstalledPackage { package_id: "qwen2.5-1.5b-instruct".into() };
+    let model = ModelRef::InstalledPackage {
+        package_id: "qwen2.5-1.5b-instruct".into(),
+    };
     for n in 0..3 {
         let t = Instant::now();
         provider.load(&model).unwrap();
@@ -134,8 +147,7 @@ fn main() {
     }
 
     // ---- artifact open / recalc / save (board_demo fixture) ----
-    let fixture = std::path::Path::new(&repo_root)
-        .join("fixtures/office/board_demo.xlsx");
+    let fixture = std::path::Path::new(&repo_root).join("fixtures/office/board_demo.xlsx");
     let bytes = std::fs::read(&fixture).expect("board_demo fixture");
     let mut open_samples = Vec::new();
     let mut recalc_samples = Vec::new();
@@ -155,7 +167,9 @@ fn main() {
     // ---- RAG indexing rate (embed via bge through the pinned runtime) ----
     let embed_root = models_root.clone();
     let embed_provider = GgufLlamaCppProvider::new(&embed_root).unwrap();
-    let embed_model = ModelRef::InstalledPackage { package_id: "bge-small-en-v1.5".into() };
+    let embed_model = ModelRef::InstalledPackage {
+        package_id: "bge-small-en-v1.5".into(),
+    };
     let rag_rate: Option<u128> = if embed_provider.load(&embed_model).is_ok() {
         let docs: Vec<String> = (0..20)
             .map(|i| {
@@ -169,7 +183,11 @@ fn main() {
         let vectors = embed_provider.embed(&embed_model, &docs).unwrap();
         let dt = t.elapsed().as_secs_f64();
         let rate = (docs.len() as f64 / dt * 60.0) as u128;
-        println!("rag_docs_per_minute: {rate} ({} docs, dim {})", docs.len(), vectors[0].len());
+        println!(
+            "rag_docs_per_minute: {rate} ({} docs, dim {})",
+            docs.len(),
+            vectors[0].len()
+        );
         Some(rate)
     } else {
         // Optional measurement requires an explicit unavailable reason,

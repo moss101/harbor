@@ -13,14 +13,14 @@
 //! packages; platform providers implement it via their native adapters.
 
 pub mod backend;
-pub mod provider;
-pub mod router;
 #[cfg(feature = "gguf-backend")]
 pub mod gguf;
+pub mod provider;
+pub mod router;
 
 pub use backend::TestBackend;
 #[cfg(feature = "gguf-backend")]
-pub use gguf::{GgufLlamaCppProvider, runtime_revision};
+pub use gguf::{runtime_revision, GgufLlamaCppProvider};
 pub use provider::{
     Capabilities, ChatRequest, ChatResponse, GenerationHandle, ModelProvider, ModelRef,
     ProviderError, Usage,

@@ -75,19 +75,45 @@ mod tests {
             context_tokens: None,
             steps: None,
         };
-        let current = Counters { active_compute_ms_total: 900, tool_count_total: 3, ..Default::default() };
-        let delta = BudgetDelta { active_compute_ms: 200, steps: 1, tool_calls: 1, context_tokens: 0 };
+        let current = Counters {
+            active_compute_ms_total: 900,
+            tool_count_total: 3,
+            ..Default::default()
+        };
+        let delta = BudgetDelta {
+            active_compute_ms: 200,
+            steps: 1,
+            tool_calls: 1,
+            context_tokens: 0,
+        };
         assert!(matches!(
             delta.within(&current, &budgets),
             Err(BudgetError::Exceeded("active_compute_ms"))
         ));
         // A zero-cost delta at an at-limit counter stays within budget.
-        let delta2 = BudgetDelta { active_compute_ms: 50, steps: 0, tool_calls: 0, context_tokens: 100 };
+        let delta2 = BudgetDelta {
+            active_compute_ms: 50,
+            steps: 0,
+            tool_calls: 0,
+            context_tokens: 100,
+        };
         assert!(delta2.within(&current, &budgets).is_ok());
         // A tool call delta exceeds the exhausted tool budget.
-        let delta3 = BudgetDelta { active_compute_ms: 50, steps: 0, tool_calls: 1, context_tokens: 0 };
-        assert!(matches!(delta3.within(&current, &budgets), Err(BudgetError::Exceeded("tool_calls"))));
-        let current2 = Counters { active_compute_ms_total: 500, tool_count_total: 2, ..Default::default() };
+        let delta3 = BudgetDelta {
+            active_compute_ms: 50,
+            steps: 0,
+            tool_calls: 1,
+            context_tokens: 0,
+        };
+        assert!(matches!(
+            delta3.within(&current, &budgets),
+            Err(BudgetError::Exceeded("tool_calls"))
+        ));
+        let current2 = Counters {
+            active_compute_ms_total: 500,
+            tool_count_total: 2,
+            ..Default::default()
+        };
         assert!(delta2.within(&current2, &budgets).is_ok());
     }
 }

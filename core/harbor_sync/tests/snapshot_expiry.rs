@@ -23,15 +23,29 @@ fn device_past_horizon_expires_epoch_advances_and_uploads_blocked() {
 
     // The expired device cannot upload: receiver membership is revoked.
     let env = RecordEnvelope::seal(
-        &group, "gone", 1, SyncRecordType::RunHistory, "o", harbor_sync::envelope::Hlc::now(1, None),
-        None, false, b"x",
+        &group,
+        "gone",
+        1,
+        SyncRecordType::RunHistory,
+        "o",
+        harbor_sync::envelope::Hlc::now(1, None),
+        None,
+        false,
+        b"x",
     );
     assert!(matches!(env, Err(SyncError::DeviceExpired(_))));
 
     // The compliant device continues on the new epoch.
     let env2 = RecordEnvelope::seal(
-        &group, "home", 1, SyncRecordType::RunHistory, "o", harbor_sync::envelope::Hlc::now(2, None),
-        None, false, b"y",
+        &group,
+        "home",
+        1,
+        SyncRecordType::RunHistory,
+        "o",
+        harbor_sync::envelope::Hlc::now(2, None),
+        None,
+        false,
+        b"y",
     )
     .unwrap();
     assert_eq!(env2.key_epoch, 2);
@@ -50,20 +64,14 @@ fn expired_device_cannot_extend_its_own_horizon() {
 
 #[test]
 fn snapshots_are_signed_and_stale_restore_is_rejected() {
-    use harbor_sync::snapshot::{validate_restore, SyncSnapshot};
+    use harbor_sync::snapshot::validate_restore;
     let t0 = Utc::now();
     let mut group = SyncGroup::create("g", t0);
     group.enroll("device-a", t0);
 
     // Issue a snapshot at epoch 1 signed by device-a's identity key.
     let identity = SyncIdentity::generate("device-a");
-    let snap = sign_snapshot(
-        &identity.signing_seed,
-        "device-a",
-        &group,
-        t0,
-        t0,
-    );
+    let snap = sign_snapshot(&identity.signing_seed, "device-a", &group, t0, t0);
     assert_eq!(snap.epoch, 1);
     assert_eq!(snap.schema, "harbor.sync_snapshot/v1");
 
@@ -75,14 +83,20 @@ fn snapshots_are_signed_and_stale_restore_is_rejected() {
     // Tampered watermark breaks the signature.
     let mut tampered = snap.clone();
     tampered.deletion_watermark = t0 + Duration::days(200);
-    assert!(matches!(verify_snapshot(&tampered, &vk), Err(SnapshotError::BadSignature)));
+    assert!(matches!(
+        verify_snapshot(&tampered, &vk),
+        Err(SnapshotError::BadSignature)
+    ));
 
     // Restoring an OLD snapshot cannot roll the epoch backward.
     group.revoke_and_advance_epoch("device-a", t0 + Duration::days(1));
     assert_eq!(group.current_epoch, 2);
     assert!(matches!(
         validate_restore(&snap, "g", group.current_epoch),
-        Err(SnapshotError::StaleSnapshot { snapshot: 1, group: 2 })
+        Err(SnapshotError::StaleSnapshot {
+            snapshot: 1,
+            group: 2
+        })
     ));
 
     // Wrong group rejected.

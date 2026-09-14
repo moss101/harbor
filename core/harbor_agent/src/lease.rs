@@ -53,7 +53,7 @@ pub struct LeaseManager {
 
 impl LeaseManager {
     pub fn open(path: impl AsRef<std::path::Path>) -> Result<Self, LeaseError> {
-        let mut conn = Connection::open(path)?;
+        let conn = Connection::open(path)?;
         conn.pragma_update(None, "journal_mode", "WAL")?;
         conn.pragma_update(None, "synchronous", "FULL")?;
         conn.execute_batch(MIGRATION_LEASES.sql)?;
@@ -98,17 +98,23 @@ impl LeaseManager {
                 other => Err(other),
             })?;
         if let Some((gen, owner_held, valid_until_s)) = current.clone() {
-            let valid_until =
-                chrono::DateTime::parse_from_rfc3339(&valid_until_s)
+            let valid_until = chrono::DateTime::parse_from_rfc3339(&valid_until_s)
                 .map_err(|e| LeaseError::Timestamp(e.to_string()))?
                 .with_timezone(&chrono::Utc);
             if valid_until > now && owner_held != owner {
-                return Err(LeaseError::Held { held: gen as u64, owner: owner_held });
+                return Err(LeaseError::Held {
+                    held: gen as u64,
+                    owner: owner_held,
+                });
             }
             // Expired or same-owner: release the old generation.
             tx.execute(
                 "UPDATE run_leases SET released_at = ?3 WHERE run_id = ?1 AND generation = ?2",
-                rusqlite::params![run_id, gen, now.to_rfc3339_opts(chrono::SecondsFormat::Micros, true)],
+                rusqlite::params![
+                    run_id,
+                    gen,
+                    now.to_rfc3339_opts(chrono::SecondsFormat::Micros, true)
+                ],
             )?;
         }
         // Next generation is the max across ALL lease rows (released
@@ -148,11 +154,7 @@ impl LeaseManager {
     }
 
     /// Validate a lease against durable state before authoritative use.
-    pub fn validate(
-        &self,
-        lease: &ExecutorLease,
-        now: DateTime<Utc>,
-    ) -> Result<(), LeaseError> {
+    pub fn validate(&self, lease: &ExecutorLease, now: DateTime<Utc>) -> Result<(), LeaseError> {
         let row: Option<(i64, String, String, Option<String>)> = self
             .conn
             .query_row(
@@ -173,12 +175,14 @@ impl LeaseManager {
             return Err(LeaseError::NotHeld);
         }
         if owner != lease.owner {
-            return Err(LeaseError::Held { held: gen as u64, owner });
+            return Err(LeaseError::Held {
+                held: gen as u64,
+                owner,
+            });
         }
-        let valid_until =
-            chrono::DateTime::parse_from_rfc3339(&valid_until_s)
-                .map_err(|e| LeaseError::Timestamp(e.to_string()))?
-                .with_timezone(&chrono::Utc);
+        let valid_until = chrono::DateTime::parse_from_rfc3339(&valid_until_s)
+            .map_err(|e| LeaseError::Timestamp(e.to_string()))?
+            .with_timezone(&chrono::Utc);
         if now >= valid_until {
             return Err(LeaseError::Expired(lease.generation));
         }
@@ -229,11 +233,15 @@ mod tests {
     fn acquire_increments_generation() {
         let (mut mgr, run) = setup();
         let now = Utc::now();
-        let l1 = mgr.acquire(&run, "exec-a", Duration::minutes(5), now).unwrap();
+        let l1 = mgr
+            .acquire(&run, "exec-a", Duration::minutes(5), now)
+            .unwrap();
         assert_eq!(l1.generation, 1);
         mgr.validate(&l1, now).unwrap();
         mgr.release(&l1, now).unwrap();
-        let l2 = mgr.acquire(&run, "exec-a", Duration::minutes(5), now).unwrap();
+        let l2 = mgr
+            .acquire(&run, "exec-a", Duration::minutes(5), now)
+            .unwrap();
         assert_eq!(l2.generation, 2);
     }
 
@@ -241,7 +249,9 @@ mod tests {
     fn second_owner_blocked_while_lease_live() {
         let (mut mgr, run) = setup();
         let now = Utc::now();
-        let _l1 = mgr.acquire(&run, "exec-a", Duration::minutes(5), now).unwrap();
+        let _l1 = mgr
+            .acquire(&run, "exec-a", Duration::minutes(5), now)
+            .unwrap();
         assert!(matches!(
             mgr.acquire(&run, "exec-b", Duration::minutes(5), now),
             Err(LeaseError::Held { owner, .. }) if owner == "exec-a"
@@ -252,22 +262,33 @@ mod tests {
     fn expired_lease_can_be_taken_over() {
         let (mut mgr, run) = setup();
         let now = Utc::now();
-        let _l1 = mgr.acquire(&run, "exec-a", Duration::seconds(1), now).unwrap();
+        let _l1 = mgr
+            .acquire(&run, "exec-a", Duration::seconds(1), now)
+            .unwrap();
         let later = now + Duration::seconds(2);
         // Same owner renewing an expired lease is fine.
-        let l2 = mgr.acquire(&run, "exec-a", Duration::minutes(5), later).unwrap();
+        let l2 = mgr
+            .acquire(&run, "exec-a", Duration::minutes(5), later)
+            .unwrap();
         assert_eq!(l2.generation, 2);
         // Validate old lease fails.
-        assert!(matches!(mgr.validate(&_l1, later), Err(LeaseError::NotHeld)));
+        assert!(matches!(
+            mgr.validate(&_l1, later),
+            Err(LeaseError::NotHeld)
+        ));
     }
 
     #[test]
     fn stale_generation_cannot_validate() {
         let (mut mgr, run) = setup();
         let now = Utc::now();
-        let l1 = mgr.acquire(&run, "exec-a", Duration::minutes(5), now).unwrap();
+        let l1 = mgr
+            .acquire(&run, "exec-a", Duration::minutes(5), now)
+            .unwrap();
         mgr.release(&l1, now).unwrap();
-        let l2 = mgr.acquire(&run, "exec-a", Duration::minutes(5), now).unwrap();
+        let l2 = mgr
+            .acquire(&run, "exec-a", Duration::minutes(5), now)
+            .unwrap();
         // Old generation cannot validate after release.
         assert!(matches!(mgr.validate(&l1, now), Err(LeaseError::NotHeld)));
         assert_eq!(mgr.current_generation(&run).unwrap(), l2.generation);

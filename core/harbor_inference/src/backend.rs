@@ -9,8 +9,6 @@
 use std::collections::BTreeMap;
 use std::sync::Mutex;
 
-use harbor_canonical::JsonValue;
-
 use crate::provider::{
     Capabilities, ChatRequest, ChatResponse, ModelProvider, ModelRef, ProviderError, Usage,
 };
@@ -53,10 +51,7 @@ impl ModelProvider for TestBackend {
                 if !self.known_packages.is_empty() && !self.known_packages.contains(package_id) {
                     return Err(ProviderError::ModelNotFound(package_id.clone()));
                 }
-                self.loaded
-                    .lock()
-                    .unwrap()
-                    .insert(package_id.clone(), ());
+                self.loaded.lock().unwrap().insert(package_id.clone(), ());
                 Ok(())
             }
             _ => Err(ProviderError::ModelNotFound("unknown ref".into())),
@@ -124,13 +119,19 @@ impl ModelProvider for TestBackend {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use harbor_canonical::JsonValue;
 
     #[test]
     fn capability_declarations_are_enforced() {
         let b = TestBackend::default().with_packages(&["pkg-1"]);
         let req = ChatRequest {
-            model: ModelRef::InstalledPackage { package_id: "pkg-1".into() },
-            messages: vec![JsonValue::object([("role", JsonValue::str("user")), ("content", JsonValue::str("hi"))])],
+            model: ModelRef::InstalledPackage {
+                package_id: "pkg-1".into(),
+            },
+            messages: vec![JsonValue::object([
+                ("role", JsonValue::str("user")),
+                ("content", JsonValue::str("hi")),
+            ])],
             max_tokens: 16,
             temperature: 0.2,
             requires: vec![Capabilities::Vision],
@@ -144,17 +145,26 @@ mod tests {
     #[test]
     fn load_unload_lifecycle_and_missing_model() {
         let b = TestBackend::default().with_packages(&["pkg-1"]);
-        let ok = ModelRef::InstalledPackage { package_id: "pkg-1".into() };
-        let missing = ModelRef::InstalledPackage { package_id: "nope".into() };
+        let ok = ModelRef::InstalledPackage {
+            package_id: "pkg-1".into(),
+        };
+        let missing = ModelRef::InstalledPackage {
+            package_id: "nope".into(),
+        };
         b.load(&ok).unwrap();
         b.unload(&ok).unwrap();
-        assert!(matches!(b.load(&missing), Err(ProviderError::ModelNotFound(_))));
+        assert!(matches!(
+            b.load(&missing),
+            Err(ProviderError::ModelNotFound(_))
+        ));
     }
 
     #[test]
     fn embed_deterministic() {
         let b = TestBackend::default();
-        let m = ModelRef::InstalledPackage { package_id: "e".into() };
+        let m = ModelRef::InstalledPackage {
+            package_id: "e".into(),
+        };
         let v1 = b.embed(&m, &["hello".into()]).unwrap();
         let v2 = b.embed(&m, &["hello".into()]).unwrap();
         assert_eq!(v1, v2);

@@ -1,3 +1,4 @@
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
@@ -7,17 +8,39 @@ import '../shell/adaptive_shell.dart';
 
 /// Work Canvas (goal §22): the artifact workspace. The user must always be
 /// able to determine which file, which version, proposed vs committed,
-/// verified values, fidelity limits, conflicts and approvals.
+/// verified values, fidelity limits, conflicts and approvals. "Open file"
+/// is a real picker routed through the core preview paths.
 class WorkSurface extends StatelessWidget {
   const WorkSurface({super.key});
+
+  static const _previewGroups = [
+    XTypeGroup(
+      label: 'Documents',
+      extensions: ['docx', 'pdf', 'xlsx', 'pptx'],
+    ),
+  ];
+
+  Future<void> _openFile(BuildContext context) async {
+    final service = HarborServiceProvider.of(context).notifier;
+    if (service == null) return;
+    final XFile? file;
+    try {
+      file = await openFile(acceptedTypeGroups: _previewGroups);
+    } catch (_) {
+      return; // picker dismissed
+    }
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    await service.loadPreviewFromBytes(bytes);
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final t = HarborTheme.of(context);
     final width = MediaQuery.sizeOf(context).width;
-    final canvasMinApplies = HarborBreakpoints
-        .enforceWorkCanvasMin(HarborBreakpoints.classify(width));
+    final canvasMinApplies = HarborBreakpoints.enforceWorkCanvasMin(
+        HarborBreakpoints.classify(width));
     return Center(
       child: Column(children: [
         Padding(
@@ -51,6 +74,7 @@ class WorkSurface extends StatelessWidget {
                 title: l10n.workEmptyTitle,
                 body: l10n.workEmptyBody,
                 actionLabel: l10n.openFile,
+                onAction: () => _openFile(context),
               );
             }
             if (preview['kind'] == 'docx') {

@@ -21,6 +21,6 @@ pub mod index;
 
 pub use chunk::{Chunker, ChunkerConfig};
 pub use corpus::{evaluation_corpus_sha256, run_pinned_evals};
-pub use eval::{EvalCase, EvalReport, run_eval};
-pub use identity::{IndexIdentity, Normalization, embed_model_identity};
+pub use eval::{run_eval, EvalCase, EvalReport};
+pub use identity::{embed_model_identity, IndexIdentity, Normalization};
 pub use index::{Citation, KnowledgeIndex, Source, SourceChunk, SourceVersionState};

@@ -60,7 +60,7 @@ class AdaptiveShell extends StatelessWidget {
       return Row(children: [
         Expanded(child: body),
         const VerticalDivider(width: 1),
-        SizedBox(width: HarborLayout.desktopLens, child: const HarborLens()),
+        const SizedBox(width: HarborLayout.desktopLens, child: HarborLens()),
       ]);
     }
     return body;
@@ -107,7 +107,8 @@ class HarborLens extends StatelessWidget {
               executionSemantic: ExecutionSemantic.local,
             ),
             const SizedBox(height: HarborSpace.s4),
-            Text(l10n.surfaceActivity, style: t.text.captionOf(t.colors.inkMuted)),
+            Text(l10n.surfaceActivity,
+                style: t.text.captionOf(t.colors.inkMuted)),
             const SizedBox(height: HarborSpace.s2),
             if (runs.isEmpty)
               Text(l10n.runTrailEmpty, style: t.text.smallOf(t.colors.inkMuted))

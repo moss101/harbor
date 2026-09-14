@@ -8,7 +8,12 @@ use harbor_formula::value::CellValue;
 
 fn board_workbook() -> Vec<u8> {
     let mut wb = HarborWorkbook::new();
-    let rows = [("North", 1200.0, 1350.0), ("South", 800.0, 950.0), ("East", 640.0, 700.0), ("West", 960.0, 1000.0)];
+    let rows = [
+        ("North", 1200.0, 1350.0),
+        ("South", 800.0, 950.0),
+        ("East", 640.0, 700.0),
+        ("West", 960.0, 1000.0),
+    ];
     for (i, (region, q1, q2)) in rows.iter().enumerate() {
         let r = (i + 2) as u32;
         wb.set_value("Sheet1", r, 1, CellValue::Text(region.to_string()));
@@ -23,8 +28,12 @@ fn board_workbook() -> Vec<u8> {
 }
 
 fn main() {
-    let out = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap()
-        .parent().unwrap().join("fixtures/office/board_demo.xlsx");
+    let out = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("fixtures/office/board_demo.xlsx");
     let bytes = board_workbook();
     // Prove the real path: load, recalc every formula, save.
     let mut doc = WorkbookDoc::load(&bytes).unwrap();

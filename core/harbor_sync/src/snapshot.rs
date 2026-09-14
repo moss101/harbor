@@ -43,7 +43,10 @@ pub enum SnapshotError {
     #[error("snapshot epoch {snapshot} is older than the group epoch {group}")]
     StaleSnapshot { snapshot: u64, group: u64 },
     #[error("snapshot is for group {snapshot_group}, not {expected}")]
-    WrongGroup { snapshot_group: String, expected: String },
+    WrongGroup {
+        snapshot_group: String,
+        expected: String,
+    },
     #[error("device {0} is expired (horizon {1}); re-enrollment required")]
     DeviceExpired(String, DateTime<Utc>),
 }

@@ -103,9 +103,15 @@ pub enum SafeCommitError {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum CommitOutcome {
-    Committed { version_id: String, bytes_written: u64 },
+    Committed {
+        version_id: String,
+        bytes_written: u64,
+    },
     /// new_copy mode: wrote a new file, original untouched.
-    CopiedNew { destination: PathBuf, version_id: String },
+    CopiedNew {
+        destination: PathBuf,
+        version_id: String,
+    },
 }
 
 /// Durable journal storage. The journal must be on the same filesystem as
@@ -226,14 +232,16 @@ fn parse_time(s: &str) -> DateTime<Utc> {
 /// Executes safe commits. `journal_db` is the durable journal; staging
 /// happens beside it. External-file publication uses exclusive-create temp
 /// + base-hash revalidation + rename within the same directory, then fsync
-/// of file and directory.
+///   of file and directory.
 pub struct SafeCommitter {
     pub journal: JournalStore,
 }
 
 impl SafeCommitter {
     pub fn new(journal_db: impl AsRef<Path>) -> Result<Self, SafeCommitError> {
-        Ok(SafeCommitter { journal: JournalStore::open(journal_db)? })
+        Ok(SafeCommitter {
+            journal: JournalStore::open(journal_db)?,
+        })
     }
 
     /// Commit `output` for `batch_id`, replacing `destination` only if its
@@ -305,7 +313,10 @@ impl SafeCommitter {
             });
         }
         // Publish once: exclusive-create + rename (same directory).
-        let version_id = format!("v-{}", &proposed_output_hash[..16.min(proposed_output_hash.len())]);
+        let version_id = format!(
+            "v-{}",
+            &proposed_output_hash[..16.min(proposed_output_hash.len())]
+        );
         std::fs::rename(&staging, destination)?;
         sync_dir(dest_dir);
         let mut j = journal;
@@ -313,7 +324,10 @@ impl SafeCommitter {
         j.committed_version_id = Some(version_id.clone());
         j.updated_at = Utc::now();
         self.journal.upsert(&j)?;
-        Ok(CommitOutcome::Committed { version_id, bytes_written: output.len() as u64 })
+        Ok(CommitOutcome::Committed {
+            version_id,
+            bytes_written: output.len() as u64,
+        })
     }
 
     /// new_copy fallback: predetermined destination, no overwrite. Used
@@ -356,7 +370,10 @@ impl SafeCommitter {
         f.write_all(output)?;
         f.sync_all()?;
         sync_dir(destination.parent().unwrap_or(Path::new(".")));
-        let version_id = format!("v-{}", &proposed_output_hash[..16.min(proposed_output_hash.len())]);
+        let version_id = format!(
+            "v-{}",
+            &proposed_output_hash[..16.min(proposed_output_hash.len())]
+        );
         let mut j = journal;
         j.state = JournalState::Committed;
         j.committed_version_id = Some(version_id.clone());
@@ -369,10 +386,7 @@ impl SafeCommitter {
     }
 
     /// Recovery: classify a prepared/staged/replaced journal after a crash.
-    pub fn recover(
-        &self,
-        batch_id: &str,
-    ) -> Result<RecoveryAction, SafeCommitError> {
+    pub fn recover(&self, batch_id: &str) -> Result<RecoveryAction, SafeCommitError> {
         let Some(j) = self.journal.get(batch_id)? else {
             return Ok(RecoveryAction::Nothing);
         };
@@ -439,7 +453,10 @@ mod tests {
             .commit_external("b1", "art-1", &dest, &base, &out_hash, out)
             .unwrap();
         match o1 {
-            CommitOutcome::Committed { version_id, bytes_written } => {
+            CommitOutcome::Committed {
+                version_id,
+                bytes_written,
+            } => {
                 assert_eq!(bytes_written, out.len() as u64);
                 assert!(version_id.starts_with("v-"));
             }
@@ -467,13 +484,13 @@ mod tests {
         let err = c
             .commit_external("b2", "art-1", &dest, &base, &out_hash, out)
             .unwrap_err();
-        assert!(matches!(
-            err,
-            SafeCommitError::BaseChanged { .. }
-        ));
+        assert!(matches!(err, SafeCommitError::BaseChanged { .. }));
         // The externally-edited content is untouched.
         assert_eq!(std::fs::read(&dest).unwrap(), b"externally-edited");
-        assert!(matches!(c.journal.get("b2").unwrap().unwrap().state, JournalState::Conflict));
+        assert!(matches!(
+            c.journal.get("b2").unwrap().unwrap().state,
+            JournalState::Conflict
+        ));
     }
 
     #[test]
@@ -503,21 +520,22 @@ mod tests {
         let out_hash = harbor_canonical::sha256_hex(out);
         // Simulate crash after staging: journal row only.
         let now = Utc::now();
-        c.journal.upsert(&CommitJournal {
-            batch_id: "bx".into(),
-            artifact_id: "art".into(),
-            state: JournalState::Staged,
-            mode: CommitMode::ProviderCompareAndSwap,
-            base_content_hash: base.clone(),
-            proposed_output_hash: out_hash.clone(),
-            staging_path: None,
-            target_identity: dest.to_string_lossy().to_string(),
-            destination_identity: dest.to_string_lossy().to_string(),
-            committed_version_id: None,
-            created_at: now,
-            updated_at: now,
-        })
-        .unwrap();
+        c.journal
+            .upsert(&CommitJournal {
+                batch_id: "bx".into(),
+                artifact_id: "art".into(),
+                state: JournalState::Staged,
+                mode: CommitMode::ProviderCompareAndSwap,
+                base_content_hash: base.clone(),
+                proposed_output_hash: out_hash.clone(),
+                staging_path: None,
+                target_identity: dest.to_string_lossy().to_string(),
+                destination_identity: dest.to_string_lossy().to_string(),
+                committed_version_id: None,
+                created_at: now,
+                updated_at: now,
+            })
+            .unwrap();
         // Base still present, output never published -> resumable.
         assert_eq!(
             c.recover("bx").unwrap(),
@@ -527,7 +545,9 @@ mod tests {
         std::fs::write(&dest, out).unwrap();
         assert_eq!(
             c.recover("bx").unwrap(),
-            RecoveryAction::FinalizeCommitted { version_id: format!("v-{}", &out_hash[..16]) }
+            RecoveryAction::FinalizeCommitted {
+                version_id: format!("v-{}", &out_hash[..16])
+            }
         );
     }
 }

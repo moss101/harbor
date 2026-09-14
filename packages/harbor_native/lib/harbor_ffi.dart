@@ -5,14 +5,16 @@
 /// commit semantics) lives behind it in Rust; this file is transport only.
 library;
 
+export 'harbor_worker.dart';
+
 import 'dart:convert';
 import 'dart:ffi';
-import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 import 'package:harbor_domain/harbor_domain.dart';
 
-typedef _OpenNative = Pointer<Void> Function(Pointer<Utf8>, Pointer<Utf8>, Uint8);
+typedef _OpenNative = Pointer<Void> Function(
+    Pointer<Utf8>, Pointer<Utf8>, Uint8);
 typedef _OpenDart = Pointer<Void> Function(Pointer<Utf8>, Pointer<Utf8>, int);
 typedef _CallNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>);
 typedef _CallDart = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>);
@@ -40,7 +42,8 @@ class HarborCoreClient {
   late final _CallDart _call =
       _lib.lookupFunction<_CallNative, _CallDart>('harbor_core_call');
   late final _StringFreeDart _stringFree =
-      _lib.lookupFunction<_StringFreeNative, _StringFreeDart>('harbor_core_string_free');
+      _lib.lookupFunction<_StringFreeNative, _StringFreeDart>(
+          'harbor_core_string_free');
 
   /// Open a library at [path] and a workspace handle.
   ///
@@ -61,7 +64,8 @@ class HarborCoreClient {
       }
       lib = process;
     }
-    final openFn = lib.lookupFunction<_OpenNative, _OpenDart>('harbor_core_open');
+    final openFn =
+        lib.lookupFunction<_OpenNative, _OpenDart>('harbor_core_open');
     final handle = openFn(
       dataRoot.toNativeUtf8(),
       workspaceId.toNativeUtf8(),
@@ -72,7 +76,6 @@ class HarborCoreClient {
     }
     return HarborCoreClient._(lib, handle);
   }
-
 
   /// Invoke a core method; throws [HarborCoreException] on error envelope.
   Map<String, dynamic> call(String method, [Map<String, dynamic>? args]) {
@@ -87,7 +90,8 @@ class HarborCoreClient {
     _stringFree(resp);
     final envelope = jsonDecode(text) as Map<String, dynamic>;
     if (envelope['ok'] != true) {
-      throw HarborCoreException(envelope['error']?.toString() ?? 'unknown error');
+      throw HarborCoreException(
+          envelope['error']?.toString() ?? 'unknown error');
     }
     return (envelope['result'] as Map).cast<String, dynamic>();
   }
@@ -97,7 +101,8 @@ class HarborCoreClient {
   Map<String, dynamic> createRun(String runId) =>
       call('run.create', {'run_id': runId});
 
-  Map<String, dynamic> runState(String runId) => call('run.state', {'run_id': runId});
+  Map<String, dynamic> runState(String runId) =>
+      call('run.state', {'run_id': runId});
 
   Map<String, dynamic> pauseRun(String runId, {String reason = 'user'}) =>
       call('run.pause', {'run_id': runId, 'reason': reason});
@@ -116,7 +121,10 @@ class HarborCoreClient {
 
   List<Map<String, dynamic>> installedModels() {
     final r = call('models.installed');
-    return (r['models'] as List).cast<Map>().map((m) => m.cast<String, dynamic>()).toList();
+    return (r['models'] as List)
+        .cast<Map>()
+        .map((m) => m.cast<String, dynamic>())
+        .toList();
   }
 
   Map<String, dynamic> fitScore({
@@ -140,7 +148,10 @@ class HarborCoreClient {
 
   List<Map<String, dynamic>> listRuns() {
     final r = call('runs.list');
-    return (r['runs'] as List).cast<Map>().map((m) => m.cast<String, dynamic>()).toList();
+    return (r['runs'] as List)
+        .cast<Map>()
+        .map((m) => m.cast<String, dynamic>())
+        .toList();
   }
 
   Map<String, dynamic> replayRun(String runId) =>
@@ -163,7 +174,8 @@ class HarborCoreClient {
         'data_b64': base64Encode(bytes),
       });
 
-  Map<String, dynamic> openKnowledge({String packageId = 'bge-small-en-v1.5'}) =>
+  Map<String, dynamic> openKnowledge(
+          {String packageId = 'bge-small-en-v1.5'}) =>
       call('knowledge.open', {'package_id': packageId});
 
   Map<String, dynamic> ingestKnowledge(List<Map<String, dynamic>> sources) =>
@@ -174,7 +186,10 @@ class HarborCoreClient {
 
   List<Map<String, dynamic>> searchHuggingFace(String query, {int limit = 8}) {
     final r = call('models.search_hf', {'query': query, 'limit': limit});
-    return (r as List).cast<Map>().map((m) => m.cast<String, dynamic>()).toList();
+    return (r as List)
+        .cast<Map>()
+        .map((m) => m.cast<String, dynamic>())
+        .toList();
   }
 
   Map<String, dynamic> acquireModelHf({

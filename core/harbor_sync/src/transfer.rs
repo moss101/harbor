@@ -53,9 +53,17 @@ pub struct TransferCoordinator {
     pub records: std::collections::BTreeMap<String, TransferRecord>,
 }
 
+impl Default for TransferCoordinator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TransferCoordinator {
     pub fn new() -> Self {
-        TransferCoordinator { records: Default::default() }
+        TransferCoordinator {
+            records: Default::default(),
+        }
     }
 
     /// Begin (or re-begin after crash) a transfer. The transfer ID is
@@ -101,7 +109,7 @@ impl TransferCoordinator {
         if rec.state == TransferState::Completed {
             return Err(TransferError::Completed(transfer_id.into()));
         }
-        if effects.iter().any(|e| *e == EffectOutcome::UnsettledInFlight) {
+        if effects.contains(&EffectOutcome::UnsettledInFlight) {
             return Err(TransferError::SourceCannotAcknowledge);
         }
         rec.state = TransferState::SourceAcknowledged;
@@ -116,7 +124,10 @@ impl TransferCoordinator {
         transfer_id: &str,
         now: DateTime<Utc>,
     ) -> Result<TransferStatus, TransferError> {
-        let rec = self.records.get_mut(transfer_id).ok_or(TransferError::SourceCannotAcknowledge)?;
+        let rec = self
+            .records
+            .get_mut(transfer_id)
+            .ok_or(TransferError::SourceCannotAcknowledge)?;
         if rec.state != TransferState::SourceAcknowledged {
             return Err(TransferError::SourceCannotAcknowledge);
         }
@@ -127,8 +138,15 @@ impl TransferCoordinator {
     }
 
     /// Both devices persisted transfer ID + generation: complete.
-    pub fn complete(&mut self, transfer_id: &str, now: DateTime<Utc>) -> Result<TransferStatus, TransferError> {
-        let rec = self.records.get_mut(transfer_id).ok_or(TransferError::SourceCannotAcknowledge)?;
+    pub fn complete(
+        &mut self,
+        transfer_id: &str,
+        now: DateTime<Utc>,
+    ) -> Result<TransferStatus, TransferError> {
+        let rec = self
+            .records
+            .get_mut(transfer_id)
+            .ok_or(TransferError::SourceCannotAcknowledge)?;
         if rec.state != TransferState::DestinationReady {
             return Err(TransferError::SourceCannotAcknowledge);
         }
@@ -165,8 +183,15 @@ mod tests {
             Err(TransferError::SourceCannotAcknowledge)
         ));
         // Explicit outcome_unknown is acceptable (never silently retried).
-        c.acknowledge_source("t1", &[EffectOutcome::Settled, EffectOutcome::ExplicitlyOutcomeUnknown], now())
-            .unwrap();
+        c.acknowledge_source(
+            "t1",
+            &[
+                EffectOutcome::Settled,
+                EffectOutcome::ExplicitlyOutcomeUnknown,
+            ],
+            now(),
+        )
+        .unwrap();
         assert_eq!(c.records["t1"].state, TransferState::SourceAcknowledged);
     }
 
@@ -177,10 +202,16 @@ mod tests {
         c.acknowledge_source("t2", &[], now()).unwrap();
         c.destination_ready("t2", now()).unwrap();
         let gen_at_ready = c.records["t2"].generation;
-        assert_eq!(gen_at_ready, 2, "destination-ready increments the generation");
+        assert_eq!(
+            gen_at_ready, 2,
+            "destination-ready increments the generation"
+        );
         c.complete("t2", now()).unwrap();
         assert_eq!(c.records["t2"].state, TransferState::Completed);
-        assert_eq!(c.records["t2"].generation, gen_at_ready, "completion persists, no further increment");
+        assert_eq!(
+            c.records["t2"].generation, gen_at_ready,
+            "completion persists, no further increment"
+        );
         // Retry after completion reuses the ID but cannot mutate state.
         assert!(matches!(
             c.begin("t2", "run-2", now()),

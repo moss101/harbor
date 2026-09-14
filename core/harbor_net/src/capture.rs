@@ -32,7 +32,10 @@ pub struct CaptureTransport {
 
 impl CaptureTransport {
     pub fn new(inner: Box<dyn Transport>) -> Self {
-        CaptureTransport { inner, records: Mutex::new(Vec::new()) }
+        CaptureTransport {
+            inner,
+            records: Mutex::new(Vec::new()),
+        }
     }
 
     pub fn records(&self) -> Vec<WireRecord> {
@@ -76,7 +79,11 @@ fn path_of(url: &str) -> String {
 }
 
 impl Transport for CaptureTransport {
-    fn execute(&self, req: &TransportRequest, timeout: Duration) -> std::io::Result<TransportResponse> {
+    fn execute(
+        &self,
+        req: &TransportRequest,
+        timeout: Duration,
+    ) -> std::io::Result<TransportResponse> {
         self.records.lock().unwrap().push(WireRecord {
             method: req.method.clone(),
             url: req.url.clone(),
@@ -136,7 +143,6 @@ pub fn compare_capture_to_audit(
     capture: &[WireRecord],
     audit: &[crate::audit::NetworkAuditEntry],
 ) -> Vec<String> {
-    use crate::audit::NetworkEventKind;
     let dispatched: Vec<&NetworkAuditEntry> = audit
         .iter()
         .filter(|e| e.kind == crate::audit::NetworkEventKind::Dispatched)
@@ -151,13 +157,22 @@ pub fn compare_capture_to_audit(
     }
     for (i, (wire, log)) in capture.iter().zip(dispatched.iter()).enumerate() {
         if wire.method != log.method {
-            violations.push(format!("hop {i}: wire method {} != logged {}", wire.method, log.method));
+            violations.push(format!(
+                "hop {i}: wire method {} != logged {}",
+                wire.method, log.method
+            ));
         }
         if wire.origin != log.origin {
-            violations.push(format!("hop {i}: wire origin {} != logged {}", wire.origin, log.origin));
+            violations.push(format!(
+                "hop {i}: wire origin {} != logged {}",
+                wire.origin, log.origin
+            ));
         }
         if wire.path != log.path {
-            violations.push(format!("hop {i}: wire path {} != logged {}", wire.path, log.path));
+            violations.push(format!(
+                "hop {i}: wire path {} != logged {}",
+                wire.path, log.path
+            ));
         }
     }
     violations
@@ -197,7 +212,12 @@ mod tests {
             bytes_in: 1,
             error: None,
         }];
-        let audit = vec![entry(NetworkEventKind::Dispatched, "GET", "https://a.example", "/x")];
+        let audit = vec![entry(
+            NetworkEventKind::Dispatched,
+            "GET",
+            "https://a.example",
+            "/x",
+        )];
         assert!(compare_capture_to_audit(&capture, &audit).is_empty());
     }
 
@@ -212,7 +232,12 @@ mod tests {
             bytes_in: 1,
             error: None,
         }];
-        let audit = vec![entry(NetworkEventKind::Dispatched, "GET", "https://a.example", "/x")];
+        let audit = vec![entry(
+            NetworkEventKind::Dispatched,
+            "GET",
+            "https://a.example",
+            "/x",
+        )];
         let violations = compare_capture_to_audit(&capture, &audit);
         assert!(
             violations.iter().any(|v| v.contains("origin")),

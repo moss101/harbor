@@ -140,7 +140,8 @@ mod tests {
                 target_id: target.into(),
                 expected_content_hash: "ab".repeat(32),
             },
-            args: harbor_canonical::parse(r#"{"sheet":"Sheet1","row":1,"col":1,"value":{"n":42}}"#).unwrap(),
+            args: harbor_canonical::parse(r#"{"sheet":"Sheet1","row":1,"col":1,"value":{"n":42}}"#)
+                .unwrap(),
         }
     }
 
@@ -168,7 +169,11 @@ mod tests {
         b.validate().unwrap();
         assert_eq!(b.canonical_hash().len(), 64);
         assert_eq!(
-            b.to_canonical_value().get("schema").unwrap().as_str().unwrap(),
+            b.to_canonical_value()
+                .get("schema")
+                .unwrap()
+                .as_str()
+                .unwrap(),
             "harbor.artifact_batch/v3"
         );
     }

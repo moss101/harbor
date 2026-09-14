@@ -571,6 +571,288 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'INSTALLED'**
   String get statusInstalled;
+
+  /// No description provided for @cancelAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelAction;
+
+  /// No description provided for @askGenerateTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate answer'**
+  String get askGenerateTooltip;
+
+  /// No description provided for @askAnswerHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer'**
+  String get askAnswerHeading;
+
+  /// No description provided for @askCitationsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Cited sources'**
+  String get askCitationsHeading;
+
+  /// No description provided for @askExecutedOnLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Executed on {model} · {tokens} tokens on-device'**
+  String askExecutedOnLine(String model, int tokens);
+
+  /// No description provided for @askGenerating.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating on-device…'**
+  String get askGenerating;
+
+  /// No description provided for @askGenerationProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{tokens} tokens generated'**
+  String askGenerationProgress(int tokens);
+
+  /// No description provided for @askInsufficientNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The model reports the evidence is insufficient — this answer is not grounded in your sources.'**
+  String get askInsufficientNote;
+
+  /// No description provided for @askNoChatModel.
+  ///
+  /// In en, this message translates to:
+  /// **'No chat model installed. Answers need a chat model (Models → Hugging Face); with Knowledge open, retrieval-only citations still work.'**
+  String get askNoChatModel;
+
+  /// No description provided for @askSearchOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Knowledge'**
+  String get askSearchOnly;
+
+  /// No description provided for @knowledgeSourcesHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Indexed sources'**
+  String get knowledgeSourcesHeading;
+
+  /// No description provided for @knowledgeChunksCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} chunks'**
+  String knowledgeChunksCount(int count);
+
+  /// No description provided for @knowledgeRemoveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get knowledgeRemoveAction;
+
+  /// No description provided for @knowledgeIngesting.
+  ///
+  /// In en, this message translates to:
+  /// **'Indexing chunks {done}/{total}'**
+  String knowledgeIngesting(int done, int total);
+
+  /// No description provided for @knowledgeOpenNeedsModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Install the embedding model bge-small-en-v1.5 (Models tab) to build the local index.'**
+  String get knowledgeOpenNeedsModel;
+
+  /// No description provided for @knowledgeAddFilesTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add files to the local index'**
+  String get knowledgeAddFilesTooltip;
+
+  /// No description provided for @knowledgeAddTextAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste text'**
+  String get knowledgeAddTextAction;
+
+  /// No description provided for @knowledgeAddTextTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Index pasted text'**
+  String get knowledgeAddTextTitle;
+
+  /// No description provided for @knowledgeAddTextTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get knowledgeAddTextTitleHint;
+
+  /// No description provided for @knowledgeAddTextBodyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the text to index'**
+  String get knowledgeAddTextBodyHint;
+
+  /// No description provided for @knowledgeAddTextConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Index'**
+  String get knowledgeAddTextConfirm;
+
+  /// No description provided for @knowledgeSourceAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Indexed {title}'**
+  String knowledgeSourceAdded(String title);
+
+  /// No description provided for @knowledgeAttachUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind} files cannot be indexed in this build'**
+  String knowledgeAttachUnsupported(String kind);
+
+  /// No description provided for @knowledgeNoSources.
+  ///
+  /// In en, this message translates to:
+  /// **'No sources indexed yet.'**
+  String get knowledgeNoSources;
+
+  /// No description provided for @knowledgeRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed {title}'**
+  String knowledgeRemoved(String title);
+
+  /// No description provided for @agentsUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent orchestration is not enabled in this release. The built-in skill families (Skills tab) are available today.'**
+  String get agentsUnavailableBody;
+
+  /// No description provided for @modelInstallAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Install'**
+  String get modelInstallAction;
+
+  /// No description provided for @modelInstalling.
+  ///
+  /// In en, this message translates to:
+  /// **'Installing…'**
+  String get modelInstalling;
+
+  /// No description provided for @modelInstallFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Install failed'**
+  String get modelInstallFailed;
+
+  /// No description provided for @modelInstallCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Install cancelled'**
+  String get modelInstallCancelled;
+
+  /// No description provided for @modelsHfSearchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Search failed — the network refused the query. Try again shortly.'**
+  String get modelsHfSearchFailed;
+
+  /// No description provided for @importModelTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Install a local GGUF file'**
+  String get importModelTooltip;
+
+  /// No description provided for @importModelInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed {package}'**
+  String importModelInstalled(String package);
+
+  /// No description provided for @importModelFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Local install failed'**
+  String get importModelFailed;
+
+  /// No description provided for @settingsIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Device identity'**
+  String get settingsIdentity;
+
+  /// No description provided for @settingsWorkspaceId.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace'**
+  String get settingsWorkspaceId;
+
+  /// No description provided for @opResolving.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolving package…'**
+  String get opResolving;
+
+  /// No description provided for @opDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total}'**
+  String opDownloading(int done, int total);
+
+  /// No description provided for @opVerifying.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying hashes…'**
+  String get opVerifying;
+
+  /// No description provided for @opInstalling.
+  ///
+  /// In en, this message translates to:
+  /// **'Installing…'**
+  String get opInstalling;
+
+  /// No description provided for @opLoadingModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading model…'**
+  String get opLoadingModel;
+
+  /// No description provided for @opGenerating.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating…'**
+  String get opGenerating;
+
+  /// No description provided for @opIngesting.
+  ///
+  /// In en, this message translates to:
+  /// **'Indexing…'**
+  String get opIngesting;
+
+  /// No description provided for @opBytesMib.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} MiB'**
+  String opBytesMib(int done, int total);
+
+  /// No description provided for @appStarting.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting the local core…'**
+  String get appStarting;
+
+  /// No description provided for @coreStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The native core could not be loaded. Harbor runs degraded without it.'**
+  String get coreStartFailed;
+
+  /// No description provided for @knowledgeIngestFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Indexing failed'**
+  String get knowledgeIngestFailed;
 }
 
 class _AppLocalizationsDelegate

@@ -139,8 +139,8 @@ impl Default for CapabilityCatalog {
 
 impl SkillManifest {
     pub fn parse(json: &str) -> Result<Self, SkillError> {
-        let m: SkillManifest = serde_json::from_str(json)
-            .map_err(|e| SkillError::Invalid(e.to_string()))?;
+        let m: SkillManifest =
+            serde_json::from_str(json).map_err(|e| SkillError::Invalid(e.to_string()))?;
         if m.schema != SCHEMA {
             return Err(SkillError::Invalid(format!(
                 "schema must be {SCHEMA}, got {}",
@@ -148,7 +148,9 @@ impl SkillManifest {
             )));
         }
         if m.id.trim().is_empty() || m.instructions.trim().is_empty() {
-            return Err(SkillError::Invalid("id and instructions are required".into()));
+            return Err(SkillError::Invalid(
+                "id and instructions are required".into(),
+            ));
         }
         Ok(m)
     }
@@ -166,7 +168,10 @@ impl SkillManifest {
         }
         for r in &self.requires {
             if !catalog.requirements.contains_key(r) {
-                return Err(SkillError::UnregisteredRequirement(self.id.clone(), r.clone()));
+                return Err(SkillError::UnregisteredRequirement(
+                    self.id.clone(),
+                    r.clone(),
+                ));
             }
         }
         match self.model_policy.execution.as_str() {
@@ -209,9 +214,14 @@ mod tests {
     #[test]
     fn builtins_parse_validate_and_cover_authority_families() {
         let skills = builtin_skills().unwrap();
-        assert!(skills.len() >= 21, "goal §8 requires >= 21 families, got {}", skills.len());
+        assert!(
+            skills.len() >= 21,
+            "goal §8 requires >= 21 families, got {}",
+            skills.len()
+        );
         for s in &skills {
-            s.validate(&catalog()).unwrap_or_else(|e| panic!("{}: {e}", s.id));
+            s.validate(&catalog())
+                .unwrap_or_else(|e| panic!("{}: {e}", s.id));
         }
     }
 
@@ -250,7 +260,10 @@ mod tests {
             "family": "test", "description": "d", "instructions": "run eval(payload) then summarize"
         }"#;
         let s = SkillManifest::parse(json).unwrap();
-        assert!(matches!(s.validate(&catalog()), Err(SkillError::ExecutableCode(_))));
+        assert!(matches!(
+            s.validate(&catalog()),
+            Err(SkillError::ExecutableCode(_))
+        ));
     }
 
     #[test]

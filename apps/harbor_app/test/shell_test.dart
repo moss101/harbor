@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/foundation.dart';
 import 'package:harbor_app/main.dart';
 import 'package:harbor_app/l10n/app_localizations.dart';
 import 'package:harbor_app/services/harbor_service.dart';
@@ -31,12 +30,13 @@ Future<void> pumpApp(
     // Real IO + FFI futures must run in a real zone inside testWidgets.
     await tester.runAsync(() async {
       final dir = await Directory.systemTemp.createTemp('harbor-shell-test-');
-      final s = HarborService.open(
+      final s = await HarborService.open(
           libraryPath: dylibPath, dataRoot: dir.path, workspaceId: 'ws-shell');
       await s.refresh();
       service = s;
     });
   }
+  addTearDown(() => service?.close());
   await tester.pumpWidget(MaterialApp(
     locale: locale,
     localizationsDelegates: const [
@@ -54,14 +54,8 @@ Future<void> pumpApp(
     ),
     home: HarborApp(service: service),
   ));
-  // ignore: avoid_print
-  print('PUMP: widget mounted, pumping');
   await tester.pump();
-  // ignore: avoid_print
-  print('PUMP: pump1 done');
   await tester.pump(const Duration(milliseconds: 100));
-  // ignore: avoid_print
-  print('PUMP: pump2 done');
 }
 
 Map<String, dynamic>? _result;
@@ -109,7 +103,13 @@ void main() {
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.byType(NavigationRail), findsNothing);
     // All nine surfaces reachable from the bottom bar.
-    for (final label in ['Models', 'Skills', 'Knowledge', 'Activity', 'Settings']) {
+    for (final label in [
+      'Models',
+      'Skills',
+      'Knowledge',
+      'Activity',
+      'Settings'
+    ]) {
       expect(find.text(label), findsWidgets);
     }
   });
@@ -121,7 +121,8 @@ void main() {
     expect(find.byType(NavigationBar), findsNothing);
   });
 
-  testWidgets('wide width shows rail; at 1280 lens is persistent with '
+  testWidgets(
+      'wide width shows rail; at 1280 lens is persistent with '
       'canvas >= 640', (tester) async {
     await pumpApp(tester, width: 1280, height: 800);
     final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
@@ -149,8 +150,7 @@ void main() {
 }
 
 void _appendLiveTests() {
-  testWidgets('home model dock reflects the live core state',
-      (tester) async {
+  testWidgets('home model dock reflects the live core state', (tester) async {
     await pumpApp(tester);
     if (!coreAvailable) {
       // Degraded-but-honest state when the native core is absent.
@@ -161,8 +161,7 @@ void _appendLiveTests() {
     // With the real core loaded the dock shows LOCAL ONLY policy facts,
     // never fake model names.
     expect(find.text('LOCAL ONLY'), findsWidgets);
-    expect(
-        find.text('No model installed — open Models to install one'),
+    expect(find.text('No model installed — open Models to install one'),
         findsOneWidget);
   });
 
@@ -173,13 +172,16 @@ void _appendLiveTests() {
     HarborService? service;
     await tester.runAsync(() async {
       final dir = await Directory.systemTemp.createTemp('harbor-activity-');
-      final s = HarborService.open(
-          libraryPath: dylibPath, dataRoot: dir.path, workspaceId: 'ws-activity');
-      s.createRun('run-visible-1');
+      final s = await HarborService.open(
+          libraryPath: dylibPath,
+          dataRoot: dir.path,
+          workspaceId: 'ws-activity');
+      await s.createRun('run-visible-1');
       await s.refresh();
       service = s;
     });
     if (service == null) return;
+    addTearDown(() => service?.close());
     // ignore: use_build_context_synchronously
     await tester.pumpWidget(HarborApp(service: service));
     await tester.pump();
@@ -193,7 +195,6 @@ void _appendLiveTests() {
     // Harbor Lens (which now shows real runs, not samples).
     expect(find.text('run-visible-1'), findsWidgets);
     expect(find.textContaining('CREATED'), findsWidgets);
-    service!.close();
   });
 }
 
@@ -207,15 +208,21 @@ void _appendPreviewTest() {
     await tester.runAsync(() async {
       final bytes = await File(fixturePath).readAsBytes();
       final dir = await Directory.systemTemp.createTemp('harbor-preview-');
-      final s = HarborService.open(
+      final s = await HarborService.open(
           libraryPath: dylibPath, dataRoot: dir.path, workspaceId: 'ws-canvas');
       await s.loadPreviewFromBytes(bytes);
       service = s;
     });
     if (service == null) return;
+    addTearDown(() => service?.close());
+    final home = HarborServiceProvider(
+      failed: false,
+      service: service!,
+      child: const WorkSurface(),
+    );
     await tester.pumpWidget(HarborTheme(
       colors: HarborColors.light,
-      text: HarborType(arabic: false),
+      text: const HarborType(arabic: false),
       child: MaterialApp(
         localizationsDelegates: const [
           AppLocalizations.delegate,
@@ -224,8 +231,7 @@ void _appendPreviewTest() {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: const [Locale('en')],
-        home: HarborServiceProvider(
-          failed: false, service: service, child: const WorkSurface()),
+        home: home,
       ),
     ));
     await tester.pump();
@@ -233,7 +239,6 @@ void _appendPreviewTest() {
     expect(find.textContaining('Sheet: Sheet1'), findsOneWidget);
     // OOXML stores formulas without the leading '='.
     expect(find.textContaining('SUM(B2:B5)'), findsOneWidget);
-    service!.close();
   });
 }
 
@@ -255,8 +260,7 @@ void _appendSkillsTest() {
     expect(find.text('Document Intelligence'), findsOneWidget);
     expect(find.text('Spreadsheet Analyst'), findsOneWidget);
     // The list is lazy: scroll to the last family.
-    await tester.scrollUntilVisible(
-        find.text('Privacy Inspector'), 300,
+    await tester.scrollUntilVisible(find.text('Privacy Inspector'), 300,
         scrollable: find.byType(Scrollable).first);
     expect(find.text('Privacy Inspector'), findsOneWidget);
   });
@@ -270,21 +274,18 @@ void _appendKnowledgeTest() {
     var opened = false;
     await tester.runAsync(() async {
       final dir = await Directory.systemTemp.createTemp('harbor-knowledge-');
-      final s = HarborService.open(
+      final s = await HarborService.open(
           libraryPath: dylibPath, dataRoot: dir.path, workspaceId: 'ws-know');
       // Install the REAL bge-small-en-v1.5 embedding model through the
       // staged-install path, then open the durable index over it.
-      final model = await File(
-              '/Users/mohsin/projects/harbor/fixtures/models/bge-small-en-v1.5-q8_0.gguf')
-          .readAsBytes();
-      s.installModelFile(
-        packageId: 'bge-small-en-v1.5',
-        path: 'bge-small-en-v1.5-q8_0.gguf',
-        bytes: model,
-      );
-      opened = s.openKnowledge();
+      opened = await s.installModelFromPath(
+            packageId: 'bge-small-en-v1.5',
+            path:
+                '/Users/mohsin/projects/harbor/fixtures/models/bge-small-en-v1.5-q8_0.gguf',
+          ) &&
+          await s.openKnowledge();
       if (opened) {
-        await s.ingestTexts([
+        final ingest = await s.ingestSources([
           {
             'id': 'en-contract',
             'title': 'Master Services Agreement',
@@ -292,28 +293,30 @@ void _appendKnowledgeTest() {
                 '2026-12-31. Payment terms are net thirty days.',
           }
         ]);
+        opened = ingest != null;
       }
       service = s;
     });
     if (!opened || service == null) {
       fail('embedding model must install and open in the test environment');
     }
+    addTearDown(() => service?.close());
     // Answerable question returns a real citation.
+    Map<String, dynamic>? cited;
+    Map<String, dynamic>? empty;
     await tester.runAsync(() async {
-      _result =
-          service!.searchKnowledge('What is the contract value?', topK: 3);
+      cited = await service!
+          .searchKnowledge('What is the contract value?', topK: 3);
+      empty = await service!
+          .searchKnowledge("What is the CEO's favorite color?", topK: 3);
     });
+    _result = cited;
     expect(_result, isNotNull);
     final citations = (_result!['citations'] as List).cast<Map>();
     expect(citations, isNotEmpty);
     expect(citations.first['source_id'], 'en-contract');
     expect((citations.first['score'] as num).toDouble(), greaterThan(0.5));
     // Unanswerable question: nothing above the evidence bar.
-    Map<String, dynamic>? empty;
-    await tester.runAsync(() async {
-      empty = service!.searchKnowledge("What is the CEO's favorite color?",
-          topK: 3);
-    });
     final emptyCitations = (empty!['citations'] as List)
         .cast<Map>()
         .where((c) => (c['score'] as num).toDouble() > 0.5)
@@ -323,39 +326,53 @@ void _appendKnowledgeTest() {
       isEmpty,
       reason: 'unrelated question must not surface evidence',
     );
-    service!.close();
+    // Source management: the indexed source is listed and removable.
+    await tester.runAsync(() async {
+      final sources = service!.knowledgeSources;
+      expect(sources, isNotEmpty);
+      expect(
+        sources.any((s) => s['source_id'] == 'en-contract'),
+        isTrue,
+      );
+      // Re-ingesting the same source id REPLACES (never duplicates).
+      await service!.ingestSources([
+        {
+          'id': 'en-contract',
+          'title': 'Master Services Agreement v2',
+          'text': 'Short replacement body.',
+        }
+      ]);
+      final after = service!.knowledgeSources
+          .firstWhere((s) => s['source_id'] == 'en-contract');
+      expect(after['chunks'], 1,
+          reason: 'replacement must drop stale higher-ordinal chunks');
+    });
   });
 }
 
 void _appendRagTest() {
-  testWidgets('ask generates grounded answers on-device end-to-end',
+  testWidgets('ask generates grounded answers on-device with durable runs',
       (tester) async {
     if (!coreAvailable) return;
     HarborService? service;
     var opened = false;
     await tester.runAsync(() async {
       final dir = await Directory.systemTemp.createTemp('harbor-rag-');
-      final s = HarborService.open(
+      final s = await HarborService.open(
           libraryPath: dylibPath, dataRoot: dir.path, workspaceId: 'ws-rag');
       // Install BOTH models through the real staged-install path:
       // the chat model and the embedding model.
-      final chat = await File(
-              '/Users/mohsin/projects/harbor/fixtures/models/stories260K.gguf')
-          .readAsBytes();
-      s.installModelFile(
+      await s.installModelFromPath(
           packageId: 'stories260k',
-          path: 'stories260K.gguf',
-          bytes: chat);
-      final embed = await File(
-              '/Users/mohsin/projects/harbor/fixtures/models/bge-small-en-v1.5-q8_0.gguf')
-          .readAsBytes();
-      s.installModelFile(
+          path:
+              '/Users/mohsin/projects/harbor/fixtures/models/stories260K.gguf');
+      await s.installModelFromPath(
           packageId: 'bge-small-en-v1.5',
-          path: 'bge-small-en-v1.5-q8_0.gguf',
-          bytes: embed);
-      opened = s.openKnowledge();
+          path:
+              '/Users/mohsin/projects/harbor/fixtures/models/bge-small-en-v1.5-q8_0.gguf');
+      opened = await s.openKnowledge();
       if (opened) {
-        await s.ingestTexts([
+        final ingest = await s.ingestSources([
           {
             'id': 'contract',
             'title': 'Master Services Agreement',
@@ -363,27 +380,52 @@ void _appendRagTest() {
                 '2026-12-31.',
           }
         ]);
+        opened = ingest != null;
       }
       service = s;
     });
     if (!opened || service == null) {
       fail('knowledge must open in the test environment');
     }
+    addTearDown(() => service?.close());
+    // The complete journey: durable run -> grounded generation ->
+    // answer recorded as run events.
     Map<String, dynamic>? answer;
+    String? runId;
     await tester.runAsync(() async {
-      answer = service!.generateAnswer('What is the contract value?',
-          chatPackage: 'stories260k', maxTokens: 24);
+      runId = HarborService.newRunId();
+      await service!.createRun(runId!);
+      answer = await service!.generateAnswer('What is the contract value?',
+          chatPackage: 'stories260k', maxTokens: 24, runId: runId);
     });
     // The RAG loop ran fully on-device with real provenance.
     expect(answer, isNotNull);
     expect(answer!['executed_on'], 'stories260k');
     expect(answer!['execution'], 'ON_DEVICE');
     expect((answer!['usage']['prompt_tokens'] as num).toInt(), greaterThan(0));
-    expect((answer!['usage']['completion_tokens'] as num).toInt(), greaterThan(0));
+    expect(
+        (answer!['usage']['completion_tokens'] as num).toInt(), greaterThan(0));
     expect((answer!['answer'] as String).trim(), isNotEmpty);
     // Citations were retrieved and surfaced with the answer.
     expect((answer!['used_citations'] as bool), isTrue);
-    service!.close();
+    // The run is durable and replays with the question + answer.
+    await tester.runAsync(() async {
+      final runs = service!.runs;
+      expect(runs.any((r) => r['run_id'] == runId), isTrue,
+          reason: 'the generated answer must leave a durable run');
+      final replay = await service!.replayRun(runId!);
+      expect(replay, isNotNull);
+      final trail =
+          (replay!['trail'] as List).cast<Map>().map((e) => e['summary']);
+      expect(
+        trail.any((s) => (s as String).startsWith('request:')),
+        isTrue,
+      );
+      expect(
+        trail.any((s) => (s as String).startsWith('answer:')),
+        isTrue,
+      );
+    });
   });
 }
 
@@ -397,9 +439,11 @@ void _appendComposerTest() {
     await tester.pump();
     // The send action is the labeled FilledButton in the composer.
     await tester.tap(find.text('Send'));
+    // submitRequest runs through the worker isolate — give the real
+    // async chain time to finish before asserting durability.
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 400)));
     await tester.pump();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
     // The submitted request became a durable run visible in Activity.
     await tester.tap(find.text('Activity').first);
     await tester.pump();

@@ -2,9 +2,12 @@
 //! monotonicity, duplicate/chain rejection, and LWW policy bounds
 //! (11_Sync_Protocol.md).
 
-use harbor_sync::envelope::{Hlc, RecordEnvelope, SyncError, SyncGroup, SyncIdentity, SyncReceiver, SyncRecordType, TOMBSTONE_RETENTION_DAYS, DEVICE_HORIZON_DAYS};
-use harbor_sync::lww::{is_lww_safe_field, lww_merge, LwwValue};
 use chrono::{Duration, Utc};
+use harbor_sync::envelope::{
+    Hlc, RecordEnvelope, SyncError, SyncGroup, SyncIdentity, SyncReceiver, SyncRecordType,
+    DEVICE_HORIZON_DAYS, TOMBSTONE_RETENTION_DAYS,
+};
+use harbor_sync::lww::{is_lww_safe_field, lww_merge, LwwValue};
 
 fn now() -> chrono::DateTime<Utc> {
     Utc::now()
@@ -49,23 +52,51 @@ fn receiver_rejects_duplicates_gaps_and_stale_epochs() {
     // Seal two sequential envelopes for device-a while the group is at
     // epoch 1, then hand the group to the receiver.
     let e1 = RecordEnvelope::seal(
-        &group, "device-a", 1, SyncRecordType::RunHistory, "obj", Hlc::now(1001, None),
-        None, false, b"body-1",
+        &group,
+        "device-a",
+        1,
+        SyncRecordType::RunHistory,
+        "obj",
+        Hlc::now(1001, None),
+        None,
+        false,
+        b"body-1",
     )
     .unwrap();
     let e2 = RecordEnvelope::seal(
-        &group, "device-a", 2, SyncRecordType::RunHistory, "obj", Hlc::now(1002, None),
-        None, false, b"body-2",
+        &group,
+        "device-a",
+        2,
+        SyncRecordType::RunHistory,
+        "obj",
+        Hlc::now(1002, None),
+        None,
+        false,
+        b"body-2",
     )
     .unwrap();
     let e3 = RecordEnvelope::seal(
-        &group, "device-a", 3, SyncRecordType::RunHistory, "obj", Hlc::now(1003, None),
-        None, false, b"body-3",
+        &group,
+        "device-a",
+        3,
+        SyncRecordType::RunHistory,
+        "obj",
+        Hlc::now(1003, None),
+        None,
+        false,
+        b"body-3",
     )
     .unwrap();
     let dup = RecordEnvelope::seal(
-        &group, "device-a", 1, SyncRecordType::RunHistory, "obj", Hlc::now(1001, None),
-        None, false, b"body-1",
+        &group,
+        "device-a",
+        1,
+        SyncRecordType::RunHistory,
+        "obj",
+        Hlc::now(1001, None),
+        None,
+        false,
+        b"body-1",
     )
     .unwrap();
     let _ = dup;
@@ -77,12 +108,21 @@ fn receiver_rejects_duplicates_gaps_and_stale_epochs() {
     let h2 = rx.accept(&e2, Some(&h1)).unwrap();
     // Duplicate sequence rejected.
     // Duplicate check precedes the chain check.
-    let h1 = rx.accept(&e1, None).unwrap_or_else(|_| h1);
-    assert!(matches!(rx.accept(&e1, Some(&h1)), Err(SyncError::DuplicateSequence { .. })));
+    let h1 = rx.accept(&e1, None).unwrap_or(h1);
+    assert!(matches!(
+        rx.accept(&e1, Some(&h1)),
+        Err(SyncError::DuplicateSequence { .. })
+    ));
     // Gap rejected (seq 4 when 3 was never accepted) and a chain break
     // (wrong prev hash) is rejected even with the right sequence.
-    assert!(matches!(rx.accept(&e3, Some("")), Err(SyncError::ChainMismatch)));
-    assert!(matches!(rx.accept(&e3, Some(&h1)), Err(SyncError::ChainMismatch)));
+    assert!(matches!(
+        rx.accept(&e3, Some("")),
+        Err(SyncError::ChainMismatch)
+    ));
+    assert!(matches!(
+        rx.accept(&e3, Some(&h1)),
+        Err(SyncError::ChainMismatch)
+    ));
     let _ = h2;
 }
 
@@ -94,7 +134,15 @@ fn revocation_advances_epoch_and_blocks_new_uploads() {
     group.enroll("device-b", t0);
 
     let env_old = RecordEnvelope::seal(
-        &group, "device-a", 1, SyncRecordType::RunHistory, "o", Hlc::now(1, None), None, false, b"old history",
+        &group,
+        "device-a",
+        1,
+        SyncRecordType::RunHistory,
+        "o",
+        Hlc::now(1, None),
+        None,
+        false,
+        b"old history",
     )
     .unwrap();
 
@@ -108,14 +156,30 @@ fn revocation_advances_epoch_and_blocks_new_uploads() {
     // Revoked device cannot SEAL anything new.
     assert!(matches!(
         RecordEnvelope::seal(
-            &group, "device-a", 2, SyncRecordType::RunHistory, "o", Hlc::now(2, None), None, false, b"sneaky",
+            &group,
+            "device-a",
+            2,
+            SyncRecordType::RunHistory,
+            "o",
+            Hlc::now(2, None),
+            None,
+            false,
+            b"sneaky",
         ),
         Err(SyncError::DeviceExpired(_))
     ));
 
     // The other device continues on the new epoch.
     let env_new = RecordEnvelope::seal(
-        &group, "device-b", 1, SyncRecordType::RunHistory, "o", Hlc::now(3, None), None, false, b"new epoch",
+        &group,
+        "device-b",
+        1,
+        SyncRecordType::RunHistory,
+        "o",
+        Hlc::now(3, None),
+        None,
+        false,
+        b"new epoch",
     )
     .unwrap();
     assert_eq!(env_new.key_epoch, 2);
@@ -146,7 +210,11 @@ fn lww_only_for_safe_fields_and_deterministic_merge() {
     assert_eq!(merged.value, "dark", "higher HLC wins");
 
     // Identical HLC resolves deterministically by device id.
-    let tie = LwwValue { value: "light".into(), writer_hlc: (100, 0), writer_device: "device-b".into() };
+    let tie = LwwValue {
+        value: "light".into(),
+        writer_hlc: (100, 0),
+        writer_device: "device-b".into(),
+    };
     assert_eq!(lww_merge(local.clone(), tie).value, "light");
 }
 

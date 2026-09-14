@@ -46,10 +46,21 @@ pub struct QualificationReport {
 
 impl fmt::Display for QualificationReport {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "engine {} {} ({})", self.engine_family, self.engine_version, self.engine_source_revision)?;
+        writeln!(
+            f,
+            "engine {} {} ({})",
+            self.engine_family, self.engine_version, self.engine_source_revision
+        )?;
         writeln!(f, "bundle {}", self.fixture_bundle_sha256)?;
         writeln!(f, "cases: {} passed, {} failed", self.passed, self.failed)?;
-        writeln!(f, "targets PASS: {}", self.target_status.values().filter(|s| **s == "PASS").count())?;
+        writeln!(
+            f,
+            "targets PASS: {}",
+            self.target_status
+                .values()
+                .filter(|s| **s == "PASS")
+                .count()
+        )?;
         Ok(())
     }
 }
@@ -63,9 +74,7 @@ fn values_match(expected: &FixtureValue, actual: &CellValue, tol: Option<f64>) -
         }
         (FixtureValue::Text(e), CellValue::Text(a)) => e == a,
         (FixtureValue::Bool(e), CellValue::Bool(a)) => e == a,
-        (FixtureValue::Error(code), CellValue::Error(e)) => {
-            error_code_matches(code, e.code())
-        }
+        (FixtureValue::Error(code), CellValue::Error(e)) => error_code_matches(code, e.code()),
         _ => false,
     }
 }
@@ -152,7 +161,10 @@ pub fn run_qualification() -> Result<QualificationReport, String> {
     for case in &cases {
         results.push(run_case(case));
     }
-    let passed = results.iter().filter(|r| r.status == CaseStatus::Pass).count();
+    let passed = results
+        .iter()
+        .filter(|r| r.status == CaseStatus::Pass)
+        .count();
     let failed = results.len() - passed;
     let mut target_status = BTreeMap::new();
     for (target, _ids) in corpus_targets(&cases) {
@@ -186,7 +198,11 @@ mod tests {
         let cases = load_corpus().unwrap();
         assert!(cases.len() >= 90, "corpus should be substantial");
         let targets = corpus_targets(&cases);
-        assert!(targets.len() >= 71, "expected >= 71 targets, got {}", targets.len());
+        assert!(
+            targets.len() >= 71,
+            "expected >= 71 targets, got {}",
+            targets.len()
+        );
     }
 
     #[test]

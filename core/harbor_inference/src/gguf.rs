@@ -15,14 +15,14 @@
 //! - No model file executes code: GGUF is parsed as data by llama.cpp.
 
 use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use llama_cpp_2::context::params::{LlamaContextParams, LlamaPoolingType};
-use llama_cpp_2::llama_batch::LlamaBatch;
 use llama_cpp_2::llama_backend::LlamaBackend;
-use llama_cpp_2::model::{AddBos, LlamaChatMessage, LlamaChatTemplate, LlamaModel};
+use llama_cpp_2::llama_batch::LlamaBatch;
+use llama_cpp_2::model::{AddBos, LlamaChatMessage, LlamaModel};
 use llama_cpp_2::sampling::LlamaSampler;
 
 use harbor_canonical::JsonValue;
@@ -88,23 +88,30 @@ impl GgufLlamaCppProvider {
             .iter()
             .find(|f| f.role == "weights" || f.role == "weights_shard");
         let Some(f) = weights else {
-            return Err(ProviderError::ModelNotFound(format!("{package_id}: no weights")));
+            return Err(ProviderError::ModelNotFound(format!(
+                "{package_id}: no weights"
+            )));
         };
         let path = self.installed_root.join(package_id).join(&f.path);
         if !path.exists() {
-            return Err(ProviderError::ModelNotFound(format!("missing file {}", f.path)));
+            return Err(ProviderError::ModelNotFound(format!(
+                "missing file {}",
+                f.path
+            )));
         }
         Ok(path)
     }
 
     /// Convert canonical JSON messages into engine chat messages.
-    fn to_chat_messages(
-        messages: &[JsonValue],
-    ) -> Result<Vec<LlamaChatMessage>, ProviderError> {
+    fn to_chat_messages(messages: &[JsonValue]) -> Result<Vec<LlamaChatMessage>, ProviderError> {
         messages
             .iter()
             .map(|m| {
-                let role = m.get("role").and_then(|v| v.as_str()).unwrap_or("user").to_string();
+                let role = m
+                    .get("role")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("user")
+                    .to_string();
                 let content = m
                     .get("content")
                     .and_then(|v| v.as_str())
@@ -119,10 +126,7 @@ impl GgufLlamaCppProvider {
     /// Assemble the prompt. Preference order:
     /// 1. the MODEL-NATIVE chat template carried in the GGUF metadata,
     /// 2. the documented minimal template (fallback for models without one).
-    fn build_prompt(
-        model: &LlamaModel,
-        messages: &[JsonValue],
-    ) -> Result<String, ProviderError> {
+    fn build_prompt(model: &LlamaModel, messages: &[JsonValue]) -> Result<String, ProviderError> {
         let chat = Self::to_chat_messages(messages)?;
         if let Ok(template) = model.chat_template(None) {
             let rendered = model
@@ -181,11 +185,15 @@ impl GgufLlamaCppProvider {
         if prompt_len == 0 {
             return Err(ProviderError::Backend("empty prompt".into()));
         }
-        let n_ctx = self.context_tokens.max(prompt_len as u32 + req.max_tokens).min(model.n_ctx_train());
-        let n_ctx = std::num::NonZeroU32::new(n_ctx).ok_or(ProviderError::Backend("n_ctx 0".into()))?;
+        let n_ctx = self
+            .context_tokens
+            .max(prompt_len as u32 + req.max_tokens)
+            .min(model.n_ctx_train());
+        let n_ctx =
+            std::num::NonZeroU32::new(n_ctx).ok_or(ProviderError::Backend("n_ctx 0".into()))?;
         let ctx_params = LlamaContextParams::default().with_n_ctx(Some(n_ctx));
         let mut ctx = model
-            .new_context(&self.backend, ctx_params)
+            .new_context(self.backend, ctx_params)
             .map_err(|e| ProviderError::Backend(format!("context: {e}")))?;
 
         // Prefill the prompt in one batch.
@@ -279,14 +287,14 @@ impl GgufLlamaCppProvider {
                 .ok_or_else(|| ProviderError::ModelNotFound(package.clone()))?
         };
         let n_ctx = self.context_tokens.max(512).min(model.n_ctx_train());
-        let n_ctx = std::num::NonZeroU32::new(n_ctx)
-            .ok_or(ProviderError::Backend("n_ctx 0".into()))?;
+        let n_ctx =
+            std::num::NonZeroU32::new(n_ctx).ok_or(ProviderError::Backend("n_ctx 0".into()))?;
         let ctx_params = LlamaContextParams::default()
             .with_n_ctx(Some(n_ctx))
             .with_embeddings(true)
             .with_pooling_type(LlamaPoolingType::Mean);
         let mut ctx = model
-            .new_context(&self.backend, ctx_params)
+            .new_context(self.backend, ctx_params)
             .map_err(|e| ProviderError::Backend(format!("context: {e}")))?;
         let mut out = Vec::with_capacity(texts.len());
         for text in texts {
@@ -335,7 +343,9 @@ impl ModelProvider for GgufLlamaCppProvider {
 
     fn load(&self, model: &ModelRef) -> Result<(), ProviderError> {
         let ModelRef::InstalledPackage { package_id } = model else {
-            return Err(ProviderError::ModelNotFound("gguf loads installed packages only".into()));
+            return Err(ProviderError::ModelNotFound(
+                "gguf loads installed packages only".into(),
+            ));
         };
         {
             let loaded = self.loaded.lock().unwrap();
@@ -345,7 +355,7 @@ impl ModelProvider for GgufLlamaCppProvider {
         }
         let path = self.weights_path(package_id)?;
         let params = llama_cpp_2::model::params::LlamaModelParams::default();
-        let model = LlamaModel::load_from_file(&self.backend, path, &params)
+        let model = LlamaModel::load_from_file(self.backend, path, &params)
             .map_err(|e| ProviderError::Backend(format!("model load: {e}")))?;
         self.loaded
             .lock()

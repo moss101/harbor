@@ -133,9 +133,7 @@ impl EventType {
             ];
         }
         match self {
-            EventType::RunCreated | EventType::RunTransition => {
-                &[ReplaySemantics::StateAffecting]
-            }
+            EventType::RunCreated | EventType::RunTransition => &[ReplaySemantics::StateAffecting],
             EventType::RunApprovalRequested
             | EventType::RunApprovalDecided
             | EventType::RunEffectPrepared
@@ -144,12 +142,11 @@ impl EventType {
             | EventType::RunLeaseAcquired
             | EventType::RunLeaseLost
             | EventType::RunCancelRequested
-            | EventType::RunBudgetUpdated => {
-                &[ReplaySemantics::AuthorityAffecting]
-            }
-            EventType::RunStepStarted | EventType::RunStepCompleted | EventType::RunNote => {
-                &[ReplaySemantics::IgnorableDisplay, ReplaySemantics::StateAffecting]
-            }
+            | EventType::RunBudgetUpdated => &[ReplaySemantics::AuthorityAffecting],
+            EventType::RunStepStarted | EventType::RunStepCompleted | EventType::RunNote => &[
+                ReplaySemantics::IgnorableDisplay,
+                ReplaySemantics::StateAffecting,
+            ],
             EventType::Unknown(_) => unreachable!("handled above"),
         }
     }
@@ -219,7 +216,11 @@ impl EventPayload {
         use JsonValue as V;
         match self {
             EventPayload::Created => V::Object(std::collections::BTreeMap::new()),
-            EventPayload::Transition { from_state, to_state, reason } => {
+            EventPayload::Transition {
+                from_state,
+                to_state,
+                reason,
+            } => {
                 let mut m = std::collections::BTreeMap::new();
                 m.insert("from_state".to_string(), V::str(from_state.as_str()));
                 m.insert("to_state".to_string(), V::str(to_state.as_str()));
@@ -229,7 +230,10 @@ impl EventPayload {
                 );
                 V::Object(m)
             }
-            EventPayload::StepStarted { step_id, description } => {
+            EventPayload::StepStarted {
+                step_id,
+                description,
+            } => {
                 let mut m = std::collections::BTreeMap::new();
                 m.insert("step_id".to_string(), V::str(step_id.clone()));
                 m.insert("description".to_string(), V::str(description.clone()));
@@ -241,25 +245,40 @@ impl EventPayload {
                 m.insert("summary".to_string(), V::str(summary.clone()));
                 V::Object(m)
             }
-            EventPayload::ApprovalRequested { effect_id, receipt_id } => {
+            EventPayload::ApprovalRequested {
+                effect_id,
+                receipt_id,
+            } => {
                 let mut m = std::collections::BTreeMap::new();
                 m.insert("effect_id".to_string(), V::str(effect_id.clone()));
                 m.insert("receipt_id".to_string(), V::str(receipt_id.clone()));
                 V::Object(m)
             }
-            EventPayload::ApprovalDecided { effect_id, approved } => {
+            EventPayload::ApprovalDecided {
+                effect_id,
+                approved,
+            } => {
                 let mut m = std::collections::BTreeMap::new();
                 m.insert("effect_id".to_string(), V::str(effect_id.clone()));
                 m.insert("approved".to_string(), V::Bool(*approved));
                 V::Object(m)
             }
-            EventPayload::EffectPrepared { effect_id, canonical_args_hash } => {
+            EventPayload::EffectPrepared {
+                effect_id,
+                canonical_args_hash,
+            } => {
                 let mut m = std::collections::BTreeMap::new();
                 m.insert("effect_id".to_string(), V::str(effect_id.clone()));
-                m.insert("canonical_args_hash".to_string(), V::str(canonical_args_hash.clone()));
+                m.insert(
+                    "canonical_args_hash".to_string(),
+                    V::str(canonical_args_hash.clone()),
+                );
                 V::Object(m)
             }
-            EventPayload::EffectDispatched { effect_id, attempt_id } => {
+            EventPayload::EffectDispatched {
+                effect_id,
+                attempt_id,
+            } => {
                 let mut m = std::collections::BTreeMap::new();
                 m.insert("effect_id".to_string(), V::str(effect_id.clone()));
                 m.insert("attempt_id".to_string(), V::str(attempt_id.clone()));
@@ -273,12 +292,11 @@ impl EventPayload {
             }
             EventPayload::LeaseAcquired { generation } | EventPayload::LeaseLost { generation } => {
                 let mut m = std::collections::BTreeMap::new();
-                let key = if matches!(self, EventPayload::LeaseAcquired { .. }) {
-                    "generation"
-                } else {
-                    "generation"
-                };
-                m.insert(key.to_string(), JsonValue::int(*generation as i64).unwrap_or(V::Null));
+                let key = "generation";
+                m.insert(
+                    key.to_string(),
+                    JsonValue::int(*generation as i64).unwrap_or(V::Null),
+                );
                 V::Object(m)
             }
             EventPayload::CancelRequested { requested_by } => {
@@ -312,7 +330,10 @@ impl EventPayload {
         }
     }
 
-    pub fn from_json(event_type: EventType, payload: &JsonValue) -> Result<EventPayload, PayloadError> {
+    pub fn from_json(
+        event_type: EventType,
+        payload: &JsonValue,
+    ) -> Result<EventPayload, PayloadError> {
         let obj = match payload {
             JsonValue::Object(m) => m,
             _ => return Err(PayloadError::NotAnObject),
@@ -336,10 +357,23 @@ impl EventPayload {
             EventType::RunBudgetUpdated => &["active_compute_ms_budget", "tool_calls_budget"],
             EventType::RunNote => &["text"],
             EventType::Unknown(_) => &[
-                "from_state", "to_state", "reason", "step_id", "description", "summary",
-                "effect_id", "receipt_id", "approved", "canonical_args_hash", "attempt_id",
-                "outcome", "generation", "requested_by", "active_compute_ms_budget",
-                "tool_calls_budget", "text",
+                "from_state",
+                "to_state",
+                "reason",
+                "step_id",
+                "description",
+                "summary",
+                "effect_id",
+                "receipt_id",
+                "approved",
+                "canonical_args_hash",
+                "attempt_id",
+                "outcome",
+                "generation",
+                "requested_by",
+                "active_compute_ms_budget",
+                "tool_calls_budget",
+                "text",
             ],
         };
         if event_type.is_known() {
@@ -352,9 +386,13 @@ impl EventPayload {
         Ok(match event_type {
             EventType::RunCreated => EventPayload::Created,
             EventType::RunTransition => {
-                let from = get("from_state").and_then(|v| v.as_str()).and_then(RunState::parse)
+                let from = get("from_state")
+                    .and_then(|v| v.as_str())
+                    .and_then(RunState::parse)
                     .ok_or(PayloadError::MissingField("from_state"))?;
-                let to = get("to_state").and_then(|v| v.as_str()).and_then(RunState::parse)
+                let to = get("to_state")
+                    .and_then(|v| v.as_str())
+                    .and_then(RunState::parse)
                     .ok_or(PayloadError::MissingField("to_state"))?;
                 let reason: Option<PauseReason> = match get("reason") {
                     None | Some(JsonValue::Null) => None,
@@ -364,50 +402,103 @@ impl EventPayload {
                             .ok_or(PayloadError::InvalidField("reason".to_string()))?,
                     ),
                 };
-                EventPayload::Transition { from_state: from, to_state: to, reason }
+                EventPayload::Transition {
+                    from_state: from,
+                    to_state: to,
+                    reason,
+                }
             }
             EventType::RunStepStarted => EventPayload::StepStarted {
-                step_id: get("step_id").and_then(|v| v.as_str()).ok_or(PayloadError::MissingField("step_id"))?.into(),
-                description: get("description").and_then(|v| v.as_str()).unwrap_or_default().into(),
+                step_id: get("step_id")
+                    .and_then(|v| v.as_str())
+                    .ok_or(PayloadError::MissingField("step_id"))?
+                    .into(),
+                description: get("description")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default()
+                    .into(),
             },
             EventType::RunStepCompleted => EventPayload::StepCompleted {
-                step_id: get("step_id").and_then(|v| v.as_str()).ok_or(PayloadError::MissingField("step_id"))?.into(),
-                summary: get("summary").and_then(|v| v.as_str()).unwrap_or_default().into(),
+                step_id: get("step_id")
+                    .and_then(|v| v.as_str())
+                    .ok_or(PayloadError::MissingField("step_id"))?
+                    .into(),
+                summary: get("summary")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default()
+                    .into(),
             },
             EventType::RunApprovalRequested => EventPayload::ApprovalRequested {
-                effect_id: get("effect_id").and_then(|v| v.as_str()).ok_or(PayloadError::MissingField("effect_id"))?.into(),
-                receipt_id: get("receipt_id").and_then(|v| v.as_str()).unwrap_or_default().into(),
+                effect_id: get("effect_id")
+                    .and_then(|v| v.as_str())
+                    .ok_or(PayloadError::MissingField("effect_id"))?
+                    .into(),
+                receipt_id: get("receipt_id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default()
+                    .into(),
             },
             EventType::RunApprovalDecided => EventPayload::ApprovalDecided {
-                effect_id: get("effect_id").and_then(|v| v.as_str()).ok_or(PayloadError::MissingField("effect_id"))?.into(),
-                approved: get("approved").and_then(|v| v.as_bool()).ok_or(PayloadError::MissingField("approved"))?,
+                effect_id: get("effect_id")
+                    .and_then(|v| v.as_str())
+                    .ok_or(PayloadError::MissingField("effect_id"))?
+                    .into(),
+                approved: get("approved")
+                    .and_then(|v| v.as_bool())
+                    .ok_or(PayloadError::MissingField("approved"))?,
             },
             EventType::RunEffectPrepared => EventPayload::EffectPrepared {
-                effect_id: get("effect_id").and_then(|v| v.as_str()).ok_or(PayloadError::MissingField("effect_id"))?.into(),
-                canonical_args_hash: get("canonical_args_hash").and_then(|v| v.as_str()).unwrap_or_default().into(),
+                effect_id: get("effect_id")
+                    .and_then(|v| v.as_str())
+                    .ok_or(PayloadError::MissingField("effect_id"))?
+                    .into(),
+                canonical_args_hash: get("canonical_args_hash")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default()
+                    .into(),
             },
             EventType::RunEffectDispatched => EventPayload::EffectDispatched {
-                effect_id: get("effect_id").and_then(|v| v.as_str()).ok_or(PayloadError::MissingField("effect_id"))?.into(),
-                attempt_id: get("attempt_id").and_then(|v| v.as_str()).unwrap_or_default().into(),
+                effect_id: get("effect_id")
+                    .and_then(|v| v.as_str())
+                    .ok_or(PayloadError::MissingField("effect_id"))?
+                    .into(),
+                attempt_id: get("attempt_id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default()
+                    .into(),
             },
             EventType::RunEffectResolved => EventPayload::EffectResolved {
-                effect_id: get("effect_id").and_then(|v| v.as_str()).ok_or(PayloadError::MissingField("effect_id"))?.into(),
-                outcome: get("outcome").and_then(|v| v.as_str()).unwrap_or_default().into(),
+                effect_id: get("effect_id")
+                    .and_then(|v| v.as_str())
+                    .ok_or(PayloadError::MissingField("effect_id"))?
+                    .into(),
+                outcome: get("outcome")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default()
+                    .into(),
             },
             EventType::RunLeaseAcquired | EventType::RunLeaseLost => {
-                let generation = get("generation").and_then(|v| v.as_int())
+                let generation = get("generation")
+                    .and_then(|v| v.as_int())
                     .ok_or(PayloadError::MissingField("generation"))?;
                 if generation < 0 {
                     return Err(PayloadError::InvalidField("generation".to_string()));
                 }
                 if event_type == EventType::RunLeaseAcquired {
-                    EventPayload::LeaseAcquired { generation: generation as u64 }
+                    EventPayload::LeaseAcquired {
+                        generation: generation as u64,
+                    }
                 } else {
-                    EventPayload::LeaseLost { generation: generation as u64 }
+                    EventPayload::LeaseLost {
+                        generation: generation as u64,
+                    }
                 }
             }
             EventType::RunCancelRequested => EventPayload::CancelRequested {
-                requested_by: get("requested_by").and_then(|v| v.as_str()).unwrap_or_default().into(),
+                requested_by: get("requested_by")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default()
+                    .into(),
             },
             EventType::RunBudgetUpdated => {
                 let parse_opt = |k: &str| -> Result<Option<u64>, PayloadError> {
@@ -430,7 +521,10 @@ impl EventPayload {
                 }
             }
             EventType::RunNote => EventPayload::Note {
-                text: get("text").and_then(|v| v.as_str()).unwrap_or_default().into(),
+                text: get("text")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default()
+                    .into(),
             },
             EventType::Unknown(_) => EventPayload::Raw(payload.clone()),
         })
@@ -461,13 +555,17 @@ pub struct Counters {
 }
 
 impl Counters {
-    fn to_json(&self) -> JsonValue {
+    fn to_json(self) -> JsonValue {
         use JsonValue as V;
         let mut m = std::collections::BTreeMap::new();
         let put = |m: &mut std::collections::BTreeMap<String, JsonValue>, k: &str, v: u64| {
             m.insert(k.to_string(), V::int(v as i64).unwrap_or(V::Null));
         };
-        put(&mut m, "active_compute_ms_total", self.active_compute_ms_total);
+        put(
+            &mut m,
+            "active_compute_ms_total",
+            self.active_compute_ms_total,
+        );
         put(&mut m, "step_count_total", self.step_count_total);
         put(&mut m, "tool_count_total", self.tool_count_total);
         put(&mut m, "context_tokens_total", self.context_tokens_total);
@@ -530,9 +628,15 @@ impl RunEvent {
         m.insert("event_id".to_string(), V::str(self.event_id.clone()));
         m.insert("seq".to_string(), V::int(self.seq as i64)?);
         m.insert("event_type".to_string(), V::str(self.event_type.as_str()));
-        m.insert("replay_semantics".to_string(), V::str(self.replay_semantics.as_str()));
+        m.insert(
+            "replay_semantics".to_string(),
+            V::str(self.replay_semantics.as_str()),
+        );
         m.insert("actor".to_string(), V::str(self.actor.as_str()));
-        m.insert("lease_generation".to_string(), V::int(self.lease_generation as i64)?);
+        m.insert(
+            "lease_generation".to_string(),
+            V::int(self.lease_generation as i64)?,
+        );
         let counters = self.counters.to_json();
         if let V::Object(cm) = counters {
             for (k, v) in cm {
@@ -542,7 +646,10 @@ impl RunEvent {
         m.insert("payload".to_string(), self.payload.to_json());
         m.insert(
             "created_at".to_string(),
-            V::str(self.created_at.to_rfc3339_opts(chrono::SecondsFormat::Micros, true)),
+            V::str(
+                self.created_at
+                    .to_rfc3339_opts(chrono::SecondsFormat::Micros, true),
+            ),
         );
         m.insert(
             "prev_event_hash".to_string(),
@@ -601,11 +708,15 @@ mod tests {
         let h1 = a.hash().unwrap();
         let h2 = a.hash().unwrap();
         assert_eq!(h1, h2);
-        let mut b = base_event(1, EventType::RunTransition, EventPayload::Transition {
-            from_state: RunState::Created,
-            to_state: RunState::Planning,
-            reason: None,
-        });
+        let mut b = base_event(
+            1,
+            EventType::RunTransition,
+            EventPayload::Transition {
+                from_state: RunState::Created,
+                to_state: RunState::Planning,
+                reason: None,
+            },
+        );
         b.prev_event_hash = Some(h1.clone());
         assert_ne!(b.hash().unwrap(), h1);
     }

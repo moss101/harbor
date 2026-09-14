@@ -39,8 +39,7 @@ fn docx_headings_lists_tables_roundtrip() {
     let doc = harbor_artifacts::DocxDocument::load(&bytes).unwrap();
 
     // Headings are recognized by style.
-    let styles: Vec<Option<&str>> =
-        doc.paragraphs.iter().map(|p| p.style.as_deref()).collect();
+    let styles: Vec<Option<&str>> = doc.paragraphs.iter().map(|p| p.style.as_deref()).collect();
     assert!(styles.contains(&Some("Heading1")), "styles: {styles:?}");
     assert!(styles.contains(&Some("Heading2")));
 
@@ -81,11 +80,11 @@ fn docx_headings_lists_tables_roundtrip() {
 fn xlsx_merged_cells_survive_edit_recalc_save() {
     // Build a workbook with a merged title cell (A1:B1) and a formula.
     let mut wb = umya_spreadsheet::new_file();
-    let sheet = wb.get_sheet_mut(&0).unwrap();
-    sheet.get_cell_mut((1, 1)).set_value("Merged title");
+    let sheet = wb.sheet_mut(0).unwrap();
+    sheet.cell_mut((1, 1)).set_value("Merged title");
     sheet.add_merge_cells("A1:B1");
-    sheet.get_cell_mut((2, 2)).set_value("B2 value");
-    sheet.get_cell_mut((2, 3)).set_formula("1+1");
+    sheet.cell_mut((2, 2)).set_value("B2 value");
+    sheet.cell_mut((2, 3)).set_formula("1+1");
     let mut buf = std::io::BufWriter::new(Cursor::new(Vec::new()));
     umya_spreadsheet::writer::xlsx::write_writer(&wb, &mut buf).unwrap();
     let bytes = buf.into_inner().unwrap().into_inner();
@@ -104,7 +103,7 @@ fn xlsx_merged_cells_survive_edit_recalc_save() {
     let recalc = doc.recalculate_all().unwrap();
     let out = doc.to_bytes().unwrap();
 
-    let reloaded = harbor_artifacts::WorkbookDoc::load(&out).unwrap();
+    let _reloaded = harbor_artifacts::WorkbookDoc::load(&out).unwrap();
     let mut ar = zip::ZipArchive::new(Cursor::new(out.as_slice())).unwrap();
     let mut sheet_xml = String::new();
     use std::io::Read as _;
@@ -163,8 +162,14 @@ fn docx_same_length_replacement_preserves_run_formatting() {
         .read_to_string(&mut xml)
         .unwrap();
     assert!(xml.contains("<w:b/>"), "bold run formatting must survive");
-    assert!(xml.contains("Kept"), "first run carries the replacement head");
-    assert!(xml.contains("tail"), "second run carries the replacement tail");
+    assert!(
+        xml.contains("Kept"),
+        "first run carries the replacement head"
+    );
+    assert!(
+        xml.contains("tail"),
+        "second run carries the replacement tail"
+    );
 }
 
 #[test]
@@ -178,8 +183,7 @@ fn table_cells_are_addressable_with_merge_aware_columns() {
         f.read_to_string(&mut xml).unwrap();
         xml
     };
-    let map =
-        harbor_artifacts::docx::table_cell_paragraph_map(&xml).unwrap();
+    let map = harbor_artifacts::docx::table_cell_paragraph_map(&xml).unwrap();
     let table = map.get(&0).expect("one table");
     // Merged header occupies (row 0, col 0) with gridSpan 2; body cells at
     // (row 1, col 0) and (row 1, col 1).
@@ -216,7 +220,11 @@ fn docx_table_cell_set_edit_roundtrip() {
         .unwrap();
     let reloaded = harbor_artifacts::DocxDocument::load(&out).unwrap();
     // The targeted cell changed; every other paragraph is untouched.
-    let texts: Vec<&str> = reloaded.paragraphs.iter().map(|p| p.text.as_str()).collect();
+    let texts: Vec<&str> = reloaded
+        .paragraphs
+        .iter()
+        .map(|p| p.text.as_str())
+        .collect();
     assert_eq!(
         texts,
         vec![
@@ -239,19 +247,19 @@ fn xlsx_chart_roundtrip_preserved_through_harbor_pipeline() {
     // Harbor workbook API, then preservation proof through the full
     // load/edit/recalc/save pipeline.
     let mut wb = umya_spreadsheet::new_file();
-    let sheet = wb.get_sheet_mut(&0).unwrap();
+    let sheet = wb.sheet_mut(0).unwrap();
     // Data: category labels + two value columns.
-    sheet.get_cell_mut((1, 1)).set_value("Region");
-    sheet.get_cell_mut((1, 2)).set_value("Q1");
-    sheet.get_cell_mut((1, 3)).set_value("Q2");
+    sheet.cell_mut((1, 1)).set_value("Region");
+    sheet.cell_mut((1, 2)).set_value("Q1");
+    sheet.cell_mut((1, 3)).set_value("Q2");
     let rows = [("North", 1200.0, 1350.0), ("South", 800.0, 950.0)];
     for (i, (region, q1, q2)) in rows.iter().enumerate() {
         let r = (i + 2) as u32;
-        sheet.get_cell_mut((1, r)).set_value(*region);
-        sheet.get_cell_mut((2, r)).set_value(q1.to_string());
-        sheet.get_cell_mut((3, r)).set_value(q2.to_string());
+        sheet.cell_mut((1, r)).set_value(*region);
+        sheet.cell_mut((2, r)).set_value(q1.to_string());
+        sheet.cell_mut((3, r)).set_value(q2.to_string());
     }
-    let series = vec![
+    let series = [
         "Sheet1!$B$1:$B$3".to_string(),
         "Sheet1!$C$1:$C$3".to_string(),
     ];
@@ -261,7 +269,12 @@ fn xlsx_chart_roundtrip_preserved_through_harbor_pipeline() {
     from.set_coordinate("F2");
     let mut to = umya_spreadsheet::structs::drawing::spreadsheet::MarkerType::default();
     to.set_coordinate("N16");
-    chart.new_chart(&umya_spreadsheet::structs::ChartType::BarChart, from, to, series.iter().map(|s| s.as_str()).collect::<Vec<_>>());
+    chart.new_chart(
+        &umya_spreadsheet::structs::ChartType::BarChart,
+        from,
+        to,
+        series.iter().map(|s| s.as_str()).collect::<Vec<_>>(),
+    );
     sheet.add_chart(chart);
 
     let mut buf = std::io::BufWriter::new(Cursor::new(Vec::new()));
@@ -287,7 +300,13 @@ fn xlsx_chart_roundtrip_preserved_through_harbor_pipeline() {
     // Data cells intact.
     let reloaded = harbor_artifacts::WorkbookDoc::load(&out).unwrap();
     assert_eq!(
-        reloaded.sheet("Sheet1").unwrap().cells.get(&(2, 2)).unwrap().cached,
+        reloaded
+            .sheet("Sheet1")
+            .unwrap()
+            .cells
+            .get(&(2, 2))
+            .unwrap()
+            .cached,
         Some(harbor_formula::value::CellValue::Number(1200.0))
     );
 }
@@ -339,9 +358,9 @@ fn pptx_chart_embedding_roundtrip() {
 fn enriched_workbook() -> Vec<u8> {
     use std::io::Write as _;
     let mut wb = umya_spreadsheet::new_file();
-    let sheet = wb.get_sheet_mut(&0).unwrap();
-    sheet.get_cell_mut((1, 1)).set_value("data");
-    sheet.get_cell_mut((2, 1)).set_formula("1+1");
+    let sheet = wb.sheet_mut(0).unwrap();
+    sheet.cell_mut((1, 1)).set_value("data");
+    sheet.cell_mut((2, 1)).set_formula("1+1");
     let mut buf = std::io::BufWriter::new(Cursor::new(Vec::new()));
     umya_spreadsheet::writer::xlsx::write_writer(&wb, &mut buf).unwrap();
     let plain = buf.into_inner().unwrap().into_inner();
@@ -448,7 +467,7 @@ fn xlsx_preserve_rows_survive_pipeline_byte_identical() {
     // Relationship graph stays resolvable: every Relationship target in
     // every rels file resolves to a part present in the final package.
     let mut ar = zip::ZipArchive::new(Cursor::new(out.as_slice())).unwrap();
-    let mut part_set: std::collections::BTreeSet<String> = (0..ar.len())
+    let part_set: std::collections::BTreeSet<String> = (0..ar.len())
         .map(|i| ar.by_index(i).unwrap().name().to_string())
         .collect();
     for i in 0..ar.len() {
@@ -509,13 +528,13 @@ fn xlsx_all_basic_chart_kinds_survive_pipeline() {
         harbor_artifacts::XlsxChartKind::Scatter,
     ] {
         let mut wb = umya_spreadsheet::new_file();
-        let sheet = wb.get_sheet_mut(&0).unwrap();
-        sheet.get_cell_mut((1, 1)).set_value("Region");
-        sheet.get_cell_mut((1, 2)).set_value("Value");
-        sheet.get_cell_mut((2, 1)).set_value("North");
-        sheet.get_cell_mut((2, 2)).set_value("1200");
-        sheet.get_cell_mut((3, 1)).set_value("South");
-        sheet.get_cell_mut((3, 2)).set_value("800");
+        let sheet = wb.sheet_mut(0).unwrap();
+        sheet.cell_mut((1, 1)).set_value("Region");
+        sheet.cell_mut((1, 2)).set_value("Value");
+        sheet.cell_mut((2, 1)).set_value("North");
+        sheet.cell_mut((2, 2)).set_value("1200");
+        sheet.cell_mut((3, 1)).set_value("South");
+        sheet.cell_mut((3, 2)).set_value("800");
         let mut buf = std::io::BufWriter::new(Cursor::new(Vec::new()));
         umya_spreadsheet::writer::xlsx::write_writer(&wb, &mut buf).unwrap();
         let bytes = buf.into_inner().unwrap().into_inner();
@@ -526,7 +545,10 @@ fn xlsx_all_basic_chart_kinds_survive_pipeline() {
             "Sheet1",
             "D2",
             "L16",
-            vec!["Sheet1!$A$1:$A$3".to_string(), "Sheet1!$B$1:$B$3".to_string()],
+            vec![
+                "Sheet1!$A$1:$A$3".to_string(),
+                "Sheet1!$B$1:$B$3".to_string(),
+            ],
             "Basic series",
         )
         .unwrap();
@@ -550,14 +572,12 @@ fn xlsx_all_basic_chart_kinds_survive_pipeline() {
 // Row 10 remainder: merged cells, row/column dimensions survive together.
 fn xlsx_dimensions_and_merges_survive_pipeline() {
     let mut wb = umya_spreadsheet::new_file();
-    let sheet = wb.get_sheet_mut(&0).unwrap();
+    let sheet = wb.sheet_mut(0).unwrap();
     sheet.add_merge_cells("A1:B1");
-    sheet.get_cell_mut((1, 1)).set_value("Title");
-    sheet
-        .get_column_dimension_mut("A")
-        .set_width(33.5);
-    sheet.get_row_dimension_mut(&3).set_height(24.0);
-    sheet.get_row_dimension_mut(&3).set_custom_height(true);
+    sheet.cell_mut((1, 1)).set_value("Title");
+    sheet.column_dimension_mut("A").set_width(33.5);
+    sheet.row_dimension_mut(3).set_height(24.0);
+    sheet.row_dimension_mut(3).set_custom_height(true);
     let mut buf = std::io::BufWriter::new(Cursor::new(Vec::new()));
     umya_spreadsheet::writer::xlsx::write_writer(&wb, &mut buf).unwrap();
     let bytes = buf.into_inner().unwrap().into_inner();
@@ -572,7 +592,10 @@ fn xlsx_dimensions_and_merges_survive_pipeline() {
         .read_to_string(&mut sheet_xml)
         .unwrap();
     assert!(sheet_xml.contains("A1:B1"), "merge survives: {sheet_xml}");
-    assert!(sheet_xml.contains("customWidth"), "column dimension survives");
+    assert!(
+        sheet_xml.contains("customWidth"),
+        "column dimension survives"
+    );
     assert!(sheet_xml.contains("customHeight"), "row dimension survives");
 }
 
@@ -582,7 +605,11 @@ fn xlsx_dimensions_and_merges_survive_pipeline() {
 // ---------------------------------------------------------------------------
 
 /// Minimal DOCX with arbitrary package parts beyond document.xml.
-fn docx_with_parts(document_xml: &str, parts: &[(&str, Vec<u8>)], content_types_extra: &str) -> Vec<u8> {
+fn docx_with_parts(
+    document_xml: &str,
+    parts: &[(&str, Vec<u8>)],
+    content_types_extra: &str,
+) -> Vec<u8> {
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
     let opts = SimpleFileOptions::default();
     let ct = format!(
@@ -638,11 +665,18 @@ fn docx_inline_image_preserved_through_edit() {
             }],
         )
         .unwrap();
-    assert_eq!(entry(&out, "word/media/image1.png"), png, "media byte-identical");
+    assert_eq!(
+        entry(&out, "word/media/image1.png"),
+        png,
+        "media byte-identical"
+    );
     let xml = String::from_utf8(entry(&out, "word/document.xml")).unwrap();
     assert!(xml.contains("wp:inline") && xml.contains("r:embed=\"rId5\""));
     assert_eq!(
-        harbor_artifacts::DocxDocument::load(&out).unwrap().paragraphs[2].text,
+        harbor_artifacts::DocxDocument::load(&out)
+            .unwrap()
+            .paragraphs[2]
+            .text,
         "Caption stays"
     );
 }
@@ -677,12 +711,27 @@ fn docx_sections_headers_footers_page_breaks_preserved() {
             }],
         )
         .unwrap();
-    assert_eq!(entry(&out, "word/header1.xml"), entry(&bytes, "word/header1.xml"));
-    assert_eq!(entry(&out, "word/footer1.xml"), entry(&bytes, "word/footer1.xml"));
-    assert_eq!(entry(&out, "word/_rels/document.xml.rels"), entry(&bytes, "word/_rels/document.xml.rels"));
+    assert_eq!(
+        entry(&out, "word/header1.xml"),
+        entry(&bytes, "word/header1.xml")
+    );
+    assert_eq!(
+        entry(&out, "word/footer1.xml"),
+        entry(&bytes, "word/footer1.xml")
+    );
+    assert_eq!(
+        entry(&out, "word/_rels/document.xml.rels"),
+        entry(&bytes, "word/_rels/document.xml.rels")
+    );
     let xml = String::from_utf8(entry(&out, "word/document.xml")).unwrap();
-    assert!(xml.contains("w:br w:type=\"page\""), "explicit page break preserved");
-    assert!(xml.contains("w:orient=\"portrait\"") && xml.contains("w:top=\"1440\""), "page size/margins preserved");
+    assert!(
+        xml.contains("w:br w:type=\"page\""),
+        "explicit page break preserved"
+    );
+    assert!(
+        xml.contains("w:orient=\"portrait\"") && xml.contains("w:top=\"1440\""),
+        "page size/margins preserved"
+    );
     assert!(xml.contains("headerReference") && xml.contains("footerReference"));
 }
 
@@ -705,15 +754,22 @@ fn docx_floating_drawing_preserve_only() {
     let out = doc
         .apply(
             &bytes,
-            &[harbor_artifacts::DocxOp::TextReplace { index: 3, new_text: "Finish".into() }],
+            &[harbor_artifacts::DocxOp::TextReplace {
+                index: 3,
+                new_text: "Finish".into(),
+            }],
         )
         .unwrap();
     let xml = String::from_utf8(entry(&out, "word/document.xml")).unwrap();
     assert!(xml.contains(&anchor_xml), "anchored drawing byte-identical");
     // Classifier reports it PRESERVE_ONLY.
-    let report = harbor_artifacts::compatibility_report(harbor_artifacts::OfficeFormat::Docx, &out).unwrap();
-    assert!(report.entries.iter().any(|e| e.part == "document.xml#floatingDrawing"
-        && e.class == harbor_artifacts::MatrixClass::PreserveOnly));
+    let report =
+        harbor_artifacts::compatibility_report(harbor_artifacts::OfficeFormat::Docx, &out).unwrap();
+    assert!(report
+        .entries
+        .iter()
+        .any(|e| e.part == "document.xml#floatingDrawing"
+            && e.class == harbor_artifacts::MatrixClass::PreserveOnly));
     assert!(report.banner_required());
 }
 
@@ -733,18 +789,34 @@ fn docx_fields_toc_equations_preserved() {
     let out = doc
         .apply(
             &bytes,
-            &[harbor_artifacts::DocxOp::TextReplace { index: 4, new_text: "Body v2".into() }],
+            &[harbor_artifacts::DocxOp::TextReplace {
+                index: 4,
+                new_text: "Body v2".into(),
+            }],
         )
         .unwrap();
     let xml = String::from_utf8(entry(&out, "word/document.xml")).unwrap();
-    assert!(xml.contains("instrText") && xml.contains("TOC \\o"), "TOC field preserved");
+    assert!(
+        xml.contains("instrText") && xml.contains("TOC \\o"),
+        "TOC field preserved"
+    );
     assert!(xml.contains("fldChar"), "field chars preserved");
-    assert!(xml.contains("oMath") && xml.contains("E=mc2"), "equation preserved");
-    let report = harbor_artifacts::compatibility_report(harbor_artifacts::OfficeFormat::Docx, &out).unwrap();
-    assert!(report.entries.iter().any(|e| e.part == "document.xml#fieldOrToc"
-        && e.class == harbor_artifacts::MatrixClass::PreserveOnly));
-    assert!(report.entries.iter().any(|e| e.part == "document.xml#equation"
-        && e.class == harbor_artifacts::MatrixClass::PreserveOnly));
+    assert!(
+        xml.contains("oMath") && xml.contains("E=mc2"),
+        "equation preserved"
+    );
+    let report =
+        harbor_artifacts::compatibility_report(harbor_artifacts::OfficeFormat::Docx, &out).unwrap();
+    assert!(report
+        .entries
+        .iter()
+        .any(|e| e.part == "document.xml#fieldOrToc"
+            && e.class == harbor_artifacts::MatrixClass::PreserveOnly));
+    assert!(report
+        .entries
+        .iter()
+        .any(|e| e.part == "document.xml#equation"
+            && e.class == harbor_artifacts::MatrixClass::PreserveOnly));
 }
 
 #[test]
@@ -769,22 +841,47 @@ fn docx_macros_ole_preserved_never_executed() {
     );
     let doc = harbor_artifacts::DocxDocument::load(&bytes).unwrap();
     // The loader reports the active content parts up front.
-    assert!(doc.preserved_parts.contains(&"word/vbaProject.bin".to_string()));
-    assert!(doc.preserved_parts.contains(&"word/embeddings/oleObject1.bin".to_string()));
+    assert!(doc
+        .preserved_parts
+        .contains(&"word/vbaProject.bin".to_string()));
+    assert!(doc
+        .preserved_parts
+        .contains(&"word/embeddings/oleObject1.bin".to_string()));
     let out = doc
         .apply(
             &bytes,
-            &[harbor_artifacts::DocxOp::TextReplace { index: 1, new_text: "Title v2".into() }],
+            &[harbor_artifacts::DocxOp::TextReplace {
+                index: 1,
+                new_text: "Title v2".into(),
+            }],
         )
         .unwrap();
-    assert_eq!(entry(&out, "word/vbaProject.bin"), vba, "VBA byte-identical");
-    assert_eq!(entry(&out, "word/embeddings/oleObject1.bin"), ole, "OLE byte-identical");
-    let report = harbor_artifacts::compatibility_report(harbor_artifacts::OfficeFormat::Docx, &out).unwrap();
-    assert!(report.entries.iter().any(|e| e.part == "word/vbaProject.bin"
-        && e.class == harbor_artifacts::MatrixClass::PreserveNoExecute));
-    assert!(report.entries.iter().any(|e| e.part == "document.xml#oleObject"
-        && e.class == harbor_artifacts::MatrixClass::PreserveNoExecute));
-    assert!(report.banner_required(), "export requires a compatibility banner");
+    assert_eq!(
+        entry(&out, "word/vbaProject.bin"),
+        vba,
+        "VBA byte-identical"
+    );
+    assert_eq!(
+        entry(&out, "word/embeddings/oleObject1.bin"),
+        ole,
+        "OLE byte-identical"
+    );
+    let report =
+        harbor_artifacts::compatibility_report(harbor_artifacts::OfficeFormat::Docx, &out).unwrap();
+    assert!(report
+        .entries
+        .iter()
+        .any(|e| e.part == "word/vbaProject.bin"
+            && e.class == harbor_artifacts::MatrixClass::PreserveNoExecute));
+    assert!(report
+        .entries
+        .iter()
+        .any(|e| e.part == "document.xml#oleObject"
+            && e.class == harbor_artifacts::MatrixClass::PreserveNoExecute));
+    assert!(
+        report.banner_required(),
+        "export requires a compatibility banner"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -817,9 +914,15 @@ fn pptx_images_theme_shapes_roundtrip() {
         .unwrap()
         .read_to_end(&mut media)
         .unwrap();
-    assert_eq!(media, vec![0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A, 9, 9]);
+    assert_eq!(
+        media,
+        vec![0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A, 9, 9]
+    );
     let mut ct = String::new();
-    ar.by_name("[Content_Types].xml").unwrap().read_to_string(&mut ct).unwrap();
+    ar.by_name("[Content_Types].xml")
+        .unwrap()
+        .read_to_string(&mut ct)
+        .unwrap();
     assert!(ct.contains("image/png"));
     // Slide rels reference the image; slide XML carries the p:pic.
     let mut rels = String::new();
@@ -829,7 +932,10 @@ fn pptx_images_theme_shapes_roundtrip() {
         .unwrap();
     assert!(rels.contains("relationships/image") && rels.contains("media/slide1-image.png"));
     let mut slide = String::new();
-    ar.by_name("ppt/slides/slide1.xml").unwrap().read_to_string(&mut slide).unwrap();
+    ar.by_name("ppt/slides/slide1.xml")
+        .unwrap()
+        .read_to_string(&mut slide)
+        .unwrap();
     assert!(slide.contains("<p:pic>") && slide.contains("r:embed=\"rId4\""));
     // Theme part present (Harbor theme).
     assert!(ar.by_name("ppt/theme/theme1.xml").is_ok());
@@ -863,7 +969,10 @@ fn pptx_speaker_notes_roundtrip() {
     };
     let bytes = deck.to_pptx_bytes().unwrap();
     let back = harbor_artifacts::PptxDeck::from_pptx_bytes(&bytes).unwrap();
-    assert_eq!(back.slides[0].notes.as_deref(), Some("Cite the verified workbook"));
+    assert_eq!(
+        back.slides[0].notes.as_deref(),
+        Some("Cite the verified workbook")
+    );
     assert_eq!(back.slides[1].notes, None, "absent notes stay absent");
 }
 
@@ -932,7 +1041,10 @@ fn pptx_transitions_never_emitted_external_preserved() {
         }
         let mut xml = String::new();
         ar.by_name(&name).unwrap().read_to_string(&mut xml).unwrap();
-        assert!(!xml.contains("p:transition"), "{name} must not carry transitions");
+        assert!(
+            !xml.contains("p:transition"),
+            "{name} must not carry transitions"
+        );
         assert!(!xml.contains("p:anim"), "{name} must not carry animations");
     }
     // An external slide with a transition still previews its text.
@@ -947,8 +1059,10 @@ fn pptx_transitions_never_emitted_external_preserved() {
             if name == "ppt/slides/slide1.xml" {
                 let mut xml = String::new();
                 std::io::Read::read_to_string(&mut f, &mut xml).unwrap();
-                let patched =
-                    xml.replace("<p:clrMapOvr>", "<p:transition spd=\"med\"><p:fade/></p:transition><p:clrMapOvr>");
+                let patched = xml.replace(
+                    "<p:clrMapOvr>",
+                    "<p:transition spd=\"med\"><p:fade/></p:transition><p:clrMapOvr>",
+                );
                 writer.write_all(patched.as_bytes()).unwrap();
             } else {
                 std::io::copy(&mut f, &mut writer).unwrap();
@@ -960,8 +1074,15 @@ fn pptx_transitions_never_emitted_external_preserved() {
     assert_eq!(back.slides[0].title, "T");
     assert!(back.slides[0].bullets.contains(&"b".to_string()));
     // The compatibility report classifies the package honestly.
-    let report = harbor_artifacts::compatibility_report(harbor_artifacts::OfficeFormat::Pptx, bytes.as_slice()).unwrap();
-    assert!(!report.banner_required(), "Harbor-generated deck claims nothing beyond scope");
+    let report = harbor_artifacts::compatibility_report(
+        harbor_artifacts::OfficeFormat::Pptx,
+        bytes.as_slice(),
+    )
+    .unwrap();
+    assert!(
+        !report.banner_required(),
+        "Harbor-generated deck claims nothing beyond scope"
+    );
 }
 
 #[test]
@@ -982,17 +1103,32 @@ fn compatibility_classifier_reports_and_banners() {
             .map(|e| e.class)
             .unwrap_or_else(|| panic!("{p} classified"))
     };
-    assert_eq!(class_of("xl/pivotTables/pivotTable1.xml"), harbor_artifacts::MatrixClass::PreserveOnly);
-    assert_eq!(class_of("xl/externalLinks/externalLink1.xml"), harbor_artifacts::MatrixClass::PreserveOnly);
-    assert_eq!(class_of("xl/vbaProject.bin"), harbor_artifacts::MatrixClass::PreserveNoExecute);
+    assert_eq!(
+        class_of("xl/pivotTables/pivotTable1.xml"),
+        harbor_artifacts::MatrixClass::PreserveOnly
+    );
+    assert_eq!(
+        class_of("xl/externalLinks/externalLink1.xml"),
+        harbor_artifacts::MatrixClass::PreserveOnly
+    );
+    assert_eq!(
+        class_of("xl/vbaProject.bin"),
+        harbor_artifacts::MatrixClass::PreserveNoExecute
+    );
     assert!(report.banner_required(), "active content forces the banner");
     // A plain Harbor workbook raises no banner and no unknown parts.
     let mut wb = umya_spreadsheet::new_file();
-    wb.get_sheet_mut(&0).unwrap().get_cell_mut((1, 1)).set_value("x");
+    wb.sheet_mut(0).unwrap().cell_mut((1, 1)).set_value("x");
     let mut buf = std::io::BufWriter::new(Cursor::new(Vec::new()));
     umya_spreadsheet::writer::xlsx::write_writer(&wb, &mut buf).unwrap();
     let plain = buf.into_inner().unwrap().into_inner();
-    let report = harbor_artifacts::compatibility_report(harbor_artifacts::OfficeFormat::Xlsx, &plain).unwrap();
-    assert!(report.unknown_parts.is_empty(), "unknown: {:?}", report.unknown_parts);
+    let report =
+        harbor_artifacts::compatibility_report(harbor_artifacts::OfficeFormat::Xlsx, &plain)
+            .unwrap();
+    assert!(
+        report.unknown_parts.is_empty(),
+        "unknown: {:?}",
+        report.unknown_parts
+    );
     assert!(!report.banner_required());
 }

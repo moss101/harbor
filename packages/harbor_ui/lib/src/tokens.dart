@@ -145,25 +145,46 @@ class HarborType {
   double get smallLine => arabic ? 20 : 17;
   double get captionLine => arabic ? 18 : 15;
 
-  TextStyle bodyOf(Color color) =>
-      TextStyle(fontFamily: family, fontSize: 14, height: bodyLine / 14, color: color);
-  TextStyle smallOf(Color color) =>
-      TextStyle(fontFamily: family, fontSize: 12, height: smallLine / 12, color: color);
+  TextStyle bodyOf(Color color) => TextStyle(
+      fontFamily: family, fontSize: 14, height: bodyLine / 14, color: color);
+  TextStyle smallOf(Color color) => TextStyle(
+      fontFamily: family, fontSize: 12, height: smallLine / 12, color: color);
   // Token weight 450 -> nearest Flutter weight w500 (FontWeight ships hundreds only).
   TextStyle captionOf(Color color) => TextStyle(
-      fontFamily: family, fontSize: 11, height: captionLine / 11, fontWeight: FontWeight.w500, color: color);
+      fontFamily: family,
+      fontSize: 11,
+      height: captionLine / 11,
+      fontWeight: FontWeight.w500,
+      color: color);
   // Token weights 620/650 -> w600.
   TextStyle titleOf(Color color) => TextStyle(
-      fontFamily: family, fontSize: 24, height: 30 / 24, fontWeight: FontWeight.w600, color: color);
+      fontFamily: family,
+      fontSize: 24,
+      height: 30 / 24,
+      fontWeight: FontWeight.w600,
+      color: color);
   TextStyle h2Of(Color color) => TextStyle(
-      fontFamily: family, fontSize: 18, height: 24 / 18, fontWeight: FontWeight.w600, color: color);
+      fontFamily: family,
+      fontSize: 18,
+      height: 24 / 18,
+      fontWeight: FontWeight.w600,
+      color: color);
   TextStyle monoOf(Color color, {double size = 13}) =>
       TextStyle(fontFamily: familyMono, fontSize: size, color: color);
 }
 
 /// Spacing / radius / motion scales.
 class HarborSpace {
-  static const double s1 = 4, s2 = 8, s3 = 12, s4 = 16, s5 = 20, s6 = 24, s8 = 32, s10 = 40, s12 = 48, s16 = 64;
+  static const double s1 = 4,
+      s2 = 8,
+      s3 = 12,
+      s4 = 16,
+      s5 = 20,
+      s6 = 24,
+      s8 = 32,
+      s10 = 40,
+      s12 = 48,
+      s16 = 64;
 }
 
 class HarborRadius {

@@ -36,8 +36,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
         with: { workspaces: core }
+      - name: Formatting gate
+        run: cargo fmt --check
+      - name: Clippy gate (all targets, warnings denied)
+        run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Test all crates (offline)
         run: cargo test --workspace
       - name: Network-dependent tests (real HF acquisition)
@@ -45,3 +51,40 @@ jobs:
         continue-on-error: false
       - name: Formula qualification report
         run: cargo test -p harbor_formula full_qualification -- --nocapture
+
+  flutter:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: core }
+      - name: Build the native core for the live FFI tests
+        run: cargo build --manifest-path core/Cargo.toml -p harbor_ffi
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.4
+          channel: stable
+          cache: true
+      - name: Pub get (packages + app)
+        run: |
+          for d in packages/harbor_domain packages/harbor_native packages/harbor_ui apps/harbor_app; do
+            (cd "$d" && flutter pub get)
+          done
+      - name: Dart formatting gate
+        run: |
+          for d in packages/harbor_domain packages/harbor_native packages/harbor_ui apps/harbor_app; do
+            (cd "$d" && dart format --output=none --set-exit-if-changed lib test)
+          done
+      - name: Analyze gate
+        run: |
+          for d in packages/harbor_domain packages/harbor_native packages/harbor_ui apps/harbor_app; do
+            (cd "$d" && flutter analyze --no-pub)
+          done
+      - name: Package tests
+        run: |
+          for d in packages/harbor_domain packages/harbor_native packages/harbor_ui; do
+            (cd "$d" && flutter test)
+          done
+      - name: App tests (live core, shell + a11y + l10n + RAG journey)
+        run: (cd apps/harbor_app && flutter test)

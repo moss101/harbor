@@ -9,16 +9,12 @@
 
 use std::collections::BTreeMap;
 use std::io::Write as _;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
-use harbor_net::AuditSink;
-use harbor_net::broker::{
-    BrokerError, DispatchOutcome, EgressBroker, EgressClass, Transport, TransportRequest,
-};
-use harbor_net::broker::PrivacyMode;
 use chrono::{DateTime, Utc};
-use sha2::{Digest, Sha256};
 use harbor_canonical::JsonValue;
+use harbor_net::broker::{BrokerError, EgressBroker, Transport, TransportRequest};
+use sha2::{Digest, Sha256};
 
 use crate::install::{PackageFile, PackageInstaller, PackageManifest, RuntimeBinding};
 
@@ -69,18 +65,15 @@ impl HfAcquirer<'_> {
 
     /// GET a URL through the broker, following hops only while each origin
     /// has a session. Returns the final body.
-    pub fn fetch(
-        &self,
-        url: &str,
-        run_id: Option<&str>,
-    ) -> Result<Vec<u8>, AcquireError> {
-        let mut current_url: url::Url =
-            url.parse().map_err(|e| AcquireError::Broker(format!("url: {e}")))?;
+    pub fn fetch(&self, url: &str, run_id: Option<&str>) -> Result<Vec<u8>, AcquireError> {
+        let mut current_url: url::Url = url
+            .parse()
+            .map_err(|e| AcquireError::Broker(format!("url: {e}")))?;
         let mut hops = 0;
         let mut retries = 0u32;
         loop {
-            let origin = origin_of(&current_url)
-                .ok_or_else(|| AcquireError::Broker("no origin".into()))?;
+            let origin =
+                origin_of(&current_url).ok_or_else(|| AcquireError::Broker("no origin".into()))?;
             let session = self
                 .session_for(&origin)
                 .ok_or_else(|| AcquireError::NoSession(origin.clone()))?;
@@ -110,9 +103,9 @@ impl HfAcquirer<'_> {
                         // bytes dispatched to us): bounded retry with
                         // backoff, then an honest failure.
                         if (resp.status == 429 || resp.status == 503) && retries < 3 {
-                            std::thread::sleep(
-                                std::time::Duration::from_secs(2 * (retries as u64 + 1)),
-                            );
+                            std::thread::sleep(std::time::Duration::from_secs(
+                                2 * (retries as u64 + 1),
+                            ));
                             retries += 1;
                             continue;
                         }
@@ -123,8 +116,9 @@ impl HfAcquirer<'_> {
                 Err(BrokerError::RedirectDenied(next)) => {
                     // Was the redirect denied because we lack a session for
                     // the next origin? Then stop honestly.
-                    let next_url: url::Url =
-                        next.parse().map_err(|e| AcquireError::Broker(format!("url: {e}")))?;
+                    let next_url: url::Url = next
+                        .parse()
+                        .map_err(|e| AcquireError::Broker(format!("url: {e}")))?;
                     let next_origin = origin_of(&next_url)
                         .ok_or_else(|| AcquireError::Broker("no origin".into()))?;
                     if self.session_for(&next_origin).is_none() {
@@ -152,21 +146,22 @@ impl HfAcquirer<'_> {
         out: &Path,
         run_id: Option<&str>,
     ) -> Result<(String, u64), AcquireError> {
-        let mut current_url: url::Url =
-            url.parse().map_err(|e| AcquireError::Broker(format!("url: {e}")))?;
+        let mut current_url: url::Url = url
+            .parse()
+            .map_err(|e| AcquireError::Broker(format!("url: {e}")))?;
         let mut hops = 0;
         let mut retries = 0u32;
         loop {
             if self.cancelled() {
                 return Err(AcquireError::Cancelled);
             }
-            let origin = origin_of(&current_url)
-                .ok_or_else(|| AcquireError::Broker("no origin".into()))?;
+            let origin =
+                origin_of(&current_url).ok_or_else(|| AcquireError::Broker("no origin".into()))?;
             let session = self
                 .session_for(&origin)
                 .ok_or_else(|| AcquireError::NoSession(origin.clone()))?;
-            let mut file = std::fs::File::create(out)
-                .map_err(|e| AcquireError::Install(e.to_string()))?;
+            let mut file =
+                std::fs::File::create(out).map_err(|e| AcquireError::Install(e.to_string()))?;
             let mut hasher = Sha256::new();
             let mut size = 0u64;
             {
@@ -180,7 +175,8 @@ impl HfAcquirer<'_> {
                     hasher.update(chunk);
                     size += chunk.len() as u64;
                     if let Some(p) = &progress {
-                        p.bytes_done.fetch_add(chunk.len() as u64, std::sync::atomic::Ordering::Relaxed);
+                        p.bytes_done
+                            .fetch_add(chunk.len() as u64, std::sync::atomic::Ordering::Relaxed);
                     }
                     file.write_all(chunk)
                 };
@@ -255,7 +251,9 @@ impl HfAcquirer<'_> {
                             retries += 1;
                             continue;
                         }
-                        return Err(AcquireError::Broker("transport failed after retries".into()));
+                        return Err(AcquireError::Broker(
+                            "transport failed after retries".into(),
+                        ));
                     }
                     Err(e) => return Err(AcquireError::Broker(e.to_string())),
                 }
@@ -280,7 +278,8 @@ impl HfAcquirer<'_> {
             .map_err(|e| AcquireError::Install(e.to_string()))?;
         let mut manifest_files = Vec::new();
         if let Some(p) = &self.progress {
-            p.items_total.store(files.len() as u64, std::sync::atomic::Ordering::Relaxed);
+            p.items_total
+                .store(files.len() as u64, std::sync::atomic::Ordering::Relaxed);
             p.set_phase("resolving");
             p.set_detail(repo_id);
         }
@@ -288,9 +287,7 @@ impl HfAcquirer<'_> {
         // brokered connection before the weight transfer. This cross-checks
         // declared sizes against HF's own metadata and warms the pooled
         // connection (edge nodes reset some fresh handshakes).
-        let tree_url = format!(
-            "https://huggingface.co/api/models/{repo_id}/tree/{revision}"
-        );
+        let tree_url = format!("https://huggingface.co/api/models/{repo_id}/tree/{revision}");
         let tree = self.fetch(&tree_url, None)?;
         let expected_sizes: std::collections::BTreeMap<String, u64> =
             serde_json::from_slice::<serde_json::Value>(&tree)
@@ -316,7 +313,8 @@ impl HfAcquirer<'_> {
                 .iter()
                 .filter_map(|(path, _, _)| expected_sizes.get(path).copied())
                 .sum();
-            p.bytes_total.store(total, std::sync::atomic::Ordering::Relaxed);
+            p.bytes_total
+                .store(total, std::sync::atomic::Ordering::Relaxed);
             p.set_phase("downloading");
         }
         for (index, (path, role, sha256)) in files.iter().enumerate() {
@@ -327,9 +325,7 @@ impl HfAcquirer<'_> {
             if let Some(p) = &self.progress {
                 p.set_detail(&format!("{path} ({}/{})", index + 1, files.len()));
             }
-            let url = format!(
-                "https://huggingface.co/{repo_id}/resolve/{revision}/{path}"
-            );
+            let url = format!("https://huggingface.co/{repo_id}/resolve/{revision}/{path}");
             let out = staged.staging_dir.join(path);
             if let Some(parent) = out.parent() {
                 std::fs::create_dir_all(parent)
@@ -356,7 +352,11 @@ impl HfAcquirer<'_> {
             // With no pinned hash (search-driven acquisition), the hash of
             // the downloaded bytes becomes the package identity and is
             // surfaced to the user.
-            let effective_sha = if sha256.is_empty() { got } else { sha256.clone() };
+            let effective_sha = if sha256.is_empty() {
+                got
+            } else {
+                sha256.clone()
+            };
             let pf = PackageFile {
                 role: role.clone(),
                 path: path.clone(),
@@ -367,7 +367,8 @@ impl HfAcquirer<'_> {
             let _ = effective_sha;
             manifest_files.push(pf);
             if let Some(p) = &self.progress {
-                p.items_done.store(index as u64 + 1, std::sync::atomic::Ordering::Relaxed);
+                p.items_done
+                    .store(index as u64 + 1, std::sync::atomic::Ordering::Relaxed);
             }
         }
         let manifest = PackageManifest {
@@ -430,8 +431,9 @@ static HF_NETWORK_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 mod tests {
     use super::*;
     use harbor_net::audit::SqliteAuditSink;
-    use harbor_net::broker::EgressBroker;
+    use harbor_net::broker::{EgressBroker, EgressClass};
     use harbor_net::transport::UreqTransport;
+    use harbor_net::AuditSink;
     use harbor_security::policy::PrivacyMode;
     use tempfile::TempDir;
 
@@ -449,7 +451,13 @@ mod tests {
         let installer = PackageInstaller::new(dir.path().join("models"));
 
         let mut sessions = BTreeMap::new();
-        for origin in ["https://huggingface.co", HF_CDN_ORIGINS[0], HF_CDN_ORIGINS[1], HF_CDN_ORIGINS[2], HF_CDN_ORIGINS[3]] {
+        for origin in [
+            "https://huggingface.co",
+            HF_CDN_ORIGINS[0],
+            HF_CDN_ORIGINS[1],
+            HF_CDN_ORIGINS[2],
+            HF_CDN_ORIGINS[3],
+        ] {
             let s = broker
                 .open_session(
                     EgressClass::WeightTransfer,
@@ -467,7 +475,7 @@ mod tests {
             installer: &installer,
             sessions,
             auth_token: None,
-        progress: None,
+            progress: None,
         };
         let sha = "270cba1bd5109f42d03350f60406024560464db173c0e387d91f0426d3bd256d";
         let result = acquirer
@@ -537,7 +545,7 @@ mod tests {
             installer: &installer,
             sessions,
             auth_token: None,
-        progress: None,
+            progress: None,
         };
         // Without a CDN session the redirect hop must be refused.
         let result = acquirer.acquire(
@@ -605,7 +613,7 @@ mod tests {
             installer: &installer,
             sessions,
             auth_token: None,
-        progress: None,
+            progress: None,
         };
         let sha = "270cba1bd5109f42d03350f60406024560464db173c0e387d91f0426d3bd256d";
         let result = acquirer.acquire(
@@ -625,7 +633,10 @@ mod tests {
         let audit_entries = sink.entries();
         let violations =
             harbor_net::capture::compare_capture_to_audit(&wire.records(), &audit_entries);
-        assert!(violations.is_empty(), "capture/audit violations: {violations:?}");
+        assert!(
+            violations.is_empty(),
+            "capture/audit violations: {violations:?}"
+        );
         // The redirect chain really happened on the wire (hub -> CDN hop).
         let origins: Vec<String> = wire.records().iter().map(|r| r.origin.clone()).collect();
         assert!(
@@ -670,13 +681,17 @@ mod tests {
             installer: &installer2,
             sessions: sessions2,
             auth_token: None,
-        progress: None,
+            progress: None,
         };
         let blocked = acquirer2.acquire(
             "m",
             "ggml-org/models",
             "main",
-            &[("tinyllamas/stories260K.gguf".to_string(), "weights".to_string(), "0".repeat(64))],
+            &[(
+                "tinyllamas/stories260K.gguf".to_string(),
+                "weights".to_string(),
+                "0".repeat(64),
+            )],
             Utc::now(),
         );
         match blocked {
@@ -687,7 +702,9 @@ mod tests {
         // the audit log records the redirect block.
         let origins2: Vec<String> = wire2.records().iter().map(|r| r.origin.clone()).collect();
         assert!(
-            !origins2.iter().any(|o| HF_CDN_ORIGINS.contains(&o.as_str())),
+            !origins2
+                .iter()
+                .any(|o| HF_CDN_ORIGINS.contains(&o.as_str())),
             "blocked CDN origin must never reach the wire: {origins2:?}"
         );
         assert!(sink2
@@ -726,7 +743,11 @@ mod tests {
         });
         let evidence_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../evidence/network_capture.json");
-        std::fs::write(&evidence_path, serde_json::to_string_pretty(&evidence).unwrap()).unwrap();
+        std::fs::write(
+            &evidence_path,
+            serde_json::to_string_pretty(&evidence).unwrap(),
+        )
+        .unwrap();
         println!("evidence written to {}", evidence_path.display());
     }
 }
@@ -874,7 +895,8 @@ pub fn acquire_signed(
         &package.id,
         &package.repo_id,
         &package.revision,
-        &package.files
+        &package
+            .files
             .iter()
             .map(|(p, r, s)| (p.clone(), r.clone(), s.clone()))
             .collect::<Vec<_>>(),
@@ -884,17 +906,24 @@ pub fn acquire_signed(
 
 #[cfg(test)]
 mod signed_tests {
-    use super::*;
     use super::HF_NETWORK_LOCK;
+    use super::*;
     use crate::catalog_signing::{sign_catalog, CatalogSigningKey, CatalogVerifier};
     use harbor_net::audit::SqliteAuditSink;
-    use harbor_net::broker::EgressBroker;
+    use harbor_net::broker::{EgressBroker, EgressClass};
     use harbor_net::transport::UreqTransport;
+    use harbor_net::AuditSink;
     use tempfile::TempDir;
 
     fn sessions_for(broker: &EgressBroker) -> BTreeMap<String, harbor_net::broker::EgressSession> {
         let mut sessions = BTreeMap::new();
-        for origin in ["https://huggingface.co", HF_CDN_ORIGINS[0], HF_CDN_ORIGINS[1], HF_CDN_ORIGINS[2], HF_CDN_ORIGINS[3]] {
+        for origin in [
+            "https://huggingface.co",
+            HF_CDN_ORIGINS[0],
+            HF_CDN_ORIGINS[1],
+            HF_CDN_ORIGINS[2],
+            HF_CDN_ORIGINS[3],
+        ] {
             let s = broker
                 .open_session(
                     EgressClass::WeightTransfer,
@@ -927,13 +956,12 @@ mod signed_tests {
         let transport = UreqTransport::new();
         let installer = PackageInstaller::new(dir.path().join("models"));
         let key = CatalogSigningKey::from_secret_bytes(&[7u8; 32]);
-        let mut verifier = CatalogVerifier::new(&hex::encode(&key.public_bytes())).unwrap();
+        let mut verifier = CatalogVerifier::new(&hex::encode(key.public_bytes())).unwrap();
         let sessions = sessions_for(&broker);
 
         // The pinned hash is the REAL model hash, signed into the catalog.
-        let catalog = signed_catalog(
-            "270cba1bd5109f42d03350f60406024560464db173c0e387d91f0426d3bd256d",
-        );
+        let catalog =
+            signed_catalog("270cba1bd5109f42d03350f60406024560464db173c0e387d91f0426d3bd256d");
         let result = acquire_signed(
             &mut verifier,
             &catalog,
@@ -951,7 +979,10 @@ mod signed_tests {
             vec!["stories260k".to_string()]
         );
         // Brokered evidence: the stream was dispatched and completed.
-        assert!(sink.entries().iter().any(|e| e.kind == harbor_net::NetworkEventKind::Completed));
+        assert!(sink
+            .entries()
+            .iter()
+            .any(|e| e.kind == harbor_net::NetworkEventKind::Completed));
     }
 
     #[test]
@@ -964,7 +995,7 @@ mod signed_tests {
         let transport = UreqTransport::new();
         let installer = PackageInstaller::new(dir.path().join("models"));
         let key = CatalogSigningKey::from_secret_bytes(&[7u8; 32]);
-        let mut verifier = CatalogVerifier::new(&hex::encode(&key.public_bytes())).unwrap();
+        let mut verifier = CatalogVerifier::new(&hex::encode(key.public_bytes())).unwrap();
         let sessions = sessions_for(&broker);
 
         // A catalog signed with a WRONG hash (attacker or stale metadata):
@@ -993,11 +1024,12 @@ mod signed_tests {
 #[cfg(test)]
 mod token_tests {
     use super::*;
-    use tempfile::TempDir;
     use harbor_net::audit::SqliteAuditSink;
+    use harbor_net::broker::EgressClass;
     use harbor_net::broker::{EgressBroker, Transport, TransportResponse};
     use harbor_security::policy::PrivacyMode;
     use std::sync::Mutex;
+    use tempfile::TempDir;
 
     /// Records the Authorization header seen per origin.
     struct RecordingTransport {
@@ -1010,19 +1042,8 @@ mod token_tests {
             req: &TransportRequest,
             _t: std::time::Duration,
         ) -> std::io::Result<TransportResponse> {
-            let origin = req
-                .url
-                .split('/')
-                .take(3)
-                .last()
-                .unwrap_or("")
-                .to_string();
-            let host = req
-                .url
-                .split('/')
-                .nth(2)
-                .unwrap_or("")
-                .to_string();
+            let origin = req.url.split('/').take(3).last().unwrap_or("").to_string();
+            let host = req.url.split('/').nth(2).unwrap_or("").to_string();
             let auth = req
                 .headers
                 .iter()
@@ -1057,7 +1078,9 @@ mod token_tests {
         let dir = TempDir::new().unwrap();
         let sink = SqliteAuditSink::open_in_memory().unwrap();
         let broker = EgressBroker::new(Box::new(sink));
-        let transport = RecordingTransport { seen: Mutex::new(Vec::new()) };
+        let transport = RecordingTransport {
+            seen: Mutex::new(Vec::new()),
+        };
         let installer = PackageInstaller::new(dir.path().join("models"));
         let mut sessions = BTreeMap::new();
         for origin in ["https://huggingface.co", "https://cdn-lfs.hf.co"] {
@@ -1077,7 +1100,7 @@ mod token_tests {
             installer: &installer,
             sessions,
             auth_token: Some("hf_secret_token".to_string()),
-        progress: None,
+            progress: None,
         };
         let bytes = acquirer
             .fetch("https://huggingface.co/repo/resolve/main/file.bin", None)
@@ -1089,7 +1112,10 @@ mod token_tests {
         assert_eq!(hf_auth.as_deref(), Some("Bearer hf_secret_token"));
         let (cdn_host, cdn_auth) = &seen[1];
         assert!(cdn_host.contains("cdn-lfs"));
-        assert!(cdn_auth.is_none(), "credentials must be stripped cross-origin");
+        assert!(
+            cdn_auth.is_none(),
+            "credentials must be stripped cross-origin"
+        );
     }
 
     #[test]
@@ -1097,7 +1123,9 @@ mod token_tests {
         let dir = TempDir::new().unwrap();
         let sink = SqliteAuditSink::open_in_memory().unwrap();
         let broker = EgressBroker::new(Box::new(sink));
-        let transport = RecordingTransport { seen: Mutex::new(Vec::new()) };
+        let transport = RecordingTransport {
+            seen: Mutex::new(Vec::new()),
+        };
         let installer = PackageInstaller::new(dir.path().join("models"));
         let mut sessions = BTreeMap::new();
         for origin in ["https://huggingface.co", "https://cdn-lfs.hf.co"] {
@@ -1117,7 +1145,7 @@ mod token_tests {
             installer: &installer,
             sessions,
             auth_token: None,
-        progress: None,
+            progress: None,
         };
         acquirer
             .fetch("https://huggingface.co/repo/resolve/main/file.bin", None)

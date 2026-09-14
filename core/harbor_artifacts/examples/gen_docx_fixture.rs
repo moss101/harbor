@@ -23,7 +23,10 @@ fn main() {
     zip.write_all(document.as_bytes()).unwrap();
     let bytes = zip.finish().unwrap().into_inner();
     let out = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent().unwrap().parent().unwrap()
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
         .join("fixtures/office/structured.docx");
     std::fs::write(&out, bytes).unwrap();
     println!("wrote {}", out.display());

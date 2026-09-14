@@ -7,7 +7,7 @@
 //! installed models.
 
 use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -86,7 +86,9 @@ pub struct PackageInstaller {
 
 impl PackageInstaller {
     pub fn new(installed_root: impl Into<PathBuf>) -> Self {
-        PackageInstaller { installed_root: installed_root.into() }
+        PackageInstaller {
+            installed_root: installed_root.into(),
+        }
     }
 
     fn package_dir(&self, package_id: &str) -> PathBuf {
@@ -138,7 +140,9 @@ impl PackageInstaller {
             let _ = std::fs::remove_file(&out);
             return Err(InstallError::SizeMismatch(expect.path.clone()));
         }
-        staged.verified_files.insert(expect.path.clone(), expect.size_bytes);
+        staged
+            .verified_files
+            .insert(expect.path.clone(), expect.size_bytes);
         Ok(())
     }
 
@@ -190,7 +194,10 @@ impl PackageInstaller {
         // staged package.
         let manifest_bytes = serde_json::to_vec_pretty(manifest)
             .map_err(|e| InstallError::Manifest(e.to_string()))?;
-        std::fs::write(staged.staging_dir.join("harbor_manifest.json"), manifest_bytes)?;
+        std::fs::write(
+            staged.staging_dir.join("harbor_manifest.json"),
+            manifest_bytes,
+        )?;
         std::fs::rename(&staged.staging_dir, &final_dir)?;
         let _ = now;
         staged.stage = InstallStage::Installed;
@@ -249,7 +256,11 @@ mod tests {
 
     fn file_entry(path: &str, bytes: &[u8]) -> PackageFile {
         PackageFile {
-            role: if path.ends_with(".gguf") { "weights".into() } else { "config".into() },
+            role: if path.ends_with(".gguf") {
+                "weights".into()
+            } else {
+                "config".into()
+            },
             path: path.into(),
             sha256: harbor_canonical::sha256_hex(bytes),
             size_bytes: bytes.len() as u64,
@@ -261,7 +272,10 @@ mod tests {
             schema: "harbor.model/v3".into(),
             id: id.into(),
             reference_type: "installed_package".into(),
-            files: vec![file_entry("model.gguf", weights), file_entry("config.json", config)],
+            files: vec![
+                file_entry("model.gguf", weights),
+                file_entry("config.json", config),
+            ],
             runtime: RuntimeBinding {
                 kind: "gguf/llama.cpp".into(),
                 min_revision: "b4000".into(),
@@ -278,13 +292,17 @@ mod tests {
         let config = br#"{"ctx":4096}"#.to_vec();
         let m = manifest("tiny-test-model", &weights, &config);
         let mut staged = inst.begin("tiny-test-model").unwrap();
-        inst.ingest_file(&mut staged, &m.files[0], &weights).unwrap();
+        inst.ingest_file(&mut staged, &m.files[0], &weights)
+            .unwrap();
         inst.ingest_file(&mut staged, &m.files[1], &config).unwrap();
         let report = inst.validate(&staged, &m).unwrap();
         assert!(report.ok, "problems: {:?}", report.problems);
         let final_dir = inst.commit(&mut staged, &m, Utc::now()).unwrap();
         assert!(final_dir.join("harbor_manifest.json").exists());
-        assert_eq!(inst.installed_packages().unwrap(), vec!["tiny-test-model".to_string()]);
+        assert_eq!(
+            inst.installed_packages().unwrap(),
+            vec!["tiny-test-model".to_string()]
+        );
         let loaded = inst.load_manifest("tiny-test-model").unwrap();
         assert_eq!(loaded.id, "tiny-test-model");
         // Idempotent commit.
@@ -300,13 +318,21 @@ mod tests {
         let inst = PackageInstaller::new(dir.path().join("installed"));
         let m = manifest("m2", &[1, 2, 3], b"{}");
         let mut staged = inst.begin("m2").unwrap();
-        let err = inst.ingest_file(&mut staged, &m.files[0], &[9, 9, 9]).unwrap_err();
+        let err = inst
+            .ingest_file(&mut staged, &m.files[0], &[9, 9, 9])
+            .unwrap_err();
         assert!(matches!(err, InstallError::HashMismatch(p) if p == "model.gguf"));
     }
 
     #[test]
     fn path_escape_rejected() {
-        for bad in ["/abs/path", "../escape", "a/../..", "C:\\win", "back\\slash"] {
+        for bad in [
+            "/abs/path",
+            "../escape",
+            "a/../..",
+            "C:\\win",
+            "back\\slash",
+        ] {
             assert!(verify_relative_path(bad).is_err(), "{bad} must be rejected");
         }
         assert!(verify_relative_path("sub/dir/model.gguf").is_ok());

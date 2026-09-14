@@ -4,10 +4,8 @@
 //! inline text replacement. Floating drawings/fields are PRESERVE_ONLY —
 //! unknown parts are passed through untouched.
 
-use std::io::{Cursor, Read, Write};
 use std::collections::BTreeMap;
-
-use harbor_canonical::JsonValue;
+use std::io::{Cursor, Read, Write};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct DocxParagraph {
@@ -44,7 +42,12 @@ pub enum DocxOp {
     /// Set a table cell's first-paragraph text (cell.set). The cell is
     /// addressed merge-aware via the table/row/col map; the cell's OTHER
     /// paragraphs are preserved.
-    TableCellSet { table: usize, row: usize, col: usize, new_text: String },
+    TableCellSet {
+        table: usize,
+        row: usize,
+        col: usize,
+        new_text: String,
+    },
 }
 
 fn para_style(p: roxmltree::Node) -> Option<String> {
@@ -73,6 +76,10 @@ fn extract_paragraphs(xml: &str) -> Result<Vec<(Option<String>, String)>, DocxEr
     }
     Ok(out)
 }
+
+/// Merged-cell bookkeeping: table index -> cell span -> (covered cells,
+/// gridSpan).
+type DocxMergeMap = BTreeMap<usize, BTreeMap<(usize, usize), (Vec<usize>, u32)>>;
 
 impl DocxDocument {
     pub fn load(bytes: &[u8]) -> Result<Self, DocxError> {
@@ -104,7 +111,10 @@ impl DocxDocument {
                 text,
             });
         }
-        Ok(DocxDocument { paragraphs, preserved_parts })
+        Ok(DocxDocument {
+            paragraphs,
+            preserved_parts,
+        })
     }
 
     /// Apply typed ops to the document XML and return the full new DOCX
@@ -122,16 +132,20 @@ impl DocxDocument {
 
         // Normalize every op into (paragraph ordinal 1-based, new text),
         // validating preconditions against the loaded document state.
-        let doc = roxmltree::Document::parse(&xml).map_err(|e| DocxError::Malformed(e.to_string()))?;
-        let para_nodes: Vec<roxmltree::Node<'_, '_>> = doc
-            .descendants()
-            .filter(|n| n.has_tag_name("p"))
-            .collect();
+        let doc =
+            roxmltree::Document::parse(&xml).map_err(|e| DocxError::Malformed(e.to_string()))?;
+        let para_nodes: Vec<roxmltree::Node<'_, '_>> =
+            doc.descendants().filter(|n| n.has_tag_name("p")).collect();
         let mut replacement: BTreeMap<usize, String> = BTreeMap::new();
         for op in ops {
             let (index, new_text): (u32, String) = match op {
                 DocxOp::TextReplace { index, new_text } => (*index, new_text.clone()),
-                DocxOp::TableCellSet { table, row, col, new_text } => {
+                DocxOp::TableCellSet {
+                    table,
+                    row,
+                    col,
+                    new_text,
+                } => {
                     let map = table_cell_paragraph_map(&xml)?;
                     let cell = map
                         .get(table)
@@ -190,7 +204,10 @@ impl DocxDocument {
 /// walk raw XML with a lightweight scanner counting "<w:p " / "<w:p>"
 /// starts; within a target paragraph replace the first "<w:t...>...</w:t>"
 /// content with the new text and empty all other w:t contents.
-fn rewrite_paragraph_texts(xml: &str, replacement: &BTreeMap<usize, String>) -> Result<String, DocxError> {
+fn rewrite_paragraph_texts(
+    xml: &str,
+    replacement: &BTreeMap<usize, String>,
+) -> Result<String, DocxError> {
     // Find paragraph spans (w:p elements, including self-closing).
     let bytes = xml.as_bytes();
     let mut spans: Vec<(usize, usize)> = Vec::new(); // start of <w:p..., end inclusive
@@ -262,9 +279,11 @@ fn replace_para_text(para: &str, new_text: &str) -> Result<String, DocxError> {
     let mut i = 0usize;
     while let Some(off) = find_wt(&para[i..]) {
         let open = i + off;
-        let content_start = para[open..].find('>').ok_or_else(|| {
-            DocxError::Malformed("w:t open".into())
-        })? + open + 1;
+        let content_start = para[open..]
+            .find('>')
+            .ok_or_else(|| DocxError::Malformed("w:t open".into()))?
+            + open
+            + 1;
         let content_end = para[content_start..]
             .find("</w:t>")
             .ok_or_else(|| DocxError::Malformed("w:t close".into()))?
@@ -321,83 +340,12 @@ fn find_wt(s: &str) -> Option<usize> {
     None
 }
 
-fn split_at_idx<'a>(s: &'a str, idx: usize) -> (&'a str, &'a str) {
-    (&s[..idx], &s[idx..])
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn minimal_docx(paragraphs: &[&str]) -> Vec<u8> {
-        // Build a minimal valid DOCX package with N paragraphs.
-        let mut paras = String::new();
-        for p in paragraphs {
-            paras.push_str(&format!(
-                "<w:p><w:r><w:t>{}</w:t></w:r></w:p>",
-                p.replace('&', "&amp;").replace('<', "&lt;")
-            ));
-        }
-        let document = format!(
-            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>{paras}<w:sectPr/></w:body></w:document>"#
-        );
-        let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-        let opts = zip::write::SimpleFileOptions::default();
-        zip.start_file("[Content_Types].xml", opts).unwrap();
-        zip.write_all(br#"<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>"#).unwrap();
-        zip.start_file("word/document.xml", opts).unwrap();
-        zip.write_all(document.as_bytes()).unwrap();
-        zip.finish().unwrap().into_inner()
-    }
-
-    #[test]
-    fn read_paragraphs_and_hash() {
-        let bytes = minimal_docx(&["Harbor proposal", "Second para"]);
-        let doc = DocxDocument::load(&bytes).unwrap();
-        assert_eq!(doc.paragraphs.len(), 2);
-        assert_eq!(doc.paragraphs[0].text, "Harbor proposal");
-        assert_eq!(doc.paragraphs[0].content_hash.len(), 64);
-        assert!(doc.paragraphs[1].text == "Second para");
-    }
-
-    #[test]
-    fn replace_paragraph_text_roundtrip() {
-        let bytes = minimal_docx(&["Old title", "Body stays"]);
-        let doc = DocxDocument::load(&bytes).unwrap();
-        let out = doc
-            .apply(
-                &bytes,
-                &[DocxOp::TextReplace { index: 1, new_text: "New title".into() }],
-            )
-            .unwrap();
-        let reloaded = DocxDocument::load(&out).unwrap();
-        assert_eq!(reloaded.paragraphs[0].text, "New title");
-        assert_eq!(reloaded.paragraphs[1].text, "Body stays");
-    }
-
-    #[test]
-    fn precondition_hash_mismatch_rejected() {
-        let bytes = minimal_docx(&["v1"]);
-        let doc = DocxDocument::load(&bytes).unwrap();
-        // Tamper with the paragraph between read and apply.
-        let other = minimal_docx(&["v2"]);
-        let err = doc.apply(
-            &other,
-            &[DocxOp::TextReplace { index: 1, new_text: "x".into() }],
-        );
-        assert!(matches!(err, Err(DocxError::ParagraphChanged(1))));
-    }
-}
-
 /// Locate tables in raw document XML using the GLOBAL paragraph ordinal
 /// space (the same indexes DocxOp::TextReplace targets). Returns, per
 /// table (document order), a map of (row, col) -> (paragraph indexes,
 /// gridSpan). Column accounting honors gridSpan so merged cells occupy
 /// their full width.
-pub fn table_cell_paragraph_map(
-    xml: &str,
-) -> Result<BTreeMap<usize, BTreeMap<(usize, usize), (Vec<usize>, u32)>>, DocxError> {
+pub fn table_cell_paragraph_map(xml: &str) -> Result<DocxMergeMap, DocxError> {
     let doc = roxmltree::Document::parse(xml).map_err(|e| DocxError::Malformed(e.to_string()))?;
 
     let tbl_ids: Vec<roxmltree::NodeId> = doc
@@ -406,13 +354,15 @@ pub fn table_cell_paragraph_map(
         .map(|n| n.id())
         .collect();
 
-    let mut result: BTreeMap<usize, BTreeMap<(usize, usize), (Vec<usize>, u32)>> = BTreeMap::new();
-    let mut global_para = 0usize;
-    for node in doc.descendants().filter(|n| n.has_tag_name("p")) {
+    let mut result: DocxMergeMap = BTreeMap::new();
+    for (global_para, node) in doc
+        .descendants()
+        .filter(|n| n.has_tag_name("p"))
+        .enumerate()
+    {
         // The global ordinal counts EVERY paragraph in document order —
         // the same space DocxDocument::paragraphs and TextReplace target.
         let this_para = global_para;
-        global_para += 1;
         let mut cell_info: Option<(usize, usize, usize, u32)> = None;
         let mut anc = node.parent();
         while let Some(a) = anc {
@@ -469,18 +419,86 @@ pub fn table_cell_paragraph_map(
             }
             anc = a.parent();
         }
-        match cell_info {
-            Some((t, r, c, span)) => {
-                result
-                    .entry(t)
-                    .or_default()
-                    .entry((r, c))
-                    .or_insert_with(|| (Vec::new(), span))
-                    .0
-                    .push(this_para);
-            }
-            None => {}
+        if let Some((t, r, c, span)) = cell_info {
+            result
+                .entry(t)
+                .or_default()
+                .entry((r, c))
+                .or_insert_with(|| (Vec::new(), span))
+                .0
+                .push(this_para);
         }
     }
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn minimal_docx(paragraphs: &[&str]) -> Vec<u8> {
+        // Build a minimal valid DOCX package with N paragraphs.
+        let mut paras = String::new();
+        for p in paragraphs {
+            paras.push_str(&format!(
+                "<w:p><w:r><w:t>{}</w:t></w:r></w:p>",
+                p.replace('&', "&amp;").replace('<', "&lt;")
+            ));
+        }
+        let document = format!(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>{paras}<w:sectPr/></w:body></w:document>"#
+        );
+        let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        let opts = zip::write::SimpleFileOptions::default();
+        zip.start_file("[Content_Types].xml", opts).unwrap();
+        zip.write_all(br#"<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>"#).unwrap();
+        zip.start_file("word/document.xml", opts).unwrap();
+        zip.write_all(document.as_bytes()).unwrap();
+        zip.finish().unwrap().into_inner()
+    }
+
+    #[test]
+    fn read_paragraphs_and_hash() {
+        let bytes = minimal_docx(&["Harbor proposal", "Second para"]);
+        let doc = DocxDocument::load(&bytes).unwrap();
+        assert_eq!(doc.paragraphs.len(), 2);
+        assert_eq!(doc.paragraphs[0].text, "Harbor proposal");
+        assert_eq!(doc.paragraphs[0].content_hash.len(), 64);
+        assert!(doc.paragraphs[1].text == "Second para");
+    }
+
+    #[test]
+    fn replace_paragraph_text_roundtrip() {
+        let bytes = minimal_docx(&["Old title", "Body stays"]);
+        let doc = DocxDocument::load(&bytes).unwrap();
+        let out = doc
+            .apply(
+                &bytes,
+                &[DocxOp::TextReplace {
+                    index: 1,
+                    new_text: "New title".into(),
+                }],
+            )
+            .unwrap();
+        let reloaded = DocxDocument::load(&out).unwrap();
+        assert_eq!(reloaded.paragraphs[0].text, "New title");
+        assert_eq!(reloaded.paragraphs[1].text, "Body stays");
+    }
+
+    #[test]
+    fn precondition_hash_mismatch_rejected() {
+        let bytes = minimal_docx(&["v1"]);
+        let doc = DocxDocument::load(&bytes).unwrap();
+        // Tamper with the paragraph between read and apply.
+        let other = minimal_docx(&["v2"]);
+        let err = doc.apply(
+            &other,
+            &[DocxOp::TextReplace {
+                index: 1,
+                new_text: "x".into(),
+            }],
+        );
+        assert!(matches!(err, Err(DocxError::ParagraphChanged(1))));
+    }
 }

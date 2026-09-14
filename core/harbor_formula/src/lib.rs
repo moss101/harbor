@@ -20,6 +20,6 @@ pub mod value;
 
 pub use corpus::{FixtureCase, FixtureEdit, FixtureExpectation, FixtureValue};
 pub use engine::{EngineIdentity, HarborWorkbook};
-pub use value::{RecalcCell, RecalcStatus};
-pub use qualify::{QualificationReport, run_qualification};
+pub use qualify::{run_qualification, QualificationReport};
 pub use value::{CellError, CellValue};
+pub use value::{RecalcCell, RecalcStatus};

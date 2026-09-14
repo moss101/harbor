@@ -105,7 +105,10 @@ pub struct EffectIntent {
 #[derive(Debug, thiserror::Error)]
 pub enum EffectError {
     #[error("illegal effect transition {from} -> {to}")]
-    IllegalTransition { from: &'static str, to: &'static str },
+    IllegalTransition {
+        from: &'static str,
+        to: &'static str,
+    },
     #[error("immutable effect field changed: {0}")]
     ImmutableChanged(&'static str),
     #[error("update timestamp regresses")]
@@ -122,6 +125,7 @@ pub enum EffectError {
 
 impl EffectIntent {
     /// Create a prepared intent, computing the canonical args hash.
+    #[allow(clippy::too_many_arguments)] // wide durable bindings are the contract here
     pub fn prepare(
         run_id: HarborId,
         tool: HarborId,
@@ -248,7 +252,12 @@ mod tests {
             .unwrap();
         assert_eq!(d.state, EffectState::Dispatched);
         let c = d
-            .apply_update(EffectState::Committed, Some("attempt-1".into()), Some("ref".into()), now)
+            .apply_update(
+                EffectState::Committed,
+                Some("attempt-1".into()),
+                Some("ref".into()),
+                now,
+            )
             .unwrap();
         assert_eq!(c.state, EffectState::Committed);
         // Terminal.
@@ -263,13 +272,20 @@ mod tests {
             .apply_update(EffectState::Dispatched, Some("attempt-1".into()), None, now)
             .unwrap();
         let u = d
-            .apply_update(EffectState::OutcomeUnknown, Some("attempt-1".into()), None, now)
+            .apply_update(
+                EffectState::OutcomeUnknown,
+                Some("attempt-1".into()),
+                None,
+                now,
+            )
             .unwrap();
         // outcome_unknown may only commit or abort; re-dispatch is illegal.
         assert!(!u.state.can_transition_to(EffectState::Dispatched));
         assert!(u.state.can_transition_to(EffectState::Committed));
         assert!(u.state.can_transition_to(EffectState::Aborted));
-        assert!(u.apply_update(EffectState::Dispatched, Some("a2".into()), None, now).is_err());
+        assert!(u
+            .apply_update(EffectState::Dispatched, Some("a2".into()), None, now)
+            .is_err());
     }
 
     #[test]

@@ -1,5 +1,7 @@
-/// Typed views over core JSON. Construction is total (fromMap) and
-/// validated at the boundary so surfaces never parse raw maps.
+library;
+
+// Typed views over core JSON. Construction is total (fromMap) and
+// validated at the boundary so surfaces never parse raw maps.
 
 final class SkillSummary {
   const SkillSummary({
@@ -49,7 +51,10 @@ final class ModelInfo {
 }
 
 final class RunSummary {
-  const RunSummary({required this.runId, required this.state, required this.activeComputeMs});
+  const RunSummary(
+      {required this.runId,
+      required this.state,
+      required this.activeComputeMs});
 
   factory RunSummary.fromMap(Map<String, dynamic> m) => RunSummary(
         runId: m['run_id'] as String,
@@ -87,7 +92,8 @@ final class FitBandVM {
 }
 
 final class TrailEntry {
-  const TrailEntry({required this.seq, required this.summary, required this.actor});
+  const TrailEntry(
+      {required this.seq, required this.summary, required this.actor});
   factory TrailEntry.fromMap(Map<String, dynamic> m) => TrailEntry(
         seq: (m['seq'] as num).toInt(),
         summary: m['summary'] as String? ?? '',

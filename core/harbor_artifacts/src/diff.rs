@@ -40,10 +40,7 @@ impl ArtifactDiff {
                     ("target_id", V::str(e.target_id.clone())),
                     ("kind", V::str(e.kind.clone())),
                     ("summary", V::str(e.summary.clone())),
-                    (
-                        "before",
-                        e.before.clone().unwrap_or(JsonValue::Null),
-                    ),
+                    ("before", e.before.clone().unwrap_or(JsonValue::Null)),
                     ("after", e.after.clone().unwrap_or(JsonValue::Null)),
                 ])
             })
@@ -52,7 +49,10 @@ impl ArtifactDiff {
             ("artifact_id", V::str(self.artifact_id.clone())),
             ("base_version_id", V::str(self.base_version_id.clone())),
             ("base_content_hash", V::str(self.base_content_hash.clone())),
-            ("proposed_output_hash", V::str(self.proposed_output_hash.clone())),
+            (
+                "proposed_output_hash",
+                V::str(self.proposed_output_hash.clone()),
+            ),
             ("entries", V::Array(entries)),
         ])
     }

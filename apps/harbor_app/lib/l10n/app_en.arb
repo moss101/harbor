@@ -152,5 +152,134 @@
   "sendAction": "Send",
   "lensOpenTooltip": "Open the Harbor Lens inspector",
   "askSearchTooltip": "Search Knowledge",
-  "statusInstalled": "INSTALLED"
+  "statusInstalled": "INSTALLED",
+  "cancelAction": "Cancel",
+  "askGenerateTooltip": "Generate answer",
+  "askAnswerHeading": "Answer",
+  "askCitationsHeading": "Cited sources",
+  "askExecutedOnLine": "Executed on {model} · {tokens} tokens on-device",
+  "@askExecutedOnLine": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      },
+      "tokens": {
+        "type": "int"
+      }
+    }
+  },
+  "askGenerating": "Generating on-device…",
+  "askGenerationProgress": "{tokens} tokens generated",
+  "@askGenerationProgress": {
+    "placeholders": {
+      "tokens": {
+        "type": "int"
+      }
+    }
+  },
+  "askInsufficientNote": "The model reports the evidence is insufficient — this answer is not grounded in your sources.",
+  "askNoChatModel": "No chat model installed. Answers need a chat model (Models → Hugging Face); with Knowledge open, retrieval-only citations still work.",
+  "askSearchOnly": "Search Knowledge",
+  "knowledgeSourcesHeading": "Indexed sources",
+  "knowledgeChunksCount": "{count} chunks",
+  "@knowledgeChunksCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "knowledgeRemoveAction": "Remove",
+  "knowledgeIngesting": "Indexing chunks {done}/{total}",
+  "@knowledgeIngesting": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "knowledgeOpenNeedsModel": "Install the embedding model bge-small-en-v1.5 (Models tab) to build the local index.",
+  "knowledgeAddFilesTooltip": "Add files to the local index",
+  "knowledgeAddTextAction": "Paste text",
+  "knowledgeAddTextTitle": "Index pasted text",
+  "knowledgeAddTextTitleHint": "Title",
+  "knowledgeAddTextBodyHint": "Paste the text to index",
+  "knowledgeAddTextConfirm": "Index",
+  "knowledgeSourceAdded": "Indexed {title}",
+  "@knowledgeSourceAdded": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "knowledgeAttachUnsupported": "{kind} files cannot be indexed in this build",
+  "@knowledgeAttachUnsupported": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "knowledgeNoSources": "No sources indexed yet.",
+  "knowledgeRemoved": "Removed {title}",
+  "@knowledgeRemoved": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "agentsUnavailableBody": "Agent orchestration is not enabled in this release. The built-in skill families (Skills tab) are available today.",
+  "modelInstallAction": "Install",
+  "modelInstalling": "Installing…",
+  "modelInstallFailed": "Install failed",
+  "modelInstallCancelled": "Install cancelled",
+  "modelsHfSearchFailed": "Search failed — the network refused the query. Try again shortly.",
+  "importModelTooltip": "Install a local GGUF file",
+  "importModelInstalled": "Installed {package}",
+  "@importModelInstalled": {
+    "placeholders": {
+      "package": {
+        "type": "String"
+      }
+    }
+  },
+  "importModelFailed": "Local install failed",
+  "settingsIdentity": "Device identity",
+  "settingsWorkspaceId": "Workspace",
+  "opResolving": "Resolving package…",
+  "opDownloading": "{done} of {total}",
+  "@opDownloading": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "opVerifying": "Verifying hashes…",
+  "opInstalling": "Installing…",
+  "opLoadingModel": "Loading model…",
+  "opGenerating": "Generating…",
+  "opIngesting": "Indexing…",
+  "opBytesMib": "{done} of {total} MiB",
+  "@opBytesMib": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "appStarting": "Starting the local core…",
+  "coreStartFailed": "The native core could not be loaded. Harbor runs degraded without it.",
+  "knowledgeIngestFailed": "Indexing failed"
 }

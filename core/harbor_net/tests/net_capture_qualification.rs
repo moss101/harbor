@@ -9,7 +9,9 @@ use std::time::Duration;
 
 use chrono::Utc;
 use harbor_net::audit::{AuditSink, NetworkEventKind, SqliteAuditSink};
-use harbor_net::broker::{BrokerError, EgressBroker, Transport, TransportRequest, TransportResponse};
+use harbor_net::broker::{
+    BrokerError, EgressBroker, Transport, TransportRequest, TransportResponse,
+};
 use harbor_net::capture::{compare_capture_to_audit, CaptureTransport};
 use harbor_security::policy::{EgressClass, PrivacyMode};
 
@@ -18,7 +20,12 @@ fn sink() -> std::sync::Arc<SqliteAuditSink> {
 }
 
 fn req(method: &str, url: &str) -> TransportRequest {
-    TransportRequest { method: method.into(), url: url.into(), headers: Vec::new(), body: Vec::new() }
+    TransportRequest {
+        method: method.into(),
+        url: url.into(),
+        headers: Vec::new(),
+        body: Vec::new(),
+    }
 }
 
 /// Scripted chain transport: each call returns the next scripted response.
@@ -29,7 +36,10 @@ struct Scripted {
 
 impl Scripted {
     fn new(responses: Vec<TransportResponse>) -> Self {
-        Scripted { responses, calls: AtomicUsize::new(0) }
+        Scripted {
+            responses,
+            calls: AtomicUsize::new(0),
+        }
     }
 }
 
@@ -50,12 +60,26 @@ fn redirect_to(location: &str) -> TransportResponse {
 }
 
 fn ok(body: &[u8]) -> TransportResponse {
-    TransportResponse { status: 200, headers: Vec::new(), body: body.to_vec(), final_url: String::new() }
+    TransportResponse {
+        status: 200,
+        headers: Vec::new(),
+        body: body.to_vec(),
+        final_url: String::new(),
+    }
 }
 
-fn session_for(broker: &EgressBroker, origin: &str, class: EgressClass) -> harbor_net::broker::EgressSession {
+fn session_for(
+    broker: &EgressBroker,
+    origin: &str,
+    class: EgressClass,
+) -> harbor_net::broker::EgressSession {
     broker
-        .open_session(class, origin, chrono::Duration::minutes(5), PrivacyMode::LocalOnly)
+        .open_session(
+            class,
+            origin,
+            chrono::Duration::minutes(5),
+            PrivacyMode::LocalOnly,
+        )
         .expect("session must open under LocalOnly for an allowed class")
 }
 
@@ -71,20 +95,26 @@ fn dispatch_chain(
     let mut current_url = url.to_string();
     let mut hops = 0usize;
     loop {
-        let parsed: url::Url = current_url.parse().map_err(|_| BrokerError::InvalidRequest("bad url"))?;
+        let parsed: url::Url = current_url
+            .parse()
+            .map_err(|_| BrokerError::InvalidRequest("bad url"))?;
         let origin = format!(
             "{}://{}",
             parsed.scheme(),
             parsed.host_str().unwrap_or_default()
         );
-        let session = sessions
-            .get(&origin)
-            .ok_or_else(|| BrokerError::PolicyDenied)?;
+        let session = sessions.get(&origin).ok_or(BrokerError::PolicyDenied)?;
         match broker.dispatch(session, req("GET", &current_url), wire, None, Utc::now()) {
             Ok(resp) => return Ok(resp),
             Err(BrokerError::RedirectDenied(next)) => {
-                let next: url::Url = next.parse().map_err(|_| BrokerError::InvalidRequest("bad redirect"))?;
-                let next_origin = format!("{}://{}", next.scheme(), next.host_str().unwrap_or_default());
+                let next: url::Url = next
+                    .parse()
+                    .map_err(|_| BrokerError::InvalidRequest("bad redirect"))?;
+                let next_origin = format!(
+                    "{}://{}",
+                    next.scheme(),
+                    next.host_str().unwrap_or_default()
+                );
                 if !sessions.contains_key(&next_origin) {
                     return Err(BrokerError::PolicyDenied);
                 }
@@ -111,12 +141,17 @@ fn redirect_chain_capture_matches_audit_one_to_one() {
     // Explicit, logged sessions for every origin of the chain (the
     // acquisition contract: each open is a user-visible action).
     let mut sessions = std::collections::BTreeMap::new();
-    for origin in ["https://hub.test", "https://cas-bridge.test", "https://us.aws.cdn.test"] {
+    for origin in [
+        "https://hub.test",
+        "https://cas-bridge.test",
+        "https://us.aws.cdn.test",
+    ] {
         let s = session_for(&broker, origin, EgressClass::WeightTransfer);
         sessions.insert(origin.to_string(), s);
     }
 
-    dispatch_chain(&broker, &sessions, &wire, "https://hub.test/models/m").expect("chain completes");
+    dispatch_chain(&broker, &sessions, &wire, "https://hub.test/models/m")
+        .expect("chain completes");
 
     // 1:1 across the three hops.
     let violations = compare_capture_to_audit(&wire.records(), &audit.entries());
@@ -125,7 +160,14 @@ fn redirect_chain_capture_matches_audit_one_to_one() {
     assert_eq!(wire.record_count(), 3);
     let records = wire.records();
     let origins: Vec<&str> = records.iter().map(|r| r.origin.as_str()).collect();
-    assert_eq!(origins, ["https://hub.test", "https://cas-bridge.test", "https://us.aws.cdn.test"]);
+    assert_eq!(
+        origins,
+        [
+            "https://hub.test",
+            "https://cas-bridge.test",
+            "https://us.aws.cdn.test"
+        ]
+    );
     // Hop paths are logged per hop (not the original path three times).
     let dispatched: Vec<String> = audit
         .entries()
@@ -162,13 +204,21 @@ fn blocked_request_never_reaches_the_wire() {
     // Session for origin A only.
     let s = session_for(&broker, "https://hub.test", EgressClass::WeightTransfer);
     let err = broker
-        .dispatch(&s, req("GET", "https://other.test/exfil"), &wire, None, Utc::now())
+        .dispatch(
+            &s,
+            req("GET", "https://other.test/exfil"),
+            &wire,
+            None,
+            Utc::now(),
+        )
         .unwrap_err();
     assert!(matches!(err, BrokerError::PolicyDenied));
     assert_eq!(wire.record_count(), 0, "nothing may hit the wire");
     let all = audit.entries();
-    let blocked: Vec<&harbor_net::audit::NetworkAuditEntry> =
-        all.iter().filter(|e| e.kind == NetworkEventKind::Blocked).collect();
+    let blocked: Vec<&harbor_net::audit::NetworkAuditEntry> = all
+        .iter()
+        .filter(|e| e.kind == NetworkEventKind::Blocked)
+        .collect();
     assert_eq!(blocked.len(), 1);
     assert_eq!(blocked[0].origin, "https://other.test");
     assert!(harbor_net::audit::verify_chain(&audit.entries()));
@@ -184,7 +234,13 @@ fn redirect_to_unauthorized_origin_blocked_and_unexecuted() {
     ])));
     let s = session_for(&broker, "https://hub.test", EgressClass::WeightTransfer);
     let err = broker
-        .dispatch(&s, req("GET", "https://hub.test/models/m"), &wire, None, Utc::now())
+        .dispatch(
+            &s,
+            req("GET", "https://hub.test/models/m"),
+            &wire,
+            None,
+            Utc::now(),
+        )
         .unwrap_err();
     assert!(matches!(err, BrokerError::RedirectDenied(url) if url.contains("unauthorized.test")));
     // Only the FIRST hop was on the wire; the redirect target never was.
@@ -192,9 +248,12 @@ fn redirect_to_unauthorized_origin_blocked_and_unexecuted() {
     assert_eq!(wire.records()[0].origin, "https://hub.test");
     // Audit log: dispatched for hop 0, redirect_blocked for the target.
     let entries = audit.entries();
-    assert!(entries.iter().any(|e| e.kind == NetworkEventKind::RedirectBlocked));
-    assert!(!entries.iter().any(|e| e.kind == NetworkEventKind::Dispatched
-        && e.origin.contains("unauthorized.test")));
+    assert!(entries
+        .iter()
+        .any(|e| e.kind == NetworkEventKind::RedirectBlocked));
+    assert!(!entries
+        .iter()
+        .any(|e| e.kind == NetworkEventKind::Dispatched && e.origin.contains("unauthorized.test")));
     let violations = compare_capture_to_audit(&wire.records(), &entries);
     assert!(violations.is_empty(), "{violations:?}");
 }
@@ -222,7 +281,11 @@ fn strict_local_only_denies_sessions_and_keeps_wire_silent() {
     assert!(matches!(err, BrokerError::PolicyDenied));
     // And a request attempted without any session is denied unlogged on
     // the wire but recorded as blocked in the audit chain.
-    let s = session_for(&broker, "https://hub.test", EgressClass::AcquisitionMetadata);
+    let s = session_for(
+        &broker,
+        "https://hub.test",
+        EgressClass::AcquisitionMetadata,
+    );
     // Close the session: now nothing is valid.
     broker.close_session(&s.session_id);
     let err = broker
@@ -236,7 +299,10 @@ fn strict_local_only_denies_sessions_and_keeps_wire_silent() {
         .unwrap_err();
     assert!(matches!(err, BrokerError::PolicyDenied));
     assert_eq!(wire.record_count(), 0);
-    assert!(audit.entries().iter().any(|e| e.kind == NetworkEventKind::Blocked));
+    assert!(audit
+        .entries()
+        .iter()
+        .any(|e| e.kind == NetworkEventKind::Blocked));
 }
 
 #[test]

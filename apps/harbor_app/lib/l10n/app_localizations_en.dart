@@ -275,4 +275,171 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statusInstalled => 'INSTALLED';
+
+  @override
+  String get cancelAction => 'Cancel';
+
+  @override
+  String get askGenerateTooltip => 'Generate answer';
+
+  @override
+  String get askAnswerHeading => 'Answer';
+
+  @override
+  String get askCitationsHeading => 'Cited sources';
+
+  @override
+  String askExecutedOnLine(String model, int tokens) {
+    return 'Executed on $model · $tokens tokens on-device';
+  }
+
+  @override
+  String get askGenerating => 'Generating on-device…';
+
+  @override
+  String askGenerationProgress(int tokens) {
+    return '$tokens tokens generated';
+  }
+
+  @override
+  String get askInsufficientNote =>
+      'The model reports the evidence is insufficient — this answer is not grounded in your sources.';
+
+  @override
+  String get askNoChatModel =>
+      'No chat model installed. Answers need a chat model (Models → Hugging Face); with Knowledge open, retrieval-only citations still work.';
+
+  @override
+  String get askSearchOnly => 'Search Knowledge';
+
+  @override
+  String get knowledgeSourcesHeading => 'Indexed sources';
+
+  @override
+  String knowledgeChunksCount(int count) {
+    return '$count chunks';
+  }
+
+  @override
+  String get knowledgeRemoveAction => 'Remove';
+
+  @override
+  String knowledgeIngesting(int done, int total) {
+    return 'Indexing chunks $done/$total';
+  }
+
+  @override
+  String get knowledgeOpenNeedsModel =>
+      'Install the embedding model bge-small-en-v1.5 (Models tab) to build the local index.';
+
+  @override
+  String get knowledgeAddFilesTooltip => 'Add files to the local index';
+
+  @override
+  String get knowledgeAddTextAction => 'Paste text';
+
+  @override
+  String get knowledgeAddTextTitle => 'Index pasted text';
+
+  @override
+  String get knowledgeAddTextTitleHint => 'Title';
+
+  @override
+  String get knowledgeAddTextBodyHint => 'Paste the text to index';
+
+  @override
+  String get knowledgeAddTextConfirm => 'Index';
+
+  @override
+  String knowledgeSourceAdded(String title) {
+    return 'Indexed $title';
+  }
+
+  @override
+  String knowledgeAttachUnsupported(String kind) {
+    return '$kind files cannot be indexed in this build';
+  }
+
+  @override
+  String get knowledgeNoSources => 'No sources indexed yet.';
+
+  @override
+  String knowledgeRemoved(String title) {
+    return 'Removed $title';
+  }
+
+  @override
+  String get agentsUnavailableBody =>
+      'Agent orchestration is not enabled in this release. The built-in skill families (Skills tab) are available today.';
+
+  @override
+  String get modelInstallAction => 'Install';
+
+  @override
+  String get modelInstalling => 'Installing…';
+
+  @override
+  String get modelInstallFailed => 'Install failed';
+
+  @override
+  String get modelInstallCancelled => 'Install cancelled';
+
+  @override
+  String get modelsHfSearchFailed =>
+      'Search failed — the network refused the query. Try again shortly.';
+
+  @override
+  String get importModelTooltip => 'Install a local GGUF file';
+
+  @override
+  String importModelInstalled(String package) {
+    return 'Installed $package';
+  }
+
+  @override
+  String get importModelFailed => 'Local install failed';
+
+  @override
+  String get settingsIdentity => 'Device identity';
+
+  @override
+  String get settingsWorkspaceId => 'Workspace';
+
+  @override
+  String get opResolving => 'Resolving package…';
+
+  @override
+  String opDownloading(int done, int total) {
+    return '$done of $total';
+  }
+
+  @override
+  String get opVerifying => 'Verifying hashes…';
+
+  @override
+  String get opInstalling => 'Installing…';
+
+  @override
+  String get opLoadingModel => 'Loading model…';
+
+  @override
+  String get opGenerating => 'Generating…';
+
+  @override
+  String get opIngesting => 'Indexing…';
+
+  @override
+  String opBytesMib(int done, int total) {
+    return '$done of $total MiB';
+  }
+
+  @override
+  String get appStarting => 'Starting the local core…';
+
+  @override
+  String get coreStartFailed =>
+      'The native core could not be loaded. Harbor runs degraded without it.';
+
+  @override
+  String get knowledgeIngestFailed => 'Indexing failed';
 }

@@ -7,9 +7,16 @@ pub enum ModelRef {
     /// A validated installed package (harbor_modelhub).
     InstalledPackage { package_id: String },
     /// A platform system model (Apple system model, Windows model...).
-    SystemManaged { provider_id: String, model_id: String },
+    SystemManaged {
+        provider_id: String,
+        model_id: String,
+    },
     /// An explicit user-configured remote endpoint.
-    RemoteEndpoint { profile_id: String, endpoint: String, model: String },
+    RemoteEndpoint {
+        profile_id: String,
+        endpoint: String,
+        model: String,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

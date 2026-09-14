@@ -18,7 +18,7 @@ use std::collections::BTreeMap;
 use chrono::{Duration, Utc};
 use harbor_canonical::JsonValue;
 use harbor_formula::engine::HarborWorkbook;
-use harbor_formula::qualify::{run_qualification, CaseStatus};
+use harbor_formula::qualify::run_qualification;
 use harbor_formula::value::CellValue;
 use harbor_security::receipt::{
     ApprovalReceipt, AuthorizationSource, BatchBinding, Decision, Target, TargetKind,
@@ -62,17 +62,31 @@ fn m1_workbook_recalc_verify_is_correct() {
     let recalc = doc.recalculate_all().unwrap();
     // Independently computed expectations (fixed here as the authority for
     // the test, as an external verifier would provide).
-    assert_eq!(recalc.get(&("Sheet1".into(), 6, 2)), Some(&CellValue::Number(3600.0)));
-    assert_eq!(recalc.get(&("Sheet1".into(), 6, 3)), Some(&CellValue::Number(4000.0)));
+    assert_eq!(
+        recalc.get(&("Sheet1".into(), 6, 2)),
+        Some(&CellValue::Number(3600.0))
+    );
+    assert_eq!(
+        recalc.get(&("Sheet1".into(), 6, 3)),
+        Some(&CellValue::Number(4000.0))
+    );
     let total_growth: CellValue = recalc.get(&("Sheet1".into(), 6, 4)).unwrap().clone();
-    let CellValue::Number(g) = total_growth else { panic!("growth must be numeric") };
-    assert!((g - (4000.0 / 3600.0 - 1.0)).abs() < 1e-12, "total growth mismatch: {g}");
+    let CellValue::Number(g) = total_growth else {
+        panic!("growth must be numeric")
+    };
+    assert!(
+        (g - (4000.0 / 3600.0 - 1.0)).abs() < 1e-12,
+        "total growth mismatch: {g}"
+    );
     // Verified statuses: recalc provenance is recorded.
     let sheet = doc.sheet("Sheet1").unwrap();
     let b6 = sheet.cells.get(&(2, 6)).unwrap();
     // OOXML stores formulas without the leading '='.
     let stored = b6.formula.as_deref().unwrap_or_default();
-    assert!(stored.trim_start_matches('=') == "SUM(B2:B5)", "stored formula: {stored:?}");
+    assert!(
+        stored.trim_start_matches('=') == "SUM(B2:B5)",
+        "stored formula: {stored:?}"
+    );
     assert_eq!(b6.cached, Some(CellValue::Number(3600.0)));
 }
 
@@ -92,7 +106,11 @@ fn formula_engine_qualification_gates_the_vertical() {
         "engine family must match the authority"
     );
     let total = report.target_status.len();
-    let passed = report.target_status.values().filter(|s| **s == "PASS").count();
+    let passed = report
+        .target_status
+        .values()
+        .filter(|s| **s == "PASS")
+        .count();
     println!("qualification: {passed}/{total} targets PASS");
     // The single known deviation (TEXT with percent formats) is reported
     // honestly; every other target passes.
@@ -107,7 +125,11 @@ fn m1_deck_generation_diff_approval_safesave_offline() {
     let recalc = doc.recalculate_all().unwrap();
     let expected_total_q1 = 3600.0;
     let got = recalc.get(&("Sheet1".into(), 6, 2)).unwrap();
-    assert_eq!(got, &CellValue::Number(expected_total_q1), "verification failed; deck must not proceed");
+    assert_eq!(
+        got,
+        &CellValue::Number(expected_total_q1),
+        "verification failed; deck must not proceed"
+    );
 
     // 4. Generate a board deck from VERIFIED values only.
     let CellValue::Number(total_q2) = recalc.get(&("Sheet1".into(), 6, 3)).unwrap().clone() else {
@@ -128,7 +150,7 @@ fn m1_deck_generation_diff_approval_safesave_offline() {
             ],
             notes: Some("Generated offline by Harbor from Sheet1!B6, C6, D6.".into()),
             chart: None,
-        image: None,
+            image: None,
         }],
     };
     let deck_bytes = deck.to_pptx_bytes().unwrap();
@@ -240,7 +262,10 @@ fn m1_deck_generation_diff_approval_safesave_offline() {
             &deck_bytes,
         )
         .unwrap();
-    assert!(matches!(outcome, harbor_artifacts::CommitOutcome::Committed { .. }));
+    assert!(matches!(
+        outcome,
+        harbor_artifacts::CommitOutcome::Committed { .. }
+    ));
     assert_eq!(std::fs::read(&dest).unwrap(), deck_bytes);
     let mut consumed = receipt.clone();
     consumed.consume(Utc::now()).unwrap();
@@ -260,9 +285,19 @@ fn m1_stale_approved_diff_never_overwrites_external_change() {
     // The user edits the file externally AFTER approval:
     std::fs::write(&dest, b"external-user-edit").unwrap();
     let err = committer
-        .commit_external("batch-stale-1", "art-1", &dest, &base_hash, &proposed_hash, new_bytes)
+        .commit_external(
+            "batch-stale-1",
+            "art-1",
+            &dest,
+            &base_hash,
+            &proposed_hash,
+            new_bytes,
+        )
         .unwrap_err();
-    assert!(matches!(err, harbor_artifacts::SafeCommitError::BaseChanged { .. }));
+    assert!(matches!(
+        err,
+        harbor_artifacts::SafeCommitError::BaseChanged { .. }
+    ));
     assert_eq!(std::fs::read(&dest).unwrap(), b"external-user-edit");
 }
 
@@ -289,7 +324,7 @@ fn m1_kill_restart_replay_with_artifacts_and_blobs() {
             bullets: vec!["b".into()],
             notes: None,
             chart: None,
-        image: None,
+            image: None,
         }],
     };
     let deck_bytes = deck.to_pptx_bytes().unwrap();
@@ -329,8 +364,7 @@ fn m1_kill_restart_replay_with_artifacts_and_blobs() {
         e.created_at = Utc::now()
             .to_rfc3339_opts(chrono::SecondsFormat::Micros, true)
             .parse::<chrono::DateTime<chrono::Utc>>()
-            .unwrap()
-            .into();
+            .unwrap();
         head_hash = log.append(e, lease.generation, None).unwrap();
         // Durable artifact registry (store DB): version bound to hash.
         let mut db = Database::open(&store_db).unwrap();
@@ -373,7 +407,9 @@ fn m1_kill_restart_replay_with_artifacts_and_blobs() {
             .unwrap();
         let wk2 = WorkspaceKey::from_wrapped(&root2, &wrapped).unwrap();
         blobs.bind_workspace("ws-m1", wk2, wrapped.clone());
-        let r = blobs.put("ws-m1", &deck_bytes, &PutOptions::default()).unwrap();
+        let r = blobs
+            .put("ws-m1", &deck_bytes, &PutOptions::default())
+            .unwrap();
         assert_eq!(r.size, deck_bytes.len() as u64);
     }
 
@@ -401,17 +437,23 @@ fn m1_kill_restart_replay_with_artifacts_and_blobs() {
     let wk3 = WorkspaceKey::from_wrapped(&root3, &wrapped).unwrap();
     blobs.bind_workspace("ws-m1", wk3, wrapped);
     let restored = blobs
-        .get("ws-m1", &harbor_canonical::sha256_hex(&deck_bytes), &PutOptions::default())
+        .get(
+            "ws-m1",
+            &harbor_canonical::sha256_hex(&deck_bytes),
+            &PutOptions::default(),
+        )
         .unwrap();
     assert_eq!(restored, deck_bytes);
 
     // Durable artifact registry survived restart.
-    let mut db = Database::open(&store_db).unwrap();
+    let db = Database::open(&store_db).unwrap();
     let count: i64 = db
         .read(|c| {
-            c.query_row("SELECT COUNT(*) FROM artifact_versions WHERE artifact_id = 'art-boarddeck'", [], |r| {
-                r.get(0)
-            })
+            c.query_row(
+                "SELECT COUNT(*) FROM artifact_versions WHERE artifact_id = 'art-boarddeck'",
+                [],
+                |r| r.get(0),
+            )
             .map_err(harbor_store::StoreError::Db)
         })
         .unwrap();

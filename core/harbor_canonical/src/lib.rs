@@ -118,9 +118,9 @@ impl JsonValue {
 
     /// SHA-256 of the canonical encoding, lowercase hex.
     pub fn canonical_sha256(&self) -> Result<String, CanonicalError> {
-        Ok(hex_hex(Sha256::digest(
-            self.to_canonical_bytes()?.as_slice(),
-        ).as_slice()))
+        Ok(hex_hex(
+            Sha256::digest(self.to_canonical_bytes()?.as_slice()).as_slice(),
+        ))
     }
 
     fn check(&self) -> Result<(), CanonicalError> {
@@ -242,7 +242,9 @@ impl<'de> serde::Deserialize<'de> for JsonValue {
                 if v <= MAX_SAFE_INTEGER as u64 {
                     Ok(JsonValue::Int(v as i64))
                 } else {
-                    Err(de::Error::custom(CanonicalError::IntegerOutOfRange(i64::MAX)))
+                    Err(de::Error::custom(CanonicalError::IntegerOutOfRange(
+                        i64::MAX,
+                    )))
                 }
             }
             fn visit_f64<E: de::Error>(self, _v: f64) -> Result<JsonValue, E> {
@@ -352,7 +354,6 @@ pub fn convert(raw: serde_json::Value) -> Result<JsonValue, CanonicalError> {
 
 /// Convert a `serde_json::Value` (e.g. from an untrusted source) into a
 /// canonical value, rejecting anything the canonical format forbids.
-
 /// Canonical JSON encoder over [`serde_json::Value`] input, for callers that
 /// hold dynamic JSON. Equivalent to `contracts.py::canonical` including its
 /// rejection rules. Returns the canonical bytes.
@@ -362,7 +363,9 @@ pub fn canonical_bytes(raw: &serde_json::Value) -> Result<Vec<u8>, CanonicalErro
 
 /// SHA-256 of `canonical_bytes(raw)`, lowercase hex.
 pub fn canonical_sha256(raw: &serde_json::Value) -> Result<String, CanonicalError> {
-    Ok(hex_hex(Sha256::digest(canonical_bytes(raw)?.as_slice()).as_slice()))
+    Ok(hex_hex(
+        Sha256::digest(canonical_bytes(raw)?.as_slice()).as_slice(),
+    ))
 }
 
 /// Lowercase SHA-256 hex of raw bytes.
@@ -382,7 +385,10 @@ mod tests {
     #[test]
     fn key_sorting_matches_python() {
         // Python: json.dumps({"b":1,"a":2,"\u00e9":3,"Z":4}, sort_keys=True, ensure_ascii=False)
-        assert_eq!(py_canonical(r#"{"b":1,"a":2,"é":3,"Z":4}"#), r#"{"Z":4,"a":2,"b":1,"é":3}"#);
+        assert_eq!(
+            py_canonical(r#"{"b":1,"a":2,"é":3,"Z":4}"#),
+            r#"{"Z":4,"a":2,"b":1,"é":3}"#
+        );
     }
 
     #[test]
@@ -405,7 +411,13 @@ mod tests {
         // classifies it as a float); the reference would emit 0 — a strict
         // subset of the reference grammar.
         assert!(parse("[-0]").is_err());
-        assert_eq!(JsonValue::int(MAX_SAFE_INTEGER).unwrap().to_canonical_bytes().unwrap(), b"9007199254740991");
+        assert_eq!(
+            JsonValue::int(MAX_SAFE_INTEGER)
+                .unwrap()
+                .to_canonical_bytes()
+                .unwrap(),
+            b"9007199254740991"
+        );
         assert!(JsonValue::int(MAX_SAFE_INTEGER + 1).is_err());
         assert!(JsonValue::int(-MAX_SAFE_INTEGER - 1).is_err());
     }
@@ -429,7 +441,13 @@ mod tests {
         let v = JsonValue::object([("a", JsonValue::Int(1)), ("b", JsonValue::Int(2))]);
         let bytes = v.to_canonical_bytes().unwrap();
         assert_eq!(bytes, b"{\"a\":1,\"b\":2}");
-        assert_eq!(sha256_hex(&bytes), "43258cff783fe7036d8a43033f830adfc60ec037382473548ac742b888292777");
-        assert_eq!(v.canonical_sha256().unwrap(), "43258cff783fe7036d8a43033f830adfc60ec037382473548ac742b888292777");
+        assert_eq!(
+            sha256_hex(&bytes),
+            "43258cff783fe7036d8a43033f830adfc60ec037382473548ac742b888292777"
+        );
+        assert_eq!(
+            v.canonical_sha256().unwrap(),
+            "43258cff783fe7036d8a43033f830adfc60ec037382473548ac742b888292777"
+        );
     }
 }

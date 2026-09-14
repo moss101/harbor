@@ -100,7 +100,7 @@ impl WorkbookPreview {
             });
         }
         cells.sort_by_key(|c| (c.row, c.col));
-        let chart_count = WorkbookDoc::count_charts_in_bytes(bytes)? as usize;
+        let chart_count = WorkbookDoc::count_charts_in_bytes(bytes)?;
         Ok(WorkbookPreview {
             kind: "workbook".into(),
             sheet: first,
@@ -153,7 +153,11 @@ mod tests {
         let preview = WorkbookPreview::from_xlsx(&bytes).unwrap();
         assert_eq!(preview.kind, "workbook");
         assert_eq!(preview.sheet, "Sheet1");
-        let a2 = preview.cells.iter().find(|c| c.row == 2 && c.col == 1).unwrap();
+        let a2 = preview
+            .cells
+            .iter()
+            .find(|c| c.row == 2 && c.col == 1)
+            .unwrap();
         assert!(a2.formula.as_deref().unwrap_or_default().contains("A1*3"));
         assert_eq!(a2.value.as_deref(), Some("30"));
         let json = serde_json::to_string(&preview).unwrap();
@@ -169,7 +173,7 @@ mod tests {
                 bullets: vec!["Q1 3600".into()],
                 notes: None,
                 chart: None,
-            image: None,
+                image: None,
             }],
         };
         let bytes = deck.to_pptx_bytes().unwrap();

@@ -27,12 +27,13 @@ Future<void> pumpApp(
   if (coreAvailable) {
     await tester.runAsync(() async {
       final dir = await Directory.systemTemp.createTemp('harbor-a11y-');
-      final s = HarborService.open(
+      final s = await HarborService.open(
           libraryPath: dylibPath, dataRoot: dir.path, workspaceId: 'ws-a11y');
       await s.refresh();
       service = s;
     });
   }
+  addTearDown(() => service?.close());
   final arabic = locale.languageCode == 'ar';
   await tester.pumpWidget(RepaintBoundary(
     child: MediaQuery(
@@ -72,6 +73,7 @@ void _assertLabeled(WidgetTester tester, String flow) {
         if (o is RenderBox) return o.size.shortestSide;
         return 0;
       }
+
       final size = sizeOf(candidate.renderObject);
       if (size == 0) continue;
       // Semantics walk: the element's semantics must carry a label or
@@ -166,7 +168,9 @@ void main() {
       if (context == null) continue;
       context.visitAncestorElements((e) {
         final w = e.widget;
-        if (w is TextField || w is EditableText) reachedTextFiled.add('composer');
+        if (w is TextField || w is EditableText) {
+          reachedTextFiled.add('composer');
+        }
         if (w is ActionChip) reachedTextFiled.add('quick-action');
         if (w is FilledButton) reachedTextFiled.add('filled-action');
         if (w is ModelDock) reachedTextFiled.add('model-dock');

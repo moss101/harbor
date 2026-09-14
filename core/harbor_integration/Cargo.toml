@@ -14,6 +14,7 @@ harbor_formula = { workspace = true }
 harbor_modelhub = { workspace = true }
 harbor_artifacts = { workspace = true }
 harbor_core = { workspace = true }
+harbor_ffi = { workspace = true }
 harbor_inference = { workspace = true }
 rusqlite = { workspace = true }
 serde_json = { workspace = true }

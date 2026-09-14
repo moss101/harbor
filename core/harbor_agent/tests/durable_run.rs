@@ -36,22 +36,46 @@ fn kill_and_restart_replays_to_durable_state() {
         let log = EventLog::open(&path).unwrap();
         log.create_run(run_id, "ws-1", Utc::now()).unwrap();
         let mut mgr = LeaseManager::open(&path).unwrap();
-        let lease = mgr.acquire(run_id, "exec-1", chrono::Duration::minutes(5), Utc::now()).unwrap();
+        let lease = mgr
+            .acquire(run_id, "exec-1", chrono::Duration::minutes(5), Utc::now())
+            .unwrap();
         assert_eq!(lease.generation, 1);
 
         let mut e = base(run_id, 1, None);
         e.prev_event_hash = Some(log.load_stream(run_id).unwrap()[0].hash().unwrap());
-        e.payload = EventPayload::Transition { from_state: RunState::Created, to_state: RunState::Planning, reason: None };
+        e.payload = EventPayload::Transition {
+            from_state: RunState::Created,
+            to_state: RunState::Planning,
+            reason: None,
+        };
         let h1 = log.append(e, 1, None).unwrap();
 
         let mut e2 = base(run_id, 2, Some(h1.clone()));
-        e2.payload = EventPayload::Transition { from_state: RunState::Planning, to_state: RunState::Running, reason: None };
-        e2.counters = Counters { active_compute_ms_total: 1500, step_count_total: 1, tool_count_total: 0, context_tokens_total: 2048 };
+        e2.payload = EventPayload::Transition {
+            from_state: RunState::Planning,
+            to_state: RunState::Running,
+            reason: None,
+        };
+        e2.counters = Counters {
+            active_compute_ms_total: 1500,
+            step_count_total: 1,
+            tool_count_total: 0,
+            context_tokens_total: 2048,
+        };
         let h2 = log.append(e2, 1, None).unwrap();
 
         let mut e3 = base(run_id, 3, Some(h2));
-        e3.payload = EventPayload::Transition { from_state: RunState::Running, to_state: RunState::Paused, reason: Some(PauseReason::User) };
-        e3.counters = Counters { active_compute_ms_total: 2400, step_count_total: 2, tool_count_total: 1, context_tokens_total: 3100 };
+        e3.payload = EventPayload::Transition {
+            from_state: RunState::Running,
+            to_state: RunState::Paused,
+            reason: Some(PauseReason::User),
+        };
+        e3.counters = Counters {
+            active_compute_ms_total: 2400,
+            step_count_total: 2,
+            tool_count_total: 1,
+            context_tokens_total: 3100,
+        };
         last_hash = log.append(e3, 1, None).unwrap();
     }
     // Process "killed": all handles dropped. Restart.
@@ -73,15 +97,24 @@ fn kill_and_restart_replays_to_durable_state() {
     let mut mgr = LeaseManager::open(&path).unwrap();
     // Renewal after restart: acquisition always increments the generation
     // (02 contract). The stale generation cannot authorize new events.
-    let lease2 = mgr.acquire(run_id, "exec-1", chrono::Duration::minutes(5), Utc::now()).unwrap();
-    assert_eq!(lease2.generation, 2, "lease acquisition increments generation");
+    let lease2 = mgr
+        .acquire(run_id, "exec-1", chrono::Duration::minutes(5), Utc::now())
+        .unwrap();
+    assert_eq!(
+        lease2.generation, 2,
+        "lease acquisition increments generation"
+    );
     // New lease can append; old generation value (1) is now fenced.
     let stream = log.load_stream(run_id).unwrap();
     let head = stream.last().unwrap().hash().unwrap();
     let mut resume = base(run_id, stream.len() as u64, Some(head));
     resume.lease_generation = lease2.generation;
     resume.counters = report.counters;
-    resume.payload = EventPayload::Transition { from_state: RunState::Paused, to_state: RunState::Running, reason: None };
+    resume.payload = EventPayload::Transition {
+        from_state: RunState::Paused,
+        to_state: RunState::Running,
+        reason: None,
+    };
     log.append(resume, lease2.generation, None).unwrap();
     assert_eq!(log.run_state(run_id).unwrap().0, RunState::Running);
 }
@@ -94,10 +127,18 @@ fn lease_acquisition_always_increments_generation() {
     let run_id = "run-lease-gen";
     log.create_run(run_id, "ws", Utc::now()).unwrap();
     let mut mgr = LeaseManager::open(&path).unwrap();
-    let l1 = mgr.acquire(run_id, "exec-1", chrono::Duration::minutes(1), Utc::now()).unwrap();
+    let l1 = mgr
+        .acquire(run_id, "exec-1", chrono::Duration::minutes(1), Utc::now())
+        .unwrap();
     mgr.release(&l1, Utc::now()).unwrap();
-    let l2 = mgr.acquire(run_id, "exec-1", chrono::Duration::minutes(1), Utc::now()).unwrap();
-    assert_eq!(l2.generation, l1.generation + 1, "lease acquisition increments generation");
+    let l2 = mgr
+        .acquire(run_id, "exec-1", chrono::Duration::minutes(1), Utc::now())
+        .unwrap();
+    assert_eq!(
+        l2.generation,
+        l1.generation + 1,
+        "lease acquisition increments generation"
+    );
 }
 
 #[test]
@@ -108,15 +149,23 @@ fn stale_generation_cannot_authorize_events() {
     let run_id = "run-fence";
     log.create_run(run_id, "ws", Utc::now()).unwrap();
     let mut mgr = LeaseManager::open(&path).unwrap();
-    let l1 = mgr.acquire(run_id, "exec-1", chrono::Duration::minutes(1), Utc::now()).unwrap();
+    let l1 = mgr
+        .acquire(run_id, "exec-1", chrono::Duration::minutes(1), Utc::now())
+        .unwrap();
     mgr.release(&l1, Utc::now()).unwrap();
-    let _l2 = mgr.acquire(run_id, "exec-1", chrono::Duration::minutes(1), Utc::now()).unwrap();
+    let _l2 = mgr
+        .acquire(run_id, "exec-1", chrono::Duration::minutes(1), Utc::now())
+        .unwrap();
 
     let stream = log.load_stream(run_id).unwrap();
     let head_hash = stream.last().unwrap().hash().unwrap();
     let mut e = base(run_id, 1, Some(head_hash));
     e.lease_generation = l1.generation; // stale
-    e.payload = EventPayload::Transition { from_state: RunState::Created, to_state: RunState::Planning, reason: None };
+    e.payload = EventPayload::Transition {
+        from_state: RunState::Created,
+        to_state: RunState::Planning,
+        reason: None,
+    };
     assert!(matches!(
         log.append(e, _l2.generation, None),
         Err(harbor_agent::LogError::LeaseFence { .. })
@@ -178,8 +227,10 @@ fn unknown_authority_event_halts_replay_but_display_skips() {
             payload: EventPayload::Raw(harbor_canonical::parse("{}").unwrap()),
             // Normalize to the log's persisted precision so the hash is
             // stable across reload.
-            created_at: Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Micros, true)
-                .parse::<chrono::DateTime<chrono::Utc>>().unwrap().into(),
+            created_at: Utc::now()
+                .to_rfc3339_opts(chrono::SecondsFormat::Micros, true)
+                .parse::<chrono::DateTime<chrono::Utc>>()
+                .unwrap(),
             prev_event_hash: Some(prev_hash),
         };
         // Runtime append refuses unknown types; a malicious/legacy writer
@@ -204,7 +255,10 @@ fn unknown_authority_event_halts_replay_but_display_skips() {
         let log = EventLog::open(&path).unwrap();
         assert!(matches!(
             log.replay(run_id),
-            Err(harbor_agent::LogError::UnknownEventHalts { kind: "authority", .. })
+            Err(harbor_agent::LogError::UnknownEventHalts {
+                kind: "authority",
+                ..
+            })
         ));
     }
     // Now a display-only unknown event, correctly chained: replay skips it.
@@ -227,8 +281,7 @@ fn unknown_authority_event_halts_replay_but_display_skips() {
             created_at: Utc::now()
                 .to_rfc3339_opts(chrono::SecondsFormat::Micros, true)
                 .parse::<chrono::DateTime<chrono::Utc>>()
-                .unwrap()
-                .into(),
+                .unwrap(),
             prev_event_hash: Some(prev_hash),
         };
         let conn = rusqlite::Connection::open(&path2).unwrap();
@@ -259,26 +312,43 @@ fn illegal_transitions_are_rejected_at_append() {
     let run_id = "run-illegal";
     log.create_run(run_id, "ws", Utc::now()).unwrap();
     let mut mgr = LeaseManager::open(&path).unwrap();
-    let l = mgr.acquire(run_id, "exec", chrono::Duration::minutes(5), Utc::now()).unwrap();
+    let l = mgr
+        .acquire(run_id, "exec", chrono::Duration::minutes(5), Utc::now())
+        .unwrap();
 
     // CREATED -> RUNNING is illegal (must pass through PLANNING).
     let stream = log.load_stream(run_id).unwrap();
     let head = stream.last().unwrap().hash().unwrap();
     let mut e = base(run_id, 1, Some(head));
-    e.payload = EventPayload::Transition { from_state: RunState::Created, to_state: RunState::Running, reason: None };
+    e.payload = EventPayload::Transition {
+        from_state: RunState::Created,
+        to_state: RunState::Running,
+        reason: None,
+    };
     assert!(matches!(
         log.append(e, l.generation, None),
         Err(harbor_agent::LogError::State(
-            harbor_agent::StateError::IllegalTransition { from: "CREATED", to: "RUNNING" }
+            harbor_agent::StateError::IllegalTransition {
+                from: "CREATED",
+                to: "RUNNING"
+            }
         ))
     ));
 
     // CANCELLING -> PAUSED with a non-unacknowledged reason is illegal.
     let mut e1 = base(run_id, 1, Some(stream.last().unwrap().hash().unwrap()));
-    e1.payload = EventPayload::Transition { from_state: RunState::Created, to_state: RunState::Cancelling, reason: None };
+    e1.payload = EventPayload::Transition {
+        from_state: RunState::Created,
+        to_state: RunState::Cancelling,
+        reason: None,
+    };
     let h1 = log.append(e1, l.generation, None).unwrap();
     let mut e2 = base(run_id, 2, Some(h1.clone()));
-    e2.payload = EventPayload::Transition { from_state: RunState::Cancelling, to_state: RunState::Paused, reason: Some(PauseReason::User) };
+    e2.payload = EventPayload::Transition {
+        from_state: RunState::Cancelling,
+        to_state: RunState::Paused,
+        reason: Some(PauseReason::User),
+    };
     assert!(matches!(
         log.append(e2, l.generation, None),
         Err(harbor_agent::LogError::State(
@@ -287,7 +357,11 @@ fn illegal_transitions_are_rejected_at_append() {
     ));
     // With cancellation_unacknowledged it is legal.
     let mut e3 = base(run_id, 2, Some(h1));
-    e3.payload = EventPayload::Transition { from_state: RunState::Cancelling, to_state: RunState::Paused, reason: Some(PauseReason::CancellationUnacknowledged) };
+    e3.payload = EventPayload::Transition {
+        from_state: RunState::Cancelling,
+        to_state: RunState::Paused,
+        reason: Some(PauseReason::CancellationUnacknowledged),
+    };
     log.append(e3, l.generation, None).unwrap();
 }
 
@@ -299,21 +373,44 @@ fn counters_never_regress() {
     let run_id = "run-counters";
     log.create_run(run_id, "ws", Utc::now()).unwrap();
     let mut mgr = LeaseManager::open(&path).unwrap();
-    let l = mgr.acquire(run_id, "exec", chrono::Duration::minutes(5), Utc::now()).unwrap();
+    let l = mgr
+        .acquire(run_id, "exec", chrono::Duration::minutes(5), Utc::now())
+        .unwrap();
     let stream = log.load_stream(run_id).unwrap();
     let head = stream.last().unwrap().hash().unwrap();
     let mut e = base(run_id, 1, Some(head));
-    e.payload = EventPayload::Transition { from_state: RunState::Created, to_state: RunState::Planning, reason: None };
-    e.counters = Counters { active_compute_ms_total: 1000, step_count_total: 1, tool_count_total: 0, context_tokens_total: 0 };
+    e.payload = EventPayload::Transition {
+        from_state: RunState::Created,
+        to_state: RunState::Planning,
+        reason: None,
+    };
+    e.counters = Counters {
+        active_compute_ms_total: 1000,
+        step_count_total: 1,
+        tool_count_total: 0,
+        context_tokens_total: 0,
+    };
     log.append(e, l.generation, None).unwrap();
     let stream = log.load_stream(run_id).unwrap();
     let head = stream.last().unwrap().hash().unwrap();
     let mut e2 = base(run_id, 2, Some(head));
-    e2.payload = EventPayload::Transition { from_state: RunState::Planning, to_state: RunState::Running, reason: None };
-    e2.counters = Counters { active_compute_ms_total: 900, step_count_total: 1, tool_count_total: 0, context_tokens_total: 0 };
+    e2.payload = EventPayload::Transition {
+        from_state: RunState::Planning,
+        to_state: RunState::Running,
+        reason: None,
+    };
+    e2.counters = Counters {
+        active_compute_ms_total: 900,
+        step_count_total: 1,
+        tool_count_total: 0,
+        context_tokens_total: 0,
+    };
     assert!(matches!(
         log.append(e2, l.generation, None),
-        Err(harbor_agent::LogError::CounterRegressed(_, "active_compute_ms_total"))
+        Err(harbor_agent::LogError::CounterRegressed(
+            _,
+            "active_compute_ms_total"
+        ))
     ));
 }
 
@@ -330,23 +427,37 @@ fn terminal_states_accept_no_transitions() {
         (RunState::Running, RunState::Completed, None),
     ] {
         let mut mgr = LeaseManager::open(&path).unwrap();
-        let l = mgr.acquire(run_id, "exec", chrono::Duration::minutes(5), Utc::now()).unwrap();
+        let l = mgr
+            .acquire(run_id, "exec", chrono::Duration::minutes(5), Utc::now())
+            .unwrap();
         let stream = log.load_stream(run_id).unwrap();
         let head = stream.last().unwrap().hash().unwrap();
         let mut e = base(run_id, stream.len() as u64, Some(head));
         e.lease_generation = l.generation;
-        e.payload = EventPayload::Transition { from_state: from, to_state: to, reason };
+        e.payload = EventPayload::Transition {
+            from_state: from,
+            to_state: to,
+            reason,
+        };
         log.append(e, l.generation, None).unwrap();
     }
     let mut mgr = LeaseManager::open(&path).unwrap();
-    let l = mgr.acquire(run_id, "exec", chrono::Duration::minutes(5), Utc::now()).unwrap();
+    let l = mgr
+        .acquire(run_id, "exec", chrono::Duration::minutes(5), Utc::now())
+        .unwrap();
     let stream = log.load_stream(run_id).unwrap();
     let head = stream.last().unwrap().hash().unwrap();
     let mut e = base(run_id, stream.len() as u64, Some(head));
     e.lease_generation = l.generation;
-    e.payload = EventPayload::Transition { from_state: RunState::Completed, to_state: RunState::Running, reason: None };
+    e.payload = EventPayload::Transition {
+        from_state: RunState::Completed,
+        to_state: RunState::Running,
+        reason: None,
+    };
     assert!(matches!(
         log.append(e, l.generation, None),
-        Err(harbor_agent::LogError::State(harbor_agent::StateError::IllegalTransition { .. }))
+        Err(harbor_agent::LogError::State(
+            harbor_agent::StateError::IllegalTransition { .. }
+        ))
     ));
 }

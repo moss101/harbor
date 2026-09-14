@@ -77,10 +77,17 @@ pub struct SignedCatalog {
     pub signature: String,
 }
 
-fn canonical_payload(epoch: u64, published_at: &str, entries: &JsonValue) -> Result<Vec<u8>, CatalogSignError> {
+fn canonical_payload(
+    epoch: u64,
+    published_at: &str,
+    entries: &JsonValue,
+) -> Result<Vec<u8>, CatalogSignError> {
     let v = JsonValue::object([
         ("entries", entries.clone()),
-        ("epoch", JsonValue::int(epoch as i64).map_err(|e| CatalogSignError::Malformed(e.to_string()))?),
+        (
+            "epoch",
+            JsonValue::int(epoch as i64).map_err(|e| CatalogSignError::Malformed(e.to_string()))?,
+        ),
         ("published_at", JsonValue::str(published_at)),
     ]);
     v.to_canonical_bytes()
@@ -95,8 +102,12 @@ fn sign_bytes(key: &CatalogSigningKey, payload: &[u8]) -> String {
 }
 
 fn verify_bytes(public: &VerifyingKey, payload: &[u8], sig_hex: &str) -> bool {
-    let Some(bytes) = hex::decode(sig_hex) else { return false };
-    let Ok(arr) = <[u8; 64]>::try_from(bytes.as_slice()) else { return false };
+    let Some(bytes) = hex::decode(sig_hex) else {
+        return false;
+    };
+    let Ok(arr) = <[u8; 64]>::try_from(bytes.as_slice()) else {
+        return false;
+    };
     let sig = Signature::from_bytes(&arr);
     public.verify(payload, &sig).is_ok()
 }
@@ -141,12 +152,25 @@ fn rotation_payload(r: &SignedRotation) -> Result<Vec<u8>, CatalogSignError> {
     let adds: Vec<JsonValue> = r
         .add_keys
         .iter()
-        .map(|(id, pk)| JsonValue::object([("key_id", JsonValue::str(id.clone())), ("public", JsonValue::str(pk.clone()))]))
+        .map(|(id, pk)| {
+            JsonValue::object([
+                ("key_id", JsonValue::str(id.clone())),
+                ("public", JsonValue::str(pk.clone())),
+            ])
+        })
         .collect();
-    let removes: Vec<JsonValue> = r.remove_key_ids.iter().map(|k| JsonValue::str(k.clone())).collect();
+    let removes: Vec<JsonValue> = r
+        .remove_key_ids
+        .iter()
+        .map(|k| JsonValue::str(k.clone()))
+        .collect();
     let v = JsonValue::object([
         ("add_keys", JsonValue::Array(adds)),
-        ("epoch", JsonValue::int(r.epoch as i64).map_err(|e| CatalogSignError::Malformed(e.to_string()))?),
+        (
+            "epoch",
+            JsonValue::int(r.epoch as i64)
+                .map_err(|e| CatalogSignError::Malformed(e.to_string()))?,
+        ),
         ("published_at", JsonValue::str(r.published_at.clone())),
         ("remove_key_ids", JsonValue::Array(removes)),
     ]);
@@ -194,13 +218,20 @@ impl CatalogVerifier {
             .to_string();
         let mut trusted = BTreeMap::new();
         trusted.insert(key_id, root_public_hex.to_string());
-        Ok(CatalogVerifier { trusted, accepted_epoch: 0, revoked: BTreeMap::new() })
+        Ok(CatalogVerifier {
+            trusted,
+            accepted_epoch: 0,
+            revoked: BTreeMap::new(),
+        })
     }
 
     /// Verify and accept a catalog document.
     pub fn verify(&mut self, catalog: &SignedCatalog) -> Result<(), CatalogSignError> {
         if catalog.epoch <= self.accepted_epoch {
-            return Err(CatalogSignError::StaleEpoch { accepted: self.accepted_epoch, got: catalog.epoch });
+            return Err(CatalogSignError::StaleEpoch {
+                accepted: self.accepted_epoch,
+                got: catalog.epoch,
+            });
         }
         if self.revoked.contains_key(&catalog.key_id) {
             return Err(CatalogSignError::RevokedKey(catalog.key_id.clone()));
@@ -221,7 +252,10 @@ impl CatalogVerifier {
     /// Apply a signed rotation; rotations obey the same epoch monotonicity.
     pub fn apply_rotation(&mut self, rotation: &SignedRotation) -> Result<(), CatalogSignError> {
         if rotation.epoch <= self.accepted_epoch {
-            return Err(CatalogSignError::StaleEpoch { accepted: self.accepted_epoch, got: rotation.epoch });
+            return Err(CatalogSignError::StaleEpoch {
+                accepted: self.accepted_epoch,
+                got: rotation.epoch,
+            });
         }
         if self.revoked.contains_key(&rotation.key_id) {
             return Err(CatalogSignError::RevokedKey(rotation.key_id.clone()));
@@ -253,7 +287,9 @@ impl CatalogVerifier {
             trusted.insert(id, pk.clone());
         }
         if trusted.is_empty() {
-            return Err(CatalogSignError::Malformed("rotation would remove all trusted keys".into()));
+            return Err(CatalogSignError::Malformed(
+                "rotation would remove all trusted keys".into(),
+            ));
         }
         self.trusted = trusted;
         self.accepted_epoch = rotation.epoch;
@@ -266,7 +302,7 @@ mod hex {
         bytes.iter().map(|b| format!("{b:02x}")).collect()
     }
     pub fn decode(s: &str) -> Option<Vec<u8>> {
-        if s.len() % 2 != 0 {
+        if !s.len().is_multiple_of(2) {
             return None;
         }
         (0..s.len())
@@ -299,7 +335,10 @@ mod tests {
         let c1_again = sign_catalog(&k, 1, "2026-09-12T00:00:00Z", entries()).unwrap();
         assert!(matches!(
             v.verify(&c1_again),
-            Err(CatalogSignError::StaleEpoch { accepted: 1, got: 1 })
+            Err(CatalogSignError::StaleEpoch {
+                accepted: 1,
+                got: 1
+            })
         ));
         let c2 = sign_catalog(&k, 2, "2026-09-12T01:00:00Z", entries()).unwrap();
         v.verify(&c2).unwrap();
@@ -342,7 +381,10 @@ mod tests {
 
         // Old key with a FRESH epoch is still unacceptable: revoked.
         let c_old = sign_catalog(&old, 6, "t", entries()).unwrap();
-        assert!(matches!(v.verify(&c_old), Err(CatalogSignError::RevokedKey(_))));
+        assert!(matches!(
+            v.verify(&c_old),
+            Err(CatalogSignError::RevokedKey(_))
+        ));
         // New key is now trusted.
         let c_new = sign_catalog(&new, 6, "t", entries()).unwrap();
         v.verify(&c_new).unwrap();
@@ -354,7 +396,10 @@ mod tests {
         let outsider = CatalogSigningKey::from_secret_bytes(&[13u8; 32]);
         let mut v = CatalogVerifier::new(&hex::encode(&root.public_bytes())).unwrap();
         let r = sign_rotation(&outsider, 9, "t", vec![], vec![]).unwrap();
-        assert!(matches!(v.apply_rotation(&r), Err(CatalogSignError::UnknownKey(_))));
+        assert!(matches!(
+            v.apply_rotation(&r),
+            Err(CatalogSignError::UnknownKey(_))
+        ));
     }
 
     #[test]

@@ -52,7 +52,12 @@ pub enum HfError {
 
 impl<'a> HfDiscovery<'a> {
     pub fn new(broker: &'a EgressBroker, transport: &'a dyn Transport) -> Self {
-        HfDiscovery { broker, transport, origin: HF_ORIGIN.into(), auth_token: None }
+        HfDiscovery {
+            broker,
+            transport,
+            origin: HF_ORIGIN.into(),
+            auth_token: None,
+        }
     }
 
     /// Attach a bearer token for gated/private repos. Only ever sent to
@@ -75,7 +80,12 @@ impl<'a> HfDiscovery<'a> {
         if let Some(token) = &self.auth_token {
             headers.push(("authorization".to_string(), format!("Bearer {token}")));
         }
-        let req = TransportRequest { method: "GET".into(), url, headers, body: Vec::new() };
+        let req = TransportRequest {
+            method: "GET".into(),
+            url,
+            headers,
+            body: Vec::new(),
+        };
         let resp = self
             .broker
             .dispatch(session, req, self.transport, None, chrono::Utc::now())
@@ -108,7 +118,11 @@ impl<'a> HfDiscovery<'a> {
         repo_id: &str,
         revision: &str,
     ) -> Result<Vec<HfFile>, HfError> {
-        let tree = format!("/api/models/{}/{}/tree/main", urlencode(repo_id), urlencode(revision));
+        let tree = format!(
+            "/api/models/{}/{}/tree/main",
+            urlencode(repo_id),
+            urlencode(revision)
+        );
         let v = self.get_json(session, &tree)?;
         serde_json::from_value(v).map_err(|e| HfError::Decode(e.to_string()))
     }
@@ -164,7 +178,12 @@ mod tests {
             } else {
                 br#"[{"type":"file","rfilename":"tiny-Q4_K_M.gguf","size":1234},{"type":"file","rfilename":"tokenizer.json","size":10},{"type":"file","rfilename":"README.md","size":5}]"#.to_vec()
             };
-            Ok(TransportResponse { status: 200, headers: Vec::new(), body, final_url: String::new() })
+            Ok(TransportResponse {
+                status: 200,
+                headers: Vec::new(),
+                body,
+                final_url: String::new(),
+            })
         }
     }
 
@@ -180,7 +199,9 @@ mod tests {
                 PrivacyMode::LocalOnly,
             )
             .unwrap();
-        let transport = FakeHf { calls: Mutex::new(Vec::new()) };
+        let transport = FakeHf {
+            calls: Mutex::new(Vec::new()),
+        };
         let hf = HfDiscovery::new(&broker, &transport);
         let models = hf.search(&session, "tiny llama", 5).unwrap();
         assert_eq!(models.len(), 1);
@@ -208,7 +229,9 @@ mod tests {
             )
             .unwrap();
         // Origin override to an attacker host: broker must refuse.
-        let transport = FakeHf { calls: Mutex::new(Vec::new()) };
+        let transport = FakeHf {
+            calls: Mutex::new(Vec::new()),
+        };
         let mut hf = HfDiscovery::new(&broker, &transport);
         hf.origin = "https://evil.test".into();
         assert!(hf.search(&session, "x", 3).is_err());

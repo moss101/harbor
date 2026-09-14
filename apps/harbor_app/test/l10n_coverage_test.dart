@@ -52,9 +52,12 @@ void main() {
         for (var i = 0; i < lines.length; i++) {
           final line = lines[i];
           // l10n-sourced and data-driven lines are fine.
-          if (line.contains('l10n.') || line.contains('c[\'') ||
-              line.contains('m[\'') || line.contains('r[\'') ||
-              line.contains('s.title') || line.contains('d.label')) {
+          if (line.contains('l10n.') ||
+              line.contains('c[\'') ||
+              line.contains('m[\'') ||
+              line.contains('r[\'') ||
+              line.contains('s.title') ||
+              line.contains('d.label')) {
             continue;
           }
           for (final m in slotRe.allMatches(line)) {

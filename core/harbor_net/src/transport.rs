@@ -5,7 +5,6 @@
 //! and strips cross-origin credentials — the transport must never follow
 //! a redirect on its own (13 policy).
 
-use std::io::Read as _;
 use std::time::Duration;
 
 use crate::broker::{Transport, TransportRequest, TransportResponse};
@@ -40,10 +39,7 @@ impl Transport for UreqTransport {
         timeout: Duration,
         sink: &mut dyn FnMut(&[u8]) -> std::io::Result<()>,
     ) -> std::io::Result<TransportResponse> {
-        let mut request = self
-            .agent
-            .request(&req.method, &req.url)
-            .timeout(timeout);
+        let mut request = self.agent.request(&req.method, &req.url).timeout(timeout);
         for (k, v) in &req.headers {
             request = request.set(k, v);
         }
@@ -56,10 +52,7 @@ impl Transport for UreqTransport {
             Ok(resp) => resp,
             Err(ureq::Error::Status(_code, resp)) => resp,
             Err(ureq::Error::Transport(t)) => {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!("transport: {t}"),
-                ));
+                return Err(std::io::Error::other(format!("transport: {t}")));
             }
         };
         let status = resp.status();
@@ -95,10 +88,7 @@ impl Transport for UreqTransport {
         req: &TransportRequest,
         timeout: Duration,
     ) -> std::io::Result<TransportResponse> {
-        let mut request = self
-            .agent
-            .request(&req.method, &req.url)
-            .timeout(timeout);
+        let mut request = self.agent.request(&req.method, &req.url).timeout(timeout);
         for (k, v) in &req.headers {
             request = request.set(k, v);
         }
@@ -116,10 +106,7 @@ impl Transport for UreqTransport {
                 // ureq surfaces redirect responses (when not following) as
                 // transport errors with an attached response only for some
                 // kinds; treat unknown as failure.
-                Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!("transport: {t}"),
-                ))
+                Err(std::io::Error::other(format!("transport: {t}")))
             }
         }
     }

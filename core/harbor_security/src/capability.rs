@@ -75,7 +75,8 @@ impl CapabilityRegistry {
             state: CapabilityState::Active,
             uses_remaining: if allow_once { Some(1) } else { None },
         };
-        self.records.insert(record.record_id.clone(), record.clone());
+        self.records
+            .insert(record.record_id.clone(), record.clone());
         record
     }
 
@@ -98,9 +99,7 @@ impl CapabilityRegistry {
             .ok_or(CapabilityError::Revoked)?;
         match c.state {
             CapabilityState::Revoked => Err(CapabilityError::Revoked),
-            CapabilityState::Expired => Err(CapabilityError::Expired(
-                c.expires_at.unwrap_or(now),
-            )),
+            CapabilityState::Expired => Err(CapabilityError::Expired(c.expires_at.unwrap_or(now))),
             CapabilityState::Active => {
                 if let Some(exp) = c.expires_at {
                     if now >= exp {
@@ -116,7 +115,11 @@ impl CapabilityRegistry {
     }
 
     /// Consume one use atomically after a successful authorization.
-    pub fn consume(&mut self, record_id: &HarborId, now: DateTime<Utc>) -> Result<(), CapabilityError> {
+    pub fn consume(
+        &mut self,
+        record_id: &HarborId,
+        now: DateTime<Utc>,
+    ) -> Result<(), CapabilityError> {
         self.check(record_id, now)?;
         let c = self.records.get_mut(record_id).unwrap();
         if let Some(n) = c.uses_remaining.as_mut() {
@@ -148,7 +151,10 @@ mod tests {
         let cap = reg.grant(scope(), true, None, now);
         reg.check(&cap.record_id, now).unwrap();
         reg.consume(&cap.record_id, now).unwrap();
-        assert!(matches!(reg.check(&cap.record_id, now), Err(CapabilityError::Exhausted)));
+        assert!(matches!(
+            reg.check(&cap.record_id, now),
+            Err(CapabilityError::Exhausted)
+        ));
     }
 
     #[test]
@@ -157,16 +163,27 @@ mod tests {
         let now = Utc::now();
         let cap = reg.grant(scope(), false, None, now);
         assert!(reg.revoke(&cap.record_id));
-        assert!(matches!(reg.check(&cap.record_id, now), Err(CapabilityError::Revoked)));
+        assert!(matches!(
+            reg.check(&cap.record_id, now),
+            Err(CapabilityError::Revoked)
+        ));
     }
 
     #[test]
     fn expiry_is_checked() {
         let mut reg = CapabilityRegistry::new();
         let now = Utc::now();
-        let cap = reg.grant(scope(), false, Some(now + chrono::Duration::minutes(5)), now);
+        let cap = reg.grant(
+            scope(),
+            false,
+            Some(now + chrono::Duration::minutes(5)),
+            now,
+        );
         assert!(reg.check(&cap.record_id, now).is_ok());
         let later = now + chrono::Duration::minutes(6);
-        assert!(matches!(reg.check(&cap.record_id, later), Err(CapabilityError::Expired(_))));
+        assert!(matches!(
+            reg.check(&cap.record_id, later),
+            Err(CapabilityError::Expired(_))
+        ));
     }
 }

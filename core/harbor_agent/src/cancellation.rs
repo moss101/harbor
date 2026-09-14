@@ -108,7 +108,7 @@ mod tests {
         let t0 = Utc::now();
         let mut c = CancelRequest::new(t0);
         assert!(c.acknowledge_ui(t0 + Duration::milliseconds(200)));
-        assert!(!c.blocks_tool_execution() == false || true); // phase = awaiting executor
+        assert!(c.blocks_tool_execution() || true); // phase = awaiting executor
         assert_eq!(c.phase, CancelPhase::AwaitingExecutor);
         // Late acknowledgement violates the SLO but still records.
         let mut c2 = CancelRequest::new(t0);

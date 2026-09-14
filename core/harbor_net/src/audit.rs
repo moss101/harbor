@@ -68,7 +68,7 @@ impl SqliteAuditSink {
         Self::init(conn)
     }
 
-    fn init(mut conn: Connection) -> Result<Self, harbor_store::StoreError> {
+    fn init(conn: Connection) -> Result<Self, harbor_store::StoreError> {
         conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS network_audit (
                 seq INTEGER PRIMARY KEY,
@@ -86,7 +86,9 @@ impl SqliteAuditSink {
                 entry_hash TEXT NOT NULL
             );",
         )?;
-        Ok(SqliteAuditSink { conn: std::sync::Mutex::new(conn) })
+        Ok(SqliteAuditSink {
+            conn: std::sync::Mutex::new(conn),
+        })
     }
 }
 
@@ -178,7 +180,9 @@ fn hash_entry(e: &NetworkAuditEntry) -> String {
         opt_string(&e.run_id),
         e.detail,
         e.at_rfc3339,
-        e.prev_entry_hash.clone().unwrap_or_else(|| "genesis".into())
+        e.prev_entry_hash
+            .clone()
+            .unwrap_or_else(|| "genesis".into())
     );
     sha256_hex(canonical.as_bytes())
 }

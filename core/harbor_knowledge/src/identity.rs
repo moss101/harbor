@@ -25,7 +25,11 @@ impl EmbedModelIdentity {
 }
 
 pub fn embed_model_identity(model: &str, revision: &str, dimension: u32) -> EmbedModelIdentity {
-    EmbedModelIdentity { model: model.into(), revision: revision.into(), dimension }
+    EmbedModelIdentity {
+        model: model.into(),
+        revision: revision.into(),
+        dimension,
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -57,18 +61,23 @@ pub struct IndexIdentity {
 impl IndexIdentity {
     pub fn canonical_hash(&self) -> String {
         let v = JsonValue::object([
-            ("embedding", JsonValue::str(self.embedding.identity_string())),
+            (
+                "embedding",
+                JsonValue::str(self.embedding.identity_string()),
+            ),
             ("chunker", JsonValue::str(self.chunker.clone())),
             (
                 "chunker_config",
                 JsonValue::object([
                     (
                         "target_graphemes",
-                        JsonValue::int(self.chunker_config.target_graphemes as i64).unwrap_or(JsonValue::Null),
+                        JsonValue::int(self.chunker_config.target_graphemes as i64)
+                            .unwrap_or(JsonValue::Null),
                     ),
                     (
                         "overlap_graphemes",
-                        JsonValue::int(self.chunker_config.overlap_graphemes as i64).unwrap_or(JsonValue::Null),
+                        JsonValue::int(self.chunker_config.overlap_graphemes as i64)
+                            .unwrap_or(JsonValue::Null),
                     ),
                     (
                         "respect_paragraphs",
@@ -81,8 +90,14 @@ impl IndexIdentity {
                 "normalization",
                 JsonValue::str(format!("{:?}", self.normalization)),
             ),
-            ("language_policy", JsonValue::str(self.language_policy.clone())),
-            ("encryption_scope", JsonValue::str(self.encryption_scope.clone())),
+            (
+                "language_policy",
+                JsonValue::str(self.language_policy.clone()),
+            ),
+            (
+                "encryption_scope",
+                JsonValue::str(self.encryption_scope.clone()),
+            ),
         ]);
         v.canonical_sha256().unwrap_or_default()
     }

@@ -161,8 +161,8 @@ pub fn to_literal(v: &CellValue) -> formualizer::LiteralValue {
 }
 
 fn err_to_lit(e: &CellError) -> formualizer::ExcelError {
-    use formualizer::ExcelErrorKind as K;
     use formualizer::ExcelError;
+    use formualizer::ExcelErrorKind as K;
     ExcelError::new(match e {
         CellError::DivZero => K::Div,
         CellError::Value => K::Value,
@@ -279,13 +279,19 @@ mod tests {
         wb.set_formula("Sheet1", 2, 3, "=IF(A1=\"alpha\",TRUE,FALSE)");
         assert_eq!(wb.evaluate_cell("Sheet1", 2, 3), CellValue::Bool(true));
         wb.set_formula("Sheet1", 3, 3, "=IFERROR(1/0,\"safe\")");
-        assert_eq!(wb.evaluate_cell("Sheet1", 3, 3), CellValue::Text("safe".into()));
+        assert_eq!(
+            wb.evaluate_cell("Sheet1", 3, 3),
+            CellValue::Text("safe".into())
+        );
     }
 
     #[test]
     fn div_zero_maps_to_error() {
         let mut wb = HarborWorkbook::new();
         wb.set_formula("Sheet1", 1, 1, "=1/0");
-        assert_eq!(wb.evaluate_cell("Sheet1", 1, 1), CellValue::Error(CellError::DivZero));
+        assert_eq!(
+            wb.evaluate_cell("Sheet1", 1, 1),
+            CellValue::Error(CellError::DivZero)
+        );
     }
 }

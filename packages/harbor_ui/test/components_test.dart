@@ -30,13 +30,17 @@ void main() {
     expect(HarborBreakpoints.railWidth(HarborWindowClass.wideRail), 220);
     expect(HarborBreakpoints.railWidth(HarborWindowClass.full), 220);
     // Lens persistent only at 1280+.
-    expect(HarborBreakpoints.lensIsPersistent(HarborWindowClass.wideRail), false);
+    expect(
+        HarborBreakpoints.lensIsPersistent(HarborWindowClass.wideRail), false);
     expect(HarborBreakpoints.lensIsPersistent(HarborWindowClass.full), true);
     // Work canvas min applies from 1024 only.
-    expect(HarborBreakpoints.enforceWorkCanvasMin(HarborWindowClass.medium), false);
-    expect(HarborBreakpoints.enforceWorkCanvasMin(HarborWindowClass.expanded), true);
+    expect(HarborBreakpoints.enforceWorkCanvasMin(HarborWindowClass.medium),
+        false);
+    expect(HarborBreakpoints.enforceWorkCanvasMin(HarborWindowClass.expanded),
+        true);
     // At 1280: 1280 - 220 rail - 320 lens = 740 >= 640 canvas preserved.
-    expect(HarborBreakpoints.workCanvasWidth(HarborWindowClass.full, 1280), 740);
+    expect(
+        HarborBreakpoints.workCanvasWidth(HarborWindowClass.full, 1280), 740);
   });
 
   testWidgets('status badge conveys meaning with icon AND label AND color',
@@ -61,8 +65,7 @@ void main() {
     expect(find.text('Execution: ON DEVICE'), findsOneWidget);
   });
 
-  testWidgets('fit score renders all five bands with reasons',
-      (tester) async {
+  testWidgets('fit score renders all five bands with reasons', (tester) async {
     for (final band in FitBand.values) {
       await tester.pumpWidget(host(Center(
           child: FitScoreBadge(band: band, reasons: const ['reason one']))));
@@ -81,7 +84,8 @@ void main() {
         baseVersion: 'v7',
         proposedHash: 'a' * 64,
         entries: const [
-          DiffEntryVM(summary: 'Create board deck', before: null, after: 'slides: 1')
+          DiffEntryVM(
+              summary: 'Create board deck', before: null, after: 'slides: 1')
         ],
       ),
       onApprove: () => approved = true,
@@ -92,12 +96,11 @@ void main() {
     expect(approved, isTrue);
   });
 
-  testWidgets('run trail renders entries and empty state',
-      (tester) async {
+  testWidgets('run trail renders entries and empty state', (tester) async {
     await tester.pumpWidget(host(const RunTrail(entries: [])));
     expect(find.text('No activity yet.'), findsOneWidget);
-    await tester.pumpWidget(host(RunTrail(entries: [
-      const RunTrailEntry('Recalculated 6 formulas'),
+    await tester.pumpWidget(host(const RunTrail(entries: [
+      RunTrailEntry('Recalculated 6 formulas'),
       RunTrailEntry('Safe save failed on conflict',
           failed: true, icon: Icons.error_outline, detail: 'base changed'),
     ])));
@@ -106,8 +109,8 @@ void main() {
   });
 
   test('arabic typography uses taller line heights than latin', () {
-    final ar = HarborType(arabic: true);
-    final la = HarborType(arabic: false);
+    const ar = HarborType(arabic: true);
+    const la = HarborType(arabic: false);
     expect(ar.bodyLine, 24);
     expect(la.bodyLine, 21);
     expect(ar.smallLine, greaterThan(la.smallLine));

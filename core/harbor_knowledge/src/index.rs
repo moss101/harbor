@@ -71,15 +71,26 @@ pub struct KnowledgeIndex {
 impl KnowledgeIndex {
     /// Create an index; the identity is baked in for its lifetime.
     pub fn new(identity: IndexIdentity) -> Self {
-        KnowledgeIndex { identity, sources: BTreeMap::new(), chunks: Vec::new(), revoked: Default::default() }
+        KnowledgeIndex {
+            identity,
+            sources: BTreeMap::new(),
+            chunks: Vec::new(),
+            revoked: Default::default(),
+        }
     }
 
     /// Attach vectors produced by another identity: hard error.
     pub fn attach_foreign(&self, other: &IndexIdentity) -> Result<(), IndexError> {
-        self.identity.require_compatible(other).map_err(IndexError::IdentityMismatch)
+        self.identity
+            .require_compatible(other)
+            .map_err(IndexError::IdentityMismatch)
     }
 
-    pub fn add_source(&mut self, source: Source, chunks: Vec<SourceChunk>) -> Result<(), IndexError> {
+    pub fn add_source(
+        &mut self,
+        source: Source,
+        chunks: Vec<SourceChunk>,
+    ) -> Result<(), IndexError> {
         for c in &chunks {
             if c.vector.len() != self.identity.embedding.dimension as usize {
                 return Err(IndexError::DimensionMismatch {
@@ -106,7 +117,11 @@ impl KnowledgeIndex {
 
     /// Update a source to a new content hash: previously cited versions
     /// report Changed, new citations bind the new hash.
-    pub fn mark_source_changed(&mut self, source_id: &str, new_hash: &str) -> Result<(), IndexError> {
+    pub fn mark_source_changed(
+        &mut self,
+        source_id: &str,
+        new_hash: &str,
+    ) -> Result<(), IndexError> {
         let Some(s) = self.sources.get_mut(source_id) else {
             return Err(IndexError::SourceNotFound(source_id.into()));
         };
@@ -197,7 +212,7 @@ mod tests {
     use super::*;
     use crate::chunk::Chunker;
     use crate::identity::ChunkerConfig;
-    use crate::identity::{ChunkerConfig as CC, Normalization, embed_model_identity};
+    use crate::identity::{embed_model_identity, ChunkerConfig as CC, Normalization};
 
     fn identity() -> IndexIdentity {
         IndexIdentity {
@@ -216,7 +231,9 @@ mod tests {
     }
 
     fn vec8(seed: u32) -> Vec<f32> {
-        (0..8).map(|i| ((seed + i * 7) % 13) as f32 / 13.0).collect()
+        (0..8)
+            .map(|i| ((seed + i * 7) % 13) as f32 / 13.0)
+            .collect()
     }
 
     #[test]
@@ -247,14 +264,25 @@ mod tests {
                 }],
             )
             .unwrap_err();
-        assert!(matches!(err, IndexError::DimensionMismatch { expected: 8, got: 16 }));
+        assert!(matches!(
+            err,
+            IndexError::DimensionMismatch {
+                expected: 8,
+                got: 16
+            }
+        ));
     }
 
     #[test]
     fn removal_excludes_retrieval_immediately() {
         let mut idx = KnowledgeIndex::new(identity());
         idx.add_source(
-            Source { source_id: "s1".into(), title: "Doc".into(), content_hash: "h1".into(), indexed_at: Utc::now() },
+            Source {
+                source_id: "s1".into(),
+                title: "Doc".into(),
+                content_hash: "h1".into(),
+                indexed_at: Utc::now(),
+            },
             vec![SourceChunk {
                 source_id: "s1".into(),
                 chunk_id: "s1-0".into(),
@@ -274,7 +302,12 @@ mod tests {
     fn changed_source_reports_changed_citation() {
         let mut idx = KnowledgeIndex::new(identity());
         idx.add_source(
-            Source { source_id: "s1".into(), title: "Doc".into(), content_hash: "old-hash".into(), indexed_at: Utc::now() },
+            Source {
+                source_id: "s1".into(),
+                title: "Doc".into(),
+                content_hash: "old-hash".into(),
+                indexed_at: Utc::now(),
+            },
             vec![SourceChunk {
                 source_id: "s1".into(),
                 chunk_id: "s1-0".into(),
@@ -284,10 +317,19 @@ mod tests {
             }],
         )
         .unwrap();
-        assert_eq!(idx.citation_state("s1", "old-hash"), SourceVersionState::Current);
+        assert_eq!(
+            idx.citation_state("s1", "old-hash"),
+            SourceVersionState::Current
+        );
         idx.mark_source_changed("s1", "new-hash").unwrap();
-        assert_eq!(idx.citation_state("s1", "old-hash"), SourceVersionState::Changed);
-        assert_eq!(idx.citation_state("s1", "new-hash"), SourceVersionState::Current);
+        assert_eq!(
+            idx.citation_state("s1", "old-hash"),
+            SourceVersionState::Changed
+        );
+        assert_eq!(
+            idx.citation_state("s1", "new-hash"),
+            SourceVersionState::Current
+        );
     }
 
     #[test]
@@ -295,7 +337,12 @@ mod tests {
         let mut idx = KnowledgeIndex::new(identity());
         for (sid, seed) in [("s-a", 3u32), ("s-b", 9)] {
             idx.add_source(
-                Source { source_id: sid.into(), title: sid.into(), content_hash: "h".into(), indexed_at: Utc::now() },
+                Source {
+                    source_id: sid.into(),
+                    title: sid.into(),
+                    content_hash: "h".into(),
+                    indexed_at: Utc::now(),
+                },
                 vec![SourceChunk {
                     source_id: sid.into(),
                     chunk_id: format!("{sid}-0"),
@@ -308,6 +355,13 @@ mod tests {
         }
         let hits = idx.search(&vec8(3), 2);
         assert_eq!(hits[0].source_id, "s-a");
-        let _ = Chunker::chunk("x", &ChunkerConfig { target_graphemes: 10, overlap_graphemes: 0, respect_paragraphs: true });
+        let _ = Chunker::chunk(
+            "x",
+            &ChunkerConfig {
+                target_graphemes: 10,
+                overlap_graphemes: 0,
+                respect_paragraphs: true,
+            },
+        );
     }
 }

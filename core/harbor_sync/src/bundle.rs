@@ -64,7 +64,7 @@ pub fn seal_bundle(
     signer_seed: &[u8; 32],
     signer_device_id: &str,
     watermark: DateTime<Utc>,
-    issued_at: DateTime<Utc>,
+    _issued_at: DateTime<Utc>,
     tails: &[RecordEnvelope],
 ) -> Result<SealedSnapshotBundle, SyncError> {
     // Only current-epoch records ride a live snapshot: older-epoch records
@@ -100,7 +100,10 @@ pub fn seal_bundle(
     let ciphertext = cipher
         .encrypt(
             Nonce::from_slice(&nonce),
-            Payload { msg: &serialized, aad: aad.as_bytes() },
+            Payload {
+                msg: &serialized,
+                aad: aad.as_bytes(),
+            },
         )
         .map_err(|_| SyncError::Other("seal failed".into()))?;
 

@@ -28,9 +28,7 @@ impl KeyMaterial {
     }
 
     pub fn from_bytes(b: &[u8]) -> Result<Self> {
-        let arr: [u8; 32] = b
-            .try_into()
-            .map_err(|_| StoreError::Crypto)?;
+        let arr: [u8; 32] = b.try_into().map_err(|_| StoreError::Crypto)?;
         Ok(KeyMaterial(arr))
     }
 }
@@ -46,8 +44,7 @@ impl KeyMaterial {
         let digest = harbor_canonical::sha256_hex(&input);
         let mut out = [0u8; 32];
         for i in 0..32 {
-            out[i] = u8::from_str_radix(&digest[2 * i..2 * i + 2], 16)
-                .unwrap_or(0);
+            out[i] = u8::from_str_radix(&digest[2 * i..2 * i + 2], 16).unwrap_or(0);
         }
         KeyMaterial(out)
     }
@@ -74,7 +71,10 @@ impl WrappedKey {
         let ct = cipher
             .encrypt(Nonce::from_slice(&nonce_bytes), plaintext)
             .map_err(|_| StoreError::Crypto)?;
-        Ok(WrappedKey { nonce: nonce_bytes, ciphertext: ct })
+        Ok(WrappedKey {
+            nonce: nonce_bytes,
+            ciphertext: ct,
+        })
     }
 
     pub fn unwrap(&self, kek: &KeyMaterial) -> Result<Vec<u8>> {
@@ -97,7 +97,10 @@ impl WrappedKey {
         }
         let mut nonce = [0u8; 12];
         nonce.copy_from_slice(&b[..12]);
-        Ok(WrappedKey { nonce, ciphertext: b[12..].to_vec() })
+        Ok(WrappedKey {
+            nonce,
+            ciphertext: b[12..].to_vec(),
+        })
     }
 }
 
@@ -136,7 +139,8 @@ impl FileKeyStore {
         // Service names are Harbor-controlled identifiers; reject separators
         // so the mapping stays injective.
         debug_assert!(!service.contains('/') && !service.contains('\\'));
-        self.dir.join(format!("{}.key", service.replace(['/', '\\', ':'], "_")))
+        self.dir
+            .join(format!("{}.key", service.replace(['/', '\\', ':'], "_")))
     }
 
     /// Whether a key file exists for [service] (rotation checks use this
@@ -178,22 +182,38 @@ impl KeyStore for FileKeyStore {
 
 /// AEAD helper shared by the blob store: authenticated encryption of a
 /// buffer under a key, with additional data binding the blob identity.
-pub fn aead_seal(key: &KeyMaterial, nonce: &[u8; 12], plaintext: &[u8], aad: &[u8]) -> Result<Vec<u8>> {
+pub fn aead_seal(
+    key: &KeyMaterial,
+    nonce: &[u8; 12],
+    plaintext: &[u8],
+    aad: &[u8],
+) -> Result<Vec<u8>> {
     let cipher = ChaCha20Poly1305::new(Key::from_slice(&key.0));
     cipher
         .encrypt(
             Nonce::from_slice(nonce),
-            Payload { msg: plaintext, aad },
+            Payload {
+                msg: plaintext,
+                aad,
+            },
         )
         .map_err(|_| StoreError::Crypto)
 }
 
-pub fn aead_open(key: &KeyMaterial, nonce: &[u8; 12], ciphertext: &[u8], aad: &[u8]) -> Result<Vec<u8>> {
+pub fn aead_open(
+    key: &KeyMaterial,
+    nonce: &[u8; 12],
+    ciphertext: &[u8],
+    aad: &[u8],
+) -> Result<Vec<u8>> {
     let cipher = ChaCha20Poly1305::new(Key::from_slice(&key.0));
     cipher
         .decrypt(
             Nonce::from_slice(nonce),
-            Payload { msg: ciphertext, aad },
+            Payload {
+                msg: ciphertext,
+                aad,
+            },
         )
         .map_err(|_| StoreError::Crypto)
 }
@@ -214,13 +234,20 @@ impl std::fmt::Debug for WorkspaceKey {
 impl PartialEq for WorkspaceKey {
     fn eq(&self, other: &Self) -> bool {
         // Constant-time-ish comparison; test helper semantics only.
-        self.kek.0.iter().zip(other.kek.0.iter()).fold(0u8, |acc, (a, b)| acc | (a ^ b)) == 0
+        self.kek
+            .0
+            .iter()
+            .zip(other.kek.0.iter())
+            .fold(0u8, |acc, (a, b)| acc | (a ^ b))
+            == 0
     }
 }
 
 impl WorkspaceKey {
     pub fn generate() -> Self {
-        WorkspaceKey { kek: KeyMaterial::random() }
+        WorkspaceKey {
+            kek: KeyMaterial::random(),
+        }
     }
 
     /// Raw key material for domain-separated subkey derivation.
@@ -251,7 +278,12 @@ impl WorkspaceKey {
     }
 
     /// Re-wrap this workspace key under a new device root key (root rotation).
-    pub fn rewrap_root(&self, old_root: &KeyMaterial, new_root: &KeyMaterial, wrapped: &WrappedKey) -> Result<WrappedKey> {
+    pub fn rewrap_root(
+        &self,
+        old_root: &KeyMaterial,
+        new_root: &KeyMaterial,
+        _wrapped: &WrappedKey,
+    ) -> Result<WrappedKey> {
         let _ = old_root;
         self.wrap_with(new_root)
     }
@@ -259,7 +291,12 @@ impl WorkspaceKey {
 
 /// Verify a wrapped key round-trips under the given roots (test helper and
 /// root-rotation validation).
-pub fn verify_rewrap(kek: &KeyMaterial, wrapped: &WrappedKey, root_old: &KeyMaterial, root_new: &KeyMaterial) -> Result<bool> {
+pub fn verify_rewrap(
+    kek: &KeyMaterial,
+    wrapped: &WrappedKey,
+    root_old: &KeyMaterial,
+    root_new: &KeyMaterial,
+) -> Result<bool> {
     let original = wrapped.unwrap(root_old)?;
     let rewrapped = WrappedKey::wrap(root_new, &original)?;
     Ok(rewrapped.unwrap(root_new)? == kek.0.to_vec())
@@ -298,7 +335,10 @@ mod tests {
         // Rotate: rewrap the workspace key under a new device root key.
         let new_root = KeyMaterial::random();
         let rewrapped = wk.rewrap_root(&root, &new_root, &wrapped).unwrap();
-        assert_eq!(WorkspaceKey::from_wrapped(&new_root, &rewrapped).unwrap(), wk);
+        assert_eq!(
+            WorkspaceKey::from_wrapped(&new_root, &rewrapped).unwrap(),
+            wk
+        );
         // Old root no longer unwraps the new wrapped key.
         assert!(WorkspaceKey::from_wrapped(&root, &rewrapped).is_err());
     }

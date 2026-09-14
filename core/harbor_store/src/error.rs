@@ -18,7 +18,9 @@ pub enum StoreError {
     WorkspaceNotFound(String),
     #[error("migration {0} failed: {1}")]
     MigrationFailed(u32, String),
-    #[error("settings downgrade from schema {found} to {target} requires explicit fail-safe handling")]
+    #[error(
+        "settings downgrade from schema {found} to {target} requires explicit fail-safe handling"
+    )]
     SettingsDowngrade { found: u32, target: u32 },
     #[error("serialization error: {0}")]
     Serde(#[from] serde_json::Error),
