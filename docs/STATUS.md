@@ -7,152 +7,166 @@ ran at.
 
 ---
 
-## Authoritative snapshot — session 28 (2026-09-13; RELEASE CANDIDATE
-## `harbor-v1.0.0-rc1`; commits this session: 1415e79 + the STATUS commit on
-## top — run `git log --oneline -3`; all machine evidence binds to 1415e79,
-## later commits touch docs/evidence only)
+## Authoritative snapshot — session 29 (2026-09-14; post-RC hardening
+## round; HEAD binds machine evidence unless stated otherwise — run
+## `git log --oneline -3`)
 
-### Release-candidate state
+### Session 29: the ten-item post-RC work order (user-directed)
 
-Harbor v1.0.0-rc1 is **frozen**: every machine-completable qualification task
-is done and the remaining non-PASS gates are exactly the external-dependency
-gates recorded in `evidence/releases/1.0.0-rc1/release_gate_report.json`
-(11 PASS / 4 BLOCKED_EXTERNAL / 4 BLOCKED_DEVICE_EVIDENCE / 2 N/A_DISABLED /
-0 FAIL). `release_declared: false` — HARBOR v1 PRODUCTION RELEASE COMPLETE is
-NOT declared until the external gates below close.
+The user issued a ten-item recommended order of work (persistent storage,
+knowledge encryption, OS keystores, full journey, no-op removal, FFI off
+the UI isolate, knowledge lifecycle, evidence repair, CI gates, external
+qualification). All machine-completable items are DONE and requalified at
+the session-29 commit; the external item remains blocked on hardware /
+operator credentials, unchanged from rc1.
 
-App identity: `version: 1.0.0+1` (Android versionName 1.0.0 / versionCode 1;
-iOS CFBundleShortVersionString 1.0.0).
+1. **Persistent app storage, service disposal, unique run IDs — FIXED.**
+   - Storage: the app data root moved from a per-launch temp dir to the
+     platform app-support dir (`path_provider`):
+     `~/Library/Application Support/dev.harbor.harborApp/harbor-data`
+     (macOS) / `/data/data/<pkg>/files/harbor-data` (Android). Verified in
+     the PACKAGED macOS app (agent.db + network_audit.db + store.db created
+     there; dylib mapped) and on the Android emulator (below). Durable
+     device identity persists in `store.db device_meta` and is stable
+     across restarts on both platforms.
+   - Disposal: `HarborService.close()` actually existed but was never
+     called; the app now closes the native core on widget dispose AND on
+     `AppLifecycleState.detached` (WidgetsBindingObserver).
+   - Run IDs: `submitRequest` used the LITERAL string
+     `run-\${DateTime.now()...}` (an escaped `$` — a constant id!), so the
+     second submission in a workspace always failed with RunExists and was
+     silently swallowed. IDs are now 96-bit random hex (`Random.secure`)
+     Dart-side, and `run.create` mints `HarborId::generate("run")` core-side
+     when the caller omits one.
+2. **Knowledge database encryption — DONE + qualified.** Chunks and
+   embedding vectors are sealed with ChaCha20-Poly1305 under a
+   workspace-derived key (`harbor.knowledge.chunk/v1`), AAD-bound to each
+   chunk identity; at rest `knowledge.db` holds no text and no vectors.
+   Legacy plaintext DBs (dev-era format) are migrated by re-sealing.
+   The plaintext-at-rest inspection (`plaintext_at_rest_inspection.rs`)
+   now drives the REAL persistence layer (`harbor_ffi::knowledge::
+   KnowledgeStore`) with a knowledge sentinel and byte-scans the whole
+   data root — PASS at the session commit (surfaces list includes
+   knowledge_db). Unit tests cover round-trip, tamper, AAD-binding and
+   key-separation; the flutter e2e knowledge/RAG tests cover the live
+   sealed path.
+3. **Real OS keystore adapters — DONE.** `harbor_store::native_keystore`:
+   - macOS/iOS: `KeychainKeyStore` (Security framework generic-password
+     items; verified live in the packaged macOS app — item
+     `dev.harbor.core/harbor.device` created and reused).
+   - Windows: `DpapiKeyStore` (CryptProtectData, user scope) —
+     compile-gated by the new `windows-core` CI job (cargo check + clippy
+     for the whole workspace on windows-latest).
+   - Android: the NDK side of a dlopened lib has no JavaVM, so the
+     embedding is the adapter: Kotlin `MainActivity` seals a random
+     32-byte root under a non-exportable AndroidKeyStore AES-256-GCM key
+     (`files/harbor-device-root.bin`, 60-byte nonce||ct blob) and injects
+     the root at open via the new `harbor_core_open_ex(..., root_hex)`.
+   - Legacy file-root data roots are rotated to the native keystore at
+     open (`rotate_file_root_to_native`, tested incl. data survival).
+   - Caveat recorded: ad-hoc rebuilds change the binary hash; the
+     keychain item ACL follows the creating binary, so a rebuild needs one
+     user Allow (or a reset). Signed releases have a stable identity.
+4. **Complete user journey — WIRED and TESTED.** Models install (HF
+   acquisition or local GGUF import) -> Knowledge ingestion (file picker
+   via `file_selector`, or pasted text; docx/pdf text extracted through
+   the qualified preview paths; everything else honestly refused) ->
+   Ask (grounded generation with a selected chat model; answer card with
+   citations, executed-on and token usage; INSUFFICIENT_EVIDENCE renders
+   the abstention note) -> durable activity (`op.start_generate` logs the
+   question as StepStarted and the answer as StepCompleted into the run;
+   Activity lists the run and Run Trail replay shows request + answer
+   summaries). Covered by `shell_test.dart` knowledge + RAG journey tests
+   against the real core (install via staged path, ingest, generate,
+   replay).
+5. **No-op / misleading actions — REPLACED with real behavior or honest
+   disabled states.** Home quick chips prefill the composer; the attach
+   button routes files into the knowledge index; ModelDock navigates to
+   Models; HF rows run the REAL brokered acquisition (the fake
+   `setState(_installedId)` button is gone) with live progress + cancel;
+   Models > Installed empty state navigates to Recommended; Work > Open
+   file opens a real picker; Ask no longer has a permanently-disabled
+   search (retrieval-only search + generate actions); Agents surface
+   states plainly that agent orchestration is not enabled in this
+   release (no fake button); Knowledge surface is a full management UI
+   (add files/paste text/remove/identity); Settings shows the durable
+   device identity. `models.search_hf` envelope fixed (was a bare JSON
+   array the Dart client could never parse — every HF search crashed).
+6. **FFI off the UI isolate + progress/cancellation — DONE.**
+   `harbor_native/harbor_worker.dart`: a long-lived background isolate
+   owns the native handle; every core call crosses it (request/reply
+   protocol over ports), so the UI isolate never blocks on FFI.
+   Long-running work (acquisition, ingestion, generation) additionally
+   runs on native threads behind an op registry: `op.start_acquire` /
+   `op.start_generate` / `op.start_ingest` / `op.status` / `op.cancel` /
+   `op.list`, with real progress (bytes via the brokered download loop,
+   chunks during ingest, tokens during generation — `AcquireProgress`
+   plumbed through `HfAcquirer` and `generate_cancellable`) and
+   cooperative cancellation at chunk/token/file boundaries. The service
+   polls status, exposes kind-tracked snapshots, and the UI renders
+   progress bars + cancel buttons.
+7. **Knowledge replacement, removal, identity — FIXED.** Ingesting an
+   existing source id now REPLACES it wholesale (transactional delete +
+   reinsert; the live index is replaced too — stale higher-ordinal
+   chunks of a longer previous version can no longer survive; regression
+   tested). `knowledge.remove_source` + `knowledge.sources` exposed over
+   FFI and managed in the UI (removed sources stay revoked so past
+   citations report Removed). Device identity persists (store.db);
+   `identity.get` exposes device + workspace identity.
+8. **Release evidence — REGENERATED at the session-29 commit.** All
+   machine suites re-run: `cargo test --workspace` 214 passed / 0 failed;
+   gguf-backend suite; plaintext-at-rest inspection (now incl.
+   knowledge.db) PASS; flutter suites (shell 13, a11y 5, l10n 2, plus
+   harbor_ui/domain/native packages) PASS; `dart format` + `flutter
+   analyze` clean in all four Dart packages; `cargo fmt --check` and
+   `cargo clippy --workspace --all-targets -- -D warnings` clean.
+   Performance qualification re-run (reference device). Artifacts
+   repackaged (APK v1.0.0(1), AAB, macOS app, iOS static-archive path
+   verified at link level with Security.framework). Evidence bundle
+   reassembled as `1.0.0-rc2` (tag `harbor-v1.0.0-rc2`).
+9. **CI gates — ADDED.** `.github/workflows/ci.yml` now gates: rustfmt,
+   clippy `-D warnings` (plus a windows-latest job for the DPAPI/cdylib
+   paths), dart format, flutter analyze, package tests, and the app
+   suite against the LIVE core (the job builds `libharbor_ffi` first).
+10. **External qualification — UNCHANGED blockers, machine part done.**
+    Android emulator tier requalified on the NEW release APK (see below);
+    physical iPhone/Android hardware, Apple identity + notarization, Play
+    Console upload key, a Windows machine and the min-spec Apple-silicon
+    device remain BLOCKED_EXTERNAL / BLOCKED_DEVICE_EVIDENCE exactly as in
+    rc1 (`resume_with` paths unchanged in the gate report).
 
-### Completed this session (release goal workstreams)
+### Requalification record (evidence/device_qualification.json →
+### session_29_persistence_and_keystore_requalification, commit-bound)
 
-1. **iOS production-device embedding (goal §4 steps 1–5, machine-complete).**
-   `libharbor_ffi.a` (aarch64-apple-ios, llama.cpp included) is force-loaded
-   into the Runner binary: `OTHER_LDFLAGS[sdk=iphoneos*]` with `-force_load`
-   + `-u _harbor_core_open/_call/_close/_string_free` retention roots (Dart
-   FFI resolves at runtime, so without `-u` dead-strip removes the exports).
-   Deterministic `Stage Harbor Native Archive` build phase (pre-link,
-   iphoneos-only) builds the archive on demand and stages it; the Dart side
-   (`HarborCoreClient.open`) falls back to `DynamicLibrary.process()` symbol
-   lookup when the named library is absent. Accelerate (+Metal/MetalKit)
-   frameworks linked (llama.cpp vDSP usage). Verified: release device build
-   (codesign-free) links a 25.5 MB Runner containing all four FFI symbols.
-   NOTE: xcodebuild upfront-validates the force_load input — on a fresh
-   machine run `scripts/package_apple.sh` (or the cargo rustc command in the
-   phase's error message) BEFORE the first Xcode build.
-2. **Android release AAB (goal §9, machine part).** `app-release.aab`
-   v1.0.0(1), arm64-v8a `libharbor_ffi.so` + `libc++_shared.so` + native
-   debug symbols in BUNDLE-METADATA. INTERNET added as the app's ONLY
-   permission (without it the authorized HF acquisition is impossible in
-   release builds); rationale documented in AndroidManifest.xml.
-3. **Apple privacy manifests + export compliance (goal §8).**
-   `PrivacyInfo.xcprivacy` bundled on both platforms via the packaging path —
-   declarations are symbol-evidence-based (FileTimestamp CA92.1 for the stat
-   family, DiskSpace E174.1 for statfs; no tracking, no collected data; the
-   Flutter engine ships its own manifest).
-   `ITSAppUsesNonExemptEncryption=false` with the recorded analysis in
-   `docs/release/store/apple_export_compliance.md` (operator confirms at
-   submission).
-4. **Post-packaging requalification (goal §10 analog).** macOS release bundle
-   (dylib + privacy manifest, ad-hoc): codesign verify ok, dylib mapped,
-   fresh temp workspace opened (agent.db+WAL/SHM+network_audit.db observed
-   via lsof), clean quit. iOS simulator rebuilt through the changed phases
-   and relaunched live: core mapped (lsof=1), LOCAL ONLY badge with real
-   model state → `evidence/ios/live_core_screenshot_rc.png`. Both recorded in
-   `evidence/device_qualification.json`
-   (`post_packaging_requalification`). Simulator builds now use `--debug`
-   (current Flutter rejects release/profile for simulators).
-5. **Store & release collateral (goal §17).** `docs/release/store/`:
-   product description, privacy statement, local-first explainer, device
-   matrix, model compatibility (no "every HF model" claims), release notes +
-   changelog, FAQ, security contact (GitHub advisories until an operator
-   email is bound), model licenses, export-compliance analysis — EN+AR where
-   stores require. `docs/release/THIRD_PARTY_NOTICES.md` generated from the
-   locked dependency graph (405 entries; `tools/generate_third_party_notices.py
-   --check` gates staleness).
-6. **Sealed release evidence bundle (goal §18) + gate report (§20).**
-   `evidence/releases/1.0.0-rc1/`: build_identity, git_commit, sbom (413
-   components), qualification profiles, acceptance/security/performance/
-   devices/network/office/accessibility/evaluation sections,
-   signed_artifact_hashes + store_package_hashes (AAB, APK, macOS app zip,
-   iOS device app zip — all honestly labeled ad-hoc/debug, NOT
-   store-distributable), release_gate_report (25 gates; PASS emitted only
-   when backing evidence exists at the same commit; assembler:
-   `tools/assemble_release_evidence.py`).
-7. **§10 reduced post-packaging suite on the RC Android APK (emulator
-   tier).** v1.0.0(1) release APK installed → launched → fresh live
-   workspace (agent.db+WAL/SHM, store.db, network_audit.db) → force-stop →
-   relaunch live again; screenshots EN + AR/RTL with the LOCAL ONLY badge
-   and Arabic-surfaced core policy (`post_packaging_requalification.
-   android_rc_apk_emulator`). Artifact integrity checks: iOS+macOS
-   CFBundleShortVersionString 1.0.0; privacy manifests present in both
-   Apple bundles; INTERNET present in APK+AAB;
-   ITSAppUsesNonExemptEncryption=false; macOS dylib present. Gotcha
-   recorded: release builds set extractNativeLibs=false, so native libs
-   demand-page from base.apk and never appear as libharbor_ffi.so paths in
-   /proc/PID/maps — absence there is NOT a load failure.
-8. **§17 EN/AR store screenshots** captured from the RC builds →
-   `docs/release/store/screenshots/` (Android EN home/models/settings +
-   AR RTL home/settings from the release APK; iOS EN home). One manual
-   step remains for the iOS AR listing screenshot (the app takes locale
-   from the in-app toggle by design and the simulator has no CLI tap
-   injection) — documented in screenshots/README.md.
-9. **Network capture rebound at the RC tree**: the real-HF test re-ran
-   clean (`real_hf_capture_matches_broker_audit_one_to_one ... ok`) →
-   `evidence/network_capture.json` now binds to the RC commit directly
-   (no compatible-build caveat).
+- **macOS packaged app** (ad-hoc, release): launch live, dylib mapped;
+  persistent data root in Application Support; keychain-held device root
+  (no file keys); device identity stable across quit + relaunch.
+- **Android emulator tier** (cvbase_test API 34 arm64, release APK
+  v1.0.0(1)): AndroidKeyStore-sealed root (60-byte blob) injected via
+  `harbor_core_open_ex`; persistent workspace (agent.db + WAL/SHM +
+  network_audit.db + store.db); device identity
+  `device-00d53bcb64dab31b41a8c5b3` stable across `am force-stop` +
+  relaunch. extractNativeLibs=false caveat as before.
 
-### Test results (all regenerated at commit 1415e79)
+### Test results (regenerated at the session-29 commit)
 
 | Suite | Result |
 | --- | --- |
-| `cargo test --workspace` (in gate bundle) | **PASS** (10/10 suites overall, `evidence/gate_results.json`, commit 1415e79, all_suites_ok=true) |
-| gguf-backend / dossier / contracts / pin / contrast / flutter (19) / dart | PASS (components of the gate bundle) |
-| Office conformance (23 matrix rows) | PASS (component of the gate bundle) |
-| Plaintext-at-rest inspection | PASS (rerun at 1415e79 → `evidence/plaintext_at_rest.json`) |
-| Optional capabilities disabled | N/A_DISABLED, zero violations |
-| Performance qualification | PASS_WITH_BLOCKED_CLASSES (reference metrics all PASS: TTFT p95 ≤ 100, ≥ 100 tok/s, artifact open/recalc/save within thresholds, RAG 25 777 docs/min; min-device/Windows classes BLOCKED_DEVICE_EVIDENCE) |
-| Network capture (offline + real-HF) | PASS — real-HF re-run at the RC tree (`evidence/network_capture.json` binds to the RC commit) |
+| `cargo test --workspace` | **214 passed / 0 failed** |
+| gguf-backend inference suite | PASS (component of the workspace run) |
+| Plaintext-at-rest inspection | PASS — now covers knowledge.db (sealed chunk sentinel) |
+| Flutter: app shell (13), a11y (5), l10n (2), packages (9) | PASS; `flutter analyze` + `dart format` clean |
+| Clippy / rustfmt | `cargo clippy --workspace --all-targets -- -D warnings` clean; `cargo fmt --check` clean |
+| Performance qualification | re-run on the reference device (see evidence/perf_qualification.json) |
+| Office / network / optional-disabled / SBOM / notices | PASS (regenerated; notices 408 entries) |
 
-### RC freeze rules now in force (goal §19)
+### Remaining external blockers (unchanged from rc1)
 
-Only release-blocker fixes, qualification fixes, packaging/signing fixes and
-release documentation may land on top of the RC tag. Every such change
-invalidates affected evidence and requires rerunning the relevant subset
-(`docs/STATUS.md` "Reproduce the evidence" block) plus
-`python3 tools/assemble_release_evidence.py --version 1.0.0-rc1 --write`.
-
-### Remaining external blockers (nothing machine-completable left)
-
-Each is a gate in `evidence/releases/1.0.0-rc1/release_gate_report.json`
-with its `resume_with` path:
-
-- **Apple Developer identity + notarization** (MAC-02, IOS-03): operator sets
-  `HARBOR_APPLE_SIGNING_IDENTITY` and runs `scripts/package_apple.sh`;
-  notarize via operator notarytool profile; TestFlight upload.
-- **Physical iPhone/iPad** (IOS-02): attach device, `flutter run --release`
-  (development signing acceptable), then execute the §4 steps 6–19 checklist
-  (inference, artifact preview, durable run replay, background/foreground,
-  Local Only, Arabic/RTL, VoiceOver, thermal) into a new device-tier record.
-- **Physical Android device(s)** (AND-03): install the release APK/AAB via
-  bundletool/adb, rerun launch + native core + inference + lifecycle +
-  TalkBack + network capture on hardware.
-- **Play Console + upload key** (AND-04): operator supplies
-  `HARBOR_ANDROID_KEYSTORE*` env vars → `scripts/package_android.sh`
-  produces the store-signed AAB; upload to internal testing; re-qualify the
-  store-delivered artifact (§10).
-- **Windows machine** (WIN-01): run `scripts/build_windows.ps1` +
-  `docs/release/windows_qualification.md` runbook.
-- **Minimum-spec Apple-silicon device** (PERF-01): run the performance
-  protocol, freeze thresholds per class from measurement.
-
-### Qualified right now
-
-macOS Apple-silicon release (ad-hoc; launch/workspace/inference/perf bound),
-iOS simulator live-core tier, Android arm64 emulator live-core tier, all
-cross-platform machine gates (office/privacy/storage/evaluation/perf-reference/a11y-test-level),
-production iOS linkage machine-verified. Physical-device tiers remain
-BLOCKED_DEVICE_EVIDENCE — never promoted from simulator/emulator evidence.
+- Apple Developer identity + notarization (MAC-02, IOS-03)
+- Physical iPhone/iPad (IOS-02), physical Android device(s) (AND-03)
+- Play Console + upload key (AND-04)
+- Windows machine (WIN-01) — compile-gated in CI in the meantime
+- Minimum-spec Apple-silicon device (PERF-01)
 
 ### Reproduce the evidence
 
@@ -160,34 +174,30 @@ BLOCKED_DEVICE_EVIDENCE — never promoted from simulator/emulator evidence.
 cd core && cargo test --workspace
 cargo test -p harbor_inference --features gguf-backend
 cargo test -p harbor_artifacts --test office_conformance
-cargo test -p harbor_net --test net_capture_qualification
 cargo test -p harbor_integration --test plaintext_at_rest_inspection
 cargo run --release -p harbor_integration --example perf_baseline --features gguf-backend -- .. ../fixtures/models-store
 cd ..
 python3 tools/run_performance_qualification.py --write
 python3 tools/generate_gate_evidence.py --write
-python3 tools/validate_dossier.py --write   # after any file change
+python3 tools/validate_dossier.py --write
 python3 tools/check_optional_disabled.py --write
 python3 tools/generate_sbom.py --write
 python3 tools/generate_third_party_notices.py --check
-python3 tools/assemble_release_evidence.py --version 1.0.0-rc1 --write
-# real-network (ignorable, unchanged since session 27):
+python3 tools/assemble_release_evidence.py --version 1.0.0-rc2 --write
+cd apps/harbor_app && ~/harbor-tools/flutter/bin/flutter test
+# real-network (unchanged since session 27):
 cargo test -p harbor_modelhub --lib -- --ignored real_hf_capture --nocapture
 ```
 
-### Environment notes
+### Environment notes (additions)
 
-- Flutter SDK is NOT on PATH: use `~/harbor-tools/flutter/bin/flutter` and
-  `~/harbor-tools/flutter/bin/cache/dart-sdk/bin/dart`.
-- `rustc`/`cargo` on PATH are Homebrew builds (host target only). Use
-  rustup shims (`PATH="$HOME/.cargo/bin:$PATH"`) for cross targets; NDK r27
-  env for Android (see `evidence/device_qualification.json`).
-- iOS device archive: `cargo rustc --crate-type staticlib` is required — a
-  plain `cargo build` also builds the cdylib, whose bare link fails on
-  `___chkstk_darwin` (compiler-rt); the app link provides it.
-- `evidence/` is gitignored by policy; evidence files are filesystem state
-  whose contents record their own commit bindings. The RC tag binds code;
-  `docs/` binds the process.
+- The Flutter app now depends on `path_provider` + `file_selector`
+  (pulled in via pub; plugins compile into the bundles automatically).
+- Android cross-compile: stage the rebuilt
+  `target/aarch64-linux-android/release/libharbor_ffi.so` into
+  `apps/harbor_app/android/app/src/main/jniLibs/arm64-v8a/` BEFORE
+  `flutter build` (recipe in the session-27 notes below).
+- `dart`/`flutter` are NOT on PATH: use `~/harbor-tools/flutter/bin/...`.
 
 ---
 
@@ -195,6 +205,16 @@ cargo test -p harbor_modelhub --lib -- --ignored real_hf_capture --nocapture
 
 *(ordered oldest → newest; the authoritative snapshot above supersedes
 anything below)*
+
+### Session 28 (2026-09-13; RELEASE CANDIDATE harbor-v1.0.0-rc1)
+
+Superseded by the session-29 snapshot above; the rc1 state was: frozen RC
+tag `harbor-v1.0.0-rc1` = 3b50001, gate report 11 PASS / 4
+BLOCKED_EXTERNAL / 4 BLOCKED_DEVICE_EVIDENCE / 2 N/A_DISABLED / 0 FAIL,
+iOS production-device static linkage, Android AAB + INTERNET permission,
+Apple privacy manifests, store collateral, sealed evidence bundle,
+Android §10 reduced suite + EN/AR screenshots, network capture rebound.
+Only external blockers remained.
 
 ### Sessions 1–8 (2026-09-12, early)
 
