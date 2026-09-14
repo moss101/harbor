@@ -168,6 +168,19 @@ operator credentials, unchanged from rc1.
 | Performance qualification | re-run on the reference device (see evidence/perf_qualification.json) |
 | Office / network / optional-disabled / SBOM / notices | PASS (regenerated; notices 408 entries) |
 
+### External-prerequisite audit (2026-09-14)
+
+The absence of every operator-supplied prerequisite was VERIFIED on this
+machine, not assumed — `security find-identity -p codesigning -v` → 0
+identities; `xcrun devicectl list devices` → none; `adb devices` →
+emulator only; `~/.harbor-keys/` holds just the catalog root key and no
+`HARBOR_ANDROID_KEYSTORE*` env exists; no Windows VM is installed;
+notarytool has no stored profile. The full audit is recorded
+commit-bound in `evidence/device_qualification.json`
+(`session_29_external_prerequisite_audit`). Closing the eight blocked
+gates requires a human to supply the resources and run the resume_with
+paths; nothing machine-completable remains.
+
 ### Remaining external blockers (unchanged from rc1)
 
 - Apple Developer identity + notarization (MAC-02, IOS-03)
