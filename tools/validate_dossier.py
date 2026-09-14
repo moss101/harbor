@@ -23,6 +23,23 @@ def rows(name,root=ROOT):
     with (root/name).open(newline='',encoding='utf-8-sig') as f:return list(csv.DictReader(f))
 def refs(s):return [x for x in s.split(';') if x]
 def package_paths(root=ROOT):
+    # Seal exactly the REPOSITORY content, not machine-local state: prefer
+    # git-tracked files so a fresh checkout (CI) reproduces the manifest.
+    # Machine-generated files that happen to be gitignored
+    # (GeneratedPluginRegistrant, local.properties, Flutter ephemeral
+    # state, gradle wrappers) previously leaked into the walk and made the
+    # seal irreproducible outside this machine.
+    try:
+        import subprocess
+        tracked = subprocess.run(['git','ls-files','-z'],cwd=root,capture_output=True,check=True).stdout.split(b'\0')
+        paths=[]
+        for raw in tracked:
+            if not raw:continue
+            p=root/raw.decode('utf-8')
+            if p.is_file() and p.name!='24_PACKAGE_MANIFEST.json':paths.append(p)
+        return sorted(paths)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass  # not a git checkout: fall back to the walk below
     return sorted(p for p in root.rglob('*') if p.is_file() and not any(part.startswith('.') or part=='__pycache__' or part=='target' or part=='build' for part in p.relative_to(root).parts) and p.relative_to(root).parts[0] not in {'reviews','outputs','evidence'} and p.name!='24_PACKAGE_MANIFEST.json')
 def inventory(paths,root=ROOT):
     return [{'path':str(p.relative_to(root)),'bytes':p.stat().st_size,'sha256':sha(p.read_bytes())} for p in paths]

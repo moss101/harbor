@@ -9,8 +9,8 @@ import 'package:harbor_app/services/harbor_service.dart';
 import 'package:harbor_app/surfaces/work_surface.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
-const dylibPath =
-    '/Users/mohsin/projects/harbor/core/target/debug/libharbor_ffi.dylib';
+final repoRoot = Directory.current.parent.parent.path; // apps/harbor_app
+final dylibPath = '$repoRoot/core/target/debug/libharbor_ffi.dylib';
 final coreAvailable = File(dylibPath).existsSync();
 
 /// Pump HarborApp with a REAL viewport of [width]x[height] logical pixels
@@ -208,8 +208,7 @@ void _appendPreviewTest() {
   testWidgets('work canvas renders a real workbook preview via the core',
       (tester) async {
     if (!coreAvailable) return;
-    const fixturePath =
-        '/Users/mohsin/projects/harbor/fixtures/office/board_demo.xlsx';
+    final fixturePath = '$repoRoot/fixtures/office/board_demo.xlsx';
     HarborService? service;
     await tester.runAsync(() async {
       final bytes = await File(fixturePath).readAsBytes();
@@ -294,8 +293,7 @@ void _appendKnowledgeTest() {
       // staged-install path, then open the durable index over it.
       opened = await s.installModelFromPath(
             packageId: 'bge-small-en-v1.5',
-            path:
-                '/Users/mohsin/projects/harbor/fixtures/models/bge-small-en-v1.5-q8_0.gguf',
+            path: '$repoRoot/fixtures/models/bge-small-en-v1.5-q8_0.gguf',
           ) &&
           await s.openKnowledge();
       if (opened) {
@@ -382,12 +380,10 @@ void _appendRagTest() {
       // the chat model and the embedding model.
       await s.installModelFromPath(
           packageId: 'stories260k',
-          path:
-              '/Users/mohsin/projects/harbor/fixtures/models/stories260K.gguf');
+          path: '$repoRoot/fixtures/models/stories260K.gguf');
       await s.installModelFromPath(
           packageId: 'bge-small-en-v1.5',
-          path:
-              '/Users/mohsin/projects/harbor/fixtures/models/bge-small-en-v1.5-q8_0.gguf');
+          path: '$repoRoot/fixtures/models/bge-small-en-v1.5-q8_0.gguf');
       opened = await s.openKnowledge();
       if (opened) {
         final ingest = await s.ingestSources([

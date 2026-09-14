@@ -9,8 +9,8 @@ import 'package:harbor_app/main.dart';
 import 'package:harbor_app/services/harbor_service.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
-const dylibPath =
-    '/Users/mohsin/projects/harbor/core/target/debug/libharbor_ffi.dylib';
+final repoRoot = Directory.current.parent.parent.path; // apps/harbor_app
+final dylibPath = '$repoRoot/core/target/debug/libharbor_ffi.dylib';
 final coreAvailable = File(dylibPath).existsSync();
 
 Future<void> pumpApp(
