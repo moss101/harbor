@@ -90,7 +90,11 @@ fn acquire_streaming_and_install_production_model() {
         .any(|e| e.kind == harbor_net::NetworkEventKind::Completed));
 }
 
+// Fixture-or-network tier: the 1.1 GB qwen GGUF is not committed, so on
+// a fresh checkout this re-acquires through the broker (real network).
+// Run it via `cargo test -- --ignored` or with the fixture installed.
 #[test]
+#[ignore = "requires the local qwen fixture or real HF acquisition"]
 fn qualify_installed_production_model_chat() {
     // Requires the model to have been acquired into a store; the test
     // re-acquires via the streaming path when the env var points at a

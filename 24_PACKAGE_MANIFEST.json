@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "2f464ce65f808694ce08fe996d8d9f8e2aa3fdaa50769ceefa39126b723736bc",
+  "input_manifest_sha256": "e8b2df40eece42f11f1e5f10aa4a3e36267d1acff88fc48d003aba978932452d",
   "file_count_excluding_manifest": 380,
   "files": [
     {
@@ -115,12 +115,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 70422,
-      "sha256": "d0f010c6d6f73df71f9679231af487e9962f972caedcc083cf939cea467a5ea2"
+      "sha256": "7f7518a7577d5440e1f6486ca94f864009ebbed85a46aaae38992311975eecf8"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "ba1505a692e2a73a4a2008807c5bb64dbf6e397bc4f6a436dd0b0e7f70380a5d"
+      "sha256": "ce186d760121e0bd4ae4640910bae95824e15299c01cd23c94bc74f49086c17c"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -1119,8 +1119,8 @@
     },
     {
       "path": "core/harbor_inference/tests/qwen_qualification.rs",
-      "bytes": 8736,
-      "sha256": "5fe153f4b7bd30f854be8b966234fd91ba9fdb654eb153dae9a278c0a64c4f53"
+      "bytes": 9021,
+      "sha256": "16c2fd8d596df52a0f4a69d4f8764dcb734e4fe04f8e4b46f56d740b0864d2d6"
     },
     {
       "path": "core/harbor_integration/Cargo.toml",
