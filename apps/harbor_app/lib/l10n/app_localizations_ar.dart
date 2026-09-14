@@ -439,4 +439,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get knowledgeIngestFailed => 'فشلت الفهرسة';
+
+  @override
+  String get fileGroupDocuments => 'المستندات';
 }

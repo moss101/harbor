@@ -23,9 +23,9 @@ Future<IngestOutcome?> pickAndIngest(
   HarborService service,
 ) async {
   final l10n = AppLocalizations.of(context)!;
-  const group = XTypeGroup(
-    label: 'Documents',
-    extensions: ['txt', 'md', 'csv', 'json', 'log', 'docx', 'pdf'],
+  final group = XTypeGroup(
+    label: l10n.fileGroupDocuments,
+    extensions: const ['txt', 'md', 'csv', 'json', 'log', 'docx', 'pdf'],
   );
   final List<XFile> files;
   try {

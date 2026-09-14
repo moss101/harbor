@@ -28,7 +28,10 @@ Future<void> pumpApp(
     await tester.runAsync(() async {
       final dir = await Directory.systemTemp.createTemp('harbor-a11y-');
       final s = await HarborService.open(
-          libraryPath: dylibPath, dataRoot: dir.path, workspaceId: 'ws-a11y');
+          libraryPath: dylibPath,
+          dataRoot: dir.path,
+          workspaceId: 'ws-a11y',
+          deviceRootHex: 'f47973db602cbd13c408a3a5cdf3a8eeaa3bd6870b76607542d75ff568526c3c05');
       await s.refresh();
       service = s;
     });

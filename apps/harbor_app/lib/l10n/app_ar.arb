@@ -125,5 +125,6 @@
   "opBytesMib": "{done} من {total} ميبيبايت",
   "appStarting": "جارٍ تشغيل النواة المحلية…",
   "coreStartFailed": "تعذّر تحميل النواة الأصلية. يعمل Harbor بشكل محدود بدونها.",
-  "knowledgeIngestFailed": "فشلت الفهرسة"
+  "knowledgeIngestFailed": "فشلت الفهرسة",
+  "fileGroupDocuments": "المستندات"
 }

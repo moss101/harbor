@@ -853,6 +853,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Indexing failed'**
   String get knowledgeIngestFailed;
+
+  /// No description provided for @fileGroupDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get fileGroupDocuments;
 }
 
 class _AppLocalizationsDelegate

@@ -281,5 +281,6 @@
   },
   "appStarting": "Starting the local core…",
   "coreStartFailed": "The native core could not be loaded. Harbor runs degraded without it.",
-  "knowledgeIngestFailed": "Indexing failed"
+  "knowledgeIngestFailed": "Indexing failed",
+  "fileGroupDocuments": "Documents"
 }

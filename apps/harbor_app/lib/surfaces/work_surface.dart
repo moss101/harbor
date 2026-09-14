@@ -13,19 +13,19 @@ import '../shell/adaptive_shell.dart';
 class WorkSurface extends StatelessWidget {
   const WorkSurface({super.key});
 
-  static const _previewGroups = [
-    XTypeGroup(
-      label: 'Documents',
-      extensions: ['docx', 'pdf', 'xlsx', 'pptx'],
-    ),
-  ];
-
   Future<void> _openFile(BuildContext context) async {
     final service = HarborServiceProvider.of(context).notifier;
     if (service == null) return;
+    final l10n = AppLocalizations.of(context)!;
+    final groups = [
+      XTypeGroup(
+        label: l10n.fileGroupDocuments,
+        extensions: const ['docx', 'pdf', 'xlsx', 'pptx'],
+      ),
+    ];
     final XFile? file;
     try {
-      file = await openFile(acceptedTypeGroups: _previewGroups);
+      file = await openFile(acceptedTypeGroups: groups);
     } catch (_) {
       return; // picker dismissed
     }

@@ -103,6 +103,7 @@ in its upstream source repository and vendored sources.
 - **const-oid 0.10.2** — Apache-2.0 OR MIT — <https://github.com/RustCrypto/formats>
 - **const-random 0.1.18** — MIT OR Apache-2.0 — <https://github.com/tkaitchuck/constrandom>
 - **const-random-macro 0.1.16** — MIT OR Apache-2.0 — <https://github.com/tkaitchuck/constrandom>
+- **core-foundation 0.10.1** — MIT OR Apache-2.0 — <https://github.com/servo/core-foundation-rs>
 - **core-foundation-sys 0.8.7** — MIT OR Apache-2.0 — <https://github.com/servo/core-foundation-rs>
 - **core_detect 1.0.0** — MIT/Apache-2.0 — <https://github.com/thomcc/core_detect>
 - **cpubits 0.1.1** — MIT OR Apache-2.0 — <https://github.com/RustCrypto/utils>
@@ -305,6 +306,8 @@ in its upstream source repository and vendored sources.
 - **schemars 1.2.2** — MIT — <https://github.com/GREsau/schemars>
 - **schemars_derive 1.2.2** — MIT — <https://github.com/GREsau/schemars>
 - **scopeguard 1.2.0** — MIT OR Apache-2.0 — <https://github.com/bluss/scopeguard>
+- **security-framework 3.7.0** — MIT OR Apache-2.0 — <https://github.com/kornelski/rust-security-framework>
+- **security-framework-sys 2.17.0** — MIT OR Apache-2.0 — <https://github.com/kornelski/rust-security-framework>
 - **semver 1.0.28** — MIT OR Apache-2.0 — <https://github.com/dtolnay/semver>
 - **serde 1.0.229** — MIT OR Apache-2.0 — <https://github.com/serde-rs/serde>
 - **serde_core 1.0.229** — MIT OR Apache-2.0 — <https://github.com/serde-rs/serde>

@@ -428,6 +428,8 @@
 					Metal,
 					"-framework",
 					MetalKit,
+					"-framework",
+					Security,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = dev.harbor.harborApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -623,6 +625,8 @@
 					Metal,
 					"-framework",
 					MetalKit,
+					"-framework",
+					Security,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = dev.harbor.harborApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -659,6 +663,8 @@
 					Metal,
 					"-framework",
 					MetalKit,
+					"-framework",
+					Security,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = dev.harbor.harborApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -442,4 +442,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get knowledgeIngestFailed => 'Indexing failed';
+
+  @override
+  String get fileGroupDocuments => 'Documents';
 }

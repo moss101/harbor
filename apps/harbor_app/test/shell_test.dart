@@ -31,7 +31,11 @@ Future<void> pumpApp(
     await tester.runAsync(() async {
       final dir = await Directory.systemTemp.createTemp('harbor-shell-test-');
       final s = await HarborService.open(
-          libraryPath: dylibPath, dataRoot: dir.path, workspaceId: 'ws-shell');
+          libraryPath: dylibPath,
+          dataRoot: dir.path,
+          workspaceId: 'ws-shell',
+          deviceRootHex:
+              'f47973db602cbd13c408a3a5cdf3a8eeaa3bd6870b76607542d75ff568526c3c');
       await s.refresh();
       service = s;
     });
@@ -209,7 +213,10 @@ void _appendPreviewTest() {
       final bytes = await File(fixturePath).readAsBytes();
       final dir = await Directory.systemTemp.createTemp('harbor-preview-');
       final s = await HarborService.open(
-          libraryPath: dylibPath, dataRoot: dir.path, workspaceId: 'ws-canvas');
+          libraryPath: dylibPath,
+          dataRoot: dir.path,
+          workspaceId: 'ws-canvas',
+          deviceRootHex: 'f47973db602cbd13c408a3a5cdf3a8eeaa3bd6870b76607542d75ff568526c3c02');
       await s.loadPreviewFromBytes(bytes);
       service = s;
     });
@@ -275,7 +282,10 @@ void _appendKnowledgeTest() {
     await tester.runAsync(() async {
       final dir = await Directory.systemTemp.createTemp('harbor-knowledge-');
       final s = await HarborService.open(
-          libraryPath: dylibPath, dataRoot: dir.path, workspaceId: 'ws-know');
+          libraryPath: dylibPath,
+          dataRoot: dir.path,
+          workspaceId: 'ws-know',
+          deviceRootHex: 'f47973db602cbd13c408a3a5cdf3a8eeaa3bd6870b76607542d75ff568526c3c03');
       // Install the REAL bge-small-en-v1.5 embedding model through the
       // staged-install path, then open the durable index over it.
       opened = await s.installModelFromPath(
@@ -359,7 +369,10 @@ void _appendRagTest() {
     await tester.runAsync(() async {
       final dir = await Directory.systemTemp.createTemp('harbor-rag-');
       final s = await HarborService.open(
-          libraryPath: dylibPath, dataRoot: dir.path, workspaceId: 'ws-rag');
+          libraryPath: dylibPath,
+          dataRoot: dir.path,
+          workspaceId: 'ws-rag',
+          deviceRootHex: 'f47973db602cbd13c408a3a5cdf3a8eeaa3bd6870b76607542d75ff568526c3c04');
       // Install BOTH models through the real staged-install path:
       // the chat model and the embedding model.
       await s.installModelFromPath(
@@ -439,12 +452,25 @@ void _appendComposerTest() {
     await tester.pump();
     // The send action is the labeled FilledButton in the composer.
     await tester.tap(find.text('Send'));
-    // submitRequest runs through the worker isolate — give the real
-    // async chain time to finish before asserting durability.
+    // submitRequest runs through the worker isolate (create + log +
+    // full refresh) — give the real async chain time to finish.
     await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 400)));
+        () => Future<void>.delayed(const Duration(milliseconds: 1500)));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
     // The submitted request became a durable run visible in Activity.
+    // The submit chain (create + log + refresh) is real async on the
+    // worker isolate: poll the service state until the durable run lands.
+    final sp = HarborServiceProvider.of(
+        tester.element(find.text('What do you want to get done?')));
+    var durable = false;
+    for (var i = 0; i < 40 && !durable; i++) {
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 150)));
+      durable = sp.notifier!.runs.isNotEmpty;
+    }
+    expect(durable, isTrue,
+        reason: 'the composer submit must create a durable run');
     await tester.tap(find.text('Activity').first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));

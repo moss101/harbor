@@ -6,9 +6,14 @@
 /// the same JSON envelopes the synchronous binding uses; results cross
 /// the isolate boundary as plain Dart values.
 ///
-/// Ownership: the worker closes the native handle when [HarborCoreWorker.close]
-/// is called (or when the isolate is killed — the OS reclaims the process
-/// memory either way).
+/// Protocol: the worker gets TWO main-isolate ports in its spawn config —
+/// `ready` (replied to once its command port is listening, or with an
+/// error envelope) and `responses` (carries every request reply). Main→
+/// worker traffic flows over the command port the worker hands back.
+///
+/// Ownership: the worker closes the native handle when
+/// [HarborCoreWorker.close] is called (or when the isolate is killed —
+/// the OS reclaims the process memory either way).
 library;
 
 import 'dart:async';
@@ -21,9 +26,10 @@ import 'package:ffi/ffi.dart';
 import 'harbor_ffi.dart' show HarborCoreException;
 
 class _SpawnConfig {
-  _SpawnConfig(this.reply, this.libraryPath, this.dataRoot, this.workspaceId,
-      this.privacyMode, this.deviceRootHex);
-  final SendPort reply;
+  _SpawnConfig(this.ready, this.responses, this.libraryPath, this.dataRoot,
+      this.workspaceId, this.privacyMode, this.deviceRootHex);
+  final SendPort ready;
+  final SendPort responses;
   final String libraryPath;
   final String dataRoot;
   final String workspaceId;
@@ -33,14 +39,13 @@ class _SpawnConfig {
 
 /// A long-lived background isolate owning the native workspace handle.
 class HarborCoreWorker {
-  HarborCoreWorker._(this._commands, this._isolate) {
+  HarborCoreWorker._(this._commands, this.isolate, this._responses) {
     _responses.listen(_onMessage);
   }
 
   final SendPort _commands;
-  final Isolate _isolate;
-  final ReceivePort _responses = ReceivePort();
-  final ReceivePort _errors = ReceivePort();
+  final Isolate isolate;
+  final ReceivePort _responses;
   final Map<int, Completer<Object?>> _pending = {};
   int _nextId = 0;
   bool _closed = false;
@@ -54,28 +59,30 @@ class HarborCoreWorker {
     String? deviceRootHex,
   }) async {
     final ready = ReceivePort();
+    final responses = ReceivePort();
     final errors = ReceivePort();
     final isolate = await Isolate.spawn(
       _entry,
-      _SpawnConfig(ready.sendPort, libraryPath, dataRoot, workspaceId,
-          privacyMode, deviceRootHex),
+      _SpawnConfig(ready.sendPort, responses.sendPort, libraryPath, dataRoot,
+          workspaceId, privacyMode, deviceRootHex),
       onError: errors.sendPort,
       errorsAreFatal: true,
     );
     final init = await ready.first;
     if (init is SendPort) {
-      final worker = HarborCoreWorker._(init, isolate);
+      final worker = HarborCoreWorker._(init, isolate, responses);
       // Surface uncaught worker errors as failed pending requests.
       errors.listen((message) {
         final fail = _FailAll('worker crashed: $message');
         for (final completer in worker._pending.values) {
-          completer.completeError(fail);
+          if (!completer.isCompleted) completer.completeError(fail);
         }
         worker._pending.clear();
       });
       return worker;
     }
     // Anything else is an init error envelope.
+    responses.close();
     final message =
         init is Map ? (init['error'] ?? 'open failed') : 'open failed';
     isolate.kill(priority: Isolate.beforeNextEvent);
@@ -110,9 +117,8 @@ class HarborCoreWorker {
     } catch (_) {
       // The worker may already be gone; the OS reclaims process state.
     }
-    _isolate.kill(priority: Isolate.beforeNextEvent);
+    isolate.kill(priority: Isolate.beforeNextEvent);
     _responses.close();
-    _errors.close();
     for (final completer in _pending.values) {
       if (!completer.isCompleted) {
         completer.completeError(HarborCoreException('worker closed'));
@@ -140,7 +146,6 @@ class HarborCoreWorker {
   /// requests until closed.
   static void _entry(_SpawnConfig config) {
     final commands = ReceivePort();
-    late final SendPort commandsSend;
     DynamicLibrary? lib;
     Pointer<Void> handle = Pointer.fromAddress(0);
     _CallDart? call;
@@ -173,11 +178,9 @@ class HarborCoreWorker {
         throw HarborCoreException('harbor_core_open failed');
       }
       call = lib.lookupFunction<_CallNative, _CallDart>('harbor_core_call');
-      stringFree = lib.lookupFunction<_StringFreeNative, _StringFreeDart>(
-          'harbor_core_string_free');
-      closeFn =
-          lib.lookupFunction<_CloseNative, _CloseDart>('harbor_core_close');
-      commandsSend = commands.sendPort;
+      stringFree = lib
+          .lookupFunction<_StringFreeNative, _StringFreeDart>('harbor_core_string_free');
+      closeFn = lib.lookupFunction<_CloseNative, _CloseDart>('harbor_core_close');
       commands.listen((message) {
         if (message is! Map) return;
         final id = message['id'] as int?;
@@ -199,11 +202,8 @@ class HarborCoreWorker {
         final resp = call!(handle, reqPtr);
         malloc.free(reqPtr);
         if (resp == Pointer.fromAddress(0)) {
-          commandsSend.send({
-            'id': id,
-            'ok': false,
-            'error': 'harbor_core_call returned null'
-          });
+          config.responses
+              .send({'id': id, 'ok': false, 'error': 'harbor_core_call returned null'});
           return;
         }
         final text = resp.toDartString();
@@ -211,23 +211,22 @@ class HarborCoreWorker {
         try {
           final envelope = jsonDecode(text) as Map<dynamic, dynamic>;
           if (envelope['ok'] == true) {
-            commandsSend
+            config.responses
                 .send({'id': id, 'ok': true, 'result': envelope['result']});
           } else {
-            commandsSend.send({
+            config.responses.send({
               'id': id,
               'ok': false,
               'error': (envelope['error'] ?? 'unknown error').toString(),
             });
           }
         } catch (e) {
-          commandsSend
-              .send({'id': id, 'ok': false, 'error': 'bad envelope: $e'});
+          config.responses.send({'id': id, 'ok': false, 'error': 'bad envelope: $e'});
         }
       });
-      config.reply.send(commands.sendPort);
+      config.ready.send(commands.sendPort);
     } catch (e) {
-      config.reply.send({'error': e.toString()});
+      config.ready.send({'error': e.toString()});
     }
   }
 }

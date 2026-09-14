@@ -52,6 +52,26 @@ jobs:
       - name: Formula qualification report
         run: cargo test -p harbor_formula full_qualification -- --nocapture
 
+  windows-core:
+    # Compile-gates the Windows-specific core paths (DPAPI keystore
+    # adapter, harbor_ffi cdylib) that cannot be built on the macOS
+    # machine. Runtime qualification stays on a real Windows machine
+    # (WIN-01, external).
+    runs-on: windows-latest
+    defaults:
+      run: { working-directory: core }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: core }
+      - name: Check workspace for the Windows target
+        run: cargo check --workspace --all-targets
+      - name: Clippy gate (Windows paths)
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
   flutter:
     runs-on: macos-14
     steps:
