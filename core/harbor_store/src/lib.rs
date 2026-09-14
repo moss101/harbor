@@ -15,7 +15,9 @@
 pub mod blob;
 pub mod db;
 pub mod error;
+pub mod kcipher;
 pub mod keys;
+pub mod native_keystore;
 pub mod settings;
 pub mod temp;
 
@@ -23,5 +25,9 @@ pub use blob::{BlobRef, BlobStore, PutOptions};
 pub use db::{Database, Migration};
 pub use error::StoreError;
 pub use keys::{FileKeyStore, KeyMaterial, KeyStore, WrappedKey};
+pub use kcipher::{knowledge_chunk_key, open_text, open_vector, seal_text, seal_vector};
+pub use native_keystore::{InjectedKeyStore, KeychainKeyStore};
+#[cfg(windows)]
+pub use native_keystore::DpapiKeyStore;
 pub use settings::SettingsStore;
 pub use temp::{TempHandle, TempRegistry};

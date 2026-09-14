@@ -50,6 +50,7 @@ fn acquire_streaming_and_install_production_model() {
         installer: &installer,
         sessions,
         auth_token: None,
+        progress: None,
     };
     // Streaming path: 1.1GB acquired in 64KiB chunks with incremental
     // SHA-256; the pinned hash enforces package identity.
@@ -116,6 +117,7 @@ fn qualify_installed_production_model_chat() {
             installer: &installer,
             sessions,
             auth_token: None,
+        progress: None,
         };
         // First acquisition: identity recorded from the downloaded bytes.
         acquirer

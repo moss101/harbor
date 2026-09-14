@@ -2,6 +2,7 @@
 //! policy, one key scope, one blob namespace, one run store.
 
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use chrono::{Duration, Utc};
 
@@ -25,21 +26,36 @@ pub struct Workspace {
     pub workspace_id: String,
     pub privacy_mode: PrivacyMode,
     pub privacy_policy_version: String,
-    pub agent_log: EventLog,
-    pub broker: EgressBroker,
+    pub agent_log: Arc<EventLog>,
+    pub broker: Arc<EgressBroker>,
     blobs: BlobStore,
     store_db_path: PathBuf,
-    key_source: FileKeyStore,
+    key_source: Arc<dyn KeyStore>,
+    workspace_key: WorkspaceKey,
 }
 
 impl Workspace {
-    /// Open or create a workspace. Establishes keys, binds the encrypted
-    /// blob store, opens the durable run log and the egress broker with a
-    /// SQLite-backed network audit.
+    /// Open or create a workspace with the platform dev keystore
+    /// (file-backed). Production callers go through
+    /// [`Workspace::open_with_keystore`] with an OS keystore adapter.
     pub fn open(opts: &OpenOptions, workspace_id: &str, mode: PrivacyMode) -> Result<Workspace, HarborError> {
-        std::fs::create_dir_all(opts.data_root.join("db"))?;
         let key_source = FileKeyStore::new(opts.data_root.join("keys"))
             .map_err(HarborError::Store)?;
+        Self::open_with_keystore(opts, workspace_id, mode, Arc::new(key_source))
+    }
+
+    /// Open or create a workspace. Establishes keys, binds the encrypted
+    /// blob store, opens the durable run log and the egress broker with a
+    /// SQLite-backed network audit. `key_source` is the device root key
+    /// origin (OS keystore adapter or injected root); the workspace keeps
+    /// it for the workspace lifetime.
+    pub fn open_with_keystore(
+        opts: &OpenOptions,
+        workspace_id: &str,
+        mode: PrivacyMode,
+        key_source: Arc<dyn KeyStore>,
+    ) -> Result<Workspace, HarborError> {
+        std::fs::create_dir_all(opts.data_root.join("db"))?;
         let root = key_source.device_root_key("harbor.device")?;
         let store_db_path = opts.data_root.join("db").join("store.db");
         let mut db = Database::open(&store_db_path)?;
@@ -95,12 +111,12 @@ impl Workspace {
 
         let audit = SqliteAuditSink::open(opts.data_root.join("db").join("network_audit.db"))
             .map_err(HarborError::Store)?;
-        let broker = EgressBroker::new(Box::new(audit));
+        let broker = Arc::new(EgressBroker::new(Box::new(audit)));
 
-        let agent_log = EventLog::open_with_payload_key(
+        let agent_log = Arc::new(EventLog::open_with_payload_key(
             opts.data_root.join("db").join("agent.db"),
             payload_key,
-        )?;
+        )?);
 
         Ok(Workspace {
             workspace_id: workspace_id.into(),
@@ -111,6 +127,7 @@ impl Workspace {
             blobs,
             store_db_path,
             key_source,
+            workspace_key: key,
         })
     }
 
@@ -137,6 +154,16 @@ impl Workspace {
         self.key_source
             .device_root_key("harbor.device")
             .map_err(HarborError::Store)
+    }
+
+    /// Key for sealing knowledge chunks at rest, derived from the
+    /// workspace key (domain-separated). Never persisted.
+    pub fn knowledge_chunk_key(
+        &self,
+    ) -> Result<harbor_store::keys::KeyMaterial, HarborError> {
+        Ok(harbor_store::kcipher::knowledge_chunk_key(
+            self.workspace_key.kek_material(),
+        ))
     }
 
     /// Default egress session lifetime for explicit acquisition sessions.

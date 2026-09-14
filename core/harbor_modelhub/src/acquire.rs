@@ -43,10 +43,26 @@ pub struct HfAcquirer<'a> {
     /// huggingface.co requests; the broker strips it on any cross-origin
     /// redirect hop (policy 13).
     pub auth_token: Option<String>,
+    /// Optional progress + cancellation surface, updated cooperatively
+    /// during the download (chunk granularity). When set, a cancel
+    /// request stops the acquisition at the next chunk or file boundary.
+    pub progress: Option<std::sync::Arc<crate::progress::AcquireProgress>>,
 }
 
-
 impl HfAcquirer<'_> {
+    /// Attach a progress + cancel surface.
+    pub fn with_progress(
+        mut self,
+        progress: std::sync::Arc<crate::progress::AcquireProgress>,
+    ) -> Self {
+        self.progress = Some(progress);
+        self
+    }
+
+    fn cancelled(&self) -> bool {
+        self.progress.as_ref().is_some_and(|p| p.is_cancelled())
+    }
+
     fn session_for(&self, origin: &str) -> Option<&harbor_net::broker::EgressSession> {
         self.sessions.get(origin)
     }
@@ -141,6 +157,9 @@ impl HfAcquirer<'_> {
         let mut hops = 0;
         let mut retries = 0u32;
         loop {
+            if self.cancelled() {
+                return Err(AcquireError::Cancelled);
+            }
             let origin = origin_of(&current_url)
                 .ok_or_else(|| AcquireError::Broker("no origin".into()))?;
             let session = self
@@ -151,9 +170,18 @@ impl HfAcquirer<'_> {
             let mut hasher = Sha256::new();
             let mut size = 0u64;
             {
+                let progress = self.progress.clone();
                 let mut sink = |chunk: &[u8]| -> std::io::Result<()> {
+                    if let Some(p) = &progress {
+                        if p.is_cancelled() {
+                            return Err(std::io::Error::other("cancelled"));
+                        }
+                    }
                     hasher.update(chunk);
                     size += chunk.len() as u64;
+                    if let Some(p) = &progress {
+                        p.bytes_done.fetch_add(chunk.len() as u64, std::sync::atomic::Ordering::Relaxed);
+                    }
                     file.write_all(chunk)
                 };
                 let result = self.broker.dispatch_streaming(
@@ -175,6 +203,12 @@ impl HfAcquirer<'_> {
                         let hash = hex::encode(hasher.finalize());
                         return Ok((hash, size));
                     }
+                    Err(_) if self.cancelled() => {
+                        // The chunk sink (or the pre-loop check) saw the
+                        // cancel: report it as cancellation, not transport
+                        // failure, and do not retry.
+                        return Err(AcquireError::Cancelled);
+                    }
                     Err(BrokerError::RedirectDenied(next)) => {
                         let next_url: url::Url = next
                             .parse()
@@ -193,6 +227,9 @@ impl HfAcquirer<'_> {
                         continue;
                     }
                     Err(BrokerError::Http(status)) if status == 429 || status == 503 => {
+                        if self.cancelled() {
+                            return Err(AcquireError::Cancelled);
+                        }
                         if retries < 3 {
                             std::thread::sleep(std::time::Duration::from_secs(
                                 2 * (retries as u64 + 1),
@@ -208,6 +245,9 @@ impl HfAcquirer<'_> {
                         // and retry with a long backoff — edge CDNs reset
                         // rapid successive handshakes.
                         let _ = std::fs::remove_file(out);
+                        if self.cancelled() {
+                            return Err(AcquireError::Cancelled);
+                        }
                         if retries < 3 {
                             std::thread::sleep(std::time::Duration::from_secs(
                                 [5, 15, 30][retries as usize],
@@ -239,6 +279,11 @@ impl HfAcquirer<'_> {
             .begin(package_id)
             .map_err(|e| AcquireError::Install(e.to_string()))?;
         let mut manifest_files = Vec::new();
+        if let Some(p) = &self.progress {
+            p.items_total.store(files.len() as u64, std::sync::atomic::Ordering::Relaxed);
+            p.set_phase("resolving");
+            p.set_detail(repo_id);
+        }
         // Metadata precheck: resolve the repo tree through the SAME
         // brokered connection before the weight transfer. This cross-checks
         // declared sizes against HF's own metadata and warms the pooled
@@ -264,7 +309,24 @@ impl HfAcquirer<'_> {
                     )
                 })
                 .unwrap_or_default();
-        for (path, role, sha256) in files {
+        if let Some(p) = &self.progress {
+            // Declared bytes for the requested files (when HF metadata
+            // covers them) give the UI a real denominator for progress.
+            let total: u64 = files
+                .iter()
+                .filter_map(|(path, _, _)| expected_sizes.get(path).copied())
+                .sum();
+            p.bytes_total.store(total, std::sync::atomic::Ordering::Relaxed);
+            p.set_phase("downloading");
+        }
+        for (index, (path, role, sha256)) in files.iter().enumerate() {
+            if self.cancelled() {
+                let _ = std::fs::remove_dir_all(&staged.staging_dir);
+                return Err(AcquireError::Cancelled);
+            }
+            if let Some(p) = &self.progress {
+                p.set_detail(&format!("{path} ({}/{})", index + 1, files.len()));
+            }
             let url = format!(
                 "https://huggingface.co/{repo_id}/resolve/{revision}/{path}"
             );
@@ -274,6 +336,9 @@ impl HfAcquirer<'_> {
                     .map_err(|e| AcquireError::Install(e.to_string()))?;
             }
             let (got, size) = self.fetch_streaming_to(&url, &out, None)?;
+            if let Some(p) = &self.progress {
+                p.set_phase("verifying");
+            }
             if !sha256.is_empty() && got != *sha256 {
                 let _ = std::fs::remove_file(&out);
                 return Err(AcquireError::HashMismatch(path.clone()));
@@ -301,6 +366,9 @@ impl HfAcquirer<'_> {
             staged.verified_files.insert(path.clone(), size);
             let _ = effective_sha;
             manifest_files.push(pf);
+            if let Some(p) = &self.progress {
+                p.items_done.store(index as u64 + 1, std::sync::atomic::Ordering::Relaxed);
+            }
         }
         let manifest = PackageManifest {
             schema: "harbor.model/v3".into(),
@@ -313,6 +381,13 @@ impl HfAcquirer<'_> {
                 targets: vec![std::env::consts::ARCH.to_string()],
             },
         };
+        if self.cancelled() {
+            let _ = std::fs::remove_dir_all(&staged.staging_dir);
+            return Err(AcquireError::Cancelled);
+        }
+        if let Some(p) = &self.progress {
+            p.set_phase("installing");
+        }
         let report = self
             .installer
             .validate(&staged, &manifest)
@@ -392,6 +467,7 @@ mod tests {
             installer: &installer,
             sessions,
             auth_token: None,
+        progress: None,
         };
         let sha = "270cba1bd5109f42d03350f60406024560464db173c0e387d91f0426d3bd256d";
         let result = acquirer
@@ -461,6 +537,7 @@ mod tests {
             installer: &installer,
             sessions,
             auth_token: None,
+        progress: None,
         };
         // Without a CDN session the redirect hop must be refused.
         let result = acquirer.acquire(
@@ -528,6 +605,7 @@ mod tests {
             installer: &installer,
             sessions,
             auth_token: None,
+        progress: None,
         };
         let sha = "270cba1bd5109f42d03350f60406024560464db173c0e387d91f0426d3bd256d";
         let result = acquirer.acquire(
@@ -592,6 +670,7 @@ mod tests {
             installer: &installer2,
             sessions: sessions2,
             auth_token: None,
+        progress: None,
         };
         let blocked = acquirer2.acquire(
             "m",
@@ -742,6 +821,8 @@ pub fn parse_catalog_document(entries: &JsonValue) -> Result<Vec<CatalogPackage>
 pub enum AcquireError {
     #[error("no session for origin {0} (redirect blocked)")]
     NoSession(String),
+    #[error("acquisition cancelled")]
+    Cancelled,
     #[error("broker: {0}")]
     Broker(String),
     #[error("http {0} for {1}")]
@@ -787,6 +868,7 @@ pub fn acquire_signed(
         installer,
         sessions: sessions.clone(),
         auth_token: None,
+        progress: None,
     };
     acquirer.acquire(
         &package.id,
@@ -995,6 +1077,7 @@ mod token_tests {
             installer: &installer,
             sessions,
             auth_token: Some("hf_secret_token".to_string()),
+        progress: None,
         };
         let bytes = acquirer
             .fetch("https://huggingface.co/repo/resolve/main/file.bin", None)
@@ -1034,6 +1117,7 @@ mod token_tests {
             installer: &installer,
             sessions,
             auth_token: None,
+        progress: None,
         };
         acquirer
             .fetch("https://huggingface.co/repo/resolve/main/file.bin", None)

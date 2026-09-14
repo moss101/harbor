@@ -16,7 +16,7 @@
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use llama_cpp_2::context::params::{LlamaContextParams, LlamaPoolingType};
@@ -148,11 +148,14 @@ impl GgufLlamaCppProvider {
         Ok(out)
     }
 
-    /// Generate with cooperative cancellation. `cancel` checked between tokens.
+    /// Generate with cooperative cancellation. `cancel` checked between
+    /// tokens; `tokens_generated` (when given) is updated after every
+    /// decoded token so runtime layers can surface real progress.
     pub fn generate_cancellable(
         &self,
         req: ChatRequest,
         cancel: &AtomicBool,
+        tokens_generated: Option<&AtomicU64>,
     ) -> Result<ChatResponse, ProviderError> {
         let package = match &req.model {
             ModelRef::InstalledPackage { package_id } => package_id.clone(),
@@ -226,6 +229,9 @@ impl GgufLlamaCppProvider {
                 .map_err(|e| ProviderError::Backend(format!("detokenize: {e}")))?;
             out.push_str(&piece);
             generated += 1;
+            if let Some(counter) = tokens_generated {
+                counter.store(generated, Ordering::Relaxed);
+            }
             // Feed the sampled token back.
             let mut step = LlamaBatch::new(1, 1);
             step.add(tok, next_pos, &[0], true)
@@ -357,7 +363,7 @@ impl ModelProvider for GgufLlamaCppProvider {
 
     fn generate(&self, req: ChatRequest) -> Result<ChatResponse, ProviderError> {
         let never = AtomicBool::new(false);
-        self.generate_cancellable(req, &never)
+        self.generate_cancellable(req, &never, None)
     }
 
     fn execution_location(&self) -> harbor_security::policy::ExecutionLocation {

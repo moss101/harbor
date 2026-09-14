@@ -37,6 +37,7 @@ fn main() {
         installer: &installer,
         sessions,
         auth_token: None,
+        progress: None,
     };
     let result = acquirer
         .acquire(

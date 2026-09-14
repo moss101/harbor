@@ -17,6 +17,7 @@ pub mod catalog_signing;
 pub mod fit;
 pub mod hf;
 pub mod install;
+pub mod progress;
 
 pub use catalog::{CatalogEntry, RecommendedTier};
 pub use acquire::{AcquireError, HfAcquirer, HF_CDN_ORIGINS};

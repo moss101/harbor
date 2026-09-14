@@ -133,7 +133,7 @@ fn generation_is_cancellable() {
         temperature: 0.0,
         requires: vec![Capabilities::Chat],
     };
-    let r = provider.generate_cancellable(req, &cancel);
+    let r = provider.generate_cancellable(req, &cancel, None);
     assert!(
         matches!(r, Err(harbor_inference::provider::ProviderError::Cancelled)),
         "pre-cancelled request must return Cancelled"

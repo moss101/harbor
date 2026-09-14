@@ -138,6 +138,22 @@ impl FileKeyStore {
         debug_assert!(!service.contains('/') && !service.contains('\\'));
         self.dir.join(format!("{}.key", service.replace(['/', '\\', ':'], "_")))
     }
+
+    /// Whether a key file exists for [service] (rotation checks use this
+    /// instead of `device_root_key`, which would generate on absence).
+    pub fn exists(&self, service: &str) -> bool {
+        self.key_path(service).exists()
+    }
+
+    /// Delete the stored key (crypto-erasure after a root rotation). The
+    /// returned material is zeroized on drop.
+    pub fn remove(&self, service: &str) -> Result<()> {
+        let path = self.key_path(service);
+        if path.exists() {
+            std::fs::remove_file(&path)?;
+        }
+        Ok(())
+    }
 }
 
 impl KeyStore for FileKeyStore {
