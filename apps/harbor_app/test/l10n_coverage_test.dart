@@ -25,7 +25,7 @@ void main() {
   });
 
   test('no hardcoded user-facing prose outside l10n', () {
-    final dirs = ['lib/surfaces', 'lib/shell'];
+    final dirs = ['lib/surfaces', 'lib/shell', 'lib/widgets'];
     final violations = <String>[];
     // Slots that render user-visible text.
     final slotRe = RegExp(

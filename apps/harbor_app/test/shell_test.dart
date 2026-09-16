@@ -1,11 +1,15 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:harbor_app/main.dart';
 import 'package:harbor_app/l10n/app_localizations.dart';
 import 'package:harbor_app/services/harbor_service.dart';
+import 'package:harbor_app/services/preferences.dart';
+import 'package:harbor_app/shell/adaptive_shell.dart';
+import 'package:harbor_app/shell/keyboard.dart';
 import 'package:harbor_app/surfaces/work_surface.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
@@ -20,6 +24,7 @@ Future<void> pumpApp(
   Locale locale = const Locale('en'),
   double width = 1440,
   double height = 900,
+  PreferencesStore? preferences,
 }) async {
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
@@ -56,10 +61,38 @@ Future<void> pumpApp(
       text: HarborType(arabic: arabic),
       child: child!,
     ),
-    home: HarborApp(service: service),
+    home: HarborApp(service: service, preferences: preferences),
   ));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 100));
+}
+
+/// Navigate to a surface by its label. On compact widths the five-item
+/// bottom bar keeps Agents/Skills/Knowledge/Activity/Settings under
+/// "More", so the helper opens that sheet first when needed.
+Future<void> goTo(WidgetTester tester, String label,
+    {String more = 'More'}) async {
+  var target = find.text(label);
+  if (target.evaluate().isEmpty) {
+    final rail = find.byType(HarborRail);
+    if (rail.evaluate().isNotEmpty) {
+      // Short windows: the rail scrolls to reach later destinations.
+      await tester.scrollUntilVisible(find.text(label), 80,
+          scrollable:
+              find.descendant(of: rail, matching: find.byType(Scrollable)));
+    } else {
+      await tester.tap(find.text(more).first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+    target = find.text(label);
+  }
+  await tester.tap(target.first);
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 400));
+  // One more frame: the previous surface retires (goes offstage) after
+  // its fade completes.
+  await tester.pump();
 }
 
 Map<String, dynamic>? _result;
@@ -86,70 +119,192 @@ void main() {
     // Arabic is chosen through the app's own Settings: the locale is
     // presentation state owned by the shell, not an external override.
     await pumpApp(tester, width: 390, height: 844);
-    await tester.tap(find.text('Settings'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    await goTo(tester, 'Settings');
     await tester.tap(find.text('العربية'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 400));
     final context = tester.element(find.byType(NavigationBar).first);
     expect(Directionality.of(context), TextDirection.rtl);
     expect(find.text('الرئيسية'), findsOneWidget);
     // Back on Home: work-first headline is localized.
-    await tester.tap(find.text('الرئيسية'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    await goTo(tester, 'الرئيسية', more: 'المزيد');
     expect(find.text('ما الذي تريد إنجازه؟'), findsOneWidget);
   });
 
-  testWidgets('compact width uses bottom navigation', (tester) async {
+  testWidgets('compact width uses a five-item bottom bar plus More',
+      (tester) async {
     await pumpApp(tester, width: 390, height: 844);
     expect(find.byType(NavigationBar), findsOneWidget);
-    expect(find.byType(NavigationRail), findsNothing);
-    // All nine surfaces reachable from the bottom bar.
+    expect(find.byType(HarborRail), findsNothing);
+    // Material guidance: 3–5 destinations. Primary surfaces are direct.
+    expect(find.byType(NavigationDestination), findsNWidgets(5));
+    for (final label in ['Home', 'Ask', 'Work', 'Models', 'More']) {
+      expect(find.text(label), findsOneWidget);
+    }
+    // The Trust chip is visible on every compact surface (§1 "Local is
+    // visible") and opens the Lens sheet.
+    expect(find.text('LOCAL'), findsOneWidget);
+    // The remaining surfaces are one tap away under More.
+    await tester.tap(find.text('More'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     for (final label in [
-      'Models',
+      'Agents',
       'Skills',
       'Knowledge',
       'Activity',
       'Settings'
     ]) {
-      expect(find.text(label), findsWidgets);
+      expect(find.text(label), findsOneWidget);
     }
+    await tester.tap(find.text('Knowledge'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    // The app bar names the secondary surface (the surface header does
+    // not repeat it on compact widths); More reads as selected.
+    expect(find.byType(NavigationDestination), findsNWidgets(5));
+    expect(find.text('Knowledge'), findsOneWidget);
+    expect(find.textContaining('citation-backed'), findsOneWidget);
+    expect(find.text('More'), findsOneWidget);
+    final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
+    expect(bar.selectedIndex, 4);
   });
 
   testWidgets('medium width shows compact rail, no persistent lens',
       (tester) async {
     await pumpApp(tester, width: 800, height: 600);
-    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.byType(HarborRail), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byType(TrustPulse), findsNothing);
+    // Medium rail: icon + caption for all nine surfaces.
+    expect(find.text('Knowledge'), findsOneWidget);
   });
 
   testWidgets(
       'wide width shows rail; at 1280 lens is persistent with '
       'canvas >= 640', (tester) async {
     await pumpApp(tester, width: 1280, height: 800);
-    final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-    // At 1280 the rail is not extended-pinned... it uses the full 220 width.
-    expect(rail, isNotNull);
-    // Trust Pulse is present in the persistent Harbor Lens.
+    final railFinder = find.byType(HarborRail);
+    expect(railFinder, findsOneWidget);
+    // Trust Pulse is present in the persistent (docked) Harbor Lens.
     expect(find.byType(TrustPulse), findsOneWidget);
+    expect(find.text('Harbor Lens'), findsOneWidget);
     // Rail (220) + lens (320) + canvas (>=640) <= 1280.
-    final railFinder = find.byType(NavigationRail);
     final railSize = tester.getSize(railFinder);
+    expect(railSize.width, HarborLayout.desktopRail);
     expect(railSize.width, lessThanOrEqualTo(1280 - HarborLayout.desktopLens));
+    // The Lens can be undocked (and the choice is a preference).
+    await tester.tap(find.byIcon(Icons.view_sidebar));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byType(TrustPulse), findsNothing);
+    await tester.tap(find.byIcon(Icons.view_sidebar_outlined));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byType(TrustPulse), findsOneWidget);
   });
 
-  testWidgets('settings switches to Arabic and dark', (tester) async {
-    await pumpApp(tester);
-    await tester.tap(find.text('Settings'));
+  testWidgets('expanded width collapses the rail to 72px with a Lens drawer',
+      (tester) async {
+    await pumpApp(tester, width: 1100, height: 800);
+    expect(tester.getSize(find.byType(HarborRail)).width,
+        HarborLayout.desktopRailCollapsed);
+    // Collapsed: labels become tooltips; the canvas keeps >= 640.
+    expect(find.text('Knowledge'), findsNothing);
+    // Tooltip carries the label (plus the ⌘7 hint on desktop).
+    expect(find.byTooltip(RegExp(r'^Knowledge')), findsOneWidget);
+    expect(find.byType(TrustPulse), findsNothing);
+    await tester.tap(find.byIcon(Icons.view_sidebar_outlined));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byType(TrustPulse), findsOneWidget);
+    expect(find.byType(Drawer), findsOneWidget);
+  });
+
+  testWidgets('language and theme choices persist through the store',
+      (tester) async {
+    final store = MemoryPreferencesStore();
+    await pumpApp(tester, preferences: store);
+    await goTo(tester, 'Settings');
+    await tester.tap(find.text('Dark'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(store.current.themeMode, ThemeMode.dark);
+    expect(Theme.of(tester.element(find.byType(HarborRail))).brightness,
+        Brightness.dark);
     await tester.tap(find.text('العربية'));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(store.current.locale, const Locale('ar'));
+    // A fresh app over the same store starts in Arabic + dark.
+    await tester.pumpWidget(const SizedBox());
+    await pumpApp(tester, preferences: store);
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('الإعدادات'), findsWidgets);
+    expect(Theme.of(tester.element(find.byType(HarborRail))).brightness,
+        Brightness.dark);
+    expect(Directionality.of(tester.element(find.byType(HarborRail))),
+        TextDirection.rtl);
+  });
+
+  testWidgets('desktop keyboard shortcuts switch surfaces', (tester) async {
+    if (!harborHasKeyboardShortcuts) return;
+    await pumpApp(tester);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit7);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    // Knowledge header (+ rail label, + the docked Lens link).
+    expect(find.text('Knowledge'), findsAtLeastNWidgets(2));
+    expect(find.textContaining('citation-backed'), findsOneWidget);
+  });
+
+  testWidgets('command palette navigates and prefills the composer',
+      (tester) async {
+    if (!harborHasKeyboardShortcuts) return;
+    await pumpApp(tester);
+    await tester.tap(find.byIcon(Icons.keyboard_command_key));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Surfaces'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).last, 'activ');
+    await tester.pump();
+    await tester.tap(find.text('Go to Activity'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.textContaining('Durable runs and background'), findsOneWidget);
+    // Quick actions from the palette land in the Home composer.
+    await tester.tap(find.byIcon(Icons.keyboard_command_key));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.enterText(find.byType(TextField).last, 'Translate');
+    await tester.pump();
+    await tester.tap(find.text('Translate content').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    final composer = tester.widget<TextField>(find.byType(TextField).first);
+    expect(composer.controller!.text, 'Translate content');
+  });
+
+  testWidgets('settings switches to Arabic and mirrors the rail',
+      (tester) async {
+    await pumpApp(tester);
+    await goTo(tester, 'Settings');
+    await tester.tap(find.text('العربية'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('الإعدادات'), findsWidgets);
     expect(find.text('اللغة'), findsOneWidget);
+    // Structural mirroring: the rail sits at the end (right) edge.
+    final rail = tester.getRect(find.byType(HarborRail));
+    expect(rail.left, greaterThan(1440 - HarborLayout.desktopRail - 1));
+    // Identifiers keep intrinsic LTR inside the RTL layout.
+    final id = find.byType(HarborIdentifier).first;
+    expect(
+        Directionality.of(tester.element(
+            find.descendant(of: id, matching: find.byType(Text)).first)),
+        TextDirection.ltr);
   });
 }
 
@@ -192,15 +347,19 @@ void _appendLiveTests() {
     await tester.pumpWidget(HarborApp(service: service));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
-    // "Activity" appears in nav, rail and Lens — tap the rail entry.
-    await tester.tap(find.text('Activity').first);
-    await tester.pump();
+    // Default test viewport is medium: tap the rail's Activity entry.
+    await goTo(tester, 'Activity');
     await tester.pump(const Duration(milliseconds: 100));
-    await tester.pump(const Duration(milliseconds: 100));
-    // The run id appears in BOTH the Activity list and the persistent
-    // Harbor Lens (which now shows real runs, not samples).
+    // The run id and its state appear in the Activity list (real runs,
+    // never samples), with the §11 state badge.
     expect(find.text('run-visible-1'), findsWidgets);
     expect(find.textContaining('CREATED'), findsWidgets);
+    expect(find.byType(RunStateBadge), findsWidgets);
+    // Home lists it under Recent runs AND the docked Harbor Lens (1440)
+    // shows the same real run — never sample data.
+    await goTo(tester, 'Home');
+    expect(find.text('run-visible-1'), findsNWidgets(2));
+    expect(find.byType(HarborLens), findsOneWidget);
   });
 }
 
@@ -246,8 +405,20 @@ void _appendPreviewTest() {
     await tester.pump();
     // The preview comes from the pinned engine's recalculation, not a mock.
     expect(find.textContaining('Sheet: Sheet1'), findsOneWidget);
-    // OOXML stores formulas without the leading '='.
+    // The grid opens on the first formula cell: the formula bar shows it
+    // (OOXML stores formulas without the leading '='; the bar adds it).
     expect(find.textContaining('SUM(B2:B5)'), findsOneWidget);
+    expect(find.text('=SUM(B2:B5)'), findsOneWidget);
+    // Real spreadsheet chrome: column letters, row numbers, cached-value
+    // disclaimer, read-only badge.
+    expect(find.text('A'), findsOneWidget);
+    expect(find.text('B'), findsOneWidget);
+    expect(find.text('1'), findsOneWidget);
+    expect(find.textContaining('not verified'), findsOneWidget);
+    expect(find.text('Read-only preview'), findsOneWidget);
+    // Selecting another cell rebinds the formula bar.
+    await tester.tap(find.text('A').first);
+    await tester.pump();
   });
 }
 
@@ -259,18 +430,23 @@ void _appendSkillsTest() {
       expect(find.textContaining('Native core not loaded'), findsNothing);
       return;
     }
-    await tester.tap(find.text('Skills').first);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    await goTo(tester, 'Skills');
     // The 21 authority skill families come through the live boundary.
     final sp = HarborServiceProvider.of(
         tester.element(find.textContaining('tools').first));
     expect(sp.notifier!.skills.length, greaterThanOrEqualTo(21));
     expect(find.text('Document Intelligence'), findsOneWidget);
     expect(find.text('Spreadsheet Analyst'), findsOneWidget);
-    // The list is lazy: scroll to the last family.
+    // The list is lazy: scroll the skills list to the last family.
     await tester.scrollUntilVisible(find.text('Privacy Inspector'), 300,
-        scrollable: find.byType(Scrollable).first);
+        scrollable: find.descendant(
+            of: find.byKey(const ValueKey('skills-list')),
+            matching: find.byType(Scrollable)));
+    expect(find.text('Privacy Inspector'), findsOneWidget);
+    // Filtering narrows the grid; the detail sheet lists real tools.
+    await tester.enterText(find.byType(TextField).first, 'privacy');
+    await tester.pump();
+    expect(find.text('Document Intelligence'), findsNothing);
     expect(find.text('Privacy Inspector'), findsOneWidget);
   });
 }
@@ -472,9 +648,7 @@ void _appendComposerTest() {
     }
     expect(durable, isTrue,
         reason: 'the composer submit must create a durable run');
-    await tester.tap(find.text('Activity').first);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    await goTo(tester, 'Activity');
     expect(find.textContaining('run-'), findsWidgets);
   });
 }

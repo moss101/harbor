@@ -229,7 +229,17 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String toolsCount(int count) {
-    return '$count أدوات';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count أداة',
+      many: '$count أداة',
+      few: '$count أدوات',
+      two: 'أداتان',
+      one: 'أداة واحدة',
+      zero: 'لا توجد أدوات',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -314,7 +324,17 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String knowledgeChunksCount(int count) {
-    return '$count مقاطع';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count جزء',
+      many: '$count جزءاً',
+      few: '$count أجزاء',
+      two: 'جزآن',
+      one: 'جزء واحد',
+      zero: 'لا توجد أجزاء',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -442,4 +462,689 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get fileGroupDocuments => 'المستندات';
+
+  @override
+  String get navMore => 'المزيد';
+
+  @override
+  String get navMoreTitle => 'كل الأقسام';
+
+  @override
+  String get lensTitle => 'عدسة هاربر';
+
+  @override
+  String get lensSubtitle => 'السياق والمهام والمعرفة';
+
+  @override
+  String get lensToggleTooltip => 'إظهار أو إخفاء عدسة هاربر';
+
+  @override
+  String get closeAction => 'إغلاق';
+
+  @override
+  String get lensSectionTrust => 'نبض الثقة';
+
+  @override
+  String get lensSectionOps => 'العمل في الخلفية';
+
+  @override
+  String get lensSectionRuns => 'آخر المهام';
+
+  @override
+  String get lensSectionModel => 'النموذج النشط';
+
+  @override
+  String get lensSectionKnowledge => 'فهرس المعرفة';
+
+  @override
+  String get viewAllAction => 'عرض الكل';
+
+  @override
+  String get trustPolicyHeading => 'سياسة مساحة العمل';
+
+  @override
+  String get trustExecutionHeading => 'التنفيذ الحالي';
+
+  @override
+  String trustPolicyVersion(String version) {
+    return 'إصدار السياسة $version';
+  }
+
+  @override
+  String get trustLocalOnlyBody =>
+      'الطلبات والملفات لا تغادر هذا الجهاز أبداً. الحصول على النماذج هو الجلسة الوحيدة الصريحة عبر الإنترنت، وتمر عبر وسيط الخروج.';
+
+  @override
+  String get trustChipLabel => 'محلي';
+
+  @override
+  String get trustChipTooltip =>
+      'سياسة محلي فقط · التنفيذ على الجهاز. افتح نبض الثقة.';
+
+  @override
+  String get commandPaletteTooltip => 'البحث في الأوامر';
+
+  @override
+  String get commandPaletteHint => 'انتقل إلى قسم أو نفّذ إجراءً…';
+
+  @override
+  String get commandPaletteEmpty => 'لا توجد أوامر مطابقة';
+
+  @override
+  String commandGoTo(String surface) {
+    return 'الانتقال إلى $surface';
+  }
+
+  @override
+  String get commandSectionSurfaces => 'الأقسام';
+
+  @override
+  String get commandSectionActions => 'الإجراءات';
+
+  @override
+  String get commandToggleLens => 'تبديل عدسة هاربر';
+
+  @override
+  String get commandToggleTheme => 'تبديل المظهر الفاتح/الداكن';
+
+  @override
+  String get commandSwitchLanguage => 'تبديل اللغة';
+
+  @override
+  String get coreDegradedTitle => 'النواة الأصلية غير متاحة';
+
+  @override
+  String get appTagline => 'ذكاؤك الاصطناعي. نماذجك. جهازك. عملك.';
+
+  @override
+  String get surfaceTitleHome => 'الرئيسية';
+
+  @override
+  String get homeGreetingMorning => 'صباح الخير';
+
+  @override
+  String get homeGreetingAfternoon => 'طاب يومك';
+
+  @override
+  String get homeGreetingEvening => 'مساء الخير';
+
+  @override
+  String get homeModelHeading => 'النموذج النشط';
+
+  @override
+  String get homeSectionActive => 'قيد التنفيذ';
+
+  @override
+  String get homeSectionRecent => 'آخر المهام';
+
+  @override
+  String get homeRecentEmpty => 'المهام التي تبدأها تظهر هنا مع حالتها.';
+
+  @override
+  String knowledgeSourcesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count مصدر',
+      many: '$count مصدراً',
+      few: '$count مصادر',
+      two: 'مصدران',
+      one: 'مصدر واحد',
+      zero: 'لا توجد مصادر',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get homeKnowledgeNotOpen => 'الفهرس غير مفتوح';
+
+  @override
+  String get homeOpenActivity => 'افتح النشاط';
+
+  @override
+  String get homeRequestQueued => 'تم تسجيل الطلب كمهمة دائمة';
+
+  @override
+  String get homeRequestFailed => 'تعذر تسجيل الطلب';
+
+  @override
+  String get quickActionsHeading => 'إجراءات سريعة';
+
+  @override
+  String get askSubtitle => 'إجابات مستندة إلى اقتباسات من معرفتك';
+
+  @override
+  String get askYou => 'أنت';
+
+  @override
+  String get askEvidenceHeading => 'الأدلة';
+
+  @override
+  String get askRetrievalOnlyNote => 'استرجاع فقط — لم يُستخدم نموذج محادثة.';
+
+  @override
+  String get askCancelledTitle => 'تم إلغاء التوليد';
+
+  @override
+  String get askCancelledBody => 'لم يُسجَّل شيء لهذا السؤال.';
+
+  @override
+  String get askModelPicker => 'نموذج المحادثة';
+
+  @override
+  String get askClearConversation => 'مسح المحادثة';
+
+  @override
+  String get askComposerHint => 'اسأل عن ملفاتك…';
+
+  @override
+  String get askErrorTitle => 'فشل التوليد';
+
+  @override
+  String get askGroundedBadge => 'مستند إلى أدلة';
+
+  @override
+  String get askUngroundedBadge => 'غير مستند إلى أدلة';
+
+  @override
+  String get workSubtitleEmpty => 'المستندات والمصنفات والعروض وملفات PDF';
+
+  @override
+  String get workPreviewOnly => 'معاينة للقراءة فقط';
+
+  @override
+  String get workPreviewOnlyBody =>
+      'التحرير المنظم والمقارنة والحفظ الآمن غير مفعّلة في هذا الإصدار؛ المعاينة مصدرها الاستخراج المؤهل في النواة.';
+
+  @override
+  String get workCloseFile => 'إغلاق الملف';
+
+  @override
+  String get workOpening => 'جارٍ فتح الملف…';
+
+  @override
+  String get workOpenFailedTitle => 'تعذر معاينة الملف';
+
+  @override
+  String get workOpenFailedBody =>
+      'يدعم هذا الإصدار ملفات DOCX وXLSX وPPTX وPDF فقط، ويجب أن يكون الملف قابلاً للقراءة.';
+
+  @override
+  String get workCompatibilityTitle => 'تنبيه التوافق';
+
+  @override
+  String workCompatibilityBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'يُحتفظ بـ $count جزء دون عرضها. لا يُنفَّذ أي شيء.',
+      many: 'يُحتفظ بـ $count جزءاً دون عرضها. لا يُنفَّذ أي شيء.',
+      few: 'يُحتفظ بـ $count أجزاء دون عرضها. لا يُنفَّذ أي شيء.',
+      two: 'يُحتفظ بجزأين دون عرضهما. لا يُنفَّذ أي شيء.',
+      one: 'يُحتفظ بجزء واحد دون عرضه. لا يُنفَّذ أي شيء.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get workCompatibilityShow => 'عرض الأجزاء';
+
+  @override
+  String get workCompatibilityHide => 'إخفاء الأجزاء';
+
+  @override
+  String get workOutline => 'المخطط';
+
+  @override
+  String get workOutlineEmpty => 'لا توجد عناوين';
+
+  @override
+  String workParagraphs(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count فقرة',
+      many: '$count فقرة',
+      few: '$count فقرات',
+      two: 'فقرتان',
+      one: 'فقرة واحدة',
+      zero: 'لا توجد فقرات',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workPages(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count صفحة',
+      many: '$count صفحة',
+      few: '$count صفحات',
+      two: 'صفحتان',
+      one: 'صفحة واحدة',
+      zero: 'لا توجد صفحات',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workSlides(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count شريحة',
+      many: '$count شريحة',
+      few: '$count شرائح',
+      two: 'شريحتان',
+      one: 'شريحة واحدة',
+      zero: 'لا توجد شرائح',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workCells(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count خلية',
+      many: '$count خلية',
+      few: '$count خلايا',
+      two: 'خليتان',
+      one: 'خلية واحدة',
+      zero: 'لا توجد خلايا',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workCharts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count مخطط',
+      many: '$count مخططاً',
+      few: '$count مخططات',
+      two: 'مخططان',
+      one: 'مخطط واحد',
+      zero: 'لا توجد مخططات',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get workFormulaBar => 'الصيغة';
+
+  @override
+  String get workValue => 'القيمة';
+
+  @override
+  String get workCellUnverified =>
+      'قيمة مخزنة — لم يتم التحقق منها بإعادة الحساب';
+
+  @override
+  String get workSheetNotPreviewed => 'تُعاين الورقة الأولى فقط في هذا الإصدار';
+
+  @override
+  String workPage(int index) {
+    return 'صفحة $index';
+  }
+
+  @override
+  String workSlide(int index) {
+    return 'شريحة $index';
+  }
+
+  @override
+  String get workKindDocument => 'مستند';
+
+  @override
+  String get workKindWorkbook => 'مصنف';
+
+  @override
+  String get workKindDeck => 'عرض تقديمي';
+
+  @override
+  String get workKindPdf => 'PDF';
+
+  @override
+  String get workSupportedTypes => 'الأنواع المدعومة';
+
+  @override
+  String get workEmptyTextPage => 'لم يُستخرج نص من هذه الصفحة';
+
+  @override
+  String get workShowFormulas => 'عرض الصيغ';
+
+  @override
+  String get workNoSelection => 'اختر خلية';
+
+  @override
+  String get modelsSubtitle => 'ثبّت وافحص واختر ما يعمل على هذا الجهاز';
+
+  @override
+  String get modelsImportBody =>
+      'ثبّت ملف GGUF محلياً. الحزم بيانات فقط — لا يُنفَّذ أي كود من المستودعات أبداً.';
+
+  @override
+  String get modelsUseForAsk => 'استخدم في اسأل';
+
+  @override
+  String get modelsInUse => 'قيد الاستخدام';
+
+  @override
+  String get modelsRuntime => 'بيئة التشغيل';
+
+  @override
+  String get modelsFiles => 'الملفات';
+
+  @override
+  String get modelsSize => 'الحجم';
+
+  @override
+  String get modelsRecommendedBody =>
+      'تُرتَّب التوصيات وفق مقياس الملاءمة بعد مزامنة الكتالوج الموقّع. حتى ذلك الحين، ابحث في هاجينج فيس أو استورد حزمة محلية.';
+
+  @override
+  String get modelsHfSearchHint => 'ابحث في المستودعات العامة';
+
+  @override
+  String modelsDownloads(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count تنزيل',
+      many: '$count تنزيلاً',
+      few: '$count تنزيلات',
+      two: 'تنزيلان',
+      one: 'تنزيل واحد',
+      zero: 'لا توجد تنزيلات',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String modelsLikes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count إعجاب',
+      many: '$count إعجاباً',
+      few: '$count إعجابات',
+      two: 'إعجابان',
+      one: 'إعجاب واحد',
+      zero: 'لا توجد إعجابات',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get modelsAcquireTitle => 'جارٍ الحصول على النموذج';
+
+  @override
+  String modelsInstalledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count نموذج مثبت',
+      many: '$count نموذجاً مثبتاً',
+      few: '$count نماذج مثبتة',
+      two: 'نموذجان مثبتان',
+      one: 'نموذج واحد مثبت',
+      zero: 'لا توجد نماذج مثبتة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get modelsGoHuggingFace => 'ابحث في هاجينج فيس';
+
+  @override
+  String get modelsImportGguf => 'استيراد GGUF';
+
+  @override
+  String get modelsFitComputing => 'جارٍ حساب مقياس الملاءمة…';
+
+  @override
+  String get fitLabelExcellent => 'ممتاز';
+
+  @override
+  String get fitLabelGood => 'جيد';
+
+  @override
+  String get fitLabelLimited => 'محدود';
+
+  @override
+  String get fitLabelTooLarge => 'كبير جداً';
+
+  @override
+  String get fitLabelUnsupported => 'غير مدعوم';
+
+  @override
+  String get fileGroupModels => 'حزم النماذج';
+
+  @override
+  String get agentsSubtitle =>
+      'ملفات تجمع بين نموذج وأدوات ومهارات ومعرفة وسياسة';
+
+  @override
+  String get agentsUnavailableTitle => 'غير مفعّل في هذا الإصدار';
+
+  @override
+  String get agentsWhatTitle => 'ما سيحتويه ملف الوكيل';
+
+  @override
+  String get agentsPartModel => 'النموذج';
+
+  @override
+  String get agentsPartModelBody =>
+      'نموذج مثبت ومؤهل مع قفل صريح وثابت لكل مساحة عمل.';
+
+  @override
+  String get agentsPartTools => 'الأدوات';
+
+  @override
+  String get agentsPartToolsBody =>
+      'قائمة مسموح بها مستمدة من عائلات المهارات المدمجة.';
+
+  @override
+  String get agentsPartKnowledge => 'المعرفة';
+
+  @override
+  String get agentsPartKnowledgeBody =>
+      'المجموعات التي يمكن للوكيل الاستشهاد بها، ولا مصادر لم يُمنح إياها.';
+
+  @override
+  String get agentsPartPolicy => 'السياسة والموافقات';
+
+  @override
+  String get agentsPartPolicyBody =>
+      'تتوقف التأثيرات المحمية لمراجعة في ورقة هاربر قبل كتابة أي شيء.';
+
+  @override
+  String get agentsGoSkills => 'تصفح المهارات';
+
+  @override
+  String get agentsGoActivity => 'عرض المهام';
+
+  @override
+  String get skillsSubtitle => 'عائلات مهارات مدمجة وموقّعة متاحة لكل مهمة';
+
+  @override
+  String get skillsSearchHint => 'تصفية المهارات';
+
+  @override
+  String skillsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count مهارة',
+      many: '$count مهارة',
+      few: '$count مهارات',
+      two: 'مهارتان',
+      one: 'مهارة واحدة',
+      zero: 'لا توجد مهارات',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get skillsToolsHeading => 'الأدوات';
+
+  @override
+  String get skillsNoMatch => 'لا توجد مهارات مطابقة';
+
+  @override
+  String get skillsFamily => 'العائلة';
+
+  @override
+  String get skillsBuiltIn => 'مدمجة';
+
+  @override
+  String get knowledgeSubtitle =>
+      'فهرس محلي مدعوم بالاقتباسات. المصادر لا تغادر الجهاز أبداً.';
+
+  @override
+  String get knowledgeIndexHeading => 'الفهرس';
+
+  @override
+  String get knowledgeIdentity => 'الهوية';
+
+  @override
+  String get knowledgeDimension => 'الأبعاد';
+
+  @override
+  String get knowledgeEmbedding => 'نموذج التضمين';
+
+  @override
+  String knowledgeRemoveConfirmTitle(String title) {
+    return 'إزالة $title؟';
+  }
+
+  @override
+  String get knowledgeRemoveConfirmBody =>
+      'ستُزال أجزاؤه من الفهرس. ستعرض الاقتباسات السابقة المصدر كمُزال.';
+
+  @override
+  String get knowledgeOpening => 'جارٍ فتح الفهرس…';
+
+  @override
+  String get knowledgeGoModels => 'افتح النماذج';
+
+  @override
+  String knowledgeSourceKb(int kb) {
+    return '$kb كيلوبايت';
+  }
+
+  @override
+  String get activitySubtitle => 'المهام الدائمة والعمليات في الخلفية';
+
+  @override
+  String get activityTabRuns => 'المهام';
+
+  @override
+  String get activityTabOps => 'العمليات';
+
+  @override
+  String get activityOpsEmptyTitle => 'لا توجد عمليات في الخلفية';
+
+  @override
+  String get activityOpsEmptyBody =>
+      'تظهر التنزيلات والفهرسة والتوليد هنا أثناء تشغيلها وبعد انتهائها.';
+
+  @override
+  String get activityRunDetail => 'تفاصيل المهمة';
+
+  @override
+  String get activityFinalState => 'الحالة النهائية';
+
+  @override
+  String get activityVerifiedEvents => 'الأحداث المتحقق منها';
+
+  @override
+  String get activityTrailHeading => 'مسار المهمة';
+
+  @override
+  String activityRunsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count مهمة',
+      many: '$count مهمة',
+      few: '$count مهام',
+      two: 'مهمتان',
+      one: 'مهمة واحدة',
+      zero: 'لا توجد مهام',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get activityReplayFailed => 'تعذر إعادة تشغيل المهمة';
+
+  @override
+  String get activityOpKindAcquire => 'الحصول على نموذج';
+
+  @override
+  String get activityOpKindIngest => 'فهرسة المعرفة';
+
+  @override
+  String get activityOpKindGenerate => 'توليد مستند إلى أدلة';
+
+  @override
+  String get settingsSubtitle => 'المظهر واللغة والخصوصية والهوية';
+
+  @override
+  String get settingsThemeSystem => 'النظام';
+
+  @override
+  String get settingsLanguageBody =>
+      'تعكس العربية التنقل والمحاذاة؛ وتحتفظ أسماء الملفات والصيغ والمعرّفات باتجاهها الخاص.';
+
+  @override
+  String get settingsPrivacyBody =>
+      'محلي فقط هو الافتراضي والسياسة الوحيدة في هذا الإصدار.';
+
+  @override
+  String get settingsAbout => 'حول';
+
+  @override
+  String get settingsVersion => 'الإصدار';
+
+  @override
+  String get settingsCoreStatus => 'النواة الأصلية';
+
+  @override
+  String get settingsCoreLoaded => 'محمّلة';
+
+  @override
+  String get settingsCoreDegraded => 'غير محمّلة — وضع متدهور';
+
+  @override
+  String get settingsShortcuts => 'اختصارات لوحة المفاتيح';
+
+  @override
+  String get settingsShortcutSurfaces => 'تبديل الأقسام';
+
+  @override
+  String get settingsShortcutPalette => 'لوحة الأوامر';
+
+  @override
+  String get settingsLensDocked => 'تثبيت العدسة في النوافذ الواسعة';
+
+  @override
+  String get settingsMotionNote => 'تتبع الحركة إعداد تقليل الحركة في نظامك.';
+
+  @override
+  String get copyAction => 'نسخ';
+
+  @override
+  String get copiedMessage => 'تم النسخ';
+
+  @override
+  String get activityExecutorTime => 'زمن التنفيذ';
+
+  @override
+  String get activityStepsLabel => 'الخطوات';
 }

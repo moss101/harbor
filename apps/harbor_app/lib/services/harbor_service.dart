@@ -42,19 +42,43 @@ class HarborService extends ChangeNotifier {
 
   String _policy = '…';
   String _execution = '…';
+  String? _policyCode;
+  String? _executionHint;
+  String? _policyVersion;
+  String? _workspaceId;
   List<Map<String, dynamic>> _installedModels = [];
   List<Map<String, dynamic>> _runs = [];
   List<SkillSummary> _skills = [];
   Map<String, dynamic>? _preview;
+  String? _previewName;
+  String? _previewError;
+  bool _previewLoading = false;
   String? _deviceId;
 
+  /// Display strings ("Policy: LOCAL_ONLY") kept for the Lens/Settings.
   String get policy => _policy;
   String get execution => _execution;
+
+  /// Raw core facts (policy token, execution hint, policy version).
+  String? get policyCode => _policyCode;
+  String? get executionHint => _executionHint;
+  String? get policyVersion => _policyVersion;
+  String? get workspaceId => _workspaceId;
   List<Map<String, dynamic>> get installedModels => _installedModels;
   List<Map<String, dynamic>> get runs => _runs;
   List<SkillSummary> get skills => _skills;
   Map<String, dynamic>? get preview => _preview;
+
+  /// File name of the open Work Canvas artifact (presentation only).
+  String? get previewName => _previewName;
+
+  /// Core error for the last failed preview load (null when none).
+  String? get previewError => _previewError;
+  bool get previewLoading => _previewLoading;
   String? get deviceId => _deviceId;
+
+  /// Whether the last refresh reached the core at all.
+  bool get coreReachable => _policyCode != null;
 
   bool knowledgeOpen = false;
   int knowledgeDimension = 0;
@@ -85,6 +109,9 @@ class HarborService extends ChangeNotifier {
   Future<void> refresh() async {
     try {
       final pulse = await _call('trust.pulse');
+      _policyCode = pulse['policy'] as String?;
+      _executionHint = pulse['execution_hint'] as String?;
+      _policyVersion = pulse['policy_version']?.toString();
       _policy = 'Policy: ${pulse['policy']}';
       _execution = 'Execution: ${pulse['execution_hint']}';
     } on ffi.HarborCoreException {
@@ -93,6 +120,7 @@ class HarborService extends ChangeNotifier {
     try {
       final identity = await _call('identity.get');
       _deviceId = identity['device_id'] as String?;
+      _workspaceId = identity['workspace_id'] as String?;
     } on ffi.HarborCoreException {
       _deviceId = null;
     }
@@ -163,6 +191,29 @@ class HarborService extends ChangeNotifier {
       return null;
     }
   }
+
+  /// Durable counters for one run (steps, tools, context tokens, compute).
+  Future<Map<String, dynamic>?> runState(String runId) async {
+    try {
+      return await _call('run.state', {'run_id': runId});
+    } on ffi.HarborCoreException {
+      return null;
+    }
+  }
+
+  /// Every background op the core still remembers for this process
+  /// (running and finished). Order is not guaranteed; the UI sorts.
+  Future<List<Map<String, dynamic>>> listOps() async {
+    try {
+      return _mapList((await _call('op.list'))['ops']);
+    } on ffi.HarborCoreException {
+      return const [];
+    }
+  }
+
+  /// Live kind-tracked progress snapshots (acquire / ingest / generate).
+  List<Map<String, dynamic>> get activeOps =>
+      kindProgress.values.toList(growable: false);
 
   /// Search public HF repositories (acquisition metadata only). Returns
   /// null when the search itself failed (network/broker), so the UI can
@@ -367,13 +418,29 @@ class HarborService extends ChangeNotifier {
   }
 
   /// Load a Work Canvas preview for artifact bytes through the core.
-  Future<void> loadPreviewFromBytes(List<int> bytes) async {
+  /// Failure is reported (not swallowed) so the canvas can explain it.
+  Future<void> loadPreviewFromBytes(List<int> bytes, {String? name}) async {
+    _previewLoading = true;
+    _previewError = null;
+    notifyListeners();
     try {
       _preview =
           await _call('artifact.preview', {'data_b64': base64Encode(bytes)});
-    } on ffi.HarborCoreException {
+      _previewName = name;
+    } on ffi.HarborCoreException catch (e) {
       _preview = null;
+      _previewName = name;
+      _previewError = e.message;
     }
+    _previewLoading = false;
+    notifyListeners();
+  }
+
+  /// Close the open artifact (presentation state only).
+  void clearPreview() {
+    _preview = null;
+    _previewName = null;
+    _previewError = null;
     notifyListeners();
   }
 
@@ -429,9 +496,14 @@ class HarborServiceProvider extends InheritedNotifier<HarborService> {
     required HarborService? service,
     required this.failed,
     required super.child,
+    this.failureDetail,
   }) : super(notifier: service);
 
   final bool failed;
+
+  /// Technical reason the core could not be opened (shown verbatim in the
+  /// degraded state so the cause is never hidden).
+  final String? failureDetail;
 
   static HarborServiceProvider of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<HarborServiceProvider>()!;

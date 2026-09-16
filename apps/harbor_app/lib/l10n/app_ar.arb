@@ -61,7 +61,7 @@
   "coreNotLoadedActivity": "النواة الأصلية غير محملة؛ المهام الدائمة مخزنة في النواة ولا يمكن سردها.",
   "newAgent": "وكيل جديد",
   "addSources": "أضف مصادر",
-  "toolsCount": "{count} أدوات",
+  "toolsCount": "{count, plural, zero{لا توجد أدوات} one{أداة واحدة} two{أداتان} few{{count} أدوات} many{{count} أداة} other{{count} أداة}}",
   "filesSizeRuntime": "{files} ملفات · {mb} ميجابايت · بيئة التشغيل {runtime}",
   "runStateLine": "الحالة: {state} · {ms} ملي ثانية تنفيذ",
   "scoreLine": "النتيجة {pct}% · {state}",
@@ -90,7 +90,7 @@
   "askNoChatModel": "لا يوجد نموذج محادثة مثبّت. تحتاج الإجابات إلى نموذج محادثة (النماذج ← Hugging Face)؛ وعند فتح المعرفة تبقى الاستشهادات المسترجَعة متاحة.",
   "askSearchOnly": "بحث في المعرفة",
   "knowledgeSourcesHeading": "المصادر المفهرسة",
-  "knowledgeChunksCount": "{count} مقاطع",
+  "knowledgeChunksCount": "{count, plural, zero{لا توجد أجزاء} one{جزء واحد} two{جزآن} few{{count} أجزاء} many{{count} جزءاً} other{{count} جزء}}",
   "knowledgeRemoveAction": "إزالة",
   "knowledgeIngesting": "جارٍ فهرسة المقاطع {done}/{total}",
   "knowledgeOpenNeedsModel": "ثبّت نموذج التضمين bge-small-en-v1.5 (تبويب النماذج) لبناء الفهرس المحلي.",
@@ -126,5 +126,316 @@
   "appStarting": "جارٍ تشغيل النواة المحلية…",
   "coreStartFailed": "تعذّر تحميل النواة الأصلية. يعمل Harbor بشكل محدود بدونها.",
   "knowledgeIngestFailed": "فشلت الفهرسة",
-  "fileGroupDocuments": "المستندات"
+  "fileGroupDocuments": "المستندات",
+  "navMore": "المزيد",
+  "navMoreTitle": "كل الأقسام",
+  "lensTitle": "عدسة هاربر",
+  "lensSubtitle": "السياق والمهام والمعرفة",
+  "lensToggleTooltip": "إظهار أو إخفاء عدسة هاربر",
+  "closeAction": "إغلاق",
+  "lensSectionTrust": "نبض الثقة",
+  "lensSectionOps": "العمل في الخلفية",
+  "lensSectionRuns": "آخر المهام",
+  "lensSectionModel": "النموذج النشط",
+  "lensSectionKnowledge": "فهرس المعرفة",
+  "viewAllAction": "عرض الكل",
+  "trustPolicyHeading": "سياسة مساحة العمل",
+  "trustExecutionHeading": "التنفيذ الحالي",
+  "trustPolicyVersion": "إصدار السياسة {version}",
+  "@trustPolicyVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "trustLocalOnlyBody": "الطلبات والملفات لا تغادر هذا الجهاز أبداً. الحصول على النماذج هو الجلسة الوحيدة الصريحة عبر الإنترنت، وتمر عبر وسيط الخروج.",
+  "trustChipLabel": "محلي",
+  "trustChipTooltip": "سياسة محلي فقط · التنفيذ على الجهاز. افتح نبض الثقة.",
+  "commandPaletteTooltip": "البحث في الأوامر",
+  "commandPaletteHint": "انتقل إلى قسم أو نفّذ إجراءً…",
+  "commandPaletteEmpty": "لا توجد أوامر مطابقة",
+  "commandGoTo": "الانتقال إلى {surface}",
+  "@commandGoTo": {
+    "placeholders": {
+      "surface": {
+        "type": "String"
+      }
+    }
+  },
+  "commandSectionSurfaces": "الأقسام",
+  "commandSectionActions": "الإجراءات",
+  "commandToggleLens": "تبديل عدسة هاربر",
+  "commandToggleTheme": "تبديل المظهر الفاتح/الداكن",
+  "commandSwitchLanguage": "تبديل اللغة",
+  "coreDegradedTitle": "النواة الأصلية غير متاحة",
+  "appTagline": "ذكاؤك الاصطناعي. نماذجك. جهازك. عملك.",
+  "surfaceTitleHome": "الرئيسية",
+  "homeGreetingMorning": "صباح الخير",
+  "homeGreetingAfternoon": "طاب يومك",
+  "homeGreetingEvening": "مساء الخير",
+  "homeModelHeading": "النموذج النشط",
+  "homeSectionActive": "قيد التنفيذ",
+  "homeSectionRecent": "آخر المهام",
+  "homeRecentEmpty": "المهام التي تبدأها تظهر هنا مع حالتها.",
+  "knowledgeSourcesCount": "{count, plural, zero{لا توجد مصادر} one{مصدر واحد} two{مصدران} few{{count} مصادر} many{{count} مصدراً} other{{count} مصدر}}",
+  "@knowledgeSourcesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeKnowledgeNotOpen": "الفهرس غير مفتوح",
+  "homeOpenActivity": "افتح النشاط",
+  "homeRequestQueued": "تم تسجيل الطلب كمهمة دائمة",
+  "homeRequestFailed": "تعذر تسجيل الطلب",
+  "quickActionsHeading": "إجراءات سريعة",
+  "askSubtitle": "إجابات مستندة إلى اقتباسات من معرفتك",
+  "askYou": "أنت",
+  "askEvidenceHeading": "الأدلة",
+  "askRetrievalOnlyNote": "استرجاع فقط — لم يُستخدم نموذج محادثة.",
+  "askCancelledTitle": "تم إلغاء التوليد",
+  "askCancelledBody": "لم يُسجَّل شيء لهذا السؤال.",
+  "askModelPicker": "نموذج المحادثة",
+  "askClearConversation": "مسح المحادثة",
+  "askComposerHint": "اسأل عن ملفاتك…",
+  "askErrorTitle": "فشل التوليد",
+  "askGroundedBadge": "مستند إلى أدلة",
+  "askUngroundedBadge": "غير مستند إلى أدلة",
+  "workSubtitleEmpty": "المستندات والمصنفات والعروض وملفات PDF",
+  "workPreviewOnly": "معاينة للقراءة فقط",
+  "workPreviewOnlyBody": "التحرير المنظم والمقارنة والحفظ الآمن غير مفعّلة في هذا الإصدار؛ المعاينة مصدرها الاستخراج المؤهل في النواة.",
+  "workCloseFile": "إغلاق الملف",
+  "workOpening": "جارٍ فتح الملف…",
+  "workOpenFailedTitle": "تعذر معاينة الملف",
+  "workOpenFailedBody": "يدعم هذا الإصدار ملفات DOCX وXLSX وPPTX وPDF فقط، ويجب أن يكون الملف قابلاً للقراءة.",
+  "workCompatibilityTitle": "تنبيه التوافق",
+  "workCompatibilityBody": "{count, plural, one{يُحتفظ بجزء واحد دون عرضه. لا يُنفَّذ أي شيء.} two{يُحتفظ بجزأين دون عرضهما. لا يُنفَّذ أي شيء.} few{يُحتفظ بـ {count} أجزاء دون عرضها. لا يُنفَّذ أي شيء.} many{يُحتفظ بـ {count} جزءاً دون عرضها. لا يُنفَّذ أي شيء.} other{يُحتفظ بـ {count} جزء دون عرضها. لا يُنفَّذ أي شيء.}}",
+  "@workCompatibilityBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workCompatibilityShow": "عرض الأجزاء",
+  "workCompatibilityHide": "إخفاء الأجزاء",
+  "workOutline": "المخطط",
+  "workOutlineEmpty": "لا توجد عناوين",
+  "workParagraphs": "{count, plural, zero{لا توجد فقرات} one{فقرة واحدة} two{فقرتان} few{{count} فقرات} many{{count} فقرة} other{{count} فقرة}}",
+  "@workParagraphs": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workPages": "{count, plural, zero{لا توجد صفحات} one{صفحة واحدة} two{صفحتان} few{{count} صفحات} many{{count} صفحة} other{{count} صفحة}}",
+  "@workPages": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workSlides": "{count, plural, zero{لا توجد شرائح} one{شريحة واحدة} two{شريحتان} few{{count} شرائح} many{{count} شريحة} other{{count} شريحة}}",
+  "@workSlides": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workCells": "{count, plural, zero{لا توجد خلايا} one{خلية واحدة} two{خليتان} few{{count} خلايا} many{{count} خلية} other{{count} خلية}}",
+  "@workCells": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workCharts": "{count, plural, zero{لا توجد مخططات} one{مخطط واحد} two{مخططان} few{{count} مخططات} many{{count} مخططاً} other{{count} مخطط}}",
+  "@workCharts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workFormulaBar": "الصيغة",
+  "workValue": "القيمة",
+  "workCellUnverified": "قيمة مخزنة — لم يتم التحقق منها بإعادة الحساب",
+  "workSheetNotPreviewed": "تُعاين الورقة الأولى فقط في هذا الإصدار",
+  "workPage": "صفحة {index}",
+  "@workPage": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "workSlide": "شريحة {index}",
+  "@workSlide": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "workKindDocument": "مستند",
+  "workKindWorkbook": "مصنف",
+  "workKindDeck": "عرض تقديمي",
+  "workKindPdf": "PDF",
+  "workSupportedTypes": "الأنواع المدعومة",
+  "workEmptyTextPage": "لم يُستخرج نص من هذه الصفحة",
+  "workShowFormulas": "عرض الصيغ",
+  "workNoSelection": "اختر خلية",
+  "modelsSubtitle": "ثبّت وافحص واختر ما يعمل على هذا الجهاز",
+  "modelsImportBody": "ثبّت ملف GGUF محلياً. الحزم بيانات فقط — لا يُنفَّذ أي كود من المستودعات أبداً.",
+  "modelsUseForAsk": "استخدم في اسأل",
+  "modelsInUse": "قيد الاستخدام",
+  "modelsRuntime": "بيئة التشغيل",
+  "modelsFiles": "الملفات",
+  "modelsSize": "الحجم",
+  "modelsRecommendedBody": "تُرتَّب التوصيات وفق مقياس الملاءمة بعد مزامنة الكتالوج الموقّع. حتى ذلك الحين، ابحث في هاجينج فيس أو استورد حزمة محلية.",
+  "modelsHfSearchHint": "ابحث في المستودعات العامة",
+  "modelsDownloads": "{count, plural, zero{لا توجد تنزيلات} one{تنزيل واحد} two{تنزيلان} few{{count} تنزيلات} many{{count} تنزيلاً} other{{count} تنزيل}}",
+  "@modelsDownloads": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modelsLikes": "{count, plural, zero{لا توجد إعجابات} one{إعجاب واحد} two{إعجابان} few{{count} إعجابات} many{{count} إعجاباً} other{{count} إعجاب}}",
+  "@modelsLikes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modelsAcquireTitle": "جارٍ الحصول على النموذج",
+  "modelsInstalledCount": "{count, plural, zero{لا توجد نماذج مثبتة} one{نموذج واحد مثبت} two{نموذجان مثبتان} few{{count} نماذج مثبتة} many{{count} نموذجاً مثبتاً} other{{count} نموذج مثبت}}",
+  "@modelsInstalledCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modelsGoHuggingFace": "ابحث في هاجينج فيس",
+  "modelsImportGguf": "استيراد GGUF",
+  "modelsFitComputing": "جارٍ حساب مقياس الملاءمة…",
+  "fitLabelExcellent": "ممتاز",
+  "fitLabelGood": "جيد",
+  "fitLabelLimited": "محدود",
+  "fitLabelTooLarge": "كبير جداً",
+  "fitLabelUnsupported": "غير مدعوم",
+  "fileGroupModels": "حزم النماذج",
+  "agentsSubtitle": "ملفات تجمع بين نموذج وأدوات ومهارات ومعرفة وسياسة",
+  "agentsUnavailableTitle": "غير مفعّل في هذا الإصدار",
+  "agentsWhatTitle": "ما سيحتويه ملف الوكيل",
+  "agentsPartModel": "النموذج",
+  "agentsPartModelBody": "نموذج مثبت ومؤهل مع قفل صريح وثابت لكل مساحة عمل.",
+  "agentsPartTools": "الأدوات",
+  "agentsPartToolsBody": "قائمة مسموح بها مستمدة من عائلات المهارات المدمجة.",
+  "agentsPartKnowledge": "المعرفة",
+  "agentsPartKnowledgeBody": "المجموعات التي يمكن للوكيل الاستشهاد بها، ولا مصادر لم يُمنح إياها.",
+  "agentsPartPolicy": "السياسة والموافقات",
+  "agentsPartPolicyBody": "تتوقف التأثيرات المحمية لمراجعة في ورقة هاربر قبل كتابة أي شيء.",
+  "agentsGoSkills": "تصفح المهارات",
+  "agentsGoActivity": "عرض المهام",
+  "skillsSubtitle": "عائلات مهارات مدمجة وموقّعة متاحة لكل مهمة",
+  "skillsSearchHint": "تصفية المهارات",
+  "skillsCount": "{count, plural, zero{لا توجد مهارات} one{مهارة واحدة} two{مهارتان} few{{count} مهارات} many{{count} مهارة} other{{count} مهارة}}",
+  "@skillsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "skillsToolsHeading": "الأدوات",
+  "skillsNoMatch": "لا توجد مهارات مطابقة",
+  "skillsFamily": "العائلة",
+  "skillsBuiltIn": "مدمجة",
+  "knowledgeSubtitle": "فهرس محلي مدعوم بالاقتباسات. المصادر لا تغادر الجهاز أبداً.",
+  "knowledgeIndexHeading": "الفهرس",
+  "knowledgeIdentity": "الهوية",
+  "knowledgeDimension": "الأبعاد",
+  "knowledgeEmbedding": "نموذج التضمين",
+  "knowledgeRemoveConfirmTitle": "إزالة {title}؟",
+  "@knowledgeRemoveConfirmTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "knowledgeRemoveConfirmBody": "ستُزال أجزاؤه من الفهرس. ستعرض الاقتباسات السابقة المصدر كمُزال.",
+  "knowledgeOpening": "جارٍ فتح الفهرس…",
+  "knowledgeGoModels": "افتح النماذج",
+  "knowledgeSourceKb": "{kb} كيلوبايت",
+  "@knowledgeSourceKb": {
+    "placeholders": {
+      "kb": {
+        "type": "int"
+      }
+    }
+  },
+  "activitySubtitle": "المهام الدائمة والعمليات في الخلفية",
+  "activityTabRuns": "المهام",
+  "activityTabOps": "العمليات",
+  "activityOpsEmptyTitle": "لا توجد عمليات في الخلفية",
+  "activityOpsEmptyBody": "تظهر التنزيلات والفهرسة والتوليد هنا أثناء تشغيلها وبعد انتهائها.",
+  "activityRunDetail": "تفاصيل المهمة",
+  "activityFinalState": "الحالة النهائية",
+  "activityVerifiedEvents": "الأحداث المتحقق منها",
+  "activityTrailHeading": "مسار المهمة",
+  "activityRunsCount": "{count, plural, zero{لا توجد مهام} one{مهمة واحدة} two{مهمتان} few{{count} مهام} many{{count} مهمة} other{{count} مهمة}}",
+  "@activityRunsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activityReplayFailed": "تعذر إعادة تشغيل المهمة",
+  "activityOpKindAcquire": "الحصول على نموذج",
+  "activityOpKindIngest": "فهرسة المعرفة",
+  "activityOpKindGenerate": "توليد مستند إلى أدلة",
+  "settingsSubtitle": "المظهر واللغة والخصوصية والهوية",
+  "settingsThemeSystem": "النظام",
+  "settingsLanguageBody": "تعكس العربية التنقل والمحاذاة؛ وتحتفظ أسماء الملفات والصيغ والمعرّفات باتجاهها الخاص.",
+  "settingsPrivacyBody": "محلي فقط هو الافتراضي والسياسة الوحيدة في هذا الإصدار.",
+  "settingsAbout": "حول",
+  "settingsVersion": "الإصدار",
+  "settingsCoreStatus": "النواة الأصلية",
+  "settingsCoreLoaded": "محمّلة",
+  "settingsCoreDegraded": "غير محمّلة — وضع متدهور",
+  "settingsShortcuts": "اختصارات لوحة المفاتيح",
+  "settingsShortcutSurfaces": "تبديل الأقسام",
+  "settingsShortcutPalette": "لوحة الأوامر",
+  "settingsLensDocked": "تثبيت العدسة في النوافذ الواسعة",
+  "settingsMotionNote": "تتبع الحركة إعداد تقليل الحركة في نظامك.",
+  "copyAction": "نسخ",
+  "copiedMessage": "تم النسخ",
+  "@toolsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@knowledgeChunksCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activityExecutorTime": "زمن التنفيذ",
+  "activityStepsLabel": "الخطوات"
 }

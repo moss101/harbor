@@ -13,6 +13,16 @@ final repoRoot = Directory.current.parent.parent.path; // apps/harbor_app
 final dylibPath = '$repoRoot/core/target/debug/libharbor_ffi.dylib';
 final coreAvailable = File(dylibPath).existsSync();
 
+/// Creator chains of layout errors raised since the last [takeLayoutError],
+/// so an overflow failure names the widget instead of just the pixels.
+final List<String> _layoutErrors = [];
+
+String takeLayoutError() {
+  final text = _layoutErrors.join('\n');
+  _layoutErrors.clear();
+  return text;
+}
+
 Future<void> pumpApp(
   WidgetTester tester, {
   Locale locale = const Locale('en'),
@@ -20,6 +30,19 @@ Future<void> pumpApp(
   double height = 900,
   double textScale = 1.0,
 }) async {
+  final previous = FlutterError.onError;
+  FlutterError.onError = (details) {
+    final text = details.toString();
+    final idx = text.indexOf('The relevant error-causing widget was');
+    _layoutErrors.add(idx < 0
+        ? text.split('\n').first
+        : text.substring(idx, (idx + 220).clamp(0, text.length)));
+    previous?.call(details);
+  };
+  addTearDown(() {
+    FlutterError.onError = previous;
+    _layoutErrors.clear();
+  });
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
@@ -39,29 +62,58 @@ Future<void> pumpApp(
   }
   addTearDown(() => service?.close());
   final arabic = locale.languageCode == 'ar';
+  // Scale text on top of the REAL view metrics (a bare MediaQueryData
+  // would zero the size and silently force the compact layout).
   await tester.pumpWidget(RepaintBoundary(
-    child: MediaQuery(
-      data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
-      child: HarborTheme(
-        colors: HarborColors.light,
-        text: HarborType(arabic: arabic),
-        child: MaterialApp(
-          locale: locale,
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: const [Locale('en'), Locale('ar')],
-          theme: harborThemeData(dark: false, arabic: arabic),
-          home: HarborApp(service: service),
+    child: Builder(
+      builder: (context) => MediaQuery(
+        data: MediaQuery.of(context)
+            .copyWith(textScaler: TextScaler.linear(textScale)),
+        child: HarborTheme(
+          colors: HarborColors.light,
+          text: HarborType(arabic: arabic),
+          child: MaterialApp(
+            locale: locale,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [Locale('en'), Locale('ar')],
+            theme: harborThemeData(dark: false, arabic: arabic),
+            home: HarborApp(service: service),
+          ),
         ),
       ),
     ),
   ));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 100));
+}
+
+/// Navigate by label; on compact widths secondary surfaces live under More.
+Future<void> goTo(WidgetTester tester, String label) async {
+  var target = find.text(label);
+  if (target.evaluate().isEmpty) {
+    final rail = find.byType(HarborRail);
+    if (rail.evaluate().isNotEmpty) {
+      await tester.scrollUntilVisible(find.text(label), 80,
+          scrollable:
+              find.descendant(of: rail, matching: find.byType(Scrollable)));
+    } else {
+      await tester.tap(find.text('More').first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+    target = find.text(label);
+  }
+  await tester.tap(target.first);
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 400));
+  // One more frame: the previous surface retires (goes offstage) after
+  // its fade completes.
+  await tester.pump();
 }
 
 /// Every enabled interactive control reachable in the critical flows must
@@ -123,9 +175,7 @@ void main() {
       'Activity',
       'Settings'
     ]) {
-      await tester.tap(find.text(surface).first);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 80));
+      await goTo(tester, surface);
       _assertLabeled(tester, surface);
     }
   });
@@ -134,12 +184,47 @@ void main() {
       (tester) async {
     await pumpApp(tester, width: 390, height: 844, textScale: 2.0);
     expect(tester.takeException(), isNull);
-    for (final surface in ['Work', 'Activity', 'Settings']) {
-      await tester.tap(find.text(surface).first);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 80));
+    for (final surface in [
+      'Ask',
+      'Work',
+      'Models',
+      'Agents',
+      'Skills',
+      'Knowledge',
+      'Activity',
+      'Settings'
+    ]) {
+      await goTo(tester, surface);
       expect(tester.takeException(), isNull,
-          reason: 'overflow at 200% scale on $surface');
+          reason: 'overflow at 200% scale on $surface\n${takeLayoutError()}');
+    }
+    // The Lens sheet also survives 200% on a 390px phone.
+    await tester.tap(find.byType(TrustChip));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(tester.takeException(), isNull,
+        reason: 'overflow in the Lens\n${takeLayoutError()}');
+  });
+
+  testWidgets('critical flows survive 320px at 200% text scale',
+      (tester) async {
+    await pumpApp(tester, width: 320, height: 568, textScale: 2.0);
+    expect(tester.takeException(), isNull);
+    for (final surface in ['Work', 'Settings']) {
+      await goTo(tester, surface);
+      expect(tester.takeException(), isNull,
+          reason: 'overflow at 320px/200% on $surface\n${takeLayoutError()}');
+    }
+  });
+
+  testWidgets('desktop surfaces survive 200% text scale', (tester) async {
+    await pumpApp(tester, width: 1280, height: 800, textScale: 2.0);
+    expect(tester.takeException(), isNull);
+    for (final surface in ['Ask', 'Work', 'Models', 'Knowledge', 'Settings']) {
+      await goTo(tester, surface);
+      expect(tester.takeException(), isNull,
+          reason:
+              'overflow at 200% scale on desktop $surface\n${takeLayoutError()}');
     }
   });
 

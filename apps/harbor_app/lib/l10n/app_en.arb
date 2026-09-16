@@ -97,7 +97,7 @@
   "@newAgent": {},
   "addSources": "Add sources",
   "@addSources": {},
-  "toolsCount": "{count} tools",
+  "toolsCount": "{count, plural, one{1 tool} other{{count} tools}}",
   "@toolsCount": {
     "placeholders": {
       "count": {
@@ -181,7 +181,7 @@
   "askNoChatModel": "No chat model installed. Answers need a chat model (Models → Hugging Face); with Knowledge open, retrieval-only citations still work.",
   "askSearchOnly": "Search Knowledge",
   "knowledgeSourcesHeading": "Indexed sources",
-  "knowledgeChunksCount": "{count} chunks",
+  "knowledgeChunksCount": "{count, plural, one{1 chunk} other{{count} chunks}}",
   "@knowledgeChunksCount": {
     "placeholders": {
       "count": {
@@ -282,5 +282,302 @@
   "appStarting": "Starting the local core…",
   "coreStartFailed": "The native core could not be loaded. Harbor runs degraded without it.",
   "knowledgeIngestFailed": "Indexing failed",
-  "fileGroupDocuments": "Documents"
+  "fileGroupDocuments": "Documents",
+  "navMore": "More",
+  "navMoreTitle": "All surfaces",
+  "lensTitle": "Harbor Lens",
+  "lensSubtitle": "Context, runs and knowledge",
+  "lensToggleTooltip": "Show or hide the Harbor Lens",
+  "closeAction": "Close",
+  "lensSectionTrust": "Trust Pulse",
+  "lensSectionOps": "Background work",
+  "lensSectionRuns": "Recent runs",
+  "lensSectionModel": "Active model",
+  "lensSectionKnowledge": "Knowledge index",
+  "viewAllAction": "View all",
+  "trustPolicyHeading": "Workspace policy",
+  "trustExecutionHeading": "Current execution",
+  "trustPolicyVersion": "Policy version {version}",
+  "@trustPolicyVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "trustLocalOnlyBody": "Requests and files never leave this device. Model acquisition is the only explicit online session, and it runs through the egress broker.",
+  "trustChipLabel": "LOCAL",
+  "trustChipTooltip": "Local Only policy · executing on device. Open the Trust Pulse.",
+  "commandPaletteTooltip": "Search commands",
+  "commandPaletteHint": "Go to a surface or run an action…",
+  "commandPaletteEmpty": "No matching commands",
+  "commandGoTo": "Go to {surface}",
+  "@commandGoTo": {
+    "placeholders": {
+      "surface": {
+        "type": "String"
+      }
+    }
+  },
+  "commandSectionSurfaces": "Surfaces",
+  "commandSectionActions": "Actions",
+  "commandToggleLens": "Toggle Harbor Lens",
+  "commandToggleTheme": "Switch light/dark theme",
+  "commandSwitchLanguage": "Switch language",
+  "coreDegradedTitle": "Native core unavailable",
+  "appTagline": "Your AI. Your models. Your device. Your work.",
+  "surfaceTitleHome": "Home",
+  "homeGreetingMorning": "Good morning",
+  "homeGreetingAfternoon": "Good afternoon",
+  "homeGreetingEvening": "Good evening",
+  "homeModelHeading": "Active model",
+  "homeSectionActive": "In progress",
+  "homeSectionRecent": "Recent runs",
+  "homeRecentEmpty": "Runs you start appear here with their state.",
+  "knowledgeSourcesCount": "{count, plural, one{1 source} other{{count} sources}}",
+  "@knowledgeSourcesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeKnowledgeNotOpen": "Index not open",
+  "homeOpenActivity": "Open Activity",
+  "homeRequestQueued": "Request recorded as a durable run",
+  "homeRequestFailed": "The request could not be recorded",
+  "quickActionsHeading": "Quick actions",
+  "askSubtitle": "Grounded answers with citations from your Knowledge",
+  "askYou": "You",
+  "askEvidenceHeading": "Evidence",
+  "askRetrievalOnlyNote": "Retrieval only — no chat model was used.",
+  "askCancelledTitle": "Generation cancelled",
+  "askCancelledBody": "Nothing was recorded for this question.",
+  "askModelPicker": "Chat model",
+  "askClearConversation": "Clear conversation",
+  "askComposerHint": "Ask about your files…",
+  "askErrorTitle": "Generation failed",
+  "askGroundedBadge": "GROUNDED",
+  "askUngroundedBadge": "NOT GROUNDED",
+  "workSubtitleEmpty": "Documents, workbooks, decks and PDFs",
+  "workPreviewOnly": "Read-only preview",
+  "workPreviewOnlyBody": "Structured edits, diff and safe save are not enabled in this build; the preview comes from the core's qualified extraction.",
+  "workCloseFile": "Close file",
+  "workOpening": "Opening file…",
+  "workOpenFailedTitle": "The file could not be previewed",
+  "workOpenFailedBody": "Only DOCX, XLSX, PPTX and PDF files are supported, and the file must be readable.",
+  "workCompatibilityTitle": "Compatibility notice",
+  "workCompatibilityBody": "{count, plural, one{1 part is preserved without rendering. Nothing is executed.} other{{count} parts are preserved without rendering. Nothing is executed.}}",
+  "@workCompatibilityBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workCompatibilityShow": "Show parts",
+  "workCompatibilityHide": "Hide parts",
+  "workOutline": "Outline",
+  "workOutlineEmpty": "No headings",
+  "workParagraphs": "{count, plural, one{1 paragraph} other{{count} paragraphs}}",
+  "@workParagraphs": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workPages": "{count, plural, one{1 page} other{{count} pages}}",
+  "@workPages": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workSlides": "{count, plural, one{1 slide} other{{count} slides}}",
+  "@workSlides": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workCells": "{count, plural, one{1 cell} other{{count} cells}}",
+  "@workCells": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workCharts": "{count, plural, one{1 chart} other{{count} charts}}",
+  "@workCharts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workFormulaBar": "Formula",
+  "workValue": "Value",
+  "workCellUnverified": "Cached value — not verified by recalculation",
+  "workSheetNotPreviewed": "Only the first sheet is previewed in this build",
+  "workPage": "Page {index}",
+  "@workPage": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "workSlide": "Slide {index}",
+  "@workSlide": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "workKindDocument": "Document",
+  "workKindWorkbook": "Workbook",
+  "workKindDeck": "Presentation",
+  "workKindPdf": "PDF",
+  "workSupportedTypes": "Supported types",
+  "workEmptyTextPage": "No text extracted on this page",
+  "workShowFormulas": "Show formulas",
+  "workNoSelection": "Select a cell",
+  "modelsSubtitle": "Install, inspect and choose what runs on this device",
+  "modelsImportBody": "Install a local GGUF file. Packages are data only — no repository code ever executes.",
+  "modelsUseForAsk": "Use for Ask",
+  "modelsInUse": "In use",
+  "modelsRuntime": "Runtime",
+  "modelsFiles": "Files",
+  "modelsSize": "Size",
+  "modelsRecommendedBody": "Recommendations are ranked by Fit Score once the signed catalog is synced. Until then, search Hugging Face or import a local package.",
+  "modelsHfSearchHint": "Search public repositories",
+  "modelsDownloads": "{count, plural, one{1 download} other{{count} downloads}}",
+  "@modelsDownloads": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modelsLikes": "{count, plural, one{1 like} other{{count} likes}}",
+  "@modelsLikes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modelsAcquireTitle": "Acquiring model",
+  "modelsInstalledCount": "{count, plural, one{1 installed} other{{count} installed}}",
+  "@modelsInstalledCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modelsGoHuggingFace": "Search Hugging Face",
+  "modelsImportGguf": "Import GGUF",
+  "modelsFitComputing": "Computing Fit Score…",
+  "fitLabelExcellent": "Excellent",
+  "fitLabelGood": "Good",
+  "fitLabelLimited": "Limited",
+  "fitLabelTooLarge": "Too large",
+  "fitLabelUnsupported": "Unsupported",
+  "fileGroupModels": "Model packages",
+  "agentsSubtitle": "Profiles that combine a model, tools, skills, knowledge and policy",
+  "agentsUnavailableTitle": "Not enabled in this release",
+  "agentsWhatTitle": "What an agent profile will contain",
+  "agentsPartModel": "Model",
+  "agentsPartModelBody": "A qualified installed model with an explicit, sticky lock per workspace.",
+  "agentsPartTools": "Tools",
+  "agentsPartToolsBody": "An allowlist drawn from the built-in skill families.",
+  "agentsPartKnowledge": "Knowledge",
+  "agentsPartKnowledgeBody": "Collections the agent may cite, never sources it was not granted.",
+  "agentsPartPolicy": "Policy & approvals",
+  "agentsPartPolicyBody": "Protected effects pause for a Harbor Sheet review before anything is written.",
+  "agentsGoSkills": "Browse skills",
+  "agentsGoActivity": "View runs",
+  "skillsSubtitle": "Signed built-in skill families available to every run",
+  "skillsSearchHint": "Filter skills",
+  "skillsCount": "{count, plural, one{1 skill} other{{count} skills}}",
+  "@skillsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "skillsToolsHeading": "Tools",
+  "skillsNoMatch": "No skills match the filter",
+  "skillsFamily": "Family",
+  "skillsBuiltIn": "Built-in",
+  "knowledgeSubtitle": "A local, citation-backed index. Sources never leave the device.",
+  "knowledgeIndexHeading": "Index",
+  "knowledgeIdentity": "Identity",
+  "knowledgeDimension": "Dimensions",
+  "knowledgeEmbedding": "Embedding model",
+  "knowledgeRemoveConfirmTitle": "Remove {title}?",
+  "@knowledgeRemoveConfirmTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "knowledgeRemoveConfirmBody": "Its chunks leave the index. Past citations will show the source as removed.",
+  "knowledgeOpening": "Opening the index…",
+  "knowledgeGoModels": "Open Models",
+  "knowledgeSourceKb": "{kb} KB",
+  "@knowledgeSourceKb": {
+    "placeholders": {
+      "kb": {
+        "type": "int"
+      }
+    }
+  },
+  "activitySubtitle": "Durable runs and background operations",
+  "activityTabRuns": "Runs",
+  "activityTabOps": "Operations",
+  "activityOpsEmptyTitle": "No background operations",
+  "activityOpsEmptyBody": "Downloads, indexing and generation appear here while they run and after they finish.",
+  "activityRunDetail": "Run detail",
+  "activityFinalState": "Final state",
+  "activityVerifiedEvents": "Verified events",
+  "activityTrailHeading": "Run Trail",
+  "activityRunsCount": "{count, plural, =0{No runs} one{1 run} other{{count} runs}}",
+  "@activityRunsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activityReplayFailed": "The run could not be replayed",
+  "activityOpKindAcquire": "Model acquisition",
+  "activityOpKindIngest": "Knowledge indexing",
+  "activityOpKindGenerate": "Grounded generation",
+  "settingsSubtitle": "Appearance, language, privacy and identity",
+  "settingsThemeSystem": "System",
+  "settingsLanguageBody": "Arabic mirrors navigation and alignment; file names, formulas and identifiers keep their own direction.",
+  "settingsPrivacyBody": "Local Only is the default and the only policy in this release.",
+  "settingsAbout": "About",
+  "settingsVersion": "Version",
+  "settingsCoreStatus": "Native core",
+  "settingsCoreLoaded": "Loaded",
+  "settingsCoreDegraded": "Not loaded — degraded",
+  "settingsShortcuts": "Keyboard shortcuts",
+  "settingsShortcutSurfaces": "Switch surfaces",
+  "settingsShortcutPalette": "Command palette",
+  "settingsLensDocked": "Dock the Lens on wide windows",
+  "settingsMotionNote": "Motion follows your system's reduce-motion setting.",
+  "copyAction": "Copy",
+  "copiedMessage": "Copied",
+  "activityExecutorTime": "Executor time",
+  "activityStepsLabel": "Steps"
 }

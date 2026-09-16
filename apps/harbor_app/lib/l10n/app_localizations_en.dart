@@ -231,7 +231,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String toolsCount(int count) {
-    return '$count tools';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tools',
+      one: '1 tool',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -317,7 +323,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String knowledgeChunksCount(int count) {
-    return '$count chunks';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count chunks',
+      one: '1 chunk',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -445,4 +457,649 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fileGroupDocuments => 'Documents';
+
+  @override
+  String get navMore => 'More';
+
+  @override
+  String get navMoreTitle => 'All surfaces';
+
+  @override
+  String get lensTitle => 'Harbor Lens';
+
+  @override
+  String get lensSubtitle => 'Context, runs and knowledge';
+
+  @override
+  String get lensToggleTooltip => 'Show or hide the Harbor Lens';
+
+  @override
+  String get closeAction => 'Close';
+
+  @override
+  String get lensSectionTrust => 'Trust Pulse';
+
+  @override
+  String get lensSectionOps => 'Background work';
+
+  @override
+  String get lensSectionRuns => 'Recent runs';
+
+  @override
+  String get lensSectionModel => 'Active model';
+
+  @override
+  String get lensSectionKnowledge => 'Knowledge index';
+
+  @override
+  String get viewAllAction => 'View all';
+
+  @override
+  String get trustPolicyHeading => 'Workspace policy';
+
+  @override
+  String get trustExecutionHeading => 'Current execution';
+
+  @override
+  String trustPolicyVersion(String version) {
+    return 'Policy version $version';
+  }
+
+  @override
+  String get trustLocalOnlyBody =>
+      'Requests and files never leave this device. Model acquisition is the only explicit online session, and it runs through the egress broker.';
+
+  @override
+  String get trustChipLabel => 'LOCAL';
+
+  @override
+  String get trustChipTooltip =>
+      'Local Only policy · executing on device. Open the Trust Pulse.';
+
+  @override
+  String get commandPaletteTooltip => 'Search commands';
+
+  @override
+  String get commandPaletteHint => 'Go to a surface or run an action…';
+
+  @override
+  String get commandPaletteEmpty => 'No matching commands';
+
+  @override
+  String commandGoTo(String surface) {
+    return 'Go to $surface';
+  }
+
+  @override
+  String get commandSectionSurfaces => 'Surfaces';
+
+  @override
+  String get commandSectionActions => 'Actions';
+
+  @override
+  String get commandToggleLens => 'Toggle Harbor Lens';
+
+  @override
+  String get commandToggleTheme => 'Switch light/dark theme';
+
+  @override
+  String get commandSwitchLanguage => 'Switch language';
+
+  @override
+  String get coreDegradedTitle => 'Native core unavailable';
+
+  @override
+  String get appTagline => 'Your AI. Your models. Your device. Your work.';
+
+  @override
+  String get surfaceTitleHome => 'Home';
+
+  @override
+  String get homeGreetingMorning => 'Good morning';
+
+  @override
+  String get homeGreetingAfternoon => 'Good afternoon';
+
+  @override
+  String get homeGreetingEvening => 'Good evening';
+
+  @override
+  String get homeModelHeading => 'Active model';
+
+  @override
+  String get homeSectionActive => 'In progress';
+
+  @override
+  String get homeSectionRecent => 'Recent runs';
+
+  @override
+  String get homeRecentEmpty => 'Runs you start appear here with their state.';
+
+  @override
+  String knowledgeSourcesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sources',
+      one: '1 source',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get homeKnowledgeNotOpen => 'Index not open';
+
+  @override
+  String get homeOpenActivity => 'Open Activity';
+
+  @override
+  String get homeRequestQueued => 'Request recorded as a durable run';
+
+  @override
+  String get homeRequestFailed => 'The request could not be recorded';
+
+  @override
+  String get quickActionsHeading => 'Quick actions';
+
+  @override
+  String get askSubtitle =>
+      'Grounded answers with citations from your Knowledge';
+
+  @override
+  String get askYou => 'You';
+
+  @override
+  String get askEvidenceHeading => 'Evidence';
+
+  @override
+  String get askRetrievalOnlyNote => 'Retrieval only — no chat model was used.';
+
+  @override
+  String get askCancelledTitle => 'Generation cancelled';
+
+  @override
+  String get askCancelledBody => 'Nothing was recorded for this question.';
+
+  @override
+  String get askModelPicker => 'Chat model';
+
+  @override
+  String get askClearConversation => 'Clear conversation';
+
+  @override
+  String get askComposerHint => 'Ask about your files…';
+
+  @override
+  String get askErrorTitle => 'Generation failed';
+
+  @override
+  String get askGroundedBadge => 'GROUNDED';
+
+  @override
+  String get askUngroundedBadge => 'NOT GROUNDED';
+
+  @override
+  String get workSubtitleEmpty => 'Documents, workbooks, decks and PDFs';
+
+  @override
+  String get workPreviewOnly => 'Read-only preview';
+
+  @override
+  String get workPreviewOnlyBody =>
+      'Structured edits, diff and safe save are not enabled in this build; the preview comes from the core\'s qualified extraction.';
+
+  @override
+  String get workCloseFile => 'Close file';
+
+  @override
+  String get workOpening => 'Opening file…';
+
+  @override
+  String get workOpenFailedTitle => 'The file could not be previewed';
+
+  @override
+  String get workOpenFailedBody =>
+      'Only DOCX, XLSX, PPTX and PDF files are supported, and the file must be readable.';
+
+  @override
+  String get workCompatibilityTitle => 'Compatibility notice';
+
+  @override
+  String workCompatibilityBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count parts are preserved without rendering. Nothing is executed.',
+      one: '1 part is preserved without rendering. Nothing is executed.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get workCompatibilityShow => 'Show parts';
+
+  @override
+  String get workCompatibilityHide => 'Hide parts';
+
+  @override
+  String get workOutline => 'Outline';
+
+  @override
+  String get workOutlineEmpty => 'No headings';
+
+  @override
+  String workParagraphs(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count paragraphs',
+      one: '1 paragraph',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workPages(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pages',
+      one: '1 page',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workSlides(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count slides',
+      one: '1 slide',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workCells(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cells',
+      one: '1 cell',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workCharts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count charts',
+      one: '1 chart',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get workFormulaBar => 'Formula';
+
+  @override
+  String get workValue => 'Value';
+
+  @override
+  String get workCellUnverified =>
+      'Cached value — not verified by recalculation';
+
+  @override
+  String get workSheetNotPreviewed =>
+      'Only the first sheet is previewed in this build';
+
+  @override
+  String workPage(int index) {
+    return 'Page $index';
+  }
+
+  @override
+  String workSlide(int index) {
+    return 'Slide $index';
+  }
+
+  @override
+  String get workKindDocument => 'Document';
+
+  @override
+  String get workKindWorkbook => 'Workbook';
+
+  @override
+  String get workKindDeck => 'Presentation';
+
+  @override
+  String get workKindPdf => 'PDF';
+
+  @override
+  String get workSupportedTypes => 'Supported types';
+
+  @override
+  String get workEmptyTextPage => 'No text extracted on this page';
+
+  @override
+  String get workShowFormulas => 'Show formulas';
+
+  @override
+  String get workNoSelection => 'Select a cell';
+
+  @override
+  String get modelsSubtitle =>
+      'Install, inspect and choose what runs on this device';
+
+  @override
+  String get modelsImportBody =>
+      'Install a local GGUF file. Packages are data only — no repository code ever executes.';
+
+  @override
+  String get modelsUseForAsk => 'Use for Ask';
+
+  @override
+  String get modelsInUse => 'In use';
+
+  @override
+  String get modelsRuntime => 'Runtime';
+
+  @override
+  String get modelsFiles => 'Files';
+
+  @override
+  String get modelsSize => 'Size';
+
+  @override
+  String get modelsRecommendedBody =>
+      'Recommendations are ranked by Fit Score once the signed catalog is synced. Until then, search Hugging Face or import a local package.';
+
+  @override
+  String get modelsHfSearchHint => 'Search public repositories';
+
+  @override
+  String modelsDownloads(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count downloads',
+      one: '1 download',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String modelsLikes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count likes',
+      one: '1 like',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get modelsAcquireTitle => 'Acquiring model';
+
+  @override
+  String modelsInstalledCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count installed',
+      one: '1 installed',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get modelsGoHuggingFace => 'Search Hugging Face';
+
+  @override
+  String get modelsImportGguf => 'Import GGUF';
+
+  @override
+  String get modelsFitComputing => 'Computing Fit Score…';
+
+  @override
+  String get fitLabelExcellent => 'Excellent';
+
+  @override
+  String get fitLabelGood => 'Good';
+
+  @override
+  String get fitLabelLimited => 'Limited';
+
+  @override
+  String get fitLabelTooLarge => 'Too large';
+
+  @override
+  String get fitLabelUnsupported => 'Unsupported';
+
+  @override
+  String get fileGroupModels => 'Model packages';
+
+  @override
+  String get agentsSubtitle =>
+      'Profiles that combine a model, tools, skills, knowledge and policy';
+
+  @override
+  String get agentsUnavailableTitle => 'Not enabled in this release';
+
+  @override
+  String get agentsWhatTitle => 'What an agent profile will contain';
+
+  @override
+  String get agentsPartModel => 'Model';
+
+  @override
+  String get agentsPartModelBody =>
+      'A qualified installed model with an explicit, sticky lock per workspace.';
+
+  @override
+  String get agentsPartTools => 'Tools';
+
+  @override
+  String get agentsPartToolsBody =>
+      'An allowlist drawn from the built-in skill families.';
+
+  @override
+  String get agentsPartKnowledge => 'Knowledge';
+
+  @override
+  String get agentsPartKnowledgeBody =>
+      'Collections the agent may cite, never sources it was not granted.';
+
+  @override
+  String get agentsPartPolicy => 'Policy & approvals';
+
+  @override
+  String get agentsPartPolicyBody =>
+      'Protected effects pause for a Harbor Sheet review before anything is written.';
+
+  @override
+  String get agentsGoSkills => 'Browse skills';
+
+  @override
+  String get agentsGoActivity => 'View runs';
+
+  @override
+  String get skillsSubtitle =>
+      'Signed built-in skill families available to every run';
+
+  @override
+  String get skillsSearchHint => 'Filter skills';
+
+  @override
+  String skillsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count skills',
+      one: '1 skill',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get skillsToolsHeading => 'Tools';
+
+  @override
+  String get skillsNoMatch => 'No skills match the filter';
+
+  @override
+  String get skillsFamily => 'Family';
+
+  @override
+  String get skillsBuiltIn => 'Built-in';
+
+  @override
+  String get knowledgeSubtitle =>
+      'A local, citation-backed index. Sources never leave the device.';
+
+  @override
+  String get knowledgeIndexHeading => 'Index';
+
+  @override
+  String get knowledgeIdentity => 'Identity';
+
+  @override
+  String get knowledgeDimension => 'Dimensions';
+
+  @override
+  String get knowledgeEmbedding => 'Embedding model';
+
+  @override
+  String knowledgeRemoveConfirmTitle(String title) {
+    return 'Remove $title?';
+  }
+
+  @override
+  String get knowledgeRemoveConfirmBody =>
+      'Its chunks leave the index. Past citations will show the source as removed.';
+
+  @override
+  String get knowledgeOpening => 'Opening the index…';
+
+  @override
+  String get knowledgeGoModels => 'Open Models';
+
+  @override
+  String knowledgeSourceKb(int kb) {
+    return '$kb KB';
+  }
+
+  @override
+  String get activitySubtitle => 'Durable runs and background operations';
+
+  @override
+  String get activityTabRuns => 'Runs';
+
+  @override
+  String get activityTabOps => 'Operations';
+
+  @override
+  String get activityOpsEmptyTitle => 'No background operations';
+
+  @override
+  String get activityOpsEmptyBody =>
+      'Downloads, indexing and generation appear here while they run and after they finish.';
+
+  @override
+  String get activityRunDetail => 'Run detail';
+
+  @override
+  String get activityFinalState => 'Final state';
+
+  @override
+  String get activityVerifiedEvents => 'Verified events';
+
+  @override
+  String get activityTrailHeading => 'Run Trail';
+
+  @override
+  String activityRunsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count runs',
+      one: '1 run',
+      zero: 'No runs',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get activityReplayFailed => 'The run could not be replayed';
+
+  @override
+  String get activityOpKindAcquire => 'Model acquisition';
+
+  @override
+  String get activityOpKindIngest => 'Knowledge indexing';
+
+  @override
+  String get activityOpKindGenerate => 'Grounded generation';
+
+  @override
+  String get settingsSubtitle => 'Appearance, language, privacy and identity';
+
+  @override
+  String get settingsThemeSystem => 'System';
+
+  @override
+  String get settingsLanguageBody =>
+      'Arabic mirrors navigation and alignment; file names, formulas and identifiers keep their own direction.';
+
+  @override
+  String get settingsPrivacyBody =>
+      'Local Only is the default and the only policy in this release.';
+
+  @override
+  String get settingsAbout => 'About';
+
+  @override
+  String get settingsVersion => 'Version';
+
+  @override
+  String get settingsCoreStatus => 'Native core';
+
+  @override
+  String get settingsCoreLoaded => 'Loaded';
+
+  @override
+  String get settingsCoreDegraded => 'Not loaded — degraded';
+
+  @override
+  String get settingsShortcuts => 'Keyboard shortcuts';
+
+  @override
+  String get settingsShortcutSurfaces => 'Switch surfaces';
+
+  @override
+  String get settingsShortcutPalette => 'Command palette';
+
+  @override
+  String get settingsLensDocked => 'Dock the Lens on wide windows';
+
+  @override
+  String get settingsMotionNote =>
+      'Motion follows your system\'s reduce-motion setting.';
+
+  @override
+  String get copyAction => 'Copy';
+
+  @override
+  String get copiedMessage => 'Copied';
+
+  @override
+  String get activityExecutorTime => 'Executor time';
+
+  @override
+  String get activityStepsLabel => 'Steps';
 }

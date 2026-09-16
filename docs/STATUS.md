@@ -7,6 +7,62 @@ ran at.
 
 ---
 
+## Session 30 (2026-09-17): complete frontend overhaul (iOS · Android · desktop)
+
+The Flutter shell and the `harbor_ui` design system were rebuilt end to
+end against the UI/UX authority (§4 responsive contract, §5–§6 tokens and
+typography, §7–§13 surfaces, §15 accessibility). Nothing in the core
+changed; every surface still renders live core facts or an honest
+degraded state.
+
+- **Design system (`packages/harbor_ui`)** — split into tokens /
+  foundation / status / navigation / trail / sheet / model dock / fit
+  score / states / diff / progress. Typography now carries real
+  platform fallback chains (monospace identifiers previously fell back
+  to a proportional face) and exact token weights via variable-font
+  axes; a motion scale from the tokens collapses under reduce-motion;
+  every stock Material widget is themed from the tokens for both modes.
+- **Shell** — compact: top bar + Trust chip + five-item bottom bar with a
+  More sheet (was nine cramped tabs); medium: icon+label rail;
+  expanded: 72 px rail with tooltips; wide: 220 px rail; ≥1280: docked,
+  toggleable 320 px Lens. Surfaces keep their state across navigation
+  (cross-fade stack). Desktop: ⌘/Ctrl+1…9, ⌘K command palette, ⌘L, ⌘O,
+  ⌘,. Language/theme/Lens choices persist (`harbor-prefs.json`);
+  ThemeMode.system is honoured; Android is edge-to-edge with adaptive
+  system-bar icons and predictive back opt-in.
+- **Surfaces** — Home (greeting, composer with Enter-to-send on desktop,
+  quick actions, live model dock, in-progress ops, recent runs,
+  knowledge status); Ask (session conversation, model picker chip,
+  grounded/not-grounded badges, citation score bars, abstention banner);
+  Work (real spreadsheet grid with frozen headers + formula bar + sheet
+  tabs, typographic document view with outline, deck filmstrip + 16:9
+  canvas, PDF page cards, compatibility banner from the Office matrix,
+  surfaced preview errors); Models (Import GGUF is now a real local
+  install, installed cards with Fit Score + "Use for Ask"); Agents
+  (honest not-enabled state); Skills (filter, family grouping, detail
+  sheet); Knowledge (index metrics, confirmed removal); Activity (Runs +
+  Operations tabs, run detail with counters and trail); Settings
+  (system/light/dark, language, Trust Pulse, identity with copy,
+  shortcuts, about). 169 new EN/AR strings with ICU plurals.
+- **Gates** — `flutter analyze` + `dart format` clean in all four
+  packages; harbor_ui 15 tests, app 25 tests PASS against the real core
+  (was 19). The accessibility gate now runs the real layouts (its
+  MediaQuery override used to zero the size and always test compact),
+  covers 320/390/1280 at 200 % text, and names the overflowing widget.
+- **Verified on device** — iPhone 17 Pro simulator with the live core:
+  composer → durable run → Activity → run detail; More sheet; Lens
+  sheet; Arabic RTL in light mode; preferences restored after relaunch.
+- **Gotchas recorded** — the Xcode "Embed Harbor Native Core" phase only
+  builds `libharbor_ffi.dylib` when it is *missing*, so a stale
+  simulator dylib (pre-`openEx`) loads and the app reports the missing
+  symbol in its degraded banner; rebuild with `~/.cargo/bin` FIRST on
+  PATH (Homebrew's `rustc` shadows rustup's and lacks the iOS targets).
+  Bundled fonts (Inter / Noto Sans Arabic / JetBrains Mono) remain a
+  follow-up decision: the notices fixture still declares system fonts
+  only, and the fallback chains cover every platform meanwhile.
+
+---
+
 ## Authoritative snapshot — session 29 (2026-09-14; post-RC hardening
 ## round; HEAD binds machine evidence unless stated otherwise — run
 ## `git log --oneline -3`)

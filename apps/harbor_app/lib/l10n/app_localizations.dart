@@ -503,7 +503,7 @@ abstract class AppLocalizations {
   /// No description provided for @toolsCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} tools'**
+  /// **'{count, plural, one{1 tool} other{{count} tools}}'**
   String toolsCount(int count);
 
   /// No description provided for @filesSizeRuntime.
@@ -641,7 +641,7 @@ abstract class AppLocalizations {
   /// No description provided for @knowledgeChunksCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} chunks'**
+  /// **'{count, plural, one{1 chunk} other{{count} chunks}}'**
   String knowledgeChunksCount(int count);
 
   /// No description provided for @knowledgeRemoveAction.
@@ -859,6 +859,1032 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Documents'**
   String get fileGroupDocuments;
+
+  /// No description provided for @navMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get navMore;
+
+  /// No description provided for @navMoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All surfaces'**
+  String get navMoreTitle;
+
+  /// No description provided for @lensTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Harbor Lens'**
+  String get lensTitle;
+
+  /// No description provided for @lensSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Context, runs and knowledge'**
+  String get lensSubtitle;
+
+  /// No description provided for @lensToggleTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Show or hide the Harbor Lens'**
+  String get lensToggleTooltip;
+
+  /// No description provided for @closeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get closeAction;
+
+  /// No description provided for @lensSectionTrust.
+  ///
+  /// In en, this message translates to:
+  /// **'Trust Pulse'**
+  String get lensSectionTrust;
+
+  /// No description provided for @lensSectionOps.
+  ///
+  /// In en, this message translates to:
+  /// **'Background work'**
+  String get lensSectionOps;
+
+  /// No description provided for @lensSectionRuns.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent runs'**
+  String get lensSectionRuns;
+
+  /// No description provided for @lensSectionModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Active model'**
+  String get lensSectionModel;
+
+  /// No description provided for @lensSectionKnowledge.
+  ///
+  /// In en, this message translates to:
+  /// **'Knowledge index'**
+  String get lensSectionKnowledge;
+
+  /// No description provided for @viewAllAction.
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get viewAllAction;
+
+  /// No description provided for @trustPolicyHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace policy'**
+  String get trustPolicyHeading;
+
+  /// No description provided for @trustExecutionHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Current execution'**
+  String get trustExecutionHeading;
+
+  /// No description provided for @trustPolicyVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Policy version {version}'**
+  String trustPolicyVersion(String version);
+
+  /// No description provided for @trustLocalOnlyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests and files never leave this device. Model acquisition is the only explicit online session, and it runs through the egress broker.'**
+  String get trustLocalOnlyBody;
+
+  /// No description provided for @trustChipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'LOCAL'**
+  String get trustChipLabel;
+
+  /// No description provided for @trustChipTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Local Only policy · executing on device. Open the Trust Pulse.'**
+  String get trustChipTooltip;
+
+  /// No description provided for @commandPaletteTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Search commands'**
+  String get commandPaletteTooltip;
+
+  /// No description provided for @commandPaletteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to a surface or run an action…'**
+  String get commandPaletteHint;
+
+  /// No description provided for @commandPaletteEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching commands'**
+  String get commandPaletteEmpty;
+
+  /// No description provided for @commandGoTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to {surface}'**
+  String commandGoTo(String surface);
+
+  /// No description provided for @commandSectionSurfaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Surfaces'**
+  String get commandSectionSurfaces;
+
+  /// No description provided for @commandSectionActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get commandSectionActions;
+
+  /// No description provided for @commandToggleLens.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle Harbor Lens'**
+  String get commandToggleLens;
+
+  /// No description provided for @commandToggleTheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch light/dark theme'**
+  String get commandToggleTheme;
+
+  /// No description provided for @commandSwitchLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch language'**
+  String get commandSwitchLanguage;
+
+  /// No description provided for @coreDegradedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Native core unavailable'**
+  String get coreDegradedTitle;
+
+  /// No description provided for @appTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Your AI. Your models. Your device. Your work.'**
+  String get appTagline;
+
+  /// No description provided for @surfaceTitleHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get surfaceTitleHome;
+
+  /// No description provided for @homeGreetingMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning'**
+  String get homeGreetingMorning;
+
+  /// No description provided for @homeGreetingAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Good afternoon'**
+  String get homeGreetingAfternoon;
+
+  /// No description provided for @homeGreetingEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Good evening'**
+  String get homeGreetingEvening;
+
+  /// No description provided for @homeModelHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Active model'**
+  String get homeModelHeading;
+
+  /// No description provided for @homeSectionActive.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get homeSectionActive;
+
+  /// No description provided for @homeSectionRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent runs'**
+  String get homeSectionRecent;
+
+  /// No description provided for @homeRecentEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs you start appear here with their state.'**
+  String get homeRecentEmpty;
+
+  /// No description provided for @knowledgeSourcesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 source} other{{count} sources}}'**
+  String knowledgeSourcesCount(int count);
+
+  /// No description provided for @homeKnowledgeNotOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Index not open'**
+  String get homeKnowledgeNotOpen;
+
+  /// No description provided for @homeOpenActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Activity'**
+  String get homeOpenActivity;
+
+  /// No description provided for @homeRequestQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Request recorded as a durable run'**
+  String get homeRequestQueued;
+
+  /// No description provided for @homeRequestFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The request could not be recorded'**
+  String get homeRequestFailed;
+
+  /// No description provided for @quickActionsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick actions'**
+  String get quickActionsHeading;
+
+  /// No description provided for @askSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Grounded answers with citations from your Knowledge'**
+  String get askSubtitle;
+
+  /// No description provided for @askYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get askYou;
+
+  /// No description provided for @askEvidenceHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence'**
+  String get askEvidenceHeading;
+
+  /// No description provided for @askRetrievalOnlyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Retrieval only — no chat model was used.'**
+  String get askRetrievalOnlyNote;
+
+  /// No description provided for @askCancelledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Generation cancelled'**
+  String get askCancelledTitle;
+
+  /// No description provided for @askCancelledBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was recorded for this question.'**
+  String get askCancelledBody;
+
+  /// No description provided for @askModelPicker.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat model'**
+  String get askModelPicker;
+
+  /// No description provided for @askClearConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear conversation'**
+  String get askClearConversation;
+
+  /// No description provided for @askComposerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about your files…'**
+  String get askComposerHint;
+
+  /// No description provided for @askErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Generation failed'**
+  String get askErrorTitle;
+
+  /// No description provided for @askGroundedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'GROUNDED'**
+  String get askGroundedBadge;
+
+  /// No description provided for @askUngroundedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'NOT GROUNDED'**
+  String get askUngroundedBadge;
+
+  /// No description provided for @workSubtitleEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents, workbooks, decks and PDFs'**
+  String get workSubtitleEmpty;
+
+  /// No description provided for @workPreviewOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only preview'**
+  String get workPreviewOnly;
+
+  /// No description provided for @workPreviewOnlyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Structured edits, diff and safe save are not enabled in this build; the preview comes from the core\'s qualified extraction.'**
+  String get workPreviewOnlyBody;
+
+  /// No description provided for @workCloseFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Close file'**
+  String get workCloseFile;
+
+  /// No description provided for @workOpening.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening file…'**
+  String get workOpening;
+
+  /// No description provided for @workOpenFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The file could not be previewed'**
+  String get workOpenFailedTitle;
+
+  /// No description provided for @workOpenFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Only DOCX, XLSX, PPTX and PDF files are supported, and the file must be readable.'**
+  String get workOpenFailedBody;
+
+  /// No description provided for @workCompatibilityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatibility notice'**
+  String get workCompatibilityTitle;
+
+  /// No description provided for @workCompatibilityBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 part is preserved without rendering. Nothing is executed.} other{{count} parts are preserved without rendering. Nothing is executed.}}'**
+  String workCompatibilityBody(int count);
+
+  /// No description provided for @workCompatibilityShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Show parts'**
+  String get workCompatibilityShow;
+
+  /// No description provided for @workCompatibilityHide.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide parts'**
+  String get workCompatibilityHide;
+
+  /// No description provided for @workOutline.
+  ///
+  /// In en, this message translates to:
+  /// **'Outline'**
+  String get workOutline;
+
+  /// No description provided for @workOutlineEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No headings'**
+  String get workOutlineEmpty;
+
+  /// No description provided for @workParagraphs.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 paragraph} other{{count} paragraphs}}'**
+  String workParagraphs(int count);
+
+  /// No description provided for @workPages.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 page} other{{count} pages}}'**
+  String workPages(int count);
+
+  /// No description provided for @workSlides.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 slide} other{{count} slides}}'**
+  String workSlides(int count);
+
+  /// No description provided for @workCells.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 cell} other{{count} cells}}'**
+  String workCells(int count);
+
+  /// No description provided for @workCharts.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 chart} other{{count} charts}}'**
+  String workCharts(int count);
+
+  /// No description provided for @workFormulaBar.
+  ///
+  /// In en, this message translates to:
+  /// **'Formula'**
+  String get workFormulaBar;
+
+  /// No description provided for @workValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get workValue;
+
+  /// No description provided for @workCellUnverified.
+  ///
+  /// In en, this message translates to:
+  /// **'Cached value — not verified by recalculation'**
+  String get workCellUnverified;
+
+  /// No description provided for @workSheetNotPreviewed.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the first sheet is previewed in this build'**
+  String get workSheetNotPreviewed;
+
+  /// No description provided for @workPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {index}'**
+  String workPage(int index);
+
+  /// No description provided for @workSlide.
+  ///
+  /// In en, this message translates to:
+  /// **'Slide {index}'**
+  String workSlide(int index);
+
+  /// No description provided for @workKindDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Document'**
+  String get workKindDocument;
+
+  /// No description provided for @workKindWorkbook.
+  ///
+  /// In en, this message translates to:
+  /// **'Workbook'**
+  String get workKindWorkbook;
+
+  /// No description provided for @workKindDeck.
+  ///
+  /// In en, this message translates to:
+  /// **'Presentation'**
+  String get workKindDeck;
+
+  /// No description provided for @workKindPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF'**
+  String get workKindPdf;
+
+  /// No description provided for @workSupportedTypes.
+  ///
+  /// In en, this message translates to:
+  /// **'Supported types'**
+  String get workSupportedTypes;
+
+  /// No description provided for @workEmptyTextPage.
+  ///
+  /// In en, this message translates to:
+  /// **'No text extracted on this page'**
+  String get workEmptyTextPage;
+
+  /// No description provided for @workShowFormulas.
+  ///
+  /// In en, this message translates to:
+  /// **'Show formulas'**
+  String get workShowFormulas;
+
+  /// No description provided for @workNoSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a cell'**
+  String get workNoSelection;
+
+  /// No description provided for @modelsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Install, inspect and choose what runs on this device'**
+  String get modelsSubtitle;
+
+  /// No description provided for @modelsImportBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Install a local GGUF file. Packages are data only — no repository code ever executes.'**
+  String get modelsImportBody;
+
+  /// No description provided for @modelsUseForAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Use for Ask'**
+  String get modelsUseForAsk;
+
+  /// No description provided for @modelsInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'In use'**
+  String get modelsInUse;
+
+  /// No description provided for @modelsRuntime.
+  ///
+  /// In en, this message translates to:
+  /// **'Runtime'**
+  String get modelsRuntime;
+
+  /// No description provided for @modelsFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get modelsFiles;
+
+  /// No description provided for @modelsSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Size'**
+  String get modelsSize;
+
+  /// No description provided for @modelsRecommendedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommendations are ranked by Fit Score once the signed catalog is synced. Until then, search Hugging Face or import a local package.'**
+  String get modelsRecommendedBody;
+
+  /// No description provided for @modelsHfSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search public repositories'**
+  String get modelsHfSearchHint;
+
+  /// No description provided for @modelsDownloads.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 download} other{{count} downloads}}'**
+  String modelsDownloads(int count);
+
+  /// No description provided for @modelsLikes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 like} other{{count} likes}}'**
+  String modelsLikes(int count);
+
+  /// No description provided for @modelsAcquireTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Acquiring model'**
+  String get modelsAcquireTitle;
+
+  /// No description provided for @modelsInstalledCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 installed} other{{count} installed}}'**
+  String modelsInstalledCount(int count);
+
+  /// No description provided for @modelsGoHuggingFace.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Hugging Face'**
+  String get modelsGoHuggingFace;
+
+  /// No description provided for @modelsImportGguf.
+  ///
+  /// In en, this message translates to:
+  /// **'Import GGUF'**
+  String get modelsImportGguf;
+
+  /// No description provided for @modelsFitComputing.
+  ///
+  /// In en, this message translates to:
+  /// **'Computing Fit Score…'**
+  String get modelsFitComputing;
+
+  /// No description provided for @fitLabelExcellent.
+  ///
+  /// In en, this message translates to:
+  /// **'Excellent'**
+  String get fitLabelExcellent;
+
+  /// No description provided for @fitLabelGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Good'**
+  String get fitLabelGood;
+
+  /// No description provided for @fitLabelLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Limited'**
+  String get fitLabelLimited;
+
+  /// No description provided for @fitLabelTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Too large'**
+  String get fitLabelTooLarge;
+
+  /// No description provided for @fitLabelUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported'**
+  String get fitLabelUnsupported;
+
+  /// No description provided for @fileGroupModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Model packages'**
+  String get fileGroupModels;
+
+  /// No description provided for @agentsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profiles that combine a model, tools, skills, knowledge and policy'**
+  String get agentsSubtitle;
+
+  /// No description provided for @agentsUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enabled in this release'**
+  String get agentsUnavailableTitle;
+
+  /// No description provided for @agentsWhatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What an agent profile will contain'**
+  String get agentsWhatTitle;
+
+  /// No description provided for @agentsPartModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get agentsPartModel;
+
+  /// No description provided for @agentsPartModelBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A qualified installed model with an explicit, sticky lock per workspace.'**
+  String get agentsPartModelBody;
+
+  /// No description provided for @agentsPartTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools'**
+  String get agentsPartTools;
+
+  /// No description provided for @agentsPartToolsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'An allowlist drawn from the built-in skill families.'**
+  String get agentsPartToolsBody;
+
+  /// No description provided for @agentsPartKnowledge.
+  ///
+  /// In en, this message translates to:
+  /// **'Knowledge'**
+  String get agentsPartKnowledge;
+
+  /// No description provided for @agentsPartKnowledgeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Collections the agent may cite, never sources it was not granted.'**
+  String get agentsPartKnowledgeBody;
+
+  /// No description provided for @agentsPartPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Policy & approvals'**
+  String get agentsPartPolicy;
+
+  /// No description provided for @agentsPartPolicyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Protected effects pause for a Harbor Sheet review before anything is written.'**
+  String get agentsPartPolicyBody;
+
+  /// No description provided for @agentsGoSkills.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse skills'**
+  String get agentsGoSkills;
+
+  /// No description provided for @agentsGoActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'View runs'**
+  String get agentsGoActivity;
+
+  /// No description provided for @skillsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed built-in skill families available to every run'**
+  String get skillsSubtitle;
+
+  /// No description provided for @skillsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter skills'**
+  String get skillsSearchHint;
+
+  /// No description provided for @skillsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 skill} other{{count} skills}}'**
+  String skillsCount(int count);
+
+  /// No description provided for @skillsToolsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools'**
+  String get skillsToolsHeading;
+
+  /// No description provided for @skillsNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No skills match the filter'**
+  String get skillsNoMatch;
+
+  /// No description provided for @skillsFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'Family'**
+  String get skillsFamily;
+
+  /// No description provided for @skillsBuiltIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in'**
+  String get skillsBuiltIn;
+
+  /// No description provided for @knowledgeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A local, citation-backed index. Sources never leave the device.'**
+  String get knowledgeSubtitle;
+
+  /// No description provided for @knowledgeIndexHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Index'**
+  String get knowledgeIndexHeading;
+
+  /// No description provided for @knowledgeIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity'**
+  String get knowledgeIdentity;
+
+  /// No description provided for @knowledgeDimension.
+  ///
+  /// In en, this message translates to:
+  /// **'Dimensions'**
+  String get knowledgeDimension;
+
+  /// No description provided for @knowledgeEmbedding.
+  ///
+  /// In en, this message translates to:
+  /// **'Embedding model'**
+  String get knowledgeEmbedding;
+
+  /// No description provided for @knowledgeRemoveConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {title}?'**
+  String knowledgeRemoveConfirmTitle(String title);
+
+  /// No description provided for @knowledgeRemoveConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Its chunks leave the index. Past citations will show the source as removed.'**
+  String get knowledgeRemoveConfirmBody;
+
+  /// No description provided for @knowledgeOpening.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening the index…'**
+  String get knowledgeOpening;
+
+  /// No description provided for @knowledgeGoModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Models'**
+  String get knowledgeGoModels;
+
+  /// No description provided for @knowledgeSourceKb.
+  ///
+  /// In en, this message translates to:
+  /// **'{kb} KB'**
+  String knowledgeSourceKb(int kb);
+
+  /// No description provided for @activitySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Durable runs and background operations'**
+  String get activitySubtitle;
+
+  /// No description provided for @activityTabRuns.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs'**
+  String get activityTabRuns;
+
+  /// No description provided for @activityTabOps.
+  ///
+  /// In en, this message translates to:
+  /// **'Operations'**
+  String get activityTabOps;
+
+  /// No description provided for @activityOpsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No background operations'**
+  String get activityOpsEmptyTitle;
+
+  /// No description provided for @activityOpsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloads, indexing and generation appear here while they run and after they finish.'**
+  String get activityOpsEmptyBody;
+
+  /// No description provided for @activityRunDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Run detail'**
+  String get activityRunDetail;
+
+  /// No description provided for @activityFinalState.
+  ///
+  /// In en, this message translates to:
+  /// **'Final state'**
+  String get activityFinalState;
+
+  /// No description provided for @activityVerifiedEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified events'**
+  String get activityVerifiedEvents;
+
+  /// No description provided for @activityTrailHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Run Trail'**
+  String get activityTrailHeading;
+
+  /// No description provided for @activityRunsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No runs} one{1 run} other{{count} runs}}'**
+  String activityRunsCount(int count);
+
+  /// No description provided for @activityReplayFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The run could not be replayed'**
+  String get activityReplayFailed;
+
+  /// No description provided for @activityOpKindAcquire.
+  ///
+  /// In en, this message translates to:
+  /// **'Model acquisition'**
+  String get activityOpKindAcquire;
+
+  /// No description provided for @activityOpKindIngest.
+  ///
+  /// In en, this message translates to:
+  /// **'Knowledge indexing'**
+  String get activityOpKindIngest;
+
+  /// No description provided for @activityOpKindGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Grounded generation'**
+  String get activityOpKindGenerate;
+
+  /// No description provided for @settingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance, language, privacy and identity'**
+  String get settingsSubtitle;
+
+  /// No description provided for @settingsThemeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get settingsThemeSystem;
+
+  /// No description provided for @settingsLanguageBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Arabic mirrors navigation and alignment; file names, formulas and identifiers keep their own direction.'**
+  String get settingsLanguageBody;
+
+  /// No description provided for @settingsPrivacyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Local Only is the default and the only policy in this release.'**
+  String get settingsPrivacyBody;
+
+  /// No description provided for @settingsAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get settingsAbout;
+
+  /// No description provided for @settingsVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get settingsVersion;
+
+  /// No description provided for @settingsCoreStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Native core'**
+  String get settingsCoreStatus;
+
+  /// No description provided for @settingsCoreLoaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Loaded'**
+  String get settingsCoreLoaded;
+
+  /// No description provided for @settingsCoreDegraded.
+  ///
+  /// In en, this message translates to:
+  /// **'Not loaded — degraded'**
+  String get settingsCoreDegraded;
+
+  /// No description provided for @settingsShortcuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard shortcuts'**
+  String get settingsShortcuts;
+
+  /// No description provided for @settingsShortcutSurfaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch surfaces'**
+  String get settingsShortcutSurfaces;
+
+  /// No description provided for @settingsShortcutPalette.
+  ///
+  /// In en, this message translates to:
+  /// **'Command palette'**
+  String get settingsShortcutPalette;
+
+  /// No description provided for @settingsLensDocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Dock the Lens on wide windows'**
+  String get settingsLensDocked;
+
+  /// No description provided for @settingsMotionNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Motion follows your system\'s reduce-motion setting.'**
+  String get settingsMotionNote;
+
+  /// No description provided for @copyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copyAction;
+
+  /// No description provided for @copiedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get copiedMessage;
+
+  /// No description provided for @activityExecutorTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Executor time'**
+  String get activityExecutorTime;
+
+  /// No description provided for @activityStepsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Steps'**
+  String get activityStepsLabel;
 }
 
 class _AppLocalizationsDelegate

@@ -1,6 +1,8 @@
+import 'package:flutter/widgets.dart';
+
 import 'tokens.dart';
 
-/// Responsive contract (UI authority §20 / 06_Design_Tokens breakpoints).
+/// Responsive contract (UI authority §4/§20, 06_Design_Tokens breakpoints).
 ///
 /// compact     <=599   bottom navigation, Lens is a modal sheet
 /// medium      600-1023 compact navigation, Lens transient
@@ -19,6 +21,9 @@ class HarborBreakpoints {
     if (width <= 1279) return HarborWindowClass.wideRail;
     return HarborWindowClass.full;
   }
+
+  static HarborWindowClass of(BuildContext context) =>
+      classify(MediaQuery.sizeOf(context).width);
 
   /// Rail width for the window class (0 = no rail).
   static double railWidth(HarborWindowClass c) => switch (c) {
@@ -51,4 +56,26 @@ class HarborBreakpoints {
     if (lensIsPersistent(c)) remaining -= HarborLayout.desktopLens;
     return remaining;
   }
+
+  /// Page gutter per class (`layout.mobileGutter/tabletGutter/desktopGutter`).
+  static double gutter(HarborWindowClass c) => switch (c) {
+        HarborWindowClass.compact => HarborLayout.mobileGutter,
+        HarborWindowClass.medium => HarborLayout.tabletGutter,
+        _ => HarborLayout.desktopGutter,
+      };
+
+  /// Compact = phone-class: bottom navigation, sheets instead of panels.
+  static bool isCompact(HarborWindowClass c) => c == HarborWindowClass.compact;
+
+  /// A side rail (compact or full) is present from 1024 up; the medium
+  /// class uses the platform's compact side pattern (icon + label rail).
+  static bool hasRail(HarborWindowClass c) => c != HarborWindowClass.compact;
+
+  /// Whether the rail shows text labels beside icons (220px rail).
+  static bool railIsExtended(HarborWindowClass c) =>
+      railWidth(c) >= HarborLayout.desktopRail;
+
+  /// Two-column surface layouts (main + aside) need a canvas of at least
+  /// this width; below it sections stack.
+  static const double twoColumnMinCanvas = 900;
 }

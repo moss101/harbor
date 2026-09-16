@@ -8,9 +8,10 @@
          are required: all storage is app-private, encrypted at rest. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="harbor_app"
+        android:label="Harbor"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"
