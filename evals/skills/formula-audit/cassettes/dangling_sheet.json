@@ -1,0 +1,11 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "formula-audit/triage#1",
+      "response": {
+        "content": "{\"decisions\": [{\"sheet\": \"Budget\", \"address\": \"B6\", \"action\": \"fix\", \"formula\": \"=Budget!A1\", \"reason\": \"The workbook has exactly one sheet, Budget; the reference to a sheet named Missing is dangling.\", \"options\": []}, {\"sheet\": \"Budget\", \"address\": \"B4\", \"action\": \"review\", \"formula\": null, \"reason\": \"Units (B3) is 0; whether that is a legitimate zero or missing data is a business judgement.\", \"options\": [\"Enter the real unit count in B3\", \"Wrap as =IF(B3=0,\\\"\\\",B2/B3) if a blank is acceptable\"]}, {\"sheet\": \"Budget\", \"address\": \"B7\", \"action\": \"review\", \"formula\": null, \"reason\": \"FOO is not a qualified function; Harbor cannot verify or rewrite it.\", \"options\": [\"Replace with a qualified function\", \"Keep the cell preserved, unverified\"]}, {\"sheet\": \"Budget\", \"address\": \"B8\", \"action\": \"review\", \"formula\": null, \"reason\": \"The lookup key \\\"zz\\\" does not exist in A2:B3.\", \"options\": [\"Correct the lookup key\", \"Wrap in IFERROR if a blank is acceptable\"]}], \"summary\": \"Static scan found 4 errors: 1 #DIV/0!, 1 #REF!, 1 #NAME? and 1 #N/A, plus one dangling sheet reference. A recalculation through the pinned engine ran and reproduced them.\"}"
+      }
+    }
+  ]
+}

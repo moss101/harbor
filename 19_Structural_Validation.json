@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "4c7ab84e16a61ca3d79b6cb7492d18f4084e5b02e14531246f477fcfd18a472e",
+  "input_manifest_sha256": "c84d2c3fbf2b758d333d29b331da4e1e9fbbc5917e52d8c2f4a0bc73d659ff16",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -11,8 +11,8 @@
     },
     {
       "path": ".gitignore",
-      "bytes": 651,
-      "sha256": "500da88a0bbd897d5aba5af0e8f243d4478cd8c482c2a46884a7118ba8e9c3c1"
+      "bytes": 910,
+      "sha256": "ad6707826f20c0b26801df969fc433aa47b046cbc805d27c7480f0413cbddb44"
     },
     {
       "path": "00_README.md",
@@ -1165,6 +1165,16 @@
       "sha256": "db122a483217358b2911dee643a8ffd538e6f231619748527b66f1f5ce7871fc"
     },
     {
+      "path": "core/harbor_core/tests/skill_evals.rs",
+      "bytes": 3980,
+      "sha256": "aa642ad4ec118d6994260ec839a182e844b7bc9b7c016985e3c26dd58f5306a3"
+    },
+    {
+      "path": "core/harbor_core/tests/skill_evals_live.rs",
+      "bytes": 9252,
+      "sha256": "2873ebea0e38621fa6f866a9a61d6211be4a05d8923a724bde0f7091f5700ddb"
+    },
+    {
       "path": "core/harbor_ffi/Cargo.toml",
       "bytes": 1071,
       "sha256": "48913e25584bda4b693762bde6a0b6f79d7a89904f1e6cb88d8e15ae28382c6f"
@@ -1750,6 +1760,61 @@
       "sha256": "529e417537f9cc04758ea74a1823799ebaac10eb37f1451e021cad69700e479b"
     },
     {
+      "path": "evals/skills/formula-audit/cases.json",
+      "bytes": 4689,
+      "sha256": "31e5a0a4b46e0cca737b41cd3e6dfc5f54651a6f7feb866cbad8e84d3053eb63"
+    },
+    {
+      "path": "evals/skills/formula-audit/cassettes/dangling_sheet.json",
+      "bytes": 1425,
+      "sha256": "0bff418b70c307f4aa59c7dbb1247db6d19001177d712dd3eeeb1f3f7fdf9b6d"
+    },
+    {
+      "path": "evals/skills/formula-audit/cassettes/hallucinated_fixes.json",
+      "bytes": 715,
+      "sha256": "dd9035342aebaffa42bebd1e14bca6c1e1ca484f0b2e38df0a4b23eb6a3a5b02"
+    },
+    {
+      "path": "evals/skills/formula-audit/cassettes/review_only.json",
+      "bytes": 1157,
+      "sha256": "0e11397b3230142db8228b7a3e050765017ebecad6e2545bde1ff56387b4dfe1"
+    },
+    {
+      "path": "evals/skills/meeting-notes/cases.json",
+      "bytes": 3757,
+      "sha256": "393b3a007fd45178f939380e8f6b5fb3e62e4997cd93969b15f48b082ff8c065"
+    },
+    {
+      "path": "evals/skills/meeting-notes/cassettes/owners_ar.json",
+      "bytes": 789,
+      "sha256": "176f1fb058942fad37aa257c10b0b9a24a094f06bd3b15c933d36143bfbb512d"
+    },
+    {
+      "path": "evals/skills/meeting-notes/cassettes/owners_en.json",
+      "bytes": 712,
+      "sha256": "4c39f53e48bc13544a63dfbeb89743e871e19a329c8e79f13e8d2510a2d2cd1f"
+    },
+    {
+      "path": "evals/skills/placeholder-fill/cases.json",
+      "bytes": 3698,
+      "sha256": "76be771cb8bed650b37adb52eb86f3d576b451eb85318d9d5209af72cf65fffd"
+    },
+    {
+      "path": "evals/skills/second-look/cases.json",
+      "bytes": 3554,
+      "sha256": "d845bdb10cac3b209c9dfe57a83a15b0386f48122478c94efa9cbcfece93c645"
+    },
+    {
+      "path": "evals/skills/second-look/cassettes/budget_plan.json",
+      "bytes": 492,
+      "sha256": "a1afaff63c0779cff17303679ad0a8249ebec653037a5a8175d2bab3baa44025"
+    },
+    {
+      "path": "evals/skills/second-look/cassettes/model_skip.json",
+      "bytes": 297,
+      "sha256": "9f58cbc82525fefa251f8a76593adab4863f7739831a0c552fc459b4dd4584b4"
+    },
+    {
       "path": "fixtures/catalog/root_public.hex",
       "bytes": 65,
       "sha256": "92c6783bc5df6eddf3f2188bc11e98bfa07d3bee83bb4dc1170cdd4f78439ad9"
@@ -2098,6 +2163,11 @@
       "path": "tools/generate_third_party_notices.py",
       "bytes": 4085,
       "sha256": "8c702aa219c185e211d13d8263294e82b68b707a59d26a9fb553a53b08a20041"
+    },
+    {
+      "path": "tools/make_skill_eval_fixtures.py",
+      "bytes": 7902,
+      "sha256": "c06db3fb4abea1449dd556bea8932deca900f29f6cbbc29ed7fc3dd9c746023a"
     },
     {
       "path": "tools/pin_engine.py",

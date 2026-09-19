@@ -1,0 +1,200 @@
+{
+  "schema": "harbor.skill_eval/v1",
+  "skill": "formula-audit",
+  "cases": [
+    {
+      "id": "dangling_sheet_fix",
+      "title": "A dangling sheet reference becomes a typed cell.set bound to the live hash; judgement calls go to review; the run parks for approval",
+      "inputs": {
+        "artifact_id": "wb"
+      },
+      "artifacts": {
+        "wb": {
+          "path": "fixtures/office/formula_errors.xlsx"
+        }
+      },
+      "cassette": "cassettes/dangling_sheet.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "approval_requested"
+        },
+        {
+          "kind": "batch_proposed",
+          "pointer": "/proposal/batch",
+          "min_ops": 1
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/op_count",
+          "value": 1
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/audit/static/counts_by_code/#DIV~10!",
+          "value": 1
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/audit/recalculated",
+          "value": true
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/plan/review",
+          "min": 3
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/audit/static/dangling_references",
+          "min": 1,
+          "max": 1
+        },
+        {
+          "kind": "state_nonempty",
+          "pointer": "/proposal/proposed_output_hash"
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "steps_le",
+          "max": 6
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 3
+        },
+        {
+          "kind": "state_empty",
+          "pointer": "/plan/rejected"
+        }
+      ]
+    },
+    {
+      "id": "review_only",
+      "title": "When nothing is deterministic the run completes with a review list and no batch",
+      "inputs": {
+        "artifact_id": "wb"
+      },
+      "artifacts": {
+        "wb": {
+          "path": "fixtures/office/formula_errors.xlsx"
+        }
+      },
+      "cassette": "cassettes/review_only.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "completed"
+        },
+        {
+          "kind": "state_empty",
+          "pointer": "/plan/operations"
+        },
+        {
+          "kind": "state_missing",
+          "pointer": "/proposal"
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/plan/review",
+          "min": 4
+        },
+        {
+          "kind": "contains",
+          "pointer": "/triage/summary",
+          "text": "#DIV/0!"
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/audit/unsupported",
+          "min": 1,
+          "max": 1
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 2
+        }
+      ]
+    },
+    {
+      "id": "hallucinated_fixes",
+      "title": "A model that re-emits the same formula or names an unreported cell proposes nothing: rejections are deterministic and the run completes without a batch",
+      "inputs": {
+        "artifact_id": "wb"
+      },
+      "artifacts": {
+        "wb": {
+          "path": "fixtures/office/formula_errors.xlsx"
+        }
+      },
+      "cassette": "cassettes/hallucinated_fixes.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "completed"
+        },
+        {
+          "kind": "state_empty",
+          "pointer": "/plan/operations"
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/plan/rejected",
+          "min": 2,
+          "max": 2
+        },
+        {
+          "kind": "contains",
+          "pointer": "/plan/rejected/*/reason",
+          "text": "unchanged"
+        },
+        {
+          "kind": "contains",
+          "pointer": "/plan/rejected/*/reason",
+          "text": "no finding"
+        },
+        {
+          "kind": "state_missing",
+          "pointer": "/proposal"
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    }
+  ]
+}

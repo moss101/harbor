@@ -1,0 +1,11 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "second-look/look#1",
+      "response": {
+        "content": "{\"applies\": false, \"skip_reason\": \"A simple factual lookup that is trivially checkable; nothing to reflect on.\", \"questions\": []}"
+      }
+    }
+  ]
+}

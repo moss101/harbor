@@ -1,0 +1,166 @@
+{
+  "schema": "harbor.skill_eval/v1",
+  "skill": "placeholder-fill",
+  "cases": [
+    {
+      "id": "full_values",
+      "title": "All placeholders mapped: a 3-op text.replace batch parks for approval; untouched paragraph stays untouched",
+      "inputs": {
+        "artifact_id": "tpl",
+        "values": {
+          "name": "Amina",
+          "ref": "HB-42",
+          "AMOUNT": "1,250.00",
+          "sender": "Harbor Team"
+        }
+      },
+      "artifacts": {
+        "tpl": {
+          "path": "fixtures/office/letter_template.docx"
+        }
+      },
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "approval_requested"
+        },
+        {
+          "kind": "batch_proposed",
+          "pointer": "/fill/batch",
+          "min_ops": 3
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/fill/op_count",
+          "value": 3
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/fill/replaced",
+          "value": 4
+        },
+        {
+          "kind": "state_empty",
+          "pointer": "/fill/unmapped"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/fill/preview/0/after",
+          "value": "Dear Amina,"
+        },
+        {
+          "kind": "not_contains",
+          "pointer": "/fill/preview/*/after",
+          "text": "{{"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/inventory/keys",
+          "value": [
+            "AMOUNT",
+            "name",
+            "ref",
+            "sender"
+          ]
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 2
+        },
+        {
+          "kind": "replay_verified"
+        }
+      ]
+    },
+    {
+      "id": "missing_value",
+      "title": "An unmapped key ends the run as needs_input; nothing is invented and nothing is proposed",
+      "inputs": {
+        "artifact_id": "tpl",
+        "values": {
+          "name": "Amina",
+          "ref": "HB-42",
+          "AMOUNT": "1,250.00"
+        }
+      },
+      "artifacts": {
+        "tpl": {
+          "path": "fixtures/office/letter_template.docx"
+        }
+      },
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "needs_input"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/fill/unmapped",
+          "value": [
+            "sender"
+          ]
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/fill/skipped_paragraphs",
+          "value": [
+            5
+          ]
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        }
+      ]
+    },
+    {
+      "id": "no_placeholders",
+      "title": "A document without placeholders completes with nothing to do",
+      "inputs": {
+        "artifact_id": "doc",
+        "values": {
+          "name": "x"
+        }
+      },
+      "artifacts": {
+        "doc": {
+          "path": "fixtures/office/structured.docx"
+        }
+      },
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "completed"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/inventory/count",
+          "value": 0
+        },
+        {
+          "kind": "state_missing",
+          "pointer": "/fill/batch"
+        },
+        {
+          "kind": "replay_verified"
+        }
+      ]
+    }
+  ]
+}

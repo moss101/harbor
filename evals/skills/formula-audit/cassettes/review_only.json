@@ -1,0 +1,11 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "formula-audit/triage#1",
+      "response": {
+        "content": "{\"decisions\": [{\"sheet\": \"Budget\", \"address\": \"B4\", \"action\": \"review\", \"formula\": null, \"reason\": \"Zero divisor needs a business decision.\", \"options\": [\"Enter the real unit count in B3\"]}, {\"sheet\": \"Budget\", \"address\": \"B6\", \"action\": \"review\", \"formula\": null, \"reason\": \"Which sheet was intended is not recoverable from the workbook alone.\", \"options\": [\"Point the reference at the intended sheet\"]}, {\"sheet\": \"Budget\", \"address\": \"B7\", \"action\": \"review\", \"formula\": null, \"reason\": \"FOO is outside the qualified function set.\", \"options\": [\"Replace with a qualified function\"]}, {\"sheet\": \"Budget\", \"address\": \"B8\", \"action\": \"review\", \"formula\": null, \"reason\": \"Lookup key not found.\", \"options\": [\"Correct the lookup key\"]}], \"summary\": \"Static scan found 4 errors (1 #DIV/0!, 1 #REF!, 1 #NAME?, 1 #N/A); a recalculation ran. None is a deterministic fix; all four need a human decision.\"}"
+      }
+    }
+  ]
+}

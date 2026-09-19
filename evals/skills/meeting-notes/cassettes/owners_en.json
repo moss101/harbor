@@ -1,0 +1,11 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "meeting-notes/minutes#1",
+      "response": {
+        "content": "{\"summary\": \"The team decided to move the archive to local storage this quarter; Omar will write the migration plan by Friday 26 September. Backup verification ownership and the runbook update remain open.\", \"decisions\": [\"The archive moves to local storage this quarter.\"], \"actions\": [{\"text\": \"Write the migration plan\", \"owner\": \"Omar\", \"due\": \"Friday 26 September\"}, {\"text\": \"Update the runbook\", \"owner\": null, \"due\": null}], \"open_questions\": [\"Who covers the backup verification?\"], \"language\": \"en\"}"
+      }
+    }
+  ]
+}

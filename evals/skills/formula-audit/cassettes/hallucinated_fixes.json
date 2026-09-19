@@ -1,0 +1,11 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "formula-audit/triage#1",
+      "response": {
+        "content": "{\"decisions\": [{\"sheet\": \"Budget\", \"address\": \"B4\", \"action\": \"fix\", \"formula\": \"=B2/B3\", \"reason\": \"Dangling reference\", \"options\": []}, {\"sheet\": \"Budget\", \"address\": \"Z99\", \"action\": \"fix\", \"formula\": \"=1\", \"reason\": \"Dangling reference\", \"options\": []}, {\"sheet\": \"Budget\", \"address\": \"B8\", \"action\": \"review\", \"formula\": null, \"reason\": \"Lookup key not found.\", \"options\": [\"Correct the key\"]}], \"summary\": \"The audit identified 4 static errors and 1 unqualified function.\"}"
+      }
+    }
+  ]
+}

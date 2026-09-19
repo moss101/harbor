@@ -1,0 +1,139 @@
+{
+  "schema": "harbor.skill_eval/v1",
+  "skill": "second-look",
+  "cases": [
+    {
+      "id": "budget_plan",
+      "title": "A drafted plan with figures gets 2–3 specific questions under 120 characters",
+      "inputs": {
+        "material": "Q2 plan: revenue grows 12% on Q1 to $540k; marketing takes 40% of spend ($96k); salaries $180k; we hire two engineers in May. Net margin lands at 18%.",
+        "material_kind": "plan",
+        "user_request": "Here is my Q2 budget plan, anything I should double-check?"
+      },
+      "cassette": "cassettes/budget_plan.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "completed"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/look/applies",
+          "value": true
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/look/questions",
+          "min": 2,
+          "max": 3
+        },
+        {
+          "kind": "string_len",
+          "pointer": "/look/questions/*",
+          "max": 120
+        },
+        {
+          "kind": "contains",
+          "pointer": "/look/questions/*",
+          "text": "?"
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 0
+        },
+        {
+          "kind": "steps_le",
+          "max": 4
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "own_summary",
+      "title": "A summary of the user's own material is skipped by rule before any model call",
+      "inputs": {
+        "material": "Summary of Monday's sync: we agreed to move the archive to local storage; Sara owns the migration plan by Friday.",
+        "material_kind": "summary_of_own_material",
+        "user_request": "Summarize my own meeting notes"
+      },
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "abstained"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/look/applies",
+          "value": false
+        },
+        {
+          "kind": "state_empty",
+          "pointer": "/look/questions"
+        },
+        {
+          "kind": "contains",
+          "pointer": "/look/skip_reason",
+          "text": "Skipped by rule"
+        },
+        {
+          "kind": "steps_le",
+          "max": 3
+        },
+        {
+          "kind": "replay_verified"
+        }
+      ]
+    },
+    {
+      "id": "model_skip",
+      "title": "An unclassified material that is a simple lookup reaches the model, which declines with a reason",
+      "inputs": {
+        "material": "Paris is the capital of France.",
+        "user_request": "What is the capital of France?"
+      },
+      "cassette": "cassettes/model_skip.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "abstained"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/look/applies",
+          "value": false
+        },
+        {
+          "kind": "state_empty",
+          "pointer": "/look/questions"
+        },
+        {
+          "kind": "state_nonempty",
+          "pointer": "/look/skip_reason"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    }
+  ]
+}

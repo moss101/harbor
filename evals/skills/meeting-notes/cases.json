@@ -1,0 +1,120 @@
+{
+  "schema": "harbor.skill_eval/v1",
+  "skill": "meeting-notes",
+  "cases": [
+    {
+      "id": "owners_en",
+      "title": "Owners and dates are only ever names and dates that appear in the transcript; unowned actions are null, not invented",
+      "inputs": {
+        "transcript": "Sara: Let's decide on the archive migration. I propose we move it to local storage this quarter.\nOmar: Agreed. I can write the migration plan by Friday 26 September.\nSara: Decision then: archive moves to local storage. Omar owns the plan.\nLina: One open question: who covers the backup verification? Nobody yet.\nSara: Park it as open. Also, someone should update the runbook — no owner yet."
+      },
+      "cassette": "cassettes/owners_en.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "state_matches_schema",
+          "pointer": "/minutes",
+          "schema": {
+            "type": "object",
+            "required": [
+              "summary",
+              "decisions",
+              "actions",
+              "open_questions",
+              "language"
+            ]
+          }
+        },
+        {
+          "kind": "values_appear_in",
+          "pointer": "/verified_actions/*/item/owner",
+          "source": "/input/transcript",
+          "allow_null": true
+        },
+        {
+          "kind": "values_appear_in",
+          "pointer": "/verified_actions/*/item/due",
+          "source": "/input/transcript",
+          "allow_null": true
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/verified_actions/1/item/owner",
+          "value": null
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/minutes/decisions",
+          "min": 1
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/minutes/open_questions",
+          "min": 1
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/language/code",
+          "value": "en"
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 101
+        },
+        {
+          "kind": "steps_le",
+          "max": 105
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        },
+        {
+          "kind": "state_empty",
+          "pointer": "/verified_actions/0/dropped"
+        }
+      ]
+    },
+    {
+      "id": "owners_ar",
+      "title": "Arabic transcript yields Arabic minutes with names preserved verbatim",
+      "inputs": {
+        "transcript": "سارة: نحتاج إلى قرار بشأن نقل الأرشيف إلى التخزين المحلي هذا الربع.\nعمر: موافق. سأكتب خطة النقل بحلول الجمعة 26 سبتمبر.\nسارة: إذن القرار: ينتقل الأرشيف إلى التخزين المحلي، وعمر مسؤول عن الخطة.\nلينا: سؤال مفتوح: من يتولى التحقق من النسخ الاحتياطي؟ لا أحد بعد."
+      },
+      "cassette": "cassettes/owners_ar.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "values_appear_in",
+          "pointer": "/verified_actions/*/item/owner",
+          "source": "/input/transcript",
+          "allow_null": true
+        },
+        {
+          "kind": "contains",
+          "pointer": "/minutes/summary",
+          "text": "عمر"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/language/code",
+          "value": "ar"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    }
+  ]
+}

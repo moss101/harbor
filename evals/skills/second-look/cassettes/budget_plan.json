@@ -1,0 +1,11 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "second-look/look#1",
+      "response": {
+        "content": "{\"applies\": true, \"skip_reason\": null, \"questions\": [\"How does the 12% growth in Q2 compare with my last two years of actual bookings?\", \"What assumption makes marketing 40% of spend \\u2014 is that from my data or a default?\", \"I didn't give a headcount plan \\u2014 does the $180k salary line already include hires?\"]}"
+      }
+    }
+  ]
+}
