@@ -134,11 +134,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Agents combine a model, tools, skills, knowledge and policy. Create one to delegate multi-step work with durable, inspectable runs.';
 
   @override
-  String get skillsEmptyTitle => 'Built-in skills ready';
+  String get skillsEmptyTitle => 'Built-in skills loaded';
 
   @override
   String get skillsEmptyBody =>
-      'Ship-quality skills for documents, spreadsheets, research, translation and more.';
+      'Skill definitions for documents, spreadsheets, research, translation and more. Runnable ones carry an executable graph.';
 
   @override
   String get knowledgeEmptyTitle => 'Knowledge is empty';
@@ -930,7 +930,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get skillsSubtitle =>
-      'Signed built-in skill families available to every run';
+      'Built-in skill definitions. Graph skills run through the durable executor; prose skills are declarations until decomposed.';
 
   @override
   String get skillsSearchHint => 'Filter skills';
@@ -1102,4 +1102,143 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activityStepsLabel => 'Steps';
+
+  @override
+  String get skillsRunnable => 'Runnable graph';
+
+  @override
+  String get skillsDeclaration => 'Declaration only';
+
+  @override
+  String get skillsDeclarationBody =>
+      'This skill is a prose declaration: it has no executable graph yet, so nothing runs it. Its instructions and allowlist are the spec for a future graph.';
+
+  @override
+  String get skillsGraphHeading => 'Graph';
+
+  @override
+  String skillsGraphNodes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nodes',
+      one: '1 node',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String skillsGraphModelNodes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count model nodes, schema-constrained',
+      one: '1 model node, schema-constrained',
+      zero: 'No model calls — fully deterministic',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String skillsGraphBudgets(int steps, int tools) {
+    return 'Budget: $steps steps, $tools tool calls';
+  }
+
+  @override
+  String get skillsRun => 'Run';
+
+  @override
+  String skillsRunTitle(String title) {
+    return 'Run $title';
+  }
+
+  @override
+  String get skillsAttachFile => 'Attach file';
+
+  @override
+  String skillsAttached(String name) {
+    return 'Attached: $name';
+  }
+
+  @override
+  String get skillsValuesHint => 'One value per line: key = value';
+
+  @override
+  String get skillsNeedsModel =>
+      'This skill has model nodes. Install a chat model in Models to run it; the model only fills typed slots.';
+
+  @override
+  String get skillsModelLabel => 'Model';
+
+  @override
+  String get skillsRunning => 'Running on device…';
+
+  @override
+  String get skillsRunFailed => 'Run failed';
+
+  @override
+  String get skillsOutcome => 'Outcome';
+
+  @override
+  String get skillsOutcomeCompleted => 'Completed';
+
+  @override
+  String get skillsOutcomeNeedsInput => 'Needs input — nothing was invented';
+
+  @override
+  String get skillsOutcomeAbstained => 'Abstained';
+
+  @override
+  String get skillsRunState => 'Run state';
+
+  @override
+  String get skillsTrailHeading => 'Node trail';
+
+  @override
+  String get skillsApprovalTitle => 'Approval required';
+
+  @override
+  String skillsApprovalBody(String effect, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count operations',
+      one: '1 operation',
+    );
+    return 'The run proposed a $effect affecting $_temp0. Nothing has been written. The proposal is bound to the base content hash and the hash of the output it would produce.';
+  }
+
+  @override
+  String get skillsApprove => 'Approve';
+
+  @override
+  String get skillsReject => 'Reject';
+
+  @override
+  String get skillsBaseHash => 'Base content hash';
+
+  @override
+  String get skillsProposedHash => 'Proposed output hash';
+
+  @override
+  String get skillsOutputsHeading => 'Outputs';
+
+  @override
+  String get skillsRequiredField => 'Required';
+
+  @override
+  String get skillsCancelRun => 'Cancel run';
+
+  @override
+  String get skillsInputsHeading => 'Inputs';
+
+  @override
+  String skillsExecutedOn(String model) {
+    return 'Executed on $model';
+  }
+
+  @override
+  String skillsStructuredMode(String mode) {
+    return 'Structured output: $mode';
+  }
 }

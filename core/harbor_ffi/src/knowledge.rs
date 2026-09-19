@@ -655,6 +655,12 @@ pub struct RagAnswer {
 }
 
 impl ChatHandle {
+    /// The underlying provider (skill graph executors call the provider
+    /// contract directly; grounded Ask keeps using the RAG path).
+    pub fn provider(&self) -> &GgufLlamaCppProvider {
+        &self.provider
+    }
+
     pub fn new(models_root: &Path) -> Self {
         ChatHandle {
             provider: GgufLlamaCppProvider::new(models_root).expect("chat provider init"),
@@ -755,5 +761,14 @@ impl ChatHandle {
             &AtomicBool::new(false),
             None,
         )
+    }
+}
+
+/// `knowledge.search` as the tool layer sees it: the same citation shape
+/// the FFI exposes, so a graph run and the Ask surface ground on the same
+/// evidence.
+impl harbor_core::tools::KnowledgeSearch for KnowledgeService {
+    fn search(&self, query: &str, top_k: usize) -> Result<serde_json::Value, String> {
+        KnowledgeService::search(self, query, top_k).map_err(|e| e.to_string())
     }
 }

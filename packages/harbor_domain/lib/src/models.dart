@@ -10,6 +10,10 @@ final class SkillSummary {
     required this.family,
     required this.description,
     required this.tools,
+    this.schema = 'harbor.skill/v1',
+    this.runnable = false,
+    this.graph,
+    this.requires = const [],
   });
 
   factory SkillSummary.fromMap(Map<String, dynamic> m) => SkillSummary(
@@ -18,10 +22,70 @@ final class SkillSummary {
         family: m['family'] as String,
         description: m['description'] as String? ?? '',
         tools: (m['tools'] as List?)?.cast<String>() ?? const [],
+        schema: m['schema'] as String? ?? 'harbor.skill/v1',
+        runnable: m['runnable'] as bool? ?? false,
+        graph: m['graph'] is Map
+            ? SkillGraphInfo.fromMap(
+                (m['graph'] as Map).cast<String, dynamic>())
+            : null,
+        requires: (m['requires'] as List?)?.cast<String>() ?? const [],
       );
 
-  final String id, title, family, description;
+  final String id, title, family, description, schema;
+  final List<String> tools, requires;
+
+  /// True when the core carries an executable graph for this skill
+  /// (decision 0006); prose-only skills are declarations.
+  final bool runnable;
+  final SkillGraphInfo? graph;
+}
+
+/// Graph facts the core reports for a runnable skill: enough for the UI to
+/// build an input form and say honestly whether the model is involved.
+final class SkillGraphInfo {
+  const SkillGraphInfo({
+    required this.id,
+    required this.version,
+    required this.nodeCount,
+    required this.modelNodes,
+    required this.tools,
+    required this.inputs,
+    required this.maxSteps,
+    required this.maxToolCalls,
+  });
+
+  factory SkillGraphInfo.fromMap(Map<String, dynamic> m) => SkillGraphInfo(
+        id: m['id'] as String,
+        version: (m['version'] as num?)?.toInt() ?? 1,
+        nodeCount: (m['node_count'] as num?)?.toInt() ?? 0,
+        modelNodes: (m['model_nodes'] as num?)?.toInt() ?? 0,
+        tools: (m['tools'] as List?)?.cast<String>() ?? const [],
+        inputs: (m['inputs'] as Map?)?.cast<String, dynamic>() ?? const {},
+        maxSteps: (m['budgets']?['max_steps'] as num?)?.toInt() ?? 0,
+        maxToolCalls: (m['budgets']?['max_tool_calls'] as num?)?.toInt() ?? 0,
+      );
+
+  final String id;
+  final int version, nodeCount, modelNodes, maxSteps, maxToolCalls;
   final List<String> tools;
+
+  /// JSON Schema of the run inputs (bound at /input).
+  final Map<String, dynamic> inputs;
+
+  bool get usesModel => modelNodes > 0;
+
+  /// Input properties in declaration order with their schemas.
+  List<MapEntry<String, Map<String, dynamic>>> get inputProperties {
+    final props = (inputs['properties'] as Map?)?.cast<String, dynamic>();
+    if (props == null) return const [];
+    return [
+      for (final e in props.entries)
+        MapEntry(e.key, (e.value as Map?)?.cast<String, dynamic>() ?? const {}),
+    ];
+  }
+
+  List<String> get requiredInputs =>
+      (inputs['required'] as List?)?.cast<String>() ?? const [];
 }
 
 final class ModelInfo {

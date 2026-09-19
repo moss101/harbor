@@ -5,9 +5,13 @@ import 'package:harbor_ui/harbor_ui.dart';
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/harbor_service.dart';
+import 'skill_run.dart';
 
-/// Skills library (UX-026): the signed built-in skill families from the
-/// core, filterable, grouped by family, with a detail sheet listing tools.
+/// Skills library (UX-026): the built-in skill definitions from the core,
+/// filterable, grouped by family, with a detail sheet listing tools and —
+/// for graph-bearing skills (decision 0006) — the graph facts and a Run
+/// action. Prose skills are shown honestly as declarations: nothing in
+/// the core executes them yet.
 class SkillsSurface extends StatefulWidget {
   const SkillsSurface({super.key});
 
@@ -55,6 +59,8 @@ class _SkillsSurfaceState extends State<SkillsSurface> {
     final l10n = AppLocalizations.of(context)!;
     final t = HarborTheme.of(context);
     final compact = HarborBreakpoints.isCompact(HarborBreakpoints.of(context));
+    final service = HarborServiceProvider.of(context).notifier;
+    final graph = s.graph;
     final content = SafeArea(
       top: false,
       child: SingleChildScrollView(
@@ -66,9 +72,14 @@ class _SkillsSurfaceState extends State<SkillsSurface> {
             Row(children: [
               Expanded(child: Text(s.title, style: t.text.h2Of(t.colors.ink))),
               StatusBadge(
-                semantic: ExecutionSemantic.local,
-                icon: Icons.verified_outlined,
-                label: l10n.skillsBuiltIn,
+                semantic: s.runnable
+                    ? ExecutionSemantic.local
+                    : ExecutionSemantic.hybrid,
+                icon: s.runnable
+                    ? Icons.account_tree_outlined
+                    : Icons.description_outlined,
+                label:
+                    s.runnable ? l10n.skillsRunnable : l10n.skillsDeclaration,
               ),
             ]),
             const SizedBox(height: HarborSpace.s2),
@@ -76,6 +87,28 @@ class _SkillsSurfaceState extends State<SkillsSurface> {
             const SizedBox(height: HarborSpace.s4),
             HarborKeyValue(label: l10n.skillsFamily, value: s.family),
             HarborKeyValue(label: 'ID', value: s.id, identifier: true),
+            HarborKeyValue(label: 'Schema', value: s.schema, identifier: true),
+            if (graph != null) ...[
+              const SizedBox(height: HarborSpace.s3),
+              Text(l10n.skillsGraphHeading,
+                  style: t.text.captionOf(t.colors.inkMuted)),
+              const SizedBox(height: HarborSpace.s2),
+              HarborKeyValue(
+                  label: l10n.skillsGraphNodes(graph.nodeCount),
+                  value: l10n.skillsGraphModelNodes(graph.modelNodes)),
+              HarborKeyValue(
+                  label: 'v${graph.version}',
+                  value: l10n.skillsGraphBudgets(
+                      graph.maxSteps, graph.maxToolCalls)),
+            ] else ...[
+              const SizedBox(height: HarborSpace.s3),
+              HarborBanner(
+                tone: HarborBannerTone.info,
+                dense: true,
+                title: l10n.skillsDeclaration,
+                body: l10n.skillsDeclarationBody,
+              ),
+            ],
             const SizedBox(height: HarborSpace.s3),
             Text(l10n.skillsToolsHeading,
                 style: t.text.captionOf(t.colors.inkMuted)),
@@ -88,6 +121,21 @@ class _SkillsSurfaceState extends State<SkillsSurface> {
                   HarborPill(tool, icon: Icons.build_outlined),
               ],
             ),
+            if (s.runnable && service != null) ...[
+              const SizedBox(height: HarborSpace.s4),
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: FilledButton.icon(
+                  key: ValueKey('skill-run-${s.id}'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    SkillRunSheet.show(context, s, service);
+                  },
+                  icon: const Icon(Icons.play_arrow_outlined),
+                  label: Text(l10n.skillsRun),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -239,6 +287,18 @@ class _SkillsSurfaceState extends State<SkillsSurface> {
                                   Row(children: [
                                     HarborPill(l10n.toolsCount(s.tools.length),
                                         icon: Icons.build_outlined),
+                                    const SizedBox(width: HarborSpace.s2),
+                                    Flexible(
+                                      child: HarborPill(
+                                        s.runnable
+                                            ? l10n.skillsRunnable
+                                            : l10n.skillsDeclaration,
+                                        icon: s.runnable
+                                            ? Icons.account_tree_outlined
+                                            : Icons.description_outlined,
+                                        brand: s.runnable,
+                                      ),
+                                    ),
                                     const Spacer(),
                                     Icon(Icons.chevron_right,
                                         size: 18, color: t.colors.inkMuted),

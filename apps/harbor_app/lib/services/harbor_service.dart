@@ -344,6 +344,52 @@ class HarborService extends ChangeNotifier {
     return answer;
   }
 
+  /// Run a graph skill as a cancellable background op (decision 0006).
+  /// Artifacts are passed as bytes: this layer holds the user-granted file
+  /// handles, the core never sees a path. Returns the run report; a
+  /// report in `WAITING_APPROVAL` carries `status.approval` for
+  /// [decideRun]. Throws [ffi.HarborCoreException] on failure.
+  Future<Map<String, dynamic>> startSkillRun({
+    required String skillId,
+    required Map<String, dynamic> inputs,
+    List<SkillArtifact> artifacts = const [],
+    Map<String, dynamic> hostInputs = const {},
+    String? chatPackage,
+  }) async {
+    final report = await _runOp('op.start_skill_run', {
+      'skill_id': skillId,
+      'inputs': inputs,
+      'host_inputs': hostInputs,
+      if (chatPackage != null) 'chat_package': chatPackage,
+      'artifacts': [
+        for (final a in artifacts)
+          {'id': a.id, 'name': a.name, 'data_b64': base64Encode(a.bytes)},
+      ],
+    });
+    await refresh();
+    return report;
+  }
+
+  /// Decide a pending approval; the run continues from the approval node
+  /// and the returned report is the run's new terminal picture.
+  Future<Map<String, dynamic>> decideRun(String runId,
+      {required bool approved}) async {
+    final report =
+        await _call('run.decide', {'run_id': runId, 'approved': approved});
+    await refresh();
+    return report;
+  }
+
+  /// Durable picture of a graph run (trail with node ids and io hashes,
+  /// outcome, pending approval), read from the encrypted snapshot store.
+  Future<Map<String, dynamic>?> runSnapshot(String runId) async {
+    try {
+      return await _call('run.snapshot', {'run_id': runId});
+    } on ffi.HarborCoreException {
+      return null;
+    }
+  }
+
   /// Cancel a running background op (acquisition, ingest, generation).
   Future<void> cancelOp(String opId) async {
     try {
@@ -507,4 +553,14 @@ class HarborServiceProvider extends InheritedNotifier<HarborService> {
 
   static HarborServiceProvider of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<HarborServiceProvider>()!;
+}
+
+/// Bytes of a file the user attached to a skill run, keyed by the id the
+/// run inputs reference (e.g. `artifact_id: "a1"`).
+final class SkillArtifact {
+  const SkillArtifact(
+      {required this.id, required this.name, required this.bytes});
+  final String id;
+  final String name;
+  final List<int> bytes;
 }

@@ -101,6 +101,7 @@ void main() {
   _appendLiveTests();
   _appendPreviewTest();
   _appendSkillsTest();
+  _appendSkillRunTests();
   _appendKnowledgeTest();
   _appendRagTest();
   _appendComposerTest();
@@ -448,6 +449,100 @@ void _appendSkillsTest() {
     await tester.pump();
     expect(find.text('Document Intelligence'), findsNothing);
     expect(find.text('Privacy Inspector'), findsOneWidget);
+  });
+}
+
+void _appendSkillRunTests() {
+  testWidgets(
+      'skills surface marks graph skills runnable and opens the run form',
+      (tester) async {
+    await pumpApp(tester);
+    if (!coreAvailable) return;
+    await goTo(tester, 'Skills');
+    // Cards say honestly which skills can run: the four decomposed graph
+    // skills are runnable, the prose ones are declarations.
+    expect(find.text('Runnable graph'), findsWidgets);
+    expect(find.text('Declaration only'), findsWidgets);
+    final sp = HarborServiceProvider.of(
+        tester.element(find.textContaining('tools').first));
+    final runnable = sp.notifier!.skills.where((s) => s.runnable).toList();
+    expect(
+        runnable.map((s) => s.id),
+        containsAll([
+          'placeholder-fill',
+          'formula-audit',
+          'second-look',
+          'meeting-notes'
+        ]));
+    expect(
+        runnable.firstWhere((s) => s.id == 'placeholder-fill').graph!.usesModel,
+        isFalse);
+    // Open the detail sheet of a runnable skill: graph facts + Run.
+    await tester.enterText(find.byType(TextField).first, 'placeholder');
+    await tester.pump();
+    await tester.tap(find.text('Placeholder & Form Fill'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('No model calls — fully deterministic'), findsOneWidget);
+    expect(find.byKey(const ValueKey('skill-run-placeholder-fill')),
+        findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('skill-run-placeholder-fill')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    // The run form is generated from the graph's input schema: an
+    // artifact attach button, a values editor, and Run disabled until the
+    // required inputs are present.
+    expect(find.byKey(const ValueKey('attach-artifact_id')), findsOneWidget);
+    expect(find.byKey(const ValueKey('input-values')), findsOneWidget);
+    final run = tester
+        .widget<FilledButton>(find.byKey(const ValueKey('skill-run-button')));
+    expect(run.onPressed, isNull);
+  });
+
+  testWidgets(
+      'placeholder fill runs through the service to approval and completion',
+      (tester) async {
+    if (!coreAvailable) return;
+    HarborService? service;
+    Map<String, dynamic>? report;
+    Map<String, dynamic>? decided;
+    await tester.runAsync(() async {
+      final dir = await Directory.systemTemp.createTemp('harbor-skill-');
+      final s = await HarborService.open(
+          libraryPath: dylibPath,
+          dataRoot: dir.path,
+          workspaceId: 'ws-skill',
+          deviceRootHex:
+              'f47973db602cbd13c408a3a5cdf3a8eeaa3bd6870b76607542d75ff568526c3c');
+      await s.refresh();
+      service = s;
+      final bytes = await File('$repoRoot/fixtures/office/letter_template.docx')
+          .readAsBytes();
+      report = await s.startSkillRun(
+        skillId: 'placeholder-fill',
+        inputs: {
+          'artifact_id': 'a1',
+          'values': {
+            'name': 'Amina',
+            'ref': 'HB-42',
+            'AMOUNT': '1,250.00',
+            'sender': 'Harbor Team'
+          },
+        },
+        artifacts: [
+          SkillArtifact(id: 'a1', name: 'letter_template.docx', bytes: bytes)
+        ],
+      );
+      decided = await s.decideRun(report!['run_id'] as String, approved: true);
+    });
+    addTearDown(() => service?.close());
+    expect(report!['state'], 'WAITING_APPROVAL');
+    expect(report!['status']['approval']['batch']['operations'], hasLength(3));
+    expect(decided!['state'], 'COMPLETED');
+    expect(
+        decided!['status']['outputs']['approvals.approve']['approved'], isTrue);
+    // The run is in the durable run list the Activity surface reads.
+    expect(service!.runs.map((r) => r['run_id']), contains(report!['run_id']));
   });
 }
 

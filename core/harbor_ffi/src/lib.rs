@@ -984,20 +984,279 @@ fn dispatch(
         "skills.list" => {
             let skills = harbor_core::skills::builtin_skills()
                 .map_err(|e| HarborError::Other(e.to_string()))?;
-            let catalog = harbor_core::skills::CapabilityCatalog::default();
+            let registry = harbor_core::tools::ToolRegistry::builtin();
+            let catalog = registry.catalog();
             let mut out = Vec::new();
             for s in &skills {
                 s.validate(&catalog)
                     .map_err(|e| HarborError::Other(e.to_string()))?;
+                // Graph-bearing skills are runnable; prose skills are
+                // declarations until decomposed (decision 0006).
+                let graph = s.graph.as_ref().map(|g| {
+                    serde_json::json!({
+                        "id": g.id,
+                        "version": g.version,
+                        "node_count": g.nodes.len(),
+                        "model_nodes": g.model_nodes().len(),
+                        "tools": g.tools().into_iter().collect::<Vec<_>>(),
+                        "inputs": g.inputs,
+                        "budgets": {"max_steps": g.budgets.max_steps, "max_tool_calls": g.budgets.max_tool_calls},
+                    })
+                });
+                let tools: Vec<String> = s
+                    .graph
+                    .as_ref()
+                    .map(|g| g.tools().into_iter().collect())
+                    .unwrap_or_else(|| s.tools.clone());
                 out.push(serde_json::json!({
                     "id": s.id,
                     "title": s.title,
                     "family": s.family,
                     "description": s.description,
-                    "tools": s.tools,
+                    "schema": s.schema,
+                    "tools": tools,
+                    "runnable": s.has_graph(),
+                    "graph": graph,
+                    "requires": s.requires,
                 }));
             }
             Ok(serde_json::json!({ "skills": out }))
+        }
+        "tools.list" => {
+            let registry = harbor_core::tools::ToolRegistry::builtin();
+            let tools: Vec<serde_json::Value> = registry
+                .specs()
+                .into_iter()
+                .map(|t| {
+                    serde_json::json!({
+                        "id": t.id,
+                        "description": t.description,
+                        "risk": t.risk.as_str(),
+                        "requires": t.requires,
+                        "timeout_ms": t.timeout_ms,
+                        "max_output_bytes": t.max_output_bytes,
+                    })
+                })
+                .collect();
+            Ok(serde_json::json!({ "tools": tools }))
+        }
+        // --- skill graph runs (decision 0006) ------------------------------
+        "op.start_skill_run" => {
+            let skill_id = args
+                .get("skill_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing skill_id".into()))?
+                .to_string();
+            let skill = harbor_core::skills::builtin_skills()
+                .map_err(|e| HarborError::Other(e.to_string()))?
+                .into_iter()
+                .find(|s| s.id == skill_id)
+                .ok_or_else(|| HarborError::Other(format!("unknown skill {skill_id}")))?;
+            let graph = skill.graph.clone().ok_or_else(|| {
+                HarborError::Other(format!("skill {skill_id} has no graph and cannot run"))
+            })?;
+            let inputs = args.get("inputs").cloned().unwrap_or(serde_json::json!({}));
+            let host_inputs = args
+                .get("host_inputs")
+                .cloned()
+                .unwrap_or(serde_json::json!({}));
+            let chat_package = args
+                .get("chat_package")
+                .and_then(|v| v.as_str())
+                .map(str::to_string);
+            let workspace_root = args
+                .get("workspace_root")
+                .and_then(|v| v.as_str())
+                .map(std::path::PathBuf::from);
+            // Attached artifacts arrive as bytes: the Flutter layer holds
+            // the user-granted file handles and passes content, never paths.
+            let mut artifacts = harbor_core::tools::MemoryArtifacts::new();
+            for a in args
+                .get("artifacts")
+                .and_then(|v| v.as_array())
+                .cloned()
+                .unwrap_or_default()
+            {
+                use base64::Engine as _;
+                let id = a.get("id").and_then(|v| v.as_str()).unwrap_or("artifact");
+                let name = a.get("name").and_then(|v| v.as_str()).unwrap_or(id);
+                let data = a.get("data_b64").and_then(|v| v.as_str()).ok_or_else(|| {
+                    HarborError::Other(format!("artifact {id}: missing data_b64"))
+                })?;
+                let bytes = base64::engine::general_purpose::STANDARD
+                    .decode(data)
+                    .map_err(|e| HarborError::Other(format!("artifact {id}: b64: {e}")))?;
+                artifacts.insert(id, name, bytes);
+            }
+            if !graph.model_nodes().is_empty() && chat_package.is_none() {
+                return Err(HarborError::Other(
+                    "this skill has model nodes; choose an installed chat model (chat_package)"
+                        .into(),
+                ));
+            }
+            let (op_id, entry) = register_op("skill_run");
+            let knowledge = ws.knowledge.clone();
+            let chat = if chat_package.is_some() {
+                Some(
+                    ws.chat
+                        .get_or_insert_with(|| {
+                            Arc::new(crate::knowledge::ChatHandle::new(
+                                &ws.data_root.join("models"),
+                            ))
+                        })
+                        .clone(),
+                )
+            } else {
+                None
+            };
+            let agent_log = ws.inner.agent_log.clone();
+            let blobs = ws.inner.blobs_arc();
+            let workspace_id = ws.inner.workspace_id.clone();
+            let data_root = ws.data_root.clone();
+            let entry_clone = entry.clone();
+            let progress = entry.progress.clone();
+            std::thread::spawn(move || {
+                progress.set_phase("running");
+                progress.set_detail(&skill.id);
+                let store =
+                    harbor_core::executor::BlobStateStore::new(blobs, &workspace_id, &data_root);
+                let registry = harbor_core::tools::ToolRegistry::builtin();
+                let provider: Option<&dyn harbor_inference::ModelProvider> = chat
+                    .as_ref()
+                    .map(|c| c.provider() as &dyn harbor_inference::ModelProvider);
+                let knowledge_ref: Option<&dyn harbor_core::tools::KnowledgeSearch> = knowledge
+                    .as_ref()
+                    .map(|k| k.as_ref() as &dyn harbor_core::tools::KnowledgeSearch);
+                let exec = harbor_core::executor::Executor::new(harbor_core::executor::Host {
+                    log: agent_log,
+                    lease_db: harbor_core::executor::lease_db_path(&data_root),
+                    store: &store,
+                    registry: &registry,
+                    provider,
+                    artifacts: &artifacts,
+                    knowledge: knowledge_ref,
+                    workspace_root,
+                    cancel: &progress.cancel,
+                    executor_id: "ffi-skill-executor".into(),
+                });
+                let result = exec.start(harbor_core::executor::RunRequest {
+                    run_id: None,
+                    workspace_id,
+                    graph,
+                    skill_id: Some(skill.id.clone()),
+                    skill_instructions: Some(skill.instructions.clone()),
+                    inputs,
+                    host_inputs,
+                    model: chat_package
+                        .map(|p| harbor_inference::ModelRef::InstalledPackage { package_id: p }),
+                });
+                let cancelled = progress.is_cancelled();
+                match result {
+                    Ok(report) => {
+                        progress.set_phase("done");
+                        complete_op(
+                            &entry_clone,
+                            serde_json::to_value(&report).map_err(|e| e.to_string()),
+                            cancelled,
+                        )
+                    }
+                    Err(e) => complete_op(&entry_clone, Err(e.to_string()), cancelled),
+                }
+            });
+            Ok(serde_json::json!({ "op_id": op_id }))
+        }
+        "run.decide" => {
+            let run_id = args
+                .get("run_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing run_id".into()))?;
+            let approved = args
+                .get("approved")
+                .and_then(|v| v.as_bool())
+                .ok_or_else(|| HarborError::Other("missing approved".into()))?;
+            let store = harbor_core::executor::BlobStateStore::new(
+                ws.inner.blobs_arc(),
+                &ws.inner.workspace_id,
+                &ws.data_root,
+            );
+            let registry = harbor_core::tools::ToolRegistry::builtin();
+            let artifacts = harbor_core::tools::MemoryArtifacts::new();
+            let never = AtomicBool::new(false);
+            let chat = ws.chat.clone();
+            let provider: Option<&dyn harbor_inference::ModelProvider> = chat
+                .as_ref()
+                .map(|c| c.provider() as &dyn harbor_inference::ModelProvider);
+            let exec = harbor_core::executor::Executor::new(harbor_core::executor::Host {
+                log: ws.inner.agent_log.clone(),
+                lease_db: harbor_core::executor::lease_db_path(&ws.data_root),
+                store: &store,
+                registry: &registry,
+                provider,
+                artifacts: &artifacts,
+                knowledge: None,
+                workspace_root: None,
+                cancel: &never,
+                executor_id: "ffi-decide".into(),
+            });
+            let report = exec
+                .decide(run_id, approved)
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            serde_json::to_value(&report).map_err(|e| HarborError::Other(e.to_string()))
+        }
+        "run.snapshot" => {
+            let run_id = args
+                .get("run_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing run_id".into()))?;
+            let store = harbor_core::executor::BlobStateStore::new(
+                ws.inner.blobs_arc(),
+                &ws.inner.workspace_id,
+                &ws.data_root,
+            );
+            use harbor_core::executor::RunStateStore as _;
+            let snap = store
+                .load(run_id)
+                .map_err(|e| HarborError::Other(e.to_string()))?
+                .ok_or_else(|| HarborError::Other(format!("no snapshot for run {run_id}")))?;
+            let (state, counters, _) = ws.inner.agent_log.run_state(run_id)?;
+            Ok(serde_json::json!({
+                "run_id": snap.run_id,
+                "state": state.as_str(),
+                "skill_id": snap.skill_id,
+                "graph_id": snap.graph.id,
+                "graph_version": snap.graph.version,
+                "outcome": snap.outcome,
+                "pending_approval": snap.pending_approval,
+                "trail": snap.trail,
+                "last_error": snap.last_error,
+                "state_hash": snap.state_hash,
+                "steps": counters.step_count_total,
+                "tool_calls": counters.tool_count_total,
+                "context_tokens": counters.context_tokens_total,
+            }))
+        }
+        "eval.run_skill" => {
+            let skill_id = args
+                .get("skill_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing skill_id".into()))?;
+            let evals_root = args
+                .get("evals_root")
+                .and_then(|v| v.as_str())
+                .map(std::path::PathBuf::from)
+                .ok_or_else(|| HarborError::Other("missing evals_root".into()))?;
+            let skill = harbor_core::skills::builtin_skills()
+                .map_err(|e| HarborError::Other(e.to_string()))?
+                .into_iter()
+                .find(|s| s.id == skill_id)
+                .ok_or_else(|| HarborError::Other(format!("unknown skill {skill_id}")))?;
+            let report = harbor_core::harness::run_builtin_suite(
+                &evals_root,
+                &skill,
+                harbor_core::harness::Tier::Replay,
+            )
+            .map_err(HarborError::Other)?;
+            Ok(harbor_core::harness::report_json(&report))
         }
         // --- evaluation -------------------------------------------------
         "eval.run" => {
@@ -1798,6 +2057,15 @@ fn dispatch(
                             harbor_agent::EventPayload::Transition { from_state, to_state, reason } => format!(
                                 "{} -> {}{}", from_state.as_str(), to_state.as_str(),
                                 reason.map(|r| format!(" ({})", r.as_str())).unwrap_or_default()),
+                            harbor_agent::EventPayload::StepStarted { description, node_id: Some(node), .. } => {
+                                format!("node {node} started ({description})")
+                            }
+                            harbor_agent::EventPayload::StepCompleted { summary, node_id: Some(node), tool, .. } => {
+                                match tool {
+                                    Some(t) => format!("node {node}: {t} — {}", truncate_for_trail(summary, 140)),
+                                    None => format!("node {node}: {}", truncate_for_trail(summary, 160)),
+                                }
+                            }
                             harbor_agent::EventPayload::StepStarted { description, .. } => {
                                 format!("request: {}", truncate_for_trail(description, 120))
                             }

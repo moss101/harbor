@@ -134,11 +134,11 @@ class AppLocalizationsAr extends AppLocalizations {
       'يجمع الوكلاء نموذجاً وأدوات ومهارات ومعرفة وسياسة. أنشئ واحداً لتفويض عمل متعدد الخطوات بمهام دائمة قابلة للفحص.';
 
   @override
-  String get skillsEmptyTitle => 'المهارات المدمجة جاهزة';
+  String get skillsEmptyTitle => 'تم تحميل المهارات المدمجة';
 
   @override
   String get skillsEmptyBody =>
-      'مهارات عالية الجودة للمستندات وجداول البيانات والبحث والترجمة وغيرها.';
+      'تعريفات مهارات للمستندات وجداول البيانات والبحث والترجمة وغيرها. القابلة للتشغيل منها تحمل مخططاً تنفيذياً.';
 
   @override
   String get knowledgeEmptyTitle => 'المعرفة فارغة';
@@ -969,7 +969,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get agentsGoActivity => 'عرض المهام';
 
   @override
-  String get skillsSubtitle => 'عائلات مهارات مدمجة وموقّعة متاحة لكل مهمة';
+  String get skillsSubtitle =>
+      'تعريفات المهارات المدمجة. المهارات ذات المخطط تُنفَّذ عبر المنفّذ الدائم؛ أما المهارات النصية فهي إعلانات إلى أن تُفكَّك إلى مخطط.';
 
   @override
   String get skillsSearchHint => 'تصفية المهارات';
@@ -1147,4 +1148,154 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get activityStepsLabel => 'الخطوات';
+
+  @override
+  String get skillsRunnable => 'مخطط قابل للتشغيل';
+
+  @override
+  String get skillsDeclaration => 'إعلان فقط';
+
+  @override
+  String get skillsDeclarationBody =>
+      'هذه المهارة إعلان نصي: لا مخطط تنفيذياً لها بعد، لذا لا شيء يشغّلها. تعليماتها وقائمة أدواتها هي مواصفة لمخطط مستقبلي.';
+
+  @override
+  String get skillsGraphHeading => 'المخطط';
+
+  @override
+  String skillsGraphNodes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count عقدة',
+      many: '$count عقدة',
+      few: '$count عقد',
+      two: 'عقدتان',
+      one: 'عقدة واحدة',
+      zero: 'لا عقد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String skillsGraphModelNodes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count عقدة نموذج مقيّدة بالمخطط',
+      many: '$count عقدة نموذج مقيّدة بالمخطط',
+      few: '$count عقد نموذج مقيّدة بالمخطط',
+      two: 'عقدتا نموذج مقيّدتان بالمخطط',
+      one: 'عقدة نموذج واحدة مقيّدة بالمخطط',
+      zero: 'بدون استدعاءات للنموذج — حتمي بالكامل',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String skillsGraphBudgets(int steps, int tools) {
+    return 'الميزانية: $steps خطوة، $tools استدعاء أداة';
+  }
+
+  @override
+  String get skillsRun => 'تشغيل';
+
+  @override
+  String skillsRunTitle(String title) {
+    return 'تشغيل $title';
+  }
+
+  @override
+  String get skillsAttachFile => 'إرفاق ملف';
+
+  @override
+  String skillsAttached(String name) {
+    return 'المرفق: $name';
+  }
+
+  @override
+  String get skillsValuesHint => 'قيمة في كل سطر: المفتاح = القيمة';
+
+  @override
+  String get skillsNeedsModel =>
+      'لهذه المهارة عقد نموذج. ثبّت نموذج محادثة من قسم النماذج لتشغيلها؛ النموذج يملأ حقولاً منظّمة فقط.';
+
+  @override
+  String get skillsModelLabel => 'النموذج';
+
+  @override
+  String get skillsRunning => 'قيد التشغيل على الجهاز…';
+
+  @override
+  String get skillsRunFailed => 'فشل التشغيل';
+
+  @override
+  String get skillsOutcome => 'النتيجة';
+
+  @override
+  String get skillsOutcomeCompleted => 'اكتمل';
+
+  @override
+  String get skillsOutcomeNeedsInput => 'يحتاج إلى مدخلات — لم يُختلق شيء';
+
+  @override
+  String get skillsOutcomeAbstained => 'امتنع';
+
+  @override
+  String get skillsRunState => 'حالة التشغيل';
+
+  @override
+  String get skillsTrailHeading => 'مسار العقد';
+
+  @override
+  String get skillsApprovalTitle => 'الموافقة مطلوبة';
+
+  @override
+  String skillsApprovalBody(String effect, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count عملية',
+      many: '$count عملية',
+      few: '$count عمليات',
+      two: 'عمليتين',
+      one: 'عملية واحدة',
+      zero: 'لا عمليات',
+    );
+    return 'اقترح التشغيل $effect يمسّ $_temp0. لم يُكتب شيء بعد. الاقتراح مرتبط بتجزئة المحتوى الأساسي وتجزئة المخرج الذي سينتجه.';
+  }
+
+  @override
+  String get skillsApprove => 'موافقة';
+
+  @override
+  String get skillsReject => 'رفض';
+
+  @override
+  String get skillsBaseHash => 'تجزئة المحتوى الأساسي';
+
+  @override
+  String get skillsProposedHash => 'تجزئة المخرج المقترح';
+
+  @override
+  String get skillsOutputsHeading => 'المخرجات';
+
+  @override
+  String get skillsRequiredField => 'مطلوب';
+
+  @override
+  String get skillsCancelRun => 'إلغاء التشغيل';
+
+  @override
+  String get skillsInputsHeading => 'المدخلات';
+
+  @override
+  String skillsExecutedOn(String model) {
+    return 'نُفّذ على $model';
+  }
+
+  @override
+  String skillsStructuredMode(String mode) {
+    return 'المخرج المنظّم: $mode';
+  }
 }

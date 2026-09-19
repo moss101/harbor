@@ -347,13 +347,13 @@ abstract class AppLocalizations {
   /// No description provided for @skillsEmptyTitle.
   ///
   /// In en, this message translates to:
-  /// **'Built-in skills ready'**
+  /// **'Built-in skills loaded'**
   String get skillsEmptyTitle;
 
   /// No description provided for @skillsEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'Ship-quality skills for documents, spreadsheets, research, translation and more.'**
+  /// **'Skill definitions for documents, spreadsheets, research, translation and more. Runnable ones carry an executable graph.'**
   String get skillsEmptyBody;
 
   /// No description provided for @knowledgeEmptyTitle.
@@ -1595,7 +1595,7 @@ abstract class AppLocalizations {
   /// No description provided for @skillsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Signed built-in skill families available to every run'**
+  /// **'Built-in skill definitions. Graph skills run through the durable executor; prose skills are declarations until decomposed.'**
   String get skillsSubtitle;
 
   /// No description provided for @skillsSearchHint.
@@ -1885,6 +1885,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Steps'**
   String get activityStepsLabel;
+
+  /// No description provided for @skillsRunnable.
+  ///
+  /// In en, this message translates to:
+  /// **'Runnable graph'**
+  String get skillsRunnable;
+
+  /// No description provided for @skillsDeclaration.
+  ///
+  /// In en, this message translates to:
+  /// **'Declaration only'**
+  String get skillsDeclaration;
+
+  /// No description provided for @skillsDeclarationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This skill is a prose declaration: it has no executable graph yet, so nothing runs it. Its instructions and allowlist are the spec for a future graph.'**
+  String get skillsDeclarationBody;
+
+  /// No description provided for @skillsGraphHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Graph'**
+  String get skillsGraphHeading;
+
+  /// No description provided for @skillsGraphNodes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 node} other{{count} nodes}}'**
+  String skillsGraphNodes(int count);
+
+  /// No description provided for @skillsGraphModelNodes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No model calls — fully deterministic} one{1 model node, schema-constrained} other{{count} model nodes, schema-constrained}}'**
+  String skillsGraphModelNodes(int count);
+
+  /// No description provided for @skillsGraphBudgets.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget: {steps} steps, {tools} tool calls'**
+  String skillsGraphBudgets(int steps, int tools);
+
+  /// No description provided for @skillsRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Run'**
+  String get skillsRun;
+
+  /// No description provided for @skillsRunTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Run {title}'**
+  String skillsRunTitle(String title);
+
+  /// No description provided for @skillsAttachFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach file'**
+  String get skillsAttachFile;
+
+  /// No description provided for @skillsAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'Attached: {name}'**
+  String skillsAttached(String name);
+
+  /// No description provided for @skillsValuesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'One value per line: key = value'**
+  String get skillsValuesHint;
+
+  /// No description provided for @skillsNeedsModel.
+  ///
+  /// In en, this message translates to:
+  /// **'This skill has model nodes. Install a chat model in Models to run it; the model only fills typed slots.'**
+  String get skillsNeedsModel;
+
+  /// No description provided for @skillsModelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get skillsModelLabel;
+
+  /// No description provided for @skillsRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running on device…'**
+  String get skillsRunning;
+
+  /// No description provided for @skillsRunFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Run failed'**
+  String get skillsRunFailed;
+
+  /// No description provided for @skillsOutcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Outcome'**
+  String get skillsOutcome;
+
+  /// No description provided for @skillsOutcomeCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get skillsOutcomeCompleted;
+
+  /// No description provided for @skillsOutcomeNeedsInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs input — nothing was invented'**
+  String get skillsOutcomeNeedsInput;
+
+  /// No description provided for @skillsOutcomeAbstained.
+  ///
+  /// In en, this message translates to:
+  /// **'Abstained'**
+  String get skillsOutcomeAbstained;
+
+  /// No description provided for @skillsRunState.
+  ///
+  /// In en, this message translates to:
+  /// **'Run state'**
+  String get skillsRunState;
+
+  /// No description provided for @skillsTrailHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Node trail'**
+  String get skillsTrailHeading;
+
+  /// No description provided for @skillsApprovalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval required'**
+  String get skillsApprovalTitle;
+
+  /// No description provided for @skillsApprovalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The run proposed a {effect} affecting {count, plural, one{1 operation} other{{count} operations}}. Nothing has been written. The proposal is bound to the base content hash and the hash of the output it would produce.'**
+  String skillsApprovalBody(String effect, int count);
+
+  /// No description provided for @skillsApprove.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get skillsApprove;
+
+  /// No description provided for @skillsReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get skillsReject;
+
+  /// No description provided for @skillsBaseHash.
+  ///
+  /// In en, this message translates to:
+  /// **'Base content hash'**
+  String get skillsBaseHash;
+
+  /// No description provided for @skillsProposedHash.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed output hash'**
+  String get skillsProposedHash;
+
+  /// No description provided for @skillsOutputsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Outputs'**
+  String get skillsOutputsHeading;
+
+  /// No description provided for @skillsRequiredField.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get skillsRequiredField;
+
+  /// No description provided for @skillsCancelRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel run'**
+  String get skillsCancelRun;
+
+  /// No description provided for @skillsInputsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Inputs'**
+  String get skillsInputsHeading;
+
+  /// No description provided for @skillsExecutedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Executed on {model}'**
+  String skillsExecutedOn(String model);
+
+  /// No description provided for @skillsStructuredMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Structured output: {mode}'**
+  String skillsStructuredMode(String mode);
 }
 
 class _AppLocalizationsDelegate
