@@ -1,0 +1,16 @@
+# cargo-audit configuration (CI: `cargo audit`, run from `core/`).
+#
+# The accepted-advisory list mirrors `[advisories].ignore` in ../deny.toml,
+# which carries the reason and re-check trigger for each entry. Keep the two
+# lists identical; tools/check_advisory_ignores.py fails CI when they drift.
+[advisories]
+ignore = [
+  "RUSTSEC-2026-0194", # quick-xml DoS via formualizer 0.9.3 pin (see deny.toml)
+  "RUSTSEC-2026-0195", # quick-xml DoS via formualizer 0.9.3 pin (see deny.toml)
+  "RUSTSEC-2026-0192", # ttf-parser unmaintained via pdf-extract 0.12.1 (see deny.toml)
+]
+informational_warnings = ["unmaintained", "unsound", "notice"]
+
+[output]
+deny = ["warnings"]
+quiet = false

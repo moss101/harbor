@@ -97,8 +97,16 @@ the production model class (1–4 B parameters on device) cannot drive a free-fo
 - Safe-commit of approved batches through the FFI/UI; Work-surface diff of a proposal.
 - Decomposition of the other 26 skills.
 - A `SKILL.md` frontmatter importer (HBR-072) — the graph is the target format for it.
-- Resume-after-crash is implemented (`Executor::resume`) but only its wrong-state
-  refusal is covered by tests; a kill/restart test is pending.
+- ~~Resume-after-crash is implemented (`Executor::resume`) but only its wrong-state
+  refusal is covered by tests; a kill/restart test is pending.~~ Closed 2026-09-19:
+  `core/harbor_core/tests/executor_resume.rs` kills the executor (a panicking host
+  resource, lease left unreleased, no snapshot saved) before the first node, mid
+  tool node and mid model node, fences out a stranger executor while the dead
+  lease is live, resumes under the same executor identity and asserts the node
+  trail, io hashes, blackboard hash and outputs equal the uninterrupted run with
+  one extra admitted step and a second `run.lease_acquired`. The test found that
+  `decide` and `resume` acquired a new generation without emitting
+  `run.lease_acquired`; every acquisition now emits it.
 
 ## Verification
 `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`,

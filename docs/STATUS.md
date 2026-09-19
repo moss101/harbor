@@ -7,6 +7,41 @@ ran at.
 
 ---
 
+## Session 33 (2026-09-19): Phase A — landed session 32, CI hygiene gates, kill/restart test
+
+Executes `docs/PRODUCTION_PLAN.md` phase A. Session 32 is committed in six
+bisectable slices (contracts → inference → core → skills → app → docs; the
+inference slice precedes core because the executor tests replay through the
+cassette provider), each slice carrying a regenerated dossier seal and green
+`cargo test --workspace` / `flutter test` at that commit.
+
+- **A2 stale-seal detector** — `tools/check_dossier_seal.py` runs first in the
+  `dossier` job: it regenerates 19/20/24 in place and fails on a non-empty
+  `git diff` with an explicit "STALE DOSSIER SEAL — run `python3
+  tools/validate_dossier.py --write` and commit …" annotation instead of the
+  validator's "Package manifest differs".
+- **A3 supply-chain gates** — new `supply-chain` CI job: `cargo audit`
+  (`core/.cargo/audit.toml`) and `cargo deny check` (`core/deny.toml`: license
+  allow-list matching `docs/release/THIRD_PARTY_NOTICES.md`, no telemetry /
+  OpenSSL crates, crates.io only, wildcard and git sources denied);
+  `tools/check_advisory_ignores.py` fails when the two accepted-advisory lists
+  drift. Workspace crates are `publish = false`. Findings at this commit:
+  rustls 0.23.44 → 0.23.45 (RUSTSEC-2026-0285, fixed); the unused direct
+  `quick-xml 0.38` dependency removed; RUSTSEC-2026-0194/0195 (quick-xml
+  0.37/0.39 DoS, reachable only through the formualizer 0.9.3 pin,
+  availability-only on a locally chosen workbook) and RUSTSEC-2026-0192
+  (ttf-parser unmaintained via pdf-extract 0.12.1) accepted with reasons and
+  re-check triggers in `deny.toml`. Non-blocking `flutter pub outdated`
+  report added to the flutter job.
+- **A4 kill/restart test** — `core/harbor_core/tests/executor_resume.rs`
+  (see decision 0006, "Not done" closed). Executor fix: `decide` and `resume`
+  now emit `run.lease_acquired` for their generation.
+- **Gates** — `cargo fmt --check`, `cargo clippy --workspace --all-targets
+  -D warnings`, `cargo test --workspace` (46 suites, 0 failures), `cargo
+  audit` clean, `cargo deny check` advisories/bans/licenses/sources ok,
+  `flutter analyze` clean, `dart format` clean, app `flutter test` 27/27,
+  dossier validator PASS, seal fresh.
+
 ## Session 32 (2026-09-18): skill graphs, tool layer, executor and eval harness (decision 0006)
 
 Skills went from inert catalog entries to runnable, replayable graphs.

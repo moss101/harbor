@@ -87,6 +87,13 @@ skills are runnable.
 Exit criteria for phase A: CI green on pushed `main`; `cargo audit` clean or
 every advisory recorded with a decision; resume test in the workspace suite.
 
+**Status (2026-09-19):** A1 landed as six slices (order: contracts, inference,
+core, skills, app, docs — inference before core because the executor tests
+replay through the cassette provider). A2 `tools/check_dossier_seal.py`,
+A3 `supply-chain` job + `core/deny.toml` + `core/.cargo/audit.toml`, A4
+`core/harbor_core/tests/executor_resume.rs` — all in commit history; see
+`docs/STATUS.md` session 33 for the gate results.
+
 ---
 
 ## Phase B — Make skills the product (weeks 2–4)

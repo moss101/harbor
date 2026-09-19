@@ -269,7 +269,6 @@ in its upstream source repository and vendored sources.
 - **prettyplease 0.2.37** — MIT OR Apache-2.0 — <https://github.com/dtolnay/prettyplease>
 - **proc-macro2 1.0.107** — MIT OR Apache-2.0 — <https://github.com/dtolnay/proc-macro2>
 - **quick-xml 0.37.5** — MIT — <https://github.com/tafia/quick-xml>
-- **quick-xml 0.38.4** — MIT — <https://github.com/tafia/quick-xml>
 - **quick-xml 0.39.4** — MIT — <https://github.com/tafia/quick-xml>
 - **quick-xml 0.41.0** — MIT — <https://github.com/tafia/quick-xml>
 - **quote 1.0.47** — MIT OR Apache-2.0 — <https://github.com/dtolnay/quote>
@@ -297,7 +296,7 @@ in its upstream source repository and vendored sources.
 - **rustc-hash 2.1.3** — Apache-2.0 OR MIT — <https://github.com/rust-lang/rustc-hash>
 - **rustc_version 0.4.1** — MIT OR Apache-2.0 — <https://github.com/djc/rustc-version-rs>
 - **rustix 1.1.4** — Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT — <https://github.com/bytecodealliance/rustix>
-- **rustls 0.23.44** — Apache-2.0 OR ISC OR MIT — <https://github.com/rustls/rustls>
+- **rustls 0.23.45** — Apache-2.0 OR ISC OR MIT — <https://github.com/rustls/rustls>
 - **rustls-pki-types 1.15.1** — MIT OR Apache-2.0 — <https://github.com/rustls/pki-types>
 - **rustls-webpki 0.103.15** — ISC — <https://github.com/rustls/webpki>
 - **rustversion 1.0.23** — MIT OR Apache-2.0 — <https://github.com/dtolnay/rustversion>

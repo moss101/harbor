@@ -4,13 +4,13 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "b6b90cf87b508e50e021dfdf8f55351009867c906e14fee2153908e7df0c28de",
-  "file_count_excluding_manifest": 445,
+  "input_manifest_sha256": "2107133cdf85fba6945e02f5790b980d1ab9b2b1f605bef5f0a9d5be728edbc6",
+  "file_count_excluding_manifest": 449,
   "files": [
     {
       "path": ".github/workflows/ci.yml",
-      "bytes": 4261,
-      "sha256": "bdc958114f1e5f8cdb30d86c2e390f4260d350aded387a4ad08d27aae222146b"
+      "bytes": 5708,
+      "sha256": "bb1a5ba4eb39055dbd28a43c4c24df0a197c9a2640f07267598f33d5a7d38b3c"
     },
     {
       "path": ".gitignore",
@@ -114,13 +114,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 81949,
-      "sha256": "6a2ead2e65ea2ab7998416b0c2bd16712ed35de7a8edfbca17efa50a325274c7"
+      "bytes": 82583,
+      "sha256": "db21fd088c5081df3a1920dd14158fc6e8072b3f553bbcd2aac0ae0b4b0c713f"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "87dbebb553167564e28ce0e69bb5c701e0e26ee9159d56cab481d3c1a05de6ff"
+      "sha256": "aa62b78a051700281aefed829cfc6a9e00aa45e83d2e916663a7caf082404f4a"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -973,24 +973,34 @@
       "sha256": "176364dbcec312720d90971682dec7441818f5d699f0b3738db02791aa9eb5ce"
     },
     {
+      "path": "core/.cargo/audit.toml",
+      "bytes": 682,
+      "sha256": "2ddaa3901a57fb4109a08a03233bb022ce37f4a2c2e592798cdc310bb0008818"
+    },
+    {
       "path": "core/.cargo/config.toml",
       "bytes": 167,
       "sha256": "6b3a627b2643440886b0ed8e750f16def81a0366b40603412b25fed9e43ee77e"
     },
     {
       "path": "core/Cargo.lock",
-      "bytes": 99965,
-      "sha256": "39dc1110f603414867b0d6bdde2ea79d0ccb04e1e8b01c1f2a36664e44f68f22"
+      "bytes": 99720,
+      "sha256": "62883edb1eb60249611bb2984c099441d3adefad63d2e2fcdcb651fdd4d5e758"
     },
     {
       "path": "core/Cargo.toml",
-      "bytes": 2024,
-      "sha256": "d5924ba47fef4d8f823c3dc752976ba808d919762e1a84b1b441d2dcb736f23f"
+      "bytes": 2021,
+      "sha256": "ed3522c9265b4a3c6213395e7aeb3af45e853a4bc7ed199c84d527837993abf6"
+    },
+    {
+      "path": "core/deny.toml",
+      "bytes": 4483,
+      "sha256": "cad91e8672c8989c46d40a824c0c8d2bdb2cfdc8ce9808d957a6d82104b34e7c"
     },
     {
       "path": "core/harbor_agent/Cargo.toml",
-      "bytes": 514,
-      "sha256": "1754c1e9a515e8eb27f5af5f78529b13a8f061a602995416e403db594124539d"
+      "bytes": 539,
+      "sha256": "ff787b4bd58d2024a0e3230fced381d70a465d843f3984502004290ff246f9dc"
     },
     {
       "path": "core/harbor_agent/src/budgets.rs",
@@ -1034,8 +1044,8 @@
     },
     {
       "path": "core/harbor_artifacts/Cargo.toml",
-      "bytes": 768,
-      "sha256": "13f3199b86666fa014acf0062c50f02b22e283e0fd698776a0176e1b35a409f8"
+      "bytes": 760,
+      "sha256": "a6dd9fe74069f9581fcb852ad79f6aa4f881b166c85720f025ddb0c0a2f432e5"
     },
     {
       "path": "core/harbor_artifacts/examples/gen_docx_fixture.rs",
@@ -1089,8 +1099,8 @@
     },
     {
       "path": "core/harbor_canonical/Cargo.toml",
-      "bytes": 278,
-      "sha256": "8ea2dec9c388b1782fce11a0173e46146bbad91b6fa0634ac9b36e18676241a2"
+      "bytes": 303,
+      "sha256": "d66b1813a21dcbc75d558f2f72013fcf71746e8d6e0e7c8339f5806dac61b687"
     },
     {
       "path": "core/harbor_canonical/src/lib.rs",
@@ -1099,8 +1109,8 @@
     },
     {
       "path": "core/harbor_core/Cargo.toml",
-      "bytes": 987,
-      "sha256": "d0fe9069426501dfc5c42578d5620be027ad0f28c296918756bfbd2f0edcc330"
+      "bytes": 1012,
+      "sha256": "67a85c4d126b8ccd6114b87749043a60c85f14d22c1cf6d7f2b14f284b193dd2"
     },
     {
       "path": "core/harbor_core/src/builtin_skills.json",
@@ -1199,8 +1209,8 @@
     },
     {
       "path": "core/harbor_ffi/Cargo.toml",
-      "bytes": 1105,
-      "sha256": "c26dea1ed41f1e470de0516272a8086eb88676c7464901b77c05c9ef55625810"
+      "bytes": 1130,
+      "sha256": "ac40500fe968616563e990d47ede7817f83bb5f2146d51f1ea7b4b5c95cdefb3"
     },
     {
       "path": "core/harbor_ffi/src/knowledge.rs",
@@ -1219,8 +1229,8 @@
     },
     {
       "path": "core/harbor_formula/Cargo.toml",
-      "bytes": 437,
-      "sha256": "3d6e4d808c0cd25283f950573cdd1e97bdf3ddc20486f68a0ee06882c2c0a604"
+      "bytes": 462,
+      "sha256": "bc8118b42aa5798de5a4627467f72184311f42750f92339f3e852476813f703f"
     },
     {
       "path": "core/harbor_formula/fixtures/formula_corpus.json",
@@ -1259,8 +1269,8 @@
     },
     {
       "path": "core/harbor_inference/Cargo.toml",
-      "bytes": 807,
-      "sha256": "74bcb4998b4539fa5512d09f5c8087cb64da4f328414425f9f289055d94f26c0"
+      "bytes": 832,
+      "sha256": "29b1663d3ba647dc76f490a070b45cb2eb283b5c59f9b95bac226ee0ca52c9d6"
     },
     {
       "path": "core/harbor_inference/src/backend.rs",
@@ -1309,8 +1319,8 @@
     },
     {
       "path": "core/harbor_integration/Cargo.toml",
-      "bytes": 714,
-      "sha256": "7da97a0daacbab359c417bc5e7b4902e50be36e4582044bb22bd6e9839b15ae1"
+      "bytes": 723,
+      "sha256": "4b1d8d48157ab3fe4f44e354af12a6af6ccd42a3df752dc00bc350530c4333a6"
     },
     {
       "path": "core/harbor_integration/examples/perf_baseline.rs",
@@ -1339,8 +1349,8 @@
     },
     {
       "path": "core/harbor_knowledge/Cargo.toml",
-      "bytes": 538,
-      "sha256": "383023cee09a9218efaf46464e6e79c8e6e3da9132309fe309b20bf4af7f9b80"
+      "bytes": 563,
+      "sha256": "6b369cc2c349b84adce87e5cfa1217f14b2fdf541ae5256a38c4a13f1a212b35"
     },
     {
       "path": "core/harbor_knowledge/src/chunk.rs",
@@ -1374,8 +1384,8 @@
     },
     {
       "path": "core/harbor_modelhub/Cargo.toml",
-      "bytes": 580,
-      "sha256": "d243ba8696fa137164bc01b94b64a76fbc9e6d658f5d92b51ad3cec758186593"
+      "bytes": 605,
+      "sha256": "88d81282486f74c05a58a0cd39270d2dc2ad6838bbf7ab1bf8e04b2f9417d129"
     },
     {
       "path": "core/harbor_modelhub/examples/acquire_qwen.rs",
@@ -1429,8 +1439,8 @@
     },
     {
       "path": "core/harbor_net/Cargo.toml",
-      "bytes": 522,
-      "sha256": "d5a2831886acc15be35cda52282b0c8a8c0f61b385d2bfed4eae0f3251c7ce6d"
+      "bytes": 547,
+      "sha256": "37702f95f1331747ae4480a684acb48e530ed4f81a4651cb3cac8140c2e43d93"
     },
     {
       "path": "core/harbor_net/examples/tls_probe.rs",
@@ -1469,8 +1479,8 @@
     },
     {
       "path": "core/harbor_render/Cargo.toml",
-      "bytes": 394,
-      "sha256": "12810d2e5cfd315f1b81d99fd7794a7c177334df18d2c76b86f999e9e6040633"
+      "bytes": 419,
+      "sha256": "d5bd0ab0b1c7357b51fc102ff299531d736eeebcfbd6241e33c6d1b3c7627543"
     },
     {
       "path": "core/harbor_render/examples/gen_fixtures.rs",
@@ -1494,8 +1504,8 @@
     },
     {
       "path": "core/harbor_security/Cargo.toml",
-      "bytes": 478,
-      "sha256": "a172ef3bd31f899a71403ee76c5aafe49b3ab7f8bb39e5acf9eafceb44dc3154"
+      "bytes": 503,
+      "sha256": "74567faa4f37e916260fa8a6394b9645250185ea78497a31b6e371f6c1bf26ca"
     },
     {
       "path": "core/harbor_security/src/capability.rs",
@@ -1529,8 +1539,8 @@
     },
     {
       "path": "core/harbor_store/Cargo.toml",
-      "bytes": 642,
-      "sha256": "494762a400a2741d55434093b4bcc2a6fbc5c8a401a73cdddc71aedfbc21a387"
+      "bytes": 667,
+      "sha256": "22dfc7032d3321890349dd07840ec914e48589507e1ebe50f750bf22ac403dac"
     },
     {
       "path": "core/harbor_store/src/blob.rs",
@@ -1579,8 +1589,8 @@
     },
     {
       "path": "core/harbor_sync/Cargo.toml",
-      "bytes": 558,
-      "sha256": "cd49bcb8e8cb550c0189b1a21e7a5188ad975e5da5d81e43a806c0984b07fda0"
+      "bytes": 583,
+      "sha256": "c483607eea5ac22c071cbe9f1125861a5ccc73bc7276f01aadc2ed27618dffe1"
     },
     {
       "path": "core/harbor_sync/src/bundle.rs",
@@ -1629,13 +1639,13 @@
     },
     {
       "path": "docs/PRODUCTION_PLAN.md",
-      "bytes": 15531,
-      "sha256": "be9dc935233c2e36fccaba6958b5dae21072a51c5774ed9b2412f028b6a45d23"
+      "bytes": 15958,
+      "sha256": "9bef9b939915104d66f3f6fa71fd86d04815f9b52982aa8c5ba1d094268c40ec"
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 25333,
-      "sha256": "d51eaee580392a4ab152396d1deddd8e3de0465892143f45f0a0e23f99a685d3"
+      "bytes": 27607,
+      "sha256": "bca49fe55619cf138249df5822c66f01616b5176798b4ed223a815b0b24cb05e"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -1664,13 +1674,13 @@
     },
     {
       "path": "docs/decisions/0006-skill-graphs-tools-and-eval-harness.md",
-      "bytes": 7470,
-      "sha256": "0b5e44ac0fa48c9393f300f5b26bdbe1ba50a7d60495bb0a3324e1223fbf818c"
+      "bytes": 8099,
+      "sha256": "8b251f377bda5a68b577bc6f656614fed8080369bb0d590855383f1ec58e641d"
     },
     {
       "path": "docs/release/THIRD_PARTY_NOTICES.md",
-      "bytes": 37699,
-      "sha256": "7df4627f648aa8f3571e0ec27c25038a15fc58e3d4af008eaefc99c7fa7b38f9"
+      "bytes": 37627,
+      "sha256": "a1982da176cbc565888b24b8043efe88c9eaef93719d30498aa9f3fb8e6abeb3"
     },
     {
       "path": "docs/release/closeout_runbook.md",
@@ -2173,9 +2183,19 @@
       "sha256": "6f0477a2f6e0dc90e09a2558b9400422faca7655ea28f5aa7dfdc40c411a02f0"
     },
     {
+      "path": "tools/check_advisory_ignores.py",
+      "bytes": 1706,
+      "sha256": "c3d6f904f08e1e8a9ef49672492b6ae83b1accef90b2ecf64aa50425d729efd4"
+    },
+    {
       "path": "tools/check_contrast.py",
       "bytes": 5244,
       "sha256": "94eee8441e8d2e34cca12d43ee64a08b099e4244d35acb2c25c1680399967c84"
+    },
+    {
+      "path": "tools/check_dossier_seal.py",
+      "bytes": 2806,
+      "sha256": "cc5c1cc7022ba5685f5ff3d61e3840976ff451a71a21152b37c67b175f7be44e"
     },
     {
       "path": "tools/check_optional_disabled.py",

@@ -12,6 +12,11 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
       - run: pip install -r requirements-validation.txt
+      # Runs first so a seal that merely lags a docs/code commit fails with
+      # "regenerate (python3 tools/validate_dossier.py --write)" instead of
+      # the validator's opaque "Package manifest differs".
+      - name: Dossier seal freshness
+        run: python3 tools/check_dossier_seal.py
       - name: Package structural validation
         run: python3 tools/validate_dossier.py
       - name: Contract tests
@@ -28,6 +33,27 @@ jobs:
         run: |
           cargo fetch --manifest-path core/Cargo.toml
           python3 tools/pin_engine.py --check
+
+  supply-chain:
+    # Dependency hygiene for the core workspace: RustSec advisories
+    # (cargo audit), and license / ban / source policy (cargo deny) as
+    # encoded in core/deny.toml. Accepted advisories live in deny.toml
+    # with a reason; core/.cargo/audit.toml must mirror them.
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: core }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit,cargo-deny
+      - name: Accepted-advisory lists agree (deny.toml == audit.toml)
+        run: python3 ../tools/check_advisory_ignores.py
+      - name: RustSec advisories (cargo audit)
+        run: cargo audit
+      - name: License, ban and source policy (cargo deny)
+        run: cargo deny check
 
   rust:
     runs-on: macos-14
@@ -94,6 +120,12 @@ jobs:
         run: |
           for d in packages/harbor_domain packages/harbor_native packages/harbor_ui apps/harbor_app; do
             (cd "$d" && flutter pub get)
+          done
+      - name: Dependency freshness report (non-blocking)
+        continue-on-error: true
+        run: |
+          for d in packages/harbor_domain packages/harbor_native packages/harbor_ui apps/harbor_app; do
+            echo "== $d"; (cd "$d" && flutter pub outdated --no-dev-dependencies || true)
           done
       - name: Dart formatting gate
         run: |
