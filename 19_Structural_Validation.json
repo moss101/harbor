@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "d837edf47b99b59f4b45411b3ff911bb4f39651a3b0411bc51b3b26a07c659b0",
+  "input_manifest_sha256": "b6b90cf87b508e50e021dfdf8f55351009867c906e14fee2153908e7df0c28de",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -1610,9 +1610,14 @@
       "sha256": "21b7a86a5927bb0a376d4465b985dd0f3e637c36a8b6e7e585ef5dc089d14eaa"
     },
     {
+      "path": "docs/PRODUCTION_PLAN.md",
+      "bytes": 15531,
+      "sha256": "be9dc935233c2e36fccaba6958b5dae21072a51c5774ed9b2412f028b6a45d23"
+    },
+    {
       "path": "docs/STATUS.md",
-      "bytes": 22011,
-      "sha256": "97b41d4f93ff0288de1b7d151d2cba4bd0fdf9b27d82ac15a5988520086a5b5d"
+      "bytes": 25333,
+      "sha256": "d51eaee580392a4ab152396d1deddd8e3de0465892143f45f0a0e23f99a685d3"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -1633,6 +1638,16 @@
       "path": "docs/decisions/0004-production-model-selection.md",
       "bytes": 1701,
       "sha256": "35fd6603decac984682d03ffbab97ef64e67e1987360d01e009730522cb0c19c"
+    },
+    {
+      "path": "docs/decisions/0005-adopted-community-skills.md",
+      "bytes": 7051,
+      "sha256": "8e44bcc88b8563b33d876e9b81e1fe13afc6012009a2be72dfa0b7445413ec8f"
+    },
+    {
+      "path": "docs/decisions/0006-skill-graphs-tools-and-eval-harness.md",
+      "bytes": 7470,
+      "sha256": "0b5e44ac0fa48c9393f300f5b26bdbe1ba50a7d60495bb0a3324e1223fbf818c"
     },
     {
       "path": "docs/release/THIRD_PARTY_NOTICES.md",
