@@ -781,7 +781,7 @@ impl Tool for ArtifactFillPlaceholders {
             }));
         }
         let batch_id =
-            s(args, "batch_id").unwrap_or_else(|| format!("batch-{}", &base_content_hash[..12]));
+            s(args, "batch_id").unwrap_or_else(|| default_batch_id(&base_content_hash, &ops));
         let batch = ArtifactBatch {
             batch_id,
             artifact_id: id.clone(),
@@ -806,6 +806,222 @@ impl Tool for ArtifactFillPlaceholders {
             "preview": preview,
         }))
     }
+}
+
+/// Parse a `harbor.artifact_batch/v3` value (as propose tools emit it and
+/// the approval binds it) back into a typed batch. Used by the commit
+/// path to re-derive the approved output from the base bytes.
+pub fn batch_from_value(v: &Value) -> Result<ArtifactBatch, String> {
+    let s = |k: &str| v.get(k).and_then(Value::as_str).map(str::to_string);
+    if let Some(schema) = s("schema") {
+        if schema != "harbor.artifact_batch/v3" {
+            return Err(format!("unsupported batch schema {schema}"));
+        }
+    }
+    let mut operations = Vec::new();
+    for (i, op) in v
+        .get("operations")
+        .and_then(Value::as_array)
+        .ok_or("batch has no operations")?
+        .iter()
+        .enumerate()
+    {
+        let so = |k: &str| op.get(k).and_then(Value::as_str).map(str::to_string);
+        let kind = match so("kind").as_deref() {
+            Some("text.replace") => OpKind::TextReplace,
+            Some("cell.set") => OpKind::CellSet,
+            Some("slide.text_set") => OpKind::SlideTextSet,
+            Some("slide.append") => OpKind::SlideAppend,
+            other => return Err(format!("op {}: unknown kind {other:?}", i + 1)),
+        };
+        let pre = op
+            .get("precondition")
+            .ok_or_else(|| format!("op {}: no precondition", i + 1))?;
+        let args = harbor_canonical::convert(op.get("args").cloned().unwrap_or(json!({})))
+            .map_err(|e| format!("op {}: args not canonical: {e}", i + 1))?;
+        operations.push(Operation {
+            op_id: so("op_id").ok_or_else(|| format!("op {}: no op_id", i + 1))?,
+            kind,
+            precondition: Precondition {
+                target_id: pre
+                    .get("target_id")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default()
+                    .to_string(),
+                expected_content_hash: pre
+                    .get("expected_content_hash")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default()
+                    .to_string(),
+            },
+            args,
+        });
+    }
+    let batch = ArtifactBatch {
+        batch_id: s("batch_id").ok_or("batch has no batch_id")?,
+        artifact_id: s("artifact_id").ok_or("batch has no artifact_id")?,
+        base_version_id: s("base_version_id").unwrap_or_default(),
+        base_content_hash: s("base_content_hash").ok_or("batch has no base_content_hash")?,
+        operations,
+    };
+    batch.validate().map_err(|e| e.to_string())?;
+    Ok(batch)
+}
+
+/// Apply a batch to the base bytes it was proposed against (DOCX or XLSX),
+/// re-checking every precondition. Deterministic: the same base and batch
+/// always yield the same bytes, so the commit path can verify the approved
+/// `proposed_output_hash` before anything is written.
+pub fn apply_batch(bytes: &[u8], batch: &ArtifactBatch) -> Result<Vec<u8>, ToolError> {
+    let tool = "artifact.apply_batch";
+    match detect_kind(bytes) {
+        ArtifactKind::Docx => apply_docx(tool, bytes, batch),
+        ArtifactKind::Xlsx => apply_xlsx(tool, bytes, batch),
+        other => Err(ToolError::failed(
+            tool,
+            format!(
+                "batches are supported for DOCX and XLSX, not {}",
+                other.as_str()
+            ),
+        )),
+    }
+}
+
+/// One human-readable entry of a proposal diff (Work surface review).
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct DiffEntry {
+    pub op_id: String,
+    pub kind: String,
+    pub target_id: String,
+    /// Where the change lands: paragraph index, or `Sheet!A1`.
+    pub location: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub before: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub after: Option<String>,
+}
+
+/// Before/after view of a batch against its base bytes: paragraph text for
+/// DOCX `text.replace`, formula-or-value for XLSX `cell.set`. Targets the
+/// base no longer contains are reported with `before: None`.
+pub fn proposal_diff(bytes: &[u8], batch: &ArtifactBatch) -> Vec<DiffEntry> {
+    let kind = detect_kind(bytes);
+    let doc = matches!(kind, ArtifactKind::Docx)
+        .then(|| DocxDocument::load(bytes).ok())
+        .flatten();
+    let wb = matches!(kind, ArtifactKind::Xlsx)
+        .then(|| WorkbookDoc::load(bytes).ok())
+        .flatten();
+    batch
+        .operations
+        .iter()
+        .map(|op| {
+            let (location, before, after) = match op.kind {
+                OpKind::TextReplace => {
+                    let index: Option<u32> = op
+                        .precondition
+                        .target_id
+                        .strip_prefix("p:")
+                        .and_then(|x| x.parse().ok());
+                    let before = doc.as_ref().and_then(|d| {
+                        d.paragraphs
+                            .iter()
+                            .find(|p| Some(p.index) == index)
+                            .map(|p| p.text.clone())
+                    });
+                    (
+                        index.map(|i| format!("¶ {i}")).unwrap_or_default(),
+                        before,
+                        op.args
+                            .get("text")
+                            .and_then(|v| v.as_str())
+                            .map(str::to_string),
+                    )
+                }
+                OpKind::CellSet => {
+                    let sheet = op
+                        .args
+                        .get("sheet_id")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("");
+                    let address = op
+                        .args
+                        .get("address")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("");
+                    let before = wb.as_ref().and_then(|w| {
+                        let (col, row) = parse_addr(address)?;
+                        let cell = w.sheets_snapshot().get(sheet)?.cells.get(&(col, row))?;
+                        Some(match (&cell.formula, &cell.cached) {
+                            (Some(f), Some(v)) => format!("={f}  →  {}", cell_value_repr(v)),
+                            (Some(f), None) => format!("={f}"),
+                            (None, Some(v)) => cell_value_repr(v),
+                            (None, None) => String::new(),
+                        })
+                    });
+                    let after = op.args.get("value").map(|v| match v {
+                        JsonValue::Str(s) => {
+                            if op.args.get("value_kind").and_then(|k| k.as_str()) == Some("formula")
+                            {
+                                format!("={}", s.trim_start_matches('='))
+                            } else {
+                                s.clone()
+                            }
+                        }
+                        JsonValue::Int(i) => i.to_string(),
+                        JsonValue::Bool(b) => b.to_string(),
+                        other => other
+                            .to_canonical_bytes()
+                            .map(|b| String::from_utf8_lossy(&b).into_owned())
+                            .unwrap_or_default(),
+                    });
+                    (format!("{sheet}!{address}"), before, after)
+                }
+                OpKind::SlideTextSet | OpKind::SlideAppend => (
+                    op.precondition.target_id.clone(),
+                    None,
+                    op.args
+                        .get("text")
+                        .and_then(|v| v.as_str())
+                        .map(str::to_string),
+                ),
+            };
+            DiffEntry {
+                op_id: op.op_id.clone(),
+                kind: op.kind.as_str().into(),
+                target_id: op.precondition.target_id.clone(),
+                location,
+                before,
+                after,
+            }
+        })
+        .collect()
+}
+
+/// Default batch identity: bound to the base *and* to the operations, so
+/// two different proposals against the same base never share a journal
+/// row (the commit journal treats a repeated batch id as a replay), while
+/// the same proposal stays deterministic for cassettes and evals.
+fn default_batch_id(base_content_hash: &str, ops: &[Operation]) -> String {
+    let ops_value = JsonValue::Array(
+        ops.iter()
+            .map(|op| {
+                JsonValue::object([
+                    ("op_id", JsonValue::str(op.op_id.clone())),
+                    ("kind", JsonValue::str(op.kind.as_str())),
+                    (
+                        "target_id",
+                        JsonValue::str(op.precondition.target_id.clone()),
+                    ),
+                    ("args", op.args.clone()),
+                ])
+            })
+            .collect(),
+    );
+    let ops_hash = ops_value
+        .canonical_sha256()
+        .unwrap_or_else(|_| harbor_canonical::sha256_hex(b""));
+    format!("batch-{}-{}", &base_content_hash[..12], &ops_hash[..8])
 }
 
 fn batch_json(b: &ArtifactBatch) -> Value {
@@ -1080,7 +1296,7 @@ impl Tool for ArtifactProposeBatch {
         }
         let batch = ArtifactBatch {
             batch_id: s(args, "batch_id")
-                .unwrap_or_else(|| format!("batch-{}", &base_content_hash[..12])),
+                .unwrap_or_else(|| default_batch_id(&base_content_hash, &operations)),
             artifact_id: id.clone(),
             base_version_id: format!("v-{}", &base_content_hash[..16]),
             base_content_hash: base_content_hash.clone(),

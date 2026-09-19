@@ -373,6 +373,7 @@ pub fn run_case(
         workspace_root: None,
         cancel: &cancel,
         executor_id: "harness".into(),
+        commit_journal: None,
     });
     let report = exec
         .start(RunRequest {

@@ -63,6 +63,18 @@ pub enum ExecError {
     },
     #[error("state store: {0}")]
     Store(String),
+    /// Refused before anything durable happened (original untouched, run
+    /// still WAITING_APPROVAL).
+    #[error("commit refused: {0}")]
+    Commit(String),
+    /// The dispatch was recorded and the write did not publish; the run is
+    /// FAILED with the reason and the original is untouched.
+    #[error("commit {outcome}: {error}")]
+    CommitFailed {
+        outcome: String,
+        error: String,
+        report: Box<RunReport>,
+    },
     #[error("{0}")]
     Other(String),
 }
@@ -176,6 +188,67 @@ pub struct PendingApproval {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub artifact_id: Option<String>,
     pub batch: Value,
+    /// Before/after view of the batch against the base bytes (computed
+    /// while the artifact is still attached, so review needs no bytes).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub diff: Vec<crate::tools::builtin::DiffEntry>,
+    /// When the approval was requested; the receipt it implies is valid
+    /// for `RECEIPT_VALIDITY` from here (02 contract: ≤ 15 minutes).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub requested_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+/// Single-effect receipts are valid for at most 15 minutes (02 contract,
+/// "Receipts"). A commit after that window needs a fresh approval.
+pub const RECEIPT_VALIDITY: chrono::Duration = chrono::Duration::minutes(15);
+
+/// Where an approved proposal is written.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "mode", rename_all = "snake_case")]
+pub enum CommitTarget {
+    /// Write the approved output to `destination`, which must not exist;
+    /// the original is never touched. The default.
+    SaveNewCopy { destination: PathBuf },
+    /// Replace `destination` in place, only if its bytes still hash to the
+    /// approved base (compare-and-swap inside the protected interval).
+    Overwrite { destination: PathBuf },
+}
+
+impl CommitTarget {
+    pub fn destination(&self) -> &Path {
+        match self {
+            CommitTarget::SaveNewCopy { destination } | CommitTarget::Overwrite { destination } => {
+                destination
+            }
+        }
+    }
+
+    pub fn mode(&self) -> &'static str {
+        match self {
+            CommitTarget::SaveNewCopy { .. } => "new_copy",
+            CommitTarget::Overwrite { .. } => "provider_compare_and_swap",
+        }
+    }
+}
+
+/// What a commit did, bound to the approval it consumed.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CommitReport {
+    pub run_id: String,
+    pub node_id: String,
+    pub effect_id: String,
+    pub receipt_id: String,
+    pub attempt_id: String,
+    pub batch_id: String,
+    pub artifact_id: String,
+    pub mode: String,
+    pub destination: PathBuf,
+    pub version_id: String,
+    pub bytes_written: u64,
+    pub base_content_hash: String,
+    pub proposed_output_hash: String,
+    /// `committed` or `already_committed` (idempotent replay of the batch).
+    pub outcome: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -314,6 +387,9 @@ pub struct Host<'a> {
     pub workspace_root: Option<PathBuf>,
     pub cancel: &'a AtomicBool,
     pub executor_id: String,
+    /// Commit journal database (`commit_journal_path`); `None` on hosts
+    /// that never commit (the eval harness).
+    pub commit_journal: Option<PathBuf>,
 }
 
 pub struct Executor<'a> {
@@ -789,6 +865,292 @@ impl<'a> Executor<'a> {
         snap.position.next_node = next;
         self.save(&mut snap)?;
         self.run_loop(&mut cur, &mut snap)
+    }
+
+    /// Before/after entries for a proposal while its artifact is attached.
+    fn proposal_diff(&self, batch_value: &Value) -> Vec<crate::tools::builtin::DiffEntry> {
+        let Some(artifact_id) = batch_value.get("artifact_id").and_then(Value::as_str) else {
+            return Vec::new();
+        };
+        let Some(bytes) = self.host.artifacts.get(artifact_id) else {
+            return Vec::new();
+        };
+        match crate::tools::builtin::batch_from_value(batch_value) {
+            Ok(batch) => crate::tools::builtin::proposal_diff(&bytes.bytes, &batch),
+            Err(_) => Vec::new(),
+        }
+    }
+
+    /// Approve the pending proposal and commit it as one protected effect,
+    /// then continue the graph from the approval node's `next_approved`
+    /// edge. This is the host effect of 02 §"Artifact batches and safe
+    /// save", executed under the run's lease while its receipt is valid:
+    ///
+    /// 1. the base bytes (re-supplied by the host through `artifacts`) must
+    ///    hash to the approved `base_content_hash`; the batch is re-applied
+    ///    and the result must hash to the approved `proposed_output_hash`
+    ///    before anything touches the destination;
+    /// 2. `run.approval_decided` + `run.effect_dispatched` are durable
+    ///    before the write; `run.effect_resolved` records the outcome;
+    /// 3. `SafeCommitter` stages, journals and publishes once (new copy:
+    ///    exclusive create, no overwrite; overwrite: base revalidated inside
+    ///    the protected interval); replaying a committed batch returns its
+    ///    version;
+    /// 4. a conflict, hash mismatch or expired receipt leaves the original
+    ///    untouched and fails the run with the reason, so the user re-runs
+    ///    the skill against the current file.
+    pub fn decide_and_commit(
+        &self,
+        run_id: &str,
+        target: CommitTarget,
+    ) -> Result<(RunReport, CommitReport), ExecError> {
+        let mut snap = self
+            .host
+            .store
+            .load(run_id)?
+            .ok_or_else(|| ExecError::NoSnapshot(run_id.into()))?;
+        let (state, _, _) = self.host.log.run_state(run_id)?;
+        if state != RunState::WaitingApproval {
+            return Err(ExecError::WrongState {
+                run_id: run_id.into(),
+                state: state.as_str().into(),
+                expected: RunState::WaitingApproval.as_str().into(),
+            });
+        }
+        let pending = snap
+            .pending_approval
+            .clone()
+            .ok_or_else(|| ExecError::Other("run is waiting but has no pending approval".into()))?;
+        if pending.effect_class != "artifact.commit" {
+            return Err(ExecError::Commit(format!(
+                "pending effect is {}, not artifact.commit",
+                pending.effect_class
+            )));
+        }
+        // --- pre-flight (nothing durable yet) ------------------------------
+        if let Some(t) = pending.requested_at {
+            if now() - t > RECEIPT_VALIDITY {
+                return Err(ExecError::Commit(format!(
+                    "approval receipt expired ({} minutes); run the skill again",
+                    RECEIPT_VALIDITY.num_minutes()
+                )));
+            }
+        }
+        let batch = crate::tools::builtin::batch_from_value(&pending.batch)
+            .map_err(|e| ExecError::Commit(format!("bound batch: {e}")))?;
+        let base_hash = pending
+            .base_content_hash
+            .clone()
+            .unwrap_or_else(|| batch.base_content_hash.clone());
+        let proposed_hash = pending
+            .proposed_output_hash
+            .clone()
+            .ok_or_else(|| ExecError::Commit("approval binds no proposed_output_hash".into()))?;
+        let base = self.host.artifacts.get(&batch.artifact_id).ok_or_else(|| {
+            ExecError::Commit(format!(
+                "base bytes for artifact {} were not supplied",
+                batch.artifact_id
+            ))
+        })?;
+        let base_now = harbor_canonical::sha256_hex(&base.bytes);
+        if base_now != base_hash {
+            return Err(ExecError::Commit(format!(
+                "base file changed since the proposal (approved {base_hash}, found {base_now})"
+            )));
+        }
+        let output = crate::tools::builtin::apply_batch(&base.bytes, &batch)
+            .map_err(|e| ExecError::Commit(format!("re-applying the batch: {e}")))?;
+        let output_hash = harbor_canonical::sha256_hex(&output);
+        if output_hash != proposed_hash {
+            return Err(ExecError::Commit(format!(
+                "re-applied output {output_hash} does not match the approved {proposed_hash}"
+            )));
+        }
+        let destination = target.destination().to_path_buf();
+        if matches!(target, CommitTarget::SaveNewCopy { .. }) && destination.exists() {
+            return Err(ExecError::Commit(format!(
+                "destination {} already exists; Save New Copy never overwrites",
+                destination.display()
+            )));
+        }
+        let journal_db = self
+            .host
+            .commit_journal
+            .clone()
+            .ok_or_else(|| ExecError::Commit("host has no commit journal".into()))?;
+        let committer = harbor_artifacts::SafeCommitter::new(&journal_db)
+            .map_err(|e| ExecError::Commit(format!("commit journal: {e}")))?;
+
+        // --- durable decision + dispatch ----------------------------------
+        let mut cur = self.open_cursor(run_id)?;
+        self.lease_acquired(&mut cur, run_id)?;
+        let zero = BudgetDelta {
+            active_compute_ms: 0,
+            steps: 0,
+            tool_calls: 0,
+            context_tokens: 0,
+        };
+        self.emit(
+            &mut cur,
+            run_id,
+            Actor::User,
+            EventType::RunApprovalDecided,
+            EventPayload::ApprovalDecided {
+                effect_id: pending.effect_id.clone(),
+                approved: true,
+            },
+            zero,
+        )?;
+        let attempt_id = harbor_security::HarborId::generate("attempt").to_string();
+        self.emit(
+            &mut cur,
+            run_id,
+            Actor::Executor,
+            EventType::RunEffectDispatched,
+            EventPayload::EffectDispatched {
+                effect_id: pending.effect_id.clone(),
+                attempt_id: attempt_id.clone(),
+            },
+            zero,
+        )?;
+        self.transition(
+            &mut cur,
+            run_id,
+            RunState::WaitingApproval,
+            RunState::Running,
+            None,
+        )?;
+        let result = match &target {
+            CommitTarget::SaveNewCopy { destination } => committer.commit_new_copy(
+                &batch.batch_id,
+                &batch.artifact_id,
+                destination,
+                &proposed_hash,
+                &output,
+            ),
+            CommitTarget::Overwrite { destination } => committer.commit_external(
+                &batch.batch_id,
+                &batch.artifact_id,
+                destination,
+                &base_hash,
+                &proposed_hash,
+                &output,
+            ),
+        };
+        let (outcome, version_id, bytes_written) = match &result {
+            Ok(harbor_artifacts::CommitOutcome::Committed {
+                version_id,
+                bytes_written,
+            }) => ("committed", version_id.clone(), *bytes_written),
+            Ok(harbor_artifacts::CommitOutcome::CopiedNew { version_id, .. }) => {
+                ("committed", version_id.clone(), output.len() as u64)
+            }
+            Err(harbor_artifacts::SafeCommitError::AlreadyCommitted(v)) => {
+                ("already_committed", v.clone(), 0)
+            }
+            Err(harbor_artifacts::SafeCommitError::BaseChanged { .. })
+            | Err(harbor_artifacts::SafeCommitError::Conflict) => ("conflict", String::new(), 0),
+            Err(harbor_artifacts::SafeCommitError::OutcomeUnknown) => {
+                ("outcome_unknown", String::new(), 0)
+            }
+            Err(_) => ("failed", String::new(), 0),
+        };
+        self.emit(
+            &mut cur,
+            run_id,
+            Actor::Executor,
+            EventType::RunEffectResolved,
+            EventPayload::EffectResolved {
+                effect_id: pending.effect_id.clone(),
+                outcome: outcome.into(),
+            },
+            zero,
+        )?;
+        let record = json!({
+            "approved": true,
+            "effect_id": pending.effect_id,
+            "receipt_id": pending.receipt_id,
+            "canonical_args_hash": pending.canonical_args_hash,
+            "proposed_output_hash": proposed_hash,
+            "commit": {
+                "outcome": outcome,
+                "attempt_id": attempt_id,
+                "mode": target.mode(),
+                "destination": destination.to_string_lossy(),
+                "version_id": version_id,
+                "bytes_written": bytes_written,
+            },
+        });
+        let _ = pointer::set_unchecked(
+            &mut snap.state,
+            &format!("/approvals/{}", pending.node_id),
+            record,
+        );
+        if let Some(t) = snap
+            .trail
+            .iter_mut()
+            .rev()
+            .find(|t| t.node_id == pending.node_id)
+        {
+            t.decision = Some(format!("approved:{outcome}"));
+        }
+        snap.pending_approval = None;
+        if let Err(e) = result {
+            // The original is untouched (journal: conflict / staged); the
+            // run records why and stops. No automatic retry (02 contract).
+            self.note(
+                &mut cur,
+                run_id,
+                format!(
+                    "commit {outcome}: {e} (destination {})",
+                    destination.display()
+                ),
+            )?;
+            snap.position.next_node = None;
+            let report = self.fail(&mut cur, &mut snap, format!("commit {outcome}: {e}"))?;
+            self.release(&cur);
+            return Err(ExecError::CommitFailed {
+                outcome: outcome.into(),
+                error: e.to_string(),
+                report: Box::new(report),
+            });
+        }
+        self.note(
+            &mut cur,
+            run_id,
+            format!(
+                "committed batch {} as {version_id} ({}) to {}",
+                batch.batch_id,
+                target.mode(),
+                destination.display()
+            ),
+        )?;
+        let commit = CommitReport {
+            run_id: run_id.into(),
+            node_id: pending.node_id.clone(),
+            effect_id: pending.effect_id.clone(),
+            receipt_id: pending.receipt_id.clone(),
+            attempt_id,
+            batch_id: batch.batch_id.clone(),
+            artifact_id: batch.artifact_id.clone(),
+            mode: target.mode().into(),
+            destination,
+            version_id,
+            bytes_written,
+            base_content_hash: base_hash,
+            proposed_output_hash: proposed_hash,
+            outcome: outcome.into(),
+        };
+        let next = match snap.graph.node(&pending.node_id) {
+            Some(Node::Approval { next_approved, .. }) => next_approved
+                .clone()
+                .map(|e| self.follow(&mut snap.position, &pending.node_id, &e)),
+            _ => None,
+        };
+        snap.position.next_node = next;
+        self.save(&mut snap)?;
+        let report = self.run_loop(&mut cur, &mut snap)?;
+        Ok((report, commit))
     }
 
     /// Resume a `RUNNING` run whose process died between nodes.
@@ -1494,6 +1856,8 @@ impl<'a> Executor<'a> {
                         .get("artifact_id")
                         .and_then(Value::as_str)
                         .map(str::to_string),
+                    diff: self.proposal_diff(&batch_value),
+                    requested_at: Some(now()),
                     batch: batch_value,
                 };
                 snap.trail.push(NodeTrace {
@@ -1794,6 +2158,11 @@ pub fn render_context(items: &[graph::ContextItem], state: &Value) -> String {
 /// Convenience for hosts: the lease database path convention.
 pub fn lease_db_path(data_root: &Path) -> PathBuf {
     data_root.join("db").join("agent.db")
+}
+
+/// Durable commit journal (same filesystem as the agent database).
+pub fn commit_journal_path(data_root: &Path) -> PathBuf {
+    data_root.join("db").join("commit_journal.db")
 }
 
 /// Snapshot store over the workspace's encrypted blob store (policy 13:

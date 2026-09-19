@@ -94,7 +94,23 @@ the production model class (1–4 B parameters on device) cannot drive a free-fo
   yet pinned as a test fixture; the tier ran on the locally present Qwen2.5-1.5B.
 
 ## Not done (explicitly)
-- Safe-commit of approved batches through the FFI/UI; Work-surface diff of a proposal.
+- ~~Safe-commit of approved batches through the FFI/UI; Work-surface diff of a proposal.~~
+  Closed 2026-09-20 (production plan B1/B2): `Executor::decide_and_commit` approves the
+  pending proposal and commits it as one protected effect under the run's lease —
+  base bytes re-supplied by the host must hash to the approved base, the batch is
+  re-applied and must hash to the approved output before anything is written,
+  `run.approval_decided` → `run.effect_dispatched` → `SafeCommitter` (Save New Copy
+  by default: exclusive create, original untouched; Overwrite: base revalidated inside
+  the protected interval) → `run.effect_resolved`, then the graph continues. Receipts
+  expire 15 minutes after the approval request (02 contract). Batch ids are now bound
+  to base *and* operations so two proposals on one file never share a journal row, and
+  a journal replay verifies the destination still holds the approved output. The
+  approval carries a before/after `diff` (paragraph text / cell formula-or-value)
+  computed while the artifact is attached, so review needs no document bytes. FFI:
+  `run.commit_proposal { run_id, destination, target, artifacts }`. App: the Run sheet
+  renders the diff with `ArtifactDiffView` and offers **Save new copy** (primary),
+  **Overwrite original…** (confirmed) and **Reject**; `shell_test.dart` runs the full
+  journey on the live core.
 - Decomposition of the other 26 skills.
 - A `SKILL.md` frontmatter importer (HBR-072) — the graph is the target format for it.
 - ~~Resume-after-crash is implemented (`Executor::resume`) but only its wrong-state

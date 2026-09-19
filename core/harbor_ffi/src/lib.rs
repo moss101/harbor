@@ -658,6 +658,32 @@ fn acquire_model(
         .map_err(|e| HarborError::Other(e.to_string()))
 }
 
+/// `artifacts: [{id, name, data_b64}]` → in-memory artifact source.
+fn decode_artifacts(
+    args: &serde_json::Value,
+) -> Result<harbor_core::tools::MemoryArtifacts, HarborError> {
+    use base64::Engine as _;
+    let mut artifacts = harbor_core::tools::MemoryArtifacts::new();
+    for a in args
+        .get("artifacts")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default()
+    {
+        let id = a.get("id").and_then(|v| v.as_str()).unwrap_or("artifact");
+        let name = a.get("name").and_then(|v| v.as_str()).unwrap_or(id);
+        let data = a
+            .get("data_b64")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| HarborError::Other(format!("artifact {id}: missing data_b64")))?;
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(data)
+            .map_err(|e| HarborError::Other(format!("artifact {id}: b64: {e}")))?;
+        artifacts.insert(id, name, bytes);
+    }
+    Ok(artifacts)
+}
+
 fn dispatch(
     ws: &mut WorkspaceHandle,
     method: &str,
@@ -1070,24 +1096,7 @@ fn dispatch(
                 .map(std::path::PathBuf::from);
             // Attached artifacts arrive as bytes: the Flutter layer holds
             // the user-granted file handles and passes content, never paths.
-            let mut artifacts = harbor_core::tools::MemoryArtifacts::new();
-            for a in args
-                .get("artifacts")
-                .and_then(|v| v.as_array())
-                .cloned()
-                .unwrap_or_default()
-            {
-                use base64::Engine as _;
-                let id = a.get("id").and_then(|v| v.as_str()).unwrap_or("artifact");
-                let name = a.get("name").and_then(|v| v.as_str()).unwrap_or(id);
-                let data = a.get("data_b64").and_then(|v| v.as_str()).ok_or_else(|| {
-                    HarborError::Other(format!("artifact {id}: missing data_b64"))
-                })?;
-                let bytes = base64::engine::general_purpose::STANDARD
-                    .decode(data)
-                    .map_err(|e| HarborError::Other(format!("artifact {id}: b64: {e}")))?;
-                artifacts.insert(id, name, bytes);
-            }
+            let artifacts = decode_artifacts(args)?;
             if !graph.model_nodes().is_empty() && chat_package.is_none() {
                 return Err(HarborError::Other(
                     "this skill has model nodes; choose an installed chat model (chat_package)"
@@ -1138,6 +1147,7 @@ fn dispatch(
                     workspace_root,
                     cancel: &progress.cancel,
                     executor_id: "ffi-skill-executor".into(),
+                    commit_journal: None,
                 });
                 let result = exec.start(harbor_core::executor::RunRequest {
                     run_id: None,
@@ -1197,11 +1207,86 @@ fn dispatch(
                 workspace_root: None,
                 cancel: &never,
                 executor_id: "ffi-decide".into(),
+                commit_journal: Some(harbor_core::executor::commit_journal_path(&ws.data_root)),
             });
             let report = exec
                 .decide(run_id, approved)
                 .map_err(|e| HarborError::Other(e.to_string()))?;
             serde_json::to_value(&report).map_err(|e| HarborError::Other(e.to_string()))
+        }
+        // Approve the pending proposal and write it (decision 0006 follow-up,
+        // production plan B1). `target` is `save_new_copy` (default; the
+        // original is never touched) or `overwrite` (base revalidated inside
+        // the protected interval). `destination` is a path the host resolved
+        // from a user-granted location; the base bytes come back through
+        // `artifacts` because the core keeps no document content between
+        // calls. Under the same lease authority as run.decide.
+        "run.commit_proposal" => {
+            let run_id = args
+                .get("run_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing run_id".into()))?;
+            let destination = args
+                .get("destination")
+                .and_then(|v| v.as_str())
+                .map(std::path::PathBuf::from)
+                .ok_or_else(|| HarborError::Other("missing destination".into()))?;
+            let target = match args.get("target").and_then(|v| v.as_str()) {
+                None | Some("save_new_copy") => {
+                    harbor_core::executor::CommitTarget::SaveNewCopy { destination }
+                }
+                Some("overwrite") => harbor_core::executor::CommitTarget::Overwrite { destination },
+                Some(other) => {
+                    return Err(HarborError::Other(format!(
+                        "unknown target {other}; use save_new_copy or overwrite"
+                    )))
+                }
+            };
+            let artifacts = decode_artifacts(args)?;
+            let store = harbor_core::executor::BlobStateStore::new(
+                ws.inner.blobs_arc(),
+                &ws.inner.workspace_id,
+                &ws.data_root,
+            );
+            let registry = harbor_core::tools::ToolRegistry::builtin();
+            let never = AtomicBool::new(false);
+            let chat = ws.chat.clone();
+            let provider: Option<&dyn harbor_inference::ModelProvider> = chat
+                .as_ref()
+                .map(|c| c.provider() as &dyn harbor_inference::ModelProvider);
+            let knowledge = ws.knowledge.clone();
+            let knowledge_ref: Option<&dyn harbor_core::tools::KnowledgeSearch> = knowledge
+                .as_ref()
+                .map(|k| k.as_ref() as &dyn harbor_core::tools::KnowledgeSearch);
+            let exec = harbor_core::executor::Executor::new(harbor_core::executor::Host {
+                log: ws.inner.agent_log.clone(),
+                lease_db: harbor_core::executor::lease_db_path(&ws.data_root),
+                store: &store,
+                registry: &registry,
+                provider,
+                artifacts: &artifacts,
+                knowledge: knowledge_ref,
+                workspace_root: None,
+                cancel: &never,
+                executor_id: "ffi-decide".into(),
+                commit_journal: Some(harbor_core::executor::commit_journal_path(&ws.data_root)),
+            });
+            match exec.decide_and_commit(run_id, target) {
+                Ok((report, commit)) => Ok(serde_json::json!({
+                    "report": report,
+                    "commit": commit,
+                })),
+                Err(harbor_core::executor::ExecError::CommitFailed {
+                    outcome,
+                    error,
+                    report,
+                }) => Ok(serde_json::json!({
+                    "report": report,
+                    "commit": serde_json::Value::Null,
+                    "commit_error": { "outcome": outcome, "error": error },
+                })),
+                Err(e) => Err(HarborError::Other(e.to_string())),
+            }
         }
         "run.snapshot" => {
             let run_id = args

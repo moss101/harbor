@@ -159,6 +159,7 @@ impl Rig {
             workspace_root: None,
             cancel: &self.cancel,
             executor_id: executor_id.into(),
+            commit_journal: None,
         })
     }
 

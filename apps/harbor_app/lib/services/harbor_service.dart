@@ -380,6 +380,33 @@ class HarborService extends ChangeNotifier {
     return report;
   }
 
+  /// Approve the pending proposal and write it (production plan B1). The
+  /// core re-derives the approved output from [artifacts] (the same bytes
+  /// the run was started with — the core keeps no document content) and
+  /// publishes once through the safe-commit journal. [target] is
+  /// [CommitTarget.saveNewCopy] (default; the original is never touched)
+  /// or [CommitTarget.overwrite] (base revalidated inside the protected
+  /// interval). The result carries `report` (the run's terminal picture)
+  /// and either `commit` or `commit_error`.
+  Future<Map<String, dynamic>> commitProposal({
+    required String runId,
+    required String destination,
+    List<SkillArtifact> artifacts = const [],
+    CommitTarget target = CommitTarget.saveNewCopy,
+  }) async {
+    final result = await _call('run.commit_proposal', {
+      'run_id': runId,
+      'destination': destination,
+      'target': target.wire,
+      'artifacts': [
+        for (final a in artifacts)
+          {'id': a.id, 'name': a.name, 'data_b64': base64Encode(a.bytes)},
+      ],
+    });
+    await refresh();
+    return result;
+  }
+
   /// Durable picture of a graph run (trail with node ids and io hashes,
   /// outcome, pending approval), read from the encrypted snapshot store.
   Future<Map<String, dynamic>?> runSnapshot(String runId) async {
@@ -563,4 +590,17 @@ final class SkillArtifact {
   final String id;
   final String name;
   final List<int> bytes;
+}
+
+/// Where an approved proposal is written (wire names match the core).
+enum CommitTarget {
+  /// A new file next to the original; the original is never touched.
+  saveNewCopy('save_new_copy'),
+
+  /// Replace the original in place; refused unless it still matches the
+  /// approved base.
+  overwrite('overwrite');
+
+  const CommitTarget(this.wire);
+  final String wire;
 }

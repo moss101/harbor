@@ -183,3 +183,130 @@ fn model_skills_require_a_chat_package_and_prose_skills_cannot_run() {
     );
     assert!(err.contains("no graph"), "{err}");
 }
+
+#[test]
+fn commit_proposal_saves_a_new_copy_through_the_ffi() {
+    use base64::Engine as _;
+    let dir = tempfile::tempdir().unwrap();
+    let h = Handle::open(dir.path());
+    let tpl = std::fs::read(repo_root().join("fixtures/office/letter_template.docx")).unwrap();
+    let tpl_b64 = base64::engine::general_purpose::STANDARD.encode(&tpl);
+    let start = h.call(
+        "op.start_skill_run",
+        serde_json::json!({
+            "skill_id": "placeholder-fill",
+            "inputs": {"artifact_id": "tpl", "values": {"name": "Amina", "ref": "HB-42", "AMOUNT": "1,250.00", "sender": "Harbor Team"}},
+            "artifacts": [{"id": "tpl", "name": "letter_template.docx", "data_b64": tpl_b64}]
+        }),
+    );
+    let report = wait_op(&h, start["op_id"].as_str().unwrap());
+    assert_eq!(report["state"], "WAITING_APPROVAL", "{report}");
+    let run_id = report["run_id"].as_str().unwrap().to_string();
+    let approval = &report["status"]["approval"];
+    let proposed = approval["proposed_output_hash"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    // The approval carries the before/after diff for the Work surface.
+    let diff = approval["diff"].as_array().unwrap();
+    assert_eq!(diff.len(), 3, "{approval}");
+    assert!(diff
+        .iter()
+        .all(|d| d["before"].is_string() && d["after"].is_string()));
+    assert!(diff[0]["before"].as_str().unwrap().contains("{{name}}"));
+    assert!(diff[0]["after"].as_str().unwrap().contains("Amina"));
+    // run.snapshot exposes the same diff without any document bytes.
+    let snap = h.call("run.snapshot", serde_json::json!({"run_id": run_id}));
+    assert_eq!(
+        snap["pending_approval"]["diff"].as_array().unwrap().len(),
+        3
+    );
+
+    // Save New Copy is the default target; the base bytes come back with
+    // the call because the core keeps no document content.
+    let out = tempfile::tempdir().unwrap();
+    let destination = out.path().join("letter_template (Harbor).docx");
+    let committed = h.call(
+        "run.commit_proposal",
+        serde_json::json!({
+            "run_id": run_id,
+            "destination": destination.to_string_lossy(),
+            "artifacts": [{"id": "tpl", "name": "letter_template.docx", "data_b64": base64::engine::general_purpose::STANDARD.encode(&tpl)}]
+        }),
+    );
+    assert_eq!(committed["report"]["state"], "COMPLETED", "{committed}");
+    assert_eq!(committed["commit"]["outcome"], "committed");
+    assert_eq!(committed["commit"]["mode"], "new_copy");
+    assert_eq!(committed["commit"]["proposed_output_hash"], proposed);
+    assert!(committed["commit_error"].is_null());
+    let written = std::fs::read(&destination).unwrap();
+    assert_eq!(harbor_canonical::sha256_hex(&written), proposed);
+    // The original bytes were never touched (they were only ever in memory).
+    assert_eq!(
+        harbor_canonical::sha256_hex(&tpl),
+        approval["base_content_hash"].as_str().unwrap()
+    );
+    // Durable: decided → dispatched → resolved(committed), chain verifies.
+    let replay = h.call("run.replay", serde_json::json!({"run_id": run_id}));
+    assert_eq!(replay["final_state"], "COMPLETED", "{replay}");
+    let events = h.call("run.state", serde_json::json!({"run_id": run_id}));
+    assert_eq!(events["state"], "COMPLETED");
+    // The commit journal lives under the data root, next to the agent db.
+    assert!(dir.path().join("db").join("commit_journal.db").exists());
+
+    // A second commit of the same run is refused (receipt consumed).
+    let err = h.call_err(
+        "run.commit_proposal",
+        serde_json::json!({
+            "run_id": run_id,
+            "destination": out.path().join("again.docx").to_string_lossy(),
+            "artifacts": [{"id": "tpl", "name": "letter_template.docx", "data_b64": base64::engine::general_purpose::STANDARD.encode(&tpl)}]
+        }),
+    );
+    assert!(err.contains("expected WAITING_APPROVAL"), "{err}");
+
+    // Refusals happen before anything durable: wrong base bytes, missing
+    // bytes, an unknown target, an existing destination.
+    let start2 = h.call(
+        "op.start_skill_run",
+        serde_json::json!({
+            "skill_id": "placeholder-fill",
+            "inputs": {"artifact_id": "tpl", "values": {"name": "B", "ref": "1", "AMOUNT": "2", "sender": "S"}},
+            "artifacts": [{"id": "tpl", "name": "letter_template.docx", "data_b64": base64::engine::general_purpose::STANDARD.encode(&tpl)}]
+        }),
+    );
+    let report2 = wait_op(&h, start2["op_id"].as_str().unwrap());
+    let run2 = report2["run_id"].as_str().unwrap().to_string();
+    let other = std::fs::read(repo_root().join("fixtures/office/structured.docx")).unwrap();
+    let err = h.call_err(
+        "run.commit_proposal",
+        serde_json::json!({
+            "run_id": run2,
+            "destination": out.path().join("b.docx").to_string_lossy(),
+            "artifacts": [{"id": "tpl", "name": "x.docx", "data_b64": base64::engine::general_purpose::STANDARD.encode(&other)}]
+        }),
+    );
+    assert!(err.contains("base file changed"), "{err}");
+    let err = h.call_err(
+        "run.commit_proposal",
+        serde_json::json!({"run_id": run2, "destination": out.path().join("b.docx").to_string_lossy()}),
+    );
+    assert!(err.contains("not supplied"), "{err}");
+    let err = h.call_err(
+        "run.commit_proposal",
+        serde_json::json!({"run_id": run2, "destination": out.path().join("b.docx").to_string_lossy(), "target": "replace"}),
+    );
+    assert!(err.contains("unknown target"), "{err}");
+    let err = h.call_err(
+        "run.commit_proposal",
+        serde_json::json!({
+            "run_id": run2,
+            "destination": destination.to_string_lossy(),
+            "artifacts": [{"id": "tpl", "name": "letter_template.docx", "data_b64": base64::engine::general_purpose::STANDARD.encode(&tpl)}]
+        }),
+    );
+    assert!(err.contains("already exists"), "{err}");
+    let state2 = h.call("run.state", serde_json::json!({"run_id": run2}));
+    assert_eq!(state2["state"], "WAITING_APPROVAL", "{state2}");
+    assert!(!out.path().join("b.docx").exists());
+}

@@ -124,6 +124,13 @@ the reason to ship 1.1 rather than 1.0 to the public.
   approval node.
 - Accessibility gate must pass on the diff view at 200 % text on 320 px.
 
+**Status (2026-09-20):** B1 and B2 done — `Executor::decide_and_commit`,
+FFI `run.commit_proposal`, `HarborService.commitProposal`, Run sheet with
+`ArtifactDiffView` and Save new copy / Overwrite original… / Reject; full
+journey in `shell_test.dart` on the live core. See `docs/STATUS.md` session 34.
+The diff is cell-level for XLSX and paragraph-level for DOCX (the batch
+model has no run-level DOCX ops); PPTX slide ops carry target + after only.
+
 ### B3. Decompose the highest-value remaining skills into graphs (week 3–4)
 Not all 26. Pick by user value and fixture availability:
 1. Document Co-Authoring

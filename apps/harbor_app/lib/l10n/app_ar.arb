@@ -479,5 +479,18 @@
   "skillsExecutedOn": "نُفّذ على {model}",
   "@skillsExecutedOn": {"placeholders": {"model": {"type": "String"}}},
   "skillsStructuredMode": "المخرج المنظّم: {mode}",
-  "@skillsStructuredMode": {"placeholders": {"mode": {"type": "String"}}}
+  "@skillsStructuredMode": {"placeholders": {"mode": {"type": "String"}}},
+  "skillsCommitBody": "اقترح التشغيل {effect} يؤثر على {count, plural, one{عملية واحدة} other{{count} عمليات}}. لم يُكتب شيء بعد. «حفظ نسخة جديدة» يكتب المخرج المعتمد كملف جديد ولا يُعدَّل الأصل أبداً. الاقتراح مرتبط بتجزئة المحتوى الأساسي وتجزئة المخرج الذي ينتجه.",
+  "@skillsCommitBody": {"placeholders": {"effect": {"type": "String"}, "count": {"type": "int"}}},
+  "skillsSaveNewCopy": "حفظ نسخة جديدة",
+  "skillsOverwrite": "استبدال الأصل…",
+  "skillsOverwriteConfirmTitle": "استبدال الملف الأصلي؟",
+  "skillsOverwriteConfirmBody": "سيستبدل Harbor الملف {name} في مكانه. يحدث ذلك فقط إذا كان الملف لا يزال مطابقاً للأساس المعتمد؛ وإلا لا يُكتب شيء ويتوقف التشغيل مع ذكر السبب.",
+  "@skillsOverwriteConfirmBody": {"placeholders": {"name": {"type": "String"}}},
+  "skillsSavedNewCopy": "حُفظ كنسخة جديدة",
+  "skillsOverwritten": "استُبدل الأصل",
+  "skillsCommittedTo": "{path} · الإصدار {version}",
+  "@skillsCommittedTo": {"placeholders": {"path": {"type": "String"}, "version": {"type": "String"}}},
+  "skillsDiffBase": "الأساس",
+  "skillsDiffProposed": "المقترح"
 }

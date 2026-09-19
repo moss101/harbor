@@ -2089,6 +2089,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Structured output: {mode}'**
   String skillsStructuredMode(String mode);
+
+  /// No description provided for @skillsCommitBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The run proposed a {effect} affecting {count, plural, one{1 operation} other{{count} operations}}. Nothing has been written yet. Save new copy writes the approved output as a new file; the original is never modified. The proposal is bound to the base content hash and the hash of the output it produces.'**
+  String skillsCommitBody(String effect, int count);
+
+  /// No description provided for @skillsSaveNewCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Save new copy'**
+  String get skillsSaveNewCopy;
+
+  /// No description provided for @skillsOverwrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Overwrite original…'**
+  String get skillsOverwrite;
+
+  /// No description provided for @skillsOverwriteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Overwrite the original?'**
+  String get skillsOverwriteConfirmTitle;
+
+  /// No description provided for @skillsOverwriteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Harbor will replace {name} in place. This only happens if the file still matches the approved base; otherwise nothing is written and the run stops with the reason.'**
+  String skillsOverwriteConfirmBody(String name);
+
+  /// No description provided for @skillsSavedNewCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved as a new copy'**
+  String get skillsSavedNewCopy;
+
+  /// No description provided for @skillsOverwritten.
+  ///
+  /// In en, this message translates to:
+  /// **'Original replaced'**
+  String get skillsOverwritten;
+
+  /// No description provided for @skillsCommittedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'{path} · version {version}'**
+  String skillsCommittedTo(String path, String version);
+
+  /// No description provided for @skillsDiffBase.
+  ///
+  /// In en, this message translates to:
+  /// **'base'**
+  String get skillsDiffBase;
+
+  /// No description provided for @skillsDiffProposed.
+  ///
+  /// In en, this message translates to:
+  /// **'proposed'**
+  String get skillsDiffProposed;
 }
 
 class _AppLocalizationsDelegate

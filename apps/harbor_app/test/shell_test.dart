@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -10,6 +11,7 @@ import 'package:harbor_app/services/harbor_service.dart';
 import 'package:harbor_app/services/preferences.dart';
 import 'package:harbor_app/shell/adaptive_shell.dart';
 import 'package:harbor_app/shell/keyboard.dart';
+import 'package:harbor_app/surfaces/skill_run.dart';
 import 'package:harbor_app/surfaces/work_surface.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
@@ -102,6 +104,7 @@ void main() {
   _appendPreviewTest();
   _appendSkillsTest();
   _appendSkillRunTests();
+  _appendSkillCommitTests();
   _appendKnowledgeTest();
   _appendRagTest();
   _appendComposerTest();
@@ -745,5 +748,136 @@ void _appendComposerTest() {
         reason: 'the composer submit must create a durable run');
     await goTo(tester, 'Activity');
     expect(find.textContaining('run-'), findsWidgets);
+  });
+}
+
+/// Production plan B1/B2 exit journey on the live core: open a fixture,
+/// run Formula-free Placeholder Fill, review the before/after diff, Save
+/// New Copy, reopen the copy and verify it is the approved output while
+/// the original is untouched.
+void _appendSkillCommitTests() {
+  testWidgets(
+      'run sheet reviews the diff and saves a new copy on the live core',
+      (tester) async {
+    if (!coreAvailable) return;
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    HarborService? service;
+    late Directory dir;
+    await tester.runAsync(() async {
+      dir = await Directory.systemTemp.createTemp('harbor-commit-');
+      final s = await HarborService.open(
+          libraryPath: dylibPath,
+          dataRoot: dir.path,
+          workspaceId: 'ws-commit',
+          deviceRootHex:
+              'f47973db602cbd13c408a3a5cdf3a8eeaa3bd6870b76607542d75ff568526c3c');
+      await s.refresh();
+      service = s;
+    });
+    addTearDown(() => service?.close());
+    // Real file IO must run inside runAsync (fake-async zone otherwise).
+    final original = File('$repoRoot/fixtures/office/letter_template.docx');
+    final originalBytes = await tester.runAsync(() => original.readAsBytes());
+    final copy = File('${dir.path}/letter_template (Harbor).docx');
+    final skill = service!.skills.firstWhere((s) => s.id == 'placeholder-fill');
+
+    await tester.pumpWidget(MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('en'), Locale('ar')],
+      theme: harborThemeData(dark: false, arabic: false),
+      builder: (_, child) => HarborTheme(
+        colors: HarborColors.light,
+        text: const HarborType(arabic: false),
+        child: child!,
+      ),
+      home: Scaffold(
+        body: SkillRunSheet(
+          skill: skill,
+          service: service!,
+          pickArtifact: () async => XFile(original.path),
+          resolveSaveDestination: (suggested) async {
+            expect(suggested, 'letter_template (Harbor).docx');
+            return copy.path;
+          },
+        ),
+      ),
+    ));
+    await tester.pump();
+
+    // Real async (worker isolate, file IO) only progresses inside
+    // runAsync; widget interaction must stay outside it (guarded calls).
+    Future<void> settle(Finder until) async {
+      for (var i = 0; i < 300; i++) {
+        await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 100)));
+        await tester.pump();
+        if (until.evaluate().isNotEmpty) return;
+      }
+    }
+
+    // Attach the fixture through the injected picker and fill the values.
+    await tester.tap(find.byKey(const ValueKey('attach-artifact_id')));
+    await settle(find.textContaining('letter_template.docx'));
+    expect(find.textContaining('letter_template.docx'), findsOneWidget);
+    await tester.enterText(find.byKey(const ValueKey('input-values')),
+        'name=Amina\nref=HB-42\nAMOUNT=1,250.00\nsender=Harbor Team');
+    await tester.pump();
+    final run = tester
+        .widget<FilledButton>(find.byKey(const ValueKey('skill-run-button')));
+    expect(run.onPressed, isNotNull);
+
+    // Run → the executor parks the run for approval with a diff.
+    await tester.tap(find.byKey(const ValueKey('skill-run-button')));
+    await settle(find.byKey(const ValueKey('skill-approval')));
+    expect(find.byKey(const ValueKey('skill-approval')), findsOneWidget);
+    expect(find.byKey(const ValueKey('skill-proposal-diff')), findsOneWidget);
+    // Before/after lines from the core's diff, rendered by ArtifactDiffView.
+    expect(find.textContaining('- Dear {{name}},'), findsOneWidget);
+    expect(find.textContaining('+ Dear Amina,'), findsOneWidget);
+    expect(find.text('Save new copy'), findsOneWidget);
+    expect(find.text('Reject'), findsOneWidget);
+    // Overwrite is offered because the picked file has a real path.
+    expect(find.byKey(const ValueKey('skill-overwrite')), findsOneWidget);
+    expect(copy.existsSync(), isFalse);
+
+    // Save new copy (the default primary action).
+    await tester.tap(find.text('Save new copy'));
+    await settle(find.byKey(const ValueKey('skill-committed')));
+    expect(find.byKey(const ValueKey('skill-committed')), findsOneWidget);
+    expect(find.text('Saved as a new copy'), findsOneWidget);
+    expect(find.textContaining(copy.path), findsWidgets);
+    expect(find.text('COMPLETED'), findsOneWidget);
+
+    // Reopen: the copy is the approved output; the original is untouched.
+    expect(copy.existsSync(), isTrue);
+    late List<int> copyBytes;
+    late List<int> originalNow;
+    Map<String, dynamic>? preview;
+    await tester.runAsync(() async {
+      copyBytes = await copy.readAsBytes();
+      originalNow = await original.readAsBytes();
+      preview = await service!.extractPreview(copyBytes);
+    });
+    expect(copyBytes, isNot(equals(originalBytes)));
+    expect(originalNow, equals(originalBytes));
+    final text = preview.toString();
+    expect(text, contains('Dear Amina,'));
+    expect(text, contains('HB-42'));
+    expect(text, isNot(contains('{{name}}')));
+    // The run's durable record shows the commit resolved.
+    Map<String, dynamic>? snap;
+    await tester.runAsync(() async {
+      final runId = service!.runs.first['run_id'] as String;
+      snap = await service!.runSnapshot(runId);
+    });
+    expect(snap!['state'], 'COMPLETED');
+    expect(snap!['pending_approval'], isNull);
   });
 }

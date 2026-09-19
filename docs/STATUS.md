@@ -7,6 +7,42 @@ ran at.
 
 ---
 
+## Session 34 (2026-09-20): Phase B1–B2 — safe-commit through FFI and app, proposal diff
+
+The skill loop no longer stops at "proposal": a user can run a skill against
+their own document, review the before/after diff, and get a safely committed
+file. Default is **Save New Copy**; Overwrite is a confirmed secondary action.
+
+- **Core** — `Executor::decide_and_commit(run_id, CommitTarget)`: pre-flight
+  (receipt age ≤ 15 min, base bytes hash to the approved base, batch
+  re-applied and hashed against the approved output, Save New Copy never
+  overwrites), then durable `run.approval_decided` → `run.effect_dispatched`
+  → `SafeCommitter::{commit_new_copy, commit_external}` →
+  `run.effect_resolved{committed|conflict|outcome_unknown|failed}`; a refused
+  write fails the run with the reason and leaves the original untouched.
+  `PendingApproval` gains `diff` (before/after per op) and `requested_at`.
+  `tools::builtin::{batch_from_value, apply_batch, proposal_diff}`. Batch ids
+  are bound to base + operations; `SafeCommitter::commit_external` replay
+  verifies the destination (a third version is a conflict).
+- **FFI** — `run.commit_proposal { run_id, destination, target:
+  save_new_copy|overwrite, artifacts }` → `{report, commit | commit_error}`;
+  commit journal at `<data_root>/db/commit_journal.db`.
+- **App** — `HarborService.commitProposal`, `CommitTarget`; Run sheet shows
+  the proposal with `ArtifactDiffView` (base/proposed hashes, `-`/`+` lines
+  per op) and the actions Save new copy / Overwrite original… / Reject;
+  desktop uses the native save dialog, mobile lands the copy in the app
+  documents folder and says where. l10n en/ar.
+- **Tests** — `harbor_core/tests/commit_proposal.rs` (5: diff carried,
+  new-copy happy path with events/journal/replay, pre-dispatch refusals,
+  expired receipt, overwrite conflict inside the protected interval);
+  `harbor_artifacts` replay-conflict unit test; FFI `skill_runs` commit test;
+  `shell_test.dart` "run sheet reviews the diff and saves a new copy on the
+  live core" (open fixture → run → diff → Save New Copy → reopen the copy is
+  the approved output, original unchanged).
+- **Gates** — `cargo fmt/clippy/test --workspace` (47 suites, 0 failures),
+  `cargo audit` clean, `cargo deny check` ok, `flutter analyze` clean, app
+  `flutter test` 28/28, packages green, dossier validator PASS.
+
 ## Session 33 (2026-09-19): Phase A — landed session 32, CI hygiene gates, kill/restart test
 
 Executes `docs/PRODUCTION_PLAN.md` phase A. Session 32 is committed in six

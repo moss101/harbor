@@ -82,6 +82,7 @@ impl Rig {
             workspace_root: None,
             cancel: &self.cancel,
             executor_id: "test-executor".into(),
+            commit_journal: None,
         })
     }
 
@@ -564,6 +565,7 @@ fn blob_state_store_keeps_snapshots_encrypted_at_rest_and_resumable() {
         workspace_root: None,
         cancel: &cancel,
         executor_id: "blob-test".into(),
+        commit_journal: None,
     };
     let exec = Executor::new(host);
     let secret = "Zubaida-Al-Rashid-9981";
@@ -606,6 +608,7 @@ fn blob_state_store_keeps_snapshots_encrypted_at_rest_and_resumable() {
         workspace_root: None,
         cancel: &cancel,
         executor_id: "blob-test-2".into(),
+        commit_journal: None,
     });
     let after = exec2.decide(&report.run_id, true).unwrap();
     assert_eq!(after.state, "COMPLETED");

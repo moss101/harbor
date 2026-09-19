@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:harbor_domain/harbor_domain.dart';
 import 'package:harbor_native/harbor_ffi.dart' as ffi;
 import 'package:harbor_ui/harbor_ui.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/harbor_service.dart';
@@ -13,11 +15,27 @@ import '../services/harbor_service.dart';
 /// graph's input schema, the run executes on the durable executor in the
 /// core, and a proposal parks the run for an explicit approval here. The
 /// UI owns no policy: every state shown is read back from the core.
+/// Resolves where a Save New Copy lands. The default asks the platform
+/// (native save dialog on desktop, the app documents folder elsewhere);
+/// tests inject a fixed path.
+typedef SaveDestinationResolver = Future<String?> Function(
+    String suggestedName);
+
 class SkillRunSheet extends StatefulWidget {
-  const SkillRunSheet({super.key, required this.skill, required this.service});
+  const SkillRunSheet({
+    super.key,
+    required this.skill,
+    required this.service,
+    this.resolveSaveDestination,
+    this.pickArtifact,
+  });
 
   final SkillSummary skill;
   final HarborService service;
+  final SaveDestinationResolver? resolveSaveDestination;
+
+  /// Replaces the platform file picker (tests attach fixtures directly).
+  final Future<XFile?> Function()? pickArtifact;
 
   static Future<void> show(
       BuildContext context, SkillSummary skill, HarborService service) {
@@ -53,6 +71,7 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
   bool _busy = false;
   String? _error;
   Map<String, dynamic>? _report;
+  Map<String, dynamic>? _commit;
 
   SkillGraphInfo get _graph => widget.skill.graph!;
 
@@ -87,12 +106,14 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
     final l10n = AppLocalizations.of(context)!;
     final XFile? file;
     try {
-      file = await openFile(acceptedTypeGroups: [
-        XTypeGroup(
-          label: l10n.fileGroupDocuments,
-          extensions: const ['docx', 'pdf', 'xlsx', 'pptx', 'txt', 'md'],
-        ),
-      ]);
+      file = widget.pickArtifact != null
+          ? await widget.pickArtifact!()
+          : await openFile(acceptedTypeGroups: [
+              XTypeGroup(
+                label: l10n.fileGroupDocuments,
+                extensions: const ['docx', 'pdf', 'xlsx', 'pptx', 'txt', 'md'],
+              ),
+            ]);
     } catch (_) {
       return; // picker dismissed
     }
@@ -177,6 +198,102 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
       final report = await widget.service.decideRun(runId, approved: approved);
       if (!mounted) return;
       setState(() => _report = report);
+    } on ffi.HarborCoreException catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// The attached artifact the proposal is bound to (its bytes go back to
+  /// the core with the commit; the core keeps no document content).
+  MapEntry<String, XFile>? get _proposalFile {
+    if (_attached.isEmpty) return null;
+    return _attached.entries.first;
+  }
+
+  String _suggestedCopyName(String original) {
+    final dot = original.lastIndexOf('.');
+    if (dot <= 0) return '$original (Harbor)';
+    return '${original.substring(0, dot)} (Harbor)${original.substring(dot)}';
+  }
+
+  Future<String?> _defaultSaveDestination(String suggestedName) async {
+    if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+      final location = await getSaveLocation(suggestedName: suggestedName);
+      return location?.path;
+    }
+    // Mobile pickers hand out cached copies, not the user's folder: land
+    // the copy in the app's documents directory and say where.
+    final dir = await getApplicationDocumentsDirectory();
+    return '${dir.path}${Platform.pathSeparator}$suggestedName';
+  }
+
+  /// Approve and write the proposal (production plan B1). Save New Copy is
+  /// the default; Overwrite asks first and only proceeds in the core when
+  /// the original still matches the approved base.
+  Future<void> _commitProposal(CommitTarget target) async {
+    final l10n = AppLocalizations.of(context)!;
+    final runId = _report?['run_id'] as String?;
+    final file = _proposalFile;
+    if (runId == null || file == null) return;
+    final String? destination;
+    if (target == CommitTarget.overwrite) {
+      final original = file.value.path;
+      if (original.isEmpty) return;
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(l10n.skillsOverwriteConfirmTitle),
+          content: Text(l10n.skillsOverwriteConfirmBody(file.value.name)),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: Text(l10n.skillsReject)),
+            FilledButton(
+                key: const ValueKey('skill-overwrite-confirm'),
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: Text(l10n.skillsOverwrite)),
+          ],
+        ),
+      );
+      if (ok != true) return;
+      destination = original;
+    } else {
+      final resolve = widget.resolveSaveDestination ?? _defaultSaveDestination;
+      destination = await resolve(_suggestedCopyName(file.value.name));
+      if (destination == null) return; // dialog dismissed
+    }
+    if (!mounted) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final result = await widget.service.commitProposal(
+        runId: runId,
+        destination: destination,
+        target: target,
+        artifacts: [
+          SkillArtifact(
+              id: (_report!['status']?['approval']?['artifact_id']
+                      as String?) ??
+                  'a1',
+              name: file.value.name,
+              bytes: _attachedBytes[file.key]!),
+        ],
+      );
+      if (!mounted) return;
+      final commitError =
+          (result['commit_error'] as Map?)?.cast<String, dynamic>();
+      setState(() {
+        _report = (result['report'] as Map).cast<String, dynamic>();
+        _commit = (result['commit'] as Map?)?.cast<String, dynamic>();
+        if (commitError != null) {
+          _error = '${commitError['outcome']}: ${commitError['error']}';
+        }
+      });
     } on ffi.HarborCoreException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
@@ -340,6 +457,18 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
             tone: HarborBannerTone.danger,
             title: l10n.skillsRunFailed,
             body: status['error'] as String?),
+      if (_commit != null) ...[
+        const SizedBox(height: HarborSpace.s3),
+        HarborBanner(
+          key: const ValueKey('skill-committed'),
+          tone: HarborBannerTone.info,
+          title: _commit!['mode'] == 'new_copy'
+              ? l10n.skillsSavedNewCopy
+              : l10n.skillsOverwritten,
+          body: l10n.skillsCommittedTo(_commit!['destination'] as String? ?? '',
+              _commit!['version_id'] as String? ?? ''),
+        ),
+      ],
       if (state == 'WAITING_APPROVAL') ..._approval(l10n, t, status),
       if (status['outputs'] is Map &&
           (status['outputs'] as Map).isNotEmpty) ...[
@@ -382,52 +511,104 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
         (status['approval'] as Map?)?.cast<String, dynamic>() ?? {};
     final batch = (approval['batch'] as Map?)?.cast<String, dynamic>() ?? {};
     final ops = (batch['operations'] as List?)?.length ?? 0;
+    final canCommit = approval['effect_class'] == 'artifact.commit' &&
+        _proposalFile != null &&
+        approval['proposed_output_hash'] != null;
+    final canOverwrite =
+        canCommit && (_proposalFile?.value.path.isNotEmpty ?? false);
     return [
       const SizedBox(height: HarborSpace.s3),
       HarborSheet(
         key: const ValueKey('skill-approval'),
         title: l10n.skillsApprovalTitle,
-        explanation: l10n.skillsApprovalBody(
-            approval['effect_class'] as String? ?? '', ops),
-        approveLabel: l10n.skillsApprove,
+        explanation: canCommit
+            ? l10n.skillsCommitBody(
+                approval['effect_class'] as String? ?? '', ops)
+            : l10n.skillsApprovalBody(
+                approval['effect_class'] as String? ?? '', ops),
+        approveLabel: canCommit ? l10n.skillsSaveNewCopy : l10n.skillsApprove,
         denyLabel: l10n.skillsReject,
-        onApprove: _busy ? () {} : () => _decide(true),
+        onApprove: _busy
+            ? () {}
+            : (canCommit
+                ? () => _commitProposal(CommitTarget.saveNewCopy)
+                : () => _decide(true)),
         onDeny: _busy ? () {} : () => _decide(false),
-        diffSummary: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (approval['base_content_hash'] != null)
-              HarborKeyValue(
-                  label: l10n.skillsBaseHash,
-                  value: approval['base_content_hash'] as String,
-                  identifier: true),
-            if (approval['proposed_output_hash'] != null)
-              HarborKeyValue(
-                  label: l10n.skillsProposedHash,
-                  value: approval['proposed_output_hash'] as String,
-                  identifier: true),
-            for (final op in (batch['operations'] as List?) ?? const [])
-              HarborListRow(
-                dense: true,
-                titleIsIdentifier: true,
-                title: Text(
-                    '${op['kind']} → ${op['precondition']?['target_id']}',
-                    style: t.text.monoOf(t.colors.ink)),
-                subtitle: op['args']?['text'] != null
-                    ? Text(op['args']['text'] as String,
-                        style: t.text.smallOf(t.colors.inkMuted),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis)
-                    : (op['args']?['value'] != null
-                        ? Text(
-                            '${op['args']['address']}: ${op['args']['value']}',
-                            style: t.text.smallOf(t.colors.inkMuted))
-                        : null),
-              ),
-          ],
-        ),
+        diffSummary: proposalDiff(l10n, t, approval, batch),
       ),
+      if (canOverwrite)
+        Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: TextButton.icon(
+            key: const ValueKey('skill-overwrite'),
+            onPressed:
+                _busy ? null : () => _commitProposal(CommitTarget.overwrite),
+            icon: const Icon(Icons.save_as_outlined, size: 18),
+            label: Text(l10n.skillsOverwrite),
+          ),
+        ),
     ];
+  }
+
+  /// Version-bound before/after view of the proposal (production plan B2):
+  /// the core's diff entries (paragraph text for DOCX, formula-or-value for
+  /// XLSX) rendered with the shared [ArtifactDiffView]; the raw operation
+  /// list is the fallback when the core supplied no diff.
+  static Widget proposalDiff(AppLocalizations l10n, HarborTheme t,
+      Map<String, dynamic> approval, Map<String, dynamic> batch) {
+    final diff = (approval['diff'] as List?)?.cast<Map>() ?? const [];
+    final base = approval['base_content_hash'] as String? ??
+        batch['base_version_id'] as String? ??
+        '';
+    final proposed = approval['proposed_output_hash'] as String? ?? '';
+    if (diff.isNotEmpty) {
+      return ArtifactDiffView(
+        key: const ValueKey('skill-proposal-diff'),
+        baseVersion: base.length >= 16 ? '${base.substring(0, 16)}…' : base,
+        proposedHash: proposed,
+        baseLabel: l10n.skillsDiffBase,
+        proposedLabel: l10n.skillsDiffProposed,
+        entries: [
+          for (final d in diff)
+            DiffEntryVM(
+              summary: '${d['location'] ?? d['target_id']} · ${d['kind']}',
+              before: d['before'] as String?,
+              after: d['after'] as String?,
+            ),
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (approval['base_content_hash'] != null)
+          HarborKeyValue(
+              label: l10n.skillsBaseHash,
+              value: approval['base_content_hash'] as String,
+              identifier: true),
+        if (approval['proposed_output_hash'] != null)
+          HarborKeyValue(
+              label: l10n.skillsProposedHash,
+              value: approval['proposed_output_hash'] as String,
+              identifier: true),
+        for (final op in (batch['operations'] as List?) ?? const [])
+          HarborListRow(
+            dense: true,
+            titleIsIdentifier: true,
+            title: Text('${op['kind']} → ${op['precondition']?['target_id']}',
+                style: t.text.monoOf(t.colors.ink)),
+            subtitle: op['args']?['text'] != null
+                ? Text(op['args']['text'] as String,
+                    style: t.text.smallOf(t.colors.inkMuted),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis)
+                : (op['args']?['value'] != null
+                    ? Text('${op['args']['address']}: ${op['args']['value']}',
+                        style: t.text.smallOf(t.colors.inkMuted))
+                    : null),
+          ),
+      ],
+    );
   }
 
   Widget _jsonBlock(HarborTheme t, String label, Object? value) {

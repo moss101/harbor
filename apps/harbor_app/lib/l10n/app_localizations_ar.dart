@@ -1298,4 +1298,46 @@ class AppLocalizationsAr extends AppLocalizations {
   String skillsStructuredMode(String mode) {
     return 'المخرج المنظّم: $mode';
   }
+
+  @override
+  String skillsCommitBody(String effect, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count عمليات',
+      one: 'عملية واحدة',
+    );
+    return 'اقترح التشغيل $effect يؤثر على $_temp0. لم يُكتب شيء بعد. «حفظ نسخة جديدة» يكتب المخرج المعتمد كملف جديد ولا يُعدَّل الأصل أبداً. الاقتراح مرتبط بتجزئة المحتوى الأساسي وتجزئة المخرج الذي ينتجه.';
+  }
+
+  @override
+  String get skillsSaveNewCopy => 'حفظ نسخة جديدة';
+
+  @override
+  String get skillsOverwrite => 'استبدال الأصل…';
+
+  @override
+  String get skillsOverwriteConfirmTitle => 'استبدال الملف الأصلي؟';
+
+  @override
+  String skillsOverwriteConfirmBody(String name) {
+    return 'سيستبدل Harbor الملف $name في مكانه. يحدث ذلك فقط إذا كان الملف لا يزال مطابقاً للأساس المعتمد؛ وإلا لا يُكتب شيء ويتوقف التشغيل مع ذكر السبب.';
+  }
+
+  @override
+  String get skillsSavedNewCopy => 'حُفظ كنسخة جديدة';
+
+  @override
+  String get skillsOverwritten => 'استُبدل الأصل';
+
+  @override
+  String skillsCommittedTo(String path, String version) {
+    return '$path · الإصدار $version';
+  }
+
+  @override
+  String get skillsDiffBase => 'الأساس';
+
+  @override
+  String get skillsDiffProposed => 'المقترح';
 }

@@ -256,9 +256,18 @@ impl SafeCommitter {
         output: &[u8],
     ) -> Result<CommitOutcome, SafeCommitError> {
         let now = Utc::now();
-        // Replaying a committed batch returns its version (idempotent).
+        // Replaying a committed batch returns its version (idempotent) —
+        // but only while the destination still holds the approved output.
+        // A third version at the destination is a conflict, never a
+        // silent success (02 contract, recovery rule 5).
         if let Some(j) = self.journal.get(batch_id)? {
             if j.state == JournalState::Committed {
+                let dest_hash = std::fs::read(destination)
+                    .map(|bytes| harbor_canonical::sha256_hex(&bytes))
+                    .ok();
+                if dest_hash.as_deref() != Some(proposed_output_hash) {
+                    return Err(SafeCommitError::Conflict);
+                }
                 return Ok(CommitOutcome::Committed {
                     version_id: j.committed_version_id.unwrap_or_default(),
                     bytes_written: output.len() as u64,
@@ -468,6 +477,14 @@ mod tests {
             .commit_external("b1", "art-1", &dest, &base, &out_hash, out)
             .unwrap();
         assert!(matches!(o2, CommitOutcome::Committed { .. }));
+        // Replay after a third version appeared at the destination is a
+        // conflict, not a silent success (recovery rule 5).
+        std::fs::write(&dest, b"third-version").unwrap();
+        let o3 = c
+            .commit_external("b1", "art-1", &dest, &base, &out_hash, out)
+            .unwrap_err();
+        assert!(matches!(o3, SafeCommitError::Conflict));
+        assert_eq!(std::fs::read(&dest).unwrap(), b"third-version");
     }
 
     #[test]

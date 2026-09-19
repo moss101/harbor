@@ -1241,4 +1241,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String skillsStructuredMode(String mode) {
     return 'Structured output: $mode';
   }
+
+  @override
+  String skillsCommitBody(String effect, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count operations',
+      one: '1 operation',
+    );
+    return 'The run proposed a $effect affecting $_temp0. Nothing has been written yet. Save new copy writes the approved output as a new file; the original is never modified. The proposal is bound to the base content hash and the hash of the output it produces.';
+  }
+
+  @override
+  String get skillsSaveNewCopy => 'Save new copy';
+
+  @override
+  String get skillsOverwrite => 'Overwrite original…';
+
+  @override
+  String get skillsOverwriteConfirmTitle => 'Overwrite the original?';
+
+  @override
+  String skillsOverwriteConfirmBody(String name) {
+    return 'Harbor will replace $name in place. This only happens if the file still matches the approved base; otherwise nothing is written and the run stops with the reason.';
+  }
+
+  @override
+  String get skillsSavedNewCopy => 'Saved as a new copy';
+
+  @override
+  String get skillsOverwritten => 'Original replaced';
+
+  @override
+  String skillsCommittedTo(String path, String version) {
+    return '$path · version $version';
+  }
+
+  @override
+  String get skillsDiffBase => 'base';
+
+  @override
+  String get skillsDiffProposed => 'proposed';
 }

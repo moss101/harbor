@@ -621,5 +621,18 @@
   "skillsExecutedOn": "Executed on {model}",
   "@skillsExecutedOn": {"placeholders": {"model": {"type": "String"}}},
   "skillsStructuredMode": "Structured output: {mode}",
-  "@skillsStructuredMode": {"placeholders": {"mode": {"type": "String"}}}
+  "@skillsStructuredMode": {"placeholders": {"mode": {"type": "String"}}},
+  "skillsCommitBody": "The run proposed a {effect} affecting {count, plural, one{1 operation} other{{count} operations}}. Nothing has been written yet. Save new copy writes the approved output as a new file; the original is never modified. The proposal is bound to the base content hash and the hash of the output it produces.",
+  "@skillsCommitBody": {"placeholders": {"effect": {"type": "String"}, "count": {"type": "int"}}},
+  "skillsSaveNewCopy": "Save new copy",
+  "skillsOverwrite": "Overwrite original…",
+  "skillsOverwriteConfirmTitle": "Overwrite the original?",
+  "skillsOverwriteConfirmBody": "Harbor will replace {name} in place. This only happens if the file still matches the approved base; otherwise nothing is written and the run stops with the reason.",
+  "@skillsOverwriteConfirmBody": {"placeholders": {"name": {"type": "String"}}},
+  "skillsSavedNewCopy": "Saved as a new copy",
+  "skillsOverwritten": "Original replaced",
+  "skillsCommittedTo": "{path} · version {version}",
+  "@skillsCommittedTo": {"placeholders": {"path": {"type": "String"}, "version": {"type": "String"}}},
+  "skillsDiffBase": "base",
+  "skillsDiffProposed": "proposed"
 }
