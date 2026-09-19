@@ -2,7 +2,7 @@
 
 Specification validation: **PASS**. Validator `harbor-dossier-validator/1.0.0`.
 
-115 tasks, 81 gates, 47 screens, 47 security scenarios, 8 schemas and 14 explicit features.
+115 tasks, 81 gates, 47 screens, 47 security scenarios, 9 schemas and 14 explicit features.
 
 Checks cover ID and backlink integrity, milestone ordering, feature activation, security coverage, screen semantics, schema validity, negative contract fixtures, color pairs, document revision and package integrity.
 
@@ -12,7 +12,7 @@ Contract regression cases: 124 passed, 0 failed.
 
 Product readiness remains **BLOCKED**. No product gate is marked PASS by this report. Formula qualification remains 0 of 71; model, engine, adapter, fixture, evaluation and device bindings require implementation evidence. Performance thresholds must be approved and measured.
 
-Input manifest SHA-256: `1cb694e5fce9c2e016e6f1297e7d8c69dfd32f63682b14e4766ce72cd4079640`. File 19 records every input digest. The package manifest excludes itself and includes this report.
+Input manifest SHA-256: `027e7ab99961e64ad1f7173f694a545b7828147172f77cebeafccb8aca1a3196`. File 19 records every input digest. The package manifest excludes itself and includes this report.
 
 Reproduce: install `requirements-validation.txt`, then run `python3 tools/validate_dossier.py`. Regenerate derived reports only after authority edits with `python3 tools/validate_dossier.py --write`.
 

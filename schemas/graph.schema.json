@@ -1,0 +1,562 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harbor.local/schemas/graph.schema.json",
+  "title": "Harbor skill graph (harbor.graph/v1)",
+  "description": "Declarative control flow for a skill run. Control flow is data: the model only ever fills typed slots inside model.* nodes and can neither choose tools nor add nodes. The tool allowlist of a graph is exactly the set of tools named by its tool.call nodes (SEC-005 is structural). Cycles are legal only through edges that declare an iteration bound.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "harbor.graph/v1"
+    },
+    "id": {
+      "$ref": "#/$defs/identifier"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "inputs": {
+      "description": "JSON Schema for the run inputs, bound at /input of the blackboard.",
+      "$ref": "#/$defs/jsonSchemaObject"
+    },
+    "entry": {
+      "$ref": "#/$defs/identifier"
+    },
+    "budgets": {
+      "type": "object",
+      "properties": {
+        "max_steps": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "max_tool_calls": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "max_context_tokens": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000000
+        }
+      },
+      "required": [
+        "max_steps",
+        "max_tool_calls"
+      ],
+      "additionalProperties": false
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 512,
+      "items": {
+        "$ref": "#/$defs/node"
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "id",
+    "version",
+    "inputs",
+    "entry",
+    "budgets",
+    "nodes"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "pointer": {
+      "description": "RFC 6901 JSON pointer into the run blackboard. A single '*' segment selects every element of an array (read side only).",
+      "type": "string",
+      "pattern": "^(/[^/]*)*$",
+      "maxLength": 512
+    },
+    "jsonSchemaObject": {
+      "description": "A JSON Schema document (subset enforced at runtime: type, properties, required, additionalProperties, items, enum, const, minimum, maximum, minLength, maxLength, minItems, maxItems, pattern). For model.structured output schemas, string patterns must be fully anchored (^\u2026$) and may not be combined with minLength/maxLength \u2014 the grammar converter of the pinned runtime rejects those.",
+      "type": "object"
+    },
+    "stateRef": {
+      "type": "object",
+      "properties": {
+        "$state": {
+          "$ref": "#/$defs/pointer"
+        }
+      },
+      "required": [
+        "$state"
+      ],
+      "additionalProperties": false
+    },
+    "edge": {
+      "description": "Next node. A string is a forward edge. An object is required for a back-edge (cycle) and declares its bound and where to go when the bound is exhausted.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/identifier"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "to": {
+              "$ref": "#/$defs/identifier"
+            },
+            "max_iterations": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "exhausted": {
+              "$ref": "#/$defs/identifier"
+            }
+          },
+          "required": [
+            "to",
+            "max_iterations",
+            "exhausted"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "contextItem": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "from": {
+          "$ref": "#/$defs/pointer"
+        },
+        "max_chars": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "label",
+        "from"
+      ],
+      "additionalProperties": false
+    },
+    "predicate": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/pointer"
+        },
+        "op": {
+          "enum": [
+            "exists",
+            "missing",
+            "nonempty",
+            "empty",
+            "truthy",
+            "falsy",
+            "eq",
+            "neq",
+            "gt",
+            "lt",
+            "gte",
+            "lte"
+          ]
+        },
+        "value": {}
+      },
+      "required": [
+        "from",
+        "op"
+      ],
+      "additionalProperties": false
+    },
+    "nodeBase": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000
+        }
+      },
+      "required": [
+        "id",
+        "kind"
+      ]
+    },
+    "node": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/toolCallNode"
+        },
+        {
+          "$ref": "#/$defs/modelStructuredNode"
+        },
+        {
+          "$ref": "#/$defs/modelTextNode"
+        },
+        {
+          "$ref": "#/$defs/branchNode"
+        },
+        {
+          "$ref": "#/$defs/mapNode"
+        },
+        {
+          "$ref": "#/$defs/approvalNode"
+        },
+        {
+          "$ref": "#/$defs/endNode"
+        },
+        {
+          "$ref": "#/$defs/constNode"
+        }
+      ]
+    },
+    "toolCallNode": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "const": "tool.call"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "tool": {
+          "$ref": "#/$defs/identifier"
+        },
+        "args": {
+          "description": "Tool arguments. Values are literals or {\"$state\": pointer} references resolved at call time; the registry validates and canonicalizes the resolved object below the model.",
+          "type": "object"
+        },
+        "out": {
+          "$ref": "#/$defs/pointer"
+        },
+        "next": {
+          "$ref": "#/$defs/edge"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "tool",
+        "args",
+        "out"
+      ],
+      "additionalProperties": false
+    },
+    "modelStructuredNode": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "const": "model.structured"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "instructions": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "context": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/contextItem"
+          },
+          "maxItems": 32
+        },
+        "output_schema": {
+          "$ref": "#/$defs/jsonSchemaObject"
+        },
+        "out": {
+          "$ref": "#/$defs/pointer"
+        },
+        "max_tokens": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32768
+        },
+        "max_retries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "next": {
+          "$ref": "#/$defs/edge"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "instructions",
+        "output_schema",
+        "out"
+      ],
+      "additionalProperties": false
+    },
+    "modelTextNode": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "const": "model.text"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "instructions": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "context": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/contextItem"
+          },
+          "maxItems": 32
+        },
+        "out": {
+          "$ref": "#/$defs/pointer"
+        },
+        "max_tokens": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32768
+        },
+        "next": {
+          "$ref": "#/$defs/edge"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "instructions",
+        "out"
+      ],
+      "additionalProperties": false
+    },
+    "branchNode": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "const": "branch"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "cases": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "properties": {
+              "when": {
+                "$ref": "#/$defs/predicate"
+              },
+              "next": {
+                "$ref": "#/$defs/edge"
+              }
+            },
+            "required": [
+              "when",
+              "next"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "default": {
+          "$ref": "#/$defs/edge"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "cases",
+        "default"
+      ],
+      "additionalProperties": false
+    },
+    "mapNode": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "const": "map"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "over": {
+          "$ref": "#/$defs/pointer"
+        },
+        "item": {
+          "$ref": "#/$defs/pointer"
+        },
+        "body": {
+          "$ref": "#/$defs/identifier"
+        },
+        "collect": {
+          "$ref": "#/$defs/pointer"
+        },
+        "max_items": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "next": {
+          "$ref": "#/$defs/edge"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "over",
+        "item",
+        "body",
+        "collect",
+        "max_items"
+      ],
+      "additionalProperties": false
+    },
+    "approvalNode": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "const": "approval"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "effect_class": {
+          "enum": [
+            "artifact.commit",
+            "connector.send",
+            "file.mutate"
+          ]
+        },
+        "batch": {
+          "$ref": "#/$defs/pointer"
+        },
+        "next_approved": {
+          "$ref": "#/$defs/edge"
+        },
+        "next_rejected": {
+          "$ref": "#/$defs/edge"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "effect_class",
+        "batch"
+      ],
+      "additionalProperties": false
+    },
+    "endNode": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "const": "end"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "outcome": {
+          "enum": [
+            "completed",
+            "needs_input",
+            "abstained"
+          ]
+        },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/pointer"
+          },
+          "maxItems": 32
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "outcome"
+      ],
+      "additionalProperties": false
+    },
+    "constNode": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "const": "const"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "value": {},
+        "out": {
+          "$ref": "#/$defs/pointer"
+        },
+        "next": {
+          "$ref": "#/$defs/edge"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "value",
+        "out"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

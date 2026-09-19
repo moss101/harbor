@@ -430,6 +430,96 @@
     {
       "properties": {
         "event_type": {
+          "const": "run.step_started"
+        },
+        "replay_semantics": {
+          "enum": [
+            "state_affecting",
+            "ignorable_display"
+          ]
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "step_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "node_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+            },
+            "input_hash": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "step_id"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "event_type": {
+          "const": "run.step_completed"
+        },
+        "replay_semantics": {
+          "enum": [
+            "state_affecting",
+            "ignorable_display"
+          ]
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "step_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+            },
+            "summary": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "node_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+            },
+            "output_hash": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "tool": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+            }
+          },
+          "required": [
+            "step_id"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "event_type": {
           "not": {
             "enum": [
               "run.created",
@@ -438,7 +528,9 @@
               "lease.acquired",
               "lease.released",
               "effect.recorded",
-              "approval.recorded"
+              "approval.recorded",
+              "run.step_started",
+              "run.step_completed"
             ]
           }
         },
@@ -479,7 +571,10 @@
           {
             "properties": {
               "replay_semantics": {
-                "enum": ["state_affecting", "authority_affecting"]
+                "enum": [
+                  "state_affecting",
+                  "authority_affecting"
+                ]
               }
             }
           }

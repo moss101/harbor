@@ -17,6 +17,15 @@ The package contains 115 tasks, 81 acceptance gates, 47 routes, 47 security scen
 - Qualification profiles define workloads, repetitions, numerical/date/error semantics, fidelity tolerances, language strata and baseline quality thresholds. Supplied source cases are starting fixtures, not a complete production corpus.
 - Sync transfer requires source-stop acknowledgement, with explicit device expiry and tombstone retention. Plaintext files have operation windows and cleanup rules; crypto-erasure claims exclude already decrypted/exported copies.
 
+## Addendum — 18 September 2026 (decision 0006: skill graphs, tool layer, eval harness)
+
+- `03_Architecture_Contracts.md` §6 (Harbor Skill v1) is extended, not replaced: a `harbor.skill/v2` manifest carries an executable graph (`schemas/graph.schema.json`, `harbor.graph/v1`). Control flow is data; the model only fills schema-constrained slots inside `model.*` nodes; the tool allowlist of a graph is exactly the set of tools its `tool.call` nodes name (SEC-005 becomes structural); cycles exist only through edges that declare an iteration bound. Prose (`v1`) manifests remain valid declarations and are shown as such.
+- `schemas/run_event.schema.json` gains explicit `run.step_started` / `run.step_completed` branches with optional `node_id`, `input_hash`, `output_hash` and `tool` fields, and the generic display branch excludes those two types. Existing step events (`step_id` + `description`/`summary`) still validate; the change is additive. Rust `harbor_agent` payloads carry the same optional fields.
+- §3 (tool contract) is now implemented as code: `harbor_core::tools` registers tools with JSON Schema, risk class, requirements, timeout and output limit; arguments are validated and canonicalized below the model; calls outside the run allowlist are refused before dispatch. The closed catalog grows by `artifact.placeholders`, `artifact.fill_placeholders`, `formula.audit`, `formula.build_operations`, `text.verify_fields` and `text.detect_language` — all `read` or `propose` class; no tool commits anything.
+- Approval nodes prepare the effect durably (`run.effect_prepared` with the canonical args hash, `run.approval_requested`) and park the run in `WAITING_APPROVAL`; the proposal carries the base content hash and the proposed output hash the receipt binds. The protected commit itself remains a host effect executed after the decision (unchanged from §5).
+- Skill evaluation is a real harness (`harbor.skill_eval/v1`): typed assertions, a replay tier that runs with no model weights (CI), a live tier bound to model/runtime identity (qualification machine) and a record mode. The prose `eval_cases` of v1 manifests are documentation, not tests.
+- Nine schemas now exist (graph added). Package manifest and structural validation regenerated.
+
 ## Verification and remaining work
 
 Run `python3 tools/validate_dossier.py` after installing `requirements-validation.txt`. The check is read-only. `--write` regenerates files 19, 20 and 24 only after checks pass. See `tools/README.md` for evidence evaluation.

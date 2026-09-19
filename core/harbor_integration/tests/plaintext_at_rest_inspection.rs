@@ -82,6 +82,8 @@ fn plaintext_at_rest_full_inspection() {
         payload: harbor_agent::EventPayload::StepStarted {
             step_id: "s1".into(),
             description: RUN_SENTINEL.into(),
+            node_id: None,
+            input_hash: None,
         },
         created_at: Workspace::now(),
         prev_event_hash: Some(head_hash),

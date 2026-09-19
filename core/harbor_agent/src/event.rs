@@ -166,10 +166,19 @@ pub enum EventPayload {
     StepStarted {
         step_id: String,
         description: String,
+        /// Graph node identity (decision 0006). Absent for prose runs.
+        node_id: Option<String>,
+        /// Stable hash of the node's resolved input (blackboard slice).
+        input_hash: Option<String>,
     },
     StepCompleted {
         step_id: String,
         summary: String,
+        node_id: Option<String>,
+        /// Stable hash of the value the node wrote to the blackboard.
+        output_hash: Option<String>,
+        /// Tool id when the step was a tool call.
+        tool: Option<String>,
     },
     ApprovalRequested {
         effect_id: String,
@@ -233,16 +242,39 @@ impl EventPayload {
             EventPayload::StepStarted {
                 step_id,
                 description,
+                node_id,
+                input_hash,
             } => {
                 let mut m = std::collections::BTreeMap::new();
                 m.insert("step_id".to_string(), V::str(step_id.clone()));
                 m.insert("description".to_string(), V::str(description.clone()));
+                if let Some(n) = node_id {
+                    m.insert("node_id".to_string(), V::str(n.clone()));
+                }
+                if let Some(h) = input_hash {
+                    m.insert("input_hash".to_string(), V::str(h.clone()));
+                }
                 V::Object(m)
             }
-            EventPayload::StepCompleted { step_id, summary } => {
+            EventPayload::StepCompleted {
+                step_id,
+                summary,
+                node_id,
+                output_hash,
+                tool,
+            } => {
                 let mut m = std::collections::BTreeMap::new();
                 m.insert("step_id".to_string(), V::str(step_id.clone()));
                 m.insert("summary".to_string(), V::str(summary.clone()));
+                if let Some(n) = node_id {
+                    m.insert("node_id".to_string(), V::str(n.clone()));
+                }
+                if let Some(h) = output_hash {
+                    m.insert("output_hash".to_string(), V::str(h.clone()));
+                }
+                if let Some(t) = tool {
+                    m.insert("tool".to_string(), V::str(t.clone()));
+                }
                 V::Object(m)
             }
             EventPayload::ApprovalRequested {
@@ -345,8 +377,10 @@ impl EventPayload {
         let allowed: &[&str] = match event_type {
             EventType::RunCreated => &[],
             EventType::RunTransition => &["from_state", "to_state", "reason"],
-            EventType::RunStepStarted => &["step_id", "description"],
-            EventType::RunStepCompleted => &["step_id", "summary"],
+            EventType::RunStepStarted => &["step_id", "description", "node_id", "input_hash"],
+            EventType::RunStepCompleted => {
+                &["step_id", "summary", "node_id", "output_hash", "tool"]
+            }
             EventType::RunApprovalRequested => &["effect_id", "receipt_id"],
             EventType::RunApprovalDecided => &["effect_id", "approved"],
             EventType::RunEffectPrepared => &["effect_id", "canonical_args_hash"],
@@ -417,6 +451,10 @@ impl EventPayload {
                     .and_then(|v| v.as_str())
                     .unwrap_or_default()
                     .into(),
+                node_id: get("node_id").and_then(|v| v.as_str()).map(str::to_string),
+                input_hash: get("input_hash")
+                    .and_then(|v| v.as_str())
+                    .map(str::to_string),
             },
             EventType::RunStepCompleted => EventPayload::StepCompleted {
                 step_id: get("step_id")
@@ -427,6 +465,11 @@ impl EventPayload {
                     .and_then(|v| v.as_str())
                     .unwrap_or_default()
                     .into(),
+                node_id: get("node_id").and_then(|v| v.as_str()).map(str::to_string),
+                output_hash: get("output_hash")
+                    .and_then(|v| v.as_str())
+                    .map(str::to_string),
+                tool: get("tool").and_then(|v| v.as_str()).map(str::to_string),
             },
             EventType::RunApprovalRequested => EventPayload::ApprovalRequested {
                 effect_id: get("effect_id")

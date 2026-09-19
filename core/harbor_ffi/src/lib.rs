@@ -1044,6 +1044,8 @@ fn dispatch(
                             .unwrap_or(1)
                     }),
                     description: text,
+                    node_id: None,
+                    input_hash: None,
                 },
                 true,
             )?;
@@ -1628,6 +1630,8 @@ fn dispatch(
                         EventPayload::StepStarted {
                             step_id: format!("step-{}", step_seq + 1),
                             description: question.clone(),
+                            node_id: None,
+                            input_hash: None,
                         },
                         true,
                     );
@@ -1664,6 +1668,9 @@ fn dispatch(
                                 EventPayload::StepCompleted {
                                     step_id: format!("step-{step_seq}"),
                                     summary,
+                                    node_id: None,
+                                    output_hash: None,
+                                    tool: None,
                                 },
                                 false,
                             );

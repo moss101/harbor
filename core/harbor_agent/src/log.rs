@@ -762,6 +762,8 @@ mod at_rest_tests {
             payload: EventPayload::StepStarted {
                 step_id: "s1".into(),
                 description: needle.into(),
+                node_id: None,
+                input_hash: None,
             },
             created_at: chrono::Utc::now(),
             prev_event_hash: Some(head_hash),
