@@ -28,7 +28,7 @@ pub struct Workspace {
     pub privacy_policy_version: String,
     pub agent_log: Arc<EventLog>,
     pub broker: Arc<EgressBroker>,
-    blobs: BlobStore,
+    blobs: Arc<BlobStore>,
     store_db_path: PathBuf,
     key_source: Arc<dyn KeyStore>,
     workspace_key: WorkspaceKey,
@@ -65,7 +65,7 @@ impl Workspace {
         let mut db = Database::open(&store_db_path)?;
         db.migrate(&[])?;
 
-        let blobs = BlobStore::new(opts.data_root.join("blobs"))?;
+        let blobs = Arc::new(BlobStore::new(opts.data_root.join("blobs"))?);
         // Create or load the workspace key (wrapped by the device root key
         // in the store database).
         let wrapped = db.write(|c| {
@@ -147,6 +147,11 @@ impl Workspace {
     /// Blob access for private artifacts (extracts, previews, run evidence).
     pub fn blobs(&self) -> &BlobStore {
         &self.blobs
+    }
+
+    /// Shared handle for background executors (encrypted run snapshots).
+    pub fn blobs_arc(&self) -> Arc<BlobStore> {
+        self.blobs.clone()
     }
 
     pub fn store_db_path(&self) -> &Path {

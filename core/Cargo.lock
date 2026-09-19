@@ -1536,6 +1536,7 @@ dependencies = [
 name = "harbor_core"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "chrono",
  "harbor_agent",
  "harbor_artifacts",
@@ -1545,13 +1546,18 @@ dependencies = [
  "harbor_knowledge",
  "harbor_modelhub",
  "harbor_net",
+ "harbor_render",
  "harbor_security",
  "harbor_store",
+ "hex",
+ "regex",
  "rusqlite",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
  "tempfile",
  "thiserror 2.0.20",
+ "zip 4.6.1",
 ]
 
 [[package]]

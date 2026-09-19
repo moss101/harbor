@@ -35,6 +35,13 @@ pub struct SkillManifest {
     pub expected_outputs: Vec<String>,
     #[serde(default)]
     pub eval_cases: Vec<SkillEvalCase>,
+    /// `harbor.skill/v2`: the executable control flow. Inline graph, or
+    /// resolved from `graph_ref` for built-ins.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub graph: Option<crate::graph::Graph>,
+    /// Built-in graph id resolved at load time (see [`builtin_graphs`]).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub graph_ref: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
@@ -77,9 +84,13 @@ pub enum SkillError {
     PrivacyWidening(String, String),
     #[error("code payload detected in skill {0}")]
     ExecutableCode(String),
+    #[error("skill {0}: {1}")]
+    Graph(String, String),
 }
 
 pub const SCHEMA: &str = "harbor.skill/v1";
+/// Graph-bearing manifests (decision 0006).
+pub const SCHEMA_V2: &str = "harbor.skill/v2";
 
 /// Registry of tools/capabilities a deployment offers. Skills reference
 /// these by id; the registry is closed (host-controlled).
@@ -116,7 +127,13 @@ impl Default for CapabilityCatalog {
                 "fs.read_workspace_file",
                 "knowledge.search",
                 "artifact.read",
+                "artifact.placeholders",
+                "artifact.fill_placeholders",
                 "artifact.propose_batch",
+                "formula.audit",
+                "formula.build_operations",
+                "text.verify_fields",
+                "text.detect_language",
                 "model.ask",
                 "model.embed",
                 "clipboard.read",
@@ -139,11 +156,11 @@ impl Default for CapabilityCatalog {
 
 impl SkillManifest {
     pub fn parse(json: &str) -> Result<Self, SkillError> {
-        let m: SkillManifest =
+        let mut m: SkillManifest =
             serde_json::from_str(json).map_err(|e| SkillError::Invalid(e.to_string()))?;
-        if m.schema != SCHEMA {
+        if m.schema != SCHEMA && m.schema != SCHEMA_V2 {
             return Err(SkillError::Invalid(format!(
-                "schema must be {SCHEMA}, got {}",
+                "schema must be {SCHEMA} or {SCHEMA_V2}, got {}",
                 m.schema
             )));
         }
@@ -152,7 +169,42 @@ impl SkillManifest {
                 "id and instructions are required".into(),
             ));
         }
+        m.resolve_graph()?;
         Ok(m)
+    }
+
+    /// Resolve `graph_ref` against the built-in graphs and enforce the v2
+    /// invariants: a v2 manifest carries a graph, a v1 manifest does not.
+    pub fn resolve_graph(&mut self) -> Result<(), SkillError> {
+        if self.graph.is_none() {
+            if let Some(r) = &self.graph_ref {
+                let g = builtin_graphs()
+                    .into_iter()
+                    .find(|g| &g.id == r)
+                    .ok_or_else(|| {
+                        SkillError::Graph(
+                            self.id.clone(),
+                            format!("graph_ref {r} is not a built-in graph"),
+                        )
+                    })?;
+                self.graph = Some(g);
+            }
+        }
+        match (self.schema.as_str(), &self.graph) {
+            (SCHEMA_V2, None) => Err(SkillError::Graph(
+                self.id.clone(),
+                "harbor.skill/v2 requires a graph".into(),
+            )),
+            (SCHEMA, Some(_)) => Err(SkillError::Graph(
+                self.id.clone(),
+                "harbor.skill/v1 may not carry a graph; use v2".into(),
+            )),
+            _ => Ok(()),
+        }
+    }
+
+    pub fn has_graph(&self) -> bool {
+        self.graph.is_some()
     }
 
     /// Validate against a host capability catalog and the privacy rules.
@@ -183,10 +235,49 @@ impl SkillManifest {
         // No code payloads: instructions are prose; reject obvious script
         // markers that would indicate an attempt to smuggle execution.
         const MARKERS: [&str; 6] = ["#!/", "<script", "function(", "eval(", "os.system", "exec("];
-        let haystack = format!("{} {}", self.instructions, self.description).to_lowercase();
+        let mut haystack = format!("{} {}", self.instructions, self.description).to_lowercase();
+        if let Some(g) = &self.graph {
+            for n in &g.nodes {
+                if let crate::graph::Node::ModelStructured { instructions, .. }
+                | crate::graph::Node::ModelText { instructions, .. } = n
+                {
+                    haystack.push(' ');
+                    haystack.push_str(&instructions.to_lowercase());
+                }
+            }
+        }
         for m in MARKERS {
             if haystack.contains(m) {
                 return Err(SkillError::ExecutableCode(self.id.clone()));
+            }
+        }
+        // Graph-bearing skills: the graph is structurally valid, every tool
+        // it names is in the catalog, and the declared allowlist (when
+        // present) is exactly the graph's tool set — nothing can widen it.
+        if let Some(g) = &self.graph {
+            g.validate()
+                .map_err(|e| SkillError::Graph(self.id.clone(), e.to_string()))?;
+            let graph_tools = g.tools();
+            let unknown: Vec<String> = graph_tools
+                .iter()
+                .filter(|t| !catalog.tools.contains_key(*t))
+                .cloned()
+                .collect();
+            if !unknown.is_empty() {
+                return Err(SkillError::UnregisteredTool(self.id.clone(), unknown));
+            }
+            if !self.tools.is_empty() {
+                let declared: std::collections::BTreeSet<String> =
+                    self.tools.iter().cloned().collect();
+                if declared != graph_tools {
+                    return Err(SkillError::Graph(
+                        self.id.clone(),
+                        format!(
+                            "declared tools {:?} differ from graph tools {:?}",
+                            declared, graph_tools
+                        ),
+                    ));
+                }
             }
         }
         Ok(())
@@ -198,9 +289,28 @@ impl SkillManifest {
 pub const BUILTIN_SKILLS_JSON: &str = include_str!("builtin_skills.json");
 
 pub fn builtin_skills() -> Result<Vec<SkillManifest>, SkillError> {
-    let v: Vec<SkillManifest> = serde_json::from_str(BUILTIN_SKILLS_JSON)
+    let mut v: Vec<SkillManifest> = serde_json::from_str(BUILTIN_SKILLS_JSON)
         .map_err(|e| SkillError::Invalid(e.to_string()))?;
+    for s in &mut v {
+        s.resolve_graph()?;
+    }
     Ok(v)
+}
+
+/// Built-in skill graphs (decision 0006), embedded so a manifest's
+/// `graph_ref` resolves without any file access at run time.
+const BUILTIN_GRAPH_JSON: &[&str] = &[
+    include_str!("graphs/formula-audit.json"),
+    include_str!("graphs/placeholder-fill.json"),
+    include_str!("graphs/second-look.json"),
+    include_str!("graphs/meeting-notes.json"),
+];
+
+pub fn builtin_graphs() -> Vec<crate::graph::Graph> {
+    BUILTIN_GRAPH_JSON
+        .iter()
+        .filter_map(|j| serde_json::from_str::<crate::graph::Graph>(j).ok())
+        .collect()
 }
 
 #[cfg(test)]
@@ -222,6 +332,47 @@ mod tests {
         for s in &skills {
             s.validate(&catalog())
                 .unwrap_or_else(|e| panic!("{}: {e}", s.id));
+        }
+    }
+
+    #[test]
+    fn builtin_ids_are_unique_and_every_skill_carries_evals() {
+        let skills = builtin_skills().unwrap();
+        let mut seen = std::collections::BTreeSet::new();
+        for s in &skills {
+            assert!(seen.insert(s.id.clone()), "duplicate skill id {}", s.id);
+            // "adding one is data + eval cases": a built-in without eval
+            // cases cannot be exercised by the eval harness.
+            assert!(!s.eval_cases.is_empty(), "{} has no eval cases", s.id);
+            assert!(
+                !s.expected_outputs.is_empty(),
+                "{} declares no expected outputs",
+                s.id
+            );
+        }
+    }
+
+    #[test]
+    fn adopted_community_skills_are_present() {
+        // docs/decisions/0005-adopted-community-skills.md: methodology
+        // adopted from anthropics/skills (Apache-2.0) and MiniMax-AI/skills
+        // (MIT) as declarative Harbor manifests.
+        let skills = builtin_skills().unwrap();
+        for id in [
+            "doc-coauthoring",
+            "team-update",
+            "second-look",
+            "skill-author",
+            "financial-model-review",
+            "formula-audit",
+            "placeholder-fill",
+            "deck-review",
+            "document-style-review",
+        ] {
+            assert!(
+                skills.iter().any(|s| s.id == id),
+                "missing adopted skill {id}"
+            );
         }
     }
 

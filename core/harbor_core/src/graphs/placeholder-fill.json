@@ -1,0 +1,81 @@
+{
+  "schema": "harbor.graph/v1",
+  "id": "placeholder-fill",
+  "version": 1,
+  "description": "Fully deterministic: inventory placeholders, propose a text.replace batch from supplied values only, and route to approval, or end with needs_input listing what is missing. No model node: filling is completion, not authoring.",
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "artifact_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+      "values": { "type": "object", "additionalProperties": { "type": ["string", "number", "boolean"] } }
+    },
+    "required": ["artifact_id", "values"],
+    "additionalProperties": false
+  },
+  "entry": "inventory",
+  "budgets": { "max_steps": 6, "max_tool_calls": 2 },
+  "nodes": [
+    {
+      "id": "inventory",
+      "kind": "tool.call",
+      "description": "Every placeholder with its paragraph and content hash, before anything is written.",
+      "tool": "artifact.placeholders",
+      "args": { "artifact_id": { "$state": "/input/artifact_id" } },
+      "out": "/inventory",
+      "next": "fill"
+    },
+    {
+      "id": "fill",
+      "kind": "tool.call",
+      "description": "Propose the fill from supplied values; unmapped keys are reported, never invented.",
+      "tool": "artifact.fill_placeholders",
+      "args": { "artifact_id": { "$state": "/input/artifact_id" }, "values": { "$state": "/input/values" } },
+      "out": "/fill",
+      "next": "route"
+    },
+    {
+      "id": "route",
+      "kind": "branch",
+      "cases": [
+        { "when": { "from": "/fill/unmapped", "op": "nonempty" }, "next": "needs_input" },
+        { "when": { "from": "/fill/batch", "op": "exists" }, "next": "approve" }
+      ],
+      "default": "nothing"
+    },
+    {
+      "id": "approve",
+      "kind": "approval",
+      "description": "The fill is a protected artifact commit bound to the base and proposed output hashes.",
+      "effect_class": "artifact.commit",
+      "batch": "/fill/batch",
+      "next_approved": "done",
+      "next_rejected": "rejected"
+    },
+    {
+      "id": "done",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": ["/fill/preview", "/fill/replaced", "/fill/proposed_output_hash", "/approvals/approve"]
+    },
+    {
+      "id": "rejected",
+      "kind": "end",
+      "outcome": "abstained",
+      "outputs": ["/fill/preview"]
+    },
+    {
+      "id": "needs_input",
+      "kind": "end",
+      "description": "Some placeholders have no value: ask, never guess.",
+      "outcome": "needs_input",
+      "outputs": ["/fill/unmapped", "/fill/skipped_paragraphs", "/inventory/keys"]
+    },
+    {
+      "id": "nothing",
+      "kind": "end",
+      "description": "The document has no placeholders to fill.",
+      "outcome": "completed",
+      "outputs": ["/inventory/count"]
+    }
+  ]
+}

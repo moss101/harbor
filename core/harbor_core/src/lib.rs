@@ -6,11 +6,18 @@
 //! (and its FFI projection). One runtime, one permission model, one
 //! artifact model, one evidence model.
 
+pub mod executor;
+pub mod graph;
+pub mod harness;
+pub mod jsonschema;
+pub mod pointer;
 pub mod skills;
+pub mod tools;
 pub mod workspace;
 
 pub use skills::{
-    builtin_skills, CapabilityCatalog, SkillError, SkillManifest, SCHEMA as SKILL_SCHEMA,
+    builtin_graphs, builtin_skills, CapabilityCatalog, SkillError, SkillManifest,
+    SCHEMA as SKILL_SCHEMA, SCHEMA_V2 as SKILL_SCHEMA_V2,
 };
 pub use workspace::{OpenOptions, Workspace};
 

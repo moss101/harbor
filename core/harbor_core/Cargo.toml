@@ -15,11 +15,19 @@ harbor_artifacts = { workspace = true }
 harbor_modelhub = { workspace = true }
 harbor_inference = { workspace = true }
 harbor_knowledge = { workspace = true }
+harbor_render = { workspace = true }
+zip = { workspace = true }
 rusqlite = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 chrono = { workspace = true }
+regex = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+base64 = "0.22"
+tempfile = "3"
 
 [dev-dependencies]
-tempfile = "3"
+# The live eval tier links the pinned llama.cpp runtime.
+harbor_inference = { workspace = true, features = ["gguf-backend"] }

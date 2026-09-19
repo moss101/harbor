@@ -1,0 +1,177 @@
+{
+  "schema": "harbor.graph/v1",
+  "id": "meeting-notes",
+  "version": 2,
+  "description": "Model proposes, tools verify: the structured model node drafts the minutes; every owner and due date is then checked verbatim against the transcript by a deterministic tool (unverifiable values become null and are reported), and the language is detected by script rather than trusted from the model.",
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "transcript": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120000
+      },
+      "language": {
+        "type": "string",
+        "maxLength": 16
+      }
+    },
+    "required": [
+      "transcript"
+    ],
+    "additionalProperties": false
+  },
+  "entry": "minutes",
+  "budgets": {
+    "max_steps": 110,
+    "max_tool_calls": 105,
+    "max_context_tokens": 40000
+  },
+  "nodes": [
+    {
+      "id": "minutes",
+      "kind": "model.structured",
+      "instructions": "Turn the transcript into minutes with four parts: a short summary, the decisions taken, the action items, and the open questions. Every owner and due date on an action item must be copied verbatim from the transcript, exactly as written there; never normalize a date or expand a name. When the transcript names no owner or no date for an action, use null for that field instead of a guess. Do not add decisions or actions that were not stated. Write in the language of the meeting unless a target language is given, and report that language as a lowercase ISO 639-1 code such as en or ar.",
+      "context": [
+        {
+          "label": "Target language (if any)",
+          "from": "/input/language"
+        },
+        {
+          "label": "Transcript",
+          "from": "/input/transcript",
+          "max_chars": 60000
+        }
+      ],
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1200
+          },
+          "decisions": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400
+            }
+          },
+          "actions": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400
+                },
+                "owner": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 120
+                },
+                "due": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 64
+                }
+              },
+              "required": [
+                "text",
+                "owner",
+                "due"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "open_questions": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400
+            }
+          },
+          "language": {
+            "type": "string",
+            "pattern": "^[a-z]{2,3}$"
+          }
+        },
+        "required": [
+          "summary",
+          "decisions",
+          "actions",
+          "open_questions",
+          "language"
+        ],
+        "additionalProperties": false
+      },
+      "out": "/minutes",
+      "max_tokens": 1500,
+      "max_retries": 1,
+      "next": "verify"
+    },
+    {
+      "id": "verify",
+      "kind": "map",
+      "description": "Owners and dates must occur verbatim in the transcript.",
+      "over": "/minutes/actions",
+      "item": "/cur",
+      "body": "verify_one",
+      "collect": "/verified_actions",
+      "max_items": 100,
+      "next": "lang"
+    },
+    {
+      "id": "verify_one",
+      "kind": "tool.call",
+      "tool": "text.verify_fields",
+      "args": {
+        "source": {
+          "$state": "/input/transcript"
+        },
+        "item": {
+          "$state": "/cur"
+        },
+        "fields": [
+          "owner",
+          "due"
+        ]
+      },
+      "out": "/one"
+    },
+    {
+      "id": "lang",
+      "kind": "tool.call",
+      "tool": "text.detect_language",
+      "args": {
+        "text": {
+          "$state": "/input/transcript"
+        }
+      },
+      "out": "/language",
+      "next": "done"
+    },
+    {
+      "id": "done",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/minutes",
+        "/verified_actions",
+        "/language"
+      ]
+    }
+  ]
+}
