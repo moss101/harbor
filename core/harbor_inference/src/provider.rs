@@ -52,6 +52,17 @@ pub struct ChatRequest {
     pub temperature: f32,
     /// Requested capabilities (checked against provider declarations).
     pub requires: Vec<Capabilities>,
+    /// JSON Schema the response must satisfy. Providers declaring
+    /// `StructuredOutput` constrain decoding to it (grammar); others must
+    /// refuse when the caller requires `StructuredOutput`. The caller
+    /// still validates the parsed response — the schema is a constraint on
+    /// generation, never a substitute for validation below the model.
+    pub response_schema: Option<JsonValue>,
+    /// Opaque caller key for tracing and record/replay (e.g.
+    /// `graph_id/node_id#iteration`). Real providers ignore it; the
+    /// cassette provider matches on it so hand-authored fixtures survive
+    /// instruction edits.
+    pub trace_key: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

@@ -97,6 +97,8 @@ fn real_model_loads_and_generates_offline() {
         max_tokens: 24,
         temperature: 0.0,
         requires: vec![Capabilities::Chat],
+        response_schema: None,
+        trace_key: None,
     };
     let resp = provider.generate(req).unwrap();
     println!("runtime: {}", runtime_revision());
@@ -153,6 +155,8 @@ fn generation_is_cancellable() {
         max_tokens: 64,
         temperature: 0.0,
         requires: vec![Capabilities::Chat],
+        response_schema: None,
+        trace_key: None,
     };
     let r = provider.generate_cancellable(req, &cancel, None);
     assert!(
@@ -187,6 +191,8 @@ fn real_model_generates_via_native_template_when_present() {
         max_tokens: 16,
         temperature: 0.0,
         requires: vec![Capabilities::Chat],
+        response_schema: None,
+        trace_key: None,
     };
     let r1 = provider.generate(req.clone()).unwrap();
     let r2 = provider.generate(req).unwrap();
@@ -226,4 +232,56 @@ fn embeddings_via_mean_pooling_are_deterministic_and_typed() {
         .pop()
         .unwrap();
     assert_ne!(a, c);
+}
+
+#[test]
+fn structured_output_is_grammar_constrained_on_the_real_runtime() {
+    let dir = tempfile::tempdir().unwrap();
+    let package = install_test_model(dir.path());
+    let provider = GgufLlamaCppProvider::new(dir.path())
+        .unwrap()
+        .with_context_tokens(512);
+    let m = ModelRef::InstalledPackage {
+        package_id: package.clone(),
+    };
+    assert!(provider.supports(&m, &Capabilities::StructuredOutput));
+    provider.load(&m).unwrap();
+    // stories260K cannot follow instructions; the grammar alone must make
+    // the output a JSON object with exactly these keys and types.
+    let schema = harbor_canonical::parse(
+        r#"{"type":"object","properties":{"word":{"type":"string","maxLength":12},"count":{"type":"integer"}},"required":["word","count"],"additionalProperties":false}"#,
+    )
+    .unwrap();
+    let req = ChatRequest {
+        model: m,
+        messages: vec![JsonValue::object([
+            ("role", JsonValue::str("user")),
+            ("content", JsonValue::str("Describe a dog as JSON.")),
+        ])],
+        max_tokens: 40,
+        temperature: 0.0,
+        requires: vec![Capabilities::Chat, Capabilities::StructuredOutput],
+        response_schema: Some(schema),
+        trace_key: None,
+    };
+    let resp = provider.generate(req).unwrap();
+    println!("structured output: {:?}", resp.content);
+    let v: serde_json::Value = serde_json::from_str(resp.content.trim()).unwrap_or_else(|e| {
+        panic!(
+            "grammar-constrained output must parse as JSON: {e}: {:?}",
+            resp.content
+        )
+    });
+    let obj = v.as_object().expect("object");
+    assert!(
+        obj.get("word").map(|w| w.is_string()).unwrap_or(false),
+        "{v}"
+    );
+    assert!(
+        obj.get("count")
+            .map(|c| c.is_i64() || c.is_u64())
+            .unwrap_or(false),
+        "{v}"
+    );
+    assert_eq!(obj.len(), 2, "additionalProperties=false must hold: {v}");
 }

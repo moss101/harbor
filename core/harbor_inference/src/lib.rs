@@ -13,12 +13,14 @@
 //! packages; platform providers implement it via their native adapters.
 
 pub mod backend;
+pub mod cassette;
 #[cfg(feature = "gguf-backend")]
 pub mod gguf;
 pub mod provider;
 pub mod router;
 
 pub use backend::TestBackend;
+pub use cassette::{Cassette, CassetteMode, RecordReplayProvider};
 #[cfg(feature = "gguf-backend")]
 pub use gguf::{runtime_revision, GgufLlamaCppProvider};
 pub use provider::{
@@ -26,3 +28,16 @@ pub use provider::{
     ProviderError, Usage,
 };
 pub use router::{RouterPolicy, Substitution};
+
+/// The inference runtime identity this build links, feature-agnostic so
+/// eval reports can always record it.
+pub fn runtime_identity() -> &'static str {
+    #[cfg(feature = "gguf-backend")]
+    {
+        gguf::runtime_revision()
+    }
+    #[cfg(not(feature = "gguf-backend"))]
+    {
+        "llama.cpp/not-linked"
+    }
+}

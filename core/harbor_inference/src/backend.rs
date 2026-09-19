@@ -135,6 +135,8 @@ mod tests {
             max_tokens: 16,
             temperature: 0.2,
             requires: vec![Capabilities::Vision],
+            response_schema: None,
+            trace_key: None,
         };
         assert!(matches!(
             b.generate(req),

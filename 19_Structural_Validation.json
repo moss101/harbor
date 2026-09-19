@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "027e7ab99961e64ad1f7173f694a545b7828147172f77cebeafccb8aca1a3196",
+  "input_manifest_sha256": "28a6b811bde2382dbc38e9a701eab11923e2e9a70cbcd71b08b402dceb4036e1",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -1106,8 +1106,8 @@
     },
     {
       "path": "core/harbor_ffi/src/knowledge.rs",
-      "bytes": 29557,
-      "sha256": "4f9161c7195b9ac001ec8f99d6036d2acdc35f01285fd24261eca8be84a08e40"
+      "bytes": 29637,
+      "sha256": "5ffb470d19dd8ff3fa78113707fc60a3b50ca415398be54d54b045e4a1c257a7"
     },
     {
       "path": "core/harbor_ffi/src/lib.rs",
@@ -1161,38 +1161,43 @@
     },
     {
       "path": "core/harbor_inference/src/backend.rs",
-      "bytes": 5702,
-      "sha256": "0d14d6a850cb8ebaa98868d152267f05b3a2b028d4678345e3fe4ae99ae8c772"
+      "bytes": 5766,
+      "sha256": "2bb6b0a407cb7267f4e20440d84a5b1ac433c8c51c0f8c84cfbfa3325c016102"
+    },
+    {
+      "path": "core/harbor_inference/src/cassette.rs",
+      "bytes": 14038,
+      "sha256": "15216343a49e1e5474a0b6ef5590adc0b61a1e1bef2e12fc960503750480a539"
     },
     {
       "path": "core/harbor_inference/src/gguf.rs",
-      "bytes": 15111,
-      "sha256": "ce29848f451f549f3a5d8790027d37a96137650ce9a0ec3fd22ee4f030cfa79d"
+      "bytes": 16571,
+      "sha256": "d5b5b82a57e7936f06b7d48a4e4274b631e180c3348c1206a2083acd2cf0fad4"
     },
     {
       "path": "core/harbor_inference/src/lib.rs",
-      "bytes": 1102,
-      "sha256": "73b069ab72f04b9613c5bf316fed60d625921f83a85e5a454949c6bbcd17af38"
+      "bytes": 1512,
+      "sha256": "9f606c4e7437ab4b5c7ab4c3644a0a804835280382332a22301f7212176fcf8d"
     },
     {
       "path": "core/harbor_inference/src/provider.rs",
-      "bytes": 3538,
-      "sha256": "4722b139dd0fcad034f76ee22ee19491587a697d71b382a7929f0d51e725d56a"
+      "bytes": 4211,
+      "sha256": "28865189ac60acfc46b477a7c10edd02ca98efd1645cf7d4ac4f7b4c1d001f78"
     },
     {
       "path": "core/harbor_inference/src/router.rs",
-      "bytes": 5950,
-      "sha256": "fc0645e9a7f1c8386f25ab720b6ce99b6df855c9562cd71af06f31368ade65a4"
+      "bytes": 6014,
+      "sha256": "8d80beba02427b74c980c4ddfb80638cb886528e70c90772cf857a1e848d6b11"
     },
     {
       "path": "core/harbor_inference/tests/gguf_provider.rs",
-      "bytes": 7778,
-      "sha256": "283f3cec7f6d2ab83ffe8815ca2c088278be6962d83f5588fbf18a407593dca7"
+      "bytes": 9889,
+      "sha256": "080de84b5e7f61b5841cd68ac1e94fd64ace59a7dd4aaf594d82a301f3611ad1"
     },
     {
       "path": "core/harbor_inference/tests/qwen_qualification.rs",
-      "bytes": 9021,
-      "sha256": "16c2fd8d596df52a0f4a69d4f8764dcb734e4fe04f8e4b46f56d740b0864d2d6"
+      "bytes": 9077,
+      "sha256": "baeafa75092ee18d05d0befc288c9dc7f67332b0a4e64c44308ffeeb328a410d"
     },
     {
       "path": "core/harbor_integration/Cargo.toml",
@@ -1201,13 +1206,13 @@
     },
     {
       "path": "core/harbor_integration/examples/perf_baseline.rs",
-      "bytes": 9575,
-      "sha256": "6a8ea7c3c9a60594c41f58cb22a37e5fec9ffceab6d1e9deec0a9f64d852a491"
+      "bytes": 9631,
+      "sha256": "14f206adb8cc3f5c8a1cc60e95528b95f25c377c3da72c00faf4318a6e1fe148"
     },
     {
       "path": "core/harbor_integration/examples/thermal_baseline.rs",
-      "bytes": 6087,
-      "sha256": "61ea22fca09617d87c989e6566f0da1ed4f62e6f043fdf4230dcf0edd9b86428"
+      "bytes": 6151,
+      "sha256": "c31631c8f9b676d5370e0c241f611aa01569ac476233f1bd4a473f63385c257d"
     },
     {
       "path": "core/harbor_integration/src/lib.rs",

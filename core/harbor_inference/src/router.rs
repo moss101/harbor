@@ -110,6 +110,8 @@ mod tests {
             max_tokens: 64,
             temperature: 0.2,
             requires: vec![Capabilities::Chat],
+            response_schema: None,
+            trace_key: None,
         }
     }
 

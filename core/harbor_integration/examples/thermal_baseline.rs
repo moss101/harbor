@@ -108,6 +108,8 @@ fn main() {
             max_tokens: 128,
             temperature: 0.0,
             requires: vec![Capabilities::Chat],
+            response_schema: None,
+            trace_key: None,
         };
         let r = provider.generate(req).unwrap();
         total_tokens += r.usage.completion_tokens;

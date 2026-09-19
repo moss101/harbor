@@ -130,6 +130,8 @@ fn main() {
         max_tokens,
         temperature: 0.0,
         requires: vec![Capabilities::Chat],
+        response_schema: None,
+        trace_key: None,
     };
     let mut ttft_samples = Vec::new();
     for _ in 0..3 {

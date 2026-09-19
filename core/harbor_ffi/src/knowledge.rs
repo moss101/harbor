@@ -723,6 +723,8 @@ impl ChatHandle {
                     max_tokens,
                     temperature: 0.0,
                     requires: vec![Capabilities::Chat],
+                    response_schema: None,
+                    trace_key: None,
                 },
                 cancel,
                 progress.map(|p| &p.items_done),

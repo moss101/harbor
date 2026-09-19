@@ -187,6 +187,8 @@ fn qualify_installed_production_model_chat() {
         max_tokens: 32,
         temperature: 0.0,
         requires: vec![Capabilities::Chat],
+        response_schema: None,
+        trace_key: None,
     };
     let r1 = provider.generate(req.clone()).unwrap();
     let r2 = provider.generate(req).unwrap();

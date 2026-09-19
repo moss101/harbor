@@ -7,9 +7,11 @@
 //! mechanism as the formula engine).
 //!
 //! Implementation notes (honest scope):
-//! - Prompt assembly uses a minimal documented template (system + turns)
-//!   and greedy decoding at temperature 0 for deterministic behavior.
-//!   Model-native chat templates are a follow-up keyed to GGUF metadata.
+//! - Prompt assembly prefers the model-native chat template carried in
+//!   the GGUF metadata and falls back to a minimal documented template;
+//!   greedy decoding at temperature 0 keeps behavior deterministic.
+//! - `ChatRequest::response_schema` constrains decoding to a JSON Schema
+//!   through a llama.cpp grammar (`StructuredOutput` capability).
 //! - Generation is cancellable through [`GgufLlamaCppProvider::generate_cancellable`];
 //!   the trait method runs to completion (or EOS / token budget).
 //! - No model file executes code: GGUF is parsed as data by llama.cpp.
@@ -206,15 +208,39 @@ impl GgufLlamaCppProvider {
         ctx.decode(&mut batch)
             .map_err(|e| ProviderError::Backend(format!("decode: {e}")))?;
 
-        let sampler: LlamaSampler = if req.temperature <= 0.0 {
-            LlamaSampler::chain_simple([LlamaSampler::greedy()])
-        } else {
-            LlamaSampler::chain_simple([
-                LlamaSampler::temp(req.temperature),
-                LlamaSampler::dist(0x48415242), // "HARB"
-            ])
+        // Structured output: constrain decoding to the caller's JSON
+        // Schema through a llama.cpp grammar. The grammar is a constraint
+        // on generation only; the executor still validates the parsed
+        // result below the model (03 §3).
+        let grammar = match &req.response_schema {
+            Some(schema) => {
+                let schema_json = schema
+                    .to_canonical_bytes()
+                    .ok()
+                    .and_then(|b| String::from_utf8(b).ok())
+                    .ok_or_else(|| {
+                        ProviderError::Backend("response_schema is not canonical JSON".into())
+                    })?;
+                let gbnf = llama_cpp_2::json_schema_to_grammar(&schema_json)
+                    .map_err(|e| ProviderError::Backend(format!("schema grammar: {e}")))?;
+                Some(
+                    LlamaSampler::grammar(&model, &gbnf, "root")
+                        .map_err(|e| ProviderError::Backend(format!("grammar sampler: {e}")))?,
+                )
+            }
+            None => None,
         };
-        let mut sampler = sampler;
+        let mut chain: Vec<LlamaSampler> = Vec::new();
+        if let Some(g) = grammar {
+            chain.push(g);
+        }
+        if req.temperature <= 0.0 {
+            chain.push(LlamaSampler::greedy());
+        } else {
+            chain.push(LlamaSampler::temp(req.temperature));
+            chain.push(LlamaSampler::dist(0x48415242)); // "HARB"
+        }
+        let mut sampler = LlamaSampler::chain_simple(chain);
         let eos = model.token_eos();
         let mut out = String::new();
         let mut generated: u64 = 0;
@@ -328,13 +354,18 @@ impl ModelProvider for GgufLlamaCppProvider {
     }
 
     fn capabilities(&self) -> &'static [Capabilities] {
-        &[Capabilities::Chat, Capabilities::Embeddings]
+        &[
+            Capabilities::Chat,
+            Capabilities::Embeddings,
+            Capabilities::StructuredOutput,
+        ]
     }
 
     fn supports(&self, model: &ModelRef, need: &Capabilities) -> bool {
         match (model, need) {
             (ModelRef::InstalledPackage { package_id }, Capabilities::Chat)
-            | (ModelRef::InstalledPackage { package_id }, Capabilities::Embeddings) => {
+            | (ModelRef::InstalledPackage { package_id }, Capabilities::Embeddings)
+            | (ModelRef::InstalledPackage { package_id }, Capabilities::StructuredOutput) => {
                 self.weights_path(package_id).is_ok()
             }
             _ => false,
