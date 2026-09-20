@@ -72,6 +72,18 @@ fn boundary_errors_app_records_and_export_go_through_the_diagnostics_log() {
     );
     assert_eq!(bad["ok"], false);
 
+    // A panic inside dispatch never crosses the boundary: it becomes an
+    // error response and a `panic` record with a backtrace.
+    let boom = h.raw("_debug.panic", serde_json::json!({}));
+    assert_eq!(boom["ok"], false);
+    assert!(
+        boom["error"].as_str().unwrap().contains("internal error"),
+        "{boom}"
+    );
+    // The handle is still usable afterwards.
+    let id = h.call("identity.get", serde_json::json!({}));
+    assert_eq!(id["workspace_id"], "ws-diag");
+
     let list = h.call("diag.list", serde_json::json!({"limit": 10}));
     let records = list["records"].as_array().unwrap();
     assert!(records.len() >= 3, "{list}"); // run.decide error, app record, diag.record error
@@ -94,6 +106,15 @@ fn boundary_errors_app_records_and_export_go_through_the_diagnostics_log() {
         .expect("boundary error recorded");
     assert!(ffi["message"].as_str().unwrap().contains("nope"));
     assert!(list["redaction_policy"].as_array().unwrap().len() >= 3);
+    let panic_rec = records
+        .iter()
+        .find(|r| r["level"] == "panic")
+        .expect("panic recorded by the hook");
+    assert!(panic_rec["message"]
+        .as_str()
+        .unwrap()
+        .contains("debug panic requested"));
+    assert!(panic_rec["backtrace"].is_string());
 
     // The log on disk is sealed: none of the messages appear in plaintext.
     let raw = std::fs::read(dir.path().join("diagnostics").join("log.hdiag")).unwrap();

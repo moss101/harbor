@@ -1,0 +1,188 @@
+{
+  "schema": "harbor.graph/v1",
+  "id": "second-look",
+  "version": 1,
+  "description": "Deterministic rules first: material kinds that never deserve a nudge (the user's own material, creative, lookup, educational, opinion) are skipped without consulting the model; only the ambiguous cases reach the structured model node, which decides applicability and writes two or three specific questions.",
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "material": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 60000
+      },
+      "material_kind": {
+        "description": "What the material is, when the caller knows: answer, draft, estimate, plan, analysis, summary_of_own_material, creative, lookup, educational, opinion.",
+        "type": "string",
+        "maxLength": 64
+      },
+      "user_request": {
+        "type": "string",
+        "maxLength": 4000
+      }
+    },
+    "required": [
+      "material"
+    ],
+    "additionalProperties": false
+  },
+  "entry": "rules",
+  "budgets": {
+    "max_steps": 4,
+    "max_tool_calls": 0,
+    "max_context_tokens": 20000
+  },
+  "nodes": [
+    {
+      "id": "rules",
+      "kind": "branch",
+      "description": "Kinds the skill never nudges are decided without a model call.",
+      "cases": [
+        {
+          "when": {
+            "from": "/input/material_kind",
+            "op": "eq",
+            "value": "summary_of_own_material"
+          },
+          "next": "rule_skip"
+        },
+        {
+          "when": {
+            "from": "/input/material_kind",
+            "op": "eq",
+            "value": "creative"
+          },
+          "next": "rule_skip"
+        },
+        {
+          "when": {
+            "from": "/input/material_kind",
+            "op": "eq",
+            "value": "lookup"
+          },
+          "next": "rule_skip"
+        },
+        {
+          "when": {
+            "from": "/input/material_kind",
+            "op": "eq",
+            "value": "educational"
+          },
+          "next": "rule_skip"
+        },
+        {
+          "when": {
+            "from": "/input/material_kind",
+            "op": "eq",
+            "value": "opinion"
+          },
+          "next": "rule_skip"
+        },
+        {
+          "when": {
+            "from": "/input/material_kind",
+            "op": "eq",
+            "value": "casual"
+          },
+          "next": "rule_skip"
+        }
+      ],
+      "default": "look"
+    },
+    {
+      "id": "rule_skip",
+      "kind": "const",
+      "value": {
+        "applies": false,
+        "skip_reason": "Skipped by rule: this kind of material is never nudged (the user judges their own material, creative work, lookups, explanations and opinions).",
+        "questions": []
+      },
+      "out": "/look",
+      "next": "skip"
+    },
+    {
+      "id": "look",
+      "kind": "model.structured",
+      "instructions": "Decide whether the material deserves a second look before the user acts on it, then write the questions. It applies when the material contains estimates, projections or figures not grounded in the user's own data, advice in a consequential domain, factual claims the user will act on or repeat, multi-step reasoning where an early assumption changes the conclusion, an interpretation of data, or a drafted artifact whose content rests on assumptions about the user's situation. It does not apply to creative writing, casual conversation, a simple lookup, a purely educational explanation, an opinion, a summary or reformatting of the user's own material, or when the user already asked for verification, citations or the quick version. When it applies, write two or three questions the user could send back verbatim, first person, question form, each under 120 characters and each pointing at something concrete in the material: a figure and how to check it against the user's own data, a reasoning step or assumption worth justifying, or context the material had to guess at. When it does not apply, set applies to false, give the skip reason, and leave questions empty.",
+      "context": [
+        {
+          "label": "Material kind (if known)",
+          "from": "/input/material_kind"
+        },
+        {
+          "label": "The user's request",
+          "from": "/input/user_request"
+        },
+        {
+          "label": "Material",
+          "from": "/input/material",
+          "max_chars": 40000
+        }
+      ],
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "applies": {
+            "type": "boolean"
+          },
+          "skip_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200
+          },
+          "questions": {
+            "type": "array",
+            "maxItems": 3,
+            "items": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 120
+            }
+          }
+        },
+        "required": [
+          "applies",
+          "skip_reason",
+          "questions"
+        ],
+        "additionalProperties": false
+      },
+      "out": "/look",
+      "max_tokens": 400,
+      "max_retries": 1,
+      "next": "route"
+    },
+    {
+      "id": "route",
+      "kind": "branch",
+      "cases": [
+        {
+          "when": {
+            "from": "/look/applies",
+            "op": "truthy"
+          },
+          "next": "questions"
+        }
+      ],
+      "default": "skip"
+    },
+    {
+      "id": "questions",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/look/questions"
+      ]
+    },
+    {
+      "id": "skip",
+      "kind": "end",
+      "outcome": "abstained",
+      "outputs": [
+        "/look/skip_reason"
+      ]
+    }
+  ]
+}

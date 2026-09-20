@@ -84,6 +84,7 @@ type DocxMergeMap = BTreeMap<usize, BTreeMap<(usize, usize), (Vec<usize>, u32)>>
 impl DocxDocument {
     pub fn load(bytes: &[u8]) -> Result<Self, DocxError> {
         let mut archive = zip::ZipArchive::new(Cursor::new(bytes))?;
+        crate::inflate_probe(&mut archive).map_err(DocxError::Malformed)?;
         let mut xml = String::new();
         {
             let mut f = archive

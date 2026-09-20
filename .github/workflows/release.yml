@@ -1,0 +1,225 @@
+# Tag-driven release evidence (production plan C5).
+#
+# On a `harbor-v*` tag (or a manual dispatch for a dry run) this workflow
+# regenerates every machine-verifiable evidence file AT THE TAGGED COMMIT,
+# assembles `evidence/releases/<version>/` with
+# tools/assemble_release_evidence.py, builds the UNSIGNED macOS app
+# bundle and the debug-key Android artifacts, and attaches everything to
+# a draft GitHub release. Signing, notarization and store uploads stay on
+# the operator machine behind the credential boundary
+# (scripts/package_apple.sh, scripts/package_android.sh): no key
+# material exists here. Gates that need operator resources are reported
+# as BLOCKED_* by the assembler, never fabricated.
+name: release
+on:
+  push:
+    tags: ["harbor-v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version label for the evidence bundle (dry run, no GitHub release)"
+        required: true
+        default: "0.0.0-dryrun"
+
+permissions:
+  contents: write
+
+jobs:
+  evidence:
+    # macOS: the reference qualification class for the machine suites.
+    runs-on: macos-14
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        name: Version from tag or input
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/harbor-v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/harbor-v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install -r requirements-validation.txt
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: core }
+      - name: Dossier + contracts (fail fast on a stale seal)
+        run: |
+          python3 tools/check_dossier_seal.py
+          python3 tools/validate_dossier.py
+          python3 tools/test_contracts.py
+      - name: Workspace gates (fmt, clippy, tests)
+        working-directory: core
+        run: |
+          cargo fmt --check
+          cargo clippy --workspace --all-targets -- -D warnings
+          cargo test --workspace
+      - name: Gate evidence (commit-bound)
+        run: |
+          python3 tools/generate_gate_evidence.py --write
+          python3 tools/check_optional_disabled.py --write
+          python3 tools/generate_sbom.py --write
+          python3 tools/generate_third_party_notices.py --check
+      - name: Plaintext-at-rest inspection (writes evidence/plaintext_at_rest.json)
+        working-directory: core
+        run: cargo test -p harbor_integration --test plaintext_at_rest_inspection
+      - name: Changelog from commit subjects
+        run: |
+          git fetch --tags --force
+          python3 tools/generate_changelog.py --write
+          cp CHANGELOG.md "evidence/releases/${{ steps.meta.outputs.version }}/CHANGELOG.md" 2>/dev/null || true
+      - name: Assemble the release evidence bundle
+        run: python3 tools/assemble_release_evidence.py --version "${{ steps.meta.outputs.version }}" --write
+      - name: Show the gate report
+        run: |
+          python3 - <<'EOF'
+          import json, glob, os
+          v = "${{ steps.meta.outputs.version }}"
+          for p in glob.glob(f"evidence/releases/{v}/*.json"):
+              d = json.load(open(p))
+              if isinstance(d, dict) and "gates" in d:
+                  for g in d["gates"]:
+                      print(f'{g["id"]:8} {g["status"]:24} {g["gate"]}')
+                  print("release_declared:", d.get("release_declared"), "-", d.get("release_declared_reason", ""))
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: evidence-${{ steps.meta.outputs.version }}
+          path: |
+            evidence/releases/${{ steps.meta.outputs.version }}
+            CHANGELOG.md
+            evidence/gate_results.json
+            evidence/plaintext_at_rest.json
+            evidence/optional_capabilities_disabled.json
+            evidence/sbom.cyclonedx.json
+          if-no-files-found: error
+
+  macos-app:
+    # Unsigned (ad-hoc) release bundle: reproducible-build evidence only.
+    # Developer ID signing + notarization run on the operator machine
+    # (scripts/package_apple.sh with HARBOR_APPLE_SIGNING_IDENTITY).
+    runs-on: macos-14
+    needs: evidence
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: core }
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.4
+          channel: stable
+          cache: true
+      - name: Native core (release)
+        run: cargo build --manifest-path core/Cargo.toml -p harbor_ffi --release
+      - name: Pub get
+        run: |
+          for d in packages/harbor_domain packages/harbor_native packages/harbor_ui apps/harbor_app; do
+            (cd "$d" && flutter pub get)
+          done
+      - name: Build macOS app (ad-hoc signed)
+        working-directory: apps/harbor_app
+        run: flutter build macos --release
+      - name: Zip the bundle + record its hash
+        run: |
+          app=apps/harbor_app/build/macos/Build/Products/Release/harbor_app.app
+          test -d "$app"
+          ditto -c -k --keepParent "$app" harbor_app-macos-${{ needs.evidence.outputs.version }}-unsigned.zip
+          shasum -a 256 harbor_app-macos-${{ needs.evidence.outputs.version }}-unsigned.zip | tee macos-sha256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-app-${{ needs.evidence.outputs.version }}
+          path: |
+            harbor_app-macos-${{ needs.evidence.outputs.version }}-unsigned.zip
+            macos-sha256.txt
+
+  android:
+    # Debug-key APK/AAB (NOT store-distributable): reproducible-build
+    # evidence; the operator upload key is applied by
+    # scripts/package_android.sh. The native core is cross-compiled here
+    # with the NDK so the artifact matches the tagged commit.
+    runs-on: ubuntu-latest
+    needs: evidence
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
+      - uses: nttld/setup-ndk@v1
+        id: ndk
+        with: { ndk-version: r27c, add-to-path: false }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: aarch64-linux-android }
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: core }
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.4
+          channel: stable
+          cache: true
+      - name: Cross-compile the native core (arm64-v8a)
+        env:
+          NDK: ${{ steps.ndk.outputs.ndk-path }}
+        run: |
+          bin="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$bin/aarch64-linux-android24-clang"
+          export CC_aarch64_linux_android="$bin/aarch64-linux-android24-clang"
+          export CXX_aarch64_linux_android="$bin/aarch64-linux-android24-clang++"
+          export AR_aarch64_linux_android="$bin/llvm-ar"
+          export CMAKE_TOOLCHAIN_FILE_aarch64_linux_android="$NDK/build/cmake/android.toolchain.cmake"
+          export CMAKE_ARGS="-DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-24 -DGGML_OPENMP=OFF"
+          cargo build --manifest-path core/Cargo.toml -p harbor_ffi --release --target aarch64-linux-android
+          cp core/target/aarch64-linux-android/release/libharbor_ffi.so apps/harbor_app/android/app/src/main/jniLibs/arm64-v8a/
+          cp "$NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so" apps/harbor_app/android/app/src/main/jniLibs/arm64-v8a/
+      - name: Pub get
+        run: |
+          for d in packages/harbor_domain packages/harbor_native packages/harbor_ui apps/harbor_app; do
+            (cd "$d" && flutter pub get)
+          done
+      - name: Build APK + AAB (debug key)
+        working-directory: apps/harbor_app
+        run: |
+          flutter build apk --release
+          flutter build appbundle --release
+          shasum -a 256 build/app/outputs/flutter-apk/app-release.apk build/app/outputs/bundle/release/app-release.aab | tee android-sha256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-${{ needs.evidence.outputs.version }}
+          path: |
+            apps/harbor_app/build/app/outputs/flutter-apk/app-release.apk
+            apps/harbor_app/build/app/outputs/bundle/release/app-release.aab
+            apps/harbor_app/android-sha256.txt
+
+  publish:
+    # Draft release with the evidence bundle and the unsigned artifacts.
+    # Only for real tags; a dispatch dry run stops at the artifacts.
+    if: startsWith(github.ref, 'refs/tags/harbor-v')
+    runs-on: ubuntu-latest
+    needs: [evidence, macos-app, android]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+      - name: Bundle the evidence directory
+        run: |
+          v="${{ needs.evidence.outputs.version }}"
+          (cd release-assets && tar -czf "harbor-evidence-$v.tar.gz" "evidence-$v")
+          ls -R release-assets | head -50
+      - uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          name: harbor-v${{ needs.evidence.outputs.version }}
+          body: |
+            Evidence bundle assembled at this tag by the `release` workflow
+            (`tools/assemble_release_evidence.py`). Artifacts here are
+            UNSIGNED / debug-key builds for reproducibility only; signed,
+            notarized and store-ready packages are produced on the operator
+            machine (`scripts/package_apple.sh`, `scripts/package_android.sh`).
+          files: |
+            release-assets/harbor-evidence-${{ needs.evidence.outputs.version }}.tar.gz
+            release-assets/macos-app-${{ needs.evidence.outputs.version }}/*
+            release-assets/android-${{ needs.evidence.outputs.version }}/**

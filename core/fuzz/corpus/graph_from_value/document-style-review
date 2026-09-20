@@ -1,0 +1,194 @@
+{
+  "schema": "harbor.graph/v1",
+  "id": "document-style-review",
+  "version": 1,
+  "description": "Six-principle style review of a DOCX: docx.inspect reports heading hierarchy breaks, direct-formatting overrides (style contamination), unmarked or mixed-direction Arabic paragraphs, cramped margins and heading size ratios from styles.xml, and lists what it could not judge. The model only prioritises: it picks up to five findings by the conflict rule (readability over hierarchy, hierarchy over consistency, consistency over aesthetics) and describes what to apply in the editor; every location it cites must be one the inspector reported (text.verify_fields). Style definitions are never rewritten by Harbor.",
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "artifact_id": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      }
+    },
+    "required": [
+      "artifact_id"
+    ],
+    "additionalProperties": false
+  },
+  "entry": "inspect",
+  "budgets": {
+    "max_steps": 20,
+    "max_tool_calls": 12,
+    "max_context_tokens": 24000
+  },
+  "nodes": [
+    {
+      "id": "inspect",
+      "kind": "tool.call",
+      "tool": "docx.inspect",
+      "args": {
+        "artifact_id": {
+          "$state": "/input/artifact_id"
+        }
+      },
+      "out": "/inspect",
+      "next": "has_findings"
+    },
+    {
+      "id": "has_findings",
+      "kind": "branch",
+      "cases": [
+        {
+          "when": {
+            "from": "/inspect/findings",
+            "op": "nonempty"
+          },
+          "next": "prioritize"
+        }
+      ],
+      "default": "clean"
+    },
+    {
+      "id": "prioritize",
+      "kind": "model.structured",
+      "description": "Order by the conflict rule; cite only reported locations.",
+      "instructions": "You are reviewing a document's typography and structure against six principles: white space, contrast and scale, proximity, alignment, repetition and hierarchy. A deterministic inspector already produced the findings; each has a code, a location such as \"¶ 5\" or \"page\" or \"styles Heading 1 / Heading 3\", and a detail. Choose up to five findings to fix first, ordered by the rule that readability wins over hierarchy, hierarchy over consistency, and consistency over aesthetics: cramped_margins and rtl_not_marked hurt readability; heading_skip, heading_without_body, empty_heading and heading_scale are hierarchy; direct_formatting is consistency; mixed_direction is alignment. For each chosen finding copy its location exactly as given, name the principle, and say in at most 200 characters why it matters. Then list the concrete steps to apply in the editor, one per line, precise enough to follow (which style to apply to which paragraph, which override to clear, which margin to set). Write a summary of at most 400 characters. Keep every field short: the output must stay well under 1200 tokens. Never claim a principle was checked if it appears in the not-checked list.",
+      "context": [
+        {
+          "label": "Findings",
+          "from": "/inspect/findings",
+          "max_chars": 12000
+        },
+        {
+          "label": "Heading counts",
+          "from": "/inspect/heading_counts",
+          "max_chars": 500
+        },
+        {
+          "label": "Not checked",
+          "from": "/inspect/not_checked",
+          "max_chars": 1500
+        }
+      ],
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          },
+          "top": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 5,
+            "items": {
+              "type": "object",
+              "properties": {
+                "location": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "principle": {
+                  "enum": [
+                    "white_space",
+                    "contrast",
+                    "proximity",
+                    "alignment",
+                    "repetition",
+                    "hierarchy"
+                  ]
+                },
+                "why": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                }
+              },
+              "required": [
+                "location",
+                "principle",
+                "why"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "apply_in_editor": {
+            "type": "array",
+            "maxItems": 6,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            }
+          }
+        },
+        "required": [
+          "summary",
+          "top",
+          "apply_in_editor"
+        ],
+        "additionalProperties": false
+      },
+      "out": "/prioritize",
+      "max_tokens": 1400,
+      "max_retries": 1,
+      "next": "verify"
+    },
+    {
+      "id": "verify",
+      "kind": "map",
+      "description": "Every cited location must be one the inspector reported.",
+      "over": "/prioritize/top",
+      "item": "/cur",
+      "body": "verify_one",
+      "collect": "/verified_top",
+      "max_items": 5,
+      "next": "done"
+    },
+    {
+      "id": "verify_one",
+      "kind": "tool.call",
+      "tool": "text.verify_fields",
+      "args": {
+        "source": {
+          "$state": "/inspect/report_text"
+        },
+        "item": {
+          "$state": "/cur"
+        },
+        "fields": [
+          "location"
+        ]
+      },
+      "out": "/one"
+    },
+    {
+      "id": "done",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/prioritize/summary",
+        "/verified_top",
+        "/prioritize/apply_in_editor",
+        "/inspect/findings",
+        "/inspect/counts_by_code",
+        "/inspect/not_checked"
+      ]
+    },
+    {
+      "id": "clean",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/inspect/counts_by_code",
+        "/inspect/heading_counts",
+        "/inspect/not_checked",
+        "/inspect/paragraph_count"
+      ]
+    }
+  ]
+}

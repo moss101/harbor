@@ -28,3 +28,10 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true
+  # The signed model catalog (harbor.catalog/v1) and its pinned root key,
+  # copied verbatim from fixtures/catalog (test/catalog_assets_test.dart
+  # keeps them identical). Imported into the core on first run so
+  # Models → Recommended works offline.
+  assets:
+    - assets/catalog/signed_catalog.json
+    - assets/catalog/root_public.hex

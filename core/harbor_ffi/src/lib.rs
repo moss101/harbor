@@ -414,7 +414,7 @@ pub extern "C" fn harbor_core_open_ex(
     privacy_mode: u8,
     device_root_hex: *const c_char,
 ) -> *mut WorkspaceHandle {
-    let result = (|| {
+    let result = std::panic::catch_unwind(|| -> Result<WorkspaceHandle, HarborError> {
         let root = str_from_ptr(data_root)?;
         let ws_id = str_from_ptr(workspace_id)?;
         let mode = match privacy_mode {
@@ -446,6 +446,26 @@ pub extern "C" fn harbor_core_open_ex(
         let ws = harbor_core::Workspace::open_with_keystore(&opts, ws_id, mode, keystore.clone())?;
         let hub_token = load_hub_token(&data_root, &keystore);
         let diagnostics = Arc::new(ws.diagnostics(&data_root)?);
+        // Crash residue from an interrupted acquisition is removed before
+        // the first call, like temp working windows (C2 recovery).
+        if let Ok(removed) =
+            harbor_modelhub::install::PackageInstaller::new(data_root.join("models"))
+                .sweep_staging()
+        {
+            if !removed.is_empty() {
+                let _ = diagnostics.record(harbor_core::diagnostics::DiagnosticRecord {
+                    at: chrono::Utc::now(),
+                    level: "info".into(),
+                    source: "core".into(),
+                    message: format!(
+                        "removed interrupted acquisition staging for {} package(s)",
+                        removed.len()
+                    ),
+                    context: Some("open".into()),
+                    backtrace: None,
+                });
+            }
+        }
         harbor_core::diagnostics::DiagnosticsLog::install_panic_hook(diagnostics.clone());
         Ok(WorkspaceHandle {
             inner: ws,
@@ -459,10 +479,10 @@ pub extern "C" fn harbor_core_open_ex(
             hub_token,
             diagnostics,
         })
-    })();
+    });
     match result {
-        Ok(h) => Box::into_raw(Box::new(h)),
-        Err(_) => ptr::null_mut(),
+        Ok(Ok(h)) => Box::into_raw(Box::new(h)),
+        _ => ptr::null_mut(),
     }
 }
 
@@ -597,6 +617,40 @@ fn open_weight_sessions(
         }
     }
     sessions
+}
+
+/// Device facts come from the platform adapters (native layer) as call
+/// arguments; the core computes Fit Scores — never the UI.
+fn device_profile_from_args(args: &serde_json::Value) -> harbor_modelhub::fit::DeviceProfile {
+    harbor_modelhub::fit::DeviceProfile {
+        architecture: args
+            .get("architecture")
+            .and_then(|v| v.as_str())
+            .unwrap_or(std::env::consts::ARCH)
+            .to_string(),
+        physical_ram: args
+            .get("physical_ram")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(8 << 30),
+        available_ram: args
+            .get("available_ram")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(4 << 30),
+        gpu_backend: if args.get("gpu_backend").and_then(|v| v.as_bool()) == Some(true) {
+            Some("Metal".to_string())
+        } else {
+            None
+        },
+        accelerated_gguf_supported: args
+            .get("accelerated")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false),
+        thermal: match args.get("thermal").and_then(|v| v.as_str()) {
+            Some("reduced") => harbor_modelhub::fit::Thermal::Reduced,
+            Some("critical") => harbor_modelhub::fit::Thermal::Critical,
+            _ => harbor_modelhub::fit::Thermal::Normal,
+        },
+    }
 }
 
 fn parse_acquire_files(
@@ -841,6 +895,11 @@ fn dispatch(
             "workspace_id": ws.inner.workspace_id,
             "policy": ws.inner.privacy_mode.as_str(),
         })),
+        // Debug builds only: proves the unwind guard and the panic hook
+        // end to end (tests, fuzzing). Absent from release binaries.
+        "_debug.panic" if cfg!(debug_assertions) => {
+            panic!("debug panic requested through the boundary")
+        }
         // --- diagnostics (production plan C1) --------------------------
         // The app records its own errors here (FlutterError,
         // PlatformDispatcher.onError); messages are redacted by the log.
@@ -981,6 +1040,83 @@ fn dispatch(
             }
             Ok(serde_json::json!({ "models": out }))
         }
+        // Fit for a package that is NOT installed yet (a catalog entry or an
+        // HF listing): the caller supplies the weights size it learned from
+        // the listing; everything else is the same core computation.
+        "model.fit_estimate" => {
+            let weights = args
+                .get("weights_bytes")
+                .and_then(|v| v.as_u64())
+                .ok_or_else(|| HarborError::Other("missing weights_bytes".into()))?;
+            let device = device_profile_from_args(args);
+            let footprint = harbor_modelhub::fit::ModelFootprint {
+                format: "GGUF".to_string(),
+                weights_bytes: weights,
+                peak_memory_bytes: weights + weights / 8,
+                kv_cache_per_1k_tokens: 8 << 20,
+                context_tokens: args
+                    .get("context_tokens")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(2048),
+                quantization: args
+                    .get("quantization")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("Q4_K_M")
+                    .to_string(),
+                multimodal: false,
+                runtime_kind: "gguf/llama.cpp".to_string(),
+            };
+            let score = harbor_modelhub::fit::FitScore::evaluate(&device, &footprint);
+            Ok(serde_json::json!({
+                "band": format!("{:?}", score.band).to_lowercase(),
+                "reasons": score.reasons,
+                "estimated_peak_bytes": score.estimated_peak_bytes,
+                "weights_bytes": weights,
+            }))
+        }
+        // The accepted signed catalog (production plan C2: first-run
+        // recommendations come from here, offline). Empty until the host
+        // imports one through catalog.import.
+        "catalog.list" => {
+            let Some((verifier, entries)) = ws.catalog.as_ref() else {
+                return Ok(serde_json::json!({ "imported": false, "packages": [] }));
+            };
+            let packages = harbor_modelhub::acquire::parse_catalog_document(entries)
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let raw: serde_json::Value =
+                serde_json::from_slice(&entries.to_canonical_bytes().unwrap_or_default())
+                    .unwrap_or(serde_json::Value::Null);
+            let installer =
+                harbor_modelhub::install::PackageInstaller::new(ws.data_root.join("models"));
+            let installed = installer.installed_packages().unwrap_or_default();
+            let list: Vec<serde_json::Value> = packages
+                .iter()
+                .map(|p| {
+                    let meta = raw
+                        .get("packages")
+                        .and_then(|v| v.as_array())
+                        .and_then(|a| a.iter().find(|e| e.get("id").and_then(|v| v.as_str()) == Some(&p.id)))
+                        .cloned()
+                        .unwrap_or(serde_json::Value::Null);
+                    serde_json::json!({
+                        "id": p.id,
+                        "repo_id": p.repo_id,
+                        "revision": p.revision,
+                        "quantization": meta.get("quantization").cloned().unwrap_or(serde_json::Value::Null),
+                        "context_tokens": meta.get("context_tokens").cloned().unwrap_or(serde_json::Value::Null),
+                        "tiers": meta.get("tiers").cloned().unwrap_or(serde_json::json!([])),
+                        "license": meta.get("license").cloned().unwrap_or(serde_json::Value::Null),
+                        "files": p.files.iter().map(|(path, role, sha)| serde_json::json!({"path": path, "role": role, "sha256": sha})).collect::<Vec<_>>(),
+                        "installed": installed.iter().any(|i| i == &p.id),
+                    })
+                })
+                .collect();
+            Ok(serde_json::json!({
+                "imported": true,
+                "epoch": verifier.accepted_epoch,
+                "packages": list,
+            }))
+        }
         "model.fit_score" => {
             // Device facts come from the platform adapters (native layer);
             // the core computes the score — never the UI.
@@ -999,35 +1135,7 @@ fn dispatch(
                 .filter(|f| f.role == "weights" || f.role == "weights_shard")
                 .map(|f| f.size_bytes)
                 .sum();
-            let device = harbor_modelhub::fit::DeviceProfile {
-                architecture: args
-                    .get("architecture")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or(std::env::consts::ARCH)
-                    .to_string(),
-                physical_ram: args
-                    .get("physical_ram")
-                    .and_then(|v| v.as_u64())
-                    .unwrap_or(8 << 30),
-                available_ram: args
-                    .get("available_ram")
-                    .and_then(|v| v.as_u64())
-                    .unwrap_or(4 << 30),
-                gpu_backend: if args.get("gpu_backend").and_then(|v| v.as_bool()) == Some(true) {
-                    Some("Metal".to_string())
-                } else {
-                    None
-                },
-                accelerated_gguf_supported: args
-                    .get("accelerated")
-                    .and_then(|v| v.as_bool())
-                    .unwrap_or(false),
-                thermal: match args.get("thermal").and_then(|v| v.as_str()) {
-                    Some("reduced") => harbor_modelhub::fit::Thermal::Reduced,
-                    Some("critical") => harbor_modelhub::fit::Thermal::Critical,
-                    _ => harbor_modelhub::fit::Thermal::Normal,
-                },
-            };
+            let device = device_profile_from_args(args);
             let footprint = harbor_modelhub::fit::ModelFootprint {
                 format: "GGUF".to_string(),
                 weights_bytes: weights,
@@ -1689,20 +1797,25 @@ fn dispatch(
                 signature: sig.to_string(),
             };
             let root_hex = args.get("root_public_hex").and_then(|v| v.as_str());
-            let (verifier, stored_entries) = ws.catalog.get_or_insert_with(|| {
-                // Bootstrap with the caller-pinned root key on first import.
-                let root = root_hex.map(str::to_string).unwrap_or_default();
-                (
-                    harbor_modelhub::catalog_signing::CatalogVerifier::new(&root)
-                        .expect("bootstrap root key"),
-                    harbor_canonical::parse("{}").unwrap(),
-                )
-            });
-            if let Some(root) = root_hex {
+            // A first import needs the caller-pinned root key, and a bad
+            // key is a typed error — never a panic behind the boundary.
+            if ws.catalog.is_none() {
+                let root = root_hex.ok_or_else(|| {
+                    HarborError::Other(
+                        "first catalog import needs root_public_hex (the pinned root key)".into(),
+                    )
+                })?;
+                let verifier = harbor_modelhub::catalog_signing::CatalogVerifier::new(root)
+                    .map_err(|e| HarborError::Other(format!("root key: {e}")))?;
+                ws.catalog = Some((verifier, harbor_canonical::parse("{}").unwrap()));
+            } else if let Some(root) = root_hex {
                 harbor_modelhub::catalog_signing::CatalogVerifier::new(root)
                     .map_err(|e| HarborError::Other(e.to_string()))?;
             }
-            let _ = root_hex;
+            let (verifier, stored_entries) = ws
+                .catalog
+                .as_mut()
+                .ok_or_else(|| HarborError::Other("catalog state missing".into()))?;
             verifier
                 .verify(&signed)
                 .map_err(|e| HarborError::Other(e.to_string()))?;
@@ -2348,7 +2461,11 @@ pub unsafe extern "C" fn harbor_core_call(
     if handle.is_null() || request_json.is_null() {
         return err_json("null argument".into());
     }
-    let result = (|| {
+    // A panic must never cross the C boundary (it would abort the host
+    // process): every dispatch runs under catch_unwind and a panic becomes
+    // an error response plus a diagnostics record. The panic hook has
+    // already captured the backtrace.
+    let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let req = str_from_ptr(request_json)?;
         let v: serde_json::Value = serde_json::from_str(req)
             .map_err(|e| HarborError::Other(format!("bad request json: {e}")))?;
@@ -2374,10 +2491,20 @@ pub unsafe extern "C" fn harbor_core_call(
                 });
         }
         r
-    })();
-    match result {
-        Ok(v) => ok_json(v),
-        Err(e) => err_json(e.to_string()),
+    }));
+    match outcome {
+        Ok(Ok(v)) => ok_json(v),
+        Ok(Err(e)) => err_json(e.to_string()),
+        Err(payload) => {
+            let message = payload
+                .downcast_ref::<&str>()
+                .map(|s| s.to_string())
+                .or_else(|| payload.downcast_ref::<String>().cloned())
+                .unwrap_or_else(|| "panic".into());
+            err_json(format!(
+                "internal error (recorded in diagnostics): {message}"
+            ))
+        }
     }
 }
 

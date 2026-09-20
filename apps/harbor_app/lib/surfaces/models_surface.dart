@@ -130,6 +130,11 @@ class _ModelsSurfaceState extends State<ModelsSurface>
   }
 }
 
+/// Recommended (production plan C2): the accepted signed catalog, offline.
+/// Each entry shows its tier, quantization and context; "Check size & fit"
+/// resolves the weights size through the brokered metadata read and asks
+/// the core for a Fit Score; "Install" runs the real acquisition with the
+/// catalog's pinned sha256. Nothing is ranked or scored from guesses.
 class _RecommendedTab extends StatelessWidget {
   const _RecommendedTab({required this.onHuggingFace, required this.onImport});
   final VoidCallback onHuggingFace;
@@ -138,21 +143,231 @@ class _RecommendedTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final t = HarborTheme.of(context);
     final sp = HarborServiceProvider.of(context);
-    if (sp.failed || sp.notifier == null) {
+    final service = sp.notifier;
+    if (sp.failed || service == null) {
       return HarborErrorState(
           title: l10n.coreDegradedTitle, message: l10n.coreNotLoadedModels);
     }
-    // Honest state: the signed catalog is not synced in this build, so
-    // there is nothing to rank — and no sample Fit Scores are shown.
-    return HarborEmptyState(
-      icon: Icons.recommend_outlined,
-      title: l10n.modelsRecommended,
-      body: l10n.modelsRecommendedBody,
-      actionLabel: l10n.modelsGoHuggingFace,
-      onAction: onHuggingFace,
-      secondaryActionLabel: l10n.modelsImportGguf,
-      onSecondaryAction: onImport,
+    final packages = service.catalog
+        .where((p) => !(p['tiers'] as List? ?? const []).contains('Test'))
+        .toList()
+      ..sort((a, b) {
+        // Chat tiers first (Balanced/Quality/Fast), embeddings after.
+        int rank(Map<String, dynamic> p) =>
+            (p['tiers'] as List? ?? const []).contains('Embeddings') ? 1 : 0;
+        return rank(a).compareTo(rank(b));
+      });
+    if (!service.catalogImported || packages.isEmpty) {
+      return HarborEmptyState(
+        icon: Icons.recommend_outlined,
+        title: l10n.modelsRecommended,
+        body: l10n.modelsRecommendedBody,
+        actionLabel: l10n.modelsGoHuggingFace,
+        onAction: onHuggingFace,
+        secondaryActionLabel: l10n.modelsImportGguf,
+        onSecondaryAction: onImport,
+      );
+    }
+    return HarborPage(
+      maxWidth: HarborLayout.readingMax + 80,
+      children: [
+        if (service.needsFirstModel)
+          Padding(
+            padding: const EdgeInsets.only(bottom: HarborSpace.s4),
+            child: HarborBanner(
+              key: const ValueKey('models-first-run'),
+              tone: HarborBannerTone.info,
+              icon: Icons.shield_outlined,
+              title: l10n.modelsFirstRunTitle,
+              body: l10n.modelsFirstRunBody,
+            ),
+          ),
+        Text(l10n.modelsCatalogHeading(service.catalog.length),
+            style: t.text.captionOf(t.colors.inkMuted)),
+        const SizedBox(height: HarborSpace.s2),
+        for (final p in packages)
+          Padding(
+            padding: const EdgeInsets.only(bottom: HarborSpace.s3),
+            child: _CatalogCard(package: p, service: service),
+          ),
+        const SizedBox(height: HarborSpace.s3),
+        Text(l10n.modelsCatalogFooter,
+            style: t.text.smallOf(t.colors.inkMuted)),
+      ],
+    );
+  }
+}
+
+class _CatalogCard extends StatefulWidget {
+  const _CatalogCard({required this.package, required this.service});
+  final Map<String, dynamic> package;
+  final HarborService service;
+
+  @override
+  State<_CatalogCard> createState() => _CatalogCardState();
+}
+
+class _CatalogCardState extends State<_CatalogCard> {
+  int? _weightsBytes;
+  Map<String, dynamic>? _fit;
+  bool _checking = false;
+  bool _installing = false;
+  String? _error;
+
+  Map<String, dynamic> get p => widget.package;
+  List<Map<String, dynamic>> get _files => (p['files'] as List? ?? const [])
+      .cast<Map>()
+      .map((m) => m.cast<String, dynamic>())
+      .toList();
+  bool get _installed => p['installed'] == true;
+
+  Future<void> _checkFit() async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _checking = true;
+      _error = null;
+    });
+    try {
+      final listing =
+          await widget.service.huggingFaceFiles(p['repo_id'] as String);
+      final wanted = _files.map((f) => f['path'] as String).toSet();
+      var bytes = 0;
+      for (final f in listing) {
+        if (wanted.contains(f['path'])) {
+          bytes += (f['size'] as num? ?? 0).toInt();
+        }
+      }
+      if (bytes == 0) {
+        if (mounted) setState(() => _error = l10n.modelsCatalogSizeUnavailable);
+        return;
+      }
+      final fit = await widget.service.fitEstimate(
+        weightsBytes: bytes,
+        contextTokens: (p['context_tokens'] as num? ?? 2048).toInt(),
+        quantization: p['quantization'] as String? ?? 'Q4_K_M',
+      );
+      if (!mounted) return;
+      setState(() {
+        _weightsBytes = bytes;
+        _fit = fit;
+      });
+    } finally {
+      if (mounted) setState(() => _checking = false);
+    }
+  }
+
+  Future<void> _install() async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _installing = true;
+      _error = null;
+    });
+    try {
+      await widget.service.acquireModelHf(
+        packageId: p['id'] as String,
+        repoId: p['repo_id'] as String,
+        files: [
+          for (final f in _files)
+            {
+              'path': f['path'] as String,
+              'role': f['role'] as String? ?? 'weights',
+              'sha256': f['sha256'] as String? ?? '',
+            },
+        ],
+      );
+    } on ffi.HarborCoreException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.message.toLowerCase().contains('cancel')
+            ? l10n.modelInstallCancelled
+            : l10n.modelInstallFailed;
+      });
+    } finally {
+      if (mounted) setState(() => _installing = false);
+    }
+  }
+
+  static String _gb(int bytes) =>
+      '${(bytes / (1 << 30)).toStringAsFixed(2)} GB';
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final t = HarborTheme.of(context);
+    final tiers = (p['tiers'] as List? ?? const []).cast<String>();
+    final fit = _fit;
+    return HarborCard(
+      key: ValueKey('catalog-${p['id']}'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Wrap(
+            spacing: HarborSpace.s2,
+            runSpacing: HarborSpace.s1,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(p['id'] as String, style: t.text.bodyStrongOf(t.colors.ink)),
+              for (final tier in tiers)
+                StatusBadge(semantic: ExecutionSemantic.local, label: tier),
+              if (_installed)
+                StatusBadge(
+                    semantic: ExecutionSemantic.local,
+                    label: l10n.modelsInstalledBadge),
+            ],
+          ),
+          const SizedBox(height: HarborSpace.s2),
+          Text(
+            [
+              p['repo_id'] as String,
+              if (p['quantization'] != null) p['quantization'] as String,
+              if (p['context_tokens'] != null)
+                l10n.modelsContextTokens((p['context_tokens'] as num).toInt()),
+              if (p['license'] != null) p['license'] as String,
+              if (_weightsBytes != null) _gb(_weightsBytes!),
+            ].join(' · '),
+            style: t.text.smallOf(t.colors.inkMuted),
+          ),
+          if (fit != null) ...[
+            const SizedBox(height: HarborSpace.s2),
+            FitScoreBadge(
+              band: FitBandLabel.parse(fit['band'] as String? ?? ''),
+              reasons: (fit['reasons'] as List? ?? const []).cast<String>(),
+            ),
+          ],
+          if (_error != null) ...[
+            const SizedBox(height: HarborSpace.s2),
+            Text(_error!, style: t.text.smallOf(t.colors.statusDangerText)),
+          ],
+          const SizedBox(height: HarborSpace.s3),
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: HarborSpace.s2,
+            runSpacing: HarborSpace.s2,
+            children: [
+              OutlinedButton.icon(
+                key: ValueKey('catalog-fit-${p['id']}'),
+                onPressed: _checking || _installing ? null : _checkFit,
+                icon: const Icon(Icons.speed_outlined, size: 18),
+                label: Text(_checking
+                    ? l10n.modelsFitComputing
+                    : l10n.modelsCatalogCheckFit),
+              ),
+              FilledButton.icon(
+                key: ValueKey('catalog-install-${p['id']}'),
+                onPressed: _installed || _installing ? null : _install,
+                icon: const Icon(Icons.download_outlined, size: 18),
+                label: Text(_installed
+                    ? l10n.modelsInstalledBadge
+                    : (_installing
+                        ? l10n.opAcquireRunning
+                        : l10n.modelsCatalogInstall)),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

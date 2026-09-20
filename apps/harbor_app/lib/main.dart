@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
@@ -24,6 +25,32 @@ void main() {
   // behind the system bars and insets its own content.
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   runApp(const HarborApp());
+}
+
+/// Import `assets/catalog/signed_catalog.json` with its pinned root key.
+/// Returns false (and records a diagnostic) when the core refuses it.
+Future<bool> importBundledCatalog(HarborService service) async {
+  try {
+    final doc = jsonDecode(
+            await rootBundle.loadString('assets/catalog/signed_catalog.json'))
+        as Map<String, dynamic>;
+    final root =
+        (await rootBundle.loadString('assets/catalog/root_public.hex')).trim();
+    final ok = await service.importCatalog(doc, rootPublicHex: root);
+    if (!ok) {
+      DiagnosticsSink.instance.record(
+          level: 'warn',
+          message: 'bundled catalog was not accepted by the core',
+          context: 'bootstrap');
+    }
+    return ok;
+  } catch (e) {
+    DiagnosticsSink.instance.record(
+        level: 'warn',
+        message: 'bundled catalog import failed: $e',
+        context: 'bootstrap');
+    return false;
+  }
 }
 
 /// The nine product surfaces (goal §3): Home · Ask · Work · Agents ·
@@ -205,6 +232,12 @@ class _HarborAppState extends State<HarborApp> with WidgetsBindingObserver {
         deviceRootHex: deviceRootHex,
       );
       await opened.refresh();
+      // First run: import the bundled signed catalog so Models →
+      // Recommended works offline. Verification and epoch monotonicity
+      // are the core's; a failure is recorded, never fatal.
+      if (!opened.catalogImported) {
+        await importBundledCatalog(opened);
+      }
     } catch (e, stack) {
       DiagnosticsSink.instance.record(
           level: 'error',

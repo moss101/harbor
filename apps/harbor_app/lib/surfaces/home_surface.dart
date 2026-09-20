@@ -45,6 +45,12 @@ class _HomeSurfaceState extends State<HomeSurface> {
     super.dispose();
   }
 
+  bool _needsFirstModel(BuildContext context) {
+    final sp = HarborServiceProvider.of(context);
+    final service = sp.notifier;
+    return !sp.failed && service != null && service.needsFirstModel;
+  }
+
   /// Text handed over by the command palette ("Summarize document").
   void _consumePending() {
     final text = widget.state.pendingComposerText;
@@ -146,6 +152,25 @@ class _HomeSurfaceState extends State<HomeSurface> {
                 ? t.text.titleOf(t.colors.ink)
                 : t.text.displayOf(t.colors.ink)),
         const SizedBox(height: HarborSpace.s5),
+        // First run (production plan C2): a model install gates every
+        // model-backed action; say so once, plainly, with the Local Only
+        // fact next to it, and take the user straight to Recommended.
+        if (_needsFirstModel(context)) ...[
+          HarborBanner(
+            key: const ValueKey('home-first-run'),
+            tone: HarborBannerTone.info,
+            icon: Icons.download_outlined,
+            title: l10n.homeFirstRunTitle,
+            body: l10n.homeFirstRunBody,
+            action: FilledButton.tonalIcon(
+              key: const ValueKey('home-first-run-install'),
+              onPressed: () => widget.state.goTo(HarborSurface.models),
+              icon: const Icon(Icons.recommend_outlined, size: 18),
+              label: Text(l10n.homeFirstRunAction),
+            ),
+          ),
+          const SizedBox(height: HarborSpace.s4),
+        ],
         Composer(
           hint: l10n.homeComposerHint,
           controller: _composer,

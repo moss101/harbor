@@ -2197,6 +2197,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Export failed'**
   String get settingsDiagnosticsExportFailed;
+
+  /// No description provided for @homeFirstRunTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Install a model to get started'**
+  String get homeFirstRunTitle;
+
+  /// No description provided for @homeFirstRunBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Harbor runs entirely on this device — nothing you open leaves it. Every answer, skill and index needs a local model, so the first step is choosing one that fits your device.'**
+  String get homeFirstRunBody;
+
+  /// No description provided for @homeFirstRunAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a model'**
+  String get homeFirstRunAction;
+
+  /// No description provided for @modelsFirstRunTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local only'**
+  String get modelsFirstRunTitle;
+
+  /// No description provided for @modelsFirstRunBody.
+  ///
+  /// In en, this message translates to:
+  /// **'These packages come from Harbor\'s signed catalog. Check size & fit reads the file list from Hugging Face through the broker; Install downloads once and verifies the pinned hash. Nothing else leaves the device.'**
+  String get modelsFirstRunBody;
+
+  /// No description provided for @modelsCatalogHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 catalog package} other{{count} catalog packages}}'**
+  String modelsCatalogHeading(int count);
+
+  /// No description provided for @modelsCatalogFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit Score is computed by the core from this device\'s memory and accelerator; it is never guessed. Sizes come from the repository listing, not the catalog.'**
+  String get modelsCatalogFooter;
+
+  /// No description provided for @modelsCatalogCheckFit.
+  ///
+  /// In en, this message translates to:
+  /// **'Check size & fit'**
+  String get modelsCatalogCheckFit;
+
+  /// No description provided for @modelsCatalogInstall.
+  ///
+  /// In en, this message translates to:
+  /// **'Install'**
+  String get modelsCatalogInstall;
+
+  /// No description provided for @modelsCatalogSizeUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Size unavailable (the repository listing could not be read).'**
+  String get modelsCatalogSizeUnavailable;
+
+  /// No description provided for @modelsInstalledBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get modelsInstalledBadge;
+
+  /// No description provided for @modelsContextTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tokens context'**
+  String modelsContextTokens(int count);
+
+  /// No description provided for @opAcquireRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Installing…'**
+  String get opAcquireRunning;
 }
 
 class _AppLocalizationsDelegate

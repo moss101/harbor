@@ -1,0 +1,1 @@
+{"schema": "harbor.graph/v1", "id": "c", "version": 1, "inputs": {"type": "object"}, "entry": "a", "budgets": {"max_steps": 2, "max_tool_calls": 0}, "nodes": [{"id": "a", "kind": "branch", "cases": [], "default": "a"}]}

@@ -164,6 +164,12 @@ impl HfAcquirer<'_> {
                 std::fs::File::create(out).map_err(|e| AcquireError::Install(e.to_string()))?;
             let mut hasher = Sha256::new();
             let mut size = 0u64;
+            // A local write failure (disk full, permission) is not a
+            // transport failure: it is recorded here so the retry logic
+            // below aborts at once instead of re-downloading three times
+            // into a full disk.
+            let write_failure: std::cell::RefCell<Option<std::io::Error>> =
+                std::cell::RefCell::new(None);
             {
                 let progress = self.progress.clone();
                 let mut sink = |chunk: &[u8]| -> std::io::Result<()> {
@@ -178,7 +184,10 @@ impl HfAcquirer<'_> {
                         p.bytes_done
                             .fetch_add(chunk.len() as u64, std::sync::atomic::Ordering::Relaxed);
                     }
-                    file.write_all(chunk)
+                    file.write_all(chunk).inspect_err(|e| {
+                        *write_failure.borrow_mut() =
+                            Some(std::io::Error::new(e.kind(), e.to_string()));
+                    })
                 };
                 let result = self.broker.dispatch_streaming(
                     session,
@@ -194,6 +203,13 @@ impl HfAcquirer<'_> {
                     &mut sink,
                 );
                 file.flush().ok();
+                if let Some(e) = write_failure.borrow_mut().take() {
+                    let _ = std::fs::remove_file(out);
+                    return Err(AcquireError::Install(format!(
+                        "writing {}: {e}",
+                        out.display()
+                    )));
+                }
                 match result {
                     Ok(()) => {
                         let hash = hex::encode(hasher.finalize());
@@ -262,9 +278,30 @@ impl HfAcquirer<'_> {
     }
 
     /// Acquire one model package: download each declared file from HF,
-    /// verify hashes, and commit through the staged installer.
+    /// verify hashes, and commit through the staged installer. Any failure
+    /// — a transfer error, a full disk, a hash or size mismatch, a
+    /// validation problem, a cancellation — removes the staging directory
+    /// so a partial download never lingers exactly when space is short
+    /// (production plan C2 recovery states). Only a committed package
+    /// survives.
     #[allow(clippy::too_many_arguments)]
     pub fn acquire(
+        &self,
+        package_id: &str,
+        repo_id: &str,
+        revision: &str,
+        files: &[(String, String, String)], // (path, role, sha256)
+        now: DateTime<Utc>,
+    ) -> Result<serde_json::Value, AcquireError> {
+        let result = self.acquire_inner(package_id, repo_id, revision, files, now);
+        if result.is_err() {
+            self.installer.discard_staging(package_id);
+        }
+        result
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn acquire_inner(
         &self,
         package_id: &str,
         repo_id: &str,
@@ -324,6 +361,18 @@ impl HfAcquirer<'_> {
             }
             if let Some(p) = &self.progress {
                 p.set_detail(&format!("{path} ({}/{})", index + 1, files.len()));
+            }
+            // File paths come from a catalog or a repository listing: they
+            // may only name files inside the staging directory.
+            let unsafe_path = path.is_empty()
+                || std::path::Path::new(path).is_absolute()
+                || path
+                    .split(['/', '\\'])
+                    .any(|c| c == ".." || c.is_empty() || c == ".");
+            if unsafe_path {
+                return Err(AcquireError::Install(format!(
+                    "refusing unsafe file path {path:?} in the package listing"
+                )));
             }
             let url = format!("https://huggingface.co/{repo_id}/resolve/{revision}/{path}");
             let out = staged.staging_dir.join(path);
@@ -1193,5 +1242,182 @@ mod committed_catalog_tests {
         assert!(ids.contains(&"qwen2.5-1.5b-instruct"));
         assert!(ids.contains(&"bge-small-en-v1.5"));
         assert!(ids.contains(&"stories260k"));
+    }
+}
+
+#[cfg(test)]
+mod staging_cleanup_tests {
+    use super::*;
+    use crate::install::PackageInstaller;
+    use harbor_net::audit::SqliteAuditSink;
+    use harbor_net::broker::{
+        EgressBroker, EgressClass, Transport, TransportRequest, TransportResponse,
+    };
+    use harbor_security::policy::PrivacyMode;
+    use std::collections::BTreeMap;
+    use tempfile::TempDir;
+
+    /// Serves the repo tree and a weight body; the local write is what
+    /// fails (the staging file is replaced by a directory before the
+    /// transfer, which is how a full or read-only disk presents to the
+    /// sink).
+    struct ServingTransport;
+
+    impl Transport for ServingTransport {
+        fn execute(
+            &self,
+            req: &TransportRequest,
+            _t: std::time::Duration,
+        ) -> std::io::Result<TransportResponse> {
+            if req.url.contains("/api/models/") {
+                return Ok(TransportResponse {
+                    status: 200,
+                    headers: Vec::new(),
+                    body: br#"[{"path": "w.gguf", "size": 4}]"#.to_vec(),
+                    final_url: String::new(),
+                });
+            }
+            Ok(TransportResponse {
+                status: 200,
+                headers: Vec::new(),
+                body: b"data".to_vec(),
+                final_url: String::new(),
+            })
+        }
+    }
+
+    /// Fails every weight transfer at the wire (dropped connection).
+    struct DroppingTransport;
+
+    impl Transport for DroppingTransport {
+        fn execute(
+            &self,
+            req: &TransportRequest,
+            _t: std::time::Duration,
+        ) -> std::io::Result<TransportResponse> {
+            if req.url.contains("/api/models/") {
+                return Ok(TransportResponse {
+                    status: 200,
+                    headers: Vec::new(),
+                    body: br#"[{"path": "w.gguf", "size": 4}]"#.to_vec(),
+                    final_url: String::new(),
+                });
+            }
+            Err(std::io::Error::new(
+                std::io::ErrorKind::ConnectionReset,
+                "connection reset",
+            ))
+        }
+    }
+
+    fn sessions_for(broker: &EgressBroker) -> BTreeMap<String, harbor_net::broker::EgressSession> {
+        let mut sessions = BTreeMap::new();
+        for origin in ["https://huggingface.co", "https://cdn-lfs.hf.co"] {
+            let s = broker
+                .open_session(
+                    EgressClass::WeightTransfer,
+                    origin,
+                    chrono::Duration::minutes(5),
+                    PrivacyMode::LocalOnly,
+                )
+                .unwrap();
+            sessions.insert(origin.to_string(), s);
+        }
+        sessions
+    }
+
+    #[test]
+    fn local_failures_abort_at_once_and_leave_no_staging_residue() {
+        let dir = TempDir::new().unwrap();
+        let models = dir.path().join("models");
+        let installer = PackageInstaller::new(&models);
+        let sink = SqliteAuditSink::open_in_memory().unwrap();
+        let broker = EgressBroker::new(Box::new(sink));
+        let acquirer = HfAcquirer {
+            broker: &broker,
+            transport: &ServingTransport,
+            installer: &installer,
+            sessions: sessions_for(&broker),
+            auth_token: None,
+            progress: None,
+        };
+        // 1. A listing path that escapes the staging directory is refused.
+        let err = acquirer
+            .acquire(
+                "m-escape",
+                "org/repo",
+                "main",
+                &[("../escape.gguf".into(), "weights".into(), String::new())],
+                chrono::Utc::now(),
+            )
+            .unwrap_err();
+        assert!(err.to_string().contains("unsafe file path"), "{err}");
+        assert!(!models.join(".staging-m-escape").exists());
+        assert!(!dir.path().join("escape.gguf").exists());
+
+        // 2. A local storage failure (the staging file cannot be created —
+        //    the same class as a full disk) aborts immediately, without the
+        //    transport backoff, and the residue is removed.
+        let staging = models.join(".staging-m-local");
+        // Plant an obstacle that survives `begin`: `begin` recreates the
+        // staging dir, so make the *models root* refuse the recreate.
+        std::fs::create_dir_all(&models).unwrap();
+        use std::os::unix::fs::PermissionsExt as _;
+        let original = std::fs::metadata(&models).unwrap().permissions();
+        std::fs::set_permissions(&models, std::fs::Permissions::from_mode(0o555)).unwrap();
+        let started = std::time::Instant::now();
+        let err = acquirer
+            .acquire(
+                "m-local",
+                "org/repo",
+                "main",
+                &[("w.gguf".into(), "weights".into(), String::new())],
+                chrono::Utc::now(),
+            )
+            .unwrap_err();
+        std::fs::set_permissions(&models, original).unwrap();
+        assert!(matches!(err, AcquireError::Install(_)), "{err}");
+        assert!(
+            started.elapsed() < std::time::Duration::from_secs(4),
+            "a local failure must not be retried with the transport backoff"
+        );
+        assert!(!staging.exists());
+        assert!(installer.installed_packages().unwrap().is_empty());
+
+        // 3. A dropped connection is retried (correct); cancelling between
+        //    retries ends the run and the staging residue is still removed.
+        let sink2 = SqliteAuditSink::open_in_memory().unwrap();
+        let broker2 = EgressBroker::new(Box::new(sink2));
+        let progress = std::sync::Arc::new(crate::progress::AcquireProgress::default());
+        let dropping = HfAcquirer {
+            broker: &broker2,
+            transport: &DroppingTransport,
+            installer: &installer,
+            sessions: sessions_for(&broker2),
+            auth_token: None,
+            progress: Some(progress.clone()),
+        };
+        progress.request_cancel();
+        let err = dropping
+            .acquire(
+                "m-dropped",
+                "org/repo",
+                "main",
+                &[("w.gguf".into(), "weights".into(), String::new())],
+                chrono::Utc::now(),
+            )
+            .unwrap_err();
+        assert!(matches!(err, AcquireError::Cancelled), "{err}");
+        assert!(!models.join(".staging-m-dropped").exists());
+
+        // 4. Crash residue (a staging dir left by a dead process) is swept
+        //    on restart; installed packages are untouched by the sweep.
+        std::fs::create_dir_all(models.join(".staging-orphan")).unwrap();
+        std::fs::write(models.join(".staging-orphan").join("w.gguf"), b"partial").unwrap();
+        std::fs::create_dir_all(models.join("installed-one")).unwrap();
+        let removed = installer.sweep_staging().unwrap();
+        assert_eq!(removed, vec!["orphan".to_string()]);
+        assert!(!models.join(".staging-orphan").exists());
+        assert!(models.join("installed-one").exists());
     }
 }

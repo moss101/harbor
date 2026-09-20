@@ -55,6 +55,31 @@ jobs:
       - name: License, ban and source policy (cargo deny)
         run: cargo deny check
 
+  fuzz:
+    # Short libFuzzer runs of the boundary and the validators below the
+    # model (production plan C4). The long runs and the committed corpus
+    # come from the qualification machine (tools/fuzz.sh); CI proves the
+    # targets still build and survive a minute each on every change.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core/fuzz
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz --locked
+      - name: Fuzz (60 s per target, no sanitizer)
+        run: tools/fuzz.sh 60
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: fuzz-artifacts
+          path: core/fuzz/artifacts
+          if-no-files-found: ignore
+
   rust:
     runs-on: macos-14
     defaults:

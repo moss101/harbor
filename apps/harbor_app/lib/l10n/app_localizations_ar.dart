@@ -1383,4 +1383,57 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsDiagnosticsExportFailed => 'فشل التصدير';
+
+  @override
+  String get homeFirstRunTitle => 'ثبّت نموذجاً للبدء';
+
+  @override
+  String get homeFirstRunBody =>
+      'يعمل Harbor بالكامل على هذا الجهاز — لا يغادره أي شيء تفتحه. تحتاج كل إجابة ومهارة وفهرس إلى نموذج محلي، لذا الخطوة الأولى هي اختيار نموذج يناسب جهازك.';
+
+  @override
+  String get homeFirstRunAction => 'اختر نموذجاً';
+
+  @override
+  String get modelsFirstRunTitle => 'محلي فقط';
+
+  @override
+  String get modelsFirstRunBody =>
+      'هذه الحزم من كتالوج Harbor الموقّع. «التحقق من الحجم والملاءمة» يقرأ قائمة الملفات من Hugging Face عبر الوسيط؛ و«تثبيت» يحمّل مرة واحدة ويتحقق من التجزئة المثبّتة. لا يغادر أي شيء آخر الجهاز.';
+
+  @override
+  String modelsCatalogHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count حزم في الكتالوج',
+      one: 'حزمة واحدة في الكتالوج',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get modelsCatalogFooter =>
+      'تحسب النواة درجة الملاءمة من ذاكرة هذا الجهاز ومسرّعه؛ ولا تُخمَّن أبداً. تأتي الأحجام من قائمة المستودع لا من الكتالوج.';
+
+  @override
+  String get modelsCatalogCheckFit => 'التحقق من الحجم والملاءمة';
+
+  @override
+  String get modelsCatalogInstall => 'تثبيت';
+
+  @override
+  String get modelsCatalogSizeUnavailable =>
+      'الحجم غير متاح (تعذّرت قراءة قائمة المستودع).';
+
+  @override
+  String get modelsInstalledBadge => 'مثبّت';
+
+  @override
+  String modelsContextTokens(int count) {
+    return 'سياق $count رمز';
+  }
+
+  @override
+  String get opAcquireRunning => 'جارٍ التثبيت…';
 }

@@ -99,6 +99,36 @@ impl PackageInstaller {
         self.installed_root.join(format!(".staging-{package_id}"))
     }
 
+    /// Remove a package's staging directory (failed or abandoned
+    /// acquisition). Idempotent; never touches an installed package.
+    pub fn discard_staging(&self, package_id: &str) {
+        let staging = self.staging_dir(package_id);
+        if staging.exists() {
+            let _ = std::fs::remove_dir_all(&staging);
+        }
+    }
+
+    /// Remove every `.staging-*` directory left by a process that died
+    /// mid-acquisition (restart sweep, like the temp-window registry).
+    /// Returns the package ids whose residue was removed.
+    pub fn sweep_staging(&self) -> Result<Vec<String>, InstallError> {
+        let mut removed = Vec::new();
+        if !self.installed_root.exists() {
+            return Ok(removed);
+        }
+        for entry in std::fs::read_dir(&self.installed_root)? {
+            let entry = entry?;
+            let name = entry.file_name().to_string_lossy().to_string();
+            if let Some(id) = name.strip_prefix(".staging-") {
+                if entry.path().is_dir() {
+                    std::fs::remove_dir_all(entry.path())?;
+                    removed.push(id.to_string());
+                }
+            }
+        }
+        Ok(removed)
+    }
+
     /// Begin staging: fresh staging directory (previous garbage removed).
     pub fn begin(&self, package_id: &str) -> Result<StagedInstall, InstallError> {
         let staging = self.staging_dir(package_id);

@@ -31,3 +31,22 @@ pub use office_matrix::{
 };
 pub use pptx::{ChartKind, ChartSpec, PptxDeck, PptxError, PptxOp, SlideContent, SlideImage};
 pub use workbook::{PreservationReport, SheetData, WorkbookDoc, WorkbookOp, XlsxChartKind};
+
+/// Inflate every entry of an OOXML package once, without keeping it, so a
+/// corrupt compressed stream is a typed error before any reader that
+/// might panic on it runs (fuzzing found the upstream workbook reader
+/// aborting on a corrupt deflate stream). Bounded by the package itself:
+/// each entry is streamed to a sink, never buffered.
+pub(crate) fn inflate_probe<R: std::io::Read + std::io::Seek>(
+    archive: &mut zip::ZipArchive<R>,
+) -> Result<(), String> {
+    for i in 0..archive.len() {
+        let mut entry = archive
+            .by_index(i)
+            .map_err(|e| format!("corrupt entry {i}: {e}"))?;
+        let name = entry.name().to_string();
+        std::io::copy(&mut entry, &mut std::io::sink())
+            .map_err(|e| format!("corrupt entry {name}: {e}"))?;
+    }
+    Ok(())
+}

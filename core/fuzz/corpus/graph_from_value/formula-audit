@@ -1,0 +1,226 @@
+{
+  "schema": "harbor.graph/v1",
+  "id": "formula-audit",
+  "version": 2,
+  "description": "Two-tier formula audit: the tool scans and recalculates on a private copy; the model only triages findings into deterministic fixes (typed cell operations bound to content hashes) and a human-review list; fixes go through approval.",
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "artifact_id": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      }
+    },
+    "required": [
+      "artifact_id"
+    ],
+    "additionalProperties": false
+  },
+  "entry": "audit",
+  "budgets": {
+    "max_steps": 9,
+    "max_tool_calls": 4,
+    "max_context_tokens": 60000
+  },
+  "nodes": [
+    {
+      "id": "audit",
+      "kind": "tool.call",
+      "description": "Static scan + recalculation through the pinned engine on a private copy.",
+      "tool": "formula.audit",
+      "args": {
+        "artifact_id": {
+          "$state": "/input/artifact_id"
+        },
+        "recalculate": true
+      },
+      "out": "/audit",
+      "next": "triage"
+    },
+    {
+      "id": "triage",
+      "kind": "model.structured",
+      "description": "Classify findings; only deterministic corrections become operations.",
+      "instructions": "You are triaging a spreadsheet formula audit. The audit facts are authoritative; never mention a cell the audit did not report. For each reported cell decide one action. Use fix only for a correction that needs no business judgement, such as a reference to a sheet that plainly should be an existing sheet, a range that stops one row short of its total, or a misspelled function name that matches exactly one qualified function; give the corrected formula starting with '=' and it must differ from the current formula. Use review for anything that needs judgement, such as a divisor that is legitimately zero, a lookup key that does not exist, or a function outside the qualified set; give the options a person could choose. Write a two-sentence summary naming counts per error code and whether a recalculation ran.",
+      "context": [
+        {
+          "label": "Sheets",
+          "from": "/audit/sheets"
+        },
+        {
+          "label": "Static errors",
+          "from": "/audit/static/errors",
+          "max_chars": 20000
+        },
+        {
+          "label": "Dangling references",
+          "from": "/audit/static/dangling_references",
+          "max_chars": 8000
+        },
+        {
+          "label": "Unqualified functions",
+          "from": "/audit/unsupported",
+          "max_chars": 8000
+        },
+        {
+          "label": "Recalculation",
+          "from": "/audit/after",
+          "max_chars": 12000
+        }
+      ],
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "decisions": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "type": "object",
+              "properties": {
+                "sheet": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "address": {
+                  "type": "string",
+                  "pattern": "^[A-Z]{1,3}[0-9]{1,7}$"
+                },
+                "action": {
+                  "enum": [
+                    "fix",
+                    "review"
+                  ]
+                },
+                "formula": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "pattern": "^=[ -~]{1,400}$"
+                },
+                "reason": {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "maxItems": 5
+                }
+              },
+              "required": [
+                "sheet",
+                "address",
+                "action",
+                "formula",
+                "reason",
+                "options"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 600
+          }
+        },
+        "required": [
+          "decisions",
+          "summary"
+        ],
+        "additionalProperties": false
+      },
+      "out": "/triage",
+      "max_tokens": 2048,
+      "max_retries": 1,
+      "next": "build"
+    },
+    {
+      "id": "build",
+      "kind": "tool.call",
+      "description": "Deterministic join: copy target ids and content hashes from the audit; reject non-fixes.",
+      "tool": "formula.build_operations",
+      "args": {
+        "audit": {
+          "$state": "/audit"
+        },
+        "decisions": {
+          "$state": "/triage/decisions"
+        }
+      },
+      "out": "/plan",
+      "next": "has_fixes"
+    },
+    {
+      "id": "has_fixes",
+      "kind": "branch",
+      "cases": [
+        {
+          "when": {
+            "from": "/plan/operations",
+            "op": "nonempty"
+          },
+          "next": "propose"
+        }
+      ],
+      "default": "report"
+    },
+    {
+      "id": "propose",
+      "kind": "tool.call",
+      "description": "Validate the proposed operations against live content hashes and compute the output hash; nothing is written.",
+      "tool": "artifact.propose_batch",
+      "args": {
+        "artifact_id": {
+          "$state": "/input/artifact_id"
+        },
+        "operations": {
+          "$state": "/plan/operations"
+        }
+      },
+      "out": "/proposal",
+      "next": "approve"
+    },
+    {
+      "id": "approve",
+      "kind": "approval",
+      "description": "Deterministic fixes are still a protected artifact commit.",
+      "effect_class": "artifact.commit",
+      "batch": "/proposal/batch",
+      "next_approved": "done",
+      "next_rejected": "report"
+    },
+    {
+      "id": "done",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/triage/summary",
+        "/plan/review",
+        "/proposal",
+        "/audit/static/counts_by_code",
+        "/audit/after/counts_by_code",
+        "/approvals/approve",
+        "/plan/rejected"
+      ]
+    },
+    {
+      "id": "report",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/triage/summary",
+        "/plan/review",
+        "/audit/static/counts_by_code",
+        "/audit/after/counts_by_code",
+        "/audit/unsupported",
+        "/plan/rejected"
+      ]
+    }
+  ]
+}

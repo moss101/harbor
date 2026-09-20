@@ -88,8 +88,29 @@ pub enum WorkbookError {
 
 impl WorkbookDoc {
     pub fn load(bytes: &[u8]) -> Result<Self, WorkbookError> {
-        let book = xlsx_reader::read_reader(&mut Cursor::new(bytes), true)
-            .map_err(|e| WorkbookError::Load(e.to_string()))?;
+        // The upstream reader panics on some malformed packages (a corrupt
+        // deflate stream inside the zip, found by fuzzing) instead of
+        // returning an error. A user-chosen file must never unwind through
+        // the tool layer or the executor: every entry is inflated once
+        // here first so a corrupt stream is a typed Load error, and the
+        // reader call is contained as a second line of defence.
+        {
+            let mut probe = zip::ZipArchive::new(Cursor::new(bytes))
+                .map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+            crate::inflate_probe(&mut probe)
+                .map_err(|e| WorkbookError::Load(format!("malformed workbook: {e}")))?;
+        }
+        let book =
+            std::panic::catch_unwind(|| xlsx_reader::read_reader(&mut Cursor::new(bytes), true))
+                .map_err(|payload| {
+                    let reason = payload
+                        .downcast_ref::<&str>()
+                        .map(|s| s.to_string())
+                        .or_else(|| payload.downcast_ref::<String>().cloned())
+                        .unwrap_or_else(|| "reader panicked".into());
+                    WorkbookError::Load(format!("malformed workbook: {reason}"))
+                })?
+                .map_err(|e| WorkbookError::Load(e.to_string()))?;
         let mut archive = zip::ZipArchive::new(Cursor::new(bytes))
             .map_err(|e| WorkbookError::BadZip(e.to_string()))?;
         let mut sheets = BTreeMap::new();

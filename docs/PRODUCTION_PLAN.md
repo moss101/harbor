@@ -211,6 +211,11 @@ extended (STATUS session 36).
   acquisition (verify the brokered download aborts cleanly and the staged
   install is removed).
 
+**Status (2026-09-20):** C2 done (STATUS session 37): first-run card,
+signed catalog in Recommended with size + Fit Score, staging cleanup and
+sweep, no-retry on local write failures. Keychain-after-rebuild stays a
+tester note in the close-out runbook.
+
 ### C3. Performance and memory on the floor device
 - Run `tools/run_performance_qualification.py` on the min-spec Mac as soon
   as PERF-01 hardware arrives (phase D); until then run it on the reference
@@ -229,6 +234,11 @@ extended (STATUS session 36).
   on keystore handling and the egress broker. Record the report under
   `evidence/security/`.
 
+**Status (2026-09-20):** C4 fuzzing done — four cargo-fuzz targets,
+one real finding fixed (corrupt-deflate abort in the XLSX reader),
+`catch_unwind` at both FFI entry points, CI `fuzz` job. `/security-review`
+and the plaintext/network re-runs at the freeze commit remain.
+
 ### C5. Release automation
 - `.github/workflows/release.yml` triggered on `harbor-v*` tags: builds
   macOS app (unsigned artifact), Android APK/AAB (unsigned), runs
@@ -238,6 +248,9 @@ extended (STATUS session 36).
 - `CHANGELOG.md` generated from conventional commit prefixes already in
   use (`core:`, `app+ui:`, `docs:`, `ci:`).
 - Bump `apps/harbor_app/pubspec.yaml` to `1.1.0+2` at phase-B freeze.
+
+**Status (2026-09-20):** C5 workflow written (`release.yml`), untested
+against a real tag; CHANGELOG and the pubspec bump (1.1.0+2) are done.
 
 Exit criteria for phase C: diagnostics export in the plaintext inspection;
 fuzz targets in CI (short run); release workflow produces a bundle from a

@@ -7,6 +7,51 @@ ran at.
 
 ---
 
+## Session 37 (2026-09-20): Phase C2/C4/C5 — first run, fuzzing, release workflow
+
+- **C2 first run and recovery** — Home shows a first-run card when no
+  model is installed (Local Only stated, "Choose a model" → Models);
+  Models → Recommended now lists the **signed catalog** offline: the app
+  bundles `assets/catalog/{signed_catalog.json,root_public.hex}` (a test
+  keeps them byte-identical to `fixtures/catalog`) and imports them on
+  first open through `catalog.import`; `catalog.list` (new FFI) returns
+  packages with tier/quantization/context/license and installed state;
+  "Check size & fit" reads the repo listing through the broker and asks
+  `model.fit_estimate` (new FFI; same device-profile code as installed
+  packages); "Install" runs the real acquisition with the catalog's pinned
+  sha256. Recovery: an acquisition that fails for any reason (transfer,
+  local write, hash/size mismatch, validation, cancel) removes its staging
+  directory; a local write failure aborts at once instead of the 5/15/30 s
+  transport backoff; orphaned `.staging-*` residue is swept at open;
+  listing paths that escape the staging directory are refused;
+  `catalog.import` with a missing or malformed root key is a typed error
+  (was a panic behind the boundary).
+- **C4 fuzzing** — `core/fuzz` (cargo-fuzz, nightly, no sanitizer):
+  `ffi_dispatch` (the JSON boundary; handle must survive every input),
+  `jsonschema`, `batch_from_value` (+ apply/diff), `graph_from_value`;
+  `tools/fuzz.sh <seconds> [targets]`; seeds from `core/fuzz/seed_corpus.py`,
+  grown corpus machine-local. Local runs: ffi_dispatch 9.6k runs/240 s,
+  jsonschema 4.4 M/240 s, graph_from_value 4.2 M/240 s, batch_from_value
+  3.5 M/300 s after the fix below — no findings remaining. **Finding:** the
+  upstream XLSX reader aborted the process on a corrupt deflate stream;
+  every OOXML loader now inflates each package entry once up front
+  (`inflate_probe`) and the workbook reader call is contained, with the
+  crash input kept as `harbor_artifacts/tests/regressions/corrupt_deflate.xlsx`.
+  Both FFI entry points run under `catch_unwind`: a panic becomes an error
+  envelope plus a diagnostics record and the handle stays usable (proved by
+  a debug-only `_debug.panic` method). CI job `fuzz` runs 60 s per target.
+- **C5 release workflow** — `.github/workflows/release.yml` on `harbor-v*`
+  tags (or dispatch dry run): regenerates gate evidence, plaintext
+  inspection, SBOM and notices at the tagged commit, assembles
+  `evidence/releases/<version>/`, builds the unsigned macOS bundle and the
+  debug-key Android APK/AAB (native core cross-compiled with the NDK), and
+  attaches everything to a draft GitHub release. Signing stays on the
+  operator machine. Not yet exercised end to end (needs a tag); the Android
+  cross-compile step is the least certain and is reported by the run.
+- **Gates** — `cargo fmt/clippy/test --workspace` (50 suites), `cargo audit`,
+  `cargo deny`, app `flutter test` 32/32 (new: first-run journey, catalog
+  assets, build info), dossier validator PASS.
+
 ## Session 36 (2026-09-20): Phase C1 — diagnostics without telemetry
 
 - **Core** — `harbor_core::diagnostics`: rolling (500 records), AEAD-sealed

@@ -433,6 +433,7 @@ impl PptxDeck {
     /// relationship (matrix row 18 round-trip).
     pub fn from_pptx_bytes(bytes: &[u8]) -> Result<PptxDeck, PptxError> {
         let mut archive = zip::ZipArchive::new(Cursor::new(bytes))?;
+        crate::inflate_probe(&mut archive).map_err(PptxError::Malformed)?;
         // Minimal read-back: slide count + titles/bullets text extraction.
         let mut names: Vec<String> = archive
             .file_names()

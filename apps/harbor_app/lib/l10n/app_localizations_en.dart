@@ -1326,4 +1326,57 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsDiagnosticsExportFailed => 'Export failed';
+
+  @override
+  String get homeFirstRunTitle => 'Install a model to get started';
+
+  @override
+  String get homeFirstRunBody =>
+      'Harbor runs entirely on this device — nothing you open leaves it. Every answer, skill and index needs a local model, so the first step is choosing one that fits your device.';
+
+  @override
+  String get homeFirstRunAction => 'Choose a model';
+
+  @override
+  String get modelsFirstRunTitle => 'Local only';
+
+  @override
+  String get modelsFirstRunBody =>
+      'These packages come from Harbor\'s signed catalog. Check size & fit reads the file list from Hugging Face through the broker; Install downloads once and verifies the pinned hash. Nothing else leaves the device.';
+
+  @override
+  String modelsCatalogHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count catalog packages',
+      one: '1 catalog package',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get modelsCatalogFooter =>
+      'Fit Score is computed by the core from this device\'s memory and accelerator; it is never guessed. Sizes come from the repository listing, not the catalog.';
+
+  @override
+  String get modelsCatalogCheckFit => 'Check size & fit';
+
+  @override
+  String get modelsCatalogInstall => 'Install';
+
+  @override
+  String get modelsCatalogSizeUnavailable =>
+      'Size unavailable (the repository listing could not be read).';
+
+  @override
+  String get modelsInstalledBadge => 'Installed';
+
+  @override
+  String modelsContextTokens(int count) {
+    return '$count tokens context';
+  }
+
+  @override
+  String get opAcquireRunning => 'Installing…';
 }

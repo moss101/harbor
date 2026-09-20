@@ -1,0 +1,49 @@
+[package]
+name = "harbor-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+arbitrary = { version = "1", features = ["derive"] }
+serde_json = "1"
+harbor_core = { path = "../harbor_core" }
+harbor_ffi = { path = "../harbor_ffi" }
+harbor_canonical = { path = "../harbor_canonical" }
+tempfile = "3"
+
+# The attack surface is the JSON that crosses the boundary (03 §3, SEC-005):
+# the dispatcher and the validators below the model must never panic or
+# abort on any input. Corpus seeds live under fuzz/corpus/<target>/.
+
+[[bin]]
+name = "ffi_dispatch"
+path = "fuzz_targets/ffi_dispatch.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "jsonschema"
+path = "fuzz_targets/jsonschema.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "batch_from_value"
+path = "fuzz_targets/batch_from_value.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "graph_from_value"
+path = "fuzz_targets/graph_from_value.rs"
+test = false
+doc = false
+bench = false

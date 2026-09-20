@@ -644,5 +644,20 @@
   "settingsDiagnosticsExported": "Diagnostics exported",
   "settingsDiagnosticsExportedBody": "{path} · {count, plural, one{1 record} other{{count} records}}",
   "@settingsDiagnosticsExportedBody": {"placeholders": {"path": {"type": "String"}, "count": {"type": "int"}}},
-  "settingsDiagnosticsExportFailed": "Export failed"
+  "settingsDiagnosticsExportFailed": "Export failed",
+  "homeFirstRunTitle": "Install a model to get started",
+  "homeFirstRunBody": "Harbor runs entirely on this device — nothing you open leaves it. Every answer, skill and index needs a local model, so the first step is choosing one that fits your device.",
+  "homeFirstRunAction": "Choose a model",
+  "modelsFirstRunTitle": "Local only",
+  "modelsFirstRunBody": "These packages come from Harbor's signed catalog. Check size & fit reads the file list from Hugging Face through the broker; Install downloads once and verifies the pinned hash. Nothing else leaves the device.",
+  "modelsCatalogHeading": "{count, plural, one{1 catalog package} other{{count} catalog packages}}",
+  "@modelsCatalogHeading": {"placeholders": {"count": {"type": "int"}}},
+  "modelsCatalogFooter": "Fit Score is computed by the core from this device's memory and accelerator; it is never guessed. Sizes come from the repository listing, not the catalog.",
+  "modelsCatalogCheckFit": "Check size & fit",
+  "modelsCatalogInstall": "Install",
+  "modelsCatalogSizeUnavailable": "Size unavailable (the repository listing could not be read).",
+  "modelsInstalledBadge": "Installed",
+  "modelsContextTokens": "{count} tokens context",
+  "@modelsContextTokens": {"placeholders": {"count": {"type": "int"}}},
+  "opAcquireRunning": "Installing…"
 }

@@ -108,6 +108,7 @@ void main() {
   _appendSkillRunTests();
   _appendSkillCommitTests();
   _appendDiagnosticsTests();
+  _appendFirstRunTests();
   _appendKnowledgeTest();
   _appendRagTest();
   _appendComposerTest();
@@ -989,5 +990,56 @@ void _appendDiagnosticsTests() {
     expect(records, isNot(contains('/Users/me')));
     expect(records, contains('work_surface.dart'));
     expect(manifest, contains('redaction_policy'));
+  });
+}
+
+/// Production plan C2: first run has no model; Home says so with the Local
+/// Only fact and takes the user to Models → Recommended, which lists the
+/// bundled signed catalog offline once the core has accepted it.
+void _appendFirstRunTests() {
+  testWidgets(
+      'first run: Home drives to Models and Recommended lists the catalog',
+      (tester) async {
+    await pumpApp(tester);
+    if (!coreAvailable) return;
+    // No model installed on a fresh data root → the first-run card.
+    expect(find.byKey(const ValueKey('home-first-run')), findsOneWidget);
+    expect(find.text('Install a model to get started'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('home-first-run-install')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    // Models opens on Recommended. The bundled catalog is imported by the
+    // app bootstrap; in this harness we import it the same way.
+    final sp = HarborServiceProvider.of(
+        tester.element(find.text('Recommended').first));
+    final service = sp.notifier!;
+    expect(service.needsFirstModel, isTrue);
+    var imported = false;
+    await tester.runAsync(() async {
+      imported = await importBundledCatalog(service);
+    });
+    expect(imported, isTrue);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(service.catalogImported, isTrue);
+    expect(
+        service.catalog.map((p) => p['id']), contains('qwen2.5-1.5b-instruct'));
+    expect(find.byKey(const ValueKey('models-first-run')), findsOneWidget);
+    expect(find.text('Local only'), findsWidgets);
+    expect(find.byKey(const ValueKey('catalog-qwen2.5-1.5b-instruct')),
+        findsOneWidget);
+    // The Test-tier fixture package is not recommended.
+    expect(find.byKey(const ValueKey('catalog-stories260k')), findsNothing);
+    expect(find.text('Check size & fit'), findsWidgets);
+    expect(find.text('Install'), findsWidgets);
+    // Epochs are monotonic: re-importing the already accepted epoch is
+    // refused by the core (rollback protection), and the accepted catalog
+    // stays in place. The app only imports when nothing is accepted yet.
+    var again = true;
+    await tester.runAsync(() async {
+      again = await importBundledCatalog(service);
+    });
+    expect(again, isFalse);
+    expect(service.catalogImported, isTrue);
   });
 }

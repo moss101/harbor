@@ -47,6 +47,8 @@ class HarborService extends ChangeNotifier {
   String? _policyVersion;
   String? _workspaceId;
   List<Map<String, dynamic>> _installedModels = [];
+  List<Map<String, dynamic>> _catalog = [];
+  bool _catalogImported = false;
   List<Map<String, dynamic>> _runs = [];
   List<SkillSummary> _skills = [];
   Map<String, dynamic>? _preview;
@@ -65,6 +67,15 @@ class HarborService extends ChangeNotifier {
   String? get policyVersion => _policyVersion;
   String? get workspaceId => _workspaceId;
   List<Map<String, dynamic>> get installedModels => _installedModels;
+
+  /// Packages of the accepted signed catalog (offline; empty until
+  /// [importCatalog] ran once on this data root).
+  List<Map<String, dynamic>> get catalog => _catalog;
+  bool get catalogImported => _catalogImported;
+
+  /// First run has no model installed: everything downstream is gated on
+  /// this (production plan C2).
+  bool get needsFirstModel => _installedModels.isEmpty;
   List<Map<String, dynamic>> get runs => _runs;
   List<SkillSummary> get skills => _skills;
   Map<String, dynamic>? get preview => _preview;
@@ -139,6 +150,14 @@ class HarborService extends ChangeNotifier {
       _skills = _mapList(result['skills']).map(SkillSummary.fromMap).toList();
     } on ffi.HarborCoreException {
       _skills = [];
+    }
+    try {
+      final result = await _call('catalog.list');
+      _catalogImported = result['imported'] == true;
+      _catalog = _mapList(result['packages']);
+    } on ffi.HarborCoreException {
+      _catalogImported = false;
+      _catalog = [];
     }
     if (knowledgeOpen) {
       try {
@@ -229,6 +248,44 @@ class HarborService extends ChangeNotifier {
 
   /// A repo's GGUF weight files (brokered metadata read) — the real file
   /// set an install launches with.
+  /// Import a signed catalog document with its pinned root key (the
+  /// bundled asset on first run). The core verifies the signature and
+  /// enforces monotonic epochs; trust state survives restarts.
+  Future<bool> importCatalog(Map<String, dynamic> signedCatalog,
+      {required String rootPublicHex}) async {
+    try {
+      await _call('catalog.import', {
+        ...signedCatalog,
+        'root_public_hex': rootPublicHex,
+      });
+      await refresh();
+      return true;
+    } on ffi.HarborCoreException {
+      return false;
+    }
+  }
+
+  /// Fit Score for a package that is not installed yet, from its weights
+  /// size and context. Device facts are the same defaults the core uses
+  /// for installed packages.
+  Future<Map<String, dynamic>?> fitEstimate({
+    required int weightsBytes,
+    required int contextTokens,
+    String quantization = 'Q4_K_M',
+  }) async {
+    try {
+      return await _call('model.fit_estimate', {
+        'weights_bytes': weightsBytes,
+        'context_tokens': contextTokens,
+        'quantization': quantization,
+        'gpu_backend': true,
+        'accelerated': true,
+      });
+    } on ffi.HarborCoreException {
+      return null;
+    }
+  }
+
   Future<List<Map<String, dynamic>>> huggingFaceFiles(String repoId) async {
     try {
       final r = await _call('models.hf_files', {'repo_id': repoId});

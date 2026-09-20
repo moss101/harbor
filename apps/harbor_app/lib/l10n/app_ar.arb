@@ -502,5 +502,20 @@
   "settingsDiagnosticsExported": "تم تصدير التشخيص",
   "settingsDiagnosticsExportedBody": "{path} · {count, plural, one{سجل واحد} other{{count} سجلات}}",
   "@settingsDiagnosticsExportedBody": {"placeholders": {"path": {"type": "String"}, "count": {"type": "int"}}},
-  "settingsDiagnosticsExportFailed": "فشل التصدير"
+  "settingsDiagnosticsExportFailed": "فشل التصدير",
+  "homeFirstRunTitle": "ثبّت نموذجاً للبدء",
+  "homeFirstRunBody": "يعمل Harbor بالكامل على هذا الجهاز — لا يغادره أي شيء تفتحه. تحتاج كل إجابة ومهارة وفهرس إلى نموذج محلي، لذا الخطوة الأولى هي اختيار نموذج يناسب جهازك.",
+  "homeFirstRunAction": "اختر نموذجاً",
+  "modelsFirstRunTitle": "محلي فقط",
+  "modelsFirstRunBody": "هذه الحزم من كتالوج Harbor الموقّع. «التحقق من الحجم والملاءمة» يقرأ قائمة الملفات من Hugging Face عبر الوسيط؛ و«تثبيت» يحمّل مرة واحدة ويتحقق من التجزئة المثبّتة. لا يغادر أي شيء آخر الجهاز.",
+  "modelsCatalogHeading": "{count, plural, one{حزمة واحدة في الكتالوج} other{{count} حزم في الكتالوج}}",
+  "@modelsCatalogHeading": {"placeholders": {"count": {"type": "int"}}},
+  "modelsCatalogFooter": "تحسب النواة درجة الملاءمة من ذاكرة هذا الجهاز ومسرّعه؛ ولا تُخمَّن أبداً. تأتي الأحجام من قائمة المستودع لا من الكتالوج.",
+  "modelsCatalogCheckFit": "التحقق من الحجم والملاءمة",
+  "modelsCatalogInstall": "تثبيت",
+  "modelsCatalogSizeUnavailable": "الحجم غير متاح (تعذّرت قراءة قائمة المستودع).",
+  "modelsInstalledBadge": "مثبّت",
+  "modelsContextTokens": "سياق {count} رمز",
+  "@modelsContextTokens": {"placeholders": {"count": {"type": "int"}}},
+  "opAcquireRunning": "جارٍ التثبيت…"
 }
