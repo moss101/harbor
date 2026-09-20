@@ -407,6 +407,28 @@ class HarborService extends ChangeNotifier {
     return result;
   }
 
+  /// Append one record to the core's encrypted diagnostics log (see
+  /// `DiagnosticsSink`). The core redacts paths and long quoted strings.
+  Future<void> recordDiagnostic(Map<String, String> record) =>
+      _call('diag.record', record);
+
+  /// Recent diagnostics records (redacted), newest last.
+  Future<Map<String, dynamic>> listDiagnostics({int limit = 50}) =>
+      _call('diag.list', {'limit': limit});
+
+  /// Write the diagnostics bundle (zip: redacted records, build and
+  /// runtime identity, device class, installed model ids, run counts —
+  /// never document content, chunks or prompts) to [destination]. The
+  /// core refuses to overwrite an existing file.
+  Future<Map<String, dynamic>> exportDiagnostics({
+    required String destination,
+    String? appVersion,
+  }) =>
+      _call('diag.export', {
+        'destination': destination,
+        if (appVersion != null) 'app_version': appVersion,
+      });
+
   /// Durable picture of a graph run (trail with node ids and io hashes,
   /// outcome, pending approval), read from the encrypted snapshot store.
   Future<Map<String, dynamic>?> runSnapshot(String runId) async {

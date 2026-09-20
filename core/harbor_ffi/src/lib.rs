@@ -51,6 +51,10 @@ pub struct WorkspaceHandle {
     /// Optional HF token for gated/private repos (M4). Sourced from the
     /// keystore; never returned across the boundary.
     hub_token: Option<String>,
+    /// Encrypted rolling crash/error log (production plan C1). Every
+    /// dispatch error and every Rust panic lands here; the app records
+    /// its own errors through `diag.record`.
+    diagnostics: Arc<harbor_core::diagnostics::DiagnosticsLog>,
 }
 
 // ---------------------------------------------------------------------------
@@ -441,6 +445,8 @@ pub extern "C" fn harbor_core_open_ex(
         };
         let ws = harbor_core::Workspace::open_with_keystore(&opts, ws_id, mode, keystore.clone())?;
         let hub_token = load_hub_token(&data_root, &keystore);
+        let diagnostics = Arc::new(ws.diagnostics(&data_root)?);
+        harbor_core::diagnostics::DiagnosticsLog::install_panic_hook(diagnostics.clone());
         Ok(WorkspaceHandle {
             inner: ws,
             data_root,
@@ -451,6 +457,7 @@ pub extern "C" fn harbor_core_open_ex(
             keystore,
             catalog: load_catalog_state(&opts.data_root),
             hub_token,
+            diagnostics,
         })
     })();
     match result {
@@ -834,6 +841,123 @@ fn dispatch(
             "workspace_id": ws.inner.workspace_id,
             "policy": ws.inner.privacy_mode.as_str(),
         })),
+        // --- diagnostics (production plan C1) --------------------------
+        // The app records its own errors here (FlutterError,
+        // PlatformDispatcher.onError); messages are redacted by the log.
+        "diag.record" => {
+            let level = args
+                .get("level")
+                .and_then(|v| v.as_str())
+                .unwrap_or("error")
+                .to_string();
+            if !["panic", "error", "warn", "info"].contains(&level.as_str()) {
+                return Err(HarborError::Other(format!("unknown level {level}")));
+            }
+            let message = args
+                .get("message")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing message".into()))?
+                .to_string();
+            ws.diagnostics
+                .record(harbor_core::diagnostics::DiagnosticRecord {
+                    at: chrono::Utc::now(),
+                    level,
+                    source: args
+                        .get("source")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("app")
+                        .to_string(),
+                    message,
+                    context: args
+                        .get("context")
+                        .and_then(|v| v.as_str())
+                        .map(str::to_string),
+                    backtrace: args
+                        .get("stack")
+                        .and_then(|v| v.as_str())
+                        .map(str::to_string),
+                })
+                .map_err(|e| HarborError::Other(format!("diagnostics: {e}")))?;
+            Ok(serde_json::json!({ "recorded": true }))
+        }
+        "diag.list" => {
+            let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(50) as usize;
+            let (records, corrupt) = ws
+                .diagnostics
+                .records()
+                .map_err(|e| HarborError::Other(format!("diagnostics: {e}")))?;
+            let start = records.len().saturating_sub(limit);
+            Ok(serde_json::json!({
+                "records": records[start..],
+                "total": records.len(),
+                "corrupt_frames": corrupt,
+                "redaction_policy": harbor_core::diagnostics::REDACTION_POLICY,
+            }))
+        }
+        // Writes the diagnostics bundle (zip) to a host-resolved path the
+        // user chose. Contains no document content, chunks or prompts; the
+        // plaintext-at-rest inspection byte-scans it.
+        "diag.export" => {
+            let destination = args
+                .get("destination")
+                .and_then(|v| v.as_str())
+                .map(std::path::PathBuf::from)
+                .ok_or_else(|| HarborError::Other("missing destination".into()))?;
+            let installer =
+                harbor_modelhub::install::PackageInstaller::new(ws.data_root.join("models"));
+            let installed_models: Vec<serde_json::Value> = installer
+                .installed_packages()
+                .unwrap_or_default()
+                .into_iter()
+                .filter_map(|id| installer.load_manifest(&id).ok())
+                .map(|m| {
+                    serde_json::json!({
+                        "id": m.id,
+                        "runtime": m.runtime.kind,
+                        "min_revision": m.runtime.min_revision,
+                        "files": m.files.iter().map(|f| f.sha256.clone()).collect::<Vec<_>>(),
+                    })
+                })
+                .collect();
+            let runs_by_state =
+                rusqlite::Connection::open(ws.data_root.join("db").join("agent.db"))
+                    .ok()
+                    .and_then(|conn| {
+                        let mut stmt = conn
+                            .prepare("SELECT state, COUNT(*) FROM runs GROUP BY state")
+                            .ok()?;
+                        let rows = stmt
+                            .query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?)))
+                            .ok()?;
+                        let mut m = serde_json::Map::new();
+                        for (state, n) in rows.flatten() {
+                            m.insert(state, serde_json::json!(n));
+                        }
+                        Some(serde_json::Value::Object(m))
+                    })
+                    .unwrap_or(serde_json::json!({}));
+            let facts = harbor_core::diagnostics::ExportFacts {
+                app_version: args
+                    .get("app_version")
+                    .and_then(|v| v.as_str())
+                    .map(str::to_string),
+                core_version: env!("CARGO_PKG_VERSION").into(),
+                runtime_revision: harbor_inference::runtime_identity().into(),
+                os: std::env::consts::OS.into(),
+                arch: std::env::consts::ARCH.into(),
+                device_hash: harbor_canonical::sha256_hex(ws.device_id.as_bytes())[..16].into(),
+                workspace_id_hash: harbor_canonical::sha256_hex(ws.inner.workspace_id.as_bytes())
+                    [..16]
+                    .into(),
+                privacy_mode: ws.inner.privacy_mode.as_str().into(),
+                installed_models,
+                runs_by_state,
+                extra: args.get("extra").cloned(),
+            };
+            let report = harbor_core::diagnostics::export(&ws.diagnostics, &facts, &destination)
+                .map_err(|e| HarborError::Other(format!("diagnostics export: {e}")))?;
+            serde_json::to_value(&report).map_err(|e| HarborError::Other(e.to_string()))
+        }
         // --- models -----------------------------------------------------
         "models.installed" => {
             let installer =
@@ -2234,7 +2358,22 @@ pub unsafe extern "C" fn harbor_core_call(
             .ok_or_else(|| HarborError::Other("missing method".into()))?;
         let args = v.get("args").cloned().unwrap_or(serde_json::Value::Null);
         let ws = &mut *handle;
-        dispatch(ws, method, &args)
+        let r = dispatch(ws, method, &args);
+        if let Err(e) = &r {
+            // Every boundary error is a diagnostics record (redacted in
+            // the log; never the request arguments).
+            let _ = ws
+                .diagnostics
+                .record(harbor_core::diagnostics::DiagnosticRecord {
+                    at: chrono::Utc::now(),
+                    level: "error".into(),
+                    source: "ffi".into(),
+                    message: e.to_string(),
+                    context: Some(method.to_string()),
+                    backtrace: None,
+                });
+        }
+        r
     })();
     match result {
         Ok(v) => ok_json(v),

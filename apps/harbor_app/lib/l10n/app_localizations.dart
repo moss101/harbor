@@ -2149,6 +2149,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'proposed'**
   String get skillsDiffProposed;
+
+  /// No description provided for @settingsDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics'**
+  String get settingsDiagnostics;
+
+  /// No description provided for @settingsDiagnosticsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Harbor keeps an encrypted crash and error log on this device and never uploads it. Export it to share with support by hand.'**
+  String get settingsDiagnosticsBody;
+
+  /// No description provided for @settingsDiagnosticsContains.
+  ///
+  /// In en, this message translates to:
+  /// **'The export contains redacted error records, the app and core versions, the runtime, the device class and installed model ids. It never contains document content, knowledge chunks or prompts.'**
+  String get settingsDiagnosticsContains;
+
+  /// No description provided for @settingsDiagnosticsRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No records yet} one{1 record} other{{count} records}}'**
+  String settingsDiagnosticsRecords(int count);
+
+  /// No description provided for @settingsDiagnosticsExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export diagnostics'**
+  String get settingsDiagnosticsExport;
+
+  /// No description provided for @settingsDiagnosticsExported.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics exported'**
+  String get settingsDiagnosticsExported;
+
+  /// No description provided for @settingsDiagnosticsExportedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{path} · {count, plural, one{1 record} other{{count} records}}'**
+  String settingsDiagnosticsExportedBody(String path, int count);
+
+  /// No description provided for @settingsDiagnosticsExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed'**
+  String get settingsDiagnosticsExportFailed;
 }
 
 class _AppLocalizationsDelegate

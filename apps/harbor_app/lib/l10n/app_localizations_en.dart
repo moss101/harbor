@@ -1283,4 +1283,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get skillsDiffProposed => 'proposed';
+
+  @override
+  String get settingsDiagnostics => 'Diagnostics';
+
+  @override
+  String get settingsDiagnosticsBody =>
+      'Harbor keeps an encrypted crash and error log on this device and never uploads it. Export it to share with support by hand.';
+
+  @override
+  String get settingsDiagnosticsContains =>
+      'The export contains redacted error records, the app and core versions, the runtime, the device class and installed model ids. It never contains document content, knowledge chunks or prompts.';
+
+  @override
+  String settingsDiagnosticsRecords(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count records',
+      one: '1 record',
+      zero: 'No records yet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get settingsDiagnosticsExport => 'Export diagnostics';
+
+  @override
+  String get settingsDiagnosticsExported => 'Diagnostics exported';
+
+  @override
+  String settingsDiagnosticsExportedBody(String path, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count records',
+      one: '1 record',
+    );
+    return '$path · $_temp0';
+  }
+
+  @override
+  String get settingsDiagnosticsExportFailed => 'Export failed';
 }

@@ -1340,4 +1340,47 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get skillsDiffProposed => 'المقترح';
+
+  @override
+  String get settingsDiagnostics => 'التشخيص';
+
+  @override
+  String get settingsDiagnosticsBody =>
+      'يحتفظ Harbor بسجل مشفّر للأعطال والأخطاء على هذا الجهاز ولا يرفعه أبداً. صدّره لمشاركته مع الدعم يدوياً.';
+
+  @override
+  String get settingsDiagnosticsContains =>
+      'يحتوي التصدير على سجلات أخطاء منقّحة وإصدار التطبيق والنواة ووقت التشغيل وفئة الجهاز ومعرّفات النماذج المثبّتة. لا يحتوي أبداً على محتوى المستندات أو مقاطع المعرفة أو التعليمات.';
+
+  @override
+  String settingsDiagnosticsRecords(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count سجلات',
+      one: 'سجل واحد',
+      zero: 'لا سجلات بعد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get settingsDiagnosticsExport => 'تصدير التشخيص';
+
+  @override
+  String get settingsDiagnosticsExported => 'تم تصدير التشخيص';
+
+  @override
+  String settingsDiagnosticsExportedBody(String path, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count سجلات',
+      one: 'سجل واحد',
+    );
+    return '$path · $_temp0';
+  }
+
+  @override
+  String get settingsDiagnosticsExportFailed => 'فشل التصدير';
 }

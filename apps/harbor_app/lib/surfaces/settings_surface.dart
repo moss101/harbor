@@ -1,7 +1,12 @@
+import 'dart:io';
+
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:harbor_ui/harbor_ui.dart';
+import 'package:path_provider/path_provider.dart';
 
+import '../build_info.dart';
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/harbor_service.dart';
@@ -123,6 +128,11 @@ class SettingsSurface extends StatelessWidget {
                   body: l10n.trustLocalOnlyBody,
                 ),
               ]),
+            ),
+            section(
+              l10n.settingsDiagnostics,
+              DiagnosticsCard(service: service),
+              body: l10n.settingsDiagnosticsBody,
             ),
             section(
               l10n.settingsIdentity,
@@ -265,6 +275,141 @@ class _CopyButton extends StatelessWidget {
             .showSnackBar(SnackBar(content: Text(l10n.copiedMessage)));
       },
       icon: const Icon(Icons.copy_outlined),
+    );
+  }
+}
+
+/// Export diagnostics (production plan C1): the core writes a zip of
+/// redacted crash/error records plus build, runtime and device facts —
+/// never document content, knowledge chunks or prompts — to a location
+/// the user picks. Nothing is uploaded; sharing is the user's act.
+class DiagnosticsCard extends StatefulWidget {
+  const DiagnosticsCard(
+      {super.key, required this.service, this.resolveDestination});
+  final HarborService? service;
+
+  /// Replaces the platform save dialog (tests inject a fixed path).
+  final Future<String?> Function(String suggestedName)? resolveDestination;
+
+  @override
+  State<DiagnosticsCard> createState() => _DiagnosticsCardState();
+}
+
+class _DiagnosticsCardState extends State<DiagnosticsCard> {
+  bool _busy = false;
+  Map<String, dynamic>? _report;
+  String? _error;
+  int? _recordCount;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCount();
+  }
+
+  Future<void> _loadCount() async {
+    final s = widget.service;
+    if (s == null) return;
+    try {
+      final list = await s.listDiagnostics(limit: 1);
+      if (!mounted) return;
+      setState(() => _recordCount = list['total'] as int?);
+    } catch (_) {
+      // The count is a courtesy; export still works.
+    }
+  }
+
+  Future<String?> _defaultDestination(String suggestedName) async {
+    if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+      final location = await getSaveLocation(suggestedName: suggestedName);
+      return location?.path;
+    }
+    final dir = await getApplicationDocumentsDirectory();
+    return '${dir.path}${Platform.pathSeparator}$suggestedName';
+  }
+
+  Future<void> _export() async {
+    final s = widget.service;
+    if (s == null) return;
+    final stamp = DateTime.now()
+        .toUtc()
+        .toIso8601String()
+        .replaceAll(':', '')
+        .split('.')
+        .first;
+    final resolve = widget.resolveDestination ?? _defaultDestination;
+    final destination = await resolve('harbor-diagnostics-$stamp.zip');
+    if (destination == null || !mounted) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final report = await s.exportDiagnostics(
+          destination: destination, appVersion: harborAppVersion);
+      if (!mounted) return;
+      setState(() => _report = report);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final t = HarborTheme.of(context);
+    return HarborCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(l10n.settingsDiagnosticsContains,
+              style: t.text.smallOf(t.colors.inkMuted)),
+          const SizedBox(height: HarborSpace.s3),
+          // Wrap, not Row: the label and the button must survive 320 px at
+          // 200 % text scale (accessibility gate).
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: HarborSpace.s3,
+            runSpacing: HarborSpace.s2,
+            children: [
+              Text(
+                _recordCount == null
+                    ? ''
+                    : l10n.settingsDiagnosticsRecords(_recordCount!),
+                style: t.text.smallOf(t.colors.inkMuted),
+              ),
+              FilledButton.tonalIcon(
+                key: const ValueKey('diagnostics-export'),
+                onPressed: _busy || widget.service == null ? null : _export,
+                icon: const Icon(Icons.outbox_outlined, size: 18),
+                label: Text(l10n.settingsDiagnosticsExport),
+              ),
+            ],
+          ),
+          if (_report != null) ...[
+            const SizedBox(height: HarborSpace.s3),
+            HarborBanner(
+              key: const ValueKey('diagnostics-exported'),
+              tone: HarborBannerTone.info,
+              title: l10n.settingsDiagnosticsExported,
+              body: l10n.settingsDiagnosticsExportedBody(
+                  _report!['path'] as String? ?? '',
+                  (_report!['records'] as num?)?.toInt() ?? 0),
+            ),
+          ],
+          if (_error != null) ...[
+            const SizedBox(height: HarborSpace.s3),
+            HarborBanner(
+                tone: HarborBannerTone.danger,
+                title: l10n.settingsDiagnosticsExportFailed,
+                body: _error),
+          ],
+        ],
+      ),
     );
   }
 }

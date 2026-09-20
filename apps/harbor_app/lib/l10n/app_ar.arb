@@ -492,5 +492,15 @@
   "skillsCommittedTo": "{path} · الإصدار {version}",
   "@skillsCommittedTo": {"placeholders": {"path": {"type": "String"}, "version": {"type": "String"}}},
   "skillsDiffBase": "الأساس",
-  "skillsDiffProposed": "المقترح"
+  "skillsDiffProposed": "المقترح",
+  "settingsDiagnostics": "التشخيص",
+  "settingsDiagnosticsBody": "يحتفظ Harbor بسجل مشفّر للأعطال والأخطاء على هذا الجهاز ولا يرفعه أبداً. صدّره لمشاركته مع الدعم يدوياً.",
+  "settingsDiagnosticsContains": "يحتوي التصدير على سجلات أخطاء منقّحة وإصدار التطبيق والنواة ووقت التشغيل وفئة الجهاز ومعرّفات النماذج المثبّتة. لا يحتوي أبداً على محتوى المستندات أو مقاطع المعرفة أو التعليمات.",
+  "settingsDiagnosticsRecords": "{count, plural, =0{لا سجلات بعد} one{سجل واحد} other{{count} سجلات}}",
+  "@settingsDiagnosticsRecords": {"placeholders": {"count": {"type": "int"}}},
+  "settingsDiagnosticsExport": "تصدير التشخيص",
+  "settingsDiagnosticsExported": "تم تصدير التشخيص",
+  "settingsDiagnosticsExportedBody": "{path} · {count, plural, one{سجل واحد} other{{count} سجلات}}",
+  "@settingsDiagnosticsExportedBody": {"placeholders": {"path": {"type": "String"}, "count": {"type": "int"}}},
+  "settingsDiagnosticsExportFailed": "فشل التصدير"
 }

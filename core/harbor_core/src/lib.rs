@@ -6,6 +6,7 @@
 //! (and its FFI projection). One runtime, one permission model, one
 //! artifact model, one evidence model.
 
+pub mod diagnostics;
 pub mod executor;
 pub mod graph;
 pub mod harness;

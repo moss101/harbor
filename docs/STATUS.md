@@ -7,6 +7,37 @@ ran at.
 
 ---
 
+## Session 36 (2026-09-20): Phase C1 — diagnostics without telemetry
+
+- **Core** — `harbor_core::diagnostics`: rolling (500 records), AEAD-sealed
+  crash/error log under a workspace-derived key at
+  `<data_root>/diagnostics/log.hdiag`; records are redacted on entry
+  (absolute paths → `<path:.ext>`, quoted strings > 48 chars, 800-char cap);
+  process-wide panic hook; `export()` writes a zip (`diagnostics.json` with
+  build/runtime/device-class facts, installed model ids, run counts and the
+  redaction policy; `records.jsonl`) that never overwrites and never
+  contains document content, chunks or prompts.
+- **FFI** — every boundary error is recorded with its method as context;
+  `diag.record` (app errors), `diag.list`, `diag.export {destination,
+  app_version}`; the panic hook is installed at open.
+- **App** — `DiagnosticsSink` hooks `FlutterError.onError` and
+  `PlatformDispatcher.onError` (bounded buffer before the core opens);
+  Settings → Diagnostics → **Export diagnostics** (native save dialog on
+  desktop, app documents folder on mobile; states what the bundle contains
+  and does not). `build_info.dart` pins the app version (1.1.0+2) with a test
+  against pubspec. "Diagnostics upload" stays N/A_DISABLED (M4).
+- **Inspection** — `plaintext_at_rest_inspection` now seeds a diagnostics
+  record carrying a sentinel and a document path, scans the data root
+  (sealed) and the export bundle (redacted record present; no run,
+  document, temp or knowledge sentinel; no path).
+- **Tests** — core unit tests (redaction, sealed round trip + roll, export,
+  panic hook), FFI `diagnostics` test, shell test "diagnostics export writes
+  a bundle from the live core"; the accessibility audit caught and fixed a
+  320 px / 200 % overflow in the new card. The live-core commit journey test
+  gets a CI-sized budget (it timed out once on a shared runner).
+- **Gates** — `cargo fmt/clippy/test --workspace` (48 suites), app `flutter
+  test` 30/30, packages green, dossier validator PASS.
+
 ## Session 35 (2026-09-20): Phase B3–B4 — nine runnable skills, live tier 13/18, GGUF long-prompt fix
 
 Five more built-ins decomposed into graphs (Deck Review & QA, Financial Model

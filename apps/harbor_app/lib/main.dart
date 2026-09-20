@@ -8,6 +8,7 @@ import 'package:harbor_ui/harbor_ui.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'l10n/app_localizations.dart';
+import 'services/diagnostics.dart';
 import 'services/harbor_service.dart';
 import 'services/preferences.dart';
 import 'shell/adaptive_shell.dart';
@@ -16,6 +17,9 @@ import 'surfaces/surfaces.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  // Uncaught errors go to the core's encrypted diagnostics log (no
+  // telemetry; the user exports it by hand from Settings).
+  DiagnosticsSink.instance.install();
   // Edge-to-edge on Android (and a no-op elsewhere): the shell paints
   // behind the system bars and insets its own content.
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -201,7 +205,12 @@ class _HarborAppState extends State<HarborApp> with WidgetsBindingObserver {
         deviceRootHex: deviceRootHex,
       );
       await opened.refresh();
-    } catch (e) {
+    } catch (e, stack) {
+      DiagnosticsSink.instance.record(
+          level: 'error',
+          message: 'core start failed: $e',
+          context: 'bootstrap',
+          stack: stack.toString());
       if (mounted) {
         setState(() {
           _serviceFailed = true;
@@ -219,6 +228,7 @@ class _HarborAppState extends State<HarborApp> with WidgetsBindingObserver {
       _service = opened;
       _initializing = false;
     });
+    DiagnosticsSink.instance.attach(opened);
   }
 
   @override
@@ -228,6 +238,7 @@ class _HarborAppState extends State<HarborApp> with WidgetsBindingObserver {
     if (state == AppLifecycleState.detached) {
       final s = _service;
       _service = null;
+      DiagnosticsSink.instance.attach(null);
       s?.close();
     }
   }

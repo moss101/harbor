@@ -165,6 +165,16 @@ impl Workspace {
             .map_err(HarborError::Store)
     }
 
+    /// The encrypted diagnostics log for this data root, sealed under a
+    /// key derived from the workspace key (production plan C1).
+    pub fn diagnostics(
+        &self,
+        data_root: &Path,
+    ) -> Result<crate::diagnostics::DiagnosticsLog, HarborError> {
+        crate::diagnostics::DiagnosticsLog::open(data_root, self.workspace_key.kek_material())
+            .map_err(|e| HarborError::Other(e.to_string()))
+    }
+
     /// Key for sealing knowledge chunks at rest, derived from the
     /// workspace key (domain-separated). Never persisted.
     pub fn knowledge_chunk_key(&self) -> Result<harbor_store::keys::KeyMaterial, HarborError> {

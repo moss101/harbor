@@ -1549,6 +1549,7 @@ dependencies = [
  "harbor_security",
  "harbor_store",
  "hex",
+ "rand 0.8.8",
  "regex",
  "roxmltree",
  "rusqlite",
@@ -1637,6 +1638,7 @@ dependencies = [
  "rusqlite",
  "serde_json",
  "tempfile",
+ "zip 4.6.1",
 ]
 
 [[package]]

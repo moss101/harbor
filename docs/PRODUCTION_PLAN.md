@@ -197,6 +197,10 @@ user to hand over evidence:
   export path is byte-scanned like everything else.
 - "Diagnostics upload" remains N/A_DISABLED (M4).
 
+**Status (2026-09-20):** C1 done — `harbor_core::diagnostics`, FFI
+`diag.*`, `DiagnosticsSink`, Settings → Export diagnostics, inspection
+extended (STATUS session 36).
+
 ### C2. First-run and empty states
 - First launch: model install is the gate to everything. Make the Home
   empty state drive the user to Models → Recommended with size + Fit Score,

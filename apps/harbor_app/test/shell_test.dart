@@ -7,10 +7,12 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:harbor_app/main.dart';
 import 'package:harbor_app/l10n/app_localizations.dart';
+import 'package:harbor_app/services/diagnostics.dart';
 import 'package:harbor_app/services/harbor_service.dart';
 import 'package:harbor_app/services/preferences.dart';
 import 'package:harbor_app/shell/adaptive_shell.dart';
 import 'package:harbor_app/shell/keyboard.dart';
+import 'package:harbor_app/surfaces/settings_surface.dart';
 import 'package:harbor_app/surfaces/skill_run.dart';
 import 'package:harbor_app/surfaces/work_surface.dart';
 import 'package:harbor_ui/harbor_ui.dart';
@@ -105,6 +107,7 @@ void main() {
   _appendSkillsTest();
   _appendSkillRunTests();
   _appendSkillCommitTests();
+  _appendDiagnosticsTests();
   _appendKnowledgeTest();
   _appendRagTest();
   _appendComposerTest();
@@ -819,12 +822,16 @@ void _appendSkillCommitTests() {
 
     // Real async (worker isolate, file IO) only progresses inside
     // runAsync; widget interaction must stay outside it (guarded calls).
+    // The budget is generous: shared CI runners run the debug core and the
+    // op poll (250 ms) several times slower than this machine.
     Future<void> settle(Finder until) async {
-      for (var i = 0; i < 300; i++) {
+      final deadline = DateTime.now().add(const Duration(seconds: 120));
+      while (DateTime.now().isBefore(deadline)) {
         await tester.runAsync(
             () => Future<void>.delayed(const Duration(milliseconds: 100)));
         await tester.pump();
         if (until.evaluate().isNotEmpty) return;
+        if (find.text('Run failed').evaluate().isNotEmpty) return;
       }
     }
 
@@ -885,5 +892,102 @@ void _appendSkillCommitTests() {
     });
     expect(snap!['state'], 'COMPLETED');
     expect(snap!['pending_approval'], isNull);
+  });
+}
+
+/// Production plan C1: uncaught app errors reach the core's encrypted
+/// diagnostics log, and Settings → Export diagnostics writes a zip with
+/// redacted records and build facts to a user-chosen path.
+void _appendDiagnosticsTests() {
+  testWidgets('diagnostics export writes a bundle from the live core',
+      (tester) async {
+    if (!coreAvailable) return;
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    HarborService? service;
+    late Directory dir;
+    await tester.runAsync(() async {
+      dir = await Directory.systemTemp.createTemp('harbor-diag-');
+      final s = await HarborService.open(
+          libraryPath: dylibPath,
+          dataRoot: dir.path,
+          workspaceId: 'ws-diag',
+          deviceRootHex:
+              'f47973db602cbd13c408a3a5cdf3a8eeaa3bd6870b76607542d75ff568526c3c');
+      await s.refresh();
+      // An app-side error recorded through the sink lands in the log.
+      DiagnosticsSink.instance.attach(s);
+      DiagnosticsSink.instance.record(
+          level: 'error',
+          message: 'RenderFlex overflowed in /Users/me/Documents/plan.docx',
+          context: 'package:harbor_app/surfaces/work_surface.dart');
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      service = s;
+    });
+    addTearDown(() {
+      DiagnosticsSink.instance.attach(null);
+      return service?.close();
+    });
+    final dest = File('${dir.path}/export/harbor-diagnostics.zip');
+    await tester.pumpWidget(MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('en'), Locale('ar')],
+      theme: harborThemeData(dark: false, arabic: false),
+      builder: (_, child) => HarborTheme(
+        colors: HarborColors.light,
+        text: const HarborType(arabic: false),
+        child: child!,
+      ),
+      home: Scaffold(
+        body: DiagnosticsCard(
+          service: service,
+          resolveDestination: (suggested) async {
+            expect(suggested, startsWith('harbor-diagnostics-'));
+            expect(suggested, endsWith('.zip'));
+            return dest.path;
+          },
+        ),
+      ),
+    ));
+    await tester.pump();
+    Future<void> settle(Finder until) async {
+      final deadline = DateTime.now().add(const Duration(seconds: 60));
+      while (DateTime.now().isBefore(deadline)) {
+        await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 100)));
+        await tester.pump();
+        if (until.evaluate().isNotEmpty) return;
+      }
+    }
+
+    await settle(find.textContaining('record'));
+    expect(find.textContaining('record'), findsWidgets);
+    await tester.tap(find.byKey(const ValueKey('diagnostics-export')));
+    await settle(find.byKey(const ValueKey('diagnostics-exported')));
+    expect(find.byKey(const ValueKey('diagnostics-exported')), findsOneWidget);
+    expect(find.textContaining(dest.path), findsOneWidget);
+    expect(dest.existsSync(), isTrue);
+    // The bundle carries the redacted app record and the app version.
+    late String manifest;
+    late String records;
+    await tester.runAsync(() async {
+      final bytes = await dest.readAsBytes();
+      final text = String.fromCharCodes(bytes);
+      // Deflated entries are not byte-visible; read them back through the core.
+      expect(text, contains('diagnostics.json'));
+      final list = await service!.listDiagnostics(limit: 10);
+      manifest = list.toString();
+      records = (list['records'] as List).toString();
+    });
+    expect(records, contains('<path:.docx>'));
+    expect(records, isNot(contains('/Users/me')));
+    expect(records, contains('work_surface.dart'));
+    expect(manifest, contains('redaction_policy'));
   });
 }

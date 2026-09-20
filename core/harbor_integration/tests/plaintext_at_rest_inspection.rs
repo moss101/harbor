@@ -14,6 +14,7 @@ const RUN_SENTINEL: &str = "HARBOR-PLAINTEXT-PROBE-RUN-7c1e4a";
 const DOC_SENTINEL: &str = "HARBOR-PLAINTEXT-PROBE-DOC-92b8d3";
 const TEMP_SENTINEL: &str = "HARBOR-PLAINTEXT-PROBE-TEMP-55aa01";
 const KNOWLEDGE_SENTINEL: &str = "HARBOR-PLAINTEXT-PROBE-KNOW-4d11ef";
+const DIAG_SENTINEL: &str = "HARBOR-PLAINTEXT-PROBE-DIAG-8e3c77";
 
 fn scan_dir_for(root: &std::path::Path, needle: &str) -> Vec<std::path::PathBuf> {
     let mut hits = Vec::new();
@@ -169,6 +170,36 @@ fn plaintext_at_rest_full_inspection() {
         .unwrap();
     let knowledge_db = data_root.join("db").join("knowledge.db");
 
+    // 7. Diagnostics (production plan C1): the crash/error log is sealed
+    // under a workspace-derived key, and the export bundle — designated
+    // plaintext the user hands over by choice — carries records and build
+    // facts but never document, run or knowledge content.
+    let diag = ws.diagnostics(&data_root).unwrap();
+    diag.record(harbor_core::diagnostics::DiagnosticRecord {
+        at: Workspace::now(),
+        level: "error".into(),
+        source: "ffi".into(),
+        message: format!("{DIAG_SENTINEL} while opening /Users/private/{DOC_SENTINEL}.docx"),
+        context: Some("op.start_skill_run".into()),
+        backtrace: None,
+    })
+    .unwrap();
+    let diag_export = export_root.join("harbor-diagnostics.zip");
+    let facts = harbor_core::diagnostics::ExportFacts {
+        app_version: Some("test".into()),
+        core_version: env!("CARGO_PKG_VERSION").into(),
+        runtime_revision: "test".into(),
+        os: std::env::consts::OS.into(),
+        arch: std::env::consts::ARCH.into(),
+        device_hash: "0000".into(),
+        workspace_id_hash: "0000".into(),
+        privacy_mode: "LocalOnly".into(),
+        installed_models: vec![],
+        runs_by_state: serde_json::json!({}),
+        extra: None,
+    };
+    harbor_core::diagnostics::export(&diag, &facts, &diag_export).unwrap();
+
     // Force WAL content into every possible resting place (the inspection
     // must see the checkpointed main DB too, not just the live WAL).
     let agent_db = data_root.join("db").join("agent.db");
@@ -187,12 +218,38 @@ fn plaintext_at_rest_full_inspection() {
         DOC_SENTINEL,
         TEMP_SENTINEL,
         KNOWLEDGE_SENTINEL,
+        DIAG_SENTINEL,
     ] {
         let hits = scan_dir_for(&data_root, needle);
         assert!(
             hits.is_empty(),
             "plaintext leak: {needle} found in {hits:?}"
         );
+    }
+    // The diagnostics export (designated plaintext, outside the data
+    // root) holds the redacted record and nothing from any other surface.
+    {
+        let mut zip = zip::ZipArchive::new(std::fs::File::open(&diag_export).unwrap()).unwrap();
+        let mut all = String::new();
+        for i in 0..zip.len() {
+            let mut f = zip.by_index(i).unwrap();
+            std::io::Read::read_to_string(&mut f, &mut all).unwrap();
+            all.push('\n');
+        }
+        assert!(all.contains(DIAG_SENTINEL), "diagnostics record exported");
+        for needle in [
+            RUN_SENTINEL,
+            DOC_SENTINEL,
+            TEMP_SENTINEL,
+            KNOWLEDGE_SENTINEL,
+        ] {
+            assert!(!all.contains(needle), "diagnostics export leaked {needle}");
+        }
+        assert!(
+            all.contains("<path:.docx>"),
+            "path redacted in export: {all}"
+        );
+        assert!(!all.contains("/Users/private"));
     }
     // WAL/SHM siblings are covered by the scan above (scan_dir_for walks
     // the whole tree); assert they existed so the scan was not vacuous.
@@ -262,10 +319,12 @@ fn plaintext_at_rest_full_inspection() {
             "network_audit": "origins/outcomes only, no payloads by contract",
             "commit_journal_recovery": "journal stores hashes/paths; recovery classify verified",
             "extracted_content_previews_index": "in-memory only in this build; no on-disk surface exists to inspect",
-            "exported_copy": "designated plaintext outside data root (user-visible output)"
+            "exported_copy": "designated plaintext outside data root (user-visible output)",
+            "diagnostics_log": "AEAD frames under a workspace-derived key; no plaintext sentinel",
+            "diagnostics_export": "designated plaintext outside data root; redacted records + build facts only, no document/run/knowledge sentinel"
         },
         "files_scanned": files_scanned,
-        "sentinels": [RUN_SENTINEL, DOC_SENTINEL, TEMP_SENTINEL, KNOWLEDGE_SENTINEL],
+        "sentinels": [RUN_SENTINEL, DOC_SENTINEL, TEMP_SENTINEL, KNOWLEDGE_SENTINEL, DIAG_SENTINEL],
         "exported_copy_path": export_path.to_string_lossy(),
     });
     let evidence_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))

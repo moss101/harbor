@@ -25,3 +25,4 @@ gguf-backend = ["harbor_inference/gguf-backend"]
 
 [dev-dependencies]
 tempfile = "3"
+zip = { workspace = true }

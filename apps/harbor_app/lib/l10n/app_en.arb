@@ -634,5 +634,15 @@
   "skillsCommittedTo": "{path} · version {version}",
   "@skillsCommittedTo": {"placeholders": {"path": {"type": "String"}, "version": {"type": "String"}}},
   "skillsDiffBase": "base",
-  "skillsDiffProposed": "proposed"
+  "skillsDiffProposed": "proposed",
+  "settingsDiagnostics": "Diagnostics",
+  "settingsDiagnosticsBody": "Harbor keeps an encrypted crash and error log on this device and never uploads it. Export it to share with support by hand.",
+  "settingsDiagnosticsContains": "The export contains redacted error records, the app and core versions, the runtime, the device class and installed model ids. It never contains document content, knowledge chunks or prompts.",
+  "settingsDiagnosticsRecords": "{count, plural, =0{No records yet} one{1 record} other{{count} records}}",
+  "@settingsDiagnosticsRecords": {"placeholders": {"count": {"type": "int"}}},
+  "settingsDiagnosticsExport": "Export diagnostics",
+  "settingsDiagnosticsExported": "Diagnostics exported",
+  "settingsDiagnosticsExportedBody": "{path} · {count, plural, one{1 record} other{{count} records}}",
+  "@settingsDiagnosticsExportedBody": {"placeholders": {"path": {"type": "String"}, "count": {"type": "int"}}},
+  "settingsDiagnosticsExportFailed": "Export failed"
 }
