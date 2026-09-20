@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "74e6a68be5b886dbd73a8400f6363e63f78525448f3ab0cac3e5a4a1d0e1b8e9",
+  "input_manifest_sha256": "821ae27a91ed774d93f01a6974ab8966104981e1d0b18771d82c187265db9f54",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -2011,8 +2011,8 @@
     },
     {
       "path": "docs/PRODUCTION_PLAN.md",
-      "bytes": 18504,
-      "sha256": "4d95ede4a3147b79c541ebe0440776405550b0ad76dd6b08ee980e3f2375574f"
+      "bytes": 19961,
+      "sha256": "7560d22fb808b0ca4f09bd06b63204927e94c3b1e3e99f841663709ad2499c09"
     },
     {
       "path": "docs/STATUS.md",

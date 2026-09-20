@@ -322,6 +322,21 @@ build-bound evidence.
 
 ---
 
+## Where we stand after the engineering track (2026-09-20)
+
+| Phase | State | Evidence |
+| --- | --- | --- |
+| A — land and stabilise | **Done.** Session 32 in six bisectable slices, CI green on `main` (dossier, supply-chain, fuzz, rust, windows-core, flutter), stale-seal detector, `cargo audit`/`cargo deny`, kill/restart test | STATUS sessions 33 |
+| B — skills product | **Done.** Safe-commit over FFI/app (Save New Copy default), proposal diff in the Run sheet, nine runnable graphs, replay 23/23, live tier 13/18 recorded | STATUS 34–35, decision 0006 addenda |
+| C — hardening | **Done on this machine.** Encrypted crash log + diagnostics export (in the plaintext inspection), first-run catalog + recovery states, fuzzing (two upstream aborts fixed), security review (decision 0007, none open at high), tag-driven release workflow, memory-pressure proxy | STATUS 36–39 |
+| D — gates and rings | **Written, not executed.** `docs/release/rings.md`; every ring is blocked on the D0 resources (Apple identity, Play key, devices, Windows host, M1 8 GB) | `closeout_runbook.md` |
+
+Not taken, with the reason: B4 option 3 (a larger catalog tier) needs a
+catalog epoch bump signed with the offline root key, which does not exist
+on this machine — it stays the documented next lever if 13/18 is judged
+insufficient at the 1.1 freeze. The real-network capture re-run and PERF-01
+happen at the ring-0 freeze commit on the qualification hardware.
+
 ## Deferred to 1.2 (explicitly not in this plan)
 - Agents surface enablement (needs its own contract work beyond skills).
 - E2EE sync activation (ACC-057), remote inference, connectors,
