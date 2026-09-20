@@ -1,0 +1,11 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "deck-review/triage#1",
+      "response": {
+        "content": "{\"verdict\": \"not_ready\", \"summary\": \"Slide 4 and slide 5 still carry template text (Lorem ipsum, Click to add text). Slides 3 and 5 make numeric claims with no source in the notes. Page numbers, text sizes and contrast were not checked.\", \"text_fixes\": [{\"slide\": 4, \"original\": \"Lorem ipsum dolor sit amet\", \"replacement\": \"[needs input]\", \"reason\": \"Template filler left in the pipeline slide.\"}, {\"slide\": 5, \"original\": \"Click to add text\", \"replacement\": \"[needs input]\", \"reason\": \"Empty placeholder bullet under Risks.\"}, {\"slide\": 5, \"original\": \"Vendor renews at nine percent\", \"replacement\": \"Vendor contract renews at +9% (source needed)\", \"reason\": \"Invented original text — must be dropped by verification.\"}], \"needs_sources\": [3, 5]}"
+      }
+    }
+  ]
+}

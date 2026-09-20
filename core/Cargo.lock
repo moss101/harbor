@@ -1550,6 +1550,7 @@ dependencies = [
  "harbor_store",
  "hex",
  "regex",
+ "roxmltree",
  "rusqlite",
  "serde",
  "serde_json",

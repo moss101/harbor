@@ -117,6 +117,15 @@ fn live_tier_runs_every_suite_and_reports_per_case() {
         let suite = EvalSuite::load(&path).unwrap();
         let case_dir = path.parent().unwrap().to_path_buf();
         for case in &suite.cases {
+            if !case.tiers.iter().any(|t| t == "live") {
+                println!(
+                    "{}/{}: SKIP (replay-only guard case: {})",
+                    skill.id,
+                    case.id,
+                    case.title.clone().unwrap_or_default()
+                );
+                continue;
+            }
             let one = EvalSuite {
                 schema: suite.schema.clone(),
                 skill: suite.skill.clone(),

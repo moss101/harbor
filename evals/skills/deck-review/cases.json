@@ -1,0 +1,161 @@
+{
+  "schema": "harbor.skill_eval/v1",
+  "skill": "deck-review",
+  "cases": [
+    {
+      "id": "board_deck",
+      "title": "Template remnants and unsourced numbers are found deterministically; the model writes one fix per candidate and every original is verbatim slide text",
+      "inputs": {
+        "artifact_id": "deck"
+      },
+      "artifacts": {
+        "deck": {
+          "path": "fixtures/office/board_deck.pptx"
+        }
+      },
+      "cassette": "cassettes/board_deck.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "completed"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/inspect/slide_count",
+          "value": 6
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/inspect/counts_by_code/placeholder_text",
+          "value": 2
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/inspect/fix_candidates",
+          "min": 2,
+          "max": 2
+        },
+        {
+          "kind": "state_exists",
+          "pointer": "/inspect/counts_by_code/unsourced_number"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/triage/verdict",
+          "value": "not_ready"
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/verified_fixes",
+          "min": 2,
+          "max": 2
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/verified_fixes/0/item/original",
+          "value": "Lorem ipsum dolor sit amet"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/verified_fixes/1/item/original",
+          "value": "Click to add text"
+        },
+        {
+          "kind": "state_empty",
+          "pointer": "/verified_fixes/0/dropped"
+        },
+        {
+          "kind": "state_empty",
+          "pointer": "/verified_fixes/1/dropped"
+        },
+        {
+          "kind": "values_appear_in",
+          "pointer": "/verified_fixes/*/item/original",
+          "source": "/inspect/text"
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/triage/needs_sources",
+          "min": 1
+        },
+        {
+          "kind": "state_nonempty",
+          "pointer": "/inspect/not_checked"
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 3
+        },
+        {
+          "kind": "steps_le",
+          "max": 8
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "board_deck_invented_original",
+      "title": "Guard: a fix whose original text is not on any slide is dropped by verification (replay-only contract test)",
+      "inputs": {
+        "artifact_id": "deck"
+      },
+      "artifacts": {
+        "deck": {
+          "path": "fixtures/office/board_deck.pptx"
+        }
+      },
+      "cassette": "cassettes/board_deck_invented_original.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/verified_fixes",
+          "min": 3,
+          "max": 3
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/verified_fixes/2/item/original",
+          "value": null
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/verified_fixes/2/dropped",
+          "min": 1
+        },
+        {
+          "kind": "values_appear_in",
+          "pointer": "/verified_fixes/*/item/original",
+          "source": "/inspect/text"
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    }
+  ]
+}

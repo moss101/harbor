@@ -142,7 +142,17 @@ pub struct EvalCase {
     /// Cassette path relative to the case file's directory.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cassette: Option<String>,
+    /// Tiers the case is meaningful in. A guard case that *requires* a
+    /// misbehaving model (an invented figure, a hallucinated fix) is a
+    /// contract test of the deterministic node and lists `replay` only;
+    /// the default is both tiers.
+    #[serde(default = "default_tiers")]
+    pub tiers: Vec<String>,
     pub assertions: Vec<Assertion>,
+}
+
+fn default_tiers() -> Vec<String> {
+    vec!["replay".into(), "live".into()]
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

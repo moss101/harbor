@@ -1,0 +1,136 @@
+{
+  "schema": "harbor.skill_eval/v1",
+  "skill": "team-update",
+  "cases": [
+    {
+      "id": "grounded_3p",
+      "title": "A 3P update whose every figure comes from the notes is delivered",
+      "inputs": {
+        "team": "Mobile team",
+        "period": "8–12 Sep 2026",
+        "notes": "Mobile team, week of 8-12 Sep 2026. Shipped offline search (3 PRs merged). Crash-free sessions at 99.4%. Started the Arabic layout audit; 2 screens left. Next week: finish the audit, cut release 1.1.0-rc1. Blocked: TestFlight review pending since Tuesday; design sign-off for settings missing."
+      },
+      "cassette": "cassettes/grounded_3p.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "completed"
+        },
+        {
+          "kind": "contains",
+          "pointer": "/update/header",
+          "text": "Mobile team"
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/update/progress",
+          "min": 1,
+          "max": 3
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/update/plans",
+          "min": 1,
+          "max": 3
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/update/problems",
+          "min": 1,
+          "max": 3
+        },
+        {
+          "kind": "string_len",
+          "pointer": "/update/progress/*",
+          "max": 320
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/g_progress/grounded",
+          "value": true
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/g_plans/grounded",
+          "value": true
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/g_problems/grounded",
+          "value": true
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 3
+        },
+        {
+          "kind": "steps_le",
+          "max": 6
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "invented_metric",
+      "title": "A figure the notes never mention blocks delivery: the run ends in needs_input listing the invented number",
+      "inputs": {
+        "team": "Mobile team",
+        "period": "8–12 Sep 2026",
+        "notes": "Mobile team, week of 8-12 Sep 2026. Shipped offline search (3 PRs merged). Crash-free sessions at 99.4%. Started the Arabic layout audit; 2 screens left. Next week: finish the audit, cut release 1.1.0-rc1. Blocked: TestFlight review pending since Tuesday; design sign-off for settings missing."
+      },
+      "cassette": "cassettes/invented_metric.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "needs_input"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/g_progress/grounded",
+          "value": false
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/g_progress/missing/0/number",
+          "value": "99.7%"
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 3
+        },
+        {
+          "kind": "steps_le",
+          "max": 6
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ],
+      "tiers": [
+        "replay"
+      ]
+    }
+  ]
+}

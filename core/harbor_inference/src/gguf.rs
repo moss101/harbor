@@ -187,10 +187,18 @@ impl GgufLlamaCppProvider {
         if prompt_len == 0 {
             return Err(ProviderError::Backend("empty prompt".into()));
         }
-        let n_ctx = self
-            .context_tokens
-            .max(prompt_len as u32 + req.max_tokens)
-            .min(model.n_ctx_train());
+        // A prompt that cannot fit the model's trained context together
+        // with the requested completion is refused here as a typed error;
+        // llama.cpp would otherwise abort the whole process.
+        let needed = prompt_len as u32 + req.max_tokens.max(1);
+        if needed > model.n_ctx_train() {
+            return Err(ProviderError::Backend(format!(
+                "prompt of {prompt_len} tokens plus {} completion tokens exceeds the model context ({})",
+                req.max_tokens,
+                model.n_ctx_train()
+            )));
+        }
+        let n_ctx = self.context_tokens.max(needed).min(model.n_ctx_train());
         let n_ctx =
             std::num::NonZeroU32::new(n_ctx).ok_or(ProviderError::Backend("n_ctx 0".into()))?;
         let ctx_params = LlamaContextParams::default().with_n_ctx(Some(n_ctx));
@@ -198,15 +206,24 @@ impl GgufLlamaCppProvider {
             .new_context(self.backend, ctx_params)
             .map_err(|e| ProviderError::Backend(format!("context: {e}")))?;
 
-        // Prefill the prompt in one batch.
-        let mut batch = LlamaBatch::new(prompt_len.max(1), 1);
-        for (pos, t) in tokens.iter().enumerate() {
-            batch
-                .add(*t, pos as i32, &[0], pos + 1 == prompt_len)
-                .map_err(|e| ProviderError::Backend(format!("batch: {e}")))?;
+        // Prefill the prompt in batches no larger than the context's
+        // n_batch (llama.cpp asserts n_tokens <= n_batch and aborts the
+        // process otherwise); logits are requested for the last token only.
+        let n_batch = (ctx.n_batch() as usize).max(1);
+        let mut last_chunk_len = 0usize;
+        for (chunk_index, chunk) in tokens.chunks(n_batch).enumerate() {
+            let offset = chunk_index * n_batch;
+            last_chunk_len = chunk.len();
+            let mut batch = LlamaBatch::new(chunk.len(), 1);
+            for (i, t) in chunk.iter().enumerate() {
+                let pos = offset + i;
+                batch
+                    .add(*t, pos as i32, &[0], pos + 1 == prompt_len)
+                    .map_err(|e| ProviderError::Backend(format!("batch: {e}")))?;
+            }
+            ctx.decode(&mut batch)
+                .map_err(|e| ProviderError::Backend(format!("decode: {e}")))?;
         }
-        ctx.decode(&mut batch)
-            .map_err(|e| ProviderError::Backend(format!("decode: {e}")))?;
 
         // Structured output: constrain decoding to the caller's JSON
         // Schema through a llama.cpp grammar. The grammar is a constraint
@@ -247,8 +264,9 @@ impl GgufLlamaCppProvider {
         let mut next_pos = prompt_len as i32;
         let max_tokens = req.max_tokens.max(1);
         // After each decode, the logits-bearing index within the LAST
-        // batch: prompt_len-1 after prefill, 0 after each 1-token step.
-        let mut logits_index: i32 = prompt_len as i32 - 1;
+        // batch: the last token of the final prefill chunk, then 0 after
+        // each 1-token step.
+        let mut logits_index: i32 = last_chunk_len as i32 - 1;
         while generated < max_tokens as u64 {
             if cancel.load(Ordering::Relaxed) {
                 return Err(ProviderError::Cancelled);
@@ -315,8 +333,14 @@ impl GgufLlamaCppProvider {
         let n_ctx = self.context_tokens.max(512).min(model.n_ctx_train());
         let n_ctx =
             std::num::NonZeroU32::new(n_ctx).ok_or(ProviderError::Backend("n_ctx 0".into()))?;
+        // Pooled embeddings need the whole text in one batch: size the
+        // batch to the context so long chunks cannot trip llama.cpp's
+        // n_tokens <= n_batch assertion (texts longer than the context are
+        // refused below).
         let ctx_params = LlamaContextParams::default()
             .with_n_ctx(Some(n_ctx))
+            .with_n_batch(n_ctx.get())
+            .with_n_ubatch(n_ctx.get())
             .with_embeddings(true)
             .with_pooling_type(LlamaPoolingType::Mean);
         let mut ctx = model
@@ -330,6 +354,13 @@ impl GgufLlamaCppProvider {
             if tokens.is_empty() {
                 out.push(Vec::new());
                 continue;
+            }
+            if tokens.len() > n_ctx.get() as usize {
+                return Err(ProviderError::Backend(format!(
+                    "text of {} tokens exceeds the embedding context ({})",
+                    tokens.len(),
+                    n_ctx.get()
+                )));
             }
             let mut batch = LlamaBatch::new(tokens.len(), 1);
             for (pos, t) in tokens.iter().enumerate() {

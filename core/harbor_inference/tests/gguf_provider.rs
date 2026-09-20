@@ -285,3 +285,48 @@ fn structured_output_is_grammar_constrained_on_the_real_runtime() {
     );
     assert_eq!(obj.len(), 2, "additionalProperties=false must hold: {v}");
 }
+
+/// A prompt longer than llama.cpp's default batch (512 tokens) used to trip
+/// `GGML_ASSERT(n_tokens_all <= cparams.n_batch)` and abort the whole
+/// process; prefill is now chunked. A prompt that cannot fit the model's
+/// context at all is refused with a typed error instead.
+#[test]
+fn long_prompts_are_prefilled_in_chunks_and_oversized_prompts_are_refused() {
+    let dir = tempfile::tempdir().unwrap();
+    let package = install_test_model(dir.path());
+    let provider = GgufLlamaCppProvider::new(dir.path())
+        .unwrap()
+        .with_context_tokens(1024);
+    let m = ModelRef::InstalledPackage {
+        package_id: package.clone(),
+    };
+    provider.load(&m).unwrap();
+    let filler = "The dog ran to the park and played with the ball. ".repeat(80);
+    let req = |content: String, max_tokens: u32| ChatRequest {
+        model: m.clone(),
+        messages: vec![JsonValue::object([
+            ("role", JsonValue::str("user")),
+            ("content", JsonValue::str(content)),
+        ])],
+        max_tokens,
+        temperature: 0.0,
+        requires: vec![Capabilities::Chat],
+        response_schema: None,
+        trace_key: None,
+    };
+    // ~800+ tokens: more than one default batch, still inside the
+    // stories260K context (2048).
+    let resp = provider.generate(req(filler.clone(), 8)).unwrap();
+    assert!(
+        resp.usage.prompt_tokens > 512,
+        "{}",
+        resp.usage.prompt_tokens
+    );
+    assert!(resp.usage.completion_tokens >= 1);
+    // Far beyond the trained context: a typed error, not an abort.
+    let err = provider.generate(req(filler.repeat(6), 8)).unwrap_err();
+    assert!(
+        err.to_string().contains("exceeds the model context"),
+        "{err}"
+    );
+}

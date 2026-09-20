@@ -93,6 +93,42 @@ the production model class (1–4 B parameters on device) cannot drive a free-fo
   selects it. The recommended small instruct model for that tier (Qwen3.5-0.8B) is not
   yet pinned as a test fixture; the tier ran on the locally present Qwen2.5-1.5B.
 
+## Addendum 2026-09-20 — five more graphs (production plan B3)
+Deck Review & QA, Financial Model Review, Document Style Review, Team Update and
+Document Co-Authoring (stage three, the cold reader test) are decomposed; nine of the
+30 built-ins are runnable. The design lesson of the first four held: each new graph
+puts the judgement that a 1–4 B model gets wrong into a deterministic tool
+(`deck.inspect`, `workbook.conventions`, `docx.inspect`, `text.verify_numbers`, in
+`harbor_core::tools::review`) and gives the model one structured node that only ranks,
+explains, chooses between `fix` and `review`, or drafts prose — and every model output
+is verified below it: fix text must occur verbatim on a slide, cited locations must be
+ones the inspector reported, a workbook fix formula is attached by the tool from its
+engine-verified suggestion (the model cannot spell a formula), figures in a 3P update
+must occur in the notes or the run ends in `needs_input`, and cold-read evidence must be
+a verbatim passage of the document. Each inspector returns `not_checked` for the
+principles the artifact IR cannot see (page numbers, text sizes, colours, number
+formats, line spacing), so a clean result never claims more than was looked at. Honest
+scope reductions: slide batches are not a commit path yet, so deck fixes are returned
+for the user; Team Update runs the 3P format only; Co-Authoring stages one and two stay
+conversational. Guard cases that *require* a misbehaving model (an invented figure, a
+hallucinated fix, a location the inspector never reported) carry `tiers: ["replay"]` —
+they are contract tests of the deterministic node, not model measurements — so the live
+tier skips them instead of failing a model for behaving well.
+
+Measured 2026-09-20 on Qwen2.5-1.5B-Instruct Q4_K_M (`evidence/skill_evals/live-6a1a2eb6d156.json`,
+commit-bound): replay tier 23/23; live tier **13/18** (was 6/11 across four skills). The
+five remaining live failures are model facts each pinned by an assertion and contained by
+a deterministic node: the model normalizes an owner name (meeting-notes), nudges a trivial
+lookup (second-look), re-emits unchanged formulas or lists nothing for review
+(formula-audit ×2), and declares a document ready while listing gaps (doc-coauthoring).
+Two runtime bugs surfaced by the longer prompts of the new graphs were fixed in the GGUF
+provider: a prompt longer than llama.cpp's batch size aborted the process
+(`GGML_ASSERT(n_tokens_all <= n_batch)`) — prefill is now chunked, and the first token is
+sampled from the last chunk's logits; a prompt that cannot fit the model context is
+refused as a typed error. A structured node whose worst-case output exceeded its
+`max_tokens` produced a truncated document that parsed as an array — schemas are now
+sized against `max_tokens`.
+
 ## Not done (explicitly)
 - ~~Safe-commit of approved batches through the FFI/UI; Work-surface diff of a proposal.~~
   Closed 2026-09-20 (production plan B1/B2): `Executor::decide_and_commit` approves the
@@ -111,7 +147,8 @@ the production model class (1–4 B parameters on device) cannot drive a free-fo
   renders the diff with `ArtifactDiffView` and offers **Save new copy** (primary),
   **Overwrite original…** (confirmed) and **Reject**; `shell_test.dart` runs the full
   journey on the live core.
-- Decomposition of the other 26 skills.
+- ~~Decomposition of the other 26 skills.~~ Five more decomposed 2026-09-20 (see the
+  addendum); the remaining 21 stay declarations, labelled as such in the Skills surface.
 - A `SKILL.md` frontmatter importer (HBR-072) — the graph is the target format for it.
 - ~~Resume-after-crash is implemented (`Executor::resume`) but only its wrong-state
   refusal is covered by tests; a kill/restart test is pending.~~ Closed 2026-09-19:

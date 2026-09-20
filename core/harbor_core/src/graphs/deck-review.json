@@ -1,0 +1,219 @@
+{
+  "schema": "harbor.graph/v1",
+  "id": "deck-review",
+  "version": 1,
+  "description": "Bug hunt over a deck: deck.inspect finds placeholder remnants, unsourced numeric claims, repeated structure and overloaded or empty slides deterministically and says what the IR cannot check; the model only ranks the findings, writes a verdict and drafts replacement text for template remnants. Every replacement's original text must occur verbatim in the deck (text.verify_fields), so nothing is fixed that was never there. Slide batches are not yet a commit path, so fixes are returned for the user to apply.",
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "artifact_id": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      }
+    },
+    "required": [
+      "artifact_id"
+    ],
+    "additionalProperties": false
+  },
+  "entry": "inspect",
+  "budgets": {
+    "max_steps": 40,
+    "max_tool_calls": 30,
+    "max_context_tokens": 24000
+  },
+  "nodes": [
+    {
+      "id": "inspect",
+      "kind": "tool.call",
+      "tool": "deck.inspect",
+      "args": {
+        "artifact_id": {
+          "$state": "/input/artifact_id"
+        }
+      },
+      "out": "/inspect",
+      "next": "has_findings"
+    },
+    {
+      "id": "has_findings",
+      "kind": "branch",
+      "cases": [
+        {
+          "when": {
+            "from": "/inspect/findings",
+            "op": "nonempty"
+          },
+          "next": "triage"
+        }
+      ],
+      "default": "clean"
+    },
+    {
+      "id": "clean",
+      "kind": "const",
+      "value": {
+        "verdict": "ready",
+        "summary": "No findings in the checkable set (placeholders, unsourced numbers, structure). Page numbers, text sizes, contrast and alignment are not visible to Harbor and still need a human pass.",
+        "text_fixes": [],
+        "needs_sources": []
+      },
+      "out": "/triage",
+      "next": "done_clean"
+    },
+    {
+      "id": "triage",
+      "kind": "model.structured",
+      "description": "Rank, judge and draft replacement text; never invent a source.",
+      "instructions": "You are reviewing a slide deck like a bug hunt; assume it has problems. A deterministic inspector already produced the findings by slide. Your job has three parts. 1) verdict: not_ready when any fix candidate exists or any empty_slide or missing_title finding exists, or when more than two slides need sources; otherwise ready_with_notes. 2) summary: at most 400 characters naming the worst slides first and stating that page numbers, text sizes and contrast were not checked. 3) text_fixes: exactly one entry per fix candidate, in order. Copy the candidate's slide number into slide and its original text character for character into original (do not shorten, translate or describe it), then write a replacement the presenter could use; when the real content is unknown write exactly [needs input]. Never write a fix for anything that is not a fix candidate, and never invent a source for a number: the slides that need sources are already listed and you copy that list into needs_sources.",
+      "context": [
+        {
+          "label": "Fix candidates (copy `original` exactly)",
+          "from": "/inspect/fix_candidates",
+          "max_chars": 6000
+        },
+        {
+          "label": "Slides that need sources",
+          "from": "/inspect/needs_sources",
+          "max_chars": 500
+        },
+        {
+          "label": "Findings by slide (code, severity, detail)",
+          "from": "/inspect/findings",
+          "max_chars": 8000
+        },
+        {
+          "label": "Checks the inspector could not perform",
+          "from": "/inspect/not_checked",
+          "max_chars": 1500
+        }
+      ],
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "verdict": {
+            "enum": [
+              "ready_with_notes",
+              "not_ready"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          },
+          "text_fixes": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "type": "object",
+              "properties": {
+                "slide": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 500
+                },
+                "original": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 300
+                },
+                "replacement": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 300
+                },
+                "reason": {
+                  "type": "string",
+                  "maxLength": 160
+                }
+              },
+              "required": [
+                "slide",
+                "original",
+                "replacement",
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "needs_sources": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          }
+        },
+        "required": [
+          "verdict",
+          "summary",
+          "text_fixes",
+          "needs_sources"
+        ],
+        "additionalProperties": false
+      },
+      "out": "/triage",
+      "max_tokens": 900,
+      "max_retries": 1,
+      "next": "verify"
+    },
+    {
+      "id": "verify",
+      "kind": "map",
+      "description": "A fix may only replace text that is actually on a slide.",
+      "over": "/triage/text_fixes",
+      "item": "/cur",
+      "body": "verify_one",
+      "collect": "/verified_fixes",
+      "max_items": 20,
+      "next": "done"
+    },
+    {
+      "id": "verify_one",
+      "kind": "tool.call",
+      "tool": "text.verify_fields",
+      "args": {
+        "source": {
+          "$state": "/inspect/text"
+        },
+        "item": {
+          "$state": "/cur"
+        },
+        "fields": [
+          "original"
+        ]
+      },
+      "out": "/one"
+    },
+    {
+      "id": "done",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/triage/verdict",
+        "/triage/summary",
+        "/verified_fixes",
+        "/triage/needs_sources",
+        "/inspect/findings",
+        "/inspect/counts_by_code",
+        "/inspect/not_checked"
+      ]
+    },
+    {
+      "id": "done_clean",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/triage/verdict",
+        "/triage/summary",
+        "/inspect/counts_by_code",
+        "/inspect/not_checked",
+        "/inspect/slide_count"
+      ]
+    }
+  ]
+}

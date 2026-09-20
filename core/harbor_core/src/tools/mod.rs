@@ -14,6 +14,7 @@
 //! eval harness with fixtures, and in unit tests.
 
 pub mod builtin;
+pub mod review;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;

@@ -1,0 +1,140 @@
+{
+  "schema": "harbor.skill_eval/v1",
+  "skill": "financial-model-review",
+  "cases": [
+    {
+      "id": "dcf_hardcoded",
+      "title": "A typed value inside a formula row becomes a verified cell.set (formula attached from the engine-verified suggestion, no model involved); the unexplained constant and the external link go to review; the run parks for approval",
+      "inputs": {
+        "artifact_id": "wb"
+      },
+      "artifacts": {
+        "wb": {
+          "path": "fixtures/office/dcf_model.xlsx"
+        }
+      },
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "approval_requested"
+        },
+        {
+          "kind": "batch_proposed",
+          "pointer": "/proposal/batch",
+          "min_ops": 1
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/op_count",
+          "value": 1
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/plan/operations/0/args/address",
+          "value": "D2"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/plan/operations/0/args/value",
+          "value": "=C2*1.1"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/conventions/counts_by_code/hardcoded_in_formula_line",
+          "value": 1
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/conventions/counts_by_code/external_link",
+          "value": 1
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/plan/review",
+          "min": 2,
+          "max": 2
+        },
+        {
+          "kind": "state_empty",
+          "pointer": "/plan/rejected"
+        },
+        {
+          "kind": "state_nonempty",
+          "pointer": "/conventions/not_checked"
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 3
+        },
+        {
+          "kind": "steps_le",
+          "max": 6
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        },
+        {
+          "kind": "contains",
+          "pointer": "/conventions/summary",
+          "text": "not checked"
+        }
+      ]
+    },
+    {
+      "id": "clean_budget_no_model",
+      "title": "A workbook with no constants inside formula lines and no external links completes without a model call",
+      "inputs": {
+        "artifact_id": "wb"
+      },
+      "artifacts": {
+        "wb": {
+          "path": "fixtures/office/formula_errors.xlsx"
+        }
+      },
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "completed"
+        },
+        {
+          "kind": "state_empty",
+          "pointer": "/conventions/findings"
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 1
+        },
+        {
+          "kind": "steps_le",
+          "max": 3
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        },
+        {
+          "kind": "state_missing",
+          "pointer": "/plan"
+        }
+      ]
+    }
+  ]
+}

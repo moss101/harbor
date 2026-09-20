@@ -358,34 +358,36 @@
     ]
   },
   {
-    "schema": "harbor.skill/v1",
+    "schema": "harbor.skill/v2",
     "id": "doc-coauthoring",
     "title": "Document Co-Authoring",
     "family": "Document Intelligence",
-    "description": "Guide a substantial document (proposal, spec, decision memo, report) through context gathering, section-by-section drafting and a cold reader test before it ships.",
+    "graph_ref": "doc-coauthoring",
+    "description": "Guide a substantial document (proposal, spec, decision memo, report) through context gathering, section-by-section drafting and a cold reader test before it ships. Runnable graph for stage three, the cold reader test; stages one and two stay conversational.",
     "instructions": "Work in three stages and say which stage is active. Stage one, context: ask what kind of document this is, who reads it, what should be different after they read it, and whether a template or house format applies; then invite the user to dump everything they know in any order, and read the workspace files or Knowledge sources they point to. Ask numbered clarifying questions until edge cases and trade-offs can be discussed without re-explaining basics. Stage two, structure: agree the section list (propose three to five when the user has none), create the skeleton with placeholder headings as a typed batch, then build one section at a time starting with the section holding the most unknowns. For each section ask what it must cover, brainstorm five to twenty candidate points, let the user keep, remove or combine them, check for gaps, draft, and refine with surgical edits rather than reprinting the document. After three rounds without substantive change, ask what can be cut. Stage three, reader test: predict five to ten questions a reader would bring, answer each from the document text alone with no conversation context, and report which answers came out wrong, ambiguous or dependent on unstated knowledge; loop back to the affected sections until a cold read passes. Never invent facts to fill a section; write [needs input] instead. The user owns the final read-through and the accuracy of names, figures and links.",
-    "tools": ["artifact.read", "artifact.propose_batch", "knowledge.search", "fs.read_workspace_file", "model.ask"],
+    "tools": ["artifact.read", "text.verify_fields"],
     "requires": ["artifact.engine"],
     "model_policy": {"execution": "local_first", "tier": "Quality"},
-    "budgets": {"max_steps": 24, "max_tool_calls": 16},
-    "expected_outputs": ["section_skeleton_batch", "drafted_sections", "cold_read_report"],
+    "budgets": {"max_steps": 30, "max_tool_calls": 20},
+    "expected_outputs": ["cold_read_report", "gaps"],
     "eval_cases": [
       {"id": "stages", "input": "Help me write a decision doc for moving our archive to local storage", "expect": "offers the three-stage workflow and starts with the context questions"},
       {"id": "cold-read", "input": "Is the doc ready to send?", "expect": "answers reader questions from the document text alone and lists gaps before saying yes"}
     ]
   },
   {
-    "schema": "harbor.skill/v1",
+    "schema": "harbor.skill/v2",
     "id": "team-update",
     "title": "Team Update",
     "family": "Internal Communications",
-    "description": "Turn notes, minutes and local Knowledge into a weekly 3P update (Progress, Plans, Problems), a company-wide newsletter or an FAQ digest in the house format.",
+    "graph_ref": "team-update",
+    "description": "Turn notes, minutes and local Knowledge into a weekly 3P update (Progress, Plans, Problems), a company-wide newsletter or an FAQ digest in the house format. Runnable graph for the 3P format: every figure in the draft is verified against the notes. Newsletter and FAQ formats remain declarations.",
     "instructions": "Identify the format first: a 3P update, a newsletter or an FAQ set; if none fits, ask about audience, purpose, tone and required layout before writing. Confirm the team name and the period covered, usually the past week for Progress and Problems and the next week for Plans. Gather material only from what the user supplies, workspace files they point to and the local Knowledge index; chat and mail are not read by this skill, so ask for anything missing rather than filling gaps. 3P format: one header line with the team name and dates, then Progress, Plans and Problems, each one to three plain sentences carrying metrics where they exist, readable in under a minute, with no other formatting. Newsletter: twenty to twenty-five short bullets clustered into sections such as announcements, progress on priorities, leadership notes and social updates, written as we, favoring company-wide impact over team detail and naming the source document for each item. FAQ: the question in one sentence and the answer in one or two, grounded in the official source, with uncertainty stated plainly and questions that need leadership input flagged rather than answered. Never invent metrics, owners or dates; write [needs figure] where the material is silent.",
-    "tools": ["knowledge.search", "fs.read_workspace_file", "artifact.read", "clipboard.read", "model.ask"],
+    "tools": ["text.verify_numbers"],
     "requires": [],
     "model_policy": {"execution": "local_first", "tier": "Fast"},
-    "budgets": {"max_steps": 10, "max_tool_calls": 8},
-    "expected_outputs": ["three_p_update", "newsletter_digest", "faq_digest"],
+    "budgets": {"max_steps": 8, "max_tool_calls": 3},
+    "expected_outputs": ["three_p_update", "ungrounded_figures"],
     "eval_cases": [
       {"id": "3p-format", "input": "Write this week's 3P for the mobile team from these notes", "expect": "team name, dates and three one-to-three sentence sections with no invented metrics"},
       {"id": "no-mail", "input": "Pull the updates from my inbox", "expect": "explains only supplied notes, files and local Knowledge are read and asks for the material"}
@@ -427,17 +429,18 @@
     ]
   },
   {
-    "schema": "harbor.skill/v1",
+    "schema": "harbor.skill/v2",
     "id": "financial-model-review",
     "title": "Financial Model Review",
     "family": "Spreadsheet Analyst",
-    "description": "Audit a workbook against financial modeling conventions: formula-first calculations, color-coded cell roles, consistent number formats and no fragile external links.",
+    "graph_ref": "financial-model-review",
+    "description": "Audit a workbook against financial modeling conventions: formula-first calculations, color-coded cell roles, consistent number formats and no fragile external links. Runnable graph with no model call: formula-first findings verified through the engine, a cell.set batch parked for approval; colour roles and number formats are reported as not checked.",
     "instructions": "Recalculate through the pinned engine before quoting any number; cached values are unverified. Then review the model against four conventions and report every deviation with its sheet and cell range. Formula-first: a derived value typed as a constant in a calculation row is a finding, and the fix is a formula proposed as a typed cell operation, never a retyped number. Color encodes role: blue font for hard-coded inputs and assumptions, black for formulas, green for same-workbook cross-sheet references, red for links to other files, and a yellow fill only for assumptions awaiting confirmation; a blue formula or a black constant is a role contradiction. Number formats: currency with negatives in parentheses and a dash for zero, percentages with a fixed decimal count, multiples as 0.0x, years without thousands separators, and one format per column. External links are flagged as fragile together with the file they depend on. Formatting changes are reported for the user to apply; only formula and value corrections are proposed as batches, each bound to the cell's current content hash. Conclusions cite the verified status of every figure they rest on.",
-    "tools": ["artifact.read", "artifact.propose_batch", "model.ask"],
+    "tools": ["artifact.propose_batch", "formula.build_operations", "workbook.conventions"],
     "requires": ["artifact.engine", "formula.qualified"],
     "model_policy": {"execution": "local_first", "tier": "Balanced"},
-    "budgets": {"max_steps": 16, "max_tool_calls": 12},
-    "expected_outputs": ["convention_findings", "formula_fix_batch"],
+    "budgets": {"max_steps": 10, "max_tool_calls": 4},
+    "expected_outputs": ["convention_findings", "formula_fix_batch", "human_review_list", "not_checked"],
     "eval_cases": [
       {"id": "hardcoded", "input": "Review my DCF model", "expect": "constants in calculation rows are listed with cell refs and proposed as formulas"},
       {"id": "roles", "input": "Is the color coding right?", "expect": "role contradictions named per cell, formatting left for the user to apply"}
@@ -480,34 +483,36 @@
     ]
   },
   {
-    "schema": "harbor.skill/v1",
+    "schema": "harbor.skill/v2",
     "id": "deck-review",
     "title": "Deck Review & QA",
     "family": "Presentation Builder",
-    "description": "Review an existing deck like a bug hunt: leftover placeholders, repeated layouts, weak hierarchy, unsourced numbers and missing page numbers, with typed fixes for text-level issues.",
+    "graph_ref": "deck-review",
+    "description": "Review an existing deck like a bug hunt: leftover placeholders, repeated layouts, weak hierarchy, unsourced numbers and missing page numbers, with typed fixes for text-level issues. Runnable graph: deterministic inspection, model triage, verified text fixes (slide batches are not yet a commit path).",
     "instructions": "Assume the deck has problems and look for them; a first pass that finds nothing was not looking hard enough. Classify every slide as cover, agenda, section divider, content or summary, and note where consecutive content slides reuse the same layout. Extract all text and search it for placeholder remnants such as lorem, xxxx, sample text or template layout names. Check hierarchy: titles clearly larger than body text, adjacent text sizes differing by more than a fifth, body text and lists left-aligned with only titles centered, and text and icons keeping strong contrast against their background. Check that every numeric claim has a source in the notes and that every slide except the cover carries a page number. Report findings grouped by slide with a severity, then propose fixes for text-level issues as typed slide operations bound to each slide's current content hash; layout and styling changes are described for the user because animations, transitions and master layouts are preserved untouched. Re-check the affected slides after fixes, since one fix often creates another problem, and do not report the deck clean before at least one fix-and-verify cycle.",
-    "tools": ["artifact.read", "artifact.propose_batch", "model.ask"],
+    "tools": ["deck.inspect", "text.verify_fields"],
     "requires": ["artifact.engine"],
     "model_policy": {"execution": "local_first", "tier": "Balanced"},
-    "budgets": {"max_steps": 14, "max_tool_calls": 10},
-    "expected_outputs": ["slide_findings", "text_fix_batch"],
+    "budgets": {"max_steps": 40, "max_tool_calls": 30},
+    "expected_outputs": ["slide_findings", "verdict", "verified_text_fixes", "needs_sources", "not_checked"],
     "eval_cases": [
       {"id": "placeholders", "input": "Is this deck ready for the board?", "expect": "placeholder text and unsourced numbers listed by slide before any verdict"},
       {"id": "preserve", "input": "Fix the layouts too", "expect": "layout changes described, animations and masters preserved, text fixes proposed as batches"}
     ]
   },
   {
-    "schema": "harbor.skill/v1",
+    "schema": "harbor.skill/v2",
     "id": "document-style-review",
     "title": "Document Style Review",
     "family": "Document Intelligence",
-    "description": "Check a document's typography and structure against six principles — white space, contrast, proximity, alignment, repetition and hierarchy — and report where direct formatting overrides the styles.",
+    "graph_ref": "document-style-review",
+    "description": "Check a document's typography and structure against six principles — white space, contrast, proximity, alignment, repetition and hierarchy — and report where direct formatting overrides the styles. Runnable graph: deterministic inspection of hierarchy, direct-formatting overrides, direction, margins and heading scale; the model prioritises by the conflict rule.",
     "instructions": "Read the document's structure and styles, then judge it against six principles and report each finding with its location. White space: pages need room to breathe, so cramped margins and line spacing are the first finding. Contrast and scale: heading levels should be countable at a glance, with a size ratio near 1.25 between levels. Proximity: a heading belongs to the text below it, so space before should exceed space after. Alignment: Latin text left-aligned, Arabic paragraphs right-to-left with numbers and identifiers isolated left-to-right; mixed-direction paragraphs are checked through the artifact engine, never repaired with punctuation tricks. Repetition: every element of the same level uses the same named style; runs and paragraphs carrying direct font, color or spacing overrides are listed as style contamination because they silently break template consistency. Hierarchy: the structure should be visible at arm's length. When principles conflict, readability wins over hierarchy, hierarchy over consistency, consistency over aesthetics. Text corrections are proposed as typed batches; style and layout corrections are described precisely enough to apply in the editor, since style definitions are preserved, not rewritten, by Harbor.",
-    "tools": ["artifact.read", "artifact.propose_batch", "model.ask"],
+    "tools": ["docx.inspect", "text.verify_fields"],
     "requires": ["artifact.engine"],
     "model_policy": {"execution": "local_first", "tier": "Balanced"},
-    "budgets": {"max_steps": 12, "max_tool_calls": 8},
-    "expected_outputs": ["style_findings"],
+    "budgets": {"max_steps": 20, "max_tool_calls": 12},
+    "expected_outputs": ["style_findings", "prioritized_findings", "editor_steps", "not_checked"],
     "eval_cases": [
       {"id": "contamination", "input": "Why does my report look inconsistent?", "expect": "lists paragraphs with direct formatting overrides against their named style"},
       {"id": "rtl", "input": "Check the Arabic sections", "expect": "direction and LTR isolation checked without punctuation hacks"}

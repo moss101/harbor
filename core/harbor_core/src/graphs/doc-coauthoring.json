@@ -1,0 +1,193 @@
+{
+  "schema": "harbor.graph/v1",
+  "id": "doc-coauthoring",
+  "version": 1,
+  "description": "Stage three of co-authoring, the cold reader test, as a graph: artifact.read extracts the document text; the model predicts five to ten questions a reader would bring, answers each from the document text alone and quotes the evidence; text.verify_fields drops any evidence that does not occur verbatim in the document, so a question the model only pretended to answer is reported as unsupported. Stages one and two (context gathering, section-by-section drafting) remain conversational: they need the user in the loop and the batch model cannot add paragraphs yet.",
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "artifact_id": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      },
+      "audience": {
+        "type": "string",
+        "maxLength": 200,
+        "description": "Who reads the document, when the user knows."
+      }
+    },
+    "required": [
+      "artifact_id"
+    ],
+    "additionalProperties": false
+  },
+  "entry": "read",
+  "budgets": {
+    "max_steps": 30,
+    "max_tool_calls": 20,
+    "max_context_tokens": 30000
+  },
+  "nodes": [
+    {
+      "id": "read",
+      "kind": "tool.call",
+      "tool": "artifact.read",
+      "args": {
+        "artifact_id": {
+          "$state": "/input/artifact_id"
+        }
+      },
+      "out": "/doc",
+      "next": "has_text"
+    },
+    {
+      "id": "has_text",
+      "kind": "branch",
+      "cases": [
+        {
+          "when": {
+            "from": "/doc/text",
+            "op": "nonempty"
+          },
+          "next": "questions"
+        }
+      ],
+      "default": "empty"
+    },
+    {
+      "id": "questions",
+      "kind": "model.structured",
+      "description": "Predict reader questions and answer them from the text alone.",
+      "instructions": "You are a cold reader who has never seen the conversation behind this document. Predict five to ten different questions that the stated audience would bring to it — no two questions may ask the same thing — then answer each one from the document text alone. For every question set status to answered when the text answers it plainly, ambiguous when the text could be read two ways, or missing when the text does not answer it. Evidence must be a passage copied character for character from the document (at most 200 characters, no paraphrase, no added words); if you cannot copy a passage exactly, set status to missing and evidence to null. Never fill a gap with knowledge the document does not contain. Set ready to true only when every question is answered with evidence. List each missing or ambiguous point as a gap the author must fix; a gap is a description of what is missing, not a sentence from the document.",
+      "context": [
+        {
+          "label": "Audience (if known)",
+          "from": "/input/audience"
+        },
+        {
+          "label": "Document",
+          "from": "/doc/text",
+          "max_chars": 24000
+        }
+      ],
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "questions": {
+            "type": "array",
+            "minItems": 5,
+            "maxItems": 10,
+            "items": {
+              "type": "object",
+              "properties": {
+                "question": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "status": {
+                  "enum": [
+                    "answered",
+                    "ambiguous",
+                    "missing"
+                  ]
+                },
+                "answer": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 300
+                },
+                "evidence": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 200
+                }
+              },
+              "required": [
+                "question",
+                "status",
+                "answer",
+                "evidence"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "ready": {
+            "type": "boolean"
+          },
+          "gaps": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        },
+        "required": [
+          "questions",
+          "ready",
+          "gaps"
+        ],
+        "additionalProperties": false
+      },
+      "out": "/cold_read",
+      "max_tokens": 1400,
+      "max_retries": 1,
+      "next": "verify"
+    },
+    {
+      "id": "verify",
+      "kind": "map",
+      "description": "Evidence must be a verbatim passage of the document.",
+      "over": "/cold_read/questions",
+      "item": "/cur",
+      "body": "verify_one",
+      "collect": "/verified",
+      "max_items": 10,
+      "next": "done"
+    },
+    {
+      "id": "verify_one",
+      "kind": "tool.call",
+      "tool": "text.verify_fields",
+      "args": {
+        "source": {
+          "$state": "/doc/text"
+        },
+        "item": {
+          "$state": "/cur"
+        },
+        "fields": [
+          "evidence"
+        ]
+      },
+      "out": "/one"
+    },
+    {
+      "id": "done",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/verified",
+        "/cold_read/ready",
+        "/cold_read/gaps",
+        "/doc/kind",
+        "/doc/paragraph_count"
+      ]
+    },
+    {
+      "id": "empty",
+      "kind": "end",
+      "outcome": "needs_input",
+      "outputs": [
+        "/doc/kind",
+        "/doc/name"
+      ]
+    }
+  ]
+}

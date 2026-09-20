@@ -1,0 +1,173 @@
+{
+  "schema": "harbor.skill_eval/v1",
+  "skill": "doc-coauthoring",
+  "cases": [
+    {
+      "id": "decision_memo",
+      "title": "The cold reader test answers from the document text alone: every surviving evidence passage is verbatim, and a document with gaps is not ready",
+      "inputs": {
+        "artifact_id": "doc",
+        "audience": "engineering leads"
+      },
+      "artifacts": {
+        "doc": {
+          "path": "fixtures/office/report_styles.docx"
+        }
+      },
+      "cassette": "cassettes/decision_memo.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "completed"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/doc/kind",
+          "value": "docx"
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/verified",
+          "min": 5,
+          "max": 10
+        },
+        {
+          "kind": "values_appear_in",
+          "pointer": "/verified/*/item/evidence",
+          "source": "/doc/text"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/cold_read/ready",
+          "value": false
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/cold_read/gaps",
+          "min": 1
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 11
+        },
+        {
+          "kind": "steps_le",
+          "max": 16
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "decision_memo_invented_evidence",
+      "title": "Guard: evidence the model did not copy verbatim is dropped and the question is reported unsupported (replay-only contract test)",
+      "inputs": {
+        "artifact_id": "doc",
+        "audience": "engineering leads"
+      },
+      "artifacts": {
+        "doc": {
+          "path": "fixtures/office/report_styles.docx"
+        }
+      },
+      "cassette": "cassettes/decision_memo.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/verified/0/item/evidence",
+          "value": "We recommend moving the archive to local storage in Q4"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/verified/5/item/evidence",
+          "value": null
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/verified/5/dropped",
+          "min": 1
+        },
+        {
+          "kind": "values_appear_in",
+          "pointer": "/verified/*/item/evidence",
+          "source": "/doc/text"
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "no_prose_needs_input",
+      "title": "An artifact with no prose to read (a workbook) ends in needs_input before any model call",
+      "inputs": {
+        "artifact_id": "doc"
+      },
+      "artifacts": {
+        "doc": {
+          "path": "fixtures/office/formula_errors.xlsx"
+        }
+      },
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "needs_input"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/doc/kind",
+          "value": "xlsx"
+        },
+        {
+          "kind": "state_missing",
+          "pointer": "/cold_read"
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 1
+        },
+        {
+          "kind": "steps_le",
+          "max": 3
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    }
+  ]
+}

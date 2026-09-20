@@ -144,6 +144,11 @@ Each: graph in `core/harbor_core/src/graphs/`, eval suite under
 `evidence/skill_evals/`. Keep the remaining 21 as honest "Declaration only"
 entries; the Skills surface already labels them.
 
+**Status (2026-09-20):** B3 done — nine runnable graphs (`deck-review`,
+`financial-model-review`, `document-style-review`, `team-update`,
+`doc-coauthoring` added), replay tier 23/23 in CI, live tier recorded
+(`evidence/skill_evals/live-6a1a2eb6d156.json`). See STATUS session 35.
+
 ### B4. Raise the live-tier pass rate (ongoing in weeks 2–4)
 Current 6/11 on Qwen2.5-1.5B, every failure a pinned model fact contained
 by a deterministic node. Options, in cost order:
@@ -156,6 +161,14 @@ by a deterministic node. Options, in cost order:
    and a signed catalog epoch bump.
 Target: ≥ 9/11 on the reference device before 1.1 freeze; record the
 number, do not promise it.
+
+**Status (2026-09-20):** options 1 and 2 applied to the new graphs (schemas
+sized against `max_tokens`, prompts copy-not-describe, fix/review decisions
+and formula attachment moved into deterministic tools, guard cases marked
+replay-only). Live tier on Qwen2.5-1.5B: **13/18** across nine skills (72 %,
+up from 6/11 = 55 % across four). The five remaining failures are pinned
+model facts (decision 0006 addendum). Option 3 (a larger catalog tier) is
+not taken in this phase; it stays the documented next lever.
 
 ### B5. SKILL.md frontmatter importer (HBR-072, week 4, optional)
 Import community `SKILL.md` files as `harbor.skill/v1` declarations, never

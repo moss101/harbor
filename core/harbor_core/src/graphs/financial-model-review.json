@@ -1,0 +1,144 @@
+{
+  "schema": "harbor.graph/v1",
+  "id": "financial-model-review",
+  "version": 1,
+  "description": "Formula-first review of a workbook with no model call: workbook.conventions finds constants typed inside formula rows and columns and links to other files, verifies through the pinned engine whether the neighbouring formula shifted to the cell reproduces the typed value, and splits findings mechanically — only an engine-verified formula becomes a fix, everything else is a review item. formula.build_operations attaches the verified formula itself; fixes become a typed cell.set batch parked for approval. Colour roles and number formats are reported as not checked because the workbook IR carries no styles.",
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "artifact_id": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      }
+    },
+    "required": [
+      "artifact_id"
+    ],
+    "additionalProperties": false
+  },
+  "entry": "conventions",
+  "budgets": {
+    "max_steps": 10,
+    "max_tool_calls": 4,
+    "max_context_tokens": 4000
+  },
+  "nodes": [
+    {
+      "id": "conventions",
+      "kind": "tool.call",
+      "tool": "workbook.conventions",
+      "args": {
+        "artifact_id": {
+          "$state": "/input/artifact_id"
+        }
+      },
+      "out": "/conventions",
+      "next": "has_findings"
+    },
+    {
+      "id": "has_findings",
+      "kind": "branch",
+      "cases": [
+        {
+          "when": {
+            "from": "/conventions/findings",
+            "op": "nonempty"
+          },
+          "next": "build"
+        }
+      ],
+      "default": "clean"
+    },
+    {
+      "id": "build",
+      "kind": "tool.call",
+      "tool": "formula.build_operations",
+      "description": "Decisions come from the inspector; the verified suggested formula is attached here.",
+      "args": {
+        "audit": {
+          "$state": "/conventions"
+        },
+        "decisions": {
+          "$state": "/conventions/decisions"
+        }
+      },
+      "out": "/plan",
+      "next": "has_fixes"
+    },
+    {
+      "id": "has_fixes",
+      "kind": "branch",
+      "cases": [
+        {
+          "when": {
+            "from": "/plan/operations",
+            "op": "nonempty"
+          },
+          "next": "propose"
+        }
+      ],
+      "default": "report"
+    },
+    {
+      "id": "propose",
+      "kind": "tool.call",
+      "tool": "artifact.propose_batch",
+      "args": {
+        "artifact_id": {
+          "$state": "/input/artifact_id"
+        },
+        "operations": {
+          "$state": "/plan/operations"
+        }
+      },
+      "out": "/proposal",
+      "next": "approve"
+    },
+    {
+      "id": "approve",
+      "kind": "approval",
+      "effect_class": "artifact.commit",
+      "batch": "/proposal/batch",
+      "next_approved": "done",
+      "next_rejected": "report"
+    },
+    {
+      "id": "done",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/conventions/summary",
+        "/plan/review",
+        "/plan/rejected",
+        "/proposal",
+        "/conventions/counts_by_code",
+        "/conventions/not_checked",
+        "/approvals/approve"
+      ]
+    },
+    {
+      "id": "report",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/conventions/summary",
+        "/plan/review",
+        "/plan/rejected",
+        "/conventions/counts_by_code",
+        "/conventions/not_checked"
+      ]
+    },
+    {
+      "id": "clean",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/conventions/summary",
+        "/conventions/sheets",
+        "/conventions/counts_by_code",
+        "/conventions/not_checked"
+      ]
+    }
+  ]
+}

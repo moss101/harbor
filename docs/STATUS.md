@@ -7,6 +7,40 @@ ran at.
 
 ---
 
+## Session 35 (2026-09-20): Phase B3–B4 — nine runnable skills, live tier 13/18, GGUF long-prompt fix
+
+Five more built-ins decomposed into graphs (Deck Review & QA, Financial Model
+Review, Document Style Review, Team Update (3P), Document Co-Authoring (cold
+reader test)); runnable skills 4 → 9 of 30. Decision 0006 addendum has the
+design: judgement in deterministic tools, one structured model node, every
+model output verified below it, `not_checked` reported for what the IR cannot see.
+
+- **Tools** — `harbor_core::tools::review`: `deck.inspect`,
+  `workbook.conventions` (shifted neighbour formulas verified through the
+  pinned engine; mechanical fix/review split), `docx.inspect` (hierarchy,
+  direct-formatting overrides, direction, margins, heading scale from
+  styles.xml), `text.verify_numbers`. `formula.build_operations` accepts a
+  flat `findings` array and attaches an engine-verified `suggested_formula`
+  so the model never spells a formula. `artifact.read` returns a flat `text`
+  for DOCX/PPTX/PDF.
+- **Fixtures** — `board_deck.pptx`, `dcf_model.xlsx`, `report_styles.docx`
+  (deterministic, `tools/make_skill_eval_fixtures.py`).
+- **Evals** — 23 replay cases (all pass in CI, no weights); `tiers` on a
+  case marks replay-only guard cases. Live tier on Qwen2.5-1.5B: **13/18**
+  (`evidence/skill_evals/live-6a1a2eb6d156.json`, commit-bound; recorded
+  cassettes under `evals/skills/*/cassettes/live/`, machine-local).
+  Financial Model Review runs with no model call (like Placeholder Fill).
+- **Runtime fix** — GGUF provider: chunked prefill (a prompt longer than
+  `n_batch` used to abort the process), correct logits index after chunked
+  prefill, typed refusal of prompts that cannot fit the model context, sized
+  embedding batches. Regression test on the real runtime
+  (`gguf_provider::long_prompts_are_prefilled_in_chunks…`).
+- **App** — Skills surface shows nine runnable graphs; the Run sheet form
+  covers the new inputs (team/period/notes; artifact attach for the rest).
+- **Gates** — `cargo fmt/clippy/test --workspace` (47 suites, 0 failures),
+  replay 23/23, grammar probe over all nine graphs, `flutter analyze` clean,
+  app `flutter test` 28/28, dossier validator PASS.
+
 ## Session 34 (2026-09-20): Phase B1–B2 — safe-commit through FFI and app, proposal diff
 
 The skill loop no longer stops at "proposal": a user can run a skill against

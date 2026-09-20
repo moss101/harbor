@@ -1,0 +1,11 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "team-update/compose#1",
+      "response": {
+        "content": "{\"header\": \"Mobile team — 8–12 Sep 2026\", \"progress\": [\"Shipped offline search with 3 PRs merged and kept crash-free sessions at 99.4%.\", \"Started the Arabic layout audit with 2 screens left.\"], \"plans\": [\"Finish the Arabic layout audit and cut release 1.1.0-rc1.\"], \"problems\": [\"TestFlight review has been pending since Tuesday and design sign-off for settings is still missing.\"]}"
+      }
+    }
+  ]
+}

@@ -462,7 +462,7 @@ void _appendSkillRunTests() {
     await pumpApp(tester);
     if (!coreAvailable) return;
     await goTo(tester, 'Skills');
-    // Cards say honestly which skills can run: the four decomposed graph
+    // Cards say honestly which skills can run: the nine decomposed graph
     // skills are runnable, the prose ones are declarations.
     expect(find.text('Runnable graph'), findsWidgets);
     expect(find.text('Declaration only'), findsWidgets);
@@ -475,8 +475,14 @@ void _appendSkillRunTests() {
           'placeholder-fill',
           'formula-audit',
           'second-look',
-          'meeting-notes'
+          'meeting-notes',
+          'deck-review',
+          'financial-model-review',
+          'document-style-review',
+          'team-update',
+          'doc-coauthoring',
         ]));
+    expect(runnable, hasLength(9));
     expect(
         runnable.firstWhere((s) => s.id == 'placeholder-fill').graph!.usesModel,
         isFalse);

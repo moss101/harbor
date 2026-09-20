@@ -38,6 +38,10 @@ pub fn all() -> Vec<Arc<dyn Tool>> {
         Arc::new(ModelAsk::new()),
         Arc::new(ModelEmbed::new()),
         Arc::new(ClipboardRead::new()),
+        Arc::new(super::review::TextVerifyNumbers::new()),
+        Arc::new(super::review::DeckInspect::new()),
+        Arc::new(super::review::WorkbookConventions::new()),
+        Arc::new(super::review::DocxInspect::new()),
     ]
 }
 
@@ -426,6 +430,12 @@ pub fn read_artifact(
             out["paragraph_count"] = json!(total);
             out["preserved_parts"] = json!(d.preserved_parts);
             out["truncated"] = json!(total > max_items);
+            out["text"] = json!(d
+                .paragraphs
+                .iter()
+                .map(|p| p.text.as_str())
+                .collect::<Vec<_>>()
+                .join("\n"));
         }
         ArtifactKind::Xlsx => {
             let w = WorkbookDoc::load(bytes).map_err(|e| ToolError::failed(tool, e.to_string()))?;
@@ -479,6 +489,14 @@ pub fn read_artifact(
             out["slides"] = Value::Array(slides);
             out["slide_count"] = json!(total);
             out["truncated"] = json!(total > max_items);
+            out["text"] = json!(d
+                .slides
+                .iter()
+                .flat_map(|sl| std::iter::once(sl.title.clone())
+                    .chain(sl.bullets.iter().cloned())
+                    .chain(sl.notes.iter().cloned()))
+                .collect::<Vec<_>>()
+                .join("\n"));
         }
         ArtifactKind::Pdf => {
             let p = harbor_render::pdf::extract_pages(bytes)
@@ -492,6 +510,12 @@ pub fn read_artifact(
             out["pages"] = Value::Array(pages);
             out["page_count"] = json!(p.page_count);
             out["truncated"] = json!(p.page_count > max_items);
+            out["text"] = json!(p
+                .pages
+                .iter()
+                .map(|pg| pg.text.as_str())
+                .collect::<Vec<_>>()
+                .join("\n"));
         }
         ArtifactKind::Text => {
             out["text"] = json!(String::from_utf8_lossy(bytes));
@@ -1628,8 +1652,10 @@ impl Tool for FormulaBuildOperations {
 
     fn call(&self, _ctx: &ToolContext<'_>, args: &Value) -> Result<Value, ToolError> {
         let audit = &args["audit"];
-        // Findings keyed by "Sheet!Address" → (target_id, content_hash, formula).
-        let mut findings: BTreeMap<String, (String, String, Option<String>)> = BTreeMap::new();
+        // Findings keyed by "Sheet!Address" → (target_id, content_hash,
+        // current formula, verified suggested formula).
+        let mut findings: BTreeMap<String, (String, String, Option<String>, Option<String>)> =
+            BTreeMap::new();
         let mut collect = |arr: Option<&Vec<Value>>| {
             for f in arr.into_iter().flatten() {
                 let (Some(sheet), Some(address)) = (s(f, "sheet"), s(f, "address")) else {
@@ -1639,14 +1665,27 @@ impl Tool for FormulaBuildOperations {
                 let target = s(f, "target_id").unwrap_or_else(|| cell_target_id(&sheet, &address));
                 let hash = s(f, "content_hash");
                 let formula = s(f, "formula");
-                let entry = findings
-                    .entry(key)
-                    .or_insert((target, String::new(), formula.clone()));
+                // Only a formula the tool verified through the engine may be
+                // applied without the model spelling it out.
+                let suggested = s(f, "suggested_formula").filter(|_| {
+                    f.get("reproduces_value")
+                        .and_then(Value::as_bool)
+                        .unwrap_or(false)
+                });
+                let entry = findings.entry(key).or_insert((
+                    target,
+                    String::new(),
+                    formula.clone(),
+                    suggested.clone(),
+                ));
                 if let Some(h) = hash {
                     entry.1 = h;
                 }
                 if entry.2.is_none() {
                     entry.2 = formula;
+                }
+                if entry.3.is_none() {
+                    entry.3 = suggested;
                 }
             }
         };
@@ -1657,6 +1696,9 @@ impl Tool for FormulaBuildOperations {
                 .and_then(Value::as_array),
         );
         collect(audit.pointer("/unsupported").and_then(Value::as_array));
+        // workbook.conventions reports a flat `findings` array in the same
+        // sheet/address/target_id/content_hash shape.
+        collect(audit.pointer("/findings").and_then(Value::as_array));
         let mut operations = Vec::new();
         let mut review = Vec::new();
         let mut rejected = Vec::new();
@@ -1664,7 +1706,7 @@ impl Tool for FormulaBuildOperations {
             let sheet = s(&d, "sheet").unwrap_or_default();
             let address = s(&d, "address").unwrap_or_default().to_ascii_uppercase();
             let key = format!("{sheet}!{address}");
-            let Some((target_id, content_hash, original)) = findings.get(&key) else {
+            let Some((target_id, content_hash, original, suggested)) = findings.get(&key) else {
                 rejected.push(json!({"address": key, "reason": "the audit reported no finding for this cell"}));
                 continue;
             };
@@ -1678,8 +1720,9 @@ impl Tool for FormulaBuildOperations {
                     let Some(formula) = s(&d, "formula")
                         .map(|f| f.trim().to_string())
                         .filter(|f| !f.is_empty())
+                        .or_else(|| suggested.clone())
                     else {
-                        rejected.push(json!({"address": key, "reason": "fix without a formula"}));
+                        rejected.push(json!({"address": key, "reason": "fix without a formula and no verified suggestion for this cell"}));
                         continue;
                     };
                     let normalized = format!("={}", formula.trim_start_matches('='));

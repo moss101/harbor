@@ -1,0 +1,207 @@
+{
+  "schema": "harbor.graph/v1",
+  "id": "team-update",
+  "version": 1,
+  "description": "Weekly 3P update (Progress, Plans, Problems) from notes the user supplies. The model drafts the three sections in plain sentences; text.verify_numbers then checks every figure in the draft against the notes, and a draft that carries a number the notes never mention ends in needs_input with the invented figures listed instead of an update. Chat and mail are not read: the only material is the notes input.",
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "team": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "period": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 80,
+        "description": "The dates covered, e.g. 8–12 Sep 2026."
+      },
+      "notes": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 60000,
+        "description": "Notes, minutes and figures gathered by the user. Nothing else is read."
+      }
+    },
+    "required": [
+      "team",
+      "period",
+      "notes"
+    ],
+    "additionalProperties": false
+  },
+  "entry": "compose",
+  "budgets": {
+    "max_steps": 8,
+    "max_tool_calls": 3,
+    "max_context_tokens": 20000
+  },
+  "nodes": [
+    {
+      "id": "compose",
+      "kind": "model.structured",
+      "description": "Draft the 3P from the notes alone.",
+      "instructions": "Write this team's weekly 3P update from the notes and nothing else. Header: the team name and the period exactly as given. Progress: one to three plain sentences about what was done in the period, carrying the metrics that appear in the notes. Plans: one to three plain sentences about the coming period. Problems: one to three plain sentences about blockers or risks. Every number, owner and date must come from the notes; where the notes are silent on a figure write [needs figure] instead of inventing one, and where a section has no material write a single sentence saying the notes do not cover it. No bullets, headings or other formatting inside the sentences. The whole update must read in under a minute.",
+      "context": [
+        {
+          "label": "Team",
+          "from": "/input/team"
+        },
+        {
+          "label": "Period",
+          "from": "/input/period"
+        },
+        {
+          "label": "Notes",
+          "from": "/input/notes",
+          "max_chars": 40000
+        }
+      ],
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "header": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "progress": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 3,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 320
+            }
+          },
+          "plans": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 3,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 320
+            }
+          },
+          "problems": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 3,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 320
+            }
+          }
+        },
+        "required": [
+          "header",
+          "progress",
+          "plans",
+          "problems"
+        ],
+        "additionalProperties": false
+      },
+      "out": "/update",
+      "max_tokens": 700,
+      "max_retries": 1,
+      "next": "ground_progress"
+    },
+    {
+      "id": "ground_progress",
+      "kind": "tool.call",
+      "tool": "text.verify_numbers",
+      "args": {
+        "source": {
+          "$state": "/input/notes"
+        },
+        "texts": {
+          "$state": "/update/progress"
+        }
+      },
+      "out": "/g_progress",
+      "next": "ground_plans"
+    },
+    {
+      "id": "ground_plans",
+      "kind": "tool.call",
+      "tool": "text.verify_numbers",
+      "args": {
+        "source": {
+          "$state": "/input/notes"
+        },
+        "texts": {
+          "$state": "/update/plans"
+        }
+      },
+      "out": "/g_plans",
+      "next": "ground_problems"
+    },
+    {
+      "id": "ground_problems",
+      "kind": "tool.call",
+      "tool": "text.verify_numbers",
+      "args": {
+        "source": {
+          "$state": "/input/notes"
+        },
+        "texts": {
+          "$state": "/update/problems"
+        }
+      },
+      "out": "/g_problems",
+      "next": "grounded"
+    },
+    {
+      "id": "grounded",
+      "kind": "branch",
+      "description": "Any invented figure blocks delivery.",
+      "cases": [
+        {
+          "when": {
+            "from": "/g_progress/grounded",
+            "op": "falsy"
+          },
+          "next": "ungrounded"
+        },
+        {
+          "when": {
+            "from": "/g_plans/grounded",
+            "op": "falsy"
+          },
+          "next": "ungrounded"
+        },
+        {
+          "when": {
+            "from": "/g_problems/grounded",
+            "op": "falsy"
+          },
+          "next": "ungrounded"
+        }
+      ],
+      "default": "done"
+    },
+    {
+      "id": "ungrounded",
+      "kind": "end",
+      "outcome": "needs_input",
+      "outputs": [
+        "/update",
+        "/g_progress/missing",
+        "/g_plans/missing",
+        "/g_problems/missing"
+      ]
+    },
+    {
+      "id": "done",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/update"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "document-style-review/prioritize#1",
+      "response": {
+        "content": "{\"summary\": \"Readability first: the page margins are cramped and the Arabic heading is not marked right-to-left. Then hierarchy: Heading 3 follows Heading 1 with no Heading 2, and two headings sit back to back. Paragraph 5 carries direct font, size and colour overrides that break the template.\", \"top\": [{\"location\": \"page\", \"principle\": \"white_space\", \"why\": \"Top and right margins under 0.5 inch leave the page no room to breathe.\"}, {\"location\": \"¶ 10\", \"principle\": \"alignment\", \"why\": \"An Arabic heading not marked RTL renders with wrong punctuation order.\"}, {\"location\": \"¶ 4\", \"principle\": \"hierarchy\", \"why\": \"Heading 3 directly under Heading 1 skips a level the reader expects.\"}, {\"location\": \"¶ 5\", \"principle\": \"repetition\", \"why\": \"Comic Sans, 14pt and red are direct overrides on Normal; use a named style.\"}, {\"location\": \"¶ 99\", \"principle\": \"contrast\", \"why\": \"Invented location — must be dropped by verification.\"}], \"apply_in_editor\": [\"Layout > Margins: set top and right to at least 0.5 inch.\", \"Select paragraph 10, Paragraph > Right-to-left.\", \"Apply Heading 2 to paragraph 4 (or restructure so Heading 3 has a parent).\", \"Select paragraph 5, clear direct formatting (Ctrl+Space) and keep the Normal style.\"]}"
+      }
+    }
+  ]
+}

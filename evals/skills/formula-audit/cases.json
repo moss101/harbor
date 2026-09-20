@@ -194,6 +194,9 @@
         {
           "kind": "no_cassette_misses"
         }
+      ],
+      "tiers": [
+        "replay"
       ]
     }
   ]

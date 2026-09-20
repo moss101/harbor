@@ -1,0 +1,203 @@
+{
+  "schema": "harbor.skill_eval/v1",
+  "skill": "document-style-review",
+  "cases": [
+    {
+      "id": "report_styles",
+      "title": "Hierarchy, contamination, direction, margins and heading scale are found deterministically; the model's prioritised locations are all locations the inspector reported",
+      "inputs": {
+        "artifact_id": "doc"
+      },
+      "artifacts": {
+        "doc": {
+          "path": "fixtures/office/report_styles.docx"
+        }
+      },
+      "cassette": "cassettes/report_styles.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "completed"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/inspect/counts_by_code/heading_skip",
+          "value": 1
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/inspect/counts_by_code/direct_formatting",
+          "value": 2
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/inspect/counts_by_code/rtl_not_marked",
+          "value": 1
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/inspect/counts_by_code/mixed_direction",
+          "value": 1
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/inspect/counts_by_code/cramped_margins",
+          "value": 1
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/inspect/counts_by_code/heading_scale",
+          "value": 1
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/verified_top",
+          "min": 1,
+          "max": 5
+        },
+        {
+          "kind": "state_nonempty",
+          "pointer": "/verified_top/0/item/location"
+        },
+        {
+          "kind": "values_appear_in",
+          "pointer": "/verified_top/*/item/location",
+          "source": "/inspect/report_text"
+        },
+        {
+          "kind": "state_nonempty",
+          "pointer": "/prioritize/apply_in_editor"
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 6
+        },
+        {
+          "kind": "steps_le",
+          "max": 14
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "report_styles_invented_location",
+      "title": "Guard: a cited location the inspector never reported is dropped by verification (replay-only contract test)",
+      "inputs": {
+        "artifact_id": "doc"
+      },
+      "artifacts": {
+        "doc": {
+          "path": "fixtures/office/report_styles.docx"
+        }
+      },
+      "cassette": "cassettes/report_styles_invented_location.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/verified_top",
+          "min": 5,
+          "max": 5
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/verified_top/0/item/location",
+          "value": "page"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/verified_top/4/item/location",
+          "value": null
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/verified_top/4/dropped",
+          "min": 1
+        },
+        {
+          "kind": "values_appear_in",
+          "pointer": "/verified_top/*/item/location",
+          "source": "/inspect/report_text"
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "clean_letter_no_model",
+      "title": "A plain document with no findings completes without a model call and still lists what was not checked",
+      "inputs": {
+        "artifact_id": "doc"
+      },
+      "artifacts": {
+        "doc": {
+          "path": "fixtures/office/letter_template.docx"
+        }
+      },
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "completed"
+        },
+        {
+          "kind": "state_empty",
+          "pointer": "/inspect/findings"
+        },
+        {
+          "kind": "state_missing",
+          "pointer": "/prioritize"
+        },
+        {
+          "kind": "state_nonempty",
+          "pointer": "/inspect/not_checked"
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 1
+        },
+        {
+          "kind": "steps_le",
+          "max": 3
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    }
+  ]
+}

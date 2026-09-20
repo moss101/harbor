@@ -133,7 +133,11 @@ impl Default for CapabilityCatalog {
                 "formula.audit",
                 "formula.build_operations",
                 "text.verify_fields",
+                "text.verify_numbers",
                 "text.detect_language",
+                "deck.inspect",
+                "workbook.conventions",
+                "docx.inspect",
                 "model.ask",
                 "model.embed",
                 "clipboard.read",
@@ -304,6 +308,11 @@ const BUILTIN_GRAPH_JSON: &[&str] = &[
     include_str!("graphs/placeholder-fill.json"),
     include_str!("graphs/second-look.json"),
     include_str!("graphs/meeting-notes.json"),
+    include_str!("graphs/deck-review.json"),
+    include_str!("graphs/financial-model-review.json"),
+    include_str!("graphs/document-style-review.json"),
+    include_str!("graphs/team-update.json"),
+    include_str!("graphs/doc-coauthoring.json"),
 ];
 
 pub fn builtin_graphs() -> Vec<crate::graph::Graph> {

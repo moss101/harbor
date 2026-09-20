@@ -1,0 +1,11 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "doc-coauthoring/questions#1",
+      "response": {
+        "content": "{\"questions\": [{\"question\": \"What is being decided?\", \"status\": \"answered\", \"answer\": \"Moving the archive to local storage in Q4.\", \"evidence\": \"We recommend moving the archive to local storage in Q4\"}, {\"question\": \"What does it cost?\", \"status\": \"answered\", \"answer\": \"2 engineers for 6 weeks.\", \"evidence\": \"the cost model assumes 2 engineers for 6 weeks\"}, {\"question\": \"When does migration happen?\", \"status\": \"answered\", \"answer\": \"2 Nov to 12 Dec 2026.\", \"evidence\": \"Migration starts 2026-11-02 and ends 2026-12-12.\"}, {\"question\": \"What are the risks?\", \"status\": \"missing\", \"answer\": \"The Risks heading has no text under it.\", \"evidence\": null}, {\"question\": \"Which option was rejected and why?\", \"status\": \"ambiguous\", \"answer\": \"Keeping the current provider is listed but no reason is given.\", \"evidence\": \"Keep the current provider.\"}, {\"question\": \"Who approved the budget?\", \"status\": \"answered\", \"answer\": \"The CFO signed off on 1 October.\", \"evidence\": \"The CFO signed off on 1 October\"}], \"ready\": false, \"gaps\": [\"Risks section is empty.\", \"No reason given for rejecting the current provider.\"]}"
+      }
+    }
+  ]
+}
