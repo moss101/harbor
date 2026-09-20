@@ -73,8 +73,12 @@ pub fn redact(message: &str) -> String {
     // boundary); source-relative locations like `src/executor.rs:10` are
     // build facts, not user data, and stay.
     let path_re = PATH_RE.get_or_init(|| {
+        // The filename may contain spaces ("Q3 plan.docx", iCloud's "Mobile
+        // Documents"): after the directory part, take the shortest run up
+        // to a file extension, else the non-space tail. Over-matching only
+        // redacts more, which is the safe failure mode here.
         regex::Regex::new(
-            r#"(^|[^A-Za-z0-9_./\\-])((?:[A-Za-z]:\\|/)(?:[^\s"'`<>|]+[\\/])+[^\s"'`<>|:;,)]*)"#,
+            r#"(^|[^A-Za-z0-9_./\\-])((?:[A-Za-z]:\\|/)(?:[^\s"'`<>|]+[\\/])+(?:[^"'`<>|:;,\n]*?\.[A-Za-z0-9]{1,6}\b|[^\s"'`<>|:;,)]*))"#,
         )
         .expect("path regex")
     });
@@ -397,9 +401,13 @@ mod tests {
         assert!(m.contains("<path:.docx>"), "{m}");
         assert!(m.contains("\"<redacted>\""), "{m}");
         assert!(!m.contains("Haddad"));
-        // Paths with spaces lose their directory part at least.
+        // Paths with spaces are redacted whole, extension kept.
         let m = redact("open /Users/amina/Documents/Q3 plan.docx failed");
-        assert!(!m.contains("amina"), "{m}");
+        assert_eq!(m, "open <path:.docx> failed");
+        let m = redact(
+            "destination /Users/a/Library/Mobile Documents/com~apple~CloudDocs/Acme acquisition offer (Harbor).docx already exists",
+        );
+        assert_eq!(m, "destination <path:.docx> already exists");
         // Source-relative locations are build facts and stay readable.
         assert_eq!(
             redact("harbor_core/src/executor.rs:10"),

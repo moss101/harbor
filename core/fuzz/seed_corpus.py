@@ -75,6 +75,9 @@ def main() -> None:
     reg = ROOT / "core/harbor_artifacts/tests/regressions/corrupt_deflate.xlsx"
     (C / "batch_from_value" / "regression_corrupt_deflate").write_bytes(
         json.dumps(batch2).encode() + b"\0" + reg.read_bytes())
+    reg2 = ROOT / "core/harbor_artifacts/tests/regressions/unclosed_attribute.xlsx"
+    (C / "batch_from_value" / "regression_unclosed_attribute").write_bytes(
+        json.dumps(batch2).encode() + b"\0" + reg2.read_bytes())
     print("seeded", {d: len(list((C / d).glob("*"))) for d in ("ffi_dispatch", "jsonschema", "batch_from_value", "graph_from_value")})
 
 

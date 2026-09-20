@@ -1357,32 +1357,34 @@ mod staging_cleanup_tests {
 
         // 2. A local storage failure (the staging file cannot be created —
         //    the same class as a full disk) aborts immediately, without the
-        //    transport backoff, and the residue is removed.
-        let staging = models.join(".staging-m-local");
-        // Plant an obstacle that survives `begin`: `begin` recreates the
-        // staging dir, so make the *models root* refuse the recreate.
-        std::fs::create_dir_all(&models).unwrap();
-        use std::os::unix::fs::PermissionsExt as _;
-        let original = std::fs::metadata(&models).unwrap().permissions();
-        std::fs::set_permissions(&models, std::fs::Permissions::from_mode(0o555)).unwrap();
-        let started = std::time::Instant::now();
-        let err = acquirer
-            .acquire(
-                "m-local",
-                "org/repo",
-                "main",
-                &[("w.gguf".into(), "weights".into(), String::new())],
-                chrono::Utc::now(),
-            )
-            .unwrap_err();
-        std::fs::set_permissions(&models, original).unwrap();
-        assert!(matches!(err, AcquireError::Install(_)), "{err}");
-        assert!(
-            started.elapsed() < std::time::Duration::from_secs(4),
-            "a local failure must not be retried with the transport backoff"
-        );
-        assert!(!staging.exists());
-        assert!(installer.installed_packages().unwrap().is_empty());
+        //    transport backoff, and the residue is removed. Unix only: the
+        //    obstacle is a read-only models root (Windows ACLs differ).
+        #[cfg(unix)]
+        {
+            let staging = models.join(".staging-m-local");
+            std::fs::create_dir_all(&models).unwrap();
+            use std::os::unix::fs::PermissionsExt as _;
+            let original = std::fs::metadata(&models).unwrap().permissions();
+            std::fs::set_permissions(&models, std::fs::Permissions::from_mode(0o555)).unwrap();
+            let started = std::time::Instant::now();
+            let err = acquirer
+                .acquire(
+                    "m-local",
+                    "org/repo",
+                    "main",
+                    &[("w.gguf".into(), "weights".into(), String::new())],
+                    chrono::Utc::now(),
+                )
+                .unwrap_err();
+            std::fs::set_permissions(&models, original).unwrap();
+            assert!(matches!(err, AcquireError::Install(_)), "{err}");
+            assert!(
+                started.elapsed() < std::time::Duration::from_secs(4),
+                "a local failure must not be retried with the transport backoff"
+            );
+            assert!(!staging.exists());
+            assert!(installer.installed_packages().unwrap().is_empty());
+        }
 
         // 3. A dropped connection is retried (correct); cancelling between
         //    retries ends the run and the staging residue is still removed.

@@ -7,6 +7,33 @@ ran at.
 
 ---
 
+## Session 38 (2026-09-20): Phase C4 security review + second fuzz finding; Phase D ring plan
+
+- **Security review** (`docs/decisions/0007-security-review-1.1.md`,
+  `evidence/security/review-1.1.json`): `/security-review` over
+  `harbor-v1.0.0-rc2..HEAD` with an independent false-positive pass per
+  candidate. Nothing reportable at ≥ 8/10; two candidates fixed anyway:
+  a deterministic **formula content gate** (`check_formula_allowed`:
+  qualified functions only, no external-workbook/UNC/URL/DDE syntax, sheet
+  references must exist; applied in `formula.build_operations` and again in
+  `apply_xlsx`), and **redaction of spaced filenames** in the diagnostics
+  log (inspection seeds a spaced path). None open at "high".
+- **Fuzzing, second finding** (from the CI `fuzz` job's first run): the
+  upstream XLSX reader also aborts on malformed XML (an unclosed attribute
+  in `[Content_Types].xml`). `inflate_probe` now requires every `.xml` /
+  `.rels` part to be well-formed before any reader runs; regression input
+  kept under `harbor_artifacts/tests/regressions/`.
+- **CI** — `windows-core` compiles the modelhub test on Windows again (the
+  read-only-root case is `cfg(unix)`).
+- **Phase D** — `docs/release/rings.md`: ring 0/1/2 with go/no-go rules
+  read from the gate report fields, the tester brief (diagnostics export as
+  the feedback channel), the fix-only rule, staged Play rollout. Operator
+  resources remain the prerequisite (`closeout_runbook.md`).
+- **Release workflow** — dry run dispatched on `da12d95`
+  (`gh workflow run release.yml`); result recorded in the next session note.
+- **Gates** — `cargo fmt/clippy/test --workspace` (50 suites), replay 23/23,
+  plaintext inspection PASS, dossier validator PASS.
+
 ## Session 37 (2026-09-20): Phase C2/C4/C5 — first run, fuzzing, release workflow
 
 - **C2 first run and recovery** — Home shows a first-run card when no

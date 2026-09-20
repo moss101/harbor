@@ -22,6 +22,16 @@ fn corrupt_deflate_stream_in_a_workbook_is_a_load_error() {
 }
 
 #[test]
+fn unclosed_attribute_in_content_types_is_a_load_error() {
+    let bytes = regression("unclosed_attribute.xlsx");
+    let err = match harbor_artifacts::WorkbookDoc::load(&bytes) {
+        Ok(_) => panic!("malformed package loaded"),
+        Err(e) => e.to_string(),
+    };
+    assert!(err.contains("malformed"), "{err}");
+}
+
+#[test]
 fn garbage_and_truncated_packages_are_load_errors() {
     for bytes in [
         b"PK\x03\x04garbage".to_vec(),

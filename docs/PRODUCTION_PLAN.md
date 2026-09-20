@@ -237,7 +237,8 @@ tester note in the close-out runbook.
 **Status (2026-09-20):** C4 fuzzing done — four cargo-fuzz targets,
 one real finding fixed (corrupt-deflate abort in the XLSX reader),
 `catch_unwind` at both FFI entry points, CI `fuzz` job. `/security-review`
-and the plaintext/network re-runs at the freeze commit remain.
+done 2026-09-20 (decision 0007: two candidates, both fixed, none open at
+"high"); the plaintext/network re-runs happen at the freeze commit.
 
 ### C5. Release automation
 - `.github/workflows/release.yml` triggered on `harbor-v*` tags: builds
@@ -257,6 +258,10 @@ fuzz targets in CI (short run); release workflow produces a bundle from a
 tag; security review findings triaged with none open at "high".
 
 ---
+
+**Status (2026-09-20):** ring structure, go/no-go rules and the tester
+procedure are written up in `docs/release/rings.md`; execution needs the
+D0 resources.
 
 ## Phase D — Close the operator gates and ship in rings (weeks 6–9)
 

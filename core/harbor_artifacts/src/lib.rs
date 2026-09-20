@@ -32,11 +32,12 @@ pub use office_matrix::{
 pub use pptx::{ChartKind, ChartSpec, PptxDeck, PptxError, PptxOp, SlideContent, SlideImage};
 pub use workbook::{PreservationReport, SheetData, WorkbookDoc, WorkbookOp, XlsxChartKind};
 
-/// Inflate every entry of an OOXML package once, without keeping it, so a
-/// corrupt compressed stream is a typed error before any reader that
-/// might panic on it runs (fuzzing found the upstream workbook reader
-/// aborting on a corrupt deflate stream). Bounded by the package itself:
-/// each entry is streamed to a sink, never buffered.
+/// Probe every entry of an OOXML package once before any upstream reader
+/// sees it: inflate each entry (a corrupt compressed stream is a typed
+/// error) and require every XML part to be well-formed (fuzzing found the
+/// upstream workbook reader aborting on both a corrupt deflate stream and
+/// an unclosed attribute in `[Content_Types].xml`). Bounded by the package
+/// itself: non-XML entries are streamed to a sink, never buffered.
 pub(crate) fn inflate_probe<R: std::io::Read + std::io::Seek>(
     archive: &mut zip::ZipArchive<R>,
 ) -> Result<(), String> {
@@ -45,8 +46,17 @@ pub(crate) fn inflate_probe<R: std::io::Read + std::io::Seek>(
             .by_index(i)
             .map_err(|e| format!("corrupt entry {i}: {e}"))?;
         let name = entry.name().to_string();
-        std::io::copy(&mut entry, &mut std::io::sink())
-            .map_err(|e| format!("corrupt entry {name}: {e}"))?;
+        let lower = name.to_ascii_lowercase();
+        if lower.ends_with(".xml") || lower.ends_with(".rels") {
+            let mut text = String::new();
+            std::io::Read::read_to_string(&mut entry, &mut text)
+                .map_err(|e| format!("corrupt entry {name}: {e}"))?;
+            roxmltree::Document::parse(&text)
+                .map_err(|e| format!("malformed XML part {name}: {e}"))?;
+        } else {
+            std::io::copy(&mut entry, &mut std::io::sink())
+                .map_err(|e| format!("corrupt entry {name}: {e}"))?;
+        }
     }
     Ok(())
 }

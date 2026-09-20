@@ -4,8 +4,8 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "97bd7efbc3bcda9f93cdcd4a6f3575ebe7e23a128f6e490ee7bab2f8b59a6207",
-  "file_count_excluding_manifest": 542,
+  "input_manifest_sha256": "b87f9c0b20c9a684c9692cf242f5cb5618ca497d68c8edcd36de3a44461f32a0",
+  "file_count_excluding_manifest": 546,
   "files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -119,13 +119,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 98828,
-      "sha256": "fb326708155d27aa19084d9f27a6d49f7a591a35e4f5caf39a046b67a94b1d38"
+      "bytes": 99558,
+      "sha256": "aa298064c3ea579c2a3b82d2d927b03582690d6029fb3ef58de0c6bcc9beb794"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "55f1cb28fb79529e68662f87da928ef478a16a35764dcbe7b9362a5aba66d292"
+      "sha256": "0a5f0a778a2fc315cad886b8dac370ef6c3b204221f23c9d78250f03f7c3ecee"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -1068,6 +1068,11 @@
       "sha256": "1e06457b0e9df1f9ef10bc93ee3aded1348fe5d229be722b0401da369621f992"
     },
     {
+      "path": "core/fuzz/corpus/batch_from_value/regression_unclosed_attribute",
+      "bytes": 2768,
+      "sha256": "fd2c3a864c3b65e86bf9f0e9a4e09c56d468b4451f0d0b2a2e3fa2a322ab1dc7"
+    },
+    {
       "path": "core/fuzz/corpus/batch_from_value/xlsx_set",
       "bytes": 2768,
       "sha256": "d2de4224846dd884ce5131cd9c02435537e388ee6e4c02845794c19a45837517"
@@ -1314,8 +1319,8 @@
     },
     {
       "path": "core/fuzz/seed_corpus.py",
-      "bytes": 4789,
-      "sha256": "10a111aae6d32b737baa31bdb8350696cec70eb62c026e2f8e8e9d8989dd4c4f"
+      "bytes": 5014,
+      "sha256": "ed797c9c42188335b86a313dccf475907331f60ae8c6daca23aead79d381963a"
     },
     {
       "path": "core/harbor_agent/Cargo.toml",
@@ -1394,8 +1399,8 @@
     },
     {
       "path": "core/harbor_artifacts/src/lib.rs",
-      "bytes": 2286,
-      "sha256": "2f2bc468bed12588fe6effad3404a09cfc7c1cbdadc70f7c63d5e7a2bf9c7caa"
+      "bytes": 2825,
+      "sha256": "d79c1bc8a7752a372411c0717bb18e3627fe3f26ab6f1f9671f6941997bc38a7"
     },
     {
       "path": "core/harbor_artifacts/src/office_matrix.rs",
@@ -1414,8 +1419,8 @@
     },
     {
       "path": "core/harbor_artifacts/tests/malformed_inputs.rs",
-      "bytes": 1368,
-      "sha256": "088b833b672ef1983efb564f2f5d7ac4c174c038dab130caf59cc34b5b1f2b1d"
+      "bytes": 1701,
+      "sha256": "4d888f3f051c59feb826490829073c8370bba83f1d13db90146904a65513f844"
     },
     {
       "path": "core/harbor_artifacts/tests/office_conformance.rs",
@@ -1426,6 +1431,11 @@
       "path": "core/harbor_artifacts/tests/regressions/corrupt_deflate.xlsx",
       "bytes": 2290,
       "sha256": "3418c2bce8be973c6d714caf745e5a98d43a8cff2708a8c4b25332edfd5f59a5"
+    },
+    {
+      "path": "core/harbor_artifacts/tests/regressions/unclosed_attribute.xlsx",
+      "bytes": 2290,
+      "sha256": "a4439f942edd73505d370d59d6bf996c43ba655d4a602a3c26f8b381fe885259"
     },
     {
       "path": "core/harbor_canonical/Cargo.toml",
@@ -1449,8 +1459,8 @@
     },
     {
       "path": "core/harbor_core/src/diagnostics.rs",
-      "bytes": 20258,
-      "sha256": "8f071eff84d1f7ad52a8c5639bbb88379c230a2338f474aaa0031c693e06ac65"
+      "bytes": 20828,
+      "sha256": "0a51ee70bf84803bb2997f9e553af85afa83691f99d5c9a1846b06520806d635"
     },
     {
       "path": "core/harbor_core/src/executor.rs",
@@ -1534,8 +1544,8 @@
     },
     {
       "path": "core/harbor_core/src/tools/builtin.rs",
-      "bytes": 97508,
-      "sha256": "066c23e7f8fe75ff890d0f93c700e67c51b897f0c75064f37feccf5f660bc9c9"
+      "bytes": 104313,
+      "sha256": "b50ef54b97b99cb0e1f933c146322221cb92bdde9c8a2bca02b3d9c223f406bc"
     },
     {
       "path": "core/harbor_core/src/tools/mod.rs",
@@ -1724,8 +1734,8 @@
     },
     {
       "path": "core/harbor_integration/tests/plaintext_at_rest_inspection.rs",
-      "bytes": 14213,
-      "sha256": "1dead8de446cea65bc266e846bbe088222ae82938ad26101921da2e662df2198"
+      "bytes": 14438,
+      "sha256": "e5b2b1062d524710666f2fa511a66c2f9f62b179a8d1439acea4d86a5949f4c4"
     },
     {
       "path": "core/harbor_knowledge/Cargo.toml",
@@ -1779,8 +1789,8 @@
     },
     {
       "path": "core/harbor_modelhub/src/acquire.rs",
-      "bytes": 56871,
-      "sha256": "cadd3bd64341cb760c7b40803151d4fdc8044ebebf46a890df2bd6cdb909717f"
+      "bytes": 56947,
+      "sha256": "4e0b4258f9112d4e81060e41e5c74f53fca5c2b4a406ab1a9eb3ca6bb88f198e"
     },
     {
       "path": "core/harbor_modelhub/src/catalog.rs",
@@ -2019,13 +2029,13 @@
     },
     {
       "path": "docs/PRODUCTION_PLAN.md",
-      "bytes": 18053,
-      "sha256": "64b01383cabe2b59841045661cfdd0b3cd61a719c024230714b5b6d911704db1"
+      "bytes": 18290,
+      "sha256": "5913a00ac4b2b9974391f1b6a05e62c55a7c57586535fd306d80345d96627ed6"
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 37325,
-      "sha256": "9e81ffcc1af3f5ea0c2ef1a80da518a4f5bd09ac35d742fb8519a2a08ae4da5b"
+      "bytes": 39070,
+      "sha256": "daec7482868aa7db91de73d5e25969f5fa61920e15cbdfeefdfd7e01ef4dc9c0"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -2058,6 +2068,11 @@
       "sha256": "cfd748defc3ffb653ea8f83dc89891dae1104347a1ce481cb187b9b645189ef1"
     },
     {
+      "path": "docs/decisions/0007-security-review-1.1.md",
+      "bytes": 3561,
+      "sha256": "4a9224cdffb7bac6f421dd9f2ab472087f0b32ab5335bbf45735ea91dddf74d1"
+    },
+    {
       "path": "docs/release/THIRD_PARTY_NOTICES.md",
       "bytes": 37627,
       "sha256": "a1982da176cbc565888b24b8043efe88c9eaef93719d30498aa9f3fb8e6abeb3"
@@ -2071,6 +2086,11 @@
       "path": "docs/release/migration_rollback.md",
       "bytes": 4714,
       "sha256": "4a6defa32cbfe520c296b9c30ad7c8a8680cd7db9e50cc6f0d8207536b343eae"
+    },
+    {
+      "path": "docs/release/rings.md",
+      "bytes": 5737,
+      "sha256": "57be3457ad860744788303ffeb298a3995bc98551c6406d14d79b8bfaa114361"
     },
     {
       "path": "docs/release/store/README.md",

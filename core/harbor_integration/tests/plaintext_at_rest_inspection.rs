@@ -179,7 +179,10 @@ fn plaintext_at_rest_full_inspection() {
         at: Workspace::now(),
         level: "error".into(),
         source: "ffi".into(),
-        message: format!("{DIAG_SENTINEL} while opening /Users/private/{DOC_SENTINEL}.docx"),
+        // A document name with spaces, the common case for user files.
+        message: format!(
+            "{DIAG_SENTINEL} while opening /Users/private/My Docs/{DOC_SENTINEL} draft.docx"
+        ),
         context: Some("op.start_skill_run".into()),
         backtrace: None,
     })
@@ -250,6 +253,10 @@ fn plaintext_at_rest_full_inspection() {
             "path redacted in export: {all}"
         );
         assert!(!all.contains("/Users/private"));
+        assert!(
+            !all.contains("My Docs") && !all.contains("draft.docx"),
+            "{all}"
+        );
     }
     // WAL/SHM siblings are covered by the scan above (scan_dir_for walks
     // the whole tree); assert they existed so the scan was not vacuous.
