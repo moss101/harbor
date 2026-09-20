@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "b87f9c0b20c9a684c9692cf242f5cb5618ca497d68c8edcd36de3a44461f32a0",
+  "input_manifest_sha256": "74e6a68be5b886dbd73a8400f6363e63f78525448f3ab0cac3e5a4a1d0e1b8e9",
   "file_count_excluding_manifest": 546,
   "files": [
     {
@@ -119,13 +119,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 99558,
-      "sha256": "aa298064c3ea579c2a3b82d2d927b03582690d6029fb3ef58de0c6bcc9beb794"
+      "bytes": 99559,
+      "sha256": "c971cc2baadd346ca8ffab44994cc5ffed50c30224f1588dd5159ae6d05f1c20"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "0a5f0a778a2fc315cad886b8dac370ef6c3b204221f23c9d78250f03f7c3ecee"
+      "sha256": "5942b5f8e4c8d83401058222f29b2eebb7d45aa2222a62b51f966edd4b83e214"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -529,28 +529,28 @@
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_ar.arb",
-      "bytes": 33006,
-      "sha256": "3bb1387bbedcb4b52af6b7bf091fd4ee536a31450d2580d4bbe615ae2aa5968a"
+      "bytes": 33074,
+      "sha256": "0f080d5a1dbf1412b1d7ef8bb4fc89ad7e3d94c8365c60b815d92a005d4c1404"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_en.arb",
-      "bytes": 26811,
-      "sha256": "e7cfa4eac61772072df2f49e6bcf77907eeee27ff63f44c82bf03ecb0b172656"
+      "bytes": 26868,
+      "sha256": "d0417bbade8e344d5d55cea4acc5c2ccd83a6d09f598676d2af7c3456f8d4995"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations.dart",
-      "bytes": 69567,
-      "sha256": "399a1c37433545f8915461792c402185f8651389f24b37fd539d04d340086c23"
+      "bytes": 69750,
+      "sha256": "6a6611c9ff337c64d07fea06d4ac1b52a42892da6c55229ec15524498c9d0b2d"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations_ar.dart",
-      "bytes": 42756,
-      "sha256": "b1f284fb45e957dee6752d8329e6bd180dc4ec5adf75ba9fef3ad38990920d7a"
+      "bytes": 42848,
+      "sha256": "1e3a4fa7d95193316ca6b5e13ab00fd56071dc65ae656f4ac49e94ff5b1bbe25"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations_en.dart",
-      "bytes": 33633,
-      "sha256": "7436fe8ad29308e612fa4b6939b83c55ef25f252fb1d5b45d27f98c4e4d39a68"
+      "bytes": 33714,
+      "sha256": "4764d277f7a55a95e289200b1ae4884c72fe6a2cf231b19602482591371d337b"
     },
     {
       "path": "apps/harbor_app/lib/main.dart",
@@ -629,8 +629,8 @@
     },
     {
       "path": "apps/harbor_app/lib/surfaces/models_surface.dart",
-      "bytes": 28635,
-      "sha256": "8030cf80f728ca39ff1bb2a34b33409e99745af0a53c4dd50c670c020a92bf7c"
+      "bytes": 29228,
+      "sha256": "efb97bab2cdd3693a2fb4c336fa9bb123971a087614ff6f12172a38b0673da2b"
     },
     {
       "path": "apps/harbor_app/lib/surfaces/settings_surface.dart",
@@ -1714,8 +1714,8 @@
     },
     {
       "path": "core/harbor_integration/examples/perf_baseline.rs",
-      "bytes": 9631,
-      "sha256": "14f206adb8cc3f5c8a1cc60e95528b95f25c377c3da72c00faf4318a6e1fe148"
+      "bytes": 11135,
+      "sha256": "eb368b821e616747134b659b36346e4e833bcaf7995a815f42c29f2e42d6caf9"
     },
     {
       "path": "core/harbor_integration/examples/thermal_baseline.rs",
@@ -2029,13 +2029,13 @@
     },
     {
       "path": "docs/PRODUCTION_PLAN.md",
-      "bytes": 18290,
-      "sha256": "5913a00ac4b2b9974391f1b6a05e62c55a7c57586535fd306d80345d96627ed6"
+      "bytes": 18504,
+      "sha256": "4d95ede4a3147b79c541ebe0440776405550b0ad76dd6b08ee980e3f2375574f"
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 39070,
-      "sha256": "daec7482868aa7db91de73d5e25969f5fa61920e15cbdfeefdfd7e01ef4dc9c0"
+      "bytes": 40637,
+      "sha256": "384a0e16dd91a041d3027b7ade2f4e0fddeef238d00ad2390f5aa1e5a57859b8"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -2654,8 +2654,8 @@
     },
     {
       "path": "tools/assemble_release_evidence.py",
-      "bytes": 17224,
-      "sha256": "6f0477a2f6e0dc90e09a2558b9400422faca7655ea28f5aa7dfdc40c411a02f0"
+      "bytes": 18749,
+      "sha256": "2f04a15aff1b8c05ce4d6dbab14c9e5cb191a2f16782055568e68ec8fbc3dbf0"
     },
     {
       "path": "tools/check_advisory_ignores.py",

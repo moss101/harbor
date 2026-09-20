@@ -7,6 +7,30 @@ ran at.
 
 ---
 
+## Session 39 (2026-09-20): Phase C3 floor proxy, Fit Score refusal, release-workflow fixes
+
+- **C3** — `perf_baseline` gained `HARBOR_PERF_BALLAST_GB=<n>`: the
+  reference Mac holds n GiB of touched ballast for the whole run as a proxy
+  for a smaller device, writing `evidence/perf_baseline_memory_pressure.json`
+  (never the reference baseline). Under 14 GiB ballast on the 24 GB
+  reference machine: ttft p95 **72 ms** (reference 55; threshold max 100),
+  tokens/s p50 **173** (reference 179; floor 100), warm load p95 130 ms,
+  RAG 23.5k docs/min — inside the frozen reference thresholds. This is a
+  proxy, recorded as such; PERF-01 on the M1 8 GB machine still freezes
+  the minimum-spec class. Models → Recommended now **refuses** install
+  (button disabled, "Does not fit this device") when the core scores a
+  package `too_large` or `unsupported`, instead of warning after download.
+- **Release workflow** — first dry run reached the assembler and stopped:
+  `assemble_release_evidence.py` loaded machine-local evidence
+  unconditionally. It now records absent files as `ABSENT` with the reason
+  (the gate table already says `FAIL_NO_EVIDENCE`), reads the app version
+  from pubspec, and — a latent bug — gates X-06..X-09 had `status` and
+  `evidence` swapped, so the report carried a file name where the ring
+  go/no-go rules read a status. Local dry run: 15 PASS, 4
+  BLOCKED_EXTERNAL, 4 BLOCKED_DEVICE_EVIDENCE, 2 N/A_DISABLED, 0 FAIL.
+- **Gates** — app `flutter test` 32/32, `cargo test --workspace` 50 suites,
+  dossier validator PASS.
+
 ## Session 38 (2026-09-20): Phase C4 security review + second fuzz finding; Phase D ring plan
 
 - **Security review** (`docs/decisions/0007-security-review-1.1.md`,

@@ -1436,4 +1436,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get opAcquireRunning => 'جارٍ التثبيت…';
+
+  @override
+  String get modelsCatalogDoesNotFit => 'لا يناسب هذا الجهاز';
 }

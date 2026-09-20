@@ -517,5 +517,6 @@
   "modelsInstalledBadge": "مثبّت",
   "modelsContextTokens": "سياق {count} رمز",
   "@modelsContextTokens": {"placeholders": {"count": {"type": "int"}}},
-  "opAcquireRunning": "جارٍ التثبيت…"
+  "opAcquireRunning": "جارٍ التثبيت…",
+  "modelsCatalogDoesNotFit": "لا يناسب هذا الجهاز"
 }

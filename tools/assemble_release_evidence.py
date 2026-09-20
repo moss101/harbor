@@ -57,6 +57,26 @@ def load(rel_path):
     return json.loads((EV / rel_path).read_text())
 
 
+def load_or_absent(rel_path, reason):
+    """Machine-local evidence (network capture, device tiers, perf) is
+    produced on the qualification machine, not on a CI runner. When it is
+    absent the bundle says so explicitly instead of failing to assemble —
+    the gate table already reports the matching gate as FAIL_NO_EVIDENCE."""
+    path = EV / rel_path
+    if not path.exists():
+        return {"status": "ABSENT", "reason": reason, "expected_path": f"evidence/{rel_path}"}
+    return load(rel_path)
+
+
+def app_version():
+    """The app's version from pubspec.yaml (kept equal to build_info.dart by
+    the app's build_info_test)."""
+    for line in (REPO / "apps/harbor_app/pubspec.yaml").read_text().splitlines():
+        if line.startswith("version:"):
+            return line.split(":", 1)[1].strip()
+    return "unknown"
+
+
 def gate(id_, name, status, evidence, note):
     return {"id": id_, "gate": name, "status": status,
             "evidence": evidence, "note": note}
@@ -108,22 +128,28 @@ def main():
         status = "PASS" if evidence_ok(ev) else "FAIL_NO_EVIDENCE"
         gates.append(gate(gid, name, status, [f"evidence/{ev}"], note))
 
+    # (status, evidence) order matters: the ring go/no-go rules read
+    # `status` (docs/release/rings.md); an earlier version swapped these
+    # for X-06..X-09 and put the file name where the status belongs.
     gates.append(gate(
-        "X-06", "Plaintext-at-rest inspection", "plaintext_at_rest.json",
+        "X-06", "Plaintext-at-rest inspection",
         "PASS" if evidence_ok("plaintext_at_rest.json") else "FAIL_NO_EVIDENCE",
-        "byte-level scan of SQLite/WAL/SHM, blob store, temp windows, crash residue"))
+        ["evidence/plaintext_at_rest.json"],
+        "byte-level scan of SQLite/WAL/SHM, blob store, temp windows, crash residue, diagnostics log/export"))
     gates.append(gate(
         "X-07", "Independent network capture vs broker audit (macOS reference)",
-        "network_capture.json",
         "PASS" if evidence_ok("network_capture.json") else "FAIL_NO_EVIDENCE",
-        "offline scenarios + real HF→CDN acquisition; capture == audit 1:1"))
+        ["evidence/network_capture.json"],
+        "offline scenarios + real HF→CDN acquisition; capture == audit 1:1 (qualification-machine-local)"))
     gates.append(gate(
-        "X-08", "Performance thresholds (reference class)", "perf_qualification.json",
+        "X-08", "Performance thresholds (reference class)",
         "PASS" if evidence_ok("perf_qualification.json") else "FAIL_NO_EVIDENCE",
+        ["evidence/perf_qualification.json"],
         "frozen v2 thresholds; unavailable device classes recorded BLOCKED_DEVICE_EVIDENCE"))
     gates.append(gate(
-        "X-09", "Evaluation corpus bound (EN/AR)", "gate_results.json",
+        "X-09", "Evaluation corpus bound (EN/AR)",
         "PASS" if evidence_ok("gate_results.json") else "FAIL_NO_EVIDENCE",
+        ["evidence/gate_results.json"],
         "464-case corpus; hash bound in 26_Qualification_Profiles.json"))
 
     # --- Platform tiers ---------------------------------------------------
@@ -277,7 +303,7 @@ def main():
             "git_commit": commit,
             "tree_dirty": dirty,
             "generated_at": now,
-            "app_version": "1.0.0+1",
+            "app_version": app_version(),
             "bindings": binding_keys,
         }, indent=2) + "\n")
         # Copy current evidence into the sealed layout.
@@ -300,9 +326,15 @@ def main():
         security = {
             "schema": "harbor.security_results/v1",
             "commit": commit,
-            "plaintext_at_rest": load("plaintext_at_rest.json"),
-            "network_capture": load("network_capture.json"),
-            "optional_capabilities_disabled": load("optional_capabilities_disabled.json"),
+            "plaintext_at_rest": load_or_absent(
+                "plaintext_at_rest.json",
+                "run cargo test -p harbor_integration --test plaintext_at_rest_inspection"),
+            "network_capture": load_or_absent(
+                "network_capture.json",
+                "qualification-machine-local: real-network tier (docs/STATUS.md 'Reproduce the evidence')"),
+            "optional_capabilities_disabled": load_or_absent(
+                "optional_capabilities_disabled.json",
+                "run python3 tools/check_optional_disabled.py --write"),
         }
         for dest, src in copies.items():
             target = out / dest

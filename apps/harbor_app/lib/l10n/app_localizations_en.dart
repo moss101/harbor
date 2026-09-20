@@ -1379,4 +1379,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get opAcquireRunning => 'Installing…';
+
+  @override
+  String get modelsCatalogDoesNotFit => 'Does not fit this device';
 }

@@ -659,5 +659,6 @@
   "modelsInstalledBadge": "Installed",
   "modelsContextTokens": "{count} tokens context",
   "@modelsContextTokens": {"placeholders": {"count": {"type": "int"}}},
-  "opAcquireRunning": "Installing…"
+  "opAcquireRunning": "Installing…",
+  "modelsCatalogDoesNotFit": "Does not fit this device"
 }

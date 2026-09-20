@@ -223,6 +223,10 @@ tester note in the close-out runbook.
 - iOS: 1.5B Q4_K_M plus KV cache on a 6 GB iPhone is tight. Add a Fit
   Score refusal (not a warning) below the measured floor.
 
+**Status (2026-09-20):** memory-pressure proxy run recorded (STATUS
+session 39: ttft p95 72 ms, tokens/s p50 173 under 14 GiB ballast);
+Fit Score refusal in Models → Recommended. PERF-01 remains the real floor.
+
 ### C4. Security review before GA
 - Run `/security-review` on the whole branch and the `harbor_ffi` boundary
   specifically (JSON dispatch is the attack surface).

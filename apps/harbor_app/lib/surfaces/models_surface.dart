@@ -298,6 +298,12 @@ class _CatalogCardState extends State<_CatalogCard> {
     final t = HarborTheme.of(context);
     final tiers = (p['tiers'] as List? ?? const []).cast<String>();
     final fit = _fit;
+    // Fit Score refusal (production plan C3): a package the core scores
+    // too large or unsupported for this device cannot be installed from
+    // here — the button says why instead of warning after a 1 GB download.
+    final band =
+        fit == null ? null : FitBandLabel.parse(fit['band'] as String? ?? '');
+    final refused = band == FitBand.tooLarge || band == FitBand.unsupported;
     return HarborCard(
       key: ValueKey('catalog-${p['id']}'),
       child: Column(
@@ -356,13 +362,18 @@ class _CatalogCardState extends State<_CatalogCard> {
               ),
               FilledButton.icon(
                 key: ValueKey('catalog-install-${p['id']}'),
-                onPressed: _installed || _installing ? null : _install,
-                icon: const Icon(Icons.download_outlined, size: 18),
+                onPressed:
+                    _installed || _installing || refused ? null : _install,
+                icon: Icon(
+                    refused ? Icons.block_outlined : Icons.download_outlined,
+                    size: 18),
                 label: Text(_installed
                     ? l10n.modelsInstalledBadge
-                    : (_installing
-                        ? l10n.opAcquireRunning
-                        : l10n.modelsCatalogInstall)),
+                    : refused
+                        ? l10n.modelsCatalogDoesNotFit
+                        : (_installing
+                            ? l10n.opAcquireRunning
+                            : l10n.modelsCatalogInstall)),
               ),
             ],
           ),

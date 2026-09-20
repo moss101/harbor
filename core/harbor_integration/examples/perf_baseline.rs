@@ -40,6 +40,30 @@ fn main() {
         .expect("models store root arg")
         .to_string();
 
+    // ---- optional memory-pressure simulation (production plan C3) ----
+    // Until the minimum-spec machine (PERF-01) exists, the reference device
+    // can approximate a smaller one by holding a ballast of touched pages
+    // for the whole run: HARBOR_PERF_BALLAST_GB=<n>. The report records the
+    // ballast and is written to evidence/perf_baseline_memory_pressure.json
+    // so the reference baseline is never overwritten by a simulation.
+    let ballast_gb: u64 = std::env::var("HARBOR_PERF_BALLAST_GB")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(0);
+    let _ballast: Vec<Vec<u8>> = (0..ballast_gb)
+        .map(|_| {
+            // 1 GiB blocks, every page touched so the OS must back them.
+            let mut block = vec![0u8; 1 << 30];
+            for i in (0..block.len()).step_by(4096) {
+                block[i] = 1;
+            }
+            block
+        })
+        .collect();
+    if ballast_gb > 0 {
+        println!("memory pressure simulation: holding {ballast_gb} GiB of touched ballast");
+    }
+
     // ---- store bootstrap: install both models from repo fixtures ----
     let store = std::path::Path::new(&models_root).to_path_buf();
     for (id, file, expected_sha) in [
@@ -207,6 +231,14 @@ fn main() {
         },
         "runtime": "llama.cpp/llama-cpp-sys-2@0.1.156",
         "protocol": "raw samples; p50/p95 derived; greedy decoding",
+        "memory_pressure_simulation": if ballast_gb > 0 {
+            serde_json::json!({
+                "ballast_gib": ballast_gb,
+                "note": "reference device with touched ballast held for the run; a proxy for a smaller device, not a PERF-01 measurement"
+            })
+        } else {
+            serde_json::Value::Null
+        },
         "samples": {
             "model_load_cold_first_ms": load_cold_ms,
             "model_load_warm_ms": load_samples,
@@ -238,7 +270,11 @@ fn main() {
             "evidence": "harbor_agent::cancellation tests",
         },
     });
-    let out = std::path::Path::new(&repo_root).join("evidence/perf_baseline.json");
+    let out = std::path::Path::new(&repo_root).join(if ballast_gb > 0 {
+        "evidence/perf_baseline_memory_pressure.json"
+    } else {
+        "evidence/perf_baseline.json"
+    });
     std::fs::create_dir_all(out.parent().unwrap()).unwrap();
     std::fs::write(&out, serde_json::to_string_pretty(&report).unwrap()).unwrap();
     println!("written {}", out.display());

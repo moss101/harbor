@@ -2275,6 +2275,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Installing…'**
   String get opAcquireRunning;
+
+  /// No description provided for @modelsCatalogDoesNotFit.
+  ///
+  /// In en, this message translates to:
+  /// **'Does not fit this device'**
+  String get modelsCatalogDoesNotFit;
 }
 
 class _AppLocalizationsDelegate
