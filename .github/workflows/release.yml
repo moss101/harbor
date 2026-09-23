@@ -194,17 +194,26 @@ jobs:
           done
       - name: Build APK + AAB (debug key)
         working-directory: apps/harbor_app
+        env:
+          V: ${{ needs.evidence.outputs.version }}
         run: |
           flutter build apk --release
           flutter build appbundle --release
-          shasum -a 256 build/app/outputs/flutter-apk/app-release.apk build/app/outputs/bundle/release/app-release.aab | tee android-sha256.txt
+          # Flatten to names that read as release assets: a GitHub release
+          # is a flat list, and "app-release.apk" says nothing about which
+          # build it is or that it carries a debug key. The hashes are
+          # taken over the names that get published.
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk \
+             "dist/harbor_app-android-$V-debugkey.apk"
+          cp build/app/outputs/bundle/release/app-release.aab \
+             "dist/harbor_app-android-$V-debugkey.aab"
+          (cd dist && shasum -a 256 ./*.apk ./*.aab | tee android-sha256.txt)
       - uses: actions/upload-artifact@v4
         with:
           name: android-${{ needs.evidence.outputs.version }}
-          path: |
-            apps/harbor_app/build/app/outputs/flutter-apk/app-release.apk
-            apps/harbor_app/build/app/outputs/bundle/release/app-release.aab
-            apps/harbor_app/android-sha256.txt
+          path: apps/harbor_app/dist
+          if-no-files-found: error
 
   publish:
     # Draft release with the evidence bundle and the unsigned artifacts.
@@ -244,4 +253,4 @@ jobs:
           files: |
             release-assets/harbor-evidence-${{ needs.evidence.outputs.version }}.tar.gz
             release-assets/macos-app-${{ needs.evidence.outputs.version }}/*
-            release-assets/android-${{ needs.evidence.outputs.version }}/**
+            release-assets/android-${{ needs.evidence.outputs.version }}/*
