@@ -83,6 +83,7 @@ jobs:
         # convenience.
         run: |
           python3 tools/generate_gate_evidence.py --write
+          python3 tools/check_contrast.py --write-evidence
           python3 tools/check_optional_disabled.py --write
           python3 tools/generate_sbom.py --write
           python3 tools/generate_third_party_notices.py --check
@@ -93,7 +94,6 @@ jobs:
         run: |
           git fetch --tags --force
           python3 tools/generate_changelog.py --write
-          cp CHANGELOG.md "evidence/releases/${{ steps.meta.outputs.version }}/CHANGELOG.md" 2>/dev/null || true
       - name: Assemble the release evidence bundle
         # --partial: a runner cannot produce the qualification-machine-local
         # evidence (real network capture, timed performance run), so X-07 and
@@ -103,6 +103,14 @@ jobs:
         # that one can satisfy a ring go/no-go rule. Any OTHER missing
         # evidence still fails this job.
         run: python3 tools/assemble_release_evidence.py --version "${{ steps.meta.outputs.version }}" --write --partial
+      - name: Put the changelog in the bundle
+        # This used to sit in the changelog step as `cp ... || true`,
+        # before the assembler had created evidence/releases/<version> —
+        # so on a fresh runner it silently copied nothing and every
+        # bundle shipped without its changelog (confirmed in dry run 4).
+        run: |
+          v="${{ steps.meta.outputs.version }}"
+          cp CHANGELOG.md "evidence/releases/$v/CHANGELOG.md"
       - name: Show the gate report
         if: always()
         run: |
