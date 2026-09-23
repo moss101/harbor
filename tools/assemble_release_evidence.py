@@ -55,7 +55,10 @@ def evidence_ok(rel_path: str) -> bool:
         return path.stat().st_size > 0
     if isinstance(data, dict):
         if "all_suites_ok" in data:
-            return bool(data["all_suites_ok"])
+            # `all_suites_ok` speaks only for the suites that RAN. A run
+            # that could not start a suite (no toolchain) has strictly
+            # less evidence and must not read the same as one that did.
+            return bool(data["all_suites_ok"]) and not data.get("skipped_suites")
         for key in ("ok", "pass", "passed", "verdict_pass"):
             if key in data:
                 return bool(data[key])

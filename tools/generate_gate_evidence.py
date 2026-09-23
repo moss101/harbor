@@ -9,6 +9,7 @@ command, its raw pass/fail counts, and the commit it ran against.
 Usage: python3 tools/generate_gate_evidence.py [--write]
 """
 import json
+import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -46,9 +47,20 @@ def run(name: str, cwd: str, cmd: list, timeout: int = 1800) -> dict:
                 "error": "timeout", "commit": COMMIT}
 
 
+def tool(name: str, vendored: Path):
+    """The qualification machine keeps the toolchain under
+    ~/harbor-tools; everywhere else (CI) it is on PATH. Returning None
+    means the suites that need it are recorded as SKIPPED, never
+    silently dropped from the evidence."""
+    if vendored.exists():
+        return str(vendored)
+    return shutil.which(name)
+
+
 def main() -> None:
-    flutter = str(Path.home() / "harbor-tools/flutter/bin/flutter")
-    dart = str(Path.home() / "harbor-tools/flutter/bin/cache/dart-sdk/bin/dart")
+    harbor_tools = Path.home() / "harbor-tools/flutter/bin"
+    flutter = tool("flutter", harbor_tools / "flutter")
+    dart = tool("dart", harbor_tools / "cache/dart-sdk/bin/dart")
     core = str(ROOT / "core")
     suites = [
         run("rust_workspace", core, ["cargo", "test", "--workspace"]),
@@ -59,12 +71,21 @@ def main() -> None:
         run("engine_pin", str(ROOT), ["python3", "tools/pin_engine.py", "--check"]),
         run("contrast_audit", str(ROOT), ["python3", "tools/check_contrast.py"]),
     ]
-    if Path(flutter).exists():
+    skipped: list = []
+    if flutter:
         suites.append(run("harbor_ui", str(ROOT / "packages/harbor_ui"), [flutter, "test"]))
         suites.append(run("harbor_app", str(ROOT / "apps/harbor_app"), [flutter, "test"]))
-    if Path(dart).exists():
+    else:
+        skipped += [{"suite": n, "reason": "flutter not found (vendored path or PATH)"}
+                    for n in ("harbor_ui", "harbor_app")]
+    if dart:
         suites.append(run("harbor_native_ffi", str(ROOT / "packages/harbor_native"), [dart, "test"]))
         suites.append(run("harbor_domain", str(ROOT / "packages/harbor_domain"), [dart, "test"]))
+    else:
+        skipped += [{"suite": n, "reason": "dart not found (vendored path or PATH)"}
+                    for n in ("harbor_native_ffi", "harbor_domain")]
+    for s in skipped:
+        print(f"SKIP {s['suite']}: {s['reason']}")
 
     # Gate mapping: suite -> acceptance gates it evidences (per
     # 05_Acceptance_Matrix.csv mappings recorded in the backlog).
@@ -90,6 +111,10 @@ def main() -> None:
         "commit": COMMIT,
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "suites": suites,
+        # A suite that could not run is recorded, never dropped: an
+        # evidence file that simply omits it reads exactly like one where
+        # it passed. `all_suites_ok` speaks only for the suites that ran.
+        "skipped_suites": skipped,
         "gate_evidence_map": gates,
         "all_suites_ok": overall,
         "open_external_blockers": [
@@ -106,7 +131,8 @@ def main() -> None:
         out.write_text(text + "\n")
         print(f"written {out}")
     print(f"OVERALL: {'PASS' if overall else 'FAIL'} "
-          f"({sum(1 for s in suites if s['ok'])}/{len(suites)} suites ok)")
+          f"({sum(1 for s in suites if s['ok'])}/{len(suites)} suites ok"
+          + (f", {len(skipped)} skipped" if skipped else "") + ")")
 
 
 if __name__ == "__main__":

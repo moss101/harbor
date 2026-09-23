@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "f4857fd357db51b1d8a789de7c808f9cddd88645f9e1f058d505c5620e8fbd7e",
+  "input_manifest_sha256": "525f639934c1d9f0f559136d4b5a56ab706791f033b5111c25d7055107ab0e02",
   "file_count_excluding_manifest": 548,
   "files": [
     {
@@ -14,8 +14,8 @@
     },
     {
       "path": ".github/workflows/release.yml",
-      "bytes": 12935,
-      "sha256": "7c7d014233a48beb8240d9190a1d704587b0529e1511eba1cf6faeee0c778aa5"
+      "bytes": 13786,
+      "sha256": "1afbe642e510f814ed80a9d307f7b50430d4d71f43af82e51c6a55990262d662"
     },
     {
       "path": ".gitignore",
@@ -120,12 +120,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 99888,
-      "sha256": "16ab7201675c647269a10a7e8041e518cac08627353cb45d655f4df1db6ad63e"
+      "sha256": "884f6a94957fe383476f5112a78217fd6bf7cc09cb67c97ed02ee16ba2a965d9"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "9be8f2e21e9d81580e1c2994e0fb65c5a95611d11d5903541a3bf002f583315d"
+      "sha256": "b117b7e59eac575ae711d88c6b40684a1d8febcc2bc84adb30c7c4c252e52d57"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -2659,8 +2659,8 @@
     },
     {
       "path": "tools/assemble_release_evidence.py",
-      "bytes": 21839,
-      "sha256": "ccc95b50adf84eed9e8a74e6d11072027a7f028377f2e1d07e74f53bd9912f5c"
+      "bytes": 22090,
+      "sha256": "3c74f9165fe8cf22ff207fefac91220b4f310c5ebaf9d2d8a1ff89cdfd7c2efb"
     },
     {
       "path": "tools/check_advisory_ignores.py",
@@ -2709,8 +2709,8 @@
     },
     {
       "path": "tools/generate_gate_evidence.py",
-      "bytes": 4795,
-      "sha256": "7e66d58f5e02c248cdd85dfb7da62b84dbbc3f2fb495ee3d05b8c39b8ad51966"
+      "bytes": 5907,
+      "sha256": "580462ee4bfbf73df7683675ef776b66e248a5ca7b9fedfbb96304f476cceeca"
     },
     {
       "path": "tools/generate_sbom.py",

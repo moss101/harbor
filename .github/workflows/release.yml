@@ -62,7 +62,25 @@ jobs:
           cargo fmt --check
           cargo clippy --workspace --all-targets -- -D warnings
           cargo test --workspace
+      - name: Native core (debug) for the live FFI tests
+        run: cargo build --manifest-path core/Cargo.toml -p harbor_ffi
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.4
+          channel: stable
+          cache: true
+      - name: Pub get (packages + app)
+        run: |
+          for d in packages/harbor_domain packages/harbor_native packages/harbor_ui apps/harbor_app; do
+            (cd "$d" && flutter pub get)
+          done
       - name: Gate evidence (commit-bound)
+        # generate_gate_evidence.py runs the Dart suites too — it finds
+        # the toolchain on PATH here and under ~/harbor-tools on the
+        # qualification machine. A suite it cannot start is recorded in
+        # `skipped_suites`, which the assembler treats as missing
+        # evidence, so the steps above are load-bearing rather than
+        # convenience.
         run: |
           python3 tools/generate_gate_evidence.py --write
           python3 tools/check_optional_disabled.py --write
