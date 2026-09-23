@@ -101,6 +101,36 @@ fn register_op(kind: &'static str) -> (String, Arc<OpEntry>) {
     (op_id.as_str().to_string(), entry)
 }
 
+/// Run an op body on a background thread with a terminal-state net.
+///
+/// The synchronous dispatch path already runs under `catch_unwind`
+/// because a panic must never cross the C boundary. An op thread's panic
+/// cannot abort the host — it is a separate thread — but it can do
+/// something quieter and worse: the thread dies before `complete_op`, the
+/// entry stays `running` for ever, and the caller's `op.status` poll
+/// never ends, with no error anywhere in the UI. Every op therefore
+/// reaches a terminal state, including when its body panics. The panic
+/// itself is already in the diagnostics log via the panic hook.
+fn spawn_op<F: FnOnce() + Send + 'static>(entry: Arc<OpEntry>, body: F) {
+    std::thread::spawn(move || {
+        if std::panic::catch_unwind(std::panic::AssertUnwindSafe(body)).is_err() {
+            // The lock is poisoned if the panic happened inside
+            // complete_op; recovering it is correct here because we only
+            // fill a slot that is still empty.
+            let mut slot = match entry.result.lock() {
+                Ok(slot) => slot,
+                Err(poisoned) => poisoned.into_inner(),
+            };
+            if slot.is_none() {
+                *slot = Some(Err(format!(
+                    "{} failed: internal error (see diagnostics)",
+                    entry.kind
+                )));
+            }
+        }
+    });
+}
+
 fn complete_op(entry: &OpEntry, result: Result<serde_json::Value, String>, cancelled: bool) {
     if cancelled {
         entry.cancelled.store(true, Ordering::Relaxed);
@@ -1356,7 +1386,7 @@ fn dispatch(
             let data_root = ws.data_root.clone();
             let entry_clone = entry.clone();
             let progress = entry.progress.clone();
-            std::thread::spawn(move || {
+            spawn_op(entry.clone(), move || {
                 progress.set_phase("running");
                 progress.set_detail(&skill.id);
                 let store =
@@ -2138,7 +2168,7 @@ fn dispatch(
             let hub_token = ws.hub_token.clone();
             let progress = entry.progress.clone();
             let entry_clone = entry.clone();
-            std::thread::spawn(move || {
+            spawn_op(entry.clone(), move || {
                 let result = acquire_model(
                     &data_root,
                     &broker,
@@ -2189,7 +2219,7 @@ fn dispatch(
             let data_root = ws.data_root.clone();
             let progress = entry.progress.clone();
             let entry_clone = entry.clone();
-            std::thread::spawn(move || {
+            spawn_op(entry.clone(), move || {
                 // 1. Retrieve grounding (may be absent).
                 let citations = knowledge
                     .as_ref()
@@ -2306,7 +2336,7 @@ fn dispatch(
                 .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
             let progress = entry.progress.clone();
             let entry_clone = entry.clone();
-            std::thread::spawn(move || {
+            spawn_op(entry.clone(), move || {
                 let never = AtomicBool::new(false);
                 let result = knowledge
                     .ingest_with_progress(&sources, &never, Some(&progress))
@@ -2639,5 +2669,60 @@ mod trust_persistence_tests {
 
     fn hex_encode(bytes: &[u8]) -> String {
         bytes.iter().map(|b| format!("{b:02x}")).collect()
+    }
+
+    /// An op whose body panics must still reach a terminal state. Before
+    /// `spawn_op` the thread simply died, the entry stayed `running`, and
+    /// the app's `op.status` poll (an unbounded loop) spun for ever with
+    /// nothing shown to the user.
+    #[test]
+    fn a_panicking_op_body_still_reaches_a_terminal_state() {
+        let (op_id, entry) = register_op("test");
+        // The hook would print this panic to stderr and confuse the test
+        // log; the op's terminal state is what is under test.
+        let previous = std::panic::take_hook();
+        std::panic::set_hook(Box::new(|_| {}));
+        spawn_op(entry.clone(), || panic!("boom inside an op body"));
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        while entry.result.lock().unwrap().is_none() {
+            assert!(
+                std::time::Instant::now() < deadline,
+                "op stayed running after its body panicked"
+            );
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        std::panic::set_hook(previous);
+
+        let status = op_status_json(&op_id, &entry);
+        assert_eq!(status["state"], "failed");
+        let error = status["result"]["error"].as_str().unwrap_or_default();
+        assert!(
+            error.contains("internal error"),
+            "the caller must see a failure, got {error:?}"
+        );
+    }
+
+    /// The net must not overwrite a real result: a body that completes
+    /// normally and then panics on the way out keeps its own outcome.
+    #[test]
+    fn the_panic_net_never_overwrites_a_completed_op() {
+        let (op_id, entry) = register_op("test");
+        let previous = std::panic::take_hook();
+        std::panic::set_hook(Box::new(|_| {}));
+        let for_body = entry.clone();
+        spawn_op(entry.clone(), move || {
+            complete_op(&for_body, Ok(serde_json::json!({"kept": true})), false);
+            panic!("after the result was recorded");
+        });
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        while entry.result.lock().unwrap().is_none() {
+            assert!(std::time::Instant::now() < deadline, "op never completed");
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        std::panic::set_hook(previous);
+
+        let status = op_status_json(&op_id, &entry);
+        assert_eq!(status["state"], "done");
+        assert_eq!(status["result"]["kept"], true);
     }
 }
