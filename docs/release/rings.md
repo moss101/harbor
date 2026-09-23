@@ -43,7 +43,16 @@ performance thresholds. Everything runs from the tagged commit
    This is the authoritative bundle; it refuses to assemble cleanly while
    any gate is `FAIL_NO_EVIDENCE`.
 
-**Go/no-go for ring 1** (read from the gate report):
+**Go/no-go for ring 1** — run the rule, do not read it:
+
+```
+python3 tools/check_ring_gate.py \
+    --report evidence/releases/1.1.0-rc1/release_gate_report.json \
+    --ring 1 --platforms mac,ios,android
+```
+
+It prints each clause below with the gate ids that violate it and exits
+non-zero on NO-GO. The clauses are:
 
 | Field | Rule |
 | --- | --- |
@@ -56,7 +65,9 @@ performance thresholds. Everything runs from the tagged commit
 
 A platform whose gates are still blocked is dropped from the ring-1 set
 (Windows is the expected drop if WIN-01 slips); it does not block the
-others.
+others — that is what `--platforms` names. Cross-platform gates (`X-*`,
+`PERF-01`, `SYNC-01`, `OPT-01`) count against every set and cannot be
+dropped.
 
 ## Ring 1 — closed beta (weeks 7–8)
 
@@ -86,7 +97,10 @@ Purpose: 20–50 strangers use the skills product on their own documents.
   and removes the staged download (verified in
   `harbor_modelhub::acquire::staging_cleanup_tests`).
 
-**Go/no-go for GA** (read from the last two rc bundles + exports):
+**Go/no-go for GA** — `--ring ga` over the last rc bundle, plus the
+exports. The tool decides the gate-report clauses and prints the three
+human ones as `MAN` items with the artifact to read; it never returns GO
+while one of them is unconfirmed:
 
 | Check | Rule |
 | --- | --- |
