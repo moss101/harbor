@@ -21,6 +21,51 @@ final repoRoot = Directory.current.parent.parent.path; // apps/harbor_app
 final dylibPath = '$repoRoot/core/target/debug/libharbor_ffi.dylib';
 final coreAvailable = File(dylibPath).existsSync();
 
+/// Pump real time until [until] matches. The live-core tests drive a
+/// worker isolate and real file IO, so they cannot use `pumpAndSettle`.
+///
+/// It fails with what the UI is actually showing rather than returning
+/// quietly and leaving a later `findsOneWidget` to report "Found 0
+/// widgets": a run that failed surfaces the core's reason from its Run
+/// failed banner, and a run that never finished says so with its budget.
+/// A shared CI runner executes the debug core several times slower than
+/// a development machine, which is why the budgets are generous — and
+/// why an opaque failure there is expensive to diagnose.
+Future<void> settleUntil(
+  WidgetTester tester,
+  Finder until, {
+  Duration budget = const Duration(seconds: 120),
+  String? what,
+}) async {
+  final target = what ?? until.toString();
+  final deadline = DateTime.now().add(budget);
+  while (DateTime.now().isBefore(deadline)) {
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await tester.pump();
+    if (until.evaluate().isNotEmpty) return;
+    final failed = tester
+        .widgetList<HarborBanner>(find.byType(HarborBanner))
+        .where((b) => b.title == 'Run failed')
+        .map((b) => b.body ?? '(no detail in the banner)');
+    if (failed.isNotEmpty) {
+      fail('the run failed while waiting for $target: ${failed.first}');
+    }
+  }
+  // A stall, not a slow runner: this wait normally resolves in seconds.
+  // Print what the sheet is showing so the next occurrence says where the
+  // run stopped instead of only that it did.
+  final visible = tester
+      .widgetList<Text>(find.byType(Text))
+      .map((t) => t.data)
+      .whereType<String>()
+      .where((t) => t.trim().isNotEmpty)
+      .take(40)
+      .join(' | ');
+  fail('timed out after ${budget.inSeconds}s waiting for $target; '
+      'the tree is showing: $visible');
+}
+
 /// Pump HarborApp with a REAL viewport of [width]x[height] logical pixels
 /// (the shell's breakpoint decisions must agree with actual layout).
 Future<void> pumpApp(
@@ -823,22 +868,13 @@ void _appendSkillCommitTests() {
 
     // Real async (worker isolate, file IO) only progresses inside
     // runAsync; widget interaction must stay outside it (guarded calls).
-    // The budget is generous: shared CI runners run the debug core and the
-    // op poll (250 ms) several times slower than this machine.
-    Future<void> settle(Finder until) async {
-      final deadline = DateTime.now().add(const Duration(seconds: 120));
-      while (DateTime.now().isBefore(deadline)) {
-        await tester.runAsync(
-            () => Future<void>.delayed(const Duration(milliseconds: 100)));
-        await tester.pump();
-        if (until.evaluate().isNotEmpty) return;
-        if (find.text('Run failed').evaluate().isNotEmpty) return;
-      }
-    }
+    Future<void> settle(Finder until, {String? what}) =>
+        settleUntil(tester, until, what: what);
 
     // Attach the fixture through the injected picker and fill the values.
     await tester.tap(find.byKey(const ValueKey('attach-artifact_id')));
-    await settle(find.textContaining('letter_template.docx'));
+    await settle(find.textContaining('letter_template.docx'),
+        what: 'the attached fixture');
     expect(find.textContaining('letter_template.docx'), findsOneWidget);
     await tester.enterText(find.byKey(const ValueKey('input-values')),
         'name=Amina\nref=HB-42\nAMOUNT=1,250.00\nsender=Harbor Team');
@@ -849,7 +885,8 @@ void _appendSkillCommitTests() {
 
     // Run → the executor parks the run for approval with a diff.
     await tester.tap(find.byKey(const ValueKey('skill-run-button')));
-    await settle(find.byKey(const ValueKey('skill-approval')));
+    await settle(find.byKey(const ValueKey('skill-approval')),
+        what: 'the run to park for approval');
     expect(find.byKey(const ValueKey('skill-approval')), findsOneWidget);
     expect(find.byKey(const ValueKey('skill-proposal-diff')), findsOneWidget);
     // Before/after lines from the core's diff, rendered by ArtifactDiffView.
@@ -863,7 +900,8 @@ void _appendSkillCommitTests() {
 
     // Save new copy (the default primary action).
     await tester.tap(find.text('Save new copy'));
-    await settle(find.byKey(const ValueKey('skill-committed')));
+    await settle(find.byKey(const ValueKey('skill-committed')),
+        what: 'the commit to land');
     expect(find.byKey(const ValueKey('skill-committed')), findsOneWidget);
     expect(find.text('Saved as a new copy'), findsOneWidget);
     expect(find.textContaining(copy.path), findsWidgets);
@@ -957,20 +995,15 @@ void _appendDiagnosticsTests() {
       ),
     ));
     await tester.pump();
-    Future<void> settle(Finder until) async {
-      final deadline = DateTime.now().add(const Duration(seconds: 60));
-      while (DateTime.now().isBefore(deadline)) {
-        await tester.runAsync(
-            () => Future<void>.delayed(const Duration(milliseconds: 100)));
-        await tester.pump();
-        if (until.evaluate().isNotEmpty) return;
-      }
-    }
+    Future<void> settle(Finder until, {String? what}) =>
+        settleUntil(tester, until,
+            budget: const Duration(seconds: 60), what: what);
 
-    await settle(find.textContaining('record'));
+    await settle(find.textContaining('record'), what: 'a diagnostics record');
     expect(find.textContaining('record'), findsWidgets);
     await tester.tap(find.byKey(const ValueKey('diagnostics-export')));
-    await settle(find.byKey(const ValueKey('diagnostics-exported')));
+    await settle(find.byKey(const ValueKey('diagnostics-exported')),
+        what: 'the diagnostics export');
     expect(find.byKey(const ValueKey('diagnostics-exported')), findsOneWidget);
     expect(find.textContaining(dest.path), findsOneWidget);
     expect(dest.existsSync(), isTrue);
