@@ -137,10 +137,27 @@ jobs:
       - name: Build macOS app (ad-hoc signed)
         working-directory: apps/harbor_app
         run: flutter build macos --release
-      - name: Zip the bundle + record its hash
+      - name: Bundle the native core + privacy manifest into the app
+        # `flutter build macos` does NOT do this — scripts/package_apple.sh
+        # does, on the operator machine, and CI never ran it. The Dart FFI
+        # opens libharbor_ffi.dylib by bare name and dyld resolves that
+        # against the bundle's Frameworks directory, so without this step
+        # the artifact launches into the degraded state with no core at
+        # all: an app that cannot open a workspace, attached to a draft
+        # release as "reproducible-build evidence".
         run: |
           app=apps/harbor_app/build/macos/Build/Products/Release/harbor_app.app
           test -d "$app"
+          cp core/target/release/libharbor_ffi.dylib "$app/Contents/Frameworks/"
+          cp apps/harbor_app/macos/Runner/PrivacyInfo.xcprivacy "$app/Contents/Resources/"
+          codesign --force --sign - "$app/Contents/Frameworks/libharbor_ffi.dylib"
+          codesign --force --sign - "$app"
+      - name: Zip the bundle + record its hash
+        run: |
+          app=apps/harbor_app/build/macos/Build/Products/Release/harbor_app.app
+          # Fail loudly rather than ship a coreless app again.
+          test -f "$app/Contents/Frameworks/libharbor_ffi.dylib"
+          test -f "$app/Contents/Resources/PrivacyInfo.xcprivacy"
           ditto -c -k --keepParent "$app" harbor_app-macos-${{ needs.evidence.outputs.version }}-unsigned.zip
           shasum -a 256 harbor_app-macos-${{ needs.evidence.outputs.version }}-unsigned.zip | tee macos-sha256.txt
       - uses: actions/upload-artifact@v4
