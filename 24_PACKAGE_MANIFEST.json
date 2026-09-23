@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "e67cdbc7e8f9d3d5143cbbe8de08badca53cd5bf6af3375ba5c0594c769b8c7b",
+  "input_manifest_sha256": "b329748d92a43e90c29e8c1b4a310e5bc5904f481c85441e37ad5117e0fa8716",
   "file_count_excluding_manifest": 548,
   "files": [
     {
@@ -120,12 +120,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 99888,
-      "sha256": "dff4c53189d750dda9e0d63158d2db57b55e5a4df3e0d8cf72852872642b310f"
+      "sha256": "d94f16c6412723683ec11b26ccb5ebec877b46887c00e1155c44fdce94f354e6"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "2d969b0c764bbff8340d5333af5dcb1cc310944166d127e1155b96bdf5004851"
+      "sha256": "9d4a9c7b0ffedb4adf6c466bf867092435039c90f08732bdb9ddb42323162a31"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -2084,8 +2084,8 @@
     },
     {
       "path": "docs/release/closeout_runbook.md",
-      "bytes": 5414,
-      "sha256": "6bfcddfb3b0d3187d75fd7b66be66a9776663ce227222613486c42976034573a"
+      "bytes": 6140,
+      "sha256": "b77160eb219e811f139dc51a235777b0e162e269b6504a2317083df587372e5b"
     },
     {
       "path": "docs/release/migration_rollback.md",

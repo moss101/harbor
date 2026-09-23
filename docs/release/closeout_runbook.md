@@ -95,9 +95,23 @@ python3 tools/run_performance_qualification.py --write
 python3 tools/generate_gate_evidence.py --write
 python3 tools/validate_dossier.py --write
 python3 tools/assemble_release_evidence.py --version 1.0.0-rc2 --write
-# Verify: release_gate_report.json has 0 non-PASS gates, then flip
-# release_declared per 10_Release_Checklist.md and tag the release.
+python3 tools/check_ring_gate.py \
+    --report evidence/releases/1.0.0-rc2/release_gate_report.json \
+    --ring 1 --platforms mac,ios,android
 ```
+
+Run the assembly on the qualification machine and WITHOUT `--partial`;
+the release workflow passes `--partial` because a CI runner cannot
+produce the network capture or the performance run, and a partial bundle
+cannot decide a ring (`docs/release/rings.md`).
+
+`release_declared` is not flipped by hand — the assembler computes it
+from the table (no `FAIL*`, no `BLOCKED_*`, complete bundle), so a
+platform Harbor is not shipping has to be recorded `N/A_PLATFORM` by its
+gate rather than left blocked. `check_ring_gate.py` prints each ring
+clause with the gate ids that violate it and exits non-zero on NO-GO;
+`--ring ga` adds the three clauses only the operator can answer
+(`--confirmed crashes,checklist,evals`).
 
 ## Machine-local facts the operator will need
 
