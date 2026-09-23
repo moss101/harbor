@@ -28,16 +28,13 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // Harbor ships ONE native core ABI (arm64-v8a —
-        // docs/release/store/supported_devices.md). Left unfiltered,
-        // Flutter also packages armeabi-v7a and x86_64: ABIs that get the
-        // Dart and Flutter runtimes but no libharbor_ffi.so, so the app
-        // installs on those devices and launches with no core at all.
-        // Filtering the ABI makes Play exclude them at the store instead
-        // of shipping them something that cannot work.
-        ndk {
-            abiFilters += listOf("arm64-v8a")
-        }
+        // NOTE: `ndk { abiFilters }` here does NOT restrict the packaged
+        // ABIs — the Flutter Gradle plugin sets them from the build's
+        // --target-platform and overwrites whatever is configured (dry
+        // run 4 shipped armeabi-v7a and x86_64 with it in place). The
+        // single supported ABI is selected at the build command instead:
+        // `flutter build apk|appbundle --target-platform android-arm64`
+        // (.github/workflows/release.yml).
     }
 
     buildTypes {

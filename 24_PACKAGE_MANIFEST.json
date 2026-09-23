@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "8b3f7a09dad8ad500fda188cd2eec06f7e0048ffbe2f3f13b96092ec167e6432",
+  "input_manifest_sha256": "2a7883a077af373726e1d5d48271917eeecb7bf455fb01032a60bfbb0b6c0dab",
   "file_count_excluding_manifest": 548,
   "files": [
     {
@@ -14,8 +14,8 @@
     },
     {
       "path": ".github/workflows/release.yml",
-      "bytes": 13786,
-      "sha256": "1afbe642e510f814ed80a9d307f7b50430d4d71f43af82e51c6a55990262d662"
+      "bytes": 14263,
+      "sha256": "9a7048a91ae761bacc7ef6e5fb771fa158cb6a306556fa1ddbc956cb2517e479"
     },
     {
       "path": ".gitignore",
@@ -119,13 +119,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 99888,
-      "sha256": "c456ebff0a6c4a29a05850e09695d9428e50fe1f81853056b0126d43d390843c"
+      "bytes": 99889,
+      "sha256": "4ec2b3647947c0ce9d1daf44adf7528c7de0658068779c777aa62e9c4d4ed715"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "b83a0e17133f96ff42d7fb127ef0d98d5df82178a68f61893d03031a36be20be"
+      "sha256": "13354173ddbf63b5689909a6e853ae31e8a7a4ed3a95cc9a5e373c87dcb514f0"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -204,8 +204,8 @@
     },
     {
       "path": "apps/harbor_app/android/app/build.gradle.kts",
-      "bytes": 2317,
-      "sha256": "96a6647e7a2a9a7b78baf4c96c666288a03eeedafc290c8c39d991b776260cd1"
+      "bytes": 2250,
+      "sha256": "ecc7465021872b378be095758ebd4a85dace2728fbfc8a3e2b83dd1fc712c2fd"
     },
     {
       "path": "apps/harbor_app/android/app/src/debug/AndroidManifest.xml",
@@ -769,8 +769,8 @@
     },
     {
       "path": "apps/harbor_app/macos/Runner/Configs/Release.xcconfig",
-      "bytes": 79,
-      "sha256": "7a6a4b4d973a23052fa0a0388dd261e32d311d7b66ba1bfc3b914b361808ac61"
+      "bytes": 616,
+      "sha256": "de58e46a7237fb6d897fa30fb10bf113636cb9d38e04bb30018931670daf52df"
     },
     {
       "path": "apps/harbor_app/macos/Runner/Configs/Warnings.xcconfig",
@@ -2189,8 +2189,8 @@
     },
     {
       "path": "docs/release/store/supported_devices.md",
-      "bytes": 1878,
-      "sha256": "8d7acb650aa4fd5fd8ebe70b3f3ce4d0107bb2e97cd2035290490de46b796336"
+      "bytes": 2117,
+      "sha256": "af0f6e2ad9ebd34c950e70046136fff39e002892a079443075509a60c3c7326c"
     },
     {
       "path": "docs/release/windows_qualification.md",

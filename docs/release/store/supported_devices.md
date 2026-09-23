@@ -8,6 +8,7 @@ Status tiers: **Qualified** (production evidence on that class),
 | --- | --- | --- | --- |
 | macOS | Apple silicon (M-series), 16 GB+ RAM | **Qualified** (reference device: M5 Pro, 24 GB) | Release build, ad-hoc signed; Developer ID + notarization pending operator credentials |
 | macOS | Apple silicon, 8 GB | In qualification | Minimum-device performance profile pending min-spec hardware; Fit Score gates model suggestions |
+| macOS | Intel (x86_64) | **Not in RC** | The release build is arm64-only (`ARCHS = arm64`): the native core is built for Apple silicon, so a universal bundle would launch on an Intel Mac with no core. macOS declines to open it instead |
 | iOS / iPadOS | iPhone/iPad with A12 or newer | In qualification | Release-style build links Harbor core statically and passes symbol/link verification; install/launch evidence requires a physical device |
 | Android | arm64-v8a phones/tablets, Android 10+ | In qualification | Release APK with live native core verified on arm64 emulator; physical-device tier pending hardware |
 | Android | x86_64 | Not in RC | Emulator-class only |

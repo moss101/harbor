@@ -1,2 +1,12 @@
 #include "../../Flutter/Flutter-Release.xcconfig"
 #include "Warnings.xcconfig"
+
+// Harbor's native core is built for Apple silicon only — the
+// supported-device matrix lists no Intel class, and the release workflow
+// cross-compiles one macOS slice. A universal app bundle would launch on
+// an Intel Mac and find no libharbor_ffi.dylib in Contents/Frameworks,
+// i.e. the degraded state with no core; macOS ships as a DMG, so unlike
+// Play there is no store-side device filter to prevent it. Building
+// arm64-only makes macOS decline to open the app there instead, which is
+// the honest answer.
+ARCHS = arm64

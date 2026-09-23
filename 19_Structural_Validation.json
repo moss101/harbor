@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "8b3f7a09dad8ad500fda188cd2eec06f7e0048ffbe2f3f13b96092ec167e6432",
+  "input_manifest_sha256": "2a7883a077af373726e1d5d48271917eeecb7bf455fb01032a60bfbb0b6c0dab",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -11,8 +11,8 @@
     },
     {
       "path": ".github/workflows/release.yml",
-      "bytes": 13786,
-      "sha256": "1afbe642e510f814ed80a9d307f7b50430d4d71f43af82e51c6a55990262d662"
+      "bytes": 14263,
+      "sha256": "9a7048a91ae761bacc7ef6e5fb771fa158cb6a306556fa1ddbc956cb2517e479"
     },
     {
       "path": ".gitignore",
@@ -186,8 +186,8 @@
     },
     {
       "path": "apps/harbor_app/android/app/build.gradle.kts",
-      "bytes": 2317,
-      "sha256": "96a6647e7a2a9a7b78baf4c96c666288a03eeedafc290c8c39d991b776260cd1"
+      "bytes": 2250,
+      "sha256": "ecc7465021872b378be095758ebd4a85dace2728fbfc8a3e2b83dd1fc712c2fd"
     },
     {
       "path": "apps/harbor_app/android/app/src/debug/AndroidManifest.xml",
@@ -751,8 +751,8 @@
     },
     {
       "path": "apps/harbor_app/macos/Runner/Configs/Release.xcconfig",
-      "bytes": 79,
-      "sha256": "7a6a4b4d973a23052fa0a0388dd261e32d311d7b66ba1bfc3b914b361808ac61"
+      "bytes": 616,
+      "sha256": "de58e46a7237fb6d897fa30fb10bf113636cb9d38e04bb30018931670daf52df"
     },
     {
       "path": "apps/harbor_app/macos/Runner/Configs/Warnings.xcconfig",
@@ -2171,8 +2171,8 @@
     },
     {
       "path": "docs/release/store/supported_devices.md",
-      "bytes": 1878,
-      "sha256": "8d7acb650aa4fd5fd8ebe70b3f3ce4d0107bb2e97cd2035290490de46b796336"
+      "bytes": 2117,
+      "sha256": "af0f6e2ad9ebd34c950e70046136fff39e002892a079443075509a60c3c7326c"
     },
     {
       "path": "docs/release/windows_qualification.md",

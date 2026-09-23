@@ -232,8 +232,14 @@ jobs:
         env:
           V: ${{ needs.evidence.outputs.version }}
         run: |
-          flutter build apk --release
-          flutter build appbundle --release
+          # arm64-v8a ONLY: it is the single ABI the native core is
+          # cross-compiled for above, and the only one
+          # docs/release/store/supported_devices.md claims. A default
+          # build also packages armeabi-v7a and x86_64 — the Dart and
+          # Flutter runtimes with no libharbor_ffi.so beside them — so
+          # those devices would install Harbor and launch it with no core.
+          flutter build apk --release --target-platform android-arm64
+          flutter build appbundle --release --target-platform android-arm64
           # Flatten to names that read as release assets: a GitHub release
           # is a flat list, and "app-release.apk" says nothing about which
           # build it is or that it carries a debug key. The hashes are
