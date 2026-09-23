@@ -5,8 +5,11 @@ per release tag (`harbor-v*`) with an Unreleased section on top.
 
   python3 tools/generate_changelog.py --write
 
-Subjects without a recognised prefix land under "Other". Multi-prefix
-subjects (`core+app:`) are listed under each named area.
+Multi-prefix subjects (`core+app:`) are listed under each named area, and
+a scope in parentheses (`fix(native):`, `test(app):`, `core(ffi):`) is
+read as its area — before this, those landed under "Other" with the
+prefix still in the entry text, which is what the release page showed.
+A subject with no recognised prefix lands under "Other" unchanged.
 """
 import argparse
 import re
@@ -17,9 +20,12 @@ ROOT = Path(__file__).resolve().parents[1]
 AREAS = {
     "core": "Core", "ffi": "FFI", "app": "App", "ui": "UI", "skills": "Skills",
     "inference": "Inference", "contracts": "Contracts", "docs": "Docs", "ci": "CI",
-    "schemas": "Contracts", "release": "Release",
+    "schemas": "Contracts", "release": "Release", "tools": "Tools",
+    "android": "App", "ios": "App", "native": "FFI", "test": "Tests",
+    "chore": "Chore",
 }
-PREFIX = re.compile(r"^([a-z+]+):\s*(.+)$")
+# `area:`, `area+area:` and `kind(area):` — the three shapes the log uses.
+PREFIX = re.compile(r"^([a-z+]+)(?:\(([a-z+]+)\))?:\s*(.+)$")
 
 
 def git(*args):
@@ -45,8 +51,16 @@ def section(title, rev_range):
     for sha, subject in commits(rev_range):
         m = PREFIX.match(subject)
         if m:
-            areas = [a for a in m.group(1).split("+")]
-            text = m.group(2)
+            kind, scope, text = m.group(1), m.group(2), m.group(3)
+            # A scope names the area more precisely than the kind does:
+            # `fix(native)` is an FFI change, not a "fix" category.
+            named = scope if scope else kind
+            areas = named.split("+")
+            # A kind with a scope neither of which is a known area (say
+            # `chore(deps)`) still beats dropping the subject into Other
+            # with its prefix attached.
+            if not any(a in AREAS for a in areas) and kind in AREAS:
+                areas = [kind]
         else:
             areas, text = ["other"], subject
         for a in areas:

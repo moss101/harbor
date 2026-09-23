@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "87d604af88d3c46563bc46e813cf10f467efe12ef391427f0f857f2b1dee1bf4",
+  "input_manifest_sha256": "582ac88bb41d2b30f9769b3665224979fc4e10ce7bdc79f7e09d0e2be0189f9a",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -146,8 +146,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 8398,
-      "sha256": "a72959f469bb1929222340e7c7b9d24b29353b872ee2067985e62165782e31cd"
+      "bytes": 10623,
+      "sha256": "1dee4fe0cff265d2585051e42918dc97860f6180d73367cae77c91c4c0be0c42"
     },
     {
       "path": "Harbor_Implementation_Authority_Reconciled.docx",
@@ -2686,8 +2686,8 @@
     },
     {
       "path": "tools/generate_changelog.py",
-      "bytes": 2906,
-      "sha256": "8acdfb13617797b2878969ca1cb7d2df9dec7ab53d9fc3548676d5591336d15e"
+      "bytes": 3826,
+      "sha256": "0fab38788e1182822f3a02623065b8d66755d79bb8a5e0b17de351d581310ff6"
     },
     {
       "path": "tools/generate_gate_evidence.py",
