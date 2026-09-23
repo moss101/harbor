@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "3b3298d719c70a7673155e3e2b90f7d7cf479f409920dc6081eef02726f2b2ea",
+  "input_manifest_sha256": "f4857fd357db51b1d8a789de7c808f9cddd88645f9e1f058d505c5620e8fbd7e",
   "file_count_excluding_manifest": 548,
   "files": [
     {
@@ -120,12 +120,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 99888,
-      "sha256": "1a9fd49fc11474f5c71c46a3cb236cdbb83b9018f32d1942405124937c03c721"
+      "sha256": "16ab7201675c647269a10a7e8041e518cac08627353cb45d655f4df1db6ad63e"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "fada4b9b91946d78afb9408ff5be3e8b94933a754b848889de7492f1005d66ff"
+      "sha256": "9be8f2e21e9d81580e1c2994e0fb65c5a95611d11d5903541a3bf002f583315d"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -204,8 +204,8 @@
     },
     {
       "path": "apps/harbor_app/android/app/build.gradle.kts",
-      "bytes": 1768,
-      "sha256": "cd5c6fea5a78463251158fc52769360f0056e9d1b8485ae6e08d0fd51bfdf917"
+      "bytes": 2317,
+      "sha256": "96a6647e7a2a9a7b78baf4c96c666288a03eeedafc290c8c39d991b776260cd1"
     },
     {
       "path": "apps/harbor_app/android/app/src/debug/AndroidManifest.xml",

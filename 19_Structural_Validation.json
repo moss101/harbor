@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "3b3298d719c70a7673155e3e2b90f7d7cf479f409920dc6081eef02726f2b2ea",
+  "input_manifest_sha256": "f4857fd357db51b1d8a789de7c808f9cddd88645f9e1f058d505c5620e8fbd7e",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -186,8 +186,8 @@
     },
     {
       "path": "apps/harbor_app/android/app/build.gradle.kts",
-      "bytes": 1768,
-      "sha256": "cd5c6fea5a78463251158fc52769360f0056e9d1b8485ae6e08d0fd51bfdf917"
+      "bytes": 2317,
+      "sha256": "96a6647e7a2a9a7b78baf4c96c666288a03eeedafc290c8c39d991b776260cd1"
     },
     {
       "path": "apps/harbor_app/android/app/src/debug/AndroidManifest.xml",
