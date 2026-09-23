@@ -62,7 +62,36 @@ def evidence_ok(rel_path: str) -> bool:
         for key in ("ok", "pass", "passed", "verdict_pass"):
             if key in data:
                 return bool(data[key])
+        # Verdict-carrying evidence: a file's EXISTENCE is not its claim,
+        # its contents are. Before this, an inspection that recorded a
+        # violation or a failed verdict still read as PASS because the
+        # JSON parsed — the gate table would have reported a clean run
+        # over evidence that said the opposite.
+        if data.get("violations"):
+            return False
+        for key, value in data.items():
+            if isinstance(value, bool) and (
+                    key.endswith("_ok") or key.endswith("_verified")):
+                if not value:
+                    return False
+        for key in ("verdict", "result", "status"):
+            value = data.get(key)
+            if isinstance(value, str):
+                return value.startswith(("PASS", "OK", "N/A"))
     return True
+
+
+def evidence_status(rel_path: str) -> str:
+    """The gate status this evidence file supports.
+
+    `FAIL_NO_EVIDENCE` means there is nothing to read; `FAIL` means there
+    is, and it says the check did not pass. The ring rules count those
+    separately (docs/release/rings.md), and only the first is ever
+    tolerated by --partial.
+    """
+    if not (EV / rel_path).exists():
+        return "FAIL_NO_EVIDENCE"
+    return "PASS" if evidence_ok(rel_path) else "FAIL"
 
 
 def load(rel_path):
@@ -146,7 +175,7 @@ def main():
          "sync/remote/connectors/diagnostics default-off with no dispatch surface"),
     ]
     for gid, name, ev, note in machine_gates:
-        status = "PASS" if evidence_ok(ev) else "FAIL_NO_EVIDENCE"
+        status = evidence_status(ev)
         gates.append(gate(gid, name, status, [f"evidence/{ev}"], note))
 
     # (status, evidence) order matters: the ring go/no-go rules read
@@ -154,22 +183,22 @@ def main():
     # for X-06..X-09 and put the file name where the status belongs.
     gates.append(gate(
         "X-06", "Plaintext-at-rest inspection",
-        "PASS" if evidence_ok("plaintext_at_rest.json") else "FAIL_NO_EVIDENCE",
+        evidence_status("plaintext_at_rest.json"),
         ["evidence/plaintext_at_rest.json"],
         "byte-level scan of SQLite/WAL/SHM, blob store, temp windows, crash residue, diagnostics log/export"))
     gates.append(gate(
         "X-07", "Independent network capture vs broker audit (macOS reference)",
-        "PASS" if evidence_ok("network_capture.json") else "FAIL_NO_EVIDENCE",
+        evidence_status("network_capture.json"),
         ["evidence/network_capture.json"],
         "offline scenarios + real HF→CDN acquisition; capture == audit 1:1 (qualification-machine-local)"))
     gates.append(gate(
         "X-08", "Performance thresholds (reference class)",
-        "PASS" if evidence_ok("perf_qualification.json") else "FAIL_NO_EVIDENCE",
+        evidence_status("perf_qualification.json"),
         ["evidence/perf_qualification.json"],
         "frozen v2 thresholds; unavailable device classes recorded BLOCKED_DEVICE_EVIDENCE"))
     gates.append(gate(
         "X-09", "Evaluation corpus bound (EN/AR)",
-        "PASS" if evidence_ok("gate_results.json") else "FAIL_NO_EVIDENCE",
+        evidence_status("gate_results.json"),
         ["evidence/gate_results.json"],
         "464-case corpus; hash bound in 26_Qualification_Profiles.json"))
 
@@ -245,8 +274,12 @@ def main():
     failing = [g for g in gates if g["status"].startswith("FAIL")]
     # A partial bundle tolerates ONLY the two machine-local absences; any
     # other missing evidence is still an assembly failure.
+    # --partial tolerates ABSENT machine-local evidence only. Evidence
+    # that exists and says the check failed is never tolerated.
     unexpected = [g for g in failing
-                  if not (args.partial and g["id"] in MACHINE_LOCAL_GATES)]
+                  if not (args.partial
+                          and g["id"] in MACHINE_LOCAL_GATES
+                          and g["status"] == "FAIL_NO_EVIDENCE")]
     # `release_declared` is COMPUTED from the table, never asserted: it is
     # true only when no gate fails, no gate is blocked on a resource that
     # does not exist, and the bundle is complete. Everything else is a
@@ -270,7 +303,9 @@ def main():
         "bindings": binding_keys,
         "bundle_completeness": "partial" if args.partial else "complete",
         "absent_machine_local": sorted(
-            g["id"] for g in failing if g["id"] in MACHINE_LOCAL_GATES
+            g["id"] for g in failing
+            if g["id"] in MACHINE_LOCAL_GATES
+            and g["status"] == "FAIL_NO_EVIDENCE"
         ) if args.partial else [],
         "release_declared": declared,
         "release_declared_reason": declared_reason,
@@ -430,7 +465,7 @@ def main():
               "N/A_DISABLED, {fail} FAIL* of {total}".format(**counts))
         for g in failing:
             tolerated = " (machine-local, tolerated by --partial)" \
-                if args.partial and g["id"] in MACHINE_LOCAL_GATES else ""
+                if g not in unexpected else ""
             print("  {} {} {}{}".format(g["id"], g["status"], g["gate"], tolerated))
     else:
         print(json.dumps(report, indent=2))
