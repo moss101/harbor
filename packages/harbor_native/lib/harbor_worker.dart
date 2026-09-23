@@ -72,12 +72,17 @@ class HarborCoreWorker {
     if (init is SendPort) {
       final worker = HarborCoreWorker._(init, isolate, responses);
       // Surface uncaught worker errors as failed pending requests.
-      errors.listen((message) {
-        final fail = _FailAll('worker crashed: $message');
-        for (final completer in worker._pending.values) {
-          if (!completer.isCompleted) completer.completeError(fail);
-        }
-        worker._pending.clear();
+      errors
+          .listen((message) => worker._failPending('worker crashed: $message'));
+      // An isolate that goes away WITHOUT an uncaught error — killed, or
+      // exited on its own — sends nothing on `errors` and nothing on
+      // `responses`, so every in-flight request would wait forever. The
+      // exit listener is the only signal that covers that case.
+      final exits = ReceivePort();
+      isolate.addOnExitListener(exits.sendPort);
+      exits.listen((_) {
+        worker._failPending('worker isolate exited');
+        exits.close();
       });
       return worker;
     }
@@ -123,6 +128,16 @@ class HarborCoreWorker {
       if (!completer.isCompleted) {
         completer.completeError(HarborCoreException('worker closed'));
       }
+    }
+    _pending.clear();
+  }
+
+  /// Complete every in-flight request with [reason]. A request that is
+  /// already answered is left alone.
+  void _failPending(String reason) {
+    final fail = _FailAll(reason);
+    for (final completer in _pending.values) {
+      if (!completer.isCompleted) completer.completeError(fail);
     }
     _pending.clear();
   }
@@ -192,7 +207,10 @@ class HarborCoreWorker {
             handle = Pointer.fromAddress(0);
           }
           commands.close();
-          Isolate.exit();
+          // Acknowledge and exit in one step. A bare Isolate.exit() never
+          // answered the close request, so every close burned the parent's
+          // full 5 s bounded wait.
+          Isolate.exit(config.responses, {'id': id, 'ok': true});
         }
         final method = message['method'] as String?;
         if (method == null) return;
