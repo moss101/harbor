@@ -21,7 +21,12 @@ performance thresholds. Everything runs from the tagged commit
 `harbor-v1.1.0-rc1`.
 
 1. Tag and let CI produce the evidence bundle and the unsigned artifacts
-   (`.github/workflows/release.yml`); do **not** release the draft.
+   (`.github/workflows/release.yml`); do **not** release the draft. That
+   bundle is **partial** (`bundle_completeness: "partial"`): a GitHub
+   runner cannot produce the qualification-machine-local evidence, so
+   X-07 (network capture) and X-08 (performance) read `FAIL_NO_EVIDENCE`
+   in it. It is a build-bound archive of everything CI *can* regenerate,
+   never the input to a go/no-go rule.
 2. Per gate, follow `closeout_runbook.md`:
    - MAC-02 / IOS-03: sign, notarize, staple; TestFlight internal group.
    - IOS-02: physical iPhone, §4 steps 6–19; record device-tier evidence.
@@ -32,8 +37,11 @@ performance thresholds. Everything runs from the tagged commit
      machine; replace every `TBD` in `15_Performance_Qualification.yaml`
      (status `BLOCKED_UNTIL_MEASURED`) with the measured p95 per class —
      thresholds are frozen from here.
-3. Regenerate all evidence at the frozen commit and re-assemble the bundle:
+3. Regenerate all evidence at the frozen commit and re-assemble the bundle
+   on the qualification machine, **without** `--partial`:
    `python3 tools/assemble_release_evidence.py --version 1.1.0-rc1 --write`.
+   This is the authoritative bundle; it refuses to assemble cleanly while
+   any gate is `FAIL_NO_EVIDENCE`.
 
 **Go/no-go for ring 1** (read from the gate report):
 
@@ -44,7 +52,7 @@ performance thresholds. Everything runs from the tagged commit
 | `BLOCKED_EXTERNAL` | 0 for every platform in the ring-1 set |
 | `BLOCKED_DEVICE_EVIDENCE` | 0 for every platform in the ring-1 set |
 | remaining non-`PASS` | only `N/A_DISABLED` (M4 services) or `N/A_PLATFORM` |
-| `release_declared` | `true` |
+| `bundle_completeness` | `complete` (a `partial` bundle never decides a ring) |
 
 A platform whose gates are still blocked is dropped from the ring-1 set
 (Windows is the expected drop if WIN-01 slips); it does not block the
@@ -86,6 +94,7 @@ Purpose: 20–50 strangers use the skills product on their own documents.
 | M3 checklist (`10_Release_Checklist.md`) | every item checked with build-bound evidence in the bundle |
 | Gate report | same rule as ring 0 for the GA platform set |
 | Live-tier skill evals | recorded for the rc (number stated, not promised) |
+| `release_declared` | `true`. The assembler computes this: no `FAIL*`, no `BLOCKED_*`, `bundle_completeness: complete`. A platform Harbor is not shipping must therefore be recorded `N/A_PLATFORM` by its gate — dropping it from a ring set is not the same as declaring it out of scope. |
 
 ## Ring 2 — GA (week 9)
 

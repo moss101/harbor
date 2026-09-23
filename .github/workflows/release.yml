@@ -5,7 +5,10 @@
 # assembles `evidence/releases/<version>/` with
 # tools/assemble_release_evidence.py, builds the UNSIGNED macOS app
 # bundle and the debug-key Android artifacts, and attaches everything to
-# a draft GitHub release. Signing, notarization and store uploads stay on
+# a draft GitHub release. The bundle assembled here is PARTIAL: a runner
+# cannot produce the qualification-machine-local evidence, so it is
+# labelled as such and is not usable for a ring go/no-go decision.
+# Signing, notarization and store uploads stay on
 # the operator machine behind the credential boundary
 # (scripts/package_apple.sh, scripts/package_android.sh): no key
 # material exists here. Gates that need operator resources are reported
@@ -74,8 +77,16 @@ jobs:
           python3 tools/generate_changelog.py --write
           cp CHANGELOG.md "evidence/releases/${{ steps.meta.outputs.version }}/CHANGELOG.md" 2>/dev/null || true
       - name: Assemble the release evidence bundle
-        run: python3 tools/assemble_release_evidence.py --version "${{ steps.meta.outputs.version }}" --write
+        # --partial: a runner cannot produce the qualification-machine-local
+        # evidence (real network capture, timed performance run), so X-07 and
+        # X-08 read FAIL_NO_EVIDENCE here and the bundle is labelled partial.
+        # The authoritative bundle is re-assembled WITHOUT --partial on the
+        # qualification machine (docs/release/rings.md, ring 0 step 3); only
+        # that one can satisfy a ring go/no-go rule. Any OTHER missing
+        # evidence still fails this job.
+        run: python3 tools/assemble_release_evidence.py --version "${{ steps.meta.outputs.version }}" --write --partial
       - name: Show the gate report
+        if: always()
         run: |
           python3 - <<'EOF'
           import json, glob, os
@@ -85,6 +96,7 @@ jobs:
               if isinstance(d, dict) and "gates" in d:
                   for g in d["gates"]:
                       print(f'{g["id"]:8} {g["status"]:24} {g["gate"]}')
+                  print("bundle_completeness:", d.get("bundle_completeness"))
                   print("release_declared:", d.get("release_declared"), "-", d.get("release_declared_reason", ""))
           EOF
       - uses: actions/upload-artifact@v4

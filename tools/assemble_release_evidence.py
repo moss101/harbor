@@ -35,6 +35,15 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 
+# Gates whose evidence is produced on the qualification machine and can
+# never exist on a CI runner: a real network capture against the live
+# HF->CDN path, and a timed performance run on qualified hardware.
+MACHINE_LOCAL_GATES = {
+    "X-07": "evidence/network_capture.json",
+    "X-08": "evidence/perf_qualification.json",
+}
+
+
 def evidence_ok(rel_path: str) -> bool:
     """True if the evidence file exists and does not declare failure."""
     path = EV / rel_path
@@ -86,6 +95,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--version", default="1.0.0-rc1")
     parser.add_argument("--write", action="store_true")
+    parser.add_argument(
+        "--partial", action="store_true",
+        help=("Assemble on a machine that cannot produce the "
+              "qualification-machine-local evidence (a CI runner): the "
+              "gate statuses are UNCHANGED — X-07/X-08 still read "
+              "FAIL_NO_EVIDENCE — but the bundle is labelled partial and "
+              "the exit code does not treat those two absences as an "
+              "assembly failure. A partial bundle can never satisfy a ring "
+              "go/no-go rule (docs/release/rings.md)."))
     args = parser.parse_args()
 
     commit = git("rev-parse", "HEAD")
@@ -222,6 +240,24 @@ def main():
 
     blocking = [g for g in gates if g["status"].startswith("BLOCKED")]
     failing = [g for g in gates if g["status"].startswith("FAIL")]
+    # A partial bundle tolerates ONLY the two machine-local absences; any
+    # other missing evidence is still an assembly failure.
+    unexpected = [g for g in failing
+                  if not (args.partial and g["id"] in MACHINE_LOCAL_GATES)]
+    # `release_declared` is COMPUTED from the table, never asserted: it is
+    # true only when no gate fails, no gate is blocked on a resource that
+    # does not exist, and the bundle is complete. Everything else is a
+    # release candidate. A platform that is not being shipped must be
+    # recorded `N/A_PLATFORM` by its gate, not left `BLOCKED_*`.
+    declared = not failing and not blocking and not args.partial
+    declared_reason = (
+        "Every gate is PASS (or N/A by design) with live evidence bound to "
+        "this commit and the bundle is complete: the release is declared."
+        if declared else
+        "Release candidate: machine-completable qualification is bound at "
+        "this commit; physical-device qualification, store signing, and "
+        "Windows execution are recorded BLOCKED_* on operator resources. "
+        "HARBOR v1 PRODUCTION RELEASE COMPLETE is not declared.")
     report = {
         "schema": "harbor.release_gate_report/v1",
         "version": args.version,
@@ -229,12 +265,12 @@ def main():
         "tree_dirty": dirty,
         "generated_at": now,
         "bindings": binding_keys,
-        "release_declared": False,
-        "release_declared_reason": (
-            "Release candidate: machine-completable qualification is bound at "
-            "this commit; physical-device qualification, store signing, and "
-            "Windows execution are recorded BLOCKED_* on operator resources. "
-            "HARBOR v1 PRODUCTION RELEASE COMPLETE is not declared."),
+        "bundle_completeness": "partial" if args.partial else "complete",
+        "absent_machine_local": sorted(
+            g["id"] for g in failing if g["id"] in MACHINE_LOCAL_GATES
+        ) if args.partial else [],
+        "release_declared": declared,
+        "release_declared_reason": declared_reason,
         "gate_counts": {
             "total": len(gates),
             "pass": sum(1 for g in gates if g["status"] == "PASS"),
@@ -252,10 +288,19 @@ def main():
             for g in blocking
         ],
     }
-    if failing:
+    if args.partial:
+        report["release_declared_reason"] += (
+            " This bundle was assembled with --partial on a machine that "
+            "cannot produce the qualification-machine-local evidence "
+            "(network capture, performance run); the gates below report "
+            "that absence as FAIL_NO_EVIDENCE and the bundle is NOT usable "
+            "for a ring go/no-go decision. Re-assemble without --partial on "
+            "the qualification machine (docs/release/rings.md, ring 0 "
+            "step 3).")
+    if unexpected:
         report["release_declared_reason"] = (
             "EVIDENCE MISSING for PASS gates: " +
-            ", ".join(g["id"] for g in failing) +
+            ", ".join(g["id"] for g in unexpected) +
             ". Regenerate evidence at this commit before assembling.")
 
     # --- Artifact hashes (only when sealing) -------------------------------
@@ -374,11 +419,20 @@ def main():
         }, indent=2) + "\n")
         shutil.copy2(out / "signed_artifact_hashes.json",
                      out / "store_package_hashes.json")
-        print("wrote {}".format(out.relative_to(REPO)))
+        print("wrote {} ({} bundle)".format(
+            out.relative_to(REPO), report["bundle_completeness"]))
+        counts = report["gate_counts"]
+        print("gates: {pass} PASS, {blocked_external} BLOCKED_EXTERNAL, "
+              "{blocked_device} BLOCKED_DEVICE_EVIDENCE, {na_disabled} "
+              "N/A_DISABLED, {fail} FAIL* of {total}".format(**counts))
+        for g in failing:
+            tolerated = " (machine-local, tolerated by --partial)" \
+                if args.partial and g["id"] in MACHINE_LOCAL_GATES else ""
+            print("  {} {} {}{}".format(g["id"], g["status"], g["gate"], tolerated))
     else:
         print(json.dumps(report, indent=2))
 
-    return 0 if not failing else 1
+    return 0 if not unexpected else 1
 
 
 if __name__ == "__main__":

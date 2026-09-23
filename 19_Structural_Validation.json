@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "821ae27a91ed774d93f01a6974ab8966104981e1d0b18771d82c187265db9f54",
+  "input_manifest_sha256": "dd25a36fb3f1b930b17b5f27e81373b6fd042113c650ac2611af66ed63787d45",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -11,8 +11,8 @@
     },
     {
       "path": ".github/workflows/release.yml",
-      "bytes": 10069,
-      "sha256": "a673dbf8f13e92f89a9fcded7b143a838d003266d5a11594c52c7227fa4f3c1a"
+      "bytes": 10860,
+      "sha256": "f091e6849b7cfc38f84935f4df04d2f387b63c71dbc7309439b1ee962771735a"
     },
     {
       "path": ".gitignore",
@@ -2071,8 +2071,8 @@
     },
     {
       "path": "docs/release/rings.md",
-      "bytes": 5737,
-      "sha256": "57be3457ad860744788303ffeb298a3995bc98551c6406d14d79b8bfaa114361"
+      "bytes": 6571,
+      "sha256": "6f5b66acfb75594406b624a8085b5f8db123dc7f3c34ecb742ce9cc6961861cb"
     },
     {
       "path": "docs/release/store/README.md",
@@ -2636,8 +2636,8 @@
     },
     {
       "path": "tools/assemble_release_evidence.py",
-      "bytes": 18749,
-      "sha256": "2f04a15aff1b8c05ce4d6dbab14c9e5cb191a2f16782055568e68ec8fbc3dbf0"
+      "bytes": 21839,
+      "sha256": "ccc95b50adf84eed9e8a74e6d11072027a7f028377f2e1d07e74f53bd9912f5c"
     },
     {
       "path": "tools/check_advisory_ignores.py",
