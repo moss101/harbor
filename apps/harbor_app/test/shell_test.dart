@@ -147,6 +147,15 @@ Future<void> goTo(WidgetTester tester, String label,
 Map<String, dynamic>? _result;
 
 void main() {
+  // Without the dylib this file produces ten failures spread across
+  // tests that look like layout and localization ones, because pumping
+  // HarborApp opens the service; a further ten guard on `coreAvailable`
+  // and return quietly. Naming the cause once, first, is worth one test.
+  test('the live native core is built', () {
+    expect(coreAvailable, isTrue,
+        reason: 'no $dylibPath — build it with '
+            '`cargo build --manifest-path core/Cargo.toml -p harbor_ffi`');
+  });
   _appendLiveTests();
   _appendPreviewTest();
   _appendSkillsTest();
