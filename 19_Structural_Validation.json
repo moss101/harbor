@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "582ac88bb41d2b30f9769b3665224979fc4e10ce7bdc79f7e09d0e2be0189f9a",
+  "input_manifest_sha256": "250201d1337ec257fc8cbc49b642818f7198c494df52ff0eabaae6e4d5b3baad",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -2016,13 +2016,13 @@
     },
     {
       "path": "docs/PRODUCTION_PLAN.md",
-      "bytes": 19961,
-      "sha256": "7560d22fb808b0ca4f09bd06b63204927e94c3b1e3e99f841663709ad2499c09"
+      "bytes": 20834,
+      "sha256": "ddbd71c32047f8922deb0c9c5703c196fe6be5cc51183896bfcf83e790f29963"
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 40637,
-      "sha256": "384a0e16dd91a041d3027b7ade2f4e0fddeef238d00ad2390f5aa1e5a57859b8"
+      "bytes": 46926,
+      "sha256": "783dbce06b6965adbcc4ce7e59a513a93c1ce68ea057ff41d54a5dcbb7de63e1"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -2076,8 +2076,8 @@
     },
     {
       "path": "docs/release/rings.md",
-      "bytes": 7511,
-      "sha256": "872e8f3c63abe74d4a6b6340eb0b4d056390df17fc162b2dac773e194fa710fb"
+      "bytes": 7605,
+      "sha256": "cccc6a09a15d60c6f629990ad453216ba8de715852fd560b61dc1d5fcdd23b6f"
     },
     {
       "path": "docs/release/store/README.md",
@@ -2631,8 +2631,8 @@
     },
     {
       "path": "scripts/package_apple.sh",
-      "bytes": 4470,
-      "sha256": "31ee6312f80be32ce9f00de140271e2abb4b726c4b24d8389771a18bbc0182fa"
+      "bytes": 4904,
+      "sha256": "12088ab8c26fd84dac9c4985068296c8778652c8454257bd0cebf023593848f2"
     },
     {
       "path": "tools/README.md",

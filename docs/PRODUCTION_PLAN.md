@@ -254,12 +254,23 @@ done 2026-09-20 (decision 0007: two candidates, both fixed, none open at
   use (`core:`, `app+ui:`, `docs:`, `ci:`).
 - Bump `apps/harbor_app/pubspec.yaml` to `1.1.0+2` at phase-B freeze.
 
-**Status (2026-09-20):** C5 workflow written (`release.yml`), untested
-against a real tag; CHANGELOG and the pubspec bump (1.1.0+2) are done.
+**Status (2026-09-23):** C5 exercised by dispatch dry runs (STATUS 40).
+`evidence`, `macos-app` and `android` are green and their artifacts were
+downloaded and opened — which is how the macOS bundle with no native
+core, the packages claiming architectures with no core, and the bundle's
+silently-skipped changelog copy were found. The evidence job now runs all
+ten suites on the runner (`skipped_suites: []`) and assembles with
+`--partial`, which labels the bundle rather than weakening X-07/X-08.
+`publish` runs on tags only and is **still untested**; CHANGELOG and the
+pubspec bump (1.1.0+2) are done.
 
 Exit criteria for phase C: diagnostics export in the plaintext inspection;
 fuzz targets in CI (short run); release workflow produces a bundle from a
-tag; security review findings triaged with none open at "high".
+tag; security review findings triaged with none open at "high". All are
+met except the tag: every dry run so far has been a `workflow_dispatch`,
+which skips `publish` by design. Closing it needs a tag push (the ring-0
+`harbor-v1.1.0-rc1`, or a throwaway tag first) — an operator decision,
+because it publishes a draft release on the repository.
 
 ---
 
@@ -328,7 +339,7 @@ build-bound evidence.
 | --- | --- | --- |
 | A — land and stabilise | **Done.** Session 32 in six bisectable slices, CI green on `main` (dossier, supply-chain, fuzz, rust, windows-core, flutter), stale-seal detector, `cargo audit`/`cargo deny`, kill/restart test | STATUS sessions 33 |
 | B — skills product | **Done.** Safe-commit over FFI/app (Save New Copy default), proposal diff in the Run sheet, nine runnable graphs, replay 23/23, live tier 13/18 recorded | STATUS 34–35, decision 0006 addenda |
-| C — hardening | **Done on this machine.** Encrypted crash log + diagnostics export (in the plaintext inspection), first-run catalog + recovery states, fuzzing (two upstream aborts fixed), security review (decision 0007, none open at high), tag-driven release workflow, memory-pressure proxy | STATUS 36–39 |
+| C — hardening | **Done on this machine, except the tagged release run.** Encrypted crash log + diagnostics export (in the plaintext inspection), first-run catalog + recovery states, fuzzing (two upstream aborts fixed), security review (decision 0007, none open at high), memory-pressure proxy; the release workflow is green on dispatch with its artifacts inspected, but `publish` has never run because it is tag-only | STATUS 36–40 |
 | D — gates and rings | **Written, not executed.** `docs/release/rings.md`; every ring is blocked on the D0 resources (Apple identity, Play key, devices, Windows host, M1 8 GB) | `closeout_runbook.md` |
 
 Not taken, with the reason: B4 option 3 (a larger catalog tier) needs a

@@ -7,6 +7,99 @@ ran at.
 
 ---
 
+## Session 40 (2026-09-23): the release workflow runs end to end — and five things it produced were not what they claimed
+
+- **Dry runs 3, 4 and 5 green** (`gh workflow run release.yml`): `evidence`,
+  `macos-app` and `android` all pass and `publish` correctly skips on a
+  dispatch. Dry run 2's failure was the assembler's exit code, not a crash:
+  it returns 1 on any `FAIL_NO_EVIDENCE`, and X-07 (real network capture)
+  and X-08 (timed performance run) can never have evidence on a GitHub
+  runner. Rather than weaken those gates, `--partial` — which the workflow
+  always passes, because it always runs on a runner — leaves their statuses
+  untouched, labels the bundle `bundle_completeness: "partial"`, lists
+  `absent_machine_local`, says in the declaration reason that it cannot
+  decide a ring, and tolerates ONLY those two absences. CI bundle: 13 PASS,
+  4 BLOCKED_EXTERNAL, 4 BLOCKED_DEVICE_EVIDENCE, 2 N/A_DISABLED,
+  X-07/X-08 FAIL_NO_EVIDENCE. `publish` is still the one untested job: it
+  runs on tags only.
+- **The macOS artifact had no native core.** Downloaded dry run 3's
+  `macos-app` zip and opened it: `Contents/Frameworks` held App,
+  FlutterMacOS and objective_c and no `libharbor_ffi.dylib`;
+  `Contents/Resources` had no `PrivacyInfo.xcprivacy`. `flutter build
+  macos` bundles neither — `scripts/package_apple.sh` does, on the operator
+  machine, and the workflow never ran it. The artifact a ring-0 draft
+  release would carry was not merely unsigned, it could not open a
+  workspace. The job now does that script's bundling half and the zip step
+  asserts both files.
+- **Both mobile/desktop packages claimed hardware with no core.** The
+  macOS executable was universal while the dylib is arm64 — an Intel Mac
+  would launch Harbor and find nothing, with no store-side filter to stop
+  it because macOS ships as a DMG. `ARCHS = arm64` now makes macOS decline
+  to open it. The APK carried `lib/armeabi-v7a/` and `lib/x86_64/` with the
+  Dart and Flutter runtimes and no `libharbor_ffi.so`; `ndk { abiFilters }`
+  did **not** fix it (the Flutter Gradle plugin overwrites the ABI list
+  from `--target-platform`, proven by dry run 4), so the ABI is selected on
+  the build command. The device matrix gained the Intel-macOS row it was
+  missing. Assets are also named now
+  (`harbor_app-android-<version>-debugkey.{apk,aab}`).
+- **Evidence that could not fail.** `evidence_ok` looked for a few boolean
+  keys and, finding none, returned true because the JSON parsed — and not
+  one of the four inspection files carries those keys. An inspection
+  recording a violation, a broken hash chain or a failed verdict read as
+  PASS. It now refuses on a non-empty `violations`, any false
+  `*_ok`/`*_verified`, or a `verdict`/`result` that is not PASS/OK/N/A
+  (verified by flipping both). The status now distinguishes `FAIL`
+  (evidence says so) from `FAIL_NO_EVIDENCE` (there is none) — the ring
+  rules count them separately — and `--partial` waves through only the
+  second.
+- **Suites that never ran counted as passes.** `generate_gate_evidence.py`
+  looked for the toolchain only under `~/harbor-tools`, so on a runner it
+  ran six suites instead of ten and still reported `all_suites_ok: true`;
+  the app suite's live-core tests return early without the dylib, so they
+  would have counted too. It now finds the toolchain there or on PATH,
+  records `skipped_suites` with reasons, and the assembler treats a bundle
+  with skipped suites as missing evidence. The evidence job installs
+  Flutter, builds the debug core and runs pub get so nothing is skipped.
+  The bundle's changelog copy was likewise a silent no-op (`|| true`,
+  running before the directory existed) — every bundle so far shipped
+  without it.
+- **`release_declared` is computed, not asserted.** It was hardcoded
+  `false`, so the ring-1 rule ("`release_declared` `true`") could never
+  hold. It now reads the table (no `FAIL*`, no `BLOCKED_*`, complete
+  bundle), which makes it a GA-level declaration — so a platform Harbor is
+  not shipping has to be recorded `N/A_PLATFORM` rather than left blocked.
+  The runbook no longer says to flip it by hand.
+- **The ring rule is executable**: `tools/check_ring_gate.py` reads a gate
+  report, prints every clause with the gate ids that violate it, and exits
+  non-zero on NO-GO. Cross-platform gates count against every ring set;
+  `--platforms` drops only platform gates; a partial bundle is refused.
+  `--ring ga` adds the three clauses no report can answer and never returns
+  GO until the operator names them (`--confirmed crashes,checklist,evals`).
+  Against today's report: NO-GO, naming the seven operator blockers.
+- **Four ways a run could hang silently, all closed.** (1) The worker
+  isolate answered `close` with a bare `Isolate.exit()` and never replied,
+  so every `HarborService.close()` burned the parent's full 5 s bounded
+  wait — the app suite went from 2:18 to 0:24. (2) An isolate that goes
+  away without an uncaught error signalled nothing, leaving in-flight
+  requests pending for ever; `addOnExitListener` fails them now. (3) The
+  four FFI op threads had no `catch_unwind`, so a panic left the op
+  `running` for ever and the app's unbounded `op.status` poll with it —
+  `spawn_op` gives every op a terminal state (two tests). (4) The run sheet
+  showed a static card with no cancel; it now renders the core's own
+  snapshot through `OpProgressCard`, with the cancel every other surface
+  already had.
+- **CI stall, diagnosed but not reproduced.** The `flutter` job failed on
+  `1df79b8`, a docs-only commit whose app code is identical to `6ad9b62`,
+  which passed. Timings show the live-core widget test ran 126 s against a
+  120 s budget where it normally takes 7.5 s — a stall, not a slow runner.
+  Not reproduced here in 15 runs (10 idle, 5 under full CPU load). The
+  waits now fail with the core's own message, or on a deadline with the
+  text the tree is showing, so the next occurrence names the layer.
+- **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
+  gguf-backend 20, `flutter test` 36/36 (app), harbor_native 1/1, dossier
+  validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,
+  release gate report 15 PASS / 0 FAIL / 8 BLOCKED_* on this machine.
+
 ## Session 39 (2026-09-20): Phase C3 floor proxy, Fit Score refusal, release-workflow fixes
 
 - **C3** — `perf_baseline` gained `HARBOR_PERF_BALLAST_GB=<n>`: the

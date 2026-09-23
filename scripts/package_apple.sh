@@ -53,11 +53,20 @@ else
   echo "-- signing: ad-hoc (default). Distributable signing requires the operator identity. --"
 fi
 
+# `|| echo NOTE` on an iOS build cannot tell "no toolchain here" from
+# "the code does not compile" — it would report the second as a skip and
+# let the script exit 0. Probe for the SDK instead, and when it is
+# present require the build to succeed.
+have_sdk() { xcrun --sdk "$1" --show-sdk-path >/dev/null 2>&1; }
+
 echo "-- iOS simulator build (compilation proof; not a store artifact) --"
 # Current Flutter rejects --release/--profile for simulators; debug proves
 # compilation and is what the live simulator verification installs.
-flutter build ios --simulator --debug \
-  || echo "NOTE: simulator build skipped (no iOS toolchain)"
+if have_sdk iphonesimulator; then
+  flutter build ios --simulator --debug
+else
+  echo "NOTE: simulator build skipped — no iphonesimulator SDK on this machine"
+fi
 
 echo "-- iOS device static core (production embedding; install/launch needs hardware) --"
 # The Runner target force-loads this archive via OTHER_LDFLAGS[sdk=iphoneos*].
@@ -71,7 +80,11 @@ symbols="$(nm -gU "$repo/core/target/aarch64-apple-ios/release/libharbor_ffi.a" 
 echo "$symbols" | grep "_harbor_core_open" >/dev/null \
   || { echo "FAIL: harbor_core_open missing from device archive"; exit 1; }
 echo "   archive ready: core/target/aarch64-apple-ios/release/libharbor_ffi.a"
-flutter build ios --release --no-codesign || echo "NOTE: device build skipped (no iOS toolchain)"
+if have_sdk iphoneos; then
+  flutter build ios --release --no-codesign
+else
+  echo "NOTE: device build skipped — no iphoneos SDK on this machine"
+fi
 
 cat <<'EOF'
 

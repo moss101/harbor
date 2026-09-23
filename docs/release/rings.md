@@ -41,7 +41,8 @@ performance thresholds. Everything runs from the tagged commit
    on the qualification machine, **without** `--partial`:
    `python3 tools/assemble_release_evidence.py --version 1.1.0-rc1 --write`.
    This is the authoritative bundle; it refuses to assemble cleanly while
-   any gate is `FAIL_NO_EVIDENCE`.
+   any gate is `FAIL` (evidence exists and says the check did not pass) or
+   `FAIL_NO_EVIDENCE` (there is no evidence to read).
 
 **Go/no-go for ring 1** — run the rule, do not read it:
 
