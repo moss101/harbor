@@ -9,6 +9,7 @@ String opKindTitle(String? kind, AppLocalizations l10n) => switch (kind) {
       'acquire' => l10n.activityOpKindAcquire,
       'ingest' => l10n.activityOpKindIngest,
       'generate' => l10n.activityOpKindGenerate,
+      'skill_run' => l10n.skillsRunning,
       _ => l10n.lensSectionOps,
     };
 
@@ -16,6 +17,7 @@ IconData opKindIcon(String? kind) => switch (kind) {
       'acquire' => Icons.downloading_outlined,
       'ingest' => Icons.library_add_outlined,
       'generate' => Icons.auto_awesome_outlined,
+      'skill_run' => Icons.account_tree_outlined,
       _ => Icons.hourglass_top_outlined,
     };
 

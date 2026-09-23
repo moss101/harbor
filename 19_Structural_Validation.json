@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "7fbb70a8beddbbdf26bff124308080e097c23d1f80570710951c4d138a0f1586",
+  "input_manifest_sha256": "d4b55d849491a5fdb2b62fe7f6598d16245cd8da735b4917ec92bf19077a2c32",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -621,8 +621,8 @@
     },
     {
       "path": "apps/harbor_app/lib/surfaces/skill_run.dart",
-      "bytes": 23509,
-      "sha256": "4bcc69403aba0fa36b32936c34bd50988e25401f4707507749a3a8adbd7a5cb5"
+      "bytes": 24468,
+      "sha256": "14f839fa6c339bf9cb745669d4d4bc0820ee55723e894e775ec1c46ecbbf7164"
     },
     {
       "path": "apps/harbor_app/lib/surfaces/skills_surface.dart",
@@ -661,8 +661,8 @@
     },
     {
       "path": "apps/harbor_app/lib/widgets/ops.dart",
-      "bytes": 3457,
-      "sha256": "cb40348a23ebaaa010542cfea0a418c64964aa54cb2f0aa8e6d26eaf771fb775"
+      "bytes": 3548,
+      "sha256": "dc13d1f0b3d2803b225e14590af645af1b7784cd24af55059f464e94e6101de8"
     },
     {
       "path": "apps/harbor_app/lib/widgets/trust.dart",

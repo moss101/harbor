@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/harbor_service.dart';
+import '../widgets/ops.dart';
 
 /// Run a graph skill (decision 0006): the form is generated from the
 /// graph's input schema, the run executes on the durable executor in the
@@ -405,10 +406,30 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
         const SizedBox(height: HarborSpace.s3),
       ],
       if (_busy)
-        HarborOpProgress(
-          title: l10n.skillsRunning,
-          detail: _graph.id,
-          icon: Icons.account_tree_outlined,
+        // The core's own op snapshot — phase, detail and a REAL cancel —
+        // as soon as the first status arrives; the static card only
+        // covers the gap before it. A run the user cannot abandon is the
+        // worst failure mode the sheet has: the poll behind it is
+        // unbounded, so a run that stops progressing otherwise leaves the
+        // sheet spinning with nothing to do but restart the app.
+        ListenableBuilder(
+          listenable: widget.service,
+          builder: (context, _) {
+            final live = widget.service.kindProgress['skill_run'];
+            if (live == null) {
+              return HarborOpProgress(
+                key: const ValueKey('skill-progress'),
+                title: l10n.skillsRunning,
+                detail: _graph.id,
+                icon: Icons.account_tree_outlined,
+              );
+            }
+            return OpProgressCard(
+              key: const ValueKey('skill-progress'),
+              progress: live,
+              service: widget.service,
+            );
+          },
         )
       else
         Align(
