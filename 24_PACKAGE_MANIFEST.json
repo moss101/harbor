@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "eaa036c720edd9daa8a7a06ae74bd4a6e23a436fa5d289dd0ca84349ed5c50c7",
+  "input_manifest_sha256": "e67cdbc7e8f9d3d5143cbbe8de08badca53cd5bf6af3375ba5c0594c769b8c7b",
   "file_count_excluding_manifest": 548,
   "files": [
     {
@@ -14,8 +14,8 @@
     },
     {
       "path": ".github/workflows/release.yml",
-      "bytes": 10860,
-      "sha256": "f091e6849b7cfc38f84935f4df04d2f387b63c71dbc7309439b1ee962771735a"
+      "bytes": 11398,
+      "sha256": "01a0ad3090f56f41fe924d6172f12bbadaed160af0b13c1773f06c36f2e827ff"
     },
     {
       "path": ".gitignore",
@@ -120,12 +120,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 99888,
-      "sha256": "60ca91b865652400ad3056c4c56808e63f96374daa3acd1e7716eb53d612833c"
+      "sha256": "dff4c53189d750dda9e0d63158d2db57b55e5a4df3e0d8cf72852872642b310f"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "1952b1f44e35b77d4e3e41c93f374295ed3db59787114f7bca2442e005667d86"
+      "sha256": "2d969b0c764bbff8340d5333af5dcb1cc310944166d127e1155b96bdf5004851"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",

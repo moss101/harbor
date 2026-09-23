@@ -227,10 +227,20 @@ jobs:
           name: harbor-v${{ needs.evidence.outputs.version }}
           body: |
             Evidence bundle assembled at this tag by the `release` workflow
-            (`tools/assemble_release_evidence.py`). Artifacts here are
-            UNSIGNED / debug-key builds for reproducibility only; signed,
-            notarized and store-ready packages are produced on the operator
-            machine (`scripts/package_apple.sh`, `scripts/package_android.sh`).
+            (`tools/assemble_release_evidence.py --partial`).
+
+            The bundle is **partial** (`bundle_completeness: "partial"`): a
+            CI runner cannot produce the qualification-machine-local
+            evidence, so X-07 (network capture) and X-08 (performance) read
+            `FAIL_NO_EVIDENCE` in it. It records what CI can regenerate at
+            this commit and CANNOT decide a ring go/no-go — the
+            authoritative bundle is re-assembled without `--partial` on the
+            qualification machine (`docs/release/rings.md`, ring 0 step 3).
+
+            Artifacts here are UNSIGNED / debug-key builds for
+            reproducibility only; signed, notarized and store-ready packages
+            are produced on the operator machine (`scripts/package_apple.sh`,
+            `scripts/package_android.sh`).
           files: |
             release-assets/harbor-evidence-${{ needs.evidence.outputs.version }}.tar.gz
             release-assets/macos-app-${{ needs.evidence.outputs.version }}/*
