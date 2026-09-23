@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "75e0b84c04c3a5c72fe848afedb298c7b76caf7cd23a3bb5ff6119a071c5d035",
+  "input_manifest_sha256": "6f983b3acbef546d80f2e01a227c836ac50593c4623fba648e7bc7edbc436a6d",
   "file_count_excluding_manifest": 547,
   "files": [
     {
@@ -120,12 +120,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 99718,
-      "sha256": "e07a8f5f975c37d4c0b0a448e219c761024899c2cf13b593320fa3012e6dabea"
+      "sha256": "8ffb807c3733e26b55f4ac5899ebe7aab6b471347d9ba951101dcdaad2d15abb"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "1cec68673f65dd63c4b84322445b051a15d86ec78b66ea701736e425de5ba6c1"
+      "sha256": "05b4861a1a74827924b28903492810c23130d55e205b8b411806ea34b6c41ce5"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -2089,8 +2089,8 @@
     },
     {
       "path": "docs/release/rings.md",
-      "bytes": 7164,
-      "sha256": "1c4e23ed8c2e2e66559ce6c58be8189e124c26303fb8dfa6d3129795243ed3f4"
+      "bytes": 7511,
+      "sha256": "872e8f3c63abe74d4a6b6340eb0b4d056390df17fc162b2dac773e194fa710fb"
     },
     {
       "path": "docs/release/store/README.md",
@@ -2679,8 +2679,8 @@
     },
     {
       "path": "tools/check_ring_gate.py",
-      "bytes": 6245,
-      "sha256": "49b01d4d26192139f1f3c3092ead56fcccb629c584cad9fe471080e7f9128434"
+      "bytes": 7591,
+      "sha256": "0323e7cfbdc9553c392df19a529f0b752c538937344cd797daa7a99d896b09b9"
     },
     {
       "path": "tools/contracts.py",

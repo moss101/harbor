@@ -99,8 +99,18 @@ Purpose: 20–50 strangers use the skills product on their own documents.
 
 **Go/no-go for GA** — `--ring ga` over the last rc bundle, plus the
 exports. The tool decides the gate-report clauses and prints the three
-human ones as `MAN` items with the artifact to read; it never returns GO
-while one of them is unconfirmed:
+human ones as `MAN` items with the artifact to read. It never returns GO
+while one is unconfirmed; the operator confirms each by name once it has
+actually been checked, which puts the assertion in the shell history and
+the runbook instead of in someone's head:
+
+```
+python3 tools/check_ring_gate.py \
+    --report evidence/releases/1.1.0/release_gate_report.json \
+    --ring ga --platforms mac,ios,android \
+    --confirmed crashes,checklist,evals
+```
+
 
 | Check | Rule |
 | --- | --- |

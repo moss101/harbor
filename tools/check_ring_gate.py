@@ -29,6 +29,20 @@ PLATFORM_PREFIX = {"MAC": "mac", "IOS": "ios", "AND": "android", "WIN": "windows
 ALL_PLATFORMS = sorted(set(PLATFORM_PREFIX.values()))
 TOLERATED_NON_PASS = {"N/A_DISABLED", "N/A_PLATFORM"}
 
+# GA clauses no gate report can answer. The operator confirms each by
+# name with --confirmed, which puts the assertion in the shell history
+# and the runbook rather than in someone's head.
+GA_MANUAL = {
+    "crashes": ("crash reports attributable to Harbor code == 0 across two "
+                "consecutive beta builds",
+                "levels.panic in every tester diagnostics export; "
+                "core/ffi records reviewed"),
+    "checklist": ("M3 release checklist fully checked with build-bound evidence",
+                  "10_Release_Checklist.md against this bundle"),
+    "evals": ("live-tier skill eval number recorded for this rc",
+              "docs/STATUS.md (state the number, never promise one)"),
+}
+
 
 def platform_of(gate_id: str):
     """The platform a gate belongs to, or None for a cross-platform gate."""
@@ -54,6 +68,10 @@ def main() -> int:
     ap.add_argument("--platforms", default=",".join(ALL_PLATFORMS),
                     help="comma-separated ring set, e.g. mac,ios,android "
                          "(a platform dropped from the ring does not block the others)")
+    ap.add_argument("--confirmed", default="",
+                    help="GA only: comma-separated clauses the operator has "
+                         "checked by hand — " + ",".join(GA_MANUAL) +
+                         ". Anything unnamed stays a NO-GO.")
     args = ap.parse_args()
 
     path = Path(args.report)
@@ -101,6 +119,13 @@ def main() -> int:
             "; a partial bundle is assembled on a CI runner and never decides a ring"
             if completeness != "complete" else "")})
 
+    confirmed = {c.strip() for c in args.confirmed.split(",") if c.strip()}
+    unknown_confirmed = confirmed - set(GA_MANUAL)
+    if unknown_confirmed:
+        print(f"NO-GO: --confirmed names unknown clause(s) "
+              f"{sorted(unknown_confirmed)}; known: {sorted(GA_MANUAL)}",
+              file=sys.stderr)
+        return 1
     manual = []
     if args.ring == "ga":
         results.append({
@@ -108,15 +133,10 @@ def main() -> int:
             "ok": bool(report.get("release_declared")),
             "offenders": [],
             "detail": report.get("release_declared_reason", "")})
-        manual = [
-            ("crash reports attributable to Harbor code == 0 across two "
-             "consecutive beta builds",
-             "levels.panic in every tester diagnostics export; core/ffi records reviewed"),
-            ("M3 release checklist fully checked with build-bound evidence",
-             "10_Release_Checklist.md against this bundle"),
-            ("live-tier skill eval number recorded for this rc",
-             "docs/STATUS.md (state the number, never promise one)"),
-        ]
+        manual = [(key, ) + GA_MANUAL[key] for key in GA_MANUAL]
+    elif confirmed:
+        print("NO-GO: --confirmed applies to the GA rule only", file=sys.stderr)
+        return 1
 
     width = max(len(r["clause"]) for r in results)
     for r in results:
@@ -126,9 +146,13 @@ def main() -> int:
             g = next(x for x in gates if x["id"] == oid)
             print(f"      {oid:8} {g['status']:24} {g['gate']}")
 
-    for name, source in manual:
-        print(f"MAN {name}\n      read: {source}")
+    for key, name, source in manual:
+        mark = "ok  " if key in confirmed else "MAN "
+        print(f"{mark}{name}")
+        print(f"      {'confirmed by the operator; ' if key in confirmed else ''}"
+              f"read: {source}")
 
+    unconfirmed = [key for key, _, _ in manual if key not in confirmed]
     machine_go = all(r["ok"] for r in results)
     print()
     print(f"report: {path}  version {report.get('version')}  "
@@ -137,9 +161,11 @@ def main() -> int:
     if not machine_go:
         print(f"NO-GO for ring {args.ring}")
         return 1
-    if manual:
-        print(f"NO-GO for ring {args.ring} until the MAN items above are "
-              f"confirmed by the operator; every machine-readable clause holds")
+    if unconfirmed:
+        print(f"NO-GO for ring {args.ring}: every machine-readable clause "
+              f"holds, but {', '.join(unconfirmed)} "
+              f"{'is' if len(unconfirmed) == 1 else 'are'} not confirmed "
+              f"(--confirmed {','.join(unconfirmed)} once checked)")
         return 1
     print(f"GO for ring {args.ring} on {sorted(platforms)}")
     return 0
