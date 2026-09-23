@@ -4,8 +4,8 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "d4b55d849491a5fdb2b62fe7f6598d16245cd8da735b4917ec92bf19077a2c32",
-  "file_count_excluding_manifest": 547,
+  "input_manifest_sha256": "eaa036c720edd9daa8a7a06ae74bd4a6e23a436fa5d289dd0ca84349ed5c50c7",
+  "file_count_excluding_manifest": 548,
   "files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -119,13 +119,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 99719,
-      "sha256": "497e143f0df301a250e9b0e59ee334727dba88fe7315ba93a82d5f74c7dc814f"
+      "bytes": 99888,
+      "sha256": "60ca91b865652400ad3056c4c56808e63f96374daa3acd1e7716eb53d612833c"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "ab14222cd7488f3ea02f14f0284da74fcebbee0102ac9b5f8333c9d41765f032"
+      "sha256": "1952b1f44e35b77d4e3e41c93f374295ed3db59787114f7bca2442e005667d86"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -861,6 +861,11 @@
       "path": "apps/harbor_app/test/l10n_coverage_test.dart",
       "bytes": 2917,
       "sha256": "44bb0de5c0826e2ff303e7fa3eb7f0612f91fbd8eb2b9dc0e7045ec0c45b46ff"
+    },
+    {
+      "path": "apps/harbor_app/test/ops_test.dart",
+      "bytes": 3232,
+      "sha256": "4677d158d48aa7e9c5c40d2c19635d3fda137fe6bc6bd81799b1a0174881262e"
     },
     {
       "path": "apps/harbor_app/test/shell_test.dart",

@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "d4b55d849491a5fdb2b62fe7f6598d16245cd8da735b4917ec92bf19077a2c32",
+  "input_manifest_sha256": "eaa036c720edd9daa8a7a06ae74bd4a6e23a436fa5d289dd0ca84349ed5c50c7",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -843,6 +843,11 @@
       "path": "apps/harbor_app/test/l10n_coverage_test.dart",
       "bytes": 2917,
       "sha256": "44bb0de5c0826e2ff303e7fa3eb7f0612f91fbd8eb2b9dc0e7045ec0c45b46ff"
+    },
+    {
+      "path": "apps/harbor_app/test/ops_test.dart",
+      "bytes": 3232,
+      "sha256": "4677d158d48aa7e9c5c40d2c19635d3fda137fe6bc6bd81799b1a0174881262e"
     },
     {
       "path": "apps/harbor_app/test/shell_test.dart",
