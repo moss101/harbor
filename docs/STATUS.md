@@ -94,69 +94,40 @@ ran at.
   showed a static card with no cancel; it now renders the core's own
   snapshot through `OpProgressCard`, with the cancel every other surface
   already had.
-- **CI stall: reproduced, and my first diagnosis was wrong.** The `flutter` job
-  failed on `1df79b8`, a docs-only commit whose app code is identical to
-  `6ad9b62`, which passed; timings showed the live-core widget test ran
-  126 s against a 120 s budget where it normally takes 7.5 s. It did not
-  reproduce here in 15 runs (10 idle, 5 under full CPU load), so the waits
-  were changed to fail with the core's own message or, on a deadline, with
-  what the tree is showing. It then **recurred on `4627f44`**, and that
-  dump settled it:
-
-      Running on device… | placeholder-fill | running | Cancel
-
-  The op was registered, `op.status` had been answered at least once, and
-  the phase was still the "running" set at the top of the op thread. I
-  read that as `Executor::start` never returning — **and the next
-  evidence contradicted it.** The stall then reproduced on this machine
-  (iteration 3 of a loop running the FULL suite under CPU contention;
-  the earlier 15 runs missed it because they ran that one test alone with
-  `--plain-name`), and stack samples taken during the hang show the core
-  *idle* for most of it, with a burst of SHA-256 late. A thread blocked
-  in the executor would have shown up in every sample. So the layer is
-  not established: what the tree shows is what the UI last HEARD, which
-  is equally consistent with the Dart side having stopped asking — and
-  the widget test drives the poll loop from inside flutter_test's
-  fake-async zone, which the real app never does. `0eae41c` makes the
-  timeout ask the core directly (`op.list` on the worker), so the next
-  reproduction prints the op's real state beside the UI's and settles it
-  in one line.
-
-  **Mechanism, found by reading the binding.**
+- **CI stall: a fake timer in the test, not a core hang.**
   `AutomatedTestWidgetsFlutterBinding.pump()` calls `elapse(duration)`
-  only when given a duration; with no argument it flushes microtasks and
-  never advances the fake clock. `settleUntil` pumped with no argument.
-  The service's poll loop is started from a tap handler, so the
+  only when given one; with no argument it flushes microtasks and leaves
+  the fake clock where it is. `settleUntil` pumped with no argument. The
+  service's poll loop is started from a tap handler, so the
   `Future.delayed(250ms)` it waits between `op.status` calls is a FAKE
-  timer — one that, in that loop, could never fire. It got away with it
-  because the run normally finishes before the first status reply is
-  processed, so `_runOp` returns on its first pass and never reaches the
-  delay. When the op is slower than that round trip — CPU contention, a
-  loaded CI runner — the first poll returns `running`, the loop reaches
-  the dead timer, and waits for ever. That accounts for every
-  observation: the idle core, the frozen `running` phase, only under
-  load, only in the full suite, and never in the app (which has no fake
-  zone). `settleUntil` now pumps `const Duration(milliseconds: 100)`,
-  and a test demonstrates the mechanism deterministically rather than
-  resting on flake counts: a 250 ms timer scheduled in the test's zone
-  survives a full second of real time under `runAsync` + bare `pump()`,
-  and fires the moment fake time is elapsed.
-  **So this was a test-harness defect, not a product one**, and the two
-  diagnoses above it were wrong in turn — kept here because the wrong
-  ones are what the evidence said at the time.
-  `Host` now takes a `step` sink called with each node id, fed into the
-  op's phase, so the next occurrence names the node (placeholder-fill
-  runs inventory → fill → route → approve) instead of "running". That is
-  instrumentation, not a fix, and it is defensive rather than aimed at a
-  proven product defect — see the correction above. Two things it does
-  buy regardless: the run
-  sheet now offers the core's real Cancel, so a user is not stuck; and
-  every op is watched, so one whose whole progress snapshot has not
-  changed for 90 s records itself ("skill_run op has not advanced past
-  'fill' for 90s") in the diagnostics log — the ring-1 feedback channel,
-  where a tester could previously only report "it hung". Comparing the
-  whole snapshot is what keeps a long download, bytes climbing under a
-  fixed phase, from being called a stall.
+  timer that, in that loop, could never fire. It got away with it because
+  the run normally finishes before the first status reply is processed,
+  so `_runOp` returns on its first pass and never reaches the delay; when
+  the op is slower than that round trip — CPU contention, a loaded runner
+  — the first poll returns `running`, the loop reaches the dead timer and
+  waits out the 120 s budget. `settleUntil` now pumps 100 ms of fake time
+  per iteration, and a test demonstrates the mechanism deterministically
+  instead of resting on flake counts: a 250 ms timer scheduled in the
+  test's zone survives a full second of real time under `runAsync` + bare
+  `pump()`, and fires the moment fake time is elapsed. **A test-harness
+  defect; the product was never implicated.**
+- **How that took three tries, because it is the kind of mistake worth
+  recording.** The `flutter` job failed on `1df79b8` (docs-only; app code
+  identical to `6ad9b62`, which passed) — 126 s against a 120 s budget
+  where the test takes 7.5 s. It would not reproduce in 15 runs, so the
+  waits were changed to report the core's message, or the visible tree on
+  a deadline. It recurred on `4627f44` showing `placeholder-fill |
+  running`, and I concluded `Executor::start` never returned — inference
+  from the UI, stated as fact. Then it reproduced here (iteration 3 of a
+  loop running the FULL suite under contention; the earlier attempts ran
+  that test alone with `--plain-name`, which is why they missed it), and
+  stack samples through the hang showed the core *idle* — one
+  `libharbor_ffi` frame in six consecutive samples. A thread blocked in
+  the executor would have been in every one. Only then did reading
+  flutter_test's binding give the actual answer. The step sink
+  (`Host::step`) and the op watchdog were both built while the wrong
+  diagnosis stood; they are kept because they are worth having, and are
+  now documented as defensive rather than as mitigating a known hang.
 - **The refusal works.** Dry run 8's evidence job failed exactly as it
   should: one of the ten suites failed (the executor stall again),
   `all_suites_ok` went false, X-01..X-04 and X-09 read `FAIL` — evidence
