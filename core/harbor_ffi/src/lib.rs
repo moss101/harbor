@@ -118,12 +118,13 @@ const OP_STALL_TICK: std::time::Duration = std::time::Duration::from_secs(5);
 
 /// Watch one op and record it, once, if it stops advancing.
 ///
-/// A run that hangs is otherwise invisible: the entry stays `running`,
-/// the caller keeps polling, and nothing reaches the diagnostics log —
-/// which is the ring-1 feedback channel, so a tester who hits it can
-/// only report "it hung". Progress is the whole snapshot, not just the
-/// phase, so a long download (bytes climbing under a fixed phase) is
-/// never mistaken for a stall.
+/// This is defensive: no op is known to hang today. But an op that did
+/// would be invisible — the entry stays `running`, the caller keeps
+/// polling, and nothing reaches the diagnostics log, which is the
+/// ring-1 feedback channel, so a tester could only report "it hung".
+/// Progress is the whole snapshot, not just the phase, so a long
+/// download (bytes climbing under a fixed phase) is never mistaken for
+/// a stall.
 fn watch_op_with(
     entry: Arc<OpEntry>,
     diagnostics: Arc<harbor_core::diagnostics::DiagnosticsLog>,

@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "31c77f72778bba38b54dd707a502c6c03309d26586edb6a7059f5d0c783d60a3",
+  "input_manifest_sha256": "03e6b1df6755fe5cd45c3450f7da9ca415a51ab7df637b59b05dcf475b8bc4ee",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -1451,8 +1451,8 @@
     },
     {
       "path": "core/harbor_core/src/executor.rs",
-      "bytes": 84064,
-      "sha256": "67e7765a276af2936d5920237be0f6a3108ce1d6da306aaf1a7d6cd9cbaae0be"
+      "bytes": 84113,
+      "sha256": "140ef02d3e9ff9b08763f64e9f7a4a5a9376b7f91edcbadb6a47fc45cb6d4220"
     },
     {
       "path": "core/harbor_core/src/graph.rs",
@@ -1586,8 +1586,8 @@
     },
     {
       "path": "core/harbor_ffi/src/lib.rs",
-      "bytes": 124608,
-      "sha256": "fb07e2f4a7d52b339083b7e76ca4c0a9859db9028f8d25302f3f3f4c806f24f4"
+      "bytes": 124649,
+      "sha256": "7fb5429817be7eed486ab640ceb4469b336ba183bffd1d06bf45701a07185474"
     },
     {
       "path": "core/harbor_ffi/tests/catalog_first_run.rs",

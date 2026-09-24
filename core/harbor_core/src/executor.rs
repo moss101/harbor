@@ -391,10 +391,11 @@ pub struct Host<'a> {
     /// that never commit (the eval harness).
     pub commit_journal: Option<PathBuf>,
     /// Called with each node id as the run reaches it. A long-running
-    /// host reports it as the operation's phase, so a run that stops
-    /// says WHERE it stopped instead of only that it did — a skill run
-    /// hung in CI for 120 s and all the evidence said was "running".
-    /// `None` for hosts with nothing to report to (tests, the harness).
+    /// host reports it as the operation's phase, so a run in flight says
+    /// which step it is on rather than a flat "running" — useful to the
+    /// surface above it, and the difference between "it stopped" and "it
+    /// stopped HERE" if one ever does. `None` for hosts with nothing to
+    /// report to (tests, the harness).
     pub step: Option<&'a dyn Fn(&str)>,
 }
 
