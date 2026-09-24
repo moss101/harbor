@@ -120,8 +120,26 @@ ran at.
   fake-async zone, which the real app never does. `0eae41c` makes the
   timeout ask the core directly (`op.list` on the worker), so the next
   reproduction prints the op's real state beside the UI's and settles it
-  in one line. Until then the honest statement is: a rare stall in this
-  widget test, layer unknown, no evidence of a product hang.
+  in one line.
+
+  **Mechanism, found by reading the binding.**
+  `AutomatedTestWidgetsFlutterBinding.pump()` calls `elapse(duration)`
+  only when given a duration; with no argument it flushes microtasks and
+  never advances the fake clock. `settleUntil` pumped with no argument.
+  The service's poll loop is started from a tap handler, so the
+  `Future.delayed(250ms)` it waits between `op.status` calls is a FAKE
+  timer — one that, in that loop, could never fire. It got away with it
+  because the run normally finishes before the first status reply is
+  processed, so `_runOp` returns on its first pass and never reaches the
+  delay. When the op is slower than that round trip — CPU contention, a
+  loaded CI runner — the first poll returns `running`, the loop reaches
+  the dead timer, and waits for ever. That accounts for every
+  observation: the idle core, the frozen `running` phase, only under
+  load, only in the full suite, and never in the app (which has no fake
+  zone). `settleUntil` now pumps `const Duration(milliseconds: 100)`.
+  **So this was a test-harness defect, not a product one**, and the two
+  diagnoses above it were wrong in turn — kept here because the wrong
+  ones are what the evidence said at the time.
   `Host` now takes a `step` sink called with each node id, fed into the
   op's phase, so the next occurrence names the node (placeholder-fill
   runs inventory → fill → route → approve) instead of "running". That is

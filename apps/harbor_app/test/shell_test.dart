@@ -43,7 +43,16 @@ Future<void> settleUntil(
   while (DateTime.now().isBefore(deadline)) {
     await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 100)));
-    await tester.pump();
+    // Advance the FAKE clock too — load-bearing, not cosmetic. The
+    // service's poll loop starts from a tap handler, so the
+    // `Future.delayed(250ms)` it waits between `op.status` calls is a
+    // FAKE timer; `pump()` calls `elapse` only when given a duration, so
+    // with no argument that timer can never fire. The loop got away with
+    // it because the run normally finishes before the first status reply
+    // is processed and it returns on the first pass — but when the op is
+    // slower than that round trip (CPU contention, a loaded CI runner)
+    // it reaches the dead timer and waits for ever. That is the stall.
+    await tester.pump(const Duration(milliseconds: 100));
     if (until.evaluate().isNotEmpty) return;
     final failed = tester
         .widgetList<HarborBanner>(find.byType(HarborBanner))
