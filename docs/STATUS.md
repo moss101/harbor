@@ -129,7 +129,7 @@ ran at.
   diagnosis stood; they are kept because they are worth having, and are
   now documented as defensive rather than as mitigating a known hang.
 - **The refusal works.** Dry run 8's evidence job failed exactly as it
-  should: one of the ten suites failed (the executor stall again),
+  should: one of the ten suites failed (the widget-test stall again),
   `all_suites_ok` went false, X-01..X-04 and X-09 read `FAIL` — evidence
   exists and says so, not `FAIL_NO_EVIDENCE` — and the assembler refused
   the bundle. What it could not say was WHICH suite: the artifact upload
