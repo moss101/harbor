@@ -30,12 +30,14 @@ performance thresholds. Everything runs from the tagged commit
 
    If that job fails on the app suite, read the failing suite's
    `output_tail` in `gate_results.json` (uploaded even when the job
-   fails) before doing anything else. There is a known intermittent hang
-   in `Executor::start` — a skill run that never returns, seen roughly
-   once in twenty app-suite runs and never reproduced on the
-   qualification machine (STATUS session 40). The op's phase now names
-   the node it stopped on. Re-running the job is not a diagnosis:
-   record the node.
+   fails) before doing anything else, and re-run nothing until you have.
+   The one intermittent failure this suite has had — a live-core widget
+   test that stalled on a loaded runner — was a fake-async timer in the
+   test's own wait loop, fixed in session 40, and it took three
+   diagnoses to get right because each earlier one was inferred from the
+   UI rather than read off the evidence. The timeout now prints both the
+   tree AND the core's own op state, which is what distinguishes a stuck
+   core from a test that stopped asking.
 2. Per gate, follow `closeout_runbook.md`:
    - MAC-02 / IOS-03: sign, notarize, staple; TestFlight internal group.
    - IOS-02: physical iPhone, §4 steps 6–19; record device-tier evidence.
