@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "8e3d9ef0b4022eef7261c944521dc6f5edcb4c29a6cbe1eb645ba097df474287",
+  "input_manifest_sha256": "6ff85abd7e6cdceeadf26996dac4973bf448a5079d3684a9bb9ed8ec50819f1e",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -2076,8 +2076,8 @@
     },
     {
       "path": "docs/release/rings.md",
-      "bytes": 7605,
-      "sha256": "cccc6a09a15d60c6f629990ad453216ba8de715852fd560b61dc1d5fcdd23b6f"
+      "bytes": 8102,
+      "sha256": "82b9fbb5d1d6b92cb7eea862240b2cd635a932e6d02507f12e05d18eaa4e00fd"
     },
     {
       "path": "docs/release/store/README.md",

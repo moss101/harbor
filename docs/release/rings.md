@@ -27,6 +27,15 @@ performance thresholds. Everything runs from the tagged commit
    X-07 (network capture) and X-08 (performance) read `FAIL_NO_EVIDENCE`
    in it. It is a build-bound archive of everything CI *can* regenerate,
    never the input to a go/no-go rule.
+
+   If that job fails on the app suite, read the failing suite's
+   `output_tail` in `gate_results.json` (uploaded even when the job
+   fails) before doing anything else. There is a known intermittent hang
+   in `Executor::start` — a skill run that never returns, seen roughly
+   once in twenty app-suite runs and never reproduced on the
+   qualification machine (STATUS session 40). The op's phase now names
+   the node it stopped on. Re-running the job is not a diagnosis:
+   record the node.
 2. Per gate, follow `closeout_runbook.md`:
    - MAC-02 / IOS-03: sign, notarize, staple; TestFlight internal group.
    - IOS-02: physical iPhone, §4 steps 6–19; record device-tier evidence.
