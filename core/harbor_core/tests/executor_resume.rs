@@ -160,6 +160,7 @@ impl Rig {
             cancel: &self.cancel,
             executor_id: executor_id.into(),
             commit_journal: None,
+            step: None,
         })
     }
 

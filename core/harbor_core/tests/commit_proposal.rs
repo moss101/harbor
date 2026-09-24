@@ -65,6 +65,7 @@ impl Rig {
             cancel: &self.cancel,
             executor_id: "commit-test".into(),
             commit_journal: Some(commit_journal_path(self.dir.path())),
+            step: None,
         })
     }
 

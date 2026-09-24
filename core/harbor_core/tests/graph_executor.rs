@@ -70,6 +70,29 @@ impl Rig {
         }
     }
 
+    /// Same host, with a `step` sink so a test can see which nodes the
+    /// run reached and in what order.
+    fn executor_reporting<'a>(
+        &'a self,
+        provider: Option<&'a RecordReplayProvider>,
+        step: &'a dyn Fn(&str),
+    ) -> Executor<'a> {
+        Executor::new(Host {
+            log: self.log.clone(),
+            lease_db: self.lease_db.clone(),
+            store: &self.store,
+            registry: &self.registry,
+            provider: provider.map(|p| p as &dyn harbor_inference::ModelProvider),
+            artifacts: &self.artifacts,
+            knowledge: None,
+            workspace_root: None,
+            cancel: &self.cancel,
+            executor_id: "test-executor".into(),
+            commit_journal: None,
+            step: Some(step),
+        })
+    }
+
     fn executor<'a>(&'a self, provider: Option<&'a RecordReplayProvider>) -> Executor<'a> {
         Executor::new(Host {
             log: self.log.clone(),
@@ -83,6 +106,7 @@ impl Rig {
             cancel: &self.cancel,
             executor_id: "test-executor".into(),
             commit_journal: None,
+            step: None,
         })
     }
 
@@ -129,6 +153,38 @@ fn step_events(log: &EventLog, run_id: &str) -> Vec<(String, Option<String>, Opt
             _ => None,
         })
         .collect()
+}
+
+/// A long-running host reports each node so a stalled run says WHERE it
+/// stopped. A skill run hung for 120 s in CI and the only evidence was
+/// the flat phase "running"; the sink below is what turns that into a
+/// node name.
+#[test]
+fn the_step_sink_reports_every_node_in_order() {
+    let rig = Rig::new();
+    let g = graph(
+        "steps",
+        "read",
+        (10, 5),
+        json!([
+            {"id": "read", "kind": "tool.call", "tool": "artifact.read", "args": {"artifact_id": {"$state": "/input/artifact_id"}}, "out": "/doc", "next": "pick"},
+            {"id": "pick", "kind": "branch", "cases": [{"when": {"from": "/doc/paragraphs", "op": "gt", "value": 0}, "next": "done"}], "default": "done"},
+            {"id": "done", "kind": "end", "outcome": "completed", "outputs": ["/doc"]}
+        ]),
+    );
+    let seen = std::sync::Mutex::new(Vec::<String>::new());
+    let sink = |node_id: &str| seen.lock().unwrap().push(node_id.to_string());
+    let exec = rig.executor_reporting(None, &sink);
+    let report = exec
+        .start(rig.request(g, json!({"artifact_id": "doc"})))
+        .unwrap();
+
+    assert_eq!(report.state, "COMPLETED");
+    assert_eq!(
+        *seen.lock().unwrap(),
+        vec!["read".to_string(), "pick".to_string(), "done".to_string()],
+        "every node must be reported, in the order the run reached them"
+    );
 }
 
 #[test]
@@ -566,6 +622,7 @@ fn blob_state_store_keeps_snapshots_encrypted_at_rest_and_resumable() {
         cancel: &cancel,
         executor_id: "blob-test".into(),
         commit_journal: None,
+        step: None,
     };
     let exec = Executor::new(host);
     let secret = "Zubaida-Al-Rashid-9981";
@@ -609,6 +666,7 @@ fn blob_state_store_keeps_snapshots_encrypted_at_rest_and_resumable() {
         cancel: &cancel,
         executor_id: "blob-test-2".into(),
         commit_journal: None,
+        step: None,
     });
     let after = exec2.decide(&report.run_id, true).unwrap();
     assert_eq!(after.state, "COMPLETED");

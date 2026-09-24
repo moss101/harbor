@@ -1398,6 +1398,11 @@ fn dispatch(
                 let knowledge_ref: Option<&dyn harbor_core::tools::KnowledgeSearch> = knowledge
                     .as_ref()
                     .map(|k| k.as_ref() as &dyn harbor_core::tools::KnowledgeSearch);
+                // Each node the run reaches becomes the op's phase, so
+                // `op.status` (and the surface above it) names the step
+                // in flight rather than a flat "running".
+                let step_progress = progress.clone();
+                let step = move |node_id: &str| step_progress.set_phase(node_id);
                 let exec = harbor_core::executor::Executor::new(harbor_core::executor::Host {
                     log: agent_log,
                     lease_db: harbor_core::executor::lease_db_path(&data_root),
@@ -1410,6 +1415,7 @@ fn dispatch(
                     cancel: &progress.cancel,
                     executor_id: "ffi-skill-executor".into(),
                     commit_journal: None,
+                    step: Some(&step),
                 });
                 let result = exec.start(harbor_core::executor::RunRequest {
                     run_id: None,
@@ -1470,6 +1476,7 @@ fn dispatch(
                 cancel: &never,
                 executor_id: "ffi-decide".into(),
                 commit_journal: Some(harbor_core::executor::commit_journal_path(&ws.data_root)),
+                step: None,
             });
             let report = exec
                 .decide(run_id, approved)
@@ -1532,6 +1539,7 @@ fn dispatch(
                 cancel: &never,
                 executor_id: "ffi-decide".into(),
                 commit_journal: Some(harbor_core::executor::commit_journal_path(&ws.data_root)),
+                step: None,
             });
             match exec.decide_and_commit(run_id, target) {
                 Ok((report, commit)) => Ok(serde_json::json!({

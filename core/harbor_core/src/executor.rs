@@ -390,6 +390,12 @@ pub struct Host<'a> {
     /// Commit journal database (`commit_journal_path`); `None` on hosts
     /// that never commit (the eval harness).
     pub commit_journal: Option<PathBuf>,
+    /// Called with each node id as the run reaches it. A long-running
+    /// host reports it as the operation's phase, so a run that stops
+    /// says WHERE it stopped instead of only that it did — a skill run
+    /// hung in CI for 120 s and all the evidence said was "running".
+    /// `None` for hosts with nothing to report to (tests, the harness).
+    pub step: Option<&'a dyn Fn(&str)>,
 }
 
 pub struct Executor<'a> {
@@ -1237,6 +1243,9 @@ impl<'a> Executor<'a> {
                     RunState::Completed,
                 ));
             };
+            if let Some(step) = self.host.step {
+                step(&node_id);
+            }
             let node = snap
                 .graph
                 .node(&node_id)
