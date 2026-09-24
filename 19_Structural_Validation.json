@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "49080b6f5f7a0a2e8616455eb59bf77ecd7dcdf82d98283698f33a799c5f2d0e",
+  "input_manifest_sha256": "995a8a51c398df8b73a15ccae7ceb8708b843eef40a0c8fdd4efb2a145268110",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -11,8 +11,8 @@
     },
     {
       "path": ".github/workflows/release.yml",
-      "bytes": 15128,
-      "sha256": "739703f2f9879f1ccdc9fce5d3305441c65f784df9461eef860ffdbd92227e70"
+      "bytes": 15502,
+      "sha256": "3387a80e86b940d9324bd65b906ac82f0849ba5f65d1505b3827b8127389c6cf"
     },
     {
       "path": ".gitignore",
@@ -2666,8 +2666,8 @@
     },
     {
       "path": "tools/check_ring_gate.py",
-      "bytes": 7591,
-      "sha256": "0323e7cfbdc9553c392df19a529f0b752c538937344cd797daa7a99d896b09b9"
+      "bytes": 7899,
+      "sha256": "c35d5206721ec230f55c49dc0276b43c450e1f6bf1f442f624b934f9e59648ea"
     },
     {
       "path": "tools/contracts.py",

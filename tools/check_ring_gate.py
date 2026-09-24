@@ -91,6 +91,12 @@ def main() -> int:
         return 1
 
     gates = report.get("gates", [])
+    if not gates:
+        # Every clause below is "no gate violates this", so an empty
+        # table satisfies all of them and would read as GO. A report with
+        # no gates is a broken report, not a clean one.
+        print(f"NO-GO: {path} has no gates to evaluate", file=sys.stderr)
+        return 1
     results = []
 
     clause(results, "no FAIL",

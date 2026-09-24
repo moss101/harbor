@@ -263,8 +263,14 @@ jobs:
           # than publish it.
           abis=$(unzip -l "dist/harbor_app-android-$V-debugkey.apk" \
                  | grep -o 'lib/[^/]*/' | sort -u | tr '\n' ' ')
-          echo "packaged ABIs: $abis"
+          echo "APK ABIs: $abis"
           test "$abis" = "lib/arm64-v8a/ "
+          # The bundle decides what Play actually serves, so it is checked
+          # too: its splits come from base/lib/<abi>/.
+          bundle_abis=$(unzip -l "dist/harbor_app-android-$V-debugkey.aab" \
+                        | grep -o 'base/lib/[^/]*/' | sort -u | tr '\n' ' ')
+          echo "AAB ABIs: $bundle_abis"
+          test "$bundle_abis" = "base/lib/arm64-v8a/ "
           (cd dist && shasum -a 256 ./*.apk ./*.aab | tee android-sha256.txt)
       - uses: actions/upload-artifact@v4
         with:
