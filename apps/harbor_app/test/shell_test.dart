@@ -36,6 +36,7 @@ Future<void> settleUntil(
   Finder until, {
   Duration budget = const Duration(seconds: 120),
   String? what,
+  Future<String> Function()? onTimeout,
 }) async {
   final target = what ?? until.toString();
   final deadline = DateTime.now().add(budget);
@@ -62,8 +63,19 @@ Future<void> settleUntil(
       .where((t) => t.trim().isNotEmpty)
       .take(40)
       .join(' | ');
+  // The tree only shows what the UI last HEARD. Ask the core directly
+  // so a stall that is really a starved poll — core finished, nothing
+  // delivered it — cannot be mistaken for a core that is stuck.
+  var probe = '';
+  if (onTimeout != null) {
+    try {
+      probe = await tester.runAsync(onTimeout) ?? '';
+    } catch (e) {
+      probe = '\nthe timeout probe itself failed: $e';
+    }
+  }
   fail('timed out after ${budget.inSeconds}s waiting for $target; '
-      'the tree is showing: $visible');
+      'the tree is showing: $visible$probe');
 }
 
 /// Pump HarborApp with a REAL viewport of [width]x[height] logical pixels
@@ -877,8 +889,9 @@ void _appendSkillCommitTests() {
 
     // Real async (worker isolate, file IO) only progresses inside
     // runAsync; widget interaction must stay outside it (guarded calls).
-    Future<void> settle(Finder until, {String? what}) =>
-        settleUntil(tester, until, what: what);
+    Future<void> settle(Finder until,
+            {String? what, Future<String> Function()? onTimeout}) =>
+        settleUntil(tester, until, what: what, onTimeout: onTimeout);
 
     // Attach the fixture through the injected picker and fill the values.
     await tester.tap(find.byKey(const ValueKey('attach-artifact_id')));
@@ -895,7 +908,16 @@ void _appendSkillCommitTests() {
     // Run → the executor parks the run for approval with a diff.
     await tester.tap(find.byKey(const ValueKey('skill-run-button')));
     await settle(find.byKey(const ValueKey('skill-approval')),
-        what: 'the run to park for approval');
+        what: 'the run to park for approval', onTimeout: () async {
+      final ops = await service!.listOps();
+      final summary = ops.isEmpty
+          ? '(no ops)'
+          : ops
+              .map((o) =>
+                  '${o['kind']} ${o['state']} phase=${o['phase']} detail=${o['detail']}')
+              .join('; ');
+      return '\nthe core itself reports: $summary';
+    });
     expect(find.byKey(const ValueKey('skill-approval')), findsOneWidget);
     expect(find.byKey(const ValueKey('skill-proposal-diff')), findsOneWidget);
     // Before/after lines from the core's diff, rendered by ArtifactDiffView.
