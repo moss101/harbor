@@ -644,7 +644,14 @@ python3 tools/validate_dossier.py --write
 python3 tools/check_optional_disabled.py --write
 python3 tools/generate_sbom.py --write
 python3 tools/generate_third_party_notices.py --check
+python3 tools/check_contrast.py --write-evidence
+# No --partial here: that flag is for a CI runner, which cannot produce
+# the network capture or the performance run. This machine can, so the
+# bundle must be complete (see docs/release/rings.md).
 python3 tools/assemble_release_evidence.py --version 1.0.0-rc2 --write
+python3 tools/check_ring_gate.py \
+    --report evidence/releases/1.0.0-rc2/release_gate_report.json \
+    --ring 1 --platforms mac,ios,android
 cd apps/harbor_app && ~/harbor-tools/flutter/bin/flutter test
 # real-network (unchanged since session 27):
 cargo test -p harbor_modelhub --lib -- --ignored real_hf_capture --nocapture
