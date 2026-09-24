@@ -114,8 +114,23 @@ ran at.
   op's phase, so the next occurrence names the node (placeholder-fill
   runs inventory → fill → route → approve) instead of "running". That is
   instrumentation, not a fix: the hang is unexplained and has never
-  reproduced on this machine. Mitigation in the product: the run sheet
-  now offers the core's real Cancel, so a user is not stuck.
+  reproduced on this machine. Two mitigations in the product: the run
+  sheet now offers the core's real Cancel, so a user is not stuck; and
+  every op is watched, so one whose whole progress snapshot has not
+  changed for 90 s records itself ("skill_run op has not advanced past
+  'fill' for 90s") in the diagnostics log — the ring-1 feedback channel,
+  where a tester could previously only report "it hung". Comparing the
+  whole snapshot is what keeps a long download, bytes climbing under a
+  fixed phase, from being called a stall.
+- **The refusal works.** Dry run 8's evidence job failed exactly as it
+  should: one of the ten suites failed (the executor stall again),
+  `all_suites_ok` went false, X-01..X-04 and X-09 read `FAIL` — evidence
+  exists and says so, not `FAIL_NO_EVIDENCE` — and the assembler refused
+  the bundle. What it could not say was WHICH suite: the artifact upload
+  had no `if: always()`, so the run that most needed its evidence read
+  was the one that threw it away, and `generate_gate_evidence.py` kept
+  only pass/fail counts although it had captured the output. Both fixed;
+  a failing suite now carries `output_tail` and prints it.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 36/36 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,
