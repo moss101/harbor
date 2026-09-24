@@ -37,6 +37,21 @@ android {
         // (.github/workflows/release.yml).
     }
 
+    // `--target-platform android-arm64` keeps Flutter's own libraries to
+    // one ABI, but native libraries that arrive through dependency AARs
+    // (libdartjni.so) are packaged for every ABI regardless, so the APK
+    // still advertised lib/armeabi-v7a/ and lib/x86_64/ — enough for Play
+    // to serve those devices a build with no Flutter runtime in it. The
+    // release workflow asserts the packaged ABI list after the build.
+    packaging {
+        jniLibs {
+            excludes += listOf(
+                "lib/armeabi-v7a/**", "lib/armeabi/**",
+                "lib/x86/**", "lib/x86_64/**",
+            )
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.

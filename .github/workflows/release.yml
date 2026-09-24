@@ -257,6 +257,14 @@ jobs:
              "dist/harbor_app-android-$V-debugkey.apk"
           cp build/app/outputs/bundle/release/app-release.aab \
              "dist/harbor_app-android-$V-debugkey.aab"
+          # Every lib/<abi>/ directory in the APK tells Play the app
+          # supports that device. Harbor's core is built for one ABI, so
+          # anything else here is a promise it cannot keep — fail rather
+          # than publish it.
+          abis=$(unzip -l "dist/harbor_app-android-$V-debugkey.apk" \
+                 | grep -o 'lib/[^/]*/' | sort -u | tr '\n' ' ')
+          echo "packaged ABIs: $abis"
+          test "$abis" = "lib/arm64-v8a/ "
           (cd dist && shasum -a 256 ./*.apk ./*.aab | tee android-sha256.txt)
       - uses: actions/upload-artifact@v4
         with:
