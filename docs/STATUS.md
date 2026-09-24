@@ -94,7 +94,7 @@ ran at.
   showed a static card with no cancel; it now renders the core's own
   snapshot through `OpProgressCard`, with the cancel every other surface
   already had.
-- **CI stall: layer identified, cause still open.** The `flutter` job
+- **CI stall: reproduced, and my first diagnosis was wrong.** The `flutter` job
   failed on `1df79b8`, a docs-only commit whose app code is identical to
   `6ad9b62`, which passed; timings showed the live-core widget test ran
   126 s against a 120 s budget where it normally takes 7.5 s. It did not
@@ -105,16 +105,29 @@ ran at.
 
       Running on device… | placeholder-fill | running | Cancel
 
-  The op was registered, `op.status` polling was working, and the phase
-  was still the "running" set at the top of the op thread — so
-  `Executor::start` never returned. Not the worker bridge, not the poll
-  loop, and not a panic (`spawn_op` would have made the op `failed`). The
-  executor hangs, rarely, on a run that normally takes two seconds.
+  The op was registered, `op.status` had been answered at least once, and
+  the phase was still the "running" set at the top of the op thread. I
+  read that as `Executor::start` never returning — **and the next
+  evidence contradicted it.** The stall then reproduced on this machine
+  (iteration 3 of a loop running the FULL suite under CPU contention;
+  the earlier 15 runs missed it because they ran that one test alone with
+  `--plain-name`), and stack samples taken during the hang show the core
+  *idle* for most of it, with a burst of SHA-256 late. A thread blocked
+  in the executor would have shown up in every sample. So the layer is
+  not established: what the tree shows is what the UI last HEARD, which
+  is equally consistent with the Dart side having stopped asking — and
+  the widget test drives the poll loop from inside flutter_test's
+  fake-async zone, which the real app never does. `0eae41c` makes the
+  timeout ask the core directly (`op.list` on the worker), so the next
+  reproduction prints the op's real state beside the UI's and settles it
+  in one line. Until then the honest statement is: a rare stall in this
+  widget test, layer unknown, no evidence of a product hang.
   `Host` now takes a `step` sink called with each node id, fed into the
   op's phase, so the next occurrence names the node (placeholder-fill
   runs inventory → fill → route → approve) instead of "running". That is
-  instrumentation, not a fix: the hang is unexplained and has never
-  reproduced on this machine. Two mitigations in the product: the run
+  instrumentation, not a fix, and it is defensive rather than aimed at a
+  proven product defect — see the correction above. Two things it does
+  buy regardless: the run
   sheet now offers the core's real Cancel, so a user is not stuck; and
   every op is watched, so one whose whole progress snapshot has not
   changed for 90 s records itself ("skill_run op has not advanced past
