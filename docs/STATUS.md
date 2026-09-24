@@ -136,7 +136,11 @@ ran at.
   the dead timer, and waits for ever. That accounts for every
   observation: the idle core, the frozen `running` phase, only under
   load, only in the full suite, and never in the app (which has no fake
-  zone). `settleUntil` now pumps `const Duration(milliseconds: 100)`.
+  zone). `settleUntil` now pumps `const Duration(milliseconds: 100)`,
+  and a test demonstrates the mechanism deterministically rather than
+  resting on flake counts: a 250 ms timer scheduled in the test's zone
+  survives a full second of real time under `runAsync` + bare `pump()`,
+  and fires the moment fake time is elapsed.
   **So this was a test-harness defect, not a product one**, and the two
   diagnoses above it were wrong in turn — kept here because the wrong
   ones are what the evidence said at the time.
@@ -163,7 +167,7 @@ ran at.
   only pass/fail counts although it had captured the output. Both fixed;
   a failing suite now carries `output_tail` and prints it.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
-  gguf-backend 20, `flutter test` 36/36 (app), harbor_native 1/1, dossier
+  gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,
   release gate report 15 PASS / 0 FAIL / 8 BLOCKED_* on this machine.
 
