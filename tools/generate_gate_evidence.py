@@ -38,9 +38,18 @@ def run(name: str, cwd: str, cmd: list, timeout: int = 1800) -> dict:
                 except (IndexError, ValueError):
                     pass
         ok = proc.returncode == 0
-        return {"suite": name, "command": " ".join(cmd), "cwd": cwd,
-                "passed": passed, "failed": failed, "ok": ok,
-                "commit": COMMIT}
+        record = {"suite": name, "command": " ".join(cmd), "cwd": cwd,
+                  "passed": passed, "failed": failed, "ok": ok,
+                  "commit": COMMIT}
+        if not ok:
+            # A suite that failed has to say what it said. Recording only
+            # `ok: false` sends whoever reads this bundle back to a CI log
+            # that may no longer exist — and the output is captured here,
+            # so discarding it is a choice, not a limitation.
+            tail = output[-4000:]
+            record["output_tail"] = tail
+            print(f"FAIL {name} (exit {proc.returncode}); last 4000 chars:\n{tail}")
+        return record
     except subprocess.TimeoutExpired:
         return {"suite": name, "command": " ".join(cmd), "cwd": cwd,
                 "passed": 0, "failed": 0, "ok": False,

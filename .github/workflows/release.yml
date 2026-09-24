@@ -126,6 +126,11 @@ jobs:
                   print("release_declared:", d.get("release_declared"), "-", d.get("release_declared_reason", ""))
           EOF
       - uses: actions/upload-artifact@v4
+        # ALWAYS: when this job fails it is usually the evidence itself
+        # that explains why, and skipping the upload on failure throws
+        # away exactly the files worth reading (dry run 8 failed on a
+        # suite and left nothing behind but a count).
+        if: always()
         with:
           name: evidence-${{ steps.meta.outputs.version }}
           path: |

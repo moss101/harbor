@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "7fed5774aeec00517d318dbae054960dfdb0dcd9f033b8694f323914eb81e932",
+  "input_manifest_sha256": "8e3d9ef0b4022eef7261c944521dc6f5edcb4c29a6cbe1eb645ba097df474287",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -11,8 +11,8 @@
     },
     {
       "path": ".github/workflows/release.yml",
-      "bytes": 15502,
-      "sha256": "3387a80e86b940d9324bd65b906ac82f0849ba5f65d1505b3827b8127389c6cf"
+      "bytes": 15790,
+      "sha256": "57bc223d09aa0d6c4a035ec5e50839b40da55d26cf501c7a6ae89f3714887973"
     },
     {
       "path": ".gitignore",
@@ -2691,8 +2691,8 @@
     },
     {
       "path": "tools/generate_gate_evidence.py",
-      "bytes": 5907,
-      "sha256": "580462ee4bfbf73df7683675ef776b66e248a5ca7b9fedfbb96304f476cceeca"
+      "bytes": 6401,
+      "sha256": "1cb1809e3cd6a3338a256c582e48e00fff21821eddf640afe05e84a5c8027adc"
     },
     {
       "path": "tools/generate_sbom.py",
