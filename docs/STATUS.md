@@ -9,7 +9,7 @@ ran at.
 
 ## Session 40 (2026-09-23): the release workflow runs end to end — and five things it produced were not what they claimed
 
-- **Dry runs 3, 4 and 5 green** (`gh workflow run release.yml`): `evidence`,
+- **Dry runs 3–7 green** (`gh workflow run release.yml`): `evidence`,
   `macos-app` and `android` all pass and `publish` correctly skips on a
   dispatch. Dry run 2's failure was the assembler's exit code, not a crash:
   it returns 1 on any `FAIL_NO_EVIDENCE`, and X-07 (real network capture)
@@ -35,12 +35,18 @@ ran at.
   macOS executable was universal while the dylib is arm64 — an Intel Mac
   would launch Harbor and find nothing, with no store-side filter to stop
   it because macOS ships as a DMG. `ARCHS = arm64` now makes macOS decline
-  to open it. The APK carried `lib/armeabi-v7a/` and `lib/x86_64/` with the
-  Dart and Flutter runtimes and no `libharbor_ffi.so`; `ndk { abiFilters }`
-  did **not** fix it (the Flutter Gradle plugin overwrites the ABI list
-  from `--target-platform`, proven by dry run 4), so the ABI is selected on
-  the build command. The device matrix gained the Intel-macOS row it was
-  missing. Assets are also named now
+  to open it. On Android it took three attempts, each one caught by opening
+  the next dry run's package: `lib/armeabi-v7a/` and `lib/x86_64/` carried
+  the Dart and Flutter runtimes with no `libharbor_ffi.so`;
+  `ndk { abiFilters }` did **not** fix it (the Flutter Gradle plugin
+  overwrites the ABI list, dry run 4); `--target-platform android-arm64`
+  removed Flutter's own libraries but left `libdartjni.so` from a
+  dependency AAR in both, which still told Play those devices were
+  supported (dry run 6); `packaging.jniLibs.excludes` drops the rest. The
+  workflow now **asserts** the packaged ABI list of both the APK and the
+  AAB (`base/lib/<abi>/`, which is what Play's splits come from) instead of
+  relying on someone opening the artifact. The device matrix gained the
+  Intel-macOS row it was missing, and the assets are named
   (`harbor_app-android-<version>-debugkey.{apk,aab}`).
 - **Evidence that could not fail.** `evidence_ok` looked for a few boolean
   keys and, finding none, returned true because the JSON parsed — and not
