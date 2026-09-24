@@ -111,7 +111,82 @@ fn register_op(kind: &'static str) -> (String, Arc<OpEntry>) {
 /// never ends, with no error anywhere in the UI. Every op therefore
 /// reaches a terminal state, including when its body panics. The panic
 /// itself is already in the diagnostics log via the panic hook.
-fn spawn_op<F: FnOnce() + Send + 'static>(entry: Arc<OpEntry>, body: F) {
+/// How long an op may show no progress at all before it is recorded as
+/// stalled, and how often that is checked.
+const OP_STALL_AFTER: std::time::Duration = std::time::Duration::from_secs(90);
+const OP_STALL_TICK: std::time::Duration = std::time::Duration::from_secs(5);
+
+/// Watch one op and record it, once, if it stops advancing.
+///
+/// A run that hangs is otherwise invisible: the entry stays `running`,
+/// the caller keeps polling, and nothing reaches the diagnostics log —
+/// which is the ring-1 feedback channel, so a tester who hits it can
+/// only report "it hung". Progress is the whole snapshot, not just the
+/// phase, so a long download (bytes climbing under a fixed phase) is
+/// never mistaken for a stall.
+fn watch_op_with(
+    entry: Arc<OpEntry>,
+    diagnostics: Arc<harbor_core::diagnostics::DiagnosticsLog>,
+    tick: std::time::Duration,
+    stall_after: std::time::Duration,
+) {
+    let key = |s: &harbor_modelhub::progress::ProgressSnapshot| {
+        (
+            s.phase.clone(),
+            s.detail.clone(),
+            s.bytes_done,
+            s.items_done,
+        )
+    };
+    let mut last = key(&entry.progress.snapshot());
+    let mut since = std::time::Instant::now();
+    let mut reported = false;
+    loop {
+        std::thread::sleep(tick);
+        // Terminal (or poisoned, which spawn_op has already answered).
+        if entry.result.lock().map(|r| r.is_some()).unwrap_or(true) {
+            return;
+        }
+        let snap = entry.progress.snapshot();
+        let now = key(&snap);
+        if now != last {
+            last = now;
+            since = std::time::Instant::now();
+            reported = false;
+        } else if !reported && since.elapsed() >= stall_after {
+            reported = true;
+            let _ = diagnostics.record(harbor_core::diagnostics::DiagnosticRecord {
+                at: chrono::Utc::now(),
+                level: "warn".into(),
+                source: "ffi".into(),
+                message: format!(
+                    "{} op has not advanced past '{}' for {}s",
+                    entry.kind,
+                    if snap.phase.is_empty() {
+                        "(no phase)"
+                    } else {
+                        &snap.phase
+                    },
+                    stall_after.as_secs()
+                ),
+                context: Some(entry.kind.to_string()),
+                backtrace: None,
+            });
+        }
+    }
+}
+
+fn spawn_op<F: FnOnce() + Send + 'static>(
+    entry: Arc<OpEntry>,
+    diagnostics: Arc<harbor_core::diagnostics::DiagnosticsLog>,
+    body: F,
+) {
+    let watched = entry.clone();
+    std::thread::spawn(move || watch_op_with(watched, diagnostics, OP_STALL_TICK, OP_STALL_AFTER));
+    spawn_op_body(entry, body)
+}
+
+fn spawn_op_body<F: FnOnce() + Send + 'static>(entry: Arc<OpEntry>, body: F) {
     std::thread::spawn(move || {
         if std::panic::catch_unwind(std::panic::AssertUnwindSafe(body)).is_err() {
             // The lock is poisoned if the panic happened inside
@@ -1386,7 +1461,7 @@ fn dispatch(
             let data_root = ws.data_root.clone();
             let entry_clone = entry.clone();
             let progress = entry.progress.clone();
-            spawn_op(entry.clone(), move || {
+            spawn_op(entry.clone(), ws.diagnostics.clone(), move || {
                 progress.set_phase("running");
                 progress.set_detail(&skill.id);
                 let store =
@@ -2176,7 +2251,7 @@ fn dispatch(
             let hub_token = ws.hub_token.clone();
             let progress = entry.progress.clone();
             let entry_clone = entry.clone();
-            spawn_op(entry.clone(), move || {
+            spawn_op(entry.clone(), ws.diagnostics.clone(), move || {
                 let result = acquire_model(
                     &data_root,
                     &broker,
@@ -2227,7 +2302,7 @@ fn dispatch(
             let data_root = ws.data_root.clone();
             let progress = entry.progress.clone();
             let entry_clone = entry.clone();
-            spawn_op(entry.clone(), move || {
+            spawn_op(entry.clone(), ws.diagnostics.clone(), move || {
                 // 1. Retrieve grounding (may be absent).
                 let citations = knowledge
                     .as_ref()
@@ -2344,7 +2419,7 @@ fn dispatch(
                 .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
             let progress = entry.progress.clone();
             let entry_clone = entry.clone();
-            spawn_op(entry.clone(), move || {
+            spawn_op(entry.clone(), ws.diagnostics.clone(), move || {
                 let never = AtomicBool::new(false);
                 let result = knowledge
                     .ingest_with_progress(&sources, &never, Some(&progress))
@@ -2690,7 +2765,7 @@ mod trust_persistence_tests {
         // log; the op's terminal state is what is under test.
         let previous = std::panic::take_hook();
         std::panic::set_hook(Box::new(|_| {}));
-        spawn_op(entry.clone(), || panic!("boom inside an op body"));
+        spawn_op_body(entry.clone(), || panic!("boom inside an op body"));
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
         while entry.result.lock().unwrap().is_none() {
             assert!(
@@ -2710,6 +2785,89 @@ mod trust_persistence_tests {
         );
     }
 
+    /// A hung op records itself. Without this the entry stays `running`
+    /// for ever, the caller polls for ever, and the diagnostics log —
+    /// the ring-1 feedback channel — says nothing at all.
+    #[test]
+    fn a_stalled_op_records_itself_once_in_diagnostics() {
+        let dir = tempfile::tempdir().unwrap();
+        let diagnostics = Arc::new(
+            harbor_core::diagnostics::DiagnosticsLog::open(
+                dir.path(),
+                &harbor_store::KeyMaterial([7u8; 32]),
+            )
+            .unwrap(),
+        );
+        let (_op_id, entry) = register_op("test");
+        entry.progress.set_phase("fill");
+        let watched = entry.clone();
+        let diag = diagnostics.clone();
+        let watcher = std::thread::spawn(move || {
+            watch_op_with(
+                watched,
+                diag,
+                std::time::Duration::from_millis(10),
+                std::time::Duration::from_millis(50),
+            )
+        });
+        std::thread::sleep(std::time::Duration::from_millis(400));
+        // The op finishes: the watcher must stop on its own.
+        complete_op(&entry, Ok(serde_json::json!({})), false);
+        watcher.join().unwrap();
+
+        let (records, _) = diagnostics.records().unwrap();
+        let stalls: Vec<_> = records
+            .iter()
+            .filter(|r| r.message.contains("has not advanced"))
+            .collect();
+        assert_eq!(stalls.len(), 1, "recorded once, not once per tick");
+        assert!(
+            stalls[0].message.contains("fill"),
+            "the record must name the phase it stopped on: {}",
+            stalls[0].message
+        );
+    }
+
+    /// Progress that keeps moving is not a stall, even under one phase:
+    /// a model download holds `downloading` while bytes climb.
+    #[test]
+    fn an_op_that_keeps_advancing_is_never_recorded_as_stalled() {
+        let dir = tempfile::tempdir().unwrap();
+        let diagnostics = Arc::new(
+            harbor_core::diagnostics::DiagnosticsLog::open(
+                dir.path(),
+                &harbor_store::KeyMaterial([9u8; 32]),
+            )
+            .unwrap(),
+        );
+        let (_op_id, entry) = register_op("test");
+        entry.progress.set_phase("downloading");
+        let watched = entry.clone();
+        let diag = diagnostics.clone();
+        let watcher = std::thread::spawn(move || {
+            watch_op_with(
+                watched,
+                diag,
+                std::time::Duration::from_millis(10),
+                std::time::Duration::from_millis(50),
+            )
+        });
+        for i in 1..=20 {
+            entry.progress.bytes_done.store(i * 1024, Ordering::Relaxed);
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+        complete_op(&entry, Ok(serde_json::json!({})), false);
+        watcher.join().unwrap();
+
+        let (records, _) = diagnostics.records().unwrap();
+        assert!(
+            !records
+                .iter()
+                .any(|r| r.message.contains("has not advanced")),
+            "bytes were climbing the whole time"
+        );
+    }
+
     /// The net must not overwrite a real result: a body that completes
     /// normally and then panics on the way out keeps its own outcome.
     #[test]
@@ -2718,7 +2876,7 @@ mod trust_persistence_tests {
         let previous = std::panic::take_hook();
         std::panic::set_hook(Box::new(|_| {}));
         let for_body = entry.clone();
-        spawn_op(entry.clone(), move || {
+        spawn_op_body(entry.clone(), move || {
             complete_op(&for_body, Ok(serde_json::json!({"kept": true})), false);
             panic!("after the result was recorded");
         });
