@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "03e6b1df6755fe5cd45c3450f7da9ca415a51ab7df637b59b05dcf475b8bc4ee",
+  "input_manifest_sha256": "8858299e8967ba5975e42544a2bce9f6ac932e6c178b3c1203eed0fba5dfade9",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -851,8 +851,8 @@
     },
     {
       "path": "apps/harbor_app/test/shell_test.dart",
-      "bytes": 46882,
-      "sha256": "1c76d4931b48e745c91b93755c59760c0fa86039e519a353018c388877c04a41"
+      "bytes": 48122,
+      "sha256": "de79590a709cfc62eeea4362fc06d7c99953092c850b4414818c313ca5e258b7"
     },
     {
       "path": "apps/harbor_app/windows/.gitignore",

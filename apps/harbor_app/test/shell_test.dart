@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
@@ -172,6 +173,32 @@ void main() {
   // tests that look like layout and localization ones, because pumping
   // HarborApp opens the service; a further ten guard on `coreAvailable`
   // and return quietly. Naming the cause once, first, is worth one test.
+  // Why settleUntil pumps a DURATION. This is the exact mechanism behind
+  // the intermittent live-core stall: a timer scheduled in the test's
+  // zone is a fake timer, and real time — however much of it passes
+  // inside runAsync — never advances the fake clock. `pump()` with no
+  // argument flushes microtasks and calls `elapse` only when given a
+  // duration. The service's op.status poll waits on exactly such a timer.
+  testWidgets('a fake timer fires only when pump is given a duration',
+      (tester) async {
+    await tester.pumpWidget(const SizedBox());
+    var fired = false;
+    Timer(const Duration(milliseconds: 250), () => fired = true);
+
+    // A full second of REAL time, in the shape settleUntil used to have.
+    for (var i = 0; i < 20; i++) {
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump();
+    }
+    expect(fired, isFalse,
+        reason: 'real time inside runAsync does not move the fake clock, so '
+            'a poll loop waiting on this timer waits for ever');
+
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(fired, isTrue, reason: 'elapsing fake time is what fires it');
+  });
+
   test('the live native core is built', () {
     expect(coreAvailable, isTrue,
         reason: 'no $dylibPath — build it with '
