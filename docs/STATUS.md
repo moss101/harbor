@@ -94,13 +94,28 @@ ran at.
   showed a static card with no cancel; it now renders the core's own
   snapshot through `OpProgressCard`, with the cancel every other surface
   already had.
-- **CI stall, diagnosed but not reproduced.** The `flutter` job failed on
-  `1df79b8`, a docs-only commit whose app code is identical to `6ad9b62`,
-  which passed. Timings show the live-core widget test ran 126 s against a
-  120 s budget where it normally takes 7.5 s — a stall, not a slow runner.
-  Not reproduced here in 15 runs (10 idle, 5 under full CPU load). The
-  waits now fail with the core's own message, or on a deadline with the
-  text the tree is showing, so the next occurrence names the layer.
+- **CI stall: layer identified, cause still open.** The `flutter` job
+  failed on `1df79b8`, a docs-only commit whose app code is identical to
+  `6ad9b62`, which passed; timings showed the live-core widget test ran
+  126 s against a 120 s budget where it normally takes 7.5 s. It did not
+  reproduce here in 15 runs (10 idle, 5 under full CPU load), so the waits
+  were changed to fail with the core's own message or, on a deadline, with
+  what the tree is showing. It then **recurred on `4627f44`**, and that
+  dump settled it:
+
+      Running on device… | placeholder-fill | running | Cancel
+
+  The op was registered, `op.status` polling was working, and the phase
+  was still the "running" set at the top of the op thread — so
+  `Executor::start` never returned. Not the worker bridge, not the poll
+  loop, and not a panic (`spawn_op` would have made the op `failed`). The
+  executor hangs, rarely, on a run that normally takes two seconds.
+  `Host` now takes a `step` sink called with each node id, fed into the
+  op's phase, so the next occurrence names the node (placeholder-fill
+  runs inventory → fill → route → approve) instead of "running". That is
+  instrumentation, not a fix: the hang is unexplained and has never
+  reproduced on this machine. Mitigation in the product: the run sheet
+  now offers the core's real Cancel, so a user is not stuck.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 36/36 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,
