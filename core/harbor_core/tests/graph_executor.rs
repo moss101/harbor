@@ -733,3 +733,50 @@ fn a_schema_that_cannot_become_a_grammar_fails_instead_of_degrading_silently() {
     // It must fail BEFORE spending a model call on an unconstrained decode.
     assert_eq!(provider.hits(), 0, "no model call should have been made");
 }
+
+#[test]
+fn a_truncated_object_is_not_salvaged_into_the_array_inside_it() {
+    // This is the iOS failure, reproduced without a device or a model.
+    //
+    // A grammar-constrained `meeting-notes` object cut off at the token
+    // budget leaves the outer `{` unclosed. extract_json then tried
+    // ('{','}') — which fails to parse — and fell through to ('[',']'),
+    // which happily matched the COMPLETE `actions` array nested inside and
+    // returned it as if it were the model's answer.
+    //
+    // The executor then reported `/: expected type "object", got array`,
+    // which points at the model's shape and sends you hunting a grammar
+    // bug. The real cause was truncation, and the grammar was doing its
+    // job right up to the last token it was allowed.
+    //
+    // Salvaging a SUBSTRUCTURE is never a correct reading of a truncated
+    // value. Whatever extract_json returns must start where the value
+    // starts.
+    let truncated =
+        r#"{"actions": [{"due": null, "owner": "Ben", "text": "run it"}], "decisions": ["ship""#;
+    let got = harbor_core::executor::extract_json(truncated);
+    assert!(
+        !got.as_ref().map(|v| v.is_array()).unwrap_or(false),
+        "a truncated object must never come back as the array nested in it: {got:?}"
+    );
+
+    // The honest salvage cases must still work.
+    assert_eq!(
+        harbor_core::executor::extract_json(r#"{"a": 1}"#),
+        Some(serde_json::json!({"a": 1}))
+    );
+    assert_eq!(
+        harbor_core::executor::extract_json("```json\n{\"a\": 1}\n```"),
+        Some(serde_json::json!({"a": 1}))
+    );
+    assert_eq!(
+        harbor_core::executor::extract_json(r#"Sure! {"a": 1} hope that helps"#),
+        Some(serde_json::json!({"a": 1})),
+        "prose around a complete object is still extractable"
+    );
+    assert_eq!(
+        harbor_core::executor::extract_json(r#"Here you go: [1, 2, 3]"#),
+        Some(serde_json::json!([1, 2, 3])),
+        "a genuine top-level array is still extractable"
+    );
+}

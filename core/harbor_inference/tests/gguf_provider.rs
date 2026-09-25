@@ -383,26 +383,42 @@ fn the_grammar_holds_for_a_nested_schema_with_a_nullable_union() {
     };
     let resp = provider.generate(req).unwrap();
     println!("nested structured output: {:?}", resp.content);
-    let v: serde_json::Value = serde_json::from_str(resp.content.trim()).unwrap_or_else(|e| {
-        panic!("must parse as JSON: {e}: {:?}", resp.content)
-    });
+    let v: serde_json::Value = serde_json::from_str(resp.content.trim())
+        .unwrap_or_else(|e| panic!("must parse as JSON: {e}: {:?}", resp.content));
     // The root is the whole point: an array here is the iOS failure.
     let obj = v
         .as_object()
         .unwrap_or_else(|| panic!("root must be an object, got {v}"));
-    assert!(obj.get("summary").map(|s| s.is_string()).unwrap_or(false), "{v}");
+    assert!(
+        obj.get("summary").map(|s| s.is_string()).unwrap_or(false),
+        "{v}"
+    );
     let actions = obj
         .get("actions")
         .and_then(|a| a.as_array())
         .unwrap_or_else(|| panic!("actions must be an array: {v}"));
     for a in actions {
-        let ao = a.as_object().unwrap_or_else(|| panic!("action must be an object: {v}"));
-        assert!(ao.get("text").map(|t| t.is_string()).unwrap_or(false), "{v}");
-        let owner = ao.get("owner").unwrap_or_else(|| panic!("owner required: {v}"));
-        assert!(owner.is_string() || owner.is_null(), "owner must be string|null: {v}");
+        let ao = a
+            .as_object()
+            .unwrap_or_else(|| panic!("action must be an object: {v}"));
+        assert!(
+            ao.get("text").map(|t| t.is_string()).unwrap_or(false),
+            "{v}"
+        );
+        let owner = ao
+            .get("owner")
+            .unwrap_or_else(|| panic!("owner required: {v}"));
+        assert!(
+            owner.is_string() || owner.is_null(),
+            "owner must be string|null: {v}"
+        );
         assert_eq!(ao.len(), 2, "additionalProperties=false must hold: {v}");
     }
-    assert_eq!(obj.len(), 2, "additionalProperties=false must hold at root: {v}");
+    assert_eq!(
+        obj.len(),
+        2,
+        "additionalProperties=false must hold at root: {v}"
+    );
 }
 
 /// The exact schema that failed on iOS, loaded from the shipped graph.
@@ -428,7 +444,10 @@ fn the_grammar_holds_for_the_shipped_meeting_notes_schema() {
         .find(|n| n["id"] == "minutes")
         .expect("minutes node")["output_schema"]
         .clone();
-    assert_eq!(node_schema["type"], "object", "precondition: root is object");
+    assert_eq!(
+        node_schema["type"], "object",
+        "precondition: root is object"
+    );
     let schema = harbor_canonical::convert(node_schema).expect("shipped schema canonicalises");
 
     let dir = tempfile::tempdir().unwrap();
@@ -459,5 +478,44 @@ fn the_grammar_holds_for_the_shipped_meeting_notes_schema() {
     assert!(
         v.is_object(),
         "root must be an object — this is exactly the iOS failure: {v}"
+    );
+}
+
+/// Inspect the GBNF the shipped schema actually compiles to.
+///
+/// A grammar can be APPLIED and still be wrong. If `json_schema_to_grammar`
+/// falls back to a permissive rule for anything it does not understand,
+/// the root accepts an array as readily as an object — and then whether a
+/// run succeeds depends on which branch greedy decoding happens to take
+/// for a given model. That would explain why stories260K yields an object
+/// on macOS while qwen2.5-1.5b yields an array on iOS, with no platform
+/// difference at all.
+///
+/// This asserts the property directly, with no model in the loop: the root
+/// rule must commit to an object.
+#[test]
+fn the_shipped_schema_compiles_to_a_grammar_whose_root_is_an_object() {
+    let graph: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(repo_root().join("core/harbor_core/src/graphs/meeting-notes.json")).unwrap(),
+    )
+    .unwrap();
+    let node_schema = graph["nodes"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|n| n["id"] == "minutes")
+        .unwrap()["output_schema"]
+        .clone();
+    let gbnf = llama_cpp_2::json_schema_to_grammar(&serde_json::to_string(&node_schema).unwrap())
+        .expect("schema must compile to a grammar");
+    println!("--- GBNF for meeting-notes/minutes ---\n{gbnf}\n--- end ---");
+    let root = gbnf
+        .lines()
+        .find(|l| l.trim_start().starts_with("root "))
+        .unwrap_or_else(|| panic!("no root rule in grammar:\n{gbnf}"));
+    println!("root rule: {root}");
+    assert!(
+        !root.contains('['),
+        "the root rule must not admit an array — this is the iOS failure: {root}"
     );
 }

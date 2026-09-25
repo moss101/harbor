@@ -455,8 +455,28 @@ pub fn extract_json(text: &str) -> Option<Value> {
     if let Ok(v) = serde_json::from_str::<Value>(fenced) {
         return Some(v);
     }
-    for (open, close) in [('{', '}'), ('[', ']')] {
-        if let (Some(s), Some(e)) = (t.find(open), t.rfind(close)) {
+    // Salvage only a value that starts where the FIRST structural opener
+    // is, and give up if that span does not parse.
+    //
+    // This used to try ('{','}') and then ('[',']') independently. On a
+    // grammar-constrained object truncated at the token budget the outer
+    // `{` never closes, so the object attempt failed and the array attempt
+    // matched a COMPLETE array nested inside it — which was then handed to
+    // the validator as the model's answer. The run failed with
+    // `/: expected type "object", got array`, an error that describes the
+    // model's shape and says nothing about the budget that actually caused
+    // it. A substructure is never a correct reading of a truncated value.
+    //
+    // The cost is a contrived case like `See [1] here: {"a":1}`, where the
+    // first opener belongs to prose rather than to the value. Returning
+    // None there is the right trade: with a schema in force the model emits
+    // JSON and nothing else, and a wrong value is worse than no value.
+    let first = t
+        .char_indices()
+        .find(|(_, c)| *c == '{' || *c == '[')
+        .map(|(i, c)| (i, if c == '{' { '}' } else { ']' }));
+    if let Some((s, close)) = first {
+        if let Some(e) = t.rfind(close) {
             if e > s {
                 if let Ok(v) = serde_json::from_str::<Value>(&t[s..=e]) {
                     return Some(v);
@@ -2117,7 +2137,22 @@ impl<'a> Executor<'a> {
                             .collect::<Vec<_>>()
                             .join("; ");
                     }
-                    None => last_error = "output is not JSON".into(),
+                    None => {
+                        // Distinguish "the model rambled" from "we cut it
+                        // off". The executor knows the budget it set and
+                        // the tokens that came back; when they meet, the
+                        // output is a prefix of a valid answer and saying
+                        // "not JSON" sends the reader after the wrong
+                        // thing entirely.
+                        last_error = if resp.usage.completion_tokens >= max_tokens as u64 {
+                            format!(
+                                "output was truncated at the {max_tokens}-token budget \
+                                 for this node, so it is an incomplete JSON value"
+                            )
+                        } else {
+                            "output is not JSON".into()
+                        }
+                    }
                 }
                 // Retry with the violation list in the conversation.
                 messages.push(JsonValue::object([

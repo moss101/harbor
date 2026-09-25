@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "42fefed3a0e412ca73f5e5b7b27f8a09c26ec102e4f6d3bf40db6ee84b188225",
+  "input_manifest_sha256": "3733a9eee63b466f357d43c958b66f1367580850b5b4b5a26144ee900b6ee101",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -1461,8 +1461,8 @@
     },
     {
       "path": "core/harbor_core/src/executor.rs",
-      "bytes": 85153,
-      "sha256": "3c57f025463aa48535e17736f3525dbe8dfbeed5d2c7b9733a55ff260d9d18f9"
+      "bytes": 87132,
+      "sha256": "2a4019e28407d4550425063297db79316f8a5e0f49d212cd5ed7bbc7bb3d11da"
     },
     {
       "path": "core/harbor_core/src/graph.rs",
@@ -1571,8 +1571,8 @@
     },
     {
       "path": "core/harbor_core/tests/graph_executor.rs",
-      "bytes": 28079,
-      "sha256": "224d5ab6f146461630feb76403a4372194b34c14c82f511abe3d309a619d1f52"
+      "bytes": 30100,
+      "sha256": "4e568c3d4845c39d5bcd04d6f1aee9314ba64c479d814d9c1beede9a363435e3"
     },
     {
       "path": "core/harbor_core/tests/skill_evals.rs",
@@ -1691,8 +1691,8 @@
     },
     {
       "path": "core/harbor_inference/tests/gguf_provider.rs",
-      "bytes": 17478,
-      "sha256": "ad9b0ef7330ebdd78f4c52f18d8573bb0e43c8cbef97338f80168f4f1bbaf298"
+      "bytes": 19325,
+      "sha256": "12c801077fd4c78810f758dcd13981244b4d4192cb8547351b5f9523eb4c6b3b"
     },
     {
       "path": "core/harbor_inference/tests/qwen_qualification.rs",
