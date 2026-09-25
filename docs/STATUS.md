@@ -550,9 +550,23 @@ ran at.
   differences. `GGML_METAL_DISABLE` / `LLAMA_NO_METAL` do not disable
   Metal in this build, so it could not be checked here. Settling it needs
   a CPU-only build or surfacing the iOS output text.
-  `meeting-notes` does not produce minutes on iOS. It now fails saying
-  the output was truncated at the budget, which is true; WHY it truncates
-  there and not on macOS is open.
+  **Settled, and it retires the "platform divergence" reading above.**
+  Running `second-look` on the simulator — same model, a schema whose
+  worst case (154 tokens) fits its 400 budget — **COMPLETED in 16.4 s**,
+  and the node records `grammar_constrained`. That is the datum the
+  encrypted run store would not give up: `supports()` is true on iOS, the
+  grammar IS applied, and structured output works there. So iOS is not
+  broken, and the second causal story told here was wrong too.
+  What remains is narrower and fits every observation: `second-look`
+  bounds `questions` to `maxItems: 3` and cannot run away.
+  `meeting-notes` permits 100 actions and 50 decisions. On macOS the
+  greedy path stopped at 2 actions; on the simulator it kept going. Both
+  are grammar-legal. The greedy paths do differ between the builds, but
+  that difference is only FATAL because the schema licenses ~26k tokens
+  against a 1500 budget — which is the defect recorded below, and a
+  product decision rather than a platform bug.
+  **First structured graph to complete on iOS**: run-300bb2d2, outcome
+  abstained, `rules -> look -> route -> skip`.
 - **How truncation is reachable at all: five shipped schemas are larger
   than the budgets that must hold them.** Independent of the iOS
   divergence, the grammar-legal worst case of most `model.structured`
