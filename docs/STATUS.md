@@ -393,6 +393,16 @@ ran at.
   Arabic ones — and the core's messages do not end in full stops (Rust
   convention, verified by grep), so the bug cannot reach them. The rule
   stays "content with its own direction", applied per call site.
+  Swept every surface reachable without a model or a document — Home,
+  Models, Skills, Settings, Work, Ask, Activity — in Arabic on the
+  simulator. One bug, the skill prose, now fixed in five places;
+  everything else correct, including the details that are easy to get
+  wrong: navigation hints mirror their arrows (`النماذج ← المثبتة`),
+  `Hugging Face` and the file-type chips stay LTR, Arabic sentences put
+  their own full stops on the left where they belong, and the composer's
+  ellipsis sits at the correct end. Running a skill or opening a
+  document needs an installed model (a 1.1 GB brokered download) or a
+  file in the simulator's storage, so those paths stay unexercised here.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,
