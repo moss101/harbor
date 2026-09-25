@@ -438,6 +438,13 @@ ran at.
   `LSSupportsOpeningDocumentsInPlace` are set now — safe, because
   Harbor's own data lives in Application Support and the only thing in
   Documents is a copy the user deliberately saved.
+  **Demonstrated, not reasoned**: rebuilt, confirmed both keys are in the
+  BUILT app's Info.plist rather than only the source (today's entitlements
+  lesson — a correct plist proved nothing there), then placed a saved copy
+  in the container and opened the simulator's Files app. "On My iPhone"
+  now lists a **Harbor** folder containing `letter_template (Harbor).docx`
+  with a working preview. Before the change the folder did not exist
+  there at all. Test file removed afterwards.
   **Android has the same problem and no one-line fix**: app-private
   storage is invisible under scoped storage, and solving it needs a SAF
   create-document channel or a share sheet. Left untouched and flagged,

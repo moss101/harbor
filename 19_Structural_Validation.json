@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "ebc5be7ab0c54f5bc1b5cfd5a8cd74edf913e157d675ac8cea11893ea8e74226",
+  "input_manifest_sha256": "90af250d369f4d093d8b3dc44f7616121852fea934c556c3534a967cf4c1a2d6",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -2021,8 +2021,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 70985,
-      "sha256": "1801aad7b628d1e1d30d2d65eff8fe9d5552c180ddaf66ac6ade7daff08c80d7"
+      "bytes": 71473,
+      "sha256": "af47057ad2f438bede85ed7229dc075c9561a592e29495b6a1c4b82f6f6e8178"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
