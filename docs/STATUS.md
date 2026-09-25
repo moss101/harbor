@@ -243,6 +243,30 @@ ran at.
   of **4 records** appeared once after I replaced the binary under a live
   container, and I could not reproduce it — a clean install and an
   update-style reinstall both record zero. Unidentified, not dismissed.
+- **The macOS release build was sandboxed with no file or network
+  access.** `Release.entitlements` has been the unmodified Flutter
+  template — `com.apple.security.app-sandbox` alone — since the first
+  commit, never revisited as the app gained documents and model
+  acquisition. Verified on the built artifact with
+  `codesign -d --entitlements`, not just the source plist. Under that
+  sandbox Powerbox does not extend access to a user-picked file
+  (Attach a document, Save new copy, Overwrite original) and no outbound
+  connection is permitted (model acquisition) — every core workflow. The
+  macOS tier evidence records "launch verified" and "Metal inference
+  verified", both of which pass sandboxed, so nothing ever exercised the
+  paths that do not.
+  Added the least-privilege pair — `files.user-selected.read-write` and
+  `network.client`, no server entitlement — and aligned DebugProfile,
+  since a debug build that can open files while the release build cannot
+  is the arrangement where the gap only shows up in the build nobody
+  tests. Rebuilt and re-read from the artifact to confirm.
+  **Not empirically demonstrated**: proving the failure needs GUI
+  interaction on a signed build, which is MAC-03's clean-machine run.
+  The alternative fix is dropping the sandbox entirely, which is
+  defensible for the Developer-ID DMG that `rings.md` describes — that
+  is a distribution decision, and the sandbox was kept because it is the
+  better default for this product and preserves the Mac App Store
+  option.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,

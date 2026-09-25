@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "16e5260ff75408cb2624da26b97549c1e7cc113477fa4c85d4f0cd9c54a0676b",
+  "input_manifest_sha256": "7e447b5bb443bd53d2fbaf86c6cfd7f5898d1314e656d2cb02b00f5533fa7d0b",
   "file_count_excluding_manifest": 548,
   "files": [
     {
@@ -119,13 +119,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 99891,
-      "sha256": "103b81f02aed8912772fb8a705a278fe52b2d7663cfa7ef87564d9101167d9d0"
+      "bytes": 99892,
+      "sha256": "7f18aa3e63d407fdb1c4e863ed8b85f2a4abecfe8c7aa176fa5daf82cdca7160"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "2e3dc0cf2d81da97624b9f28e49e6268235aeb4e68675bf9263fcc16f4e1cf7e"
+      "sha256": "e999b91cee95843596fc8f3894851caa73512566be294a8edcd0590643f49982"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -779,8 +779,8 @@
     },
     {
       "path": "apps/harbor_app/macos/Runner/DebugProfile.entitlements",
-      "bytes": 348,
-      "sha256": "ebaab2b9992173de422c33e1fbab7f6e31acaa2213956097ac8cefd894a91ac8"
+      "bytes": 680,
+      "sha256": "fadf88b9981c9bdbf74a30ab120eb25be174e8a496bfe57aa29f1239f1f7cfc3"
     },
     {
       "path": "apps/harbor_app/macos/Runner/Info.plist",
@@ -799,8 +799,8 @@
     },
     {
       "path": "apps/harbor_app/macos/Runner/Release.entitlements",
-      "bytes": 240,
-      "sha256": "b746c74b201e6af4e0864fbd1f4f629f96156a7ec4b7208bc995d0a5089bb592"
+      "bytes": 1121,
+      "sha256": "295eac2b37ea2746b1058030b9079e5c0cf763e93866fa20fee42638f08657d9"
     },
     {
       "path": "apps/harbor_app/macos/Runner.xcodeproj/project.pbxproj",
@@ -2039,8 +2039,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 57425,
-      "sha256": "bb00cfe9236b1bf933dd8e6e22b5fcec2a6040fbd20b638a5415ac63a676ce96"
+      "bytes": 58962,
+      "sha256": "9997aeb945730ff69ddc3a589763cbf0aab1a9b6ad791646111cff56a68e164c"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",

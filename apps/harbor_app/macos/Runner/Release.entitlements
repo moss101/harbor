@@ -4,5 +4,23 @@
 <dict>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
+	<!-- Least privilege for what Harbor actually does. The file was the
+	     unmodified Flutter template (sandbox alone) from the first commit
+	     and was never revisited as the app gained documents and model
+	     acquisition; under that sandbox a user-picked file is NOT readable
+	     and no outbound connection is permitted, which is every core
+	     workflow. -->
+
+	<!-- Attach a document, Save new copy, Overwrite original: Powerbox
+	     extends access to user-chosen files only with this. Harbor never
+	     asks for broad disk access — only what the user picked. -->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+
+	<!-- Model acquisition is the single documented egress and runs
+	     through the core's broker in this process. No server entitlement:
+	     Harbor listens for nothing. -->
+	<key>com.apple.security.network.client</key>
+	<true/>
 </dict>
 </plist>

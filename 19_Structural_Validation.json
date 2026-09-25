@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "16e5260ff75408cb2624da26b97549c1e7cc113477fa4c85d4f0cd9c54a0676b",
+  "input_manifest_sha256": "7e447b5bb443bd53d2fbaf86c6cfd7f5898d1314e656d2cb02b00f5533fa7d0b",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -761,8 +761,8 @@
     },
     {
       "path": "apps/harbor_app/macos/Runner/DebugProfile.entitlements",
-      "bytes": 348,
-      "sha256": "ebaab2b9992173de422c33e1fbab7f6e31acaa2213956097ac8cefd894a91ac8"
+      "bytes": 680,
+      "sha256": "fadf88b9981c9bdbf74a30ab120eb25be174e8a496bfe57aa29f1239f1f7cfc3"
     },
     {
       "path": "apps/harbor_app/macos/Runner/Info.plist",
@@ -781,8 +781,8 @@
     },
     {
       "path": "apps/harbor_app/macos/Runner/Release.entitlements",
-      "bytes": 240,
-      "sha256": "b746c74b201e6af4e0864fbd1f4f629f96156a7ec4b7208bc995d0a5089bb592"
+      "bytes": 1121,
+      "sha256": "295eac2b37ea2746b1058030b9079e5c0cf763e93866fa20fee42638f08657d9"
     },
     {
       "path": "apps/harbor_app/macos/Runner.xcodeproj/project.pbxproj",
@@ -2021,8 +2021,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 57425,
-      "sha256": "bb00cfe9236b1bf933dd8e6e22b5fcec2a6040fbd20b638a5415ac63a676ce96"
+      "bytes": 58962,
+      "sha256": "9997aeb945730ff69ddc3a589763cbf0aab1a9b6ad791646111cff56a68e164c"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
