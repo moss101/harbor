@@ -627,6 +627,32 @@ ran at.
   iPhone, whose Metal implementation is not SimMetalHost. The fault is
   most likely simulator-only, but that is unproven and IOS-02 remains
   the thing that would settle it.
+  **Prediction tested and confirmed on the original failing case.**
+  `meeting-notes` — the run that truncated twice and burned twelve
+  minutes — COMPLETED CPU-only on the simulator in ~20 s
+  (run-1552b12c), outcome اكتمل:
+  `decisions: ["Hold the tag until Ben signs off"]`,
+  `actions: [{text: "Run the device checklist tomorrow", owner: "Ben",
+  due: "2023-04-15"}]`, `language: "en"` (detector: latin_ratio 1.0,
+  method "script"). Nothing about the schema changed — only the GPU left
+  the loop — so the 34x bounds were not the cause and garbage was.
+  (First attempt at this test proved nothing: the previous result sheet
+  was still open and swallowed the taps, and I nearly reported a stale
+  Second Look result as a meeting-notes outcome. Relaunching and reading
+  the transcript off the screen before firing is what ruled that out.)
+  **The output is not clean, and the flaw is worth more than the pass.**
+  The node's instructions say every due date must be copied verbatim and
+  that a date the transcript does not state must be `null`, never a
+  guess. The transcript said "tomorrow". The model emitted
+  `"due": "2023-04-15"` — a fabricated date from a training prior, in the
+  exact field where the graph author anticipated this and forbade it. The
+  summary also conflates the decision with the action.
+  So: pipeline, grammar, validation and routing are correct on iOS with
+  the GPU bypassed; qwen2.5-1.5b does NOT reliably honour the verbatim
+  constraint. That is model quality, not a code defect — but a
+  hallucinated date in minutes is exactly the kind of output that reads
+  as authoritative and is wrong, and it belongs in any evaluation of
+  whether a 1.5B model is fit to be the recommended default.
   It does mean the earlier claim that a structured graph "completed on
   iOS" is true only in the emptiest sense: it completed with garbage.
 - **How truncation is reachable at all: five shipped schemas are larger
