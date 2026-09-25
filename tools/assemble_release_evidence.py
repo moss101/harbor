@@ -81,6 +81,37 @@ def evidence_ok(rel_path: str) -> bool:
     return True
 
 
+def cited_present(paths) -> bool:
+    """Every path a gate cites as its evidence actually exists.
+
+    Repo-relative, because platform gates cite build outputs and tracked
+    files rather than `evidence/*.json`.
+    """
+    return all((REPO / p).exists() for p in paths)
+
+
+def asserted(id_, name, evidence, note):
+    """A gate whose status was a hardcoded string.
+
+    These read `PASS` no matter what: the platform tier asserted six of
+    them, and IOS-01 asserted a passing native-linkage gate while citing
+    a static archive that did not exist on this machine. A gate that
+    names its evidence and then does not look at it is the worst shape
+    in this file — the table reads clean over nothing at all. Now the
+    files must be there; `evidence_ok` still decides what the JSON ones
+    SAY once they are.
+    """
+    if not cited_present(evidence):
+        missing = [e for e in evidence if not (REPO / e).exists()]
+        return gate(id_, name, "FAIL_NO_EVIDENCE", evidence,
+                    note + " [MISSING: " + ", ".join(missing) + "]")
+    for e in evidence:
+        if e.startswith("evidence/") and e.endswith(".json") and not evidence_ok(e[len("evidence/"):]):
+            return gate(id_, name, "FAIL", evidence,
+                        note + " [evidence says the check did not pass: " + e + "]")
+    return gate(id_, name, "PASS", evidence, note)
+
+
 def evidence_status(rel_path: str) -> str:
     """The gate status this evidence file supports.
 
@@ -204,8 +235,8 @@ def main():
 
     # --- Platform tiers ---------------------------------------------------
     gates += [
-        gate("MAC-01", "macOS release build + live native core + launch",
-             "PASS", ["evidence/device_qualification.json",
+        asserted("MAC-01", "macOS release build + live native core + launch",
+             ["evidence/device_qualification.json",
                       "evidence/perf_baseline.json"],
              "ad-hoc signed release bundle maps libharbor_ffi.dylib; full workspace verified live"),
         gate("MAC-02", "macOS Developer ID signing + notarization + stapling",
@@ -216,13 +247,13 @@ def main():
         gate("MAC-03", "macOS clean-machine launch (no dev tools)",
              "BLOCKED_DEVICE_EVIDENCE", [],
              "requires a second macOS machine without Xcode/toolchains"),
-        gate("MAC-04", "macOS privacy manifest + export compliance",
-             "PASS", ["apps/harbor_app/macos/Runner/PrivacyInfo.xcprivacy",
+        asserted("MAC-04", "macOS privacy manifest + export compliance",
+             ["apps/harbor_app/macos/Runner/PrivacyInfo.xcprivacy",
                       "docs/release/store/apple_export_compliance.md"],
              "symbol-evidence-based required-reason declarations; operator "
              "confirms export answer at submission"),
-        gate("IOS-01", "iOS production-device native linkage (static archive)",
-             "PASS", ["core/target/aarch64-apple-ios/release/libharbor_ffi.a",
+        asserted("IOS-01", "iOS production-device native linkage (static archive)",
+             ["core/target/aarch64-apple-ios/release/libharbor_ffi.a",
                       "apps/harbor_app/ios/Runner.xcodeproj/project.pbxproj"],
              "libharbor_ffi.a (aarch64-apple-ios, llama.cpp included) "
              "force-loaded into Runner via sdk-conditional build phase; "
@@ -235,15 +266,15 @@ def main():
         gate("IOS-03", "iOS store distribution (TestFlight/App Store archive)",
              "BLOCKED_EXTERNAL", ["scripts/package_apple.sh"],
              "requires Apple Developer Program + distribution identity"),
-        gate("IOS-04", "iOS privacy manifest + export compliance",
-             "PASS", ["apps/harbor_app/ios/Runner/PrivacyInfo.xcprivacy",
+        asserted("IOS-04", "iOS privacy manifest + export compliance",
+             ["apps/harbor_app/ios/Runner/PrivacyInfo.xcprivacy",
                       "docs/release/store/apple_export_compliance.md"],
              "ITSAppUsesNonExemptEncryption=false recorded with rationale"),
-        gate("AND-01", "Android release APK live native core (arm64 emulator)",
-             "PASS", ["evidence/device_qualification.json"],
+        asserted("AND-01", "Android release APK live native core (arm64 emulator)",
+             ["evidence/device_qualification.json"],
              "NDK cross-compiled libharbor_ffi.so + libc++_shared.so; live core"),
-        gate("AND-02", "Android release AAB (structural store artifact)",
-             "PASS", ["apps/harbor_app/build/app/outputs/bundle/release/app-release.aab"],
+        asserted("AND-02", "Android release AAB (structural store artifact)",
+             ["apps/harbor_app/build/app/outputs/bundle/release/app-release.aab"],
              "debug-key signed — NOT store-distributable; structure and ABI "
              "packaging validated"),
         gate("AND-03", "Android physical-device qualification",
