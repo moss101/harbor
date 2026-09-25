@@ -330,3 +330,134 @@ fn long_prompts_are_prefilled_in_chunks_and_oversized_prompts_are_refused() {
         "{err}"
     );
 }
+
+/// The grammar must hold for the schema shapes the product actually ships,
+/// not only for a flat object.
+///
+/// `structured_output_is_grammar_constrained_on_the_real_runtime` above
+/// proves the constraint with two scalar properties. Every real graph
+/// schema is richer than that: `meeting-notes` nests an array of objects
+/// and marks two fields `["string","null"]`. A run of that graph on iOS
+/// returned an ARRAY where the root schema says object — which a grammar,
+/// if it were doing its job, could not emit. That is the gap this covers:
+/// the guarantee was verified where it was easy and assumed where it was
+/// hard.
+///
+/// stories260K cannot follow instructions at all, so anything well-formed
+/// here is the grammar's doing and nothing else.
+#[test]
+fn the_grammar_holds_for_a_nested_schema_with_a_nullable_union() {
+    let dir = tempfile::tempdir().unwrap();
+    let package = install_test_model(dir.path());
+    let provider = GgufLlamaCppProvider::new(dir.path())
+        .unwrap()
+        .with_context_tokens(512);
+    let m = ModelRef::InstalledPackage {
+        package_id: package,
+    };
+    provider.load(&m).unwrap();
+    // The shape of meeting-notes/minutes, reduced but structurally faithful:
+    // object root, array of objects, and a nullable string.
+    let schema = harbor_canonical::parse(
+        r#"{"type":"object","properties":{
+             "summary":{"type":"string","maxLength":40},
+             "actions":{"type":"array","maxItems":2,"items":{
+               "type":"object",
+               "properties":{"text":{"type":"string","maxLength":20},
+                             "owner":{"type":["string","null"],"maxLength":20}},
+               "required":["text","owner"],"additionalProperties":false}}},
+           "required":["summary","actions"],"additionalProperties":false}"#,
+    )
+    .unwrap();
+    let req = ChatRequest {
+        model: m,
+        messages: vec![JsonValue::object([
+            ("role", JsonValue::str("user")),
+            ("content", JsonValue::str("Summarise a meeting as JSON.")),
+        ])],
+        max_tokens: 120,
+        temperature: 0.0,
+        requires: vec![Capabilities::Chat, Capabilities::StructuredOutput],
+        response_schema: Some(schema),
+        trace_key: None,
+    };
+    let resp = provider.generate(req).unwrap();
+    println!("nested structured output: {:?}", resp.content);
+    let v: serde_json::Value = serde_json::from_str(resp.content.trim()).unwrap_or_else(|e| {
+        panic!("must parse as JSON: {e}: {:?}", resp.content)
+    });
+    // The root is the whole point: an array here is the iOS failure.
+    let obj = v
+        .as_object()
+        .unwrap_or_else(|| panic!("root must be an object, got {v}"));
+    assert!(obj.get("summary").map(|s| s.is_string()).unwrap_or(false), "{v}");
+    let actions = obj
+        .get("actions")
+        .and_then(|a| a.as_array())
+        .unwrap_or_else(|| panic!("actions must be an array: {v}"));
+    for a in actions {
+        let ao = a.as_object().unwrap_or_else(|| panic!("action must be an object: {v}"));
+        assert!(ao.get("text").map(|t| t.is_string()).unwrap_or(false), "{v}");
+        let owner = ao.get("owner").unwrap_or_else(|| panic!("owner required: {v}"));
+        assert!(owner.is_string() || owner.is_null(), "owner must be string|null: {v}");
+        assert_eq!(ao.len(), 2, "additionalProperties=false must hold: {v}");
+    }
+    assert_eq!(obj.len(), 2, "additionalProperties=false must hold at root: {v}");
+}
+
+/// The exact schema that failed on iOS, loaded from the shipped graph.
+///
+/// The reduced version above passes, so the grammar handles nesting and
+/// nullable unions in principle. This pins the real thing — 5 properties,
+/// `maxItems: 100`, an enum, and an array of 3-field objects — because a
+/// run of this graph on an iPhone simulator came back with an ARRAY at a
+/// root the schema declares an object, after a grammar was supposedly
+/// applied. Either the grammar silently weakens on this schema, or the
+/// fault is elsewhere; a reduced proxy cannot tell us which, and this is
+/// the only version that ships.
+#[test]
+fn the_grammar_holds_for_the_shipped_meeting_notes_schema() {
+    let graph: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(repo_root().join("core/harbor_core/src/graphs/meeting-notes.json")).unwrap(),
+    )
+    .unwrap();
+    let node_schema = graph["nodes"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|n| n["id"] == "minutes")
+        .expect("minutes node")["output_schema"]
+        .clone();
+    assert_eq!(node_schema["type"], "object", "precondition: root is object");
+    let schema = harbor_canonical::convert(node_schema).expect("shipped schema canonicalises");
+
+    let dir = tempfile::tempdir().unwrap();
+    let package = install_test_model(dir.path());
+    let provider = GgufLlamaCppProvider::new(dir.path())
+        .unwrap()
+        .with_context_tokens(512);
+    let m = ModelRef::InstalledPackage {
+        package_id: package,
+    };
+    provider.load(&m).unwrap();
+    let req = ChatRequest {
+        model: m,
+        messages: vec![JsonValue::object([
+            ("role", JsonValue::str("user")),
+            ("content", JsonValue::str("Turn this into minutes.")),
+        ])],
+        max_tokens: 200,
+        temperature: 0.0,
+        requires: vec![Capabilities::Chat, Capabilities::StructuredOutput],
+        response_schema: Some(schema),
+        trace_key: None,
+    };
+    let resp = provider.generate(req).unwrap();
+    println!("shipped-schema output: {:?}", resp.content);
+    let v: serde_json::Value = serde_json::from_str(resp.content.trim())
+        .unwrap_or_else(|e| panic!("must parse as JSON: {e}: {:?}", resp.content));
+    assert!(
+        v.is_object(),
+        "root must be an object — this is exactly the iOS failure: {v}"
+    );
+}

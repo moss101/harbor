@@ -689,3 +689,47 @@ fn walkdir(root: &std::path::Path) -> Vec<std::path::PathBuf> {
     }
     out
 }
+
+#[test]
+fn a_schema_that_cannot_become_a_grammar_fails_instead_of_degrading_silently() {
+    // A `model.structured` node whose schema carries a fractional bound.
+    // Canonical JSON prohibits floats, so this schema cannot be converted,
+    // and therefore cannot be turned into a llama.cpp grammar.
+    //
+    // The old code wrote `harbor_canonical::convert(..).ok()`, so the
+    // failure became `None`: the request went out with no response_schema,
+    // decoding ran UNCONSTRAINED, and any output that happened to validate
+    // was still recorded as `mode: "grammar_constrained"`. The caller asked
+    // for a guarantee, silently did not get it, and was told it had.
+    //
+    // The run must now fail, and say why, rather than produce a result
+    // under a label it did not earn.
+    let rig = Rig::new();
+    let g = graph(
+        "floaty",
+        "n",
+        (10, 5),
+        json!([
+            {"id": "n", "kind": "model.structured", "instructions": "Give a ratio.", "context": [],
+             "output_schema": {"type": "object", "properties": {"ratio": {"type": "number", "multipleOf": 0.5}}, "required": ["ratio"], "additionalProperties": false},
+             "out": "/r", "max_retries": 1, "next": "done"},
+            {"id": "done", "kind": "end", "outcome": "completed", "outputs": ["/r"]}
+        ]),
+    );
+    let cassette = Cassette::default().with_entry("floaty/n#1", r#"{"ratio": 1.5}"#);
+    let provider = RecordReplayProvider::replay(cassette);
+    let r = rig
+        .executor(Some(&provider))
+        .start(rig.request(g, json!({})))
+        .unwrap();
+    assert_eq!(r.state, "FAILED", "{:?}", r.status);
+    assert!(
+        matches!(&r.status, RunStatus::Failed { error }
+            if error.contains("cannot be canonicalised")
+                && error.contains("grammar-constrained")),
+        "the failure must name the cause, not just refuse: {:?}",
+        r.status
+    );
+    // It must fail BEFORE spending a model call on an unconstrained decode.
+    assert_eq!(provider.hits(), 0, "no model call should have been made");
+}

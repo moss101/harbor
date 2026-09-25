@@ -2035,8 +2035,26 @@ impl<'a> Executor<'a> {
                 ("content", JsonValue::str(user)),
             ]),
         ];
+        // A schema that cannot be canonicalised cannot become a grammar.
+        // This used to be `.ok()`, which turned that into `None`: the
+        // request went out with no `response_schema`, llama.cpp sampled
+        // unconstrained, and a result that happened to validate was still
+        // recorded as `mode: "grammar_constrained"` — the label asserting
+        // exactly the guarantee that had just been dropped. Canonical JSON
+        // rejects floats, so any schema carrying `multipleOf: 0.5` or a
+        // fractional bound silently lost its grammar. Fail loudly instead:
+        // callers asked for constrained decoding and must not be told they
+        // got it when they did not.
         let schema_canonical: Option<JsonValue> = if constrained {
-            schema.and_then(|sc| harbor_canonical::convert(sc.clone()).ok())
+            match schema {
+                Some(sc) => Some(harbor_canonical::convert(sc.clone()).map_err(|e| {
+                    ExecError::Other(format!(
+                        "model node {node_id}: output_schema cannot be canonicalised \
+                         ({e}), so decoding cannot be grammar-constrained"
+                    ))
+                })?),
+                None => None,
+            }
         } else {
             None
         };

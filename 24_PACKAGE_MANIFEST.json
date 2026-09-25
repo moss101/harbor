@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "c63f0cd0531f066a10712584f2edc79743fa60e6e7100399b34bc35d7efbff11",
+  "input_manifest_sha256": "42fefed3a0e412ca73f5e5b7b27f8a09c26ec102e4f6d3bf40db6ee84b188225",
   "file_count_excluding_manifest": 550,
   "files": [
     {
@@ -120,12 +120,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 100253,
-      "sha256": "8ccf733020c271410210dce71400eb0f5ba01155d2b07a24b7051cbaea0492fe"
+      "sha256": "664bd07e6e288239a4fcb79b5836cf7c8fb31f023f2bcc0607f1d61fba7775d8"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "716a8f847656639397b7648ad9c379349925566398251ccc14b7533920b9ed48"
+      "sha256": "82ebe9a3d63d93976586815c203fb577bf5b285afa9b3150cb61ee78709a8ad9"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -474,8 +474,8 @@
     },
     {
       "path": "apps/harbor_app/ios/Runner.xcodeproj/project.pbxproj",
-      "bytes": 29662,
-      "sha256": "4b749ededf8411b0dc3c80e3d29fd35ef99657e43977b45425fca5f37412203e"
+      "bytes": 31274,
+      "sha256": "7f507556fac7e068a6b4a78462728f9cfdbea3c94139b6a05b31cc47c03039ff"
     },
     {
       "path": "apps/harbor_app/ios/Runner.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
@@ -1479,8 +1479,8 @@
     },
     {
       "path": "core/harbor_core/src/executor.rs",
-      "bytes": 84113,
-      "sha256": "140ef02d3e9ff9b08763f64e9f7a4a5a9376b7f91edcbadb6a47fc45cb6d4220"
+      "bytes": 85153,
+      "sha256": "3c57f025463aa48535e17736f3525dbe8dfbeed5d2c7b9733a55ff260d9d18f9"
     },
     {
       "path": "core/harbor_core/src/graph.rs",
@@ -1589,8 +1589,8 @@
     },
     {
       "path": "core/harbor_core/tests/graph_executor.rs",
-      "bytes": 26000,
-      "sha256": "ed3e3b995e49a218361cb487b48aa8f9ce10089868bbdb9213b76be13c7ae117"
+      "bytes": 28079,
+      "sha256": "224d5ab6f146461630feb76403a4372194b34c14c82f511abe3d309a619d1f52"
     },
     {
       "path": "core/harbor_core/tests/skill_evals.rs",
@@ -1709,8 +1709,8 @@
     },
     {
       "path": "core/harbor_inference/tests/gguf_provider.rs",
-      "bytes": 11619,
-      "sha256": "8fd20702e482b0a618f985c11045cc4758de149ee4df88c960217e140036e0b4"
+      "bytes": 17478,
+      "sha256": "ad9b0ef7330ebdd78f4c52f18d8573bb0e43c8cbef97338f80168f4f1bbaf298"
     },
     {
       "path": "core/harbor_inference/tests/qwen_qualification.rs",
