@@ -198,6 +198,17 @@ ran at.
   TestFlight or Play upload happens store-side and leaves no local
   artifact to read, so they are operator-attested rather than
   pretending to be measured.
+- **The CI bundle was overstating by four gates, and now says so.** The
+  consequence of making the platform tier check its evidence shows up
+  hardest on a runner: MAC-01, IOS-01, AND-01 and AND-02 cite files that
+  exist only on the qualification machine or in a different job, and
+  they were asserting `PASS` over them. Every partial bundle CI has ever
+  produced claimed 13 PASS including four platform gates it had no
+  evidence for whatsoever. A full runner simulation (machine-local
+  evidence and build outputs both hidden) now reports **9 PASS with six
+  absences named in `absent_machine_local`**, and still exits 0 under
+  `--partial` — which is the property that had to hold, or every release
+  run would fail.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,
