@@ -231,6 +231,14 @@ ran at.
   simulator evidence is not promoted to the device tier, and the
   simulator loads a `.dylib` where a device force-loads the static
   archive — a different linkage path from the one IOS-01 claims.
+  Also exercised on device geometry, both clean: **dark mode** (fresh
+  install follows the system theme) and **Arabic/RTL**, which holds up
+  including the subtle part — layout, nav and segmented controls all
+  mirror (الرئيسية moves to the right, the composer's send arrow to the
+  left), while `LOCAL ONLY`, `ON DEVICE`, `policy-2026.09` and the brand
+  name stay LTR, which is exactly what the settings copy promises about
+  identifiers keeping their own direction. No defects found there; worth
+  recording as a result rather than leaving untested.
   One loose end, stated rather than explained away: a diagnostics count
   of **4 records** appeared once after I replaced the binary under a live
   container, and I could not reproduce it — a clean install and an
