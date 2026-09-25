@@ -185,6 +185,19 @@ ran at.
   apksigner cannot verify). The values match what was asserted for the
   three signed artifacts, and correct the iOS one: `--no-codesign`
   output is **unsigned**, which the hardcoded string called ad-hoc.
+- **MAC-02 can close now; IOS-03 and AND-04 honestly cannot.** Once
+  signing became observable, the Developer-ID gate stopped needing to be
+  a literal: signature authority, notarization and a stapled ticket are
+  all properties of the artifact. It derives from `codesign` +
+  `xcrun stapler validate`, and states why it is blocked
+  ("signing is ad-hoc") instead of only that it is. Verified in four
+  directions, including the one that matters — Developer ID signing
+  **alone** does not close it, because the gate also requires
+  notarization, and a missing `stapler` blocks rather than guesses.
+  IOS-03 and AND-04 stay asserted on purpose and now say so: a
+  TestFlight or Play upload happens store-side and leaves no local
+  artifact to read, so they are operator-attested rather than
+  pretending to be measured.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,

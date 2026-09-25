@@ -214,6 +214,36 @@ def observed_signing(path: Path) -> str:
     return "undetermined (no signing check for this artifact type)"
 
 
+MACOS_APP = "apps/harbor_app/build/macos/Build/Products/Release/harbor_app.app"
+
+
+def macos_distribution_state():
+    """Is the macOS app Developer ID signed AND notarized-and-stapled?
+
+    MAC-02 asserted `BLOCKED_EXTERNAL` as a literal, so it would have
+    stayed blocked after the operator did the very thing it gates. All
+    three parts — signature authority, notarization, stapled ticket —
+    are properties of the artifact and observable right here. Anything
+    short of all of them keeps the gate blocked; never the reverse.
+
+    IOS-03 and AND-04 are deliberately NOT derived: a TestFlight or Play
+    upload happens store-side and leaves no local artifact to read, so
+    they stay operator-attested.
+    """
+    app = REPO / MACOS_APP
+    if not app.exists():
+        return False, "no macOS app bundle built here"
+    signed = observed_signing(app)
+    if not signed.startswith("signed: Developer ID"):
+        return False, "signing is {}".format(signed)
+    code, _out = _run(["xcrun", "stapler", "validate", str(app)])
+    if code is None:
+        return False, "stapler unavailable, notarization unverified"
+    if code != 0:
+        return False, "no notarization ticket stapled"
+    return True, "Developer ID signed, notarization ticket stapled"
+
+
 def cited_present(paths) -> bool:
     """Every path a gate cites as its evidence actually exists.
 
@@ -367,16 +397,18 @@ def main():
         "464-case corpus; hash bound in 26_Qualification_Profiles.json"))
 
     # --- Platform tiers ---------------------------------------------------
+    _mac02_ok, _mac02_why = macos_distribution_state()
     gates += [
         asserted("MAC-01", "macOS release build + live native core + launch",
              ["evidence/device_qualification.json",
                       "evidence/perf_baseline.json"],
              "ad-hoc signed release bundle maps libharbor_ffi.dylib; full workspace verified live"),
         gate("MAC-02", "macOS Developer ID signing + notarization + stapling",
-             "BLOCKED_EXTERNAL", ["scripts/package_apple.sh"],
+             "PASS" if _mac02_ok else "BLOCKED_EXTERNAL",
+             ["scripts/package_apple.sh", MACOS_APP],
              "requires operator Apple Developer identity; script signs when "
              "HARBOR_APPLE_SIGNING_IDENTITY is set; notarization via operator "
-             "notarytool profile"),
+             "notarytool profile [" + _mac02_why + "]"),
         gate("MAC-03", "macOS clean-machine launch (no dev tools)",
              "BLOCKED_DEVICE_EVIDENCE", [],
              "requires a second macOS machine without Xcode/toolchains"),
@@ -398,7 +430,7 @@ def main():
              "promoted to the device tier"),
         gate("IOS-03", "iOS store distribution (TestFlight/App Store archive)",
              "BLOCKED_EXTERNAL", ["scripts/package_apple.sh"],
-             "requires Apple Developer Program + distribution identity"),
+             "requires Apple Developer Program + distribution identity [operator-attested: a TestFlight/App Store upload leaves no local artifact to verify]"),
         asserted("IOS-04", "iOS privacy manifest + export compliance",
              ["apps/harbor_app/ios/Runner/PrivacyInfo.xcprivacy",
                       "docs/release/store/apple_export_compliance.md"],
@@ -415,7 +447,7 @@ def main():
              "requires physical arm64 device(s)"),
         gate("AND-04", "Android store distribution (Play upload)",
              "BLOCKED_EXTERNAL", ["scripts/package_android.sh"],
-             "requires Play Console ownership + operator upload key via env vars"),
+             "requires Play Console ownership + operator upload key via env vars [operator-attested: a Play upload leaves no local artifact to verify]"),
         device_gate("WIN-01", "Windows native build + qualification",
              "BLOCKED_EXTERNAL", ["scripts/build_windows.ps1",
                                   "docs/release/windows_qualification.md"],
