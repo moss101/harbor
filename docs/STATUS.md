@@ -523,11 +523,36 @@ ran at.
   output was truncated at that budget. **Demonstrated on the simulator**:
   the same run now reports "output was truncated at the 1500-token
   budget for this node, so it is an incomplete JSON value".
-  **Still broken, and not claimed otherwise**: the grammar admits up to
-  100 actions and 50 decisions, and qwen2.5-1.5b under greedy decoding
-  keeps emitting items rather than closing the array — two attempts x
-  1500 tokens is the twelve minutes each run took. `meeting-notes` does
-  not produce minutes on that model. It now fails saying why.
+  **Still broken, cause NOT known.** I first wrote here, and in the
+  f64af07 commit message, that the grammar admits 100 actions and 50
+  decisions and that qwen2.5-1.5b "keeps emitting items rather than
+  closing the array". **That is wrong and this corrects it.** I inferred
+  it from the truncation alone and never looked at what the model emits —
+  the exact move the rest of this entry is about.
+  Measured instead (`what_the_recommended_model_emits_for_the_shipped_schema`,
+  `#[ignore]`, run by hand): on macOS, with the same weights, the schema
+  loaded verbatim from the graph, and the user message reproduced exactly
+  as `render_context` builds it — labelled sections and `(none)` for the
+  empty optional language — the model returns a **complete, conforming
+  object in 124 tokens**, nowhere near the 1500 budget. It closes every
+  array. It does not loop.
+  (The first version of that test hand-wrote `"Transcript: ..."` instead
+  of the real prompt, so its pass proved nothing about the failing run;
+  the fixed version gives the same 124 tokens.)
+  So the iOS truncation is a genuine platform divergence, not model
+  behaviour: same model, same schema, same grammar, same prompt — 124
+  tokens on macOS, 1500 and truncated on the simulator, twice.
+  **Excluded**: the grammar (GBNF root commits to an object), the schema's
+  canonicalisation, the prompt shape, the context size (`n_ctx` grows via
+  `context_tokens.max(needed)`), and a stale core.
+  **Untested hypothesis**: backend numerics — macOS runs Metal, the
+  simulator does not, and greedy decoding can diverge from small logit
+  differences. `GGML_METAL_DISABLE` / `LLAMA_NO_METAL` do not disable
+  Metal in this build, so it could not be checked here. Settling it needs
+  a CPU-only build or surfacing the iOS output text.
+  `meeting-notes` does not produce minutes on iOS. It now fails saying
+  the output was truncated at the budget, which is true; WHY it truncates
+  there and not on macOS is open.
 - **Two more "existence is proof" defects found on the way there.**
   (a) `model.structured` built its request schema with
   `harbor_canonical::convert(sc).ok()`. Canonical JSON prohibits floats,

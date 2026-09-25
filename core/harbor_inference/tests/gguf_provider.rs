@@ -519,3 +519,116 @@ fn the_shipped_schema_compiles_to_a_grammar_whose_root_is_an_object() {
         "the root rule must not admit an array — this is the iOS failure: {root}"
     );
 }
+
+/// What does the recommended model ACTUALLY emit for meeting-notes?
+///
+/// `#[ignore]` — needs the 1.1 GB catalog model in fixtures/models and is
+/// far too slow for CI. Run deliberately:
+///   cargo test -p harbor_inference --features gguf-backend --test gguf_provider \
+///     -- --ignored what_the_recommended_model_emits --nocapture
+///
+/// This exists because I claimed, from a truncation alone, that the model
+/// "keeps emitting array items rather than closing". That was inference,
+/// not observation — the exact move this session has been removing from
+/// the code. This prints the real output so the claim can be checked.
+#[test]
+#[ignore]
+fn what_the_recommended_model_emits_for_the_shipped_schema() {
+    let weights = repo_root().join("fixtures/models/qwen2.5-1.5b-instruct-q4_k_m.gguf");
+    if !weights.exists() {
+        eprintln!("skipped: {} not present", weights.display());
+        return;
+    }
+    let bytes = std::fs::read(&weights).unwrap();
+    let sha = harbor_canonical::sha256_hex(&bytes);
+    let dir = tempfile::tempdir().unwrap();
+    let installer = PackageInstaller::new(dir.path());
+    let manifest = PackageManifest {
+        schema: "harbor.model/v3".into(),
+        id: "qwen".into(),
+        reference_type: "installed_package".into(),
+        files: vec![PackageFile {
+            role: "weights".into(),
+            path: "qwen.gguf".into(),
+            sha256: sha.clone(),
+            size_bytes: bytes.len() as u64,
+        }],
+        runtime: RuntimeBinding {
+            kind: "gguf/llama.cpp".into(),
+            min_revision: "0.1.156".into(),
+            targets: vec![std::env::consts::ARCH.to_string()],
+        },
+    };
+    let mut staged = installer.begin("qwen").unwrap();
+    installer
+        .ingest_file(&mut staged, &manifest.files[0], &bytes)
+        .unwrap();
+    installer
+        .commit(&mut staged, &manifest, chrono::Utc::now())
+        .unwrap();
+
+    let graph: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(repo_root().join("core/harbor_core/src/graphs/meeting-notes.json")).unwrap(),
+    )
+    .unwrap();
+    let node = graph["nodes"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|n| n["id"] == "minutes")
+        .unwrap()
+        .clone();
+    let schema = harbor_canonical::convert(node["output_schema"].clone()).unwrap();
+    let max_tokens = node["max_tokens"].as_u64().unwrap() as u32;
+
+    let provider = GgufLlamaCppProvider::new(dir.path())
+        .unwrap()
+        .with_context_tokens(4096);
+    let m = ModelRef::InstalledPackage {
+        package_id: "qwen".into(),
+    };
+    provider.load(&m).unwrap();
+    let system = format!(
+        "{}\n\nRespond with a single JSON value that conforms to this JSON Schema and nothing else:\n{}",
+        node["instructions"].as_str().unwrap(),
+        serde_json::to_string(&node["output_schema"]).unwrap()
+    );
+    let req = ChatRequest {
+        model: m,
+        messages: vec![
+            JsonValue::object([
+                ("role", JsonValue::str("system")),
+                ("content", JsonValue::str(system)),
+            ]),
+            JsonValue::object([
+                ("role", JsonValue::str("user")),
+                (
+                    "content",
+                    // Exactly what render_context produces for this node:
+                    // labelled sections, and "(none)" for the optional
+                    // language the iOS run left empty. My first pass here
+                    // hand-wrote "Transcript: ..." instead, which is NOT
+                    // the prompt the executor sends — so a pass proved
+                    // nothing about the run that failed.
+                    JsonValue::str(
+                        "## Target language (if any)\n(none)\n\n                         ## Transcript\nAna: ship the fix today.                          Ben: I run the checklist tomorrow.\n\n",
+                    ),
+                ),
+            ]),
+        ],
+        max_tokens,
+        temperature: 0.0,
+        requires: vec![Capabilities::Chat, Capabilities::StructuredOutput],
+        response_schema: Some(schema),
+        trace_key: None,
+    };
+    let resp = provider.generate(req).unwrap();
+    println!("=== completion_tokens: {}", resp.usage.completion_tokens);
+    println!(
+        "=== hit budget: {}",
+        resp.usage.completion_tokens >= max_tokens as u64
+    );
+    println!("=== output ===\n{}\n=== end ===", resp.content);
+    let parsed = serde_json::from_str::<serde_json::Value>(resp.content.trim());
+    println!("=== parses as JSON: {}", parsed.is_ok());
+}
