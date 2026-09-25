@@ -550,7 +550,8 @@ ran at.
   differences. `GGML_METAL_DISABLE` / `LLAMA_NO_METAL` do not disable
   Metal in this build, so it could not be checked here. Settling it needs
   a CPU-only build or surfacing the iOS output text.
-  **Settled, and it retires the "platform divergence" reading above.**
+  **SUPERSEDED by the next entry: the simulator produces degenerate
+  output, and the reading below is wrong where it says iOS is fine.**
   Running `second-look` on the simulator — same model, a schema whose
   worst case (154 tokens) fits its 400 budget — **COMPLETED in 16.4 s**,
   and the node records `grammar_constrained`. That is the datum the
@@ -567,6 +568,40 @@ ran at.
   product decision rather than a platform bug.
   **First structured graph to complete on iOS**: run-300bb2d2, outcome
   abstained, `rules -> look -> route -> skip`.
+- **The iOS simulator produces DEGENERATE inference output. This is the
+  real finding, and it overturns what I wrote twice above.**
+  Running `second-look` a second time — same model, `material_kind:
+  estimate`, a claim with two unstated assumptions — COMPLETED, and the
+  `skip_reason` it returned was:
+  `於osex留给北斗asticsearch WithEventsanness-MSRinerary共产
+  köposteroneometricserior乃ën addCriterionymm a an society anreature
+  anChangeEvent antlement anBILE anBILE anBILE anBILE anBILE anBILE
+  anBILE安`
+  Multilingual token soup with a repetition loop, in 56.8 s (against
+  16.4 s for the first run). It is schema-VALID — a string under
+  `maxLength: 200` — and semantically worthless. The grammar did its job
+  perfectly: it constrained garbage into a valid shape.
+  So "iOS structured output works" was wrong. The pipeline runs, the
+  grammar is applied (`grammar_constrained` is genuine), and the model's
+  output is garbage. My first `second-look` run abstained with an empty
+  `questions` array, which is the easiest thing a grammar can emit and
+  exercised nothing; I took it as proof and should not have.
+  This also reverses the correction before it. The platform is NOT fine
+  and the schema bounds are not the cause — the bounds only decide what
+  the garbage DOES: on `second-look` it fit inside a 200-char string and
+  "completed"; on `meeting-notes` it filled a 100-item array until it hit
+  the 1500-token cap, twice, which is the twelve minutes.
+  All three simulator runs are consistent with this.
+  **The controlled contrast**: same weights, same schema loaded from the
+  graph, same prompt shape, same `grammar_constrained` path — coherent
+  and correct in 124 tokens on macOS, degenerate on the simulator.
+  **What this does NOT establish**: anything about a physical iPhone. The
+  simulator has its own Metal path (SimMetalHost) and its own build of
+  the ggml kernels. Degenerate output of this kind usually means wrong
+  numerics — a bad quantised kernel, or a wrong chat template/tokenizer
+  path — and which of those it is has not been determined.
+  It does mean the earlier claim that a structured graph "completed on
+  iOS" is true only in the emptiest sense: it completed with garbage.
 - **How truncation is reachable at all: five shipped schemas are larger
   than the budgets that must hold them.** The grammar-legal worst case of
   most `model.structured` nodes does not fit the node's `max_tokens`.
