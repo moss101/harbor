@@ -2811,7 +2811,10 @@ mod trust_persistence_tests {
                 std::time::Duration::from_millis(50),
             )
         });
-        std::thread::sleep(std::time::Duration::from_millis(400));
+        // 1.5 s against a 50 ms threshold and a 10 ms tick: the watcher
+        // has ~150 chances to notice. The sibling test's margins were
+        // eight times thinner in the other direction and CI failed them.
+        std::thread::sleep(std::time::Duration::from_millis(1500));
         // The op finishes: the watcher must stop on its own.
         complete_op(&entry, Ok(serde_json::json!({})), false);
         watcher.join().unwrap();
