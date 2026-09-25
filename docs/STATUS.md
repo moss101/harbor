@@ -426,6 +426,22 @@ ran at.
   of item a tester would have ticked by seeing the button work.
   Read from the plugins' source rather than assumed; not demonstrated on
   a device, which is IOS-02 and AND-03.
+- **…and "Save new copy" put the result where nobody could reach it.**
+  The other half of safe-commit on mobile. The save path already knew
+  about copy semantics — its comment says "mobile pickers hand out cached
+  copies" — and lands the output in the app's documents directory,
+  because neither mobile plugin implements a save picker. But on iOS that
+  directory is invisible without `UIFileSharingEnabled`, which was
+  absent: the save succeeded, the UI reported the path, and the file
+  could not be opened, shared or found by anyone. The core workflow's
+  output was effectively discarded. Both that key and
+  `LSSupportsOpeningDocumentsInPlace` are set now — safe, because
+  Harbor's own data lives in Application Support and the only thing in
+  Documents is a copy the user deliberately saved.
+  **Android has the same problem and no one-line fix**: app-private
+  storage is invisible under scoped storage, and solving it needs a SAF
+  create-document channel or a share sheet. Left untouched and flagged,
+  because that is a product decision rather than a bug fix.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,

@@ -244,8 +244,22 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
       final location = await getSaveLocation(suggestedName: suggestedName);
       return location?.path;
     }
-    // Mobile pickers hand out cached copies, not the user's folder: land
-    // the copy in the app's documents directory and say where.
+    // Mobile pickers hand out cached copies, not the user's folder, and
+    // neither file_selector_ios nor file_selector_android implements a
+    // save picker — so the copy lands in the app's documents directory.
+    //
+    // On iOS that directory is only REACHABLE because Info.plist now sets
+    // UIFileSharingEnabled and LSSupportsOpeningDocumentsInPlace; without
+    // them the save succeeds, the UI reports where, and the file cannot
+    // be opened, shared or found by anyone. Safe to expose because
+    // Harbor's own data lives in Application Support, not here — the only
+    // thing in Documents is a copy the user deliberately saved.
+    //
+    // Android has the same reachability problem and NO equivalent
+    // one-line fix: app-private storage is invisible under scoped
+    // storage, and solving it properly needs a SAF create-document
+    // channel or a share sheet. Untouched, and flagged rather than
+    // papered over.
     final dir = await getApplicationDocumentsDirectory();
     return '${dir.path}${Platform.pathSeparator}$suggestedName';
   }
