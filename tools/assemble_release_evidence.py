@@ -90,6 +90,54 @@ def evidence_ok(rel_path: str) -> bool:
     return True
 
 
+# Device classes `perf_qualification.json` reports as blocked, and the
+# gate each one blocks. The evidence file already names them and says
+# why, so these gates can be DERIVED instead of asserted — which is what
+# lets them close. Asserted, they stay BLOCKED after the operator has
+# actually qualified the hardware, `release_declared` can never become
+# true, and check_ring_gate can never say GO: the ring-0 procedure would
+# complete in reality and the tooling would not notice.
+DEVICE_CLASS_GATES = {
+    "ios_arm64_physical": "IOS-02",
+    "android_arm64_physical": "AND-03",
+    "windows_x64": "WIN-01",
+    "minimum_spec_macos_arm64": "PERF-01",
+}
+
+
+def blocked_device_classes():
+    """Device classes the performance evidence still reports as blocked.
+
+    Absent evidence means nothing is known, so everything stays blocked —
+    never the other way round.
+    """
+    path = EV / "perf_qualification.json"
+    if not path.exists():
+        return set(DEVICE_CLASS_GATES)
+    try:
+        data = json.loads(path.read_text())
+    except json.JSONDecodeError:
+        return set(DEVICE_CLASS_GATES)
+    return {b.get("device_class") for b in data.get("blocked_device_evidence", [])}
+
+
+def device_gate(id_, name, blocked_status, evidence, note):
+    """A device/hardware gate whose block is DERIVED from the evidence.
+
+    Same call shape as `gate()`; the status passed in is the one to use
+    while the device class is still reported blocked.
+    """
+    blocked_classes = blocked_device_classes()
+    still = [c for c, g in DEVICE_CLASS_GATES.items()
+             if g == id_ and c in blocked_classes]
+    if still:
+        return gate(id_, name, blocked_status, evidence,
+                    note + " [blocked device class: " + ", ".join(still) + "]")
+    return gate(id_, name, "PASS", evidence,
+                note + " [device class no longer reported blocked by "
+                       "evidence/perf_qualification.json]")
+
+
 def cited_present(paths) -> bool:
     """Every path a gate cites as its evidence actually exists.
 
@@ -267,7 +315,7 @@ def main():
              "libharbor_ffi.a (aarch64-apple-ios, llama.cpp included) "
              "force-loaded into Runner via sdk-conditional build phase; "
              "symbol/link verification via codesign-free device build"),
-        gate("IOS-02", "iOS physical-device qualification (install, inference, "
+        device_gate("IOS-02", "iOS physical-device qualification (install, inference, "
              "lifecycle, VoiceOver, thermal)",
              "BLOCKED_DEVICE_EVIDENCE", ["evidence/device_qualification.json"],
              "requires a physical iPhone/iPad; simulator evidence is NOT "
@@ -286,13 +334,13 @@ def main():
              ["apps/harbor_app/build/app/outputs/bundle/release/app-release.aab"],
              "debug-key signed — NOT store-distributable; structure and ABI "
              "packaging validated"),
-        gate("AND-03", "Android physical-device qualification",
+        device_gate("AND-03", "Android physical-device qualification",
              "BLOCKED_DEVICE_EVIDENCE", ["evidence/device_qualification.json"],
              "requires physical arm64 device(s)"),
         gate("AND-04", "Android store distribution (Play upload)",
              "BLOCKED_EXTERNAL", ["scripts/package_android.sh"],
              "requires Play Console ownership + operator upload key via env vars"),
-        gate("WIN-01", "Windows native build + qualification",
+        device_gate("WIN-01", "Windows native build + qualification",
              "BLOCKED_EXTERNAL", ["scripts/build_windows.ps1",
                                   "docs/release/windows_qualification.md"],
              "complete script + runbook in repo; execution requires a "
@@ -303,7 +351,7 @@ def main():
         gate("OPT-01", "Optional remote/connector/diagnostics features",
              "N/A_DISABLED", ["evidence/optional_capabilities_disabled.json"],
              "default-off, zero FFI dispatch surface"),
-        gate("PERF-01", "Minimum-device performance qualification",
+        device_gate("PERF-01", "Minimum-device performance qualification",
              "BLOCKED_DEVICE_EVIDENCE",
              ["fixtures/qualification/performance_thresholds_reference_macos_arm64.json"],
              "requires min-spec hardware; thresholds frozen per device class "
