@@ -2154,15 +2154,17 @@ impl<'a> Executor<'a> {
                         }
                     }
                 }
-                // Retry with the violation list in the conversation.
-                messages.push(JsonValue::object([
-                    ("role", JsonValue::str("assistant")),
-                    ("content", JsonValue::str(resp.content.clone())),
-                ]));
-                messages.push(JsonValue::object([
-                    ("role", JsonValue::str("user")),
-                    ("content", JsonValue::str(format!("That output did not satisfy the schema: {last_error}. Reply with corrected JSON only."))),
-                ]));
+                for (role, content) in retry_turns(
+                    resp.usage.completion_tokens >= max_tokens as u64,
+                    max_tokens,
+                    &last_error,
+                    &resp.content,
+                ) {
+                    messages.push(JsonValue::object([
+                        ("role", JsonValue::str(role)),
+                        ("content", JsonValue::str(content)),
+                    ]));
+                }
             } else {
                 return Ok(ModelOutcome {
                     value: Value::String(resp.content),
@@ -2196,6 +2198,54 @@ fn gather_context(items: &[graph::ContextItem], state: &Value) -> Value {
 
 /// Render context items as labelled sections; strings verbatim, other
 /// JSON pretty-printed; each section bounded by `max_chars`.
+/// The turns appended before a structured retry.
+///
+/// A truncation and a schema violation need different handling, and
+/// treating them alike is what made the second attempt worthless:
+///
+/// - The old code echoed the whole rejected output back as an assistant
+///   turn. For a violation that is useful context. For a TRUNCATION it is
+///   up to `max_tokens` of text spent re-reading the answer we just could
+///   not fit, which leaves the retry less room than the attempt that had
+///   already run out — so it truncates again, at the same place, for the
+///   same reason.
+/// - "That output did not satisfy the schema" is not actionable when the
+///   schema was never the problem. The model cannot know it was cut off,
+///   or that the fix is to say less.
+///
+/// On a truncation the retry therefore drops the fragment and asks for a
+/// materially shorter answer. That is the only variable the model
+/// controls; the budget is fixed by the node.
+pub fn retry_turns(
+    truncated: bool,
+    max_tokens: u32,
+    last_error: &str,
+    rejected: &str,
+) -> Vec<(&'static str, String)> {
+    if truncated {
+        return vec![(
+            "user",
+            format!(
+                "Your previous answer was cut off at this node's \
+                 {max_tokens}-token limit, so it was incomplete. Answer \
+                 again and make it materially shorter: fewer array items, \
+                 shorter strings, and only what the source states. Reply \
+                 with JSON only."
+            ),
+        )];
+    }
+    vec![
+        ("assistant", rejected.to_string()),
+        (
+            "user",
+            format!(
+                "That output did not satisfy the schema: {last_error}. \
+                 Reply with corrected JSON only."
+            ),
+        ),
+    ]
+}
+
 pub fn render_context(items: &[graph::ContextItem], state: &Value) -> String {
     let mut out = String::new();
     for c in items {

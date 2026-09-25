@@ -780,3 +780,41 @@ fn a_truncated_object_is_not_salvaged_into_the_array_inside_it() {
         "a genuine top-level array is still extractable"
     );
 }
+
+#[test]
+fn a_truncation_retry_asks_for_less_instead_of_replaying_the_fragment() {
+    use harbor_core::executor::retry_turns;
+
+    // Truncated: the rejected fragment must NOT be echoed back — it is up
+    // to max_tokens of text spent re-reading the answer that did not fit,
+    // which leaves the retry less room than the attempt that already ran
+    // out. And the instruction must be actionable: say less.
+    let fragment = "{\"actions\": [{\"due\": null, \"owner\": \"Ben\"";
+    let turns = retry_turns(true, 1500, "output was truncated", fragment);
+    assert_eq!(turns.len(), 1, "no assistant echo on truncation: {turns:?}");
+    assert_eq!(turns[0].0, "user");
+    assert!(
+        !turns[0].1.contains(fragment),
+        "the truncated fragment must not be replayed: {}",
+        turns[0].1
+    );
+    assert!(
+        turns[0].1.contains("1500"),
+        "name the limit: {}",
+        turns[0].1
+    );
+    assert!(
+        turns[0].1.contains("shorter"),
+        "ask for the one thing the model controls: {}",
+        turns[0].1
+    );
+
+    // A genuine schema violation is different: there the rejected output
+    // IS the useful context, and the violation list is actionable.
+    let bad = "{\"count\": \"x\"}";
+    let turns = retry_turns(false, 1500, "/count: expected integer", bad);
+    assert_eq!(turns.len(), 2);
+    assert_eq!(turns[0].0, "assistant");
+    assert_eq!(turns[0].1, bad, "the violating output is kept as context");
+    assert!(turns[1].1.contains("/count: expected integer"));
+}

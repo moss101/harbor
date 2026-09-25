@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "caac52adf3f3614ff24109ab7522509a00b7a210d72d5af400d6b1e41df236b3",
+  "input_manifest_sha256": "a98d3bab6693affb804243a5ba96cb06c221d77f68c0a94fd113188787ed56c1",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -1461,8 +1461,8 @@
     },
     {
       "path": "core/harbor_core/src/executor.rs",
-      "bytes": 87132,
-      "sha256": "2a4019e28407d4550425063297db79316f8a5e0f49d212cd5ed7bbc7bb3d11da"
+      "bytes": 88855,
+      "sha256": "c3fae300d2e53dd8a14535cc92c07a693e6f9640f04a641e0a220db4be1f20ff"
     },
     {
       "path": "core/harbor_core/src/graph.rs",
@@ -1571,8 +1571,8 @@
     },
     {
       "path": "core/harbor_core/tests/graph_executor.rs",
-      "bytes": 30100,
-      "sha256": "4e568c3d4845c39d5bcd04d6f1aee9314ba64c479d814d9c1beede9a363435e3"
+      "bytes": 31623,
+      "sha256": "fc651d4200a4935b1ab7be6f773d447aa86a761f6926043f1a9614c645e731ba"
     },
     {
       "path": "core/harbor_core/tests/skill_evals.rs",
@@ -2031,8 +2031,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 80338,
-      "sha256": "515f9bce9fbc37f30ba049cbcf549796d839dc90b6fea2cfc3609643d95ab04d"
+      "bytes": 81921,
+      "sha256": "294c25a994bacee0cf585770ea0c134f7940db64acabae9a021f6302080a93d0"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",

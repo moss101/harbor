@@ -553,6 +553,30 @@ ran at.
   `meeting-notes` does not produce minutes on iOS. It now fails saying
   the output was truncated at the budget, which is true; WHY it truncates
   there and not on macOS is open.
+- **How truncation is reachable at all: five shipped schemas are larger
+  than the budgets that must hold them.** Independent of the iOS
+  divergence, the grammar-legal worst case of most `model.structured`
+  nodes does not fit the node's `max_tokens` (chars/4 estimate):
+  `formula-audit/triage` ~100k tokens against 2048 (49x),
+  `meeting-notes/minutes` ~26k against 1500 (17x),
+  `deck-review/triage` ~4.6k against 900, `doc-coauthoring/questions`
+  ~2.3k against 1400, `team-update/compose` ~790 against 700. Only
+  `document-style-review` and `second-look` fit. A model that uses the
+  allowance the schema advertises therefore truncates by construction.
+  Whether to tighten the bounds (100 action items for a meeting) or
+  raise the budgets is a product judgment and is left open, not decided
+  here.
+- **The truncation retry was guaranteed to fail the same way.** The retry
+  path echoed the whole rejected output back as an assistant turn and
+  said "That output did not satisfy the schema". For a violation both are
+  right. For a truncation, echoing spends up to `max_tokens` re-reading
+  the answer that just did not fit — leaving the retry LESS room than the
+  attempt that had already run out — and the message is not actionable,
+  because the model cannot know it was cut off or that the fix is to say
+  less. That second identical 1500-token generation is half of the twelve
+  minutes each iOS run took. `retry_turns` now splits the two: a
+  truncation drops the fragment and asks for a materially shorter answer,
+  which is the only variable the model controls.
 - **Two more "existence is proof" defects found on the way there.**
   (a) `model.structured` built its request schema with
   `harbor_canonical::convert(sc).ok()`. Canonical JSON prohibits floats,

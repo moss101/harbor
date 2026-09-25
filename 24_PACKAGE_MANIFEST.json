@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "caac52adf3f3614ff24109ab7522509a00b7a210d72d5af400d6b1e41df236b3",
+  "input_manifest_sha256": "a98d3bab6693affb804243a5ba96cb06c221d77f68c0a94fd113188787ed56c1",
   "file_count_excluding_manifest": 550,
   "files": [
     {
@@ -120,12 +120,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 100253,
-      "sha256": "b6c2132972cdfee85fc400b5d9e6a32dd6b17e2dd159a0becbc3ab24e04ccb2f"
+      "sha256": "4d833c8621271de96b729c4871e5d8deb7e67556f2d86ecf2cf7208637bacf62"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "03a732391c5af56361ffe46e554a9af4ea4b3a994fc59f732a14f4187df73d93"
+      "sha256": "6c99fc69a0ddfd9bc952c334df29ee8129a103a1f814f3aa70ad53baad367d52"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -1479,8 +1479,8 @@
     },
     {
       "path": "core/harbor_core/src/executor.rs",
-      "bytes": 87132,
-      "sha256": "2a4019e28407d4550425063297db79316f8a5e0f49d212cd5ed7bbc7bb3d11da"
+      "bytes": 88855,
+      "sha256": "c3fae300d2e53dd8a14535cc92c07a693e6f9640f04a641e0a220db4be1f20ff"
     },
     {
       "path": "core/harbor_core/src/graph.rs",
@@ -1589,8 +1589,8 @@
     },
     {
       "path": "core/harbor_core/tests/graph_executor.rs",
-      "bytes": 30100,
-      "sha256": "4e568c3d4845c39d5bcd04d6f1aee9314ba64c479d814d9c1beede9a363435e3"
+      "bytes": 31623,
+      "sha256": "fc651d4200a4935b1ab7be6f773d447aa86a761f6926043f1a9614c645e731ba"
     },
     {
       "path": "core/harbor_core/tests/skill_evals.rs",
@@ -2049,8 +2049,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 80338,
-      "sha256": "515f9bce9fbc37f30ba049cbcf549796d839dc90b6fea2cfc3609643d95ab04d"
+      "bytes": 81921,
+      "sha256": "294c25a994bacee0cf585770ea0c134f7940db64acabae9a021f6302080a93d0"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
