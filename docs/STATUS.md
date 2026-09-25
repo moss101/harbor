@@ -293,6 +293,24 @@ ran at.
   with the core and the privacy manifest still in place. Three dry runs
   to get one plist right — the first proved the config was wrong, the
   second that fixing the config was not enough, the third that it holds.
+- **Android: supplying the operator upload key did nothing at all.**
+  `package_android.sh` writes `android/key.properties` from the
+  operator's env vars, prints "release build with OPERATOR signing", and
+  builds — while `build.gradle.kts` never read that file and set
+  `signingConfig = signingConfigs.getByName("debug")` unconditionally
+  (the Flutter template's TODO, untouched). So the operator would follow
+  the runbook, hand over a keystore and password, get an artifact the
+  script calls operator-signed, and be **rejected at Play upload**. The
+  password was written to disk for no benefit whatsoever.
+  `key.properties` is now loaded into a real `release` signingConfig,
+  used when present and falling back to the debug key when absent so
+  `flutter run --release` still works, and the script reads the signer
+  **off the built APK** with `apksigner` and fails if the operator branch
+  produced a debug-signed artifact. Proven both ways with a throwaway
+  keystore: with the file, `CN=Harbor Upload Test`; without it,
+  `CN=Android Debug`. The test keystore was deleted;
+  `android/key.properties` is gitignored, so credentials cannot be
+  committed.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,

@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "949989d5641d80ec3490f5418c53597c0079c52f4a1e780ab22341ef8bf2b0d3",
+  "input_manifest_sha256": "62aebef564b31391bbc463b7820ea76e60aff94b215008b837d382170e89d1e7",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -186,8 +186,8 @@
     },
     {
       "path": "apps/harbor_app/android/app/build.gradle.kts",
-      "bytes": 2891,
-      "sha256": "0ea2182fe98b2207cefb9c8f731bb8f6c3a68841525d2b1b5492fd9fa8207ee1"
+      "bytes": 4223,
+      "sha256": "846695e4d9c8182b9b8695eb34c3833d9e51238193b42353de429679c25c81f9"
     },
     {
       "path": "apps/harbor_app/android/app/src/debug/AndroidManifest.xml",
@@ -2021,8 +2021,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 60771,
-      "sha256": "2fb78cac1a4fab43291112f4a9386c6e0a66c225defd308af4dcaef476e6b226"
+      "bytes": 61938,
+      "sha256": "57833c1b33e117c8277b8ee1a131bd0ab3644bae8895ce4476835be6f0709787"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -2626,8 +2626,8 @@
     },
     {
       "path": "scripts/package_android.sh",
-      "bytes": 2679,
-      "sha256": "0c0c39d77d5b13c10b90342330b92d2ed28e9e6adc56fa6ccfd6f2d900b78888"
+      "bytes": 4238,
+      "sha256": "082d2ca0e6831b3d43767e4977c7cd3a92d44a1373c8751dfd03be6996eb291b"
     },
     {
       "path": "scripts/package_apple.sh",

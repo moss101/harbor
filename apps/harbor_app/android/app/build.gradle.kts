@@ -1,3 +1,19 @@
+import java.io.FileInputStream
+import java.util.Properties
+
+// scripts/package_android.sh writes android/key.properties from the
+// operator's env vars. Nothing read it: the release build type asked for
+// signingConfigs["debug"] unconditionally, so supplying an upload key
+// produced a debug-signed bundle while the script reported "OPERATOR
+// signing" — and Play rejects that on upload.
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        FileInputStream(keystorePropertiesFile).use { load(it) }
+    }
+}
+val hasOperatorKey = keystorePropertiesFile.exists()
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -52,11 +68,28 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            if (hasOperatorKey) {
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // The operator's upload key when android/key.properties is
+            // present, the debug key otherwise so `flutter run --release`
+            // still works. package_android.sh verifies which one actually
+            // signed the output rather than trusting this.
+            signingConfig = if (hasOperatorKey) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }
