@@ -70,7 +70,18 @@ class _SkillsSurfaceState extends State<SkillsSurface> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(children: [
-              Expanded(child: Text(s.title, style: t.text.h2Of(t.colors.ink))),
+              // Skill titles and descriptions are English-only data from
+              // builtin_skills.json — nothing routes them through l10n.
+              // Rendered with the ambient direction they inherit RTL in
+              // Arabic, which puts the sentence period at the left edge
+              // ("`.information from DOCX`"). Give the paragraph its own
+              // direction, the way identifiers already get theirs. If a
+              // skill's prose is ever localized, this has to become
+              // conditional on the content.
+              Expanded(
+                  child: Text(s.title,
+                      textDirection: TextDirection.ltr,
+                      style: t.text.h2Of(t.colors.ink))),
               StatusBadge(
                 semantic: s.runnable
                     ? ExecutionSemantic.local
@@ -83,7 +94,9 @@ class _SkillsSurfaceState extends State<SkillsSurface> {
               ),
             ]),
             const SizedBox(height: HarborSpace.s2),
-            Text(s.description, style: t.text.bodyOf(t.colors.inkMuted)),
+            Text(s.description,
+                textDirection: TextDirection.ltr,
+                style: t.text.bodyOf(t.colors.inkMuted)),
             const SizedBox(height: HarborSpace.s4),
             HarborKeyValue(label: l10n.skillsFamily, value: s.family),
             HarborKeyValue(label: 'ID', value: s.id, identifier: true),
@@ -272,6 +285,7 @@ class _SkillsSurfaceState extends State<SkillsSurface> {
                                     const SizedBox(width: HarborSpace.s2),
                                     Expanded(
                                       child: Text(s.title,
+                                          textDirection: TextDirection.ltr,
                                           style:
                                               t.text.bodyStrongOf(t.colors.ink),
                                           maxLines: 1,
@@ -280,6 +294,7 @@ class _SkillsSurfaceState extends State<SkillsSurface> {
                                   ]),
                                   const SizedBox(height: HarborSpace.s2),
                                   Text(s.description,
+                                      textDirection: TextDirection.ltr,
                                       maxLines: 3,
                                       overflow: TextOverflow.ellipsis,
                                       style: t.text.smallOf(t.colors.inkMuted)),

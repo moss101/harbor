@@ -365,6 +365,21 @@ ran at.
   one. There is no min-spec device manifest to check against, so the
   host facts are the audit trail rather than a guard: a class attested
   from the wrong machine is visible in the evidence.
+- **Arabic UI: English skill prose rendered with its punctuation on the
+  wrong side.** Answering "are graphs implemented?" meant checking the
+  claim that the 21 non-graph skills are *labelled* as declarations, so I
+  opened the Skills surface on the simulator. The labelling is right —
+  "30 مهارة", `إعلان فقط` on prose skills, `مخطط قابل للتشغيل` on graph
+  ones — but the skill titles and descriptions are English-only data from
+  `builtin_skills.json` that nothing routes through l10n, and they were
+  rendered with the ambient direction. In Arabic that makes them RTL
+  paragraphs, so each sentence's full stop moved to the left edge:
+  `.information from DOCX, PDF and text documents`. Four `Text` widgets
+  now carry `textDirection: TextDirection.ltr`, the same treatment
+  identifiers already had. Rebuilt and confirmed on device: the stops sit
+  at the end, English prose left-aligns inside the RTL card, and the
+  Arabic chrome is untouched. Only visible by running the app in Arabic —
+  the RTL widget tests assert semantics and overflow, not bidi placement.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,
