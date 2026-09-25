@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "3cfad8f12c639297bedc7cc438b8cddd80190b92fd761ca749f5458dce778907",
+  "input_manifest_sha256": "94d08864f8d7b8fe924046f2193eecad87f2f831ae4eec286842948f7b8b8662",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -1691,8 +1691,8 @@
     },
     {
       "path": "core/harbor_inference/tests/gguf_provider.rs",
-      "bytes": 23929,
-      "sha256": "2f39856bc6b4b9bcff25f18762cbc407e8941d36ac2707ea428cfcc01188e970"
+      "bytes": 28906,
+      "sha256": "39918e0290980ffcc6eaefd84539b76a7c43e5ca3da95eab9785c8f54d7ff678"
     },
     {
       "path": "core/harbor_inference/tests/qwen_qualification.rs",
@@ -2031,8 +2031,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 82885,
-      "sha256": "e35df7aae7a309bf187ef145bdeb164d9d7d87de87bc60d7bc7ec7d814346fe5"
+      "bytes": 83547,
+      "sha256": "82402030faf70e3006e77e1627ccaf5b6077c1051b1d71d3abeaa221e6958203"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",

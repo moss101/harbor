@@ -568,18 +568,29 @@ ran at.
   **First structured graph to complete on iOS**: run-300bb2d2, outcome
   abstained, `rules -> look -> route -> skip`.
 - **How truncation is reachable at all: five shipped schemas are larger
-  than the budgets that must hold them.** Independent of the iOS
-  divergence, the grammar-legal worst case of most `model.structured`
-  nodes does not fit the node's `max_tokens` (chars/4 estimate):
-  `formula-audit/triage` ~100k tokens against 2048 (49x),
-  `meeting-notes/minutes` ~26k against 1500 (17x),
-  `deck-review/triage` ~4.6k against 900, `doc-coauthoring/questions`
-  ~2.3k against 1400, `team-update/compose` ~790 against 700. Only
-  `document-style-review` and `second-look` fit. A model that uses the
-  allowance the schema advertises therefore truncates by construction.
-  Whether to tighten the bounds (100 action items for a meeting) or
-  raise the budgets is a product judgment and is left open, not decided
-  here.
+  than the budgets that must hold them.** The grammar-legal worst case of
+  most `model.structured` nodes does not fit the node's `max_tokens`.
+  First published here as a chars/4 estimate; now MEASURED with the
+  model's own tokenizer
+  (`worst_case_output_against_budget_in_real_tokens`, `#[ignore]`),
+  because `team-update` sat at 1.13x under the estimate — inside its
+  error bar, which made that one an estimate wearing the clothes of a
+  measurement. The real numbers are ~2x worse than the estimate:
+  `formula-audit/triage` 194,908 tokens against 2048 (**95x**),
+  `meeting-notes/minutes` 50,916 against 1500 (**34x**),
+  `deck-review/triage` 9,597 against 900 (10.7x),
+  `doc-coauthoring/questions` 4,461 against 1400 (3.2x),
+  `team-update/compose` 1,559 against 700 (2.2x — clearly over, not
+  borderline). Only `second-look` (0.74x) and `document-style-review`
+  (0.97x, barely) fit.
+  The worst case fills every string to `maxLength` and every array to
+  `maxItems`, so no real answer looks like it — that is the point: it is
+  the ceiling the grammar will let a model walk to, and `meeting-notes`
+  walked most of the way there on the simulator.
+  A model that uses the allowance the schema advertises truncates by
+  construction. Whether to tighten the bounds (100 action items for a
+  meeting) or raise the budgets is a product judgment and is left open,
+  not decided here.
 - **The truncation retry was guaranteed to fail the same way.** The retry
   path echoed the whole rejected output back as an assistant turn and
   said "That output did not satisfy the schema". For a violation both are
