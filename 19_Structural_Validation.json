@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "46f0bd909a4e9c6228afd09e99bc89e68e79efe3d07c4c4b1934bf5553b61876",
+  "input_manifest_sha256": "8e3ca4f88cadee24ecb5a8ad721aa9f7ece50ea2e8c3cd86bf3183ac03d7dd55",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -1050,6 +1050,11 @@
       "sha256": "36e91974644292362296eaedfd6c25444c5796e9c59a54a4e2d5942e89f0fd2e"
     },
     {
+      "path": "core/fuzz/corpus/batch_from_value/crash-92b3025ecb55a42824f0ca23637d20c4bd4f9879",
+      "bytes": 2786,
+      "sha256": "b294961ee2ef5ecd1c824e9d03cf060838be3da6f9554533e390f53ee85a2741"
+    },
+    {
       "path": "core/fuzz/corpus/batch_from_value/docx_replace",
       "bytes": 1490,
       "sha256": "efd7e79accec6269a3f62d5f97accd0208f5208cf2c8dc949802d8b976771573"
@@ -1411,8 +1416,8 @@
     },
     {
       "path": "core/harbor_artifacts/src/workbook.rs",
-      "bytes": 35084,
-      "sha256": "ac1e32d84f40b609271aef2c0aab80c6d6eb3cd0373db44912e1c41b19dc6dde"
+      "bytes": 36565,
+      "sha256": "7ccde3e2a8d8d7353ecb0f645ef49a9249bacca3b622c928c0087cb9a04a9e38"
     },
     {
       "path": "core/harbor_artifacts/tests/malformed_inputs.rs",
@@ -1541,8 +1546,8 @@
     },
     {
       "path": "core/harbor_core/src/tools/builtin.rs",
-      "bytes": 104313,
-      "sha256": "b50ef54b97b99cb0e1f933c146322221cb92bdde9c8a2bca02b3d9c223f406bc"
+      "bytes": 104717,
+      "sha256": "5348b4ca669ec73a1db7195dd5735dea4938eef5dd04d9e92c6bf676dde93a06"
     },
     {
       "path": "core/harbor_core/src/tools/mod.rs",
@@ -1560,6 +1565,11 @@
       "sha256": "0dd82c998c04cd2c8a1fb878691a7443d1fac4326ae907c94f37f8b383f55adc"
     },
     {
+      "path": "core/harbor_core/tests/batch_fuzz_repro.rs",
+      "bytes": 1507,
+      "sha256": "024b35ecee70325d8d0469f1dc644196c28d6cf20ceb569cc19c5b0fc5771b25"
+    },
+    {
       "path": "core/harbor_core/tests/commit_proposal.rs",
       "bytes": 16797,
       "sha256": "9692f46edc4d0afd27aca3649e7389f86dbab9b86f1ecf8c691fd23c516d5c2c"
@@ -1568,6 +1578,11 @@
       "path": "core/harbor_core/tests/executor_resume.rs",
       "bytes": 15851,
       "sha256": "c998c6b3419ebd012821d4dfe1fa593a39cf28064fdf87e1a3c2ca833c5df34a"
+    },
+    {
+      "path": "core/harbor_core/tests/fixtures/batch_crash_92b3025e.bin",
+      "bytes": 2786,
+      "sha256": "b294961ee2ef5ecd1c824e9d03cf060838be3da6f9554533e390f53ee85a2741"
     },
     {
       "path": "core/harbor_core/tests/graph_executor.rs",

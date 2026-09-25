@@ -40,10 +40,32 @@ pub fn col_letter(mut col: u32) -> String {
     String::from_utf8(out).unwrap()
 }
 
+/// The spreadsheet grid's limits: XFD and 1048576.
+pub const MAX_COL: u32 = 16_384;
+pub const MAX_ROW: u32 = 1_048_576;
+
+/// Column letters to a 1-based index, saturating rather than overflowing.
+///
+/// `n = n * 26 + ...` overflowed on a long run of letters. In debug that
+/// is a panic; in release, where overflow wraps, it is worse — the
+/// address silently resolves to a DIFFERENT cell than the one named, on
+/// a commit path whose whole job is to touch exactly what was approved.
+/// Found by the `batch_from_value` fuzz target on the address
+/// "Dxxxxxxxxxxxxxxxxxx2" (crash-92b3025e).
+///
+/// A non-letter byte also used to underflow `b - b'A'`. Both now saturate
+/// past `MAX_COL`, which is out of range by construction, so callers
+/// reject it through their existing bounds check instead of trusting an
+/// arithmetic accident.
 pub fn col_number(s: &str) -> u32 {
     let mut n = 0u32;
     for b in s.bytes() {
-        n = n * 26 + (b.to_ascii_uppercase() - b'A') as u32 + 1;
+        if !b.is_ascii_alphabetic() {
+            return u32::MAX;
+        }
+        n = n
+            .saturating_mul(26)
+            .saturating_add((b.to_ascii_uppercase() - b'A') as u32 + 1);
     }
     n
 }
@@ -925,5 +947,14 @@ mod tests {
         assert_eq!(col_letter(27), "AA");
         assert_eq!(col_letter(52), "AZ");
         assert_eq!(col_number("AZ"), 52);
+        // The grid's real edge, and past it.
+        assert_eq!(col_number("XFD"), MAX_COL);
+        // 19 letters used to overflow the accumulator: a panic in debug,
+        // a silent wrap to some other column in release.
+        assert_eq!(col_number("Dxxxxxxxxxxxxxxxxxx"), u32::MAX);
+        assert_eq!(col_number("AAAAAAAAAAAAAAAAAAAA"), u32::MAX);
+        // A non-letter used to underflow b - b'A'.
+        assert_eq!(col_number("A1"), u32::MAX);
+        assert_eq!(col_number("-"), u32::MAX);
     }
 }

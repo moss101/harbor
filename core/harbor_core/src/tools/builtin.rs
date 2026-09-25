@@ -193,10 +193,19 @@ fn parse_addr(a: &str) -> Option<(u32, u32)> {
     if letters.is_empty() || digits.is_empty() || !digits.chars().all(|c| c.is_ascii_digit()) {
         return None;
     }
-    Some((
-        harbor_artifacts::workbook::col_number(&letters),
-        digits.parse().ok()?,
-    ))
+    // Bound the address to the real grid. Without this a long letter run
+    // reached col_number and overflowed there, and even saturating it
+    // would otherwise hand callers a column that cannot exist.
+    let col = harbor_artifacts::workbook::col_number(&letters);
+    let row: u32 = digits.parse().ok()?;
+    if col == 0
+        || col > harbor_artifacts::workbook::MAX_COL
+        || row == 0
+        || row > harbor_artifacts::workbook::MAX_ROW
+    {
+        return None;
+    }
+    Some((col, row))
 }
 
 // ---------------------------------------------------------------------------
