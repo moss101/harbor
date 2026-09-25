@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "784a75a192963899ca2141bea53813527af9621c19848dd207b4fe14309cdcfe",
+  "input_manifest_sha256": "23ded096b4c7c706298f67622129652a519b837b0cc7af4ec8cedacb848815b2",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -2076,8 +2076,8 @@
     },
     {
       "path": "docs/release/closeout_runbook.md",
-      "bytes": 8290,
-      "sha256": "73684ea3b4ce126fc5d04e8c126d40b85a80f056f7e503a84772bfcfbba983bd"
+      "bytes": 9315,
+      "sha256": "34c3282dd33b97df647ca88924e236221d6f3dda829f4b6d382aeb641c027df6"
     },
     {
       "path": "docs/release/migration_rollback.md",

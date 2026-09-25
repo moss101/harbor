@@ -54,6 +54,23 @@ xcrun altool --upload-app -f build/ios/ipa/*.ipa -t ios \
 
 ### IOS-02 — physical iPhone
 
+**The simulator cannot stand in for this, and not only because it is not
+a shipping target: its inference output is DEGENERATE.** Session 40 ran
+`second-look` there on qwen2.5-1.5b-instruct-q4_k_m through the
+`grammar_constrained` path and got multilingual token soup with a
+repetition loop — schema-valid, semantically worthless — where the same
+weights, schema and prompt produce a correct answer in 124 tokens on
+macOS. A `model.structured` node on the simulator therefore "succeeds"
+while returning nothing usable, and one that runs long is garbage
+filling its array to the token cap.
+So: never tick an inference, quality, eval or performance item from a
+simulator run. The simulator is good for UI reachability, file pickers,
+plumbing and crash-freedom, and for nothing that depends on what the
+model actually said. Whether a physical device shares the fault is
+UNKNOWN — the simulator has its own Metal path (SimMetalHost) and its
+own ggml kernel build — and step 6 below is the first thing that will
+tell us.
+
 ```bash
 # Prereq: device attached + trusted; development signing in Xcode.
 cd apps/harbor_app && flutter run --release -d <device-id>
