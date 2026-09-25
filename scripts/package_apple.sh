@@ -94,6 +94,23 @@ echo "$symbols" | grep "_harbor_core_open" >/dev/null \
 echo "   archive ready: core/target/aarch64-apple-ios/release/libharbor_ffi.a"
 if have_sdk iphoneos; then
   flutter build ios --release --no-codesign
+  echo "   compilation proof only: build/ios/iphoneos/Runner.app, UNSIGNED."
+  echo "   This is NOT a store artifact — it is neither an .xcarchive that"
+  echo "   Xcode Organizer can upload nor an .ipa that altool accepts."
+  if [[ -n "${HARBOR_APPLE_SIGNING_IDENTITY:-}" ]]; then
+    echo "-- iOS store artifact (operator identity present) --"
+    # `flutter build ipa` archives AND exports; the unsigned device build
+    # above produces neither. Needs an App Store Connect record and a
+    # matching provisioning profile, so it is allowed to fail loudly
+    # rather than silently leaving nothing to upload.
+    flutter build ipa --export-method app-store
+    ipa="$(ls -1 build/ios/ipa/*.ipa 2>/dev/null | head -1)"
+    [[ -n "$ipa" ]] || { echo "FAIL: flutter build ipa produced no .ipa"; exit 1; }
+    echo "   store artifact: $ipa"
+  else
+    echo "   TestFlight upload needs HARBOR_APPLE_SIGNING_IDENTITY and an"
+    echo "   App Store Connect record; see docs/release/closeout_runbook.md."
+  fi
 else
   echo "NOTE: device build skipped — no iphoneos SDK on this machine"
 fi

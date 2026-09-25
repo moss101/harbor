@@ -331,6 +331,21 @@ ran at.
   app rather than the zip, and ends by proving it with
   `stapler validate` plus an entitlements read — the two things the
   MAC-02 gate itself checks, so the runbook and the gate cannot drift.
+- **IOS-03 had nothing to upload.** The runbook said "TestFlight (iOS):
+  Xcode → Organizer → upload, or altool", and the line above it described
+  `package_apple.sh` as producing an "iOS archive". It does not: it runs
+  `flutter build ios --release --no-codesign`, whose output is an
+  UNSIGNED `Runner.app` — neither an `.xcarchive` that Organizer can
+  list nor an `.ipa` that altool accepts. The operator reaches the
+  upload step with no artifact in existence. The script now says plainly
+  that the device build is compilation proof, and when the signing
+  identity is present runs `flutter build ipa --export-method app-store`
+  — which archives *and* exports — failing loudly if no `.ipa` appears;
+  the runbook points at that path instead of at Organizer.
+  **Reasoned, not executed**: producing an `.ipa` needs an App Store
+  Connect record and a matching provisioning profile, neither of which
+  exists here. `flutter build ipa` was confirmed present in the pinned
+  Flutter and both scripts parse; the rest waits on IOS-03 itself.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,

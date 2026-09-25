@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "956f3314615389cb0eff69e173fbcbe6a061948ec056f18c3d3ff33c1b109dc0",
+  "input_manifest_sha256": "f3446b552d0195cd33907adc7b35dc2b10589c53afa335537116a90587786bd5",
   "file_count_excluding_manifest": 548,
   "files": [
     {
@@ -120,12 +120,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 99892,
-      "sha256": "2ab80b79e4b2256c6cf6639f3eead50da487bc50c4e5450a80c907d0228a7e02"
+      "sha256": "60152d47e38214d79d6a81330dedbfb5342ada97f34496cca36107461d403b46"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "983934da30c3cf5d0c8c746b72bc7604cc2e8c511e863880c53e1609083e2b39"
+      "sha256": "c3301e9023ce1dc20d4db07a5b4e4dfcaac0ca99f66c16586467ef3c3d5b2b96"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -2039,8 +2039,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 63305,
-      "sha256": "636e40ae9e5a05423536b3fa1773677d9ffb4db95241de511eeb0ea3ff9068bf"
+      "bytes": 64358,
+      "sha256": "d3f1fb8c489e6c519cdbf8fbd45e8e11f44f86fa8fa953b577112c9516a0c813"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -2084,8 +2084,8 @@
     },
     {
       "path": "docs/release/closeout_runbook.md",
-      "bytes": 6570,
-      "sha256": "58bafdb6b1ce6f501eb0af73bc8744b8b22acf85f4f6ea1ade4d353c13a89b7f"
+      "bytes": 7128,
+      "sha256": "605c96ef3eb6d4081f6180a2d032f9a112a3311c93bad28634761ef6958702c2"
     },
     {
       "path": "docs/release/migration_rollback.md",
@@ -2649,8 +2649,8 @@
     },
     {
       "path": "scripts/package_apple.sh",
-      "bytes": 5722,
-      "sha256": "562b8bf16a21de41d360d30c4eaa88f13c72c56616307ca4e10468392cd75455"
+      "bytes": 6730,
+      "sha256": "65ba284b98f0b46372541bcf3c59ffed8fdcf164ff62728f930dbe2f4ca01498"
     },
     {
       "path": "tools/README.md",

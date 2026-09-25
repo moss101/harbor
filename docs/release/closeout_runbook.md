@@ -40,7 +40,16 @@ xcrun stapler staple "$app"
 # MAC-02 gate reads, so if these two disagree the gate wins:
 xcrun stapler validate "$app"
 codesign -d --entitlements - "$app" | grep -q app-sandbox   # entitlements survived signing
-# TestFlight (iOS): Xcode → Organizer → upload, or altool.
+# TestFlight (iOS). Organizer lists .xcarchive files and altool takes an
+# .ipa; the script's `flutter build ios --release --no-codesign` produces
+# NEITHER, so with the identity exported above it now runs `flutter build
+# ipa` and leaves the artifact here:
+cd apps/harbor_app && flutter build ipa --export-method app-store
+xcrun altool --upload-app -f build/ios/ipa/*.ipa -t ios \
+  --apiKey <key-id> --apiIssuer <issuer-id>   # or Transporter.app
+# Needs the App Store Connect record and a matching provisioning profile
+# to exist first — without them the export fails rather than producing
+# something unuploadable.
 ```
 
 ### IOS-02 — physical iPhone
