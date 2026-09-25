@@ -406,6 +406,26 @@ ran at.
   enabled in this release" banner pointing at Skills, rather than hiding
   the surface or pretending it works — the UI agreeing with `OPT-01`
   and `SYNC-01` reading `N/A_DISABLED` in the gate table.
+- **"Overwrite original" would have lied on both phones.** Chasing what
+  else IOS-02 covers: the commit sets `destination = pickedFile.path`,
+  which is correct on desktop. It is not on mobile.
+  `file_selector_ios` presents `UIDocumentPickerViewController(... in:
+  .import)`, which copies the selection into the app's temporary
+  directory, and `file_selector_android` resolves the SAF URI through
+  `getPathFromCopyOfFileFromUri` — both hand back a **copy**. So an
+  overwrite on a phone would rewrite a temp file, the commit would
+  succeed, the receipt would verify, the UI would report the document
+  overwritten, and the user's file would be untouched. For a product
+  whose safe-commit exists to make writes honest and verified, that is
+  the worst possible failure: a confident false claim about someone's
+  document.
+  The option is now offered only where the picker returns the user's
+  real file, with the reasoning in the source. Save new copy is
+  unaffected — it writes where the user chose. The device checklist says
+  to confirm the option is **absent** on a phone, since it was the kind
+  of item a tester would have ticked by seeing the button work.
+  Read from the plugins' source rather than assumed; not demonstrated on
+  a device, which is IOS-02 and AND-03.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,

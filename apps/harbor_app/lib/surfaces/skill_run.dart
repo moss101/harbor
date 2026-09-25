@@ -12,6 +12,25 @@ import '../l10n/app_localizations.dart';
 import '../services/harbor_service.dart';
 import '../widgets/ops.dart';
 
+/// Whether this platform's file picker hands back the user's actual file.
+///
+/// It does on the desktops, which use NSOpenPanel and its equivalents. It
+/// does NOT on mobile: iOS presents `UIDocumentPickerViewController` in
+/// `.import` mode, which copies the selection into the app's temporary
+/// directory, and Android's Storage Access Framework path is resolved
+/// through `getPathFromCopyOfFileFromUri`. Both hand back a COPY.
+///
+/// That matters for one action only, and it matters a great deal:
+/// "Overwrite original" takes the picked path as its destination. On
+/// mobile that path is the temporary copy, so the commit would succeed,
+/// the receipt would verify, the UI would report the file overwritten —
+/// and the user's document would be untouched. Harbor's whole
+/// safe-commit design is about writes that are honest and verified, so
+/// the option is not offered where it cannot be honoured. Save new copy
+/// is unaffected: it writes to a destination the user chooses.
+bool get pickerReturnsTheUsersFile =>
+    Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+
 /// Run a graph skill (decision 0006): the form is generated from the
 /// graph's input schema, the run executes on the durable executor in the
 /// core, and a proposal parks the run for an explicit approval here. The
@@ -542,8 +561,9 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
     final canCommit = approval['effect_class'] == 'artifact.commit' &&
         _proposalFile != null &&
         approval['proposed_output_hash'] != null;
-    final canOverwrite =
-        canCommit && (_proposalFile?.value.path.isNotEmpty ?? false);
+    final canOverwrite = canCommit &&
+        pickerReturnsTheUsersFile &&
+        (_proposalFile?.value.path.isNotEmpty ?? false);
     return [
       const SizedBox(height: HarborSpace.s3),
       HarborSheet(

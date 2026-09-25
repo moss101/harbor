@@ -60,6 +60,14 @@ cd apps/harbor_app && flutter run --release -d <device-id>
 # Execute the §4 steps 6–19 checklist (inference, artifact preview,
 # durable run replay, background/foreground, Local Only, Arabic/RTL,
 # VoiceOver, thermal) and record into evidence/device_qualification.json.
+#
+# Safe-commit on mobile: "Overwrite original" is deliberately NOT offered
+# on iOS or Android — both pickers hand the app a COPY of the chosen file
+# (UIDocumentPicker `.import`; SAF resolved via a cache copy), so an
+# overwrite there would rewrite a temporary file and report success over
+# a document the user still has unchanged. Confirm the option is absent
+# and that "Save new copy" writes where the user chose. If you ever see
+# Overwrite on a phone, that is the bug, not the fix.
 ```
 
 ### AND-03 — physical Android
