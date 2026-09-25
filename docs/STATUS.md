@@ -497,6 +497,66 @@ ran at.
   `run.created` → `run.step_started`, request bound), but a model.text
   graph producing tokens on iOS remains **unproven**, and the benchmark
   tab exposes no run control on a compact layout.
+- **…and running a real graph on it found the misdiagnosis machine.**
+  With the picker fixed and the model installed, `meeting-notes` was run
+  on the simulator with real weights. It failed:
+  `/: expected type "object", got array`.
+  That message is wrong, and it is wrong in the most expensive way — it
+  describes the model's SHAPE for a problem that was entirely about a
+  token budget. It sent me through the grammar mechanism, the
+  canonicalisation path, the provider capability check, the sampler
+  chain and the iOS toolchain before the actual cause.
+  **Root cause**: `extract_json` tried `('{','}')` and then `('[',']')`
+  independently. A grammar-constrained object cut off at the node's
+  1500-token budget never closes its outer `{`, so the object attempt
+  fails to parse and the array attempt matches the COMPLETE `actions`
+  array nested inside it, which was handed to the validator as the
+  model's answer. Reproduced with no device and no model: a unit test on
+  a truncated string returns `Array [Object {"due": Null, ...}]`.
+  The grammar was correct throughout. Dumping the GBNF for the shipped
+  schema gives `root ::= "{" space actions-kv "," ... "}"`, which cannot
+  emit an array; a test now pins that.
+  Fixed: `extract_json` salvages only a value starting at the FIRST
+  structural opener and gives up if that span does not parse — a
+  substructure is never a correct reading of a truncated value — and a
+  failure where `completion_tokens` reached `max_tokens` now says the
+  output was truncated at that budget. **Demonstrated on the simulator**:
+  the same run now reports "output was truncated at the 1500-token
+  budget for this node, so it is an incomplete JSON value".
+  **Still broken, and not claimed otherwise**: the grammar admits up to
+  100 actions and 50 decisions, and qwen2.5-1.5b under greedy decoding
+  keeps emitting items rather than closing the array — two attempts x
+  1500 tokens is the twelve minutes each run took. `meeting-notes` does
+  not produce minutes on that model. It now fails saying why.
+- **Two more "existence is proof" defects found on the way there.**
+  (a) `model.structured` built its request schema with
+  `harbor_canonical::convert(sc).ok()`. Canonical JSON prohibits floats,
+  so a schema with `multipleOf: 0.5` became `None`: no `response_schema`,
+  UNCONSTRAINED sampling, and a result that happened to validate was
+  still recorded as `mode: "grammar_constrained"` — the label asserting
+  the guarantee that had just been dropped. The test goes red on the
+  shipped code (the run COMPLETED with `{"ratio": 1.5}`) and green on the
+  fix.
+  (b) Both iOS build phases rebuilt the native core only
+  `if [ ! -f "$FFI_LIB" ]` — existence taken as currency. After one
+  simulator build every later build copied that dylib forward, so Rust
+  changes never reached the simulator and the app under test was not the
+  app in the tree; the device phase had it too, where the stale archive
+  becomes the TestFlight artifact. Removing the guard immediately
+  surfaced what it hid: the rebuild FAILED here, because the phase pinned
+  the cargo binary while cargo resolves `rustc` through PATH, where
+  Homebrew's wins and has no Apple targets. Both phases now pin the
+  toolchain. Demonstrated: the sim dylib had been frozen at 16:01 and
+  rebuilt to 21:31, then again to 21:50.
+- **What iOS inference now has behind it**: a model imported and
+  installed through the app's own picker (1065 MB, gguf/llama.cpp), two
+  full generations per run at ~2 GB resident and 40-52% CPU, the live
+  node display fed by `Host.step`, the 90-second stall watchdog
+  correctly NOT firing on a long model node, and schema validation with
+  bounded retry ending in an honest typed failure. What it does not have
+  is a completed structured graph: no `model.structured` node has yet
+  produced a conforming result on iOS. The simulator is not a
+  qualification target, so none of this closes IOS-02.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,
