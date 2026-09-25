@@ -29,10 +29,17 @@ the affected evidence and finish with the bundle re-assembly (bottom).
 security find-identity -p codesigning -v   # must list the identity
 export HARBOR_APPLE_SIGNING_IDENTITY="Developer ID Application: <name> (<team>)"
 scripts/package_apple.sh                   # signs macOS app + iOS archive
-# Notarization (macOS):
+# Notarization (macOS). Paths are from the REPO ROOT, and the zip has to
+# be made — notarytool takes an archive, and nothing above produces one.
+app=apps/harbor_app/build/macos/Build/Products/Release/harbor_app.app
+ditto -c -k --keepParent "$app" /tmp/harbor_app.zip
 xcrun notarytool store-credentials HARBOR_NOTARY --apple-id <id> --team-id <team>
-xcrun notarytool submit build/macos/Build/Products/Release/harbor_app.zip --keychain-profile HARBOR_NOTARY --wait
-xcrun stapler staple build/macos/Build/Products/Release/harbor_app.app
+xcrun notarytool submit /tmp/harbor_app.zip --keychain-profile HARBOR_NOTARY --wait
+xcrun stapler staple "$app"
+# Staple the APP, not the zip, then prove it — this is exactly what the
+# MAC-02 gate reads, so if these two disagree the gate wins:
+xcrun stapler validate "$app"
+codesign -d --entitlements - "$app" | grep -q app-sandbox   # entitlements survived signing
 # TestFlight (iOS): Xcode → Organizer → upload, or altool.
 ```
 

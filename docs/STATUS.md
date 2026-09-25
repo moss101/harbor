@@ -311,6 +311,26 @@ ran at.
   `CN=Android Debug`. The test keystore was deleted;
   `android/key.properties` is gitignored, so credentials cannot be
   committed.
+- **Two more defects in code nobody could run**, found by following the
+  same thread — everything behind a `BLOCKED_*` gate is unexecuted, so
+  it is also untested. **Windows**: neither the CMake nor
+  `build_windows.ps1` built or copied `harbor_ffi.dll`, so
+  `flutter build windows --release` would have produced an exe with no
+  core beside it — the macOS bug again, on the platform nobody here can
+  run. The script now builds it, copies it and checks the packaged
+  folder; the runbook's launch check ("window opens with the Model Dock
+  visible") passed happily with no core, so it now requires the trust
+  chip to read LOCAL and About to say *Native core: Loaded*. **Unexecuted
+  — no Windows host and no PowerShell here to parse it.**
+  **Notarization**: the MAC-02 runbook told the operator to
+  `notarytool submit .../harbor_app.zip`, and nothing in the preceding
+  steps creates that zip — `package_apple.sh` signs the `.app` and stops
+  — with the path written relative to the wrong directory besides. It
+  would have failed on the first attempt, with credentials in hand. Now
+  it makes the archive with `ditto`, uses repo-root paths, staples the
+  app rather than the zip, and ends by proving it with
+  `stapler validate` plus an entitlements read — the two things the
+  MAC-02 gate itself checks, so the runbook and the gate cannot drift.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,
