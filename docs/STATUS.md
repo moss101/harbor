@@ -737,6 +737,47 @@ ran at.
   is a completed structured graph: no `model.structured` node has yet
   produced a conforming result on iOS. The simulator is not a
   qualification target, so none of this closes IOS-02.
+- **The fuzzer found a real bug, and then showed why it nearly did not.**
+  CI's `fuzz` job failed on `08fd9b0` — a DOCS-ONLY commit — so this was
+  latent, not a regression: same targets, same corpus, same 60 s, only a
+  different draw of inputs. The workflow uploads the reproducer on
+  failure, so the minimised input was recoverable instead of guessed at:
+  a well-formed `artifact_batch/v3` whose `cell.set` address is
+  `"Dxxxxxxxxxxxxxxxxxx2"` (19 letters), applied to a real XLSX.
+  `col_number` accumulated `n = n * 26 + ...` and overflowed —
+  `attempt to multiply with overflow`, `workbook.rs:46`. **Release is
+  worse than the panic**: overflow wraps there, so the address silently
+  resolves to a DIFFERENT cell than the one named, on the commit path
+  whose whole job is to touch exactly what was approved. A non-letter
+  byte also underflowed `b - b'A'`.
+  Fixed: `col_number` saturates past `MAX_COL` (16384/XFD) and returns
+  `u32::MAX` for non-columns; `parse_addr` bounds column and row to the
+  real grid (it already returned `Option` and simply was not using it).
+  Reproduced first as a plain test reading the libFuzzer bytes verbatim
+  so it fails for the original reason — red on the old code, green on the
+  fix. CI green on `40d903f`, on the same job that caught it.
+- **Fuzz coverage is very uneven, and the least-fuzzed target is the C
+  boundary.** Measured at 240 s each (clean sweep, no findings):
+  `ffi_dispatch` 3,722 runs (~15/s) against `jsonschema` 2,572,614,
+  `batch_from_value` 2,168,332, `graph_from_value` 1,884,661 — roughly
+  700x. `ffi_dispatch` is slow because it does real SQLite work per
+  iteration, which is right; the problem is that CI's flat 60 s per
+  target then gives the boundary ~900 executions. It also starts from few seeds — and that is
+  DELIBERATE, which I nearly reported as a gap: `core/fuzz/.gitignore`
+  ignores `corpus/*/` entries whose names are exactly 40 characters,
+  which is exactly libFuzzer's SHA-1-named output. Curated seeds with
+  readable names are tracked, machine-grown ones stay local, and the repo
+  stays lean; the cost is that a slow target re-derives coverage every
+  run. A minimised corpus is ~486 files / 1.9 MB covering 20,334 edges,
+  so force-adding it would trade repo weight for a far more effective
+  60 s. That is a judgement about this repo, not a defect, and it is left
+  to the operator.
+  **Trap recorded in `tools/fuzz.sh`**: `cargo fuzz cmin` REPLACES the
+  corpus directory with the coverage-minimal set and deletes tracked
+  seeds it considers redundant — it removed `docx_replace`, `garbage` and
+  the crash reproducer committed minutes earlier. `git checkout --
+  core/fuzz/corpus/` restores them; do that before committing anything
+  after a cmin.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,

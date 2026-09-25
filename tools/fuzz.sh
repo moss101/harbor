@@ -12,6 +12,35 @@
 # __sanitizer_cov_* symbols live in the fuzz binary, not the dylib).
 # Findings land in core/fuzz/artifacts/<target>/; the corpus under
 # core/fuzz/corpus/<target>/ grows and is committed after review.
+#
+# WARNING: `cargo fuzz cmin <target>` REPLACES that directory with the
+# coverage-minimal set. It does not know which files were curated, so it
+# deletes tracked seeds — including named ones like `docx_replace` and
+# `garbage`, and any crash reproducer committed as a regression seed —
+# whenever some other input happens to cover the same edges. Run it, then
+# `git checkout -- core/fuzz/corpus/` to bring the reviewed seeds back
+# before committing anything.
+#
+# Coverage is very uneven and the budget here does not account for it.
+# Measured at 240 s per target on the qualification Mac:
+#   ffi_dispatch        3,722 runs   (~15/s)
+#   jsonschema      2,572,614 runs
+#   batch_from_value 2,168,332 runs
+#   graph_from_value 1,884,661 runs
+# ffi_dispatch does real SQLite work per iteration, which is correct —
+# it is the C boundary and the point is to exercise the real path — but
+# CI's 60 s gives it roughly 900 executions against the others' hundreds
+# of thousands.
+#
+# It also starts from few seeds, and that part is DELIBERATE, not an
+# oversight: core/fuzz/.gitignore ignores `corpus/*/` entries whose names
+# are exactly 40 characters, which is precisely libFuzzer's SHA-1-named
+# output. Curated seeds with readable names are tracked; machine-grown
+# ones stay local, and the repo stays lean. The cost is that a slow
+# target re-derives coverage every CI run. A minimised ffi_dispatch
+# corpus is ~486 files / 1.9 MB covering 20,334 edges — force-adding it
+# would trade repo weight for a much more effective 60 s, which is a
+# judgement about this repo rather than a bug to fix.
 set -euo pipefail
 seconds="${1:-60}"
 shift || true
