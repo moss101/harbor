@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "09e380e6c6f906a692670493bce4d9b792f19392d504ee3148ef7b158320b173",
+  "input_manifest_sha256": "bca85a26a3e9a4857d939fda26c18f8cbaab4580c0909a1ec053783dc66acd98",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -2021,8 +2021,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 50259,
-      "sha256": "5b9d41d34e095cb62f7d0253d426483ccdf4904c4c9da854960dc0d5f14a45e8"
+      "bytes": 51111,
+      "sha256": "e1404d497ee1913ef832b53bb3a9f20714bf9c0b71ad6f5ad62952f3e023f266"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -2051,8 +2051,8 @@
     },
     {
       "path": "docs/decisions/0006-skill-graphs-tools-and-eval-harness.md",
-      "bytes": 12360,
-      "sha256": "cfd748defc3ffb653ea8f83dc89891dae1104347a1ce481cb187b9b645189ef1"
+      "bytes": 12599,
+      "sha256": "4db5a0586794d110ee9f62dc32ee7fe2bd32a127795e444a08cd5d5b5047a97e"
     },
     {
       "path": "docs/decisions/0007-security-review-1.1.md",

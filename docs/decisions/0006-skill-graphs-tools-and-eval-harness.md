@@ -116,7 +116,10 @@ they are contract tests of the deterministic node, not model measurements — so
 tier skips them instead of failing a model for behaving well.
 
 Measured 2026-09-20 on Qwen2.5-1.5B-Instruct Q4_K_M (`evidence/skill_evals/live-6a1a2eb6d156.json`,
-commit-bound): replay tier 23/23; live tier **13/18** (was 6/11 across four skills). The
+commit-bound): replay tier 23/23; live tier **13/18** (was 6/11 across four skills).
+Re-measured 2026-09-25 at commit `14eb406e` on the same pinned weights: 13/18 again,
+the same five skills — the formula content gate added in `87922ed` does not move the
+two formula-audit cases, which are model behaviour upstream of it. The
 five remaining live failures are model facts each pinned by an assertion and contained by
 a deterministic node: the model normalizes an owner name (meeting-notes), nudges a trivial
 lookup (second-look), re-emits unchanged formulas or lists nothing for review

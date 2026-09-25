@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "09e380e6c6f906a692670493bce4d9b792f19392d504ee3148ef7b158320b173",
+  "input_manifest_sha256": "bca85a26a3e9a4857d939fda26c18f8cbaab4580c0909a1ec053783dc66acd98",
   "file_count_excluding_manifest": 548,
   "files": [
     {
@@ -120,12 +120,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 99890,
-      "sha256": "522333c6d6849a22bb6af058711d9d3417b655619ba4400112ace5bf9c27b8c7"
+      "sha256": "12f963428df298cd4a70f96847c31ca560d3d554e6eeaf07fa861b09537d2f65"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "10b07137d3f7185b28bf680cede4a1d702dcb324df91052633e72a059263105b"
+      "sha256": "9863b188fa19545fd4888fd2e082a65e69fc438e23ee0950033c3930678e0e13"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -2039,8 +2039,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 50259,
-      "sha256": "5b9d41d34e095cb62f7d0253d426483ccdf4904c4c9da854960dc0d5f14a45e8"
+      "bytes": 51111,
+      "sha256": "e1404d497ee1913ef832b53bb3a9f20714bf9c0b71ad6f5ad62952f3e023f266"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -2069,8 +2069,8 @@
     },
     {
       "path": "docs/decisions/0006-skill-graphs-tools-and-eval-harness.md",
-      "bytes": 12360,
-      "sha256": "cfd748defc3ffb653ea8f83dc89891dae1104347a1ce481cb187b9b645189ef1"
+      "bytes": 12599,
+      "sha256": "4db5a0586794d110ee9f62dc32ee7fe2bd32a127795e444a08cd5d5b5047a97e"
     },
     {
       "path": "docs/decisions/0007-security-review-1.1.md",

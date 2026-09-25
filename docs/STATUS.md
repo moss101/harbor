@@ -137,6 +137,18 @@ ran at.
   was the one that threw it away, and `generate_gate_evidence.py` kept
   only pass/fail counts although it had captured the output. Both fixed;
   a failing suite now carries `output_tail` and prints it.
+- **Live skill-eval tier re-measured at HEAD: 13/18, unchanged.** The
+  recorded number was bound to `b020beb54` (session 34) and the GA rule
+  wants one for the candidate, not one inherited four sessions back —
+  and the formula content gate (`87922ed`) had landed since, sitting
+  directly in the path of two of the five failures. Re-run on the same
+  pinned Qwen2.5-1.5B (sha `6a1a2eb6…`, 144 s): **13/18 at `14eb406e`,
+  the same five failures in the same five skills** (`formula-audit` ×2,
+  `doc-coauthoring`, `meeting-notes`, `second-look`). So the gate did not
+  move them, which confirms decision 0006's attribution that they are
+  model behaviour upstream of it, and the evidence file is now bound to
+  HEAD. Recorded as measured; the ≥9/11 target in the plan is not what
+  this is scored against and no number was adjusted toward it.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,
