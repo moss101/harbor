@@ -44,10 +44,18 @@ performance thresholds. Everything runs from the tagged commit
    - AND-03 / AND-04: release APK on both handsets, §10 checklist;
      store-signed AAB to Play internal testing.
    - WIN-01: build smoke on the Windows host.
-   - PERF-01: `tools/run_performance_qualification.py --write` on the M1 8 GB
-     machine; replace every `TBD` in `15_Performance_Qualification.yaml`
-     (status `BLOCKED_UNTIL_MEASURED`) with the measured p95 per class —
-     thresholds are frozen from here.
+   - PERF-01: on the M1 8 GB machine,
+     `tools/run_performance_qualification.py --write --measured-class
+     minimum_spec_macos_arm64`. The `--measured-class` flag is what closes
+     the gate: it records `evidence/devices/<class>.json` with this host's
+     model, CPU and memory, and the class stays blocked until that file
+     exists. Run it ON the hardware — the recorded host facts are the
+     audit trail, and a class attested from the wrong machine is visible
+     in the evidence. Then replace every `TBD` in
+     `15_Performance_Qualification.yaml` (status `BLOCKED_UNTIL_MEASURED`)
+     with the measured p95 per class — thresholds are frozen from here.
+   - IOS-02 / AND-03 / WIN-01 close the same way, each with its own
+     `--measured-class` on the machine that did the measuring.
 3. Regenerate all evidence at the frozen commit and re-assemble the bundle
    on the qualification machine, **without** `--partial`:
    `python3 tools/assemble_release_evidence.py --version 1.1.0-rc1 --write`.

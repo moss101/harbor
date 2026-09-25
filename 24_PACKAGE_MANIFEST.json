@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "f3446b552d0195cd33907adc7b35dc2b10589c53afa335537116a90587786bd5",
+  "input_manifest_sha256": "ec446a748caebc393424dc0d612eee8a1fc3bf3486f288b3902f686bd92316d0",
   "file_count_excluding_manifest": 548,
   "files": [
     {
@@ -120,12 +120,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 99892,
-      "sha256": "60152d47e38214d79d6a81330dedbfb5342ada97f34496cca36107461d403b46"
+      "sha256": "8e6ac30f16636fa0c7fba0c9e2a368c071a16345a86965ed918239b18009cb61"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "c3301e9023ce1dc20d4db07a5b4e4dfcaac0ca99f66c16586467ef3c3d5b2b96"
+      "sha256": "88489ee22d74b93df544a48140951a7c38ba9ceaba488d18001cc182ed021d85"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -2039,8 +2039,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 64358,
-      "sha256": "d3f1fb8c489e6c519cdbf8fbd45e8e11f44f86fa8fa953b577112c9516a0c813"
+      "bytes": 65639,
+      "sha256": "b31f11a8c260c9b0b8e13c740b60aba129e4faec47619a7f11cb6964d5c01342"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -2094,8 +2094,8 @@
     },
     {
       "path": "docs/release/rings.md",
-      "bytes": 8283,
-      "sha256": "4f2baad641675cd4fc5ed0ba11ec4affd71f281dcfbaa58f459c4dda790c8476"
+      "bytes": 8824,
+      "sha256": "ca9e12dd2e0938d2ca23d9484308d4d34e116a351e0d276133903781f7a27885"
     },
     {
       "path": "docs/release/store/README.md",
@@ -2734,8 +2734,8 @@
     },
     {
       "path": "tools/run_performance_qualification.py",
-      "bytes": 6192,
-      "sha256": "25422d9ec81d1eca331a0c9c292b043499b5991ec4bc430fced229e44e04b466"
+      "bytes": 9809,
+      "sha256": "000aa67d97da991dc45b4ab50319d128263c5443ff9afe852c7f4051187b8bc7"
     },
     {
       "path": "tools/test_contracts.py",

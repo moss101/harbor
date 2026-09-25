@@ -346,6 +346,25 @@ ran at.
   Connect record and a matching provisioning profile, neither of which
   exists here. `flutter build ipa` was confirmed present in the pinned
   Flutter and both scripts parse; the rest waits on IOS-03 itself.
+- **The derivation I built rested on a constant that could never
+  change.** Making the device gates derive from
+  `perf_qualification.json`'s `blocked_device_evidence` (5d80e7e) was
+  only half a fix: that field was emitted from a hardcoded module-level
+  list, verbatim, on every run. The operator could run the tool **on**
+  the minimum-spec Mac and the report would still say the class was
+  blocked for want of hardware, so the gates still could not close — the
+  exact defect I thought I had removed, one layer down.
+  A class is blocked now unless `evidence/devices/<class>.json` exists,
+  and only `--measured-class` writes it, recording the commit, the perf
+  run hash and the host's model, CPU and memory. Verified end to end:
+  baseline blocks all four and PERF-01 reads BLOCKED; recording the
+  minimum-spec measurement drops that class and PERF-01 **closes**
+  (15 → 16 PASS) while the other three stay blocked. The simulated
+  measurement was then deleted — and it is worth noting what it had
+  recorded: `Mac17,8 / 24 GiB`, this reference machine, not a minimum-spec
+  one. There is no min-spec device manifest to check against, so the
+  host facts are the audit trail rather than a guard: a class attested
+  from the wrong machine is visible in the evidence.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,

@@ -23,9 +23,16 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-# Device classes that must eventually qualify for GA but have no hardware
-# available in this environment. They are recorded as BLOCKED_DEVICE_EVIDENCE.
-BLOCKED_DEVICE_CLASSES = [
+# The device classes that must eventually qualify for GA.
+#
+# This list used to be emitted verbatim as `blocked_device_evidence` on
+# every run, which made it an assertion rather than a measurement: the
+# operator could run this ON the minimum-spec Mac and the report would
+# still say that class was blocked for want of hardware. The gates that
+# read this file could therefore never close. A class is blocked here
+# unless `evidence/devices/<class>.json` says it was measured, and only
+# `--measured-class` writes that file — on the machine, bound to the run.
+DEVICE_CLASSES = [
     {
         "device_class": "minimum_spec_macos_arm64",
         "reason": "no minimum-spec Apple silicon device available in this environment",
@@ -53,10 +60,65 @@ def sha256_file(p: Path) -> str:
     return hashlib.sha256(p.read_bytes()).hexdigest()
 
 
+def device_evidence_path(repo: Path, device_class: str) -> Path:
+    return repo / "evidence" / "devices" / f"{device_class}.json"
+
+
+def blocked_device_classes(repo: Path):
+    """Classes with no recorded measurement. Absence blocks; it never clears."""
+    out = []
+    for spec in DEVICE_CLASSES:
+        if not device_evidence_path(repo, spec["device_class"]).exists():
+            out.append(dict(spec))
+    return out
+
+
+def host_facts() -> dict:
+    """Enough about this machine to audit a measurement claim later."""
+    def sysctl(key):
+        try:
+            return subprocess.check_output(["sysctl", "-n", key], text=True).strip()
+        except Exception:
+            return None
+    mem = sysctl("hw.memsize")
+    return {
+        "platform": sys.platform,
+        "cpu": sysctl("machdep.cpu.brand_string"),
+        "memory_bytes": int(mem) if mem and mem.isdigit() else None,
+        "model": sysctl("hw.model"),
+    }
+
+
+def record_measured_class(repo: Path, device_class: str, commit: str, perf_sha: str) -> Path:
+    """Record that THIS machine measured this class.
+
+    Written only by an explicit `--measured-class`, so clearing a gate is
+    always a deliberate, auditable act performed on the hardware — never
+    something a tool infers on a machine that happens to be running it.
+    """
+    path = device_evidence_path(repo, device_class)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({
+        "schema": "harbor.device_class_measurement/v1",
+        "device_class": device_class,
+        "commit": commit,
+        "measured_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "perf_run_sha256": perf_sha,
+        "host": host_facts(),
+    }, indent=1) + "\n")
+    return path
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo", default=".")
     ap.add_argument("--write", action="store_true")
+    ap.add_argument(
+        "--measured-class", action="append", default=[],
+        choices=[c["device_class"] for c in DEVICE_CLASSES],
+        help="record that THIS run measured that device class on THIS "
+             "machine, which is what lets the gate reading this file "
+             "close. Requires --write. Repeatable.")
     args = ap.parse_args()
     repo = Path(args.repo).resolve()
 
@@ -76,6 +138,19 @@ def main() -> int:
     thr = json.loads(thr_path.read_text())
     thr_sha = sha256_file(thr_path)
     perf_sha = sha256_file(perf_path)
+
+    # Record any class this run measured BEFORE deriving what is still
+    # blocked, so a run that clears a class reports it cleared.
+    measured_now = []
+    if args.measured_class:
+        if not args.write:
+            print("--measured-class requires --write: recording a measurement "
+                  "is a durable claim, not a dry run", file=sys.stderr)
+            return 2
+        for c in args.measured_class:
+            record_measured_class(repo, c, commit, perf_sha)
+            measured_now.append(c)
+    blocked = blocked_device_classes(repo)
 
     # Identity binding: thresholds were frozen FOR this model + device.
     identity_ok = (
@@ -144,8 +219,9 @@ def main() -> int:
         "perf_run_sha256": perf_sha,
         "identity_binding_ok": identity_ok,
         "metric_results": results,
-        "blocked_device_evidence": BLOCKED_DEVICE_CLASSES,
-        "verdict": "FAIL" if failed else "PASS_WITH_BLOCKED_CLASSES",
+        "blocked_device_evidence": blocked,
+        "verdict": "FAIL" if failed else
+        ("PASS" if not blocked else "PASS_WITH_BLOCKED_CLASSES"),
     }
     out = repo / "evidence/perf_qualification.json"
     if args.write:
@@ -154,8 +230,17 @@ def main() -> int:
     print(json.dumps({k: report[k] for k in ("verdict", "identity_binding_ok")}))
     for r in results:
         print(f"  {r['metric']}: {r.get('measured', '-')} {r.get('direction', '')} {r.get('threshold', '')} -> {r['verdict']}")
-    for b in BLOCKED_DEVICE_CLASSES:
+    for b in blocked:
         print(f"  {b['device_class']}: BLOCKED_DEVICE_EVIDENCE ({b['reason']})")
+    for c in measured_now:
+        h = host_facts()
+        gib = (h["memory_bytes"] or 0) / (1024 ** 3)
+        # Print what is being attested, on the machine attesting it. There
+        # is no minimum-spec device manifest to check against, so the
+        # recorded host facts ARE the audit trail — a class claimed on the
+        # wrong hardware is visible in the evidence rather than prevented.
+        print(f"  {c}: MEASURED -> {device_evidence_path(repo, c)}")
+        print(f"      attested on: {h['model']} / {h['cpu']} / {gib:.0f} GiB")
     return 1 if failed else 0
 
 
