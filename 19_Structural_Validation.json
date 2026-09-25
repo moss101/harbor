@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "914ff2d6b11cf45bce4c487bc8d0c562dedf78081dc1d548cc04ca184429d4cf",
+  "input_manifest_sha256": "a01745285f1babbce268dff60f86d16b68a2cfb1544a8ef1e21ced22bbfa7eab",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -11,8 +11,8 @@
     },
     {
       "path": ".github/workflows/release.yml",
-      "bytes": 15790,
-      "sha256": "57bc223d09aa0d6c4a035ec5e50839b40da55d26cf501c7a6ae89f3714887973"
+      "bytes": 16435,
+      "sha256": "5b330ba9997d9bfcf0ac81d76deb2093fc93d4c842ec426567180af9c2ef320a"
     },
     {
       "path": ".gitignore",
@@ -2021,8 +2021,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 59482,
-      "sha256": "e4601437f1fe39e31afc6b2698dbc0910a8588736a3cc9b8ea4c9d3fe4310164"
+      "bytes": 60449,
+      "sha256": "719a1f91dbef02d7e8bc711f85dc2c6882b56872b4e1afa8dfbb883b5e15dfc6"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -2631,8 +2631,8 @@
     },
     {
       "path": "scripts/package_apple.sh",
-      "bytes": 4904,
-      "sha256": "12088ab8c26fd84dac9c4985068296c8778652c8454257bd0cebf023593848f2"
+      "bytes": 5722,
+      "sha256": "562b8bf16a21de41d360d30c4eaa88f13c72c56616307ca4e10468392cd75455"
     },
     {
       "path": "tools/README.md",

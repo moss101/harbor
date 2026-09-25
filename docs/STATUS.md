@@ -275,6 +275,20 @@ ran at.
   connections by default, HTTPS satisfies ATS, and `UIDocumentPicker`
   needs no usage-description string. macOS was the only platform where
   the sandbox had to be told.
+- **And the entitlements were then thrown away by the signing — including
+  by a step I added today.** Dry run 11 was dispatched to confirm the
+  new entitlements survived a CI build; the artifact came back with
+  **none at all**, not even `app-sandbox`. `codesign --force --sign -`
+  without `--entitlements` REPLACES the signature and discards them, and
+  that is exactly what the "bundle the native core" step (3a9c7ca, mine,
+  today) did. `scripts/package_apple.sh` had the same defect twice over,
+  pre-existing: on its ad-hoc re-sign AND on the operator's Developer ID
+  signing — so the app the operator ships would have carried no
+  entitlements whatever the plist said. Fixed in both, and both now read
+  the entitlements back **off the bundle** after signing and fail if any
+  of the three is missing, because what ships is whatever the last
+  `codesign` wrote, not what the plist contains. Demonstrated locally in
+  both directions before trusting CI.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,

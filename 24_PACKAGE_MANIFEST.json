@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "914ff2d6b11cf45bce4c487bc8d0c562dedf78081dc1d548cc04ca184429d4cf",
+  "input_manifest_sha256": "a01745285f1babbce268dff60f86d16b68a2cfb1544a8ef1e21ced22bbfa7eab",
   "file_count_excluding_manifest": 548,
   "files": [
     {
@@ -14,8 +14,8 @@
     },
     {
       "path": ".github/workflows/release.yml",
-      "bytes": 15790,
-      "sha256": "57bc223d09aa0d6c4a035ec5e50839b40da55d26cf501c7a6ae89f3714887973"
+      "bytes": 16435,
+      "sha256": "5b330ba9997d9bfcf0ac81d76deb2093fc93d4c842ec426567180af9c2ef320a"
     },
     {
       "path": ".gitignore",
@@ -120,12 +120,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 99892,
-      "sha256": "7364fa1fe6a44377e59d9ba8079fac5bb27fbe2a34e2ab322d8521431c5ab7a8"
+      "sha256": "cf8b9056e9d7e54a9cd91fb9e1423f3c6d8308393bc5111b4ae064036e0d9795"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "cef251c4853f86d184f76fe39f3844373683be9ed5e7094baca15e0b5e440d92"
+      "sha256": "1490611aea3edac7ce58b911aaaae0479869d74fb6d35f5f65fc2286f5b0143c"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -2039,8 +2039,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 59482,
-      "sha256": "e4601437f1fe39e31afc6b2698dbc0910a8588736a3cc9b8ea4c9d3fe4310164"
+      "bytes": 60449,
+      "sha256": "719a1f91dbef02d7e8bc711f85dc2c6882b56872b4e1afa8dfbb883b5e15dfc6"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -2649,8 +2649,8 @@
     },
     {
       "path": "scripts/package_apple.sh",
-      "bytes": 4904,
-      "sha256": "12088ab8c26fd84dac9c4985068296c8778652c8454257bd0cebf023593848f2"
+      "bytes": 5722,
+      "sha256": "562b8bf16a21de41d360d30c4eaa88f13c72c56616307ca4e10468392cd75455"
     },
     {
       "path": "tools/README.md",

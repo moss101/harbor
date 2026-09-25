@@ -39,14 +39,26 @@ echo "-- bundle the native core into the app (Contents/Frameworks) --"
 (cd "$repo/core" && cargo build --release -p harbor_ffi)
 cp "$repo/core/target/release/libharbor_ffi.dylib" "$macos_app/Contents/Frameworks/"
 cp "$app/macos/Runner/PrivacyInfo.xcprivacy" "$macos_app/Contents/Resources/"
+# Re-signing REPLACES the signature, and a codesign without
+# --entitlements discards the ones Xcode embedded. Both signings below
+# must carry them or the shipped app has none at all: not sandboxed, no
+# user-selected file access declared, and rejected by the Mac App Store.
+ents="$app/macos/Runner/Release.entitlements"
 codesign --force --sign - "$macos_app/Contents/Frameworks/libharbor_ffi.dylib"
-codesign --force --sign - "$macos_app"
+codesign --force --sign - --entitlements "$ents" "$macos_app"
+# Read them back off the bundle: the entitlements the app ships with are
+# whatever the LAST codesign wrote, not whatever the plist says.
+for key in app-sandbox files.user-selected.read-write network.client; do
+  codesign -d --entitlements - "$macos_app" 2>&1 | grep -q "$key" \
+    || { echo "FAIL: entitlement $key missing after signing"; exit 1; }
+done
+echo "   entitlements verified on the bundle: sandbox + user-selected files + network client"
 echo "   dylib bundled: Contents/Frameworks/libharbor_ffi.dylib"
 echo "   privacy manifest bundled: Contents/Resources/PrivacyInfo.xcprivacy"
 
 if [[ -n "${HARBOR_APPLE_SIGNING_IDENTITY:-}" ]]; then
   echo "-- signing macOS app with OPERATOR identity (keychain-provided) --"
-  codesign --deep --force --options runtime \
+  codesign --deep --force --options runtime --entitlements "$ents" \
     --sign "$HARBOR_APPLE_SIGNING_IDENTITY" "$macos_app"
   codesign --verify --strict "$macos_app"
 else

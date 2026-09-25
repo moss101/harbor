@@ -182,13 +182,23 @@ jobs:
           cp core/target/release/libharbor_ffi.dylib "$app/Contents/Frameworks/"
           cp apps/harbor_app/macos/Runner/PrivacyInfo.xcprivacy "$app/Contents/Resources/"
           codesign --force --sign - "$app/Contents/Frameworks/libharbor_ffi.dylib"
-          codesign --force --sign - "$app"
+          # --entitlements or this re-sign DISCARDS the ones Xcode
+          # embedded; dry run 11's artifact had none at all because of
+          # exactly that omission in this step.
+          codesign --force --sign - \
+            --entitlements apps/harbor_app/macos/Runner/Release.entitlements "$app"
       - name: Zip the bundle + record its hash
         run: |
           app=apps/harbor_app/build/macos/Build/Products/Release/harbor_app.app
           # Fail loudly rather than ship a coreless app again.
           test -f "$app/Contents/Frameworks/libharbor_ffi.dylib"
           test -f "$app/Contents/Resources/PrivacyInfo.xcprivacy"
+          # The entitlements that ship are whatever the last codesign
+          # wrote. Read them off the bundle, not off the plist.
+          for key in app-sandbox files.user-selected.read-write network.client; do
+            codesign -d --entitlements - "$app" 2>&1 | grep -q "$key" \
+              || { echo "entitlement $key missing after signing"; exit 1; }
+          done
           ditto -c -k --keepParent "$app" harbor_app-macos-${{ needs.evidence.outputs.version }}-unsigned.zip
           shasum -a 256 harbor_app-macos-${{ needs.evidence.outputs.version }}-unsigned.zip | tee macos-sha256.txt
       - uses: actions/upload-artifact@v4
