@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "0d78605c0d0b9564a9d1140612c8f8bccc65b4ab968d03f34387e24424c8dd55",
+  "input_manifest_sha256": "16faee414b0dfc68d9b791f82834319458ffcc92b7ca926a2f1fe1a640b60e93",
   "file_count_excluding_manifest": 553,
   "files": [
     {
@@ -120,12 +120,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 100837,
-      "sha256": "41429db634062184c46c03eaaa91bba09f76e9306db1e7821818437f43d922c0"
+      "sha256": "131b28724ef11f02917b169d084b1b05c7bc4493421af1f3652a194031acfdff"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "01894914fa3fe8293b11d672d324ffad15db94aca99a511ce7b1e2226011b196"
+      "sha256": "8ab503ea87953f1534be84cf6097ccfcbc68f25017db9bb9e6d2ba9b07c43793"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -1564,8 +1564,8 @@
     },
     {
       "path": "core/harbor_core/src/tools/builtin.rs",
-      "bytes": 104717,
-      "sha256": "5348b4ca669ec73a1db7195dd5735dea4938eef5dd04d9e92c6bf676dde93a06"
+      "bytes": 106022,
+      "sha256": "c19fc03287cbb47ff98b7e6805c9fae76cfc5e603afd431a45cfb5fda1ffc718"
     },
     {
       "path": "core/harbor_core/src/tools/mod.rs",

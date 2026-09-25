@@ -2190,6 +2190,34 @@ impl Tool for ClipboardRead {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn parse_addr_bounds_the_address_to_the_real_grid() {
+        use super::parse_addr;
+        // Ordinary addresses, and the grid's exact corners.
+        assert_eq!(parse_addr("A1"), Some((1, 1)));
+        assert_eq!(parse_addr("B3"), Some((2, 3)));
+        assert_eq!(parse_addr("XFD1048576"), Some((16_384, 1_048_576)));
+
+        // One past each corner. XFE is a well-formed letter run that
+        // denotes no column; 1048577 is a row that cannot exist.
+        assert_eq!(parse_addr("XFE1"), None);
+        assert_eq!(parse_addr("A1048577"), None);
+        assert_eq!(parse_addr("A0"), None, "rows are 1-based");
+
+        // The fuzz finding: 19 letters overflowed col_number before it
+        // could be bounds-checked, panicking in debug and WRAPPING in
+        // release to address a different cell than the one named.
+        assert_eq!(parse_addr("Dxxxxxxxxxxxxxxxxxx2"), None);
+        assert_eq!(parse_addr("AAAAAAAAAAAAAAAAAAAA1"), None);
+
+        // Shapes that were already refused and must stay refused.
+        assert_eq!(parse_addr(""), None);
+        assert_eq!(parse_addr("A"), None, "no row");
+        assert_eq!(parse_addr("1"), None, "no column");
+        assert_eq!(parse_addr("A1B"), None, "trailing junk");
+        assert_eq!(parse_addr("A-1"), None);
+    }
+
     use super::*;
     use crate::tools::{ArtifactSource, MemoryArtifacts, ToolRegistry};
     use std::sync::atomic::AtomicBool;
