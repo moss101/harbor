@@ -288,7 +288,11 @@ ran at.
   the entitlements back **off the bundle** after signing and fail if any
   of the three is missing, because what ships is whatever the last
   `codesign` wrote, not what the plist contains. Demonstrated locally in
-  both directions before trusting CI.
+  both directions, then confirmed on CI: dry run 12's artifact carries
+  `app-sandbox`, `files.user-selected.read-write` and `network.client`,
+  with the core and the privacy manifest still in place. Three dry runs
+  to get one plist right — the first proved the config was wrong, the
+  second that fixing the config was not enough, the third that it holds.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,
