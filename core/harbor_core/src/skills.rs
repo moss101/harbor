@@ -344,6 +344,42 @@ mod tests {
         }
     }
 
+    /// The runnable set is a product claim — "nine runnable graphs" in
+    /// docs/PRODUCTION_PLAN.md, and what the Skills surface marks as
+    /// runnable. Nothing pinned it: a skill demoted from v2 to v1 drops
+    /// the count to eight with every other test still green, and the
+    /// documentation silently becomes wrong. Change this list when the
+    /// set genuinely changes, and change the docs in the same commit.
+    #[test]
+    fn exactly_the_documented_skills_are_runnable() {
+        const RUNNABLE: &[&str] = &[
+            "deck-review",
+            "doc-coauthoring",
+            "document-style-review",
+            "financial-model-review",
+            "formula-audit",
+            "meeting-notes",
+            "placeholder-fill",
+            "second-look",
+            "team-update",
+        ];
+        let skills = builtin_skills().unwrap();
+        let mut got: Vec<&str> = skills
+            .iter()
+            .filter(|s| s.has_graph())
+            .map(|s| s.id.as_str())
+            .collect();
+        got.sort_unstable();
+        assert_eq!(got, RUNNABLE, "the runnable skill set changed");
+        // Every embedded graph must be reachable from a skill; one that
+        // parses but nothing references is dead weight nobody can run.
+        assert_eq!(
+            builtin_graphs().len(),
+            RUNNABLE.len(),
+            "embedded graphs and runnable skills disagree"
+        );
+    }
+
     #[test]
     fn builtin_ids_are_unique_and_every_skill_carries_evals() {
         let skills = builtin_skills().unwrap();
