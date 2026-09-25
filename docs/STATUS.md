@@ -267,6 +267,14 @@ ran at.
   is a distribution decision, and the sandbox was kept because it is the
   better default for this product and preserves the Mac App Store
   option.
+  The other two platforms were checked rather than assumed to share it,
+  and both are correct: Android declares `INTERNET` in the **main**
+  manifest (Flutter's template puts it only in debug/profile, so that
+  was already fixed deliberately) and reaches files through the Storage
+  Access Framework, which needs no permission; iOS allows outbound
+  connections by default, HTTPS satisfies ATS, and `UIDocumentPicker`
+  needs no usage-description string. macOS was the only platform where
+  the sandbox had to be told.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,
