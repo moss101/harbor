@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "23ded096b4c7c706298f67622129652a519b837b0cc7af4ec8cedacb848815b2",
+  "input_manifest_sha256": "5f2748aa0ee276ad5528be8a4a29fa067a2883a83e8601974131c93321093136",
   "file_count_excluding_manifest": 550,
   "files": [
     {
@@ -119,13 +119,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 100253,
-      "sha256": "728afd5a54316fa919e5e45213b0420971d39ce4b5f4591dc60f569db991dfff"
+      "bytes": 100254,
+      "sha256": "38c8fc6d0f1086e223ad8fdef81e50f33755423a6ac600143048985267ccb0d5"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "7722190344da263cf3c878fba40ef3746018a5db625a993fc2b267dd3281d35f"
+      "sha256": "8510440fd72f93bee6cb7f324bc7f883f4a02e97bc99feaf4c59b382bcaa7394"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -1689,8 +1689,8 @@
     },
     {
       "path": "core/harbor_inference/src/gguf.rs",
-      "bytes": 18231,
-      "sha256": "406a5fcd9393eee825f861507f13f0d3732842acf259987864a9048ba78ce2f2"
+      "bytes": 18953,
+      "sha256": "8ed1e19df73fae87309778c95507d1bcd2ed2159e13e4fd544819d979d7fb568"
     },
     {
       "path": "core/harbor_inference/src/lib.rs",
@@ -2049,8 +2049,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 85868,
-      "sha256": "4b84fd552b3c3747bade09c372738ebc87ef28b59741e06c6d1b9e39f5aa73d2"
+      "bytes": 87315,
+      "sha256": "6acb24f052ebef7e2509a7a2cab04096288292daf206ebe6de094f9c17dba55f"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -2094,8 +2094,8 @@
     },
     {
       "path": "docs/release/closeout_runbook.md",
-      "bytes": 9315,
-      "sha256": "34c3282dd33b97df647ca88924e236221d6f3dda829f4b6d382aeb641c027df6"
+      "bytes": 10148,
+      "sha256": "4639590cda6a379cb7f821a9219679f9faf04818bf8bbed79f91e2e826dfc013"
     },
     {
       "path": "docs/release/migration_rollback.md",

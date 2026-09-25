@@ -416,7 +416,19 @@ impl ModelProvider for GgufLlamaCppProvider {
             }
         }
         let path = self.weights_path(package_id)?;
-        let params = llama_cpp_2::model::params::LlamaModelParams::default();
+        // HARBOR_GGUF_CPU_ONLY=1 keeps every layer on the CPU.
+        //
+        // A diagnostic escape hatch, not a feature. The iOS simulator
+        // returns schema-valid token soup from this same code path while
+        // macOS returns a correct answer from the same weights, prompt
+        // and grammar, and the two plausible causes — wrong numerics in
+        // the GPU kernels, or a wrong template/tokenizer path — are only
+        // separable by taking the GPU out of the loop. It doubles as a
+        // way to keep a device usable if its GPU kernels are broken.
+        let mut params = llama_cpp_2::model::params::LlamaModelParams::default();
+        if std::env::var("HARBOR_GGUF_CPU_ONLY").as_deref() == Ok("1") {
+            params = params.with_n_gpu_layers(0);
+        }
         let model = LlamaModel::load_from_file(self.backend, path, &params)
             .map_err(|e| ProviderError::Backend(format!("model load: {e}")))?;
         self.loaded

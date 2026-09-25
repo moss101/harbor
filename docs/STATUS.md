@@ -595,11 +595,38 @@ ran at.
   **The controlled contrast**: same weights, same schema loaded from the
   graph, same prompt shape, same `grammar_constrained` path — coherent
   and correct in 124 tokens on macOS, degenerate on the simulator.
-  **What this does NOT establish**: anything about a physical iPhone. The
-  simulator has its own Metal path (SimMetalHost) and its own build of
-  the ggml kernels. Degenerate output of this kind usually means wrong
-  numerics — a bad quantised kernel, or a wrong chat template/tokenizer
-  path — and which of those it is has not been determined.
+  **Now DETERMINED, by taking the GPU out of the loop rather than
+  guessing a fourth time.** `HARBOR_GGUF_CPU_ONLY=1` (new, in
+  `gguf.rs`) pins every layer to the CPU; `simctl` passes it through as
+  `SIMCTL_CHILD_HARBOR_GGUF_CPU_ONLY=1`. Same simulator, same weights,
+  same prompt, same schema:
+
+  | environment | result | time |
+  |---|---|---|
+  | simulator + Metal (default) | **garbage** | 56.8 s |
+  | simulator + CPU only | **correct** | 7.3 s |
+  | macOS + Metal | correct | 124 tok |
+  | macOS + CPU only | correct | 124 tok |
+
+  CPU-only on the simulator returns three coherent, on-point questions —
+  "How long will it take to migrate the store to SQLite?", "What is the
+  current query latency before the migration?", "How much will the query
+  latency be reduced by after the migration?" — `applies: true`, array
+  populated, routed to the `questions` end node.
+  So it is the SIMULATOR'S METAL PATH (SimMetalHost -> host GPU) giving
+  wrong numerics on the q4_K kernels. Not the chat template, not the
+  tokenizer, not the schema, not the model. And it is not only wrong: it
+  is 7x SLOWER than the CPU path it loses to.
+  `--stderr` on `simctl launch` finally gave llama.cpp's own logs from
+  the simulator (1221 lines) and they are clean — correct tokenizer
+  (gpt2/qwen2, eos 151645), chat template present, no warnings. Worth
+  noting separately: the model declares `add_bos_token = false` while
+  `gguf.rs` tokenises with `AddBos::Always`. That is a latent mismatch,
+  not this bug — macOS runs the identical path correctly.
+  **What this still does NOT establish**: anything about a physical
+  iPhone, whose Metal implementation is not SimMetalHost. The fault is
+  most likely simulator-only, but that is unproven and IOS-02 remains
+  the thing that would settle it.
   It does mean the earlier claim that a structured graph "completed on
   iOS" is true only in the emptiest sense: it completed with garbage.
 - **How truncation is reachable at all: five shipped schemas are larger

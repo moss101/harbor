@@ -63,13 +63,30 @@ weights, schema and prompt produce a correct answer in 124 tokens on
 macOS. A `model.structured` node on the simulator therefore "succeeds"
 while returning nothing usable, and one that runs long is garbage
 filling its array to the token cap.
+The cause is the simulator's METAL path: pin the layers to the CPU with
+`HARBOR_GGUF_CPU_ONLY=1` and the same run on the same simulator returns
+correct output in 7.3 s instead of garbage in 56.8 s. macOS is correct
+either way. So the simulator's GPU kernels compute the wrong thing for
+q4_K, and are slower than the CPU they lose to.
+
+    SIMCTL_CHILD_HARBOR_GGUF_CPU_ONLY=1 xcrun simctl launch \
+      --stderr=<path> <device> dev.harbor.harborApp
+
+`--stderr` also gets llama.cpp's own logs out of the simulator, which
+nothing else does.
+
 So: never tick an inference, quality, eval or performance item from a
-simulator run. The simulator is good for UI reachability, file pickers,
-plumbing and crash-freedom, and for nothing that depends on what the
-model actually said. Whether a physical device shares the fault is
-UNKNOWN — the simulator has its own Metal path (SimMetalHost) and its
-own ggml kernel build — and step 6 below is the first thing that will
-tell us.
+DEFAULT simulator run — it will look like a model or prompt problem when
+it is the GPU. With CPU-only forced, the simulator is usable for
+inference SANITY (does a graph produce sensible output at all) but never
+for performance, which that flag deliberately changes. The simulator
+remains good for UI reachability, file pickers, plumbing and
+crash-freedom.
+Whether a physical device shares the fault is UNKNOWN: its Metal
+implementation is not SimMetalHost. Most likely simulator-only, but
+unproven — step 6 below is what settles it. Run it BOTH ways on the
+device: if the GPU path there is also wrong, that is a release blocker,
+not a lab curiosity.
 
 ```bash
 # Prereq: device attached + trusted; development signing in Xcode.
