@@ -2850,12 +2850,12 @@ mod trust_persistence_tests {
                 watched,
                 diag,
                 std::time::Duration::from_millis(10),
-                std::time::Duration::from_millis(50),
+                std::time::Duration::from_secs(2),
             )
         });
-        for i in 1..=20 {
+        for i in 1..=60 {
             entry.progress.bytes_done.store(i * 1024, Ordering::Relaxed);
-            std::thread::sleep(std::time::Duration::from_millis(20));
+            std::thread::sleep(std::time::Duration::from_millis(5));
         }
         complete_op(&entry, Ok(serde_json::json!({})), false);
         watcher.join().unwrap();
