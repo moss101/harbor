@@ -61,18 +61,41 @@ flutter build windows --release
 if ($LASTEXITCODE -ne 0) { Pop-Location; throw "windows build failed" }
 Pop-Location
 
-# 5. Package the release folder (portable zip; installer is a later,
-#    credential-gated step).
-Step "Package"
+# 5. Bundle the native core beside the executable.
+#    `flutter build windows` does NOT do this and neither did this
+#    script: nothing built harbor_ffi.dll and nothing copied it, so the
+#    packaged app would have launched into the degraded state with no
+#    core at all. The Dart FFI opens "harbor_ffi.dll" by bare name, which
+#    Windows resolves from the executable's own directory first. The same
+#    omission shipped a coreless macOS bundle until it was caught by
+#    opening the artifact.
+Step "Native core (release)"
 $buildDir = "$repo\apps\harbor_app\build\windows\x64\runner\Release"
 if (-not (Test-Path $buildDir)) { throw "expected build output missing: $buildDir" }
+Push-Location "$repo\core"
+cargo build --release -p harbor_ffi
+if ($LASTEXITCODE -ne 0) { Pop-Location; throw "harbor_ffi build failed" }
+Pop-Location
+$coreDll = "$repo\core\target\release\harbor_ffi.dll"
+if (-not (Test-Path $coreDll)) { throw "harbor_ffi.dll not produced at $coreDll" }
+Copy-Item -Force $coreDll $buildDir
+# Read it back off the packaged folder: what ships is what is there, not
+# what the copy above intended.
+if (-not (Test-Path "$buildDir\harbor_ffi.dll")) {
+  throw "harbor_ffi.dll missing from $buildDir after copy"
+}
+Write-Host "   native core bundled: harbor_ffi.dll" -ForegroundColor Green
+
+# 6. Package the release folder (portable zip; installer is a later,
+#    credential-gated step).
+Step "Package"
 $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $outZip = "$repo\outputs\harbor_app_windows_x64_$stamp.zip"
 New-Item -ItemType Directory -Force -Path "$repo\outputs" | Out-Null
 Compress-Archive -Path "$buildDir\*" -DestinationPath $outZip
 Write-Host "`nPackaged: $outZip" -ForegroundColor Green
 
-# 6. Evidence to record (manual, on the Windows machine):
+# 7. Evidence to record (manual, on the Windows machine):
 #    - perf: cargo run --release -p harbor_integration --example perf_baseline `
 #        --features gguf-backend -- <repo> <models-store>
 #      then: python tools\run_performance_qualification.py --write

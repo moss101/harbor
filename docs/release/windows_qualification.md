@@ -37,6 +37,20 @@ Start `build\windows\x64\runner\Release\harbor_app.exe`, confirm the window
 opens with the Model Dock visible, quit cleanly. Record a screenshot under
 `evidence/windows/launch/`.
 
+**A window is not enough.** The app opens and renders its shell with no
+native core at all — that is the honest degraded state, by design — so a
+screenshot of a window proves only that Flutter started. Confirm in the
+same screenshot that:
+
+- the trust chip in the header reads **LOCAL**, not `OFFLINE`; and
+- **Settings → About** shows *Native core: Loaded*.
+
+If either says otherwise, `harbor_ffi.dll` is not beside `harbor_app.exe`
+and the build is coreless. `build_windows.ps1` now builds and copies it
+and fails if it is missing, but check the running app rather than
+trusting the script: a coreless macOS bundle shipped for months behind a
+"launch verified" note that was true and meaningless.
+
 ## Notes
 - `harbor_inference` `gguf-backend` builds with the llama.cpp CPU (or CUDA,
   if available) backend on Windows — no Metal. Model-load and tok/s

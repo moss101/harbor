@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "62aebef564b31391bbc463b7820ea76e60aff94b215008b837d382170e89d1e7",
+  "input_manifest_sha256": "e3a9d951e5bbe7e75afb71b68435f6a9e39910b3d9413cb7e0d981ce74dc25fe",
   "file_count_excluding_manifest": 548,
   "files": [
     {
@@ -120,12 +120,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 99892,
-      "sha256": "689eabf417e51bc8290f10b6573754bc2dfb2a4d4f543b9a5890dfbff115d01c"
+      "sha256": "f8916891e0841824faf30ddd9df27f4061ae3f682e37e6aa1486382e68534c83"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "b85ded43e42b106dfe6b5c394de95ce8d0cfbc0c738dbf4bbce674a820918d11"
+      "sha256": "b4d5f82f70336322cac3c1d19c8eb78c4dcf2580ac86adb513e407fba651d436"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -2194,8 +2194,8 @@
     },
     {
       "path": "docs/release/windows_qualification.md",
-      "bytes": 2222,
-      "sha256": "59aa212a72a325e52f439180029d5da58efbd3eaadfc63790090c0b8d17268bf"
+      "bytes": 2928,
+      "sha256": "5d68df0be309cc41cc6e36ccdecb2f4ed68705c357fb27106c421be62544eaf3"
     },
     {
       "path": "docs/release_checklist_status.md",
@@ -2639,8 +2639,8 @@
     },
     {
       "path": "scripts/build_windows.ps1",
-      "bytes": 3376,
-      "sha256": "3c6e5356f3ce30ce8d362db355d573d2cd50af74117722e8c2d69252ead2b60f"
+      "bytes": 4526,
+      "sha256": "4bcab17a0ced94db8885eb6732218476ffb5380e6cc7a04078728b5b9456a5d7"
     },
     {
       "path": "scripts/package_android.sh",
