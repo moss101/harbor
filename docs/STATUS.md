@@ -449,6 +449,54 @@ ran at.
   storage is invisible under scoped storage, and solving it needs a SAF
   create-document channel or a share sheet. Left untouched and flagged,
   because that is a product decision rather than a bug fix.
+- **…and then it turned out iOS could not OPEN a file either — any file,
+  from any surface.** Chasing the last open question (run a real graph on
+  the simulator with real weights, without spending 1.1 GB of the
+  operator's bandwidth: the GGUF was already on this machine, and the
+  `UIFileSharingEnabled` fix above had just made the app's Documents
+  folder visible to the picker) the "Import GGUF" button did nothing.
+  Not an empty sheet, not an error — nothing, and nothing in the system
+  log either, because no picker was ever constructed.
+  `file_selector_ios` throws `ArgumentError` from DART when a type group
+  carries only `extensions` and no `uniformTypeIdentifiers`. All five
+  call sites — home attach, work open, skill-run attach, knowledge
+  ingest, model import — passed `extensions` only, and all five wrapped
+  the call in `catch (_) { return; }`. Three of them labelled that
+  branch `// picker dismissed`. So every file entry point on iOS had
+  been inert for as long as it existed, and the source asserted the
+  cause was the user changing their mind.
+  This is the same defect class as the seven before it and the worst
+  instance: not a gap behind a `BLOCKED_*` gate, but a swallowed
+  exception that actively narrated a false reason.
+  Fixed in `apps/harbor_app/lib/services/file_types.dart` — one place,
+  extensions for desktop and UTIs for Apple, since each platform ignores
+  the other's. `.gguf` has no registered UTI anywhere, so the model group
+  uses `public.data`; anything narrower greys the user's own weights out
+  in the picker, which reads as "unsupported file" rather than "wrong
+  filter". The five `catch (_)` blocks now rethrow `Error` and keep
+  swallowing only genuine dismissals.
+  `test/file_type_groups_test.dart` reproduces the plugin's own
+  precondition against the groups the app actually passes, imported from
+  the file the surfaces import — a copy of the lists would pass forever
+  while the shipped ones rotted. **Verified it catches the real bug**:
+  restoring the shipped `extensions`-only model group turns the test red
+  with the ArgumentError message, restoring the fix turns it green.
+  **Demonstrated end to end on the simulator**: picker opens; the 1.12 GB
+  GGUF is listed and selectable, not greyed out; import installs it
+  (1065 MB, `gguf/llama.cpp`, Fit Score ممتاز) — the first model ever
+  installed on iOS; Home swaps the "install a model" card for the active
+  model; and the Work surface opens `letter_template.docx` through the
+  same repaired picker, parses it (5 paragraphs), renders it and raises
+  the honest fidelity warning about the one retained-but-unrendered
+  part. Staged copies deleted afterwards.
+  **What this did NOT prove**: no inference ran. The Home composer's
+  `submitRequest` only calls `run.create` + `run.log_request` and stops —
+  which is what its snackbar says ("recorded as a durable task"), so the
+  string is accurate and this is not a defect; free-text capture is not
+  the execution surface. The run ledger works on iOS (2 verified events,
+  `run.created` → `run.step_started`, request bound), but a model.text
+  graph producing tokens on iOS remains **unproven**, and the benchmark
+  tab exposes no run control on a compact layout.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,

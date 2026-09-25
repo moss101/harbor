@@ -68,6 +68,17 @@ cd apps/harbor_app && flutter run --release -d <device-id>
 # a document the user still has unchanged. Confirm the option is absent
 # and that "Save new copy" writes where the user chose. If you ever see
 # Overwrite on a phone, that is the bug, not the fix.
+#
+# File pickers: open a file from EVERY entry point — Home attach, Work
+# "Open a file", skill-run attach, Knowledge ingest, Models "Import
+# GGUF" — and confirm each one actually presents the system picker AND
+# that the file you want is selectable rather than greyed out. Do not
+# tick this from one surface. On iOS a type group with no
+# `uniformTypeIdentifiers` throws before any picker is built, so a dead
+# entry point looks exactly like a user who changed their mind: no
+# sheet, no error, no log line. All five were inert this way until
+# session 40. `file_type_groups_test` guards the groups; only a device
+# shows that the UTIs actually match real files.
 ```
 
 ### AND-03 — physical Android

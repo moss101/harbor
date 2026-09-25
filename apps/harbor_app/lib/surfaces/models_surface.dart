@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:harbor_native/harbor_ffi.dart' as ffi;
 import 'package:harbor_ui/harbor_ui.dart';
 
+import '../services/file_types.dart';
+
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/harbor_service.dart';
@@ -40,10 +42,16 @@ class _ModelsSurfaceState extends State<ModelsSurface>
     final XFile? file;
     try {
       file = await openFile(acceptedTypeGroups: [
-        XTypeGroup(label: l10n.fileGroupModels, extensions: const ['gguf']),
+        modelTypeGroup(l10n.fileGroupModels),
       ]);
+    } on Error {
+      // A misconfigured type group throws Error from Dart before any
+      // picker exists. Swallowing that as "dismissed" is exactly how
+      // every file entry point on iOS stayed dead: silent, and labelled
+      // as the user's choice. Let it surface.
+      rethrow;
     } catch (_) {
-      return;
+      return; // picker dismissed
     }
     if (file == null || !mounted) return;
     final name = file.name;

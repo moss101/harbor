@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
+import '../services/file_types.dart';
+
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/harbor_service.dart';
@@ -71,13 +73,16 @@ class _HomeSurfaceState extends State<HomeSurface> {
     final service = sp.notifier;
     if (service == null) return;
     final l10n = AppLocalizations.of(context)!;
-    final group = XTypeGroup(
-      label: l10n.fileGroupDocuments,
-      extensions: const ['txt', 'md', 'csv', 'json', 'log', 'docx', 'pdf'],
-    );
+    final group = knowledgeTypeGroup(l10n.fileGroupDocuments);
     final List<XFile> files;
     try {
       files = await openFiles(acceptedTypeGroups: [group]);
+    } on Error {
+      // A misconfigured type group throws Error from Dart before any
+      // picker exists. Swallowing that as "dismissed" is exactly how
+      // every file entry point on iOS stayed dead: silent, and labelled
+      // as the user's choice. Let it surface.
+      rethrow;
     } catch (_) {
       return; // picker dismissed
     }

@@ -2,6 +2,8 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
+import '../services/file_types.dart';
+
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/harbor_service.dart';
@@ -60,14 +62,17 @@ class _WorkSurfaceState extends State<WorkSurface> {
     if (service == null) return;
     final l10n = AppLocalizations.of(context)!;
     final groups = [
-      XTypeGroup(
-        label: l10n.fileGroupDocuments,
-        extensions: const ['docx', 'pdf', 'xlsx', 'pptx'],
-      ),
+      officeTypeGroup(l10n.fileGroupDocuments),
     ];
     final XFile? file;
     try {
       file = await openFile(acceptedTypeGroups: groups);
+    } on Error {
+      // A misconfigured type group throws Error from Dart before any
+      // picker exists. Swallowing that as "dismissed" is exactly how
+      // every file entry point on iOS stayed dead: silent, and labelled
+      // as the user's choice. Let it surface.
+      rethrow;
     } catch (_) {
       return; // picker dismissed
     }
