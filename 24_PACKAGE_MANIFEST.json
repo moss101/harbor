@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "ac876e0e7b57e0f7b349cee8ce7f9a6f10523a74a8ecafdb6b03e3c0790b0877",
+  "input_manifest_sha256": "ce1adf7b6ddda1951ff537e876113c186c2d5d9538e3ed8ac817ad2dcc5def50",
   "file_count_excluding_manifest": 548,
   "files": [
     {
@@ -119,13 +119,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 99890,
-      "sha256": "99d7c69978d079db2983fcf4e197f08d2dc2dcad93cd545c107a792f0968e7aa"
+      "bytes": 99891,
+      "sha256": "7286b2ea4236512ddc6912c6e702b045c550488132572144baac0e1ae6a62f50"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "9489d6627b7a3ac73eeb2b2ab8848ddaf7c8544e4dc0e69c8ab917959ad38918"
+      "sha256": "1b7011730d16b0eb5860cfbcdafbb77dc873e3aaa3948c92a2eb9034eae96b56"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -634,8 +634,8 @@
     },
     {
       "path": "apps/harbor_app/lib/surfaces/settings_surface.dart",
-      "bytes": 15345,
-      "sha256": "495057b2ab85111cabfd30b83224b0f1b6b362463f46304b638b7bc9462bf050"
+      "bytes": 15655,
+      "sha256": "dce948cfb7f5256631346f8fd4556cebc0362245ddbc079382e4f19bafffafda"
     },
     {
       "path": "apps/harbor_app/lib/surfaces/skill_run.dart",
@@ -849,8 +849,8 @@
     },
     {
       "path": "apps/harbor_app/test/build_info_test.dart",
-      "bytes": 440,
-      "sha256": "4aca580e0b164d3fbaa5386a261d1d10ebe068196875af1e96a487827a83c88a"
+      "bytes": 1273,
+      "sha256": "2387f145241326f89753bc324a06125425b50e9bceb298aa62bf8b509c83820e"
     },
     {
       "path": "apps/harbor_app/test/catalog_assets_test.dart",
@@ -2039,8 +2039,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 55111,
-      "sha256": "89dc8f7cac8f7d59d02c7239c602dabab47afea2f01d2c4aa8781006dc20285e"
+      "bytes": 56861,
+      "sha256": "d74da392808d73b80bcd0d1f10459849832b720eb306a1a049d559be2f1ce84c"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",

@@ -209,6 +209,32 @@ ran at.
   absences named in `absent_machine_local`**, and still exits 0 under
   `--partial` — which is the property that had to hold, or every release
   run would fail.
+- **iOS simulator run — and it found a user-facing bug.** Built the
+  simulator dylib fresh first (the Xcode phase only builds it when
+  missing, so a stale one ships silently), verified the app embedded
+  *that* build rather than assuming — by checking for a string literal
+  only today's FFI contains — then installed and drove it on an iPhone
+  17 Pro. The app launches, the trust chip reads LOCAL, About says
+  "Native core: Loaded", and Models → Recommended lists **3 catalog
+  packages**, which means the core imported the bundled catalog,
+  verified its signature against the pinned root key, persisted trust
+  and served `catalog.list` over FFI. The device identity row proves it
+  wrote to its store.
+  The bug: Settings → About rendered **`value: '1.0.0'` as a hardcoded
+  literal** on a 1.1.0+2 build — and disagreed with the diagnostics
+  export in the same file, which correctly uses `harborAppVersion`. A
+  ring-1 tester reporting a problem would have quoted the wrong build.
+  Fixed, and `build_info_test` now asserts the About card reads
+  build_info and contains no version literal; the test was checked
+  against the old code to confirm it actually catches it.
+  **This does not touch IOS-02**, which stays `BLOCKED_DEVICE_EVIDENCE`:
+  simulator evidence is not promoted to the device tier, and the
+  simulator loads a `.dylib` where a device force-loads the static
+  archive — a different linkage path from the one IOS-01 claims.
+  One loose end, stated rather than explained away: a diagnostics count
+  of **4 records** appeared once after I replaced the binary under a live
+  container, and I could not reproduce it — a clean install and an
+  update-style reinstall both record zero. Unidentified, not dismissed.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,

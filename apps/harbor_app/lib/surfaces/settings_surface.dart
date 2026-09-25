@@ -200,7 +200,11 @@ class SettingsSurface extends StatelessWidget {
                     const SizedBox(height: HarborSpace.s3),
                     HarborKeyValue(
                         label: l10n.settingsVersion,
-                        value: '1.0.0',
+                        // build_info.dart exists to carry this, and a test
+                        // keeps it equal to pubspec. A literal here read
+                        // 1.0.0 on a 1.1.0+2 build — and disagreed with the
+                        // diagnostics export below, which does use it.
+                        value: harborAppVersion,
                         identifier: true),
                     HarborKeyValue(
                       label: l10n.settingsCoreStatus,
