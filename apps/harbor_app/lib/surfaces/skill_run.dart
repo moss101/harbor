@@ -318,7 +318,14 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
             Text(l10n.skillsRunTitle(widget.skill.title),
                 style: t.text.h2Of(t.colors.ink)),
             const SizedBox(height: HarborSpace.s2),
+            // English-only prose from builtin_skills.json, like the
+            // Skills surface: without its own direction the trailing
+            // full stop lands at the left edge in Arabic. The title
+            // above is deliberately NOT given one — it is interpolated
+            // into a localized Arabic template, where an embedded LTR
+            // run is exactly what bidi already handles.
             Text(widget.skill.description,
+                textDirection: TextDirection.ltr,
                 style: t.text.bodyOf(t.colors.inkMuted)),
             const SizedBox(height: HarborSpace.s4),
             if (_report == null) ..._form(context, l10n, t),

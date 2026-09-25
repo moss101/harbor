@@ -380,6 +380,13 @@ ran at.
   at the end, English prose left-aligns inside the RTL card, and the
   Arabic chrome is untouched. Only visible by running the app in Arabic —
   the RTL widget tests assert semantics and overflow, not bidi placement.
+  The Run sheet renders the same prose and had the same bug; that is five
+  sites in total. Its **title** was deliberately left alone: it is
+  interpolated into a localized Arabic template, where an embedded LTR
+  run is precisely the case bidi already handles, and forcing the
+  paragraph LTR would flip the Arabic around it. Models was checked in
+  Arabic too and is clean — package ids, repo paths and licences are
+  short values rather than sentences, so nothing trails a full stop.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,
