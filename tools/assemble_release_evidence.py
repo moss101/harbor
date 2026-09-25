@@ -15,6 +15,7 @@ import argparse
 import hashlib
 import json
 import shutil
+import os
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -136,6 +137,81 @@ def device_gate(id_, name, blocked_status, evidence, note):
     return gate(id_, name, "PASS", evidence,
                 note + " [device class no longer reported blocked by "
                        "evidence/perf_qualification.json]")
+
+
+def _run(cmd, timeout=60):
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        return proc.returncode, (proc.stdout or "") + (proc.stderr or "")
+    except (OSError, subprocess.SubprocessError):
+        return None, ""
+
+
+def _apksigner():
+    """apksigner from PATH, else the newest build-tools that has one."""
+    found = shutil.which("apksigner")
+    if found:
+        return found
+    roots = [os.environ.get("ANDROID_HOME"), os.environ.get("ANDROID_SDK_ROOT"),
+             str(Path.home() / "Library/Android/sdk")]
+    for root in [r for r in roots if r]:
+        tools = sorted(Path(root).glob("build-tools/*/apksigner"), reverse=True)
+        if tools:
+            return str(tools[0])
+    return None
+
+
+def observed_signing(path: Path) -> str:
+    """What the signing tools SAY about this artifact.
+
+    This field used to be a hardcoded string — "ad-hoc (NOT
+    store-distributable)" for Apple, "debug key" for Android — so it
+    would have kept saying exactly that after the operator signed with a
+    Developer ID or the Play upload key, inside a file that ships in the
+    release bundle AS EVIDENCE of how the artifact is signed. Both are
+    observable. When the tool is unavailable the value says the state is
+    undetermined rather than guessing in either direction.
+    """
+    name = path.name.lower()
+    if name.endswith((".app", ".zip")) or path.is_dir():
+        code, out = _run(["codesign", "-dv", "--verbose=2", str(path)])
+        if code is None:
+            return "undetermined (codesign unavailable)"
+        if code != 0:
+            return "unsigned (codesign could not read a signature)"
+        if "Signature=adhoc" in out:
+            return "ad-hoc (NOT store-distributable)"
+        authority = [l.split("=", 1)[1].strip()
+                     for l in out.splitlines() if l.startswith("Authority=")]
+        return "signed: {}".format(authority[0]) if authority else "signed (authority not reported)"
+    if name.endswith(".aab"):
+        # A bundle is jar-signed; apksigner only handles APKs and calling
+        # it here reports "unverifiable" on a bundle that is signed fine.
+        code, out = _run(["keytool", "-printcert", "-jarfile", str(path)])
+        if code is None:
+            return "undetermined (keytool unavailable)"
+        owner = [l.split(":", 1)[1].strip() for l in out.splitlines()
+                 if l.startswith("Owner:")]
+        if not owner:
+            return "unsigned or unverifiable"
+        if "CN=Android Debug" in owner[0]:
+            return "debug key (NOT store-distributable)"
+        return "signed: {}".format(owner[0])
+    if name.endswith(".apk"):
+        tool = _apksigner()
+        if not tool:
+            return "undetermined (apksigner not found)"
+        code, out = _run([tool, "verify", "--print-certs", str(path)])
+        if code is None or code != 0:
+            return "unsigned or unverifiable"
+        dn = [l.split(":", 1)[1].strip() for l in out.splitlines()
+              if "certificate DN:" in l]
+        if not dn:
+            return "signed (signer not reported)"
+        if "CN=Android Debug" in dn[0]:
+            return "debug key (NOT store-distributable)"
+        return "signed: {}".format(dn[0])
+    return "undetermined (no signing check for this artifact type)"
 
 
 def cited_present(paths) -> bool:
@@ -451,13 +527,13 @@ def main():
                 digest = sha256(zip_path)
                 store_packages[key] = {
                     "path": str(zip_path.relative_to(REPO)), "sha256": digest,
-                    "signed": "ad-hoc (NOT store-distributable)",
+                    "signed": observed_signing(path),
                 }
             else:
                 digest = sha256(path)
                 store_packages[key] = {
                     "path": str(path.relative_to(REPO)), "sha256": digest,
-                    "signed": "debug key (NOT store-distributable)",
+                    "signed": observed_signing(path),
                 }
             artifacts[key] = digest
 

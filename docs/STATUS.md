@@ -166,6 +166,25 @@ ran at.
   FFI entry points (`harbor_core_open`, `open_ex`, `call`, `close`,
   `string_free`), 1099 llama.cpp symbols, force-load wired in the Xcode
   project. 15 PASS again, this time earned.
+- **Two more statuses that were asserted, not derived.** (1) The four
+  device-blocked gates (`IOS-02`, `AND-03`, `WIN-01`, `PERF-01`)
+  hardcoded `BLOCKED`, so ring 0 could complete in reality — iPhone,
+  handsets, Windows host, M1 8 GB all qualified — and the table would go
+  on reporting them blocked until someone edited the source;
+  `release_declared` could never become true. They derive from the
+  device classes `perf_qualification.json` already names
+  (`ios_arm64_physical`, `android_arm64_physical`, `windows_x64`,
+  `minimum_spec_macos_arm64`), so they close by themselves. Verified
+  both ways: today's evidence leaves all four blocked; removing two
+  classes flips IOS-02 and PERF-01 to PASS (15 → 17) and leaves the
+  others. (2) `signed_artifact_hashes.json` hardcoded its `signed`
+  field, so it would have kept saying "ad-hoc (NOT store-distributable)"
+  after the operator signed with a Developer ID — in a file that ships
+  in the bundle AS the evidence of how the artifact is signed. It is now
+  read from `codesign`, `apksigner` (APK) and `keytool` (AAB, which
+  apksigner cannot verify). The values match what was asserted for the
+  three signed artifacts, and correct the iOS one: `--no-codesign`
+  output is **unsigned**, which the hardcoded string called ad-hoc.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,
