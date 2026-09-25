@@ -41,6 +41,15 @@ def sha256(path: Path) -> str:
 MACHINE_LOCAL_GATES = {
     "X-07": "evidence/network_capture.json",
     "X-08": "evidence/perf_qualification.json",
+    # Asserted platform gates whose evidence is equally unavailable to the
+    # `evidence` job: two are qualification-machine-local, and two are
+    # build outputs produced in a DIFFERENT job of the same workflow.
+    # Without these, b0a7bbb (which made the platform tier actually check
+    # its evidence) would fail every release run.
+    "MAC-01": "evidence/device_qualification.json",
+    "AND-01": "evidence/device_qualification.json",
+    "AND-02": "apps/harbor_app/build/.../app-release.aab (android job)",
+    "IOS-01": "core/target/aarch64-apple-ios/release/libharbor_ffi.a (operator iOS build)",
 }
 
 
