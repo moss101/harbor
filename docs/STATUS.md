@@ -647,12 +647,30 @@ ran at.
   `"due": "2023-04-15"` — a fabricated date from a training prior, in the
   exact field where the graph author anticipated this and forbade it. The
   summary also conflates the decision with the action.
-  So: pipeline, grammar, validation and routing are correct on iOS with
-  the GPU bypassed; qwen2.5-1.5b does NOT reliably honour the verbatim
-  constraint. That is model quality, not a code defect — but a
-  hallucinated date in minutes is exactly the kind of output that reads
-  as authoritative and is wrong, and it belongs in any evaluation of
-  whether a 1.5B model is fit to be the recommended default.
+  **And then the guard caught it — I understated Harbor above.** Scrolling
+  the same result to `verified_actions`:
+  `[{"item": {"text": "Run the device checklist tomorrow", "owner":
+  "Ben", "due": null}, "dropped": [{"field": "due", "value":
+  "2023-04-15"}]}]`
+  Node path: `minutes` (8592 ms) -> `verify_one` · `text.verify_fields`
+  (2 ms) -> `verify` · map (3 ms) -> `lang` (0 ms) -> `done` · completed.
+  The hallucination did NOT escape. A 1.5B model invented a date and a
+  deterministic tool nulled it and reported exactly what it dropped, in
+  two milliseconds — "model proposes, tool verifies" working as designed,
+  on-device, against a real hallucination rather than a synthetic one.
+  I described it as an authoritative-looking wrong answer; it was caught,
+  and the design deserves the credit.
+  **The residual defect is narrower and real**: `done` outputs BOTH
+  `/minutes` (fabricated date intact) and `/verified_actions`
+  (corrected), and the UI renders `minutes` first. A consumer reading the
+  obvious field gets the hallucination; only one who knows to read
+  `verified_actions` gets the truth, and nothing marks which is
+  authoritative. The verified artifact should be the one that is
+  presented, or the unverified one should not be published beside it —
+  a graph/UI decision, not a bug in the tool.
+  Still true and still worth weighing: qwen2.5-1.5b does not honour the
+  verbatim constraint on its own, which is an input to whether a 1.5B
+  model is fit to be the recommended default.
   It does mean the earlier claim that a structured graph "completed on
   iOS" is true only in the emptiest sense: it completed with garbage.
 - **How truncation is reachable at all: five shipped schemas are larger
