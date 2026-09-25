@@ -387,6 +387,12 @@ ran at.
   paragraph LTR would flip the Arabic around it. Models was checked in
   Arabic too and is clean — package ids, repo paths and licences are
   short values rather than sentences, so nothing trails a full stop.
+  Error banners were considered and deliberately left alone:
+  `HarborBanner`'s body carries localized Arabic strings as well as
+  English core errors, so a blanket direction there would break the
+  Arabic ones — and the core's messages do not end in full stops (Rust
+  convention, verified by grep), so the bug cannot reach them. The rule
+  stays "content with its own direction", applied per call site.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,
