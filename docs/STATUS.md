@@ -149,6 +149,23 @@ ran at.
   model behaviour upstream of it, and the evidence file is now bound to
   HEAD. Recorded as measured; the ≥9/11 target in the plan is not what
   this is scored against and no number was adjusted toward it.
+- **Six platform gates asserted PASS without looking at their evidence.**
+  The X-* tier was made evidence-driven in an earlier session; the
+  platform tier was not, and hardcoded its statuses. `IOS-01` — "iOS
+  production-device native linkage" — read PASS while citing
+  `core/target/aarch64-apple-ios/release/libharbor_ffi.a`, an archive
+  that did not exist here. The honest table was **14 PASS / 1
+  FAIL_NO_EVIDENCE**, not 15. MAC-01, MAC-04, IOS-01, IOS-04, AND-01 and
+  AND-02 now go through `asserted()`: every cited path must exist, and an
+  `evidence/*.json` must say the check passed. Making them check would
+  have failed every release run — on a runner four of them cite files
+  that never exist — so they joined `MACHINE_LOCAL_GATES`, where
+  `--partial` names their absence instead of hiding it.
+  Then the gap was **closed rather than just flagged**: the archive was
+  rebuilt (3 min) and what IOS-01 claims was verified directly — all five
+  FFI entry points (`harbor_core_open`, `open_ex`, `call`, `close`,
+  `string_free`), 1099 llama.cpp symbols, force-load wired in the Xcode
+  project. 15 PASS again, this time earned.
 - **Gates** — `cargo fmt/clippy/test --workspace` green (288 tests),
   gguf-backend 20, `flutter test` 37/37 (app), harbor_native 1/1, dossier
   validator PASS, gate evidence 10/10 suites with `skipped_suites: []`,
