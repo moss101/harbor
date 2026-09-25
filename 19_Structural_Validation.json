@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "86d8099be943e5a223d7a7d31c756f7377e2c5cce520d2ef39f1610e51908729",
+  "input_manifest_sha256": "16e5260ff75408cb2624da26b97549c1e7cc113477fa4c85d4f0cd9c54a0676b",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -2081,8 +2081,8 @@
     },
     {
       "path": "docs/release/store/README.md",
-      "bytes": 1566,
-      "sha256": "fca0d3610ed442b3a2172983f76c36d2358fade179a6dc14dbd237b1f5db8420"
+      "bytes": 2434,
+      "sha256": "3ae4dd0e8b8650e18443231a0864d82817ffe75fce0c2aa9aaabf3052f3f6247"
     },
     {
       "path": "docs/release/store/apple_export_compliance.md",

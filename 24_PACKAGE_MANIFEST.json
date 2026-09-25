@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "86d8099be943e5a223d7a7d31c756f7377e2c5cce520d2ef39f1610e51908729",
+  "input_manifest_sha256": "16e5260ff75408cb2624da26b97549c1e7cc113477fa4c85d4f0cd9c54a0676b",
   "file_count_excluding_manifest": 548,
   "files": [
     {
@@ -120,12 +120,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 99891,
-      "sha256": "13cb2ca19042c6090d264b945d6a2f278206eae9eab2c51eb16bcb9ed655b4a5"
+      "sha256": "103b81f02aed8912772fb8a705a278fe52b2d7663cfa7ef87564d9101167d9d0"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "14c18f388ef8d4bfc5da5891312da91ce459d4aac63a32a1d849f89012df2093"
+      "sha256": "2e3dc0cf2d81da97624b9f28e49e6268235aeb4e68675bf9263fcc16f4e1cf7e"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -2099,8 +2099,8 @@
     },
     {
       "path": "docs/release/store/README.md",
-      "bytes": 1566,
-      "sha256": "fca0d3610ed442b3a2172983f76c36d2358fade179a6dc14dbd237b1f5db8420"
+      "bytes": 2434,
+      "sha256": "3ae4dd0e8b8650e18443231a0864d82817ffe75fce0c2aa9aaabf3052f3f6247"
     },
     {
       "path": "docs/release/store/apple_export_compliance.md",

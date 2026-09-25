@@ -19,6 +19,23 @@ backed by a PASS gate or explicitly labeled as disabled/pending.
 | `model_licenses.md` | Model-license presentation |
 | `apple_export_compliance.md` | Analysis behind `ITSAppUsesNonExemptEncryption=false` |
 
+## Bundle identifiers (enter these EXACTLY in the store records)
+
+They are not the same string on every platform, which is legal and easy
+to transcribe wrong; a mismatch is rejected at upload, on Apple after
+notarization has already been paid for in time.
+
+| Platform | Identifier | Source of truth |
+| --- | --- | --- |
+| iOS / iPadOS | `dev.harbor.harborApp` | `ios/Runner.xcodeproj` → `PRODUCT_BUNDLE_IDENTIFIER` |
+| macOS | `dev.harbor.harborApp` | same project; `codesign -dv` reports it as `Identifier=` |
+| Android | `dev.harbor.harbor_app` | `android/app/build.gradle.kts` → `applicationId` |
+
+Note the difference: Apple uses `harborApp`, Android `harbor_app`. Read
+them from the build outputs rather than from memory —
+`/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" <App>/Info.plist`
+and `apksigner verify --print-certs` / the APK's manifest.
+
 Wording rules (from the release goal):
 
 - Never claim "works with every Hugging Face model" — Harbor qualifies
