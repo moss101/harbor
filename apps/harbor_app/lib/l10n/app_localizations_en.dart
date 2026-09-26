@@ -1382,4 +1382,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get modelsCatalogDoesNotFit => 'Does not fit this device';
+
+  @override
+  String skillsCreateBody(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count operations',
+      one: '1 operation',
+    );
+    return 'The run proposed a new file, $name, built from $_temp0. Nothing has been written yet. Save new file writes it where you choose; nothing else on this device changes. The proposal is bound to the hash of the file it produces.';
+  }
+
+  @override
+  String get skillsSaveNewFile => 'Save new file';
+
+  @override
+  String get skillsSavedNewFile => 'Saved as a new file';
+
+  @override
+  String get skillsCopy => 'Copy';
+
+  @override
+  String get skillsCopied => 'Copied to the clipboard';
 }

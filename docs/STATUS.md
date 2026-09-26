@@ -7,6 +7,80 @@ ran at.
 
 ---
 
+## Session 41 (2026-09-26): Harbor makes files — seven authoring skills, a repair loop, and what the live tier said about both
+
+Decision 0008. Uncommitted on top of `eec218b` at the time of writing.
+
+- **New files, through the existing approval path.** A creation batch is a
+  batch over the empty base (02's "immutable empty base version"): every
+  precondition expects the empty hash, rendering is deterministic, and
+  `decide_and_commit` re-derives the approved bytes from the batch alone —
+  no host bytes, Save New Copy only, Overwrite refused ("there is no
+  original"). Workbooks use `sheet.insert` + `cell.set`, decks
+  `slide.insert` + `slide.update`, documents the one new schema kind,
+  `block.insert`. Every package passes `package_integrity` before it is
+  proposed. Tests: creation commit for all three formats through the real
+  executor and commit journal (`commit_proposal.rs`), determinism and
+  read-back per format.
+- **Seven skills (runnable 9 → 16 of 35).** Spreadsheet Builder, Table
+  Cleanup, Report to Slides, Document Drafter (proposal/report/letter) and
+  Thread Summary are new; Presentation Builder and Email Drafting went from
+  prose to graphs. The model designs; code writes every formula
+  (`workbook.build`), lays out every slide (`deck.build`) and letter
+  (`docx.build`), and formats the email (`email.render` — nothing is sent).
+- **The harness.** Verifiers return `{ok, problems, warnings}`; a failed
+  check follows a bounded back-edge to the drafting node once, with the
+  problems in an `optional` context item that is absent on the first
+  attempt; a second failure ends in `needs_input` or, where nulling is safe,
+  completes with fields nulled. Warnings (repetition, length) never withhold
+  a result. `Graph::worst_case` proves each graph's budgets cover its worst
+  run, and validation refuses one that cannot — all nine existing graphs
+  already did. New eval assertion `node_runs`.
+- **Live tier — three runs, measured, not tuned toward a number.** Baseline
+  re-measured at `eec218b`: 13/18, the usual five. Run 1: 20/31 — every
+  retry copied its previous answer byte for byte. Run 2: 21/31 — without the
+  previous answer, table specs and slide outlines regenerated fine but a
+  meeting-notes retry dropped a correct action. Run 3: **25/31** — the
+  original 18 still **13/18** (same five; the loops run, the pinned model
+  repeats the same mistakes, though the misattributed meeting-notes owner is
+  now nulled), and the new skills **12/13** (the miss: an exact 3-slide
+  count the model could only meet by repeating a slide). Details and the
+  per-run lessons in decision 0008.
+- **Four real bugs the new tests found.** (1) PDF pages: every multi-page
+  PDF came back as one "page 2" (pdf-extract 0.12 emits no form feeds), and
+  `artifact.read` added one to a 1-based index — page citations were wrong
+  everywhere. (2) The deck writer: notes pages all linked to slide 1, the
+  notes master had no content type or theme, chart links were the literal
+  `chart{n}.xml`, titles with `&` read back escaped — the package PowerPoint
+  would offer to repair. Rewritten. (3) Numbers stored as text were read as
+  numbers, hiding them from cleanup (`stored_as_text`). (4)
+  `presProps`/`viewProps`/`tableStyles` were "unknown parts", bannering every
+  real deck.
+- **App.** Run sheet: enum inputs are dropdowns, integer inputs digits-only,
+  a created file is saved under the tool's suggested name with no
+  attachment and no Overwrite (`ApprovalActions`, unit-tested), text results
+  have Copy. l10n en/ar.
+- **Gates.** `cargo fmt --check`, `cargo clippy --workspace --all-targets -D
+  warnings`, `cargo test --workspace` (0 failures; harbor_core lib 68,
+  commit_proposal 7, graph_executor 11, ffi skill_runs 4), replay 54/54,
+  `flutter analyze` + `dart format` clean, app `flutter test` 52/52 against
+  the rebuilt debug core (plus harbor_ui 15, harbor_domain 1, harbor_native
+  1), dossier validator: schemas valid and 124/124 contract cases, seal to
+  be regenerated at commit (`validate_dossier.py --write` after `git add
+  -A`). Rust gates and replay re-run green after the cover fix below.
+- **Opened in Office (Microsoft 365 16.113.2 on macOS).** The five files
+  `created_samples.rs` writes (budget workbook, two decks, proposal,
+  letter) open in Excel, PowerPoint and Word with no repair prompt, and
+  none is marked modified on open — Excel's recalculation agrees with the
+  cached values (`=SUM(B2:B5)`, `=B2-C2`, `"$"#,##0.00`, frozen header row
+  as written); each notes page sits on its own slide with the cited
+  sentence and page; the documents use Word's own Title and Heading 1
+  styles. One defect found and fixed: a cover with no subtitle kept an
+  empty subtitle placeholder, which PowerPoint shows as "Click to add
+  subtitle"; the shape is now left out (asserted in `pptx.rs`). Reproduce
+  from `core/`: `HARBOR_WRITE_SAMPLES=<dir> cargo test -p harbor_core
+  --test created_samples -- --ignored`, then open the files.
+
 ## Session 40 (2026-09-23): the release workflow runs end to end — and five things it produced were not what they claimed
 
 - **Dry runs 3–7 green** (`gh workflow run release.yml`): `evidence`,

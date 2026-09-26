@@ -1439,4 +1439,27 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get modelsCatalogDoesNotFit => 'لا يناسب هذا الجهاز';
+
+  @override
+  String skillsCreateBody(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count عمليات',
+      one: 'عملية واحدة',
+    );
+    return 'اقترح التشغيل ملفاً جديداً، $name، مبنياً من $_temp0. لم يُكتب شيء بعد. «حفظ ملف جديد» يكتبه في المكان الذي تختاره ولا يتغيّر شيء آخر على هذا الجهاز. الاقتراح مرتبط بتجزئة الملف الذي ينتجه.';
+  }
+
+  @override
+  String get skillsSaveNewFile => 'حفظ ملف جديد';
+
+  @override
+  String get skillsSavedNewFile => 'حُفظ كملف جديد';
+
+  @override
+  String get skillsCopy => 'نسخ';
+
+  @override
+  String get skillsCopied => 'نُسخ إلى الحافظة';
 }

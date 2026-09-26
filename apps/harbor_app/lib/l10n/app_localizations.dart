@@ -2281,6 +2281,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Does not fit this device'**
   String get modelsCatalogDoesNotFit;
+
+  /// No description provided for @skillsCreateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The run proposed a new file, {name}, built from {count, plural, one{1 operation} other{{count} operations}}. Nothing has been written yet. Save new file writes it where you choose; nothing else on this device changes. The proposal is bound to the hash of the file it produces.'**
+  String skillsCreateBody(String name, int count);
+
+  /// No description provided for @skillsSaveNewFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Save new file'**
+  String get skillsSaveNewFile;
+
+  /// No description provided for @skillsSavedNewFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved as a new file'**
+  String get skillsSavedNewFile;
+
+  /// No description provided for @skillsCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get skillsCopy;
+
+  /// No description provided for @skillsCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to the clipboard'**
+  String get skillsCopied;
 }
 
 class _AppLocalizationsDelegate

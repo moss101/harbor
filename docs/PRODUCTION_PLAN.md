@@ -342,6 +342,16 @@ build-bound evidence.
 | C — hardening | **Done on this machine, except the tagged release run.** Encrypted crash log + diagnostics export (in the plaintext inspection), first-run catalog + recovery states, fuzzing (two upstream aborts fixed), security review (decision 0007, none open at high), memory-pressure proxy; the release workflow is green on dispatch with its artifacts inspected, but `publish` has never run because it is tag-only | STATUS 36–40 |
 | D — gates and rings | **Written, not executed.** `docs/release/rings.md`; every ring is blocked on the D0 resources (Apple identity, Play key, devices, Windows host, M1 8 GB) | `closeout_runbook.md` |
 
+## Phase E — authoring skills and the repair loop (2026-09-26, decision 0008)
+
+| Item | State | Evidence |
+| --- | --- | --- |
+| New files through the approval path (creation batches over the empty base; Save New Copy only) | **Done** | `commit_proposal.rs` creation tests, decision 0008 |
+| Seven skills: sheet-builder, table-cleanup, presentation-builder, report-to-slides, document-drafter, email-drafting, thread-summary — sixteen runnable graphs | **Done** | `skills.rs` runnable pin, replay 54/54 |
+| Verify-then-repair-once loops (bounded back-edge, optional feedback context, blocking problems vs. advisory warnings); static worst-case budget proof | **Done** | `graph.rs`, decision 0008 |
+| Live tier on Qwen2.5-1.5B | **25/31** (original 18 unchanged at 13/18; new skills 12/13) | `evidence/skill_evals/`, STATUS 41 |
+| Created files opened in Excel/PowerPoint/Word | **Not done** — screen locked; integrity checks and Quick Look only | `created_samples.rs` |
+
 Not taken, with the reason: B4 option 3 (a larger catalog tier) needs a
 catalog epoch bump signed with the offline root key, which does not exist
 on this machine — it stays the documented next lever if 13/18 is judged
@@ -354,7 +364,8 @@ happen at the ring-0 freeze commit on the qualification hardware.
   diagnostics upload — M4 optional services, each gated independently.
 - Deep links / share targets (HBR-114, P1).
 - Bundled fonts decision (fallback chains cover every platform today).
-- Remaining 21 skill decompositions.
+- Remaining 19 skill decompositions (16 of 35 built-ins are runnable after
+  decision 0008); `workbook-to-deck` is the next one that fits the creation path.
 
 ## Sequencing summary
 

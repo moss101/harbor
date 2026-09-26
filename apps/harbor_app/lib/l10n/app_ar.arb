@@ -518,5 +518,11 @@
   "modelsContextTokens": "سياق {count} رمز",
   "@modelsContextTokens": {"placeholders": {"count": {"type": "int"}}},
   "opAcquireRunning": "جارٍ التثبيت…",
-  "modelsCatalogDoesNotFit": "لا يناسب هذا الجهاز"
+  "modelsCatalogDoesNotFit": "لا يناسب هذا الجهاز",
+  "skillsCreateBody": "اقترح التشغيل ملفاً جديداً، {name}، مبنياً من {count, plural, one{عملية واحدة} other{{count} عمليات}}. لم يُكتب شيء بعد. «حفظ ملف جديد» يكتبه في المكان الذي تختاره ولا يتغيّر شيء آخر على هذا الجهاز. الاقتراح مرتبط بتجزئة الملف الذي ينتجه.",
+  "@skillsCreateBody": {"placeholders": {"name": {"type": "String"}, "count": {"type": "int"}}},
+  "skillsSaveNewFile": "حفظ ملف جديد",
+  "skillsSavedNewFile": "حُفظ كملف جديد",
+  "skillsCopy": "نسخ",
+  "skillsCopied": "نُسخ إلى الحافظة"
 }

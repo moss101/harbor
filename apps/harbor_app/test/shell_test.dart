@@ -209,6 +209,7 @@ void main() {
   _appendSkillsTest();
   _appendSkillRunTests();
   _appendSkillCommitTests();
+  _appendAuthoringFormTests();
   _appendDiagnosticsTests();
   _appendFirstRunTests();
   _appendKnowledgeTest();
@@ -568,8 +569,8 @@ void _appendSkillRunTests() {
     await pumpApp(tester);
     if (!coreAvailable) return;
     await goTo(tester, 'Skills');
-    // Cards say honestly which skills can run: the nine decomposed graph
-    // skills are runnable, the prose ones are declarations.
+    // Cards say honestly which skills can run: the sixteen graph skills
+    // are runnable, the prose ones are declarations.
     expect(find.text('Runnable graph'), findsWidgets);
     expect(find.text('Declaration only'), findsWidgets);
     final sp = HarborServiceProvider.of(
@@ -587,8 +588,15 @@ void _appendSkillRunTests() {
           'document-style-review',
           'team-update',
           'doc-coauthoring',
+          'sheet-builder',
+          'table-cleanup',
+          'presentation-builder',
+          'report-to-slides',
+          'document-drafter',
+          'email-drafting',
+          'thread-summary',
         ]));
-    expect(runnable, hasLength(9));
+    expect(runnable, hasLength(16));
     expect(
         runnable.firstWhere((s) => s.id == 'placeholder-fill').graph!.usesModel,
         isFalse);
@@ -998,6 +1006,101 @@ void _appendSkillCommitTests() {
     });
     expect(snap!['state'], 'COMPLETED');
     expect(snap!['pending_approval'], isNull);
+  });
+}
+
+/// Decision 0008: the authoring skills' run sheets are generated from the
+/// core's own input schemas — a closed set of choices renders as a
+/// dropdown, an integer as a digits-only field — and the new skills are
+/// listed as runnable. No model is installed here, so nothing runs; the
+/// replay tier covers the runs themselves.
+void _appendAuthoringFormTests() {
+  testWidgets('authoring run sheets render choices and numbers from the core',
+      (tester) async {
+    if (!coreAvailable) return;
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    HarborService? service;
+    await tester.runAsync(() async {
+      final dir = await Directory.systemTemp.createTemp('harbor-forms-');
+      final s = await HarborService.open(
+          libraryPath: dylibPath,
+          dataRoot: dir.path,
+          workspaceId: 'ws-forms',
+          deviceRootHex:
+              'b1c2d3e4f5061728394a5b6c7d8e9f00112233445566778899aabbccddeeff00');
+      await s.refresh();
+      service = s;
+    });
+    addTearDown(() => service?.close());
+    for (final id in [
+      'sheet-builder',
+      'table-cleanup',
+      'presentation-builder',
+      'report-to-slides',
+      'document-drafter',
+      'email-drafting',
+      'thread-summary',
+    ]) {
+      final skill = service!.skills.firstWhere((s) => s.id == id);
+      expect(skill.graph, isNotNull, reason: '$id is runnable');
+    }
+
+    Future<void> show(String id) async {
+      final skill = service!.skills.firstWhere((s) => s.id == id);
+      await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [Locale('en'), Locale('ar')],
+        theme: harborThemeData(dark: false, arabic: false),
+        builder: (_, child) => HarborTheme(
+          colors: HarborColors.light,
+          text: const HarborType(arabic: false),
+          child: child!,
+        ),
+        // A key per skill: the same widget type in the same place would
+        // otherwise keep the previous sheet's State (and its fields).
+        home: Scaffold(
+            body: SkillRunSheet(
+                key: ValueKey(id), skill: skill, service: service!)),
+      ));
+      await tester.pump();
+    }
+
+    // document-drafter: `kind` is a dropdown of the template kinds.
+    await show('document-drafter');
+    final kind = find.byKey(const ValueKey('input-kind'));
+    expect(kind, findsOneWidget);
+    expect(
+        find.descendant(
+            of: kind, matching: find.byType(DropdownButton<String>)),
+        findsOneWidget);
+    await tester.tap(kind);
+    await tester.pumpAndSettle();
+    for (final v in ['proposal', 'report', 'letter']) {
+      expect(find.text(v), findsWidgets);
+    }
+    await tester.tap(find.text('letter').last);
+    await tester.pumpAndSettle();
+    // Without an installed model the sheet says so and Run stays off.
+    expect(find.text('Model'), findsOneWidget);
+    final run = tester
+        .widget<FilledButton>(find.byKey(const ValueKey('skill-run-button')));
+    expect(run.onPressed, isNull);
+
+    // presentation-builder: `slides` accepts digits only.
+    await show('presentation-builder');
+    final slides = find.byKey(const ValueKey('input-slides'));
+    expect(slides, findsOneWidget);
+    await tester.enterText(slides, 'five 5');
+    await tester.pump();
+    expect(tester.widget<TextField>(slides).controller!.text, '5',
+        reason: 'letters are filtered out of an integer input');
   });
 }
 

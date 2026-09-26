@@ -26,6 +26,15 @@ The package contains 115 tasks, 81 acceptance gates, 47 routes, 47 security scen
 - Skill evaluation is a real harness (`harbor.skill_eval/v1`): typed assertions, a replay tier that runs with no model weights (CI), a live tier bound to model/runtime identity (qualification machine) and a record mode. The prose `eval_cases` of v1 manifests are documentation, not tests.
 - Nine schemas now exist (graph added). Package manifest and structural validation regenerated.
 
+## Addendum — 26 September 2026 (decision 0008: creating new files, the repair loop)
+
+- `schemas/artifact_batch.schema.json` gains one operation kind, `block.insert` (`block_id`, `index`, `style` ∈ title/heading1–3/paragraph/bullet/numbered/compact, `text`), so a new Word document can be expressed as a batch. The change is additive; every existing batch still validates. New workbooks and decks use the kinds the schema already had (`sheet.insert`, `cell.set`, `slide.insert`, `slide.update`, `metadata.set`).
+- Creating a file follows the rule 02 already stated — "a newly created artifact first registers an immutable empty base version with the SHA-256 of empty bytes": a creation batch binds that base hash, every precondition expects it (the target does not exist yet), rendering is deterministic, and the commit re-derives the approved output from the batch alone. Only Save New Copy applies; Overwrite is refused because there is no original. No change to the receipt, journal or commit contracts.
+- `schemas/graph.schema.json`: a context item may declare `optional: true`, which omits the section while its value is missing, null or empty. Used by repair loops so a first attempt never shows an empty "problems" section. Additive.
+- Graph validation now refuses a graph whose declared `max_steps`/`max_tool_calls` cannot cover its worst-case run (bounded edges to their limits, maps at `max_items`). All existing built-in graphs already satisfied it.
+- The closed tool catalog grows by `workbook.build`, `deck.build`, `docx.build` (propose class) and `workbook.verify_spec`, `deck.verify_outline`, `document.verify_draft`, `email.verify_draft`, `email.render`, `text.verify_items`, `text.verify_citations`, `document.units`, `document.sentences`, `table.inspect`, `table.build_cleanup` (read class). No tool commits anything and none reaches the network.
+- Office matrix scope is unchanged: created files use only SUPPORTED_GA features (paragraphs, headings, lists; values, formulas, styles, number formats; slides, text, speaker notes, themes). The PPTX part classifier now recognises `presProps.xml`, `viewProps.xml` and `tableStyles.xml` as presentation-level properties instead of unknown parts.
+
 ## Verification and remaining work
 
 Run `python3 tools/validate_dossier.py` after installing `requirements-validation.txt`. The check is read-only. `--write` regenerates files 19, 20 and 24 only after checks pass. See `tools/README.md` for evidence evaluation.

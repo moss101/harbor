@@ -660,5 +660,11 @@
   "modelsContextTokens": "{count} tokens context",
   "@modelsContextTokens": {"placeholders": {"count": {"type": "int"}}},
   "opAcquireRunning": "Installing…",
-  "modelsCatalogDoesNotFit": "Does not fit this device"
+  "modelsCatalogDoesNotFit": "Does not fit this device",
+  "skillsCreateBody": "The run proposed a new file, {name}, built from {count, plural, one{1 operation} other{{count} operations}}. Nothing has been written yet. Save new file writes it where you choose; nothing else on this device changes. The proposal is bound to the hash of the file it produces.",
+  "@skillsCreateBody": {"placeholders": {"name": {"type": "String"}, "count": {"type": "int"}}},
+  "skillsSaveNewFile": "Save new file",
+  "skillsSavedNewFile": "Saved as a new file",
+  "skillsCopy": "Copy",
+  "skillsCopied": "Copied to the clipboard"
 }

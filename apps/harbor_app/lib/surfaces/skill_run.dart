@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:harbor_domain/harbor_domain.dart';
 import 'package:harbor_native/harbor_ffi.dart' as ffi;
 import 'package:harbor_ui/harbor_ui.dart';
@@ -32,6 +33,61 @@ import '../widgets/ops.dart';
 /// is unaffected: it writes to a destination the user chooses.
 bool get pickerReturnsTheUsersFile =>
     Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+
+/// What the approval sheet can offer for a pending approval. Pure, so the
+/// rules are tested without a core:
+///
+/// - an edit commits only with the original attached (its bytes go back
+///   with the commit) and may offer Overwrite where the picker handed back
+///   the user's own file;
+/// - a proposal that CREATES a file (decision 0008) commits with nothing
+///   attached, is saved under the name the tool suggested, and never
+///   offers Overwrite: there is no original.
+final class ApprovalActions {
+  const ApprovalActions({
+    required this.creates,
+    required this.canCommit,
+    required this.canOverwrite,
+    required this.saveName,
+  });
+
+  factory ApprovalActions.of(
+    Map<String, dynamic> approval, {
+    required String? attachedName,
+    required bool attachedHasRealPath,
+    required bool pickerReturnsUsersFile,
+  }) {
+    final creates = approval['creates'] == true;
+    final canCommit = approval['effect_class'] == 'artifact.commit' &&
+        approval['proposed_output_hash'] != null &&
+        (creates || attachedName != null);
+    final suggested = (approval['suggested_name'] as String?)?.trim() ?? '';
+    return ApprovalActions(
+      creates: creates,
+      canCommit: canCommit,
+      canOverwrite: canCommit &&
+          !creates &&
+          pickerReturnsUsersFile &&
+          attachedHasRealPath,
+      saveName: creates
+          ? (suggested.isEmpty ? 'Harbor' : suggested)
+          : (attachedName == null ? null : suggestedCopyName(attachedName)),
+    );
+  }
+
+  final bool creates, canCommit, canOverwrite;
+
+  /// The name the save dialog suggests; null when nothing can be saved.
+  final String? saveName;
+}
+
+/// `report.docx` → `report (Harbor).docx`: a copy never takes the
+/// original's name.
+String suggestedCopyName(String original) {
+  final dot = original.lastIndexOf('.');
+  if (dot <= 0) return '$original (Harbor)';
+  return '${original.substring(0, dot)} (Harbor)${original.substring(dot)}';
+}
 
 /// Run a graph skill (decision 0006): the form is generated from the
 /// graph's input schema, the run executes on the durable executor in the
@@ -87,6 +143,7 @@ class SkillRunSheet extends StatefulWidget {
 
 class _SkillRunSheetState extends State<SkillRunSheet> {
   final Map<String, TextEditingController> _fields = {};
+  final Map<String, String?> _choices = {};
   final Map<String, XFile> _attached = {};
   final Map<String, List<int>> _attachedBytes = {};
   String? _chatPackage;
@@ -94,6 +151,7 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
   String? _error;
   Map<String, dynamic>? _report;
   Map<String, dynamic>? _commit;
+  bool _created = false;
 
   SkillGraphInfo get _graph => widget.skill.graph!;
 
@@ -101,7 +159,10 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
   void initState() {
     super.initState();
     for (final e in _graph.inputProperties) {
-      if (!_isArtifact(e.key)) {
+      if (_isArtifact(e.key)) continue;
+      if (_isEnum(e.value)) {
+        _choices[e.key] = null;
+      } else {
         _fields[e.key] = TextEditingController();
       }
     }
@@ -123,6 +184,23 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
 
   bool _isLong(Map<String, dynamic> schema) =>
       ((schema['maxLength'] as num?) ?? 0) > 300;
+
+  /// A closed set of choices (document kind, tone) is a dropdown, not a
+  /// free-text field the user has to spell exactly.
+  bool _isEnum(Map<String, dynamic> schema) => schema['enum'] is List;
+
+  bool _isInteger(Map<String, dynamic> schema) => schema['type'] == 'integer';
+
+  /// An integer field holds an integer the schema allows, or nothing.
+  bool _integerOk(String key, Map<String, dynamic> schema) {
+    final text = _fields[key]?.text.trim() ?? '';
+    if (text.isEmpty) return true;
+    final n = int.tryParse(text);
+    if (n == null) return false;
+    final min = (schema['minimum'] as num?)?.toInt();
+    final max = (schema['maximum'] as num?)?.toInt();
+    return (min == null || n >= min) && (max == null || n <= max);
+  }
 
   Future<void> _attach(String key) async {
     final l10n = AppLocalizations.of(context)!;
@@ -166,9 +244,14 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
   bool get _canRun {
     if (_busy) return false;
     if (_graph.usesModel && _chatPackage == null) return false;
+    for (final e in _graph.inputProperties) {
+      if (_isInteger(e.value) && !_integerOk(e.key, e.value)) return false;
+    }
     for (final key in _graph.requiredInputs) {
       if (_isArtifact(key)) {
         if (!_attachedBytes.containsKey(key)) return false;
+      } else if (_choices.containsKey(key)) {
+        if (_choices[key] == null) return false;
       } else if ((_fields[key]?.text.trim() ?? '').isEmpty) {
         return false;
       }
@@ -190,8 +273,17 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
             SkillArtifact(id: id, name: _attached[key]!.name, bytes: bytes));
         continue;
       }
+      if (_choices.containsKey(key)) {
+        final choice = _choices[key];
+        if (choice != null) inputs[key] = choice;
+        continue;
+      }
       final text = _fields[key]!.text;
       if (text.trim().isEmpty) continue;
+      if (_isInteger(e.value)) {
+        inputs[key] = int.parse(text.trim());
+        continue;
+      }
       inputs[key] = _isObject(e.value) ? _parseValues(text) : text;
     }
     setState(() {
@@ -238,11 +330,13 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
     return _attached.entries.first;
   }
 
-  String _suggestedCopyName(String original) {
-    final dot = original.lastIndexOf('.');
-    if (dot <= 0) return '$original (Harbor)';
-    return '${original.substring(0, dot)} (Harbor)${original.substring(dot)}';
-  }
+  ApprovalActions _actionsFor(Map<String, dynamic> approval) =>
+      ApprovalActions.of(
+        approval,
+        attachedName: _proposalFile?.value.name,
+        attachedHasRealPath: _proposalFile?.value.path.isNotEmpty ?? false,
+        pickerReturnsUsersFile: pickerReturnsTheUsersFile,
+      );
 
   Future<String?> _defaultSaveDestination(String suggestedName) async {
     if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
@@ -275,17 +369,29 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
   Future<void> _commitProposal(CommitTarget target) async {
     final l10n = AppLocalizations.of(context)!;
     final runId = _report?['run_id'] as String?;
+    final approval =
+        (_report?['status']?['approval'] as Map?)?.cast<String, dynamic>() ??
+            const <String, dynamic>{};
+    // A proposal that creates a file has no original: nothing is attached,
+    // no bytes go back with the commit, and Overwrite does not exist.
     final file = _proposalFile;
-    if (runId == null || file == null) return;
+    final actions = _actionsFor(approval);
+    final creates = actions.creates;
+    if (runId == null || !actions.canCommit) return;
     final String? destination;
-    if (target == CommitTarget.overwrite) {
-      final original = file.value.path;
+    if (creates) {
+      final resolve = widget.resolveSaveDestination ?? _defaultSaveDestination;
+      destination = await resolve(actions.saveName!);
+      if (destination == null) return; // dialog dismissed
+    } else if (target == CommitTarget.overwrite) {
+      final picked = file!;
+      final original = picked.value.path;
       if (original.isEmpty) return;
       final ok = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
           title: Text(l10n.skillsOverwriteConfirmTitle),
-          content: Text(l10n.skillsOverwriteConfirmBody(file.value.name)),
+          content: Text(l10n.skillsOverwriteConfirmBody(picked.value.name)),
           actions: [
             TextButton(
                 onPressed: () => Navigator.of(ctx).pop(false),
@@ -301,7 +407,7 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
       destination = original;
     } else {
       final resolve = widget.resolveSaveDestination ?? _defaultSaveDestination;
-      destination = await resolve(_suggestedCopyName(file.value.name));
+      destination = await resolve(actions.saveName!);
       if (destination == null) return; // dialog dismissed
     }
     if (!mounted) return;
@@ -314,19 +420,20 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
         runId: runId,
         destination: destination,
         target: target,
-        artifacts: [
-          SkillArtifact(
-              id: (_report!['status']?['approval']?['artifact_id']
-                      as String?) ??
-                  'a1',
-              name: file.value.name,
-              bytes: _attachedBytes[file.key]!),
-        ],
+        artifacts: creates
+            ? const []
+            : [
+                SkillArtifact(
+                    id: (approval['artifact_id'] as String?) ?? 'a1',
+                    name: file!.value.name,
+                    bytes: _attachedBytes[file.key]!),
+              ],
       );
       if (!mounted) return;
       final commitError =
           (result['commit_error'] as Map?)?.cast<String, dynamic>();
       setState(() {
+        _created = creates;
         _report = (result['report'] as Map).cast<String, dynamic>();
         _commit = (result['commit'] as Map?)?.cast<String, dynamic>();
         if (commitError != null) {
@@ -410,11 +517,33 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
               ),
             ),
           ])
+        else if (_isEnum(e.value))
+          DropdownButtonFormField<String>(
+            key: ValueKey('input-${e.key}'),
+            initialValue: _choices[e.key],
+            decoration: InputDecoration(
+              labelText: required.contains(e.key)
+                  ? '${e.key} · ${l10n.skillsRequiredField}'
+                  : e.key,
+              helperText: e.value['description'] as String?,
+              helperMaxLines: 3,
+            ),
+            items: [
+              for (final v in (e.value['enum'] as List).cast<Object?>())
+                DropdownMenuItem(value: '$v', child: Text('$v')),
+            ],
+            onChanged:
+                _busy ? null : (v) => setState(() => _choices[e.key] = v),
+          )
         else
           TextField(
             key: ValueKey('input-${e.key}'),
             controller: _fields[e.key],
             enabled: !_busy,
+            keyboardType: _isInteger(e.value) ? TextInputType.number : null,
+            inputFormatters: _isInteger(e.value)
+                ? [FilteringTextInputFormatter.digitsOnly]
+                : null,
             maxLines: _isObject(e.value) || _isLong(e.value) ? 6 : 1,
             minLines: _isObject(e.value) || _isLong(e.value) ? 3 : 1,
             decoration: InputDecoration(
@@ -528,9 +657,11 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
         HarborBanner(
           key: const ValueKey('skill-committed'),
           tone: HarborBannerTone.info,
-          title: _commit!['mode'] == 'new_copy'
-              ? l10n.skillsSavedNewCopy
-              : l10n.skillsOverwritten,
+          title: _created
+              ? l10n.skillsSavedNewFile
+              : (_commit!['mode'] == 'new_copy'
+                  ? l10n.skillsSavedNewCopy
+                  : l10n.skillsOverwritten),
           body: l10n.skillsCommittedTo(_commit!['destination'] as String? ?? '',
               _commit!['version_id'] as String? ?? ''),
         ),
@@ -577,23 +708,26 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
         (status['approval'] as Map?)?.cast<String, dynamic>() ?? {};
     final batch = (approval['batch'] as Map?)?.cast<String, dynamic>() ?? {};
     final ops = (batch['operations'] as List?)?.length ?? 0;
-    final canCommit = approval['effect_class'] == 'artifact.commit' &&
-        _proposalFile != null &&
-        approval['proposed_output_hash'] != null;
-    final canOverwrite = canCommit &&
-        pickerReturnsTheUsersFile &&
-        (_proposalFile?.value.path.isNotEmpty ?? false);
+    final actions = _actionsFor(approval);
+    final creates = actions.creates;
+    final canCommit = actions.canCommit;
+    final canOverwrite = actions.canOverwrite;
     return [
       const SizedBox(height: HarborSpace.s3),
       HarborSheet(
         key: const ValueKey('skill-approval'),
         title: l10n.skillsApprovalTitle,
-        explanation: canCommit
-            ? l10n.skillsCommitBody(
-                approval['effect_class'] as String? ?? '', ops)
-            : l10n.skillsApprovalBody(
-                approval['effect_class'] as String? ?? '', ops),
-        approveLabel: canCommit ? l10n.skillsSaveNewCopy : l10n.skillsApprove,
+        explanation: creates && canCommit
+            ? l10n.skillsCreateBody(
+                (approval['suggested_name'] as String?) ?? '', ops)
+            : canCommit
+                ? l10n.skillsCommitBody(
+                    approval['effect_class'] as String? ?? '', ops)
+                : l10n.skillsApprovalBody(
+                    approval['effect_class'] as String? ?? '', ops),
+        approveLabel: canCommit
+            ? (creates ? l10n.skillsSaveNewFile : l10n.skillsSaveNewCopy)
+            : l10n.skillsApprove,
         denyLabel: l10n.skillsReject,
         onApprove: _busy
             ? () {}
@@ -679,6 +813,7 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
   }
 
   Widget _jsonBlock(HarborTheme t, String label, Object? value) {
+    final l10n = AppLocalizations.of(context)!;
     final text = value is String
         ? value
         : const JsonEncoder.withIndent('  ').convert(value);
@@ -687,7 +822,24 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: t.text.smallOf(t.colors.inkMuted)),
+          Row(children: [
+            Expanded(
+                child: Text(label, style: t.text.smallOf(t.colors.inkMuted))),
+            // Text results (a drafted email) are meant to be taken
+            // elsewhere: Harbor never sends them itself.
+            if (value is String)
+              TextButton.icon(
+                key: ValueKey('copy-$label'),
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: text));
+                  if (!mounted) return;
+                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                      SnackBar(content: Text(l10n.skillsCopied)));
+                },
+                icon: const Icon(Icons.copy_outlined, size: 16),
+                label: Text(l10n.skillsCopy),
+              ),
+          ]),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(HarborSpace.s3),

@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "50dd52e3131445ce865a2f3d65ff36bbe6e0ae8406ab585f4da964559d11dc46",
+  "input_manifest_sha256": "216784892b6f4685e4fb81ace24d331a2338d5b0f3295ab512cbb3a049dec413",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -141,8 +141,8 @@
     },
     {
       "path": "28_Correction_Log.md",
-      "bytes": 5519,
-      "sha256": "9467dfdfd4993517572cb858ad6bbea733ce921f6cf6a120e89d9f7465d069da"
+      "bytes": 7738,
+      "sha256": "ba22e7795ed5efe266ec716491443bef1a202691fd420679f401e07209da164d"
     },
     {
       "path": "CHANGELOG.md",
@@ -511,28 +511,28 @@
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_ar.arb",
-      "bytes": 33074,
-      "sha256": "0f080d5a1dbf1412b1d7ef8bb4fc89ad7e3d94c8365c60b815d92a005d4c1404"
+      "bytes": 33773,
+      "sha256": "90cf77305bbd36fdf6f25bd523a1c05b73039ba19cd76fd595bfabc8aaca2522"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_en.arb",
-      "bytes": 26868,
-      "sha256": "d0417bbade8e344d5d55cea4acc5c2ccd83a6d09f598676d2af7c3456f8d4995"
+      "bytes": 27423,
+      "sha256": "8ece40042565b9d433e46bfdcc19201c0cf424263a6d9175339c9df69da31c8c"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations.dart",
-      "bytes": 69750,
-      "sha256": "6a6611c9ff337c64d07fea06d4ac1b52a42892da6c55229ec15524498c9d0b2d"
+      "bytes": 70816,
+      "sha256": "737be7ce65e687adba5521569f494b36be5534f901d83cf49292dc277fdad23b"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations_ar.dart",
-      "bytes": 42848,
-      "sha256": "1e3a4fa7d95193316ca6b5e13ab00fd56071dc65ae656f4ac49e94ff5b1bbe25"
+      "bytes": 43700,
+      "sha256": "efd9c6ffdf5fce1bb196518779052f9d458da03064d3dcccfdef3ef6bf4703c4"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations_en.dart",
-      "bytes": 33714,
-      "sha256": "4764d277f7a55a95e289200b1ae4884c72fe6a2cf231b19602482591371d337b"
+      "bytes": 34422,
+      "sha256": "76e32c4b28df2cf317aeced8ed145063c5aa748f4235bb4c8d324e9b17a4a0ba"
     },
     {
       "path": "apps/harbor_app/lib/main.dart",
@@ -626,8 +626,8 @@
     },
     {
       "path": "apps/harbor_app/lib/surfaces/skill_run.dart",
-      "bytes": 27104,
-      "sha256": "6435a401e43529680b70a591f77164d9b850b46acbd661b5b403ab1cde77d584"
+      "bytes": 33121,
+      "sha256": "f44cb1ca295564866884eee0c5e760d7afd46a033afe72d9368a2873c41e6723"
     },
     {
       "path": "apps/harbor_app/lib/surfaces/skills_surface.dart",
@@ -861,8 +861,13 @@
     },
     {
       "path": "apps/harbor_app/test/shell_test.dart",
-      "bytes": 48122,
-      "sha256": "de79590a709cfc62eeea4362fc06d7c99953092c850b4414818c313ca5e258b7"
+      "bytes": 52046,
+      "sha256": "eabe7a2f458dd48bd7a8ba3fa8f59fc3b3f3e04f9b0f7297d187787a79f53e1e"
+    },
+    {
+      "path": "apps/harbor_app/test/skill_run_test.dart",
+      "bytes": 2982,
+      "sha256": "44bfc3a89983bf9e6f53f54519eebbd636ee7eacefbb5906f8a953175e459e53"
     },
     {
       "path": "apps/harbor_app/windows/.gitignore",
@@ -2101,13 +2106,13 @@
     },
     {
       "path": "docs/PRODUCTION_PLAN.md",
-      "bytes": 20834,
-      "sha256": "ddbd71c32047f8922deb0c9c5703c196fe6be5cc51183896bfcf83e790f29963"
+      "bytes": 21931,
+      "sha256": "2605605270e41dc39e796f0da4030471b2d96c08389dfdbd760de2196d0d4f40"
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 92946,
-      "sha256": "74269fc3db8cea372e4d081bc3c08f9ff56d7a99dd797fab8cfed5bcb11742f3"
+      "bytes": 97963,
+      "sha256": "ff4b0e6d5a2dc9566ad49c34581648d4a68bb8ef18b4f74effbfc343b74e6077"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -2143,6 +2148,11 @@
       "path": "docs/decisions/0007-security-review-1.1.md",
       "bytes": 3561,
       "sha256": "4a9224cdffb7bac6f421dd9f2ab472087f0b32ab5335bbf45735ea91dddf74d1"
+    },
+    {
+      "path": "docs/decisions/0008-authoring-skills-creation-and-repair-loop.md",
+      "bytes": 11909,
+      "sha256": "708f90894b98e3167092d071f8a09fe934a873bb4bcd1f95d661ac0e0fca2ef0"
     },
     {
       "path": "docs/release/THIRD_PARTY_NOTICES.md",
