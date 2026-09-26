@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "53213655b56e5732faf62d5653be58040d29772dba53b1654202f30d3e62ee48",
+  "input_manifest_sha256": "4a3ba34d8254b414b93e7c5e872269b743612b62012643d1c19d1d9b67e00bfd",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -1381,8 +1381,8 @@
     },
     {
       "path": "core/harbor_artifacts/src/batch.rs",
-      "bytes": 6062,
-      "sha256": "2ffc14358df2526c2783fac53e495aae0b645bf04006ec442579603adde2d909"
+      "bytes": 8561,
+      "sha256": "1a7cbced0a897569231d907151941b558ba43e81441b388b839eb36c1bbcffd7"
     },
     {
       "path": "core/harbor_artifacts/src/commit.rs",
@@ -1396,13 +1396,13 @@
     },
     {
       "path": "core/harbor_artifacts/src/docx.rs",
-      "bytes": 19793,
-      "sha256": "6ff75c38252388a064494efbb4f819812fd17bf27e6b89b04240306f7e5f7200"
+      "bytes": 35349,
+      "sha256": "402578a53afcda9283bdfc236b35b00d8225f6c04210ccc7cb37dfaa35851cdf"
     },
     {
       "path": "core/harbor_artifacts/src/lib.rs",
-      "bytes": 2896,
-      "sha256": "21b979e59a95405cfb19d05ea420c8498993d4bebbc4bf4293ce2ff87deb5d52"
+      "bytes": 2952,
+      "sha256": "44b60e47808bb3f1f36e3ab7704d71d41369a615be42fb4555809971535ae506"
     },
     {
       "path": "core/harbor_artifacts/src/office_matrix.rs",
@@ -1421,8 +1421,8 @@
     },
     {
       "path": "core/harbor_artifacts/src/workbook.rs",
-      "bytes": 37650,
-      "sha256": "13499ac293ab7d055bc58d7b84c156565325061c2fe62d8f4b70342730d4481f"
+      "bytes": 47285,
+      "sha256": "d8fa2fd88b07202852cd47386869c4e7f990e351e7e4095d0affd530dd974d62"
     },
     {
       "path": "core/harbor_artifacts/tests/malformed_inputs.rs",
@@ -1471,8 +1471,8 @@
     },
     {
       "path": "core/harbor_core/src/executor.rs",
-      "bytes": 88855,
-      "sha256": "c3fae300d2e53dd8a14535cc92c07a693e6f9640f04a641e0a220db4be1f20ff"
+      "bytes": 90862,
+      "sha256": "d2e6d195b622bd1bfb3727ba99ed32ec7460b22cb0247ded55e52c4d5cb5a09d"
     },
     {
       "path": "core/harbor_core/src/graph.rs",
@@ -1546,18 +1546,23 @@
     },
     {
       "path": "core/harbor_core/src/skills.rs",
-      "bytes": 16695,
-      "sha256": "8425131070307a4b6882e52eb8c45dd468c4a492d308b9331eaa550ee6acc756"
+      "bytes": 16789,
+      "sha256": "7f2d5552904224f1b95f00aa38032329d226af766b8c7ea83b1cbcd37324c559"
     },
     {
       "path": "core/harbor_core/src/tools/builtin.rs",
-      "bytes": 106155,
-      "sha256": "9e2ba4ee08e95f76885cb0614d2fef8affc86e6278e9c76557588a2cb7ecc85c"
+      "bytes": 106778,
+      "sha256": "6a27b8b2de004cb1886f062e63ca96851f2a1b3c176d69d9bcc41718df475829"
+    },
+    {
+      "path": "core/harbor_core/src/tools/create.rs",
+      "bytes": 104607,
+      "sha256": "c3cb12edf81d8adeccffc3ce74a9f5d1af5b202ae2a176e27a0cd1d640fbab8e"
     },
     {
       "path": "core/harbor_core/src/tools/mod.rs",
-      "bytes": 17254,
-      "sha256": "8c16ac026b4395746b78acf50799d0773b01fca9a33c83739f1d9e04099acb7d"
+      "bytes": 17270,
+      "sha256": "cca85dc6e1cf0c748d02fda26eccb02f2ffdeffc82dc23b0b727ed14898c80d5"
     },
     {
       "path": "core/harbor_core/src/tools/review.rs",
@@ -1576,8 +1581,8 @@
     },
     {
       "path": "core/harbor_core/tests/commit_proposal.rs",
-      "bytes": 16797,
-      "sha256": "9692f46edc4d0afd27aca3649e7389f86dbab9b86f1ecf8c691fd23c516d5c2c"
+      "bytes": 22776,
+      "sha256": "6f6213693cc7bc1378837d5a7023ecee894447e56f85bf2c04f111d95967b0e3"
     },
     {
       "path": "core/harbor_core/tests/executor_resume.rs",
@@ -2621,8 +2626,8 @@
     },
     {
       "path": "schemas/artifact_batch.schema.json",
-      "bytes": 17991,
-      "sha256": "ad75d1baf08e233f64731d301c83153b26fd07d82b07eca7c202ba219225d47e"
+      "bytes": 20455,
+      "sha256": "f2120013ffa4e91aba9173e7c4c9a3d758f4c5243179dc8fb23bbf9372fc2641"
     },
     {
       "path": "schemas/artifact_commit.schema.json",

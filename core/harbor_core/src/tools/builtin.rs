@@ -42,6 +42,9 @@ pub fn all() -> Vec<Arc<dyn Tool>> {
         Arc::new(super::review::DeckInspect::new()),
         Arc::new(super::review::WorkbookConventions::new()),
         Arc::new(super::review::DocxInspect::new()),
+        Arc::new(super::create::WorkbookBuild::new()),
+        Arc::new(super::create::DeckBuild::new()),
+        Arc::new(super::create::DocxBuild::new()),
     ]
 }
 
@@ -135,7 +138,7 @@ pub fn cell_value_json(v: &CellValue) -> Value {
     }
 }
 
-fn cell_value_repr(v: &CellValue) -> String {
+pub(crate) fn cell_value_repr(v: &CellValue) -> String {
     match v {
         CellValue::Blank => String::new(),
         CellValue::Number(n) => format!("{n}"),
@@ -183,11 +186,11 @@ pub fn paragraph_target_id(index: u32) -> String {
     format!("p:{index}")
 }
 
-fn addr(col: u32, row: u32) -> String {
+pub(crate) fn addr(col: u32, row: u32) -> String {
     format!("{}{}", harbor_artifacts::workbook::col_letter(col), row)
 }
 
-fn parse_addr(a: &str) -> Option<(u32, u32)> {
+pub(crate) fn parse_addr(a: &str) -> Option<(u32, u32)> {
     let letters: String = a.chars().take_while(|c| c.is_ascii_alphabetic()).collect();
     let digits: String = a.chars().skip(letters.len()).collect();
     if letters.is_empty() || digits.is_empty() || !digits.chars().all(|c| c.is_ascii_digit()) {
@@ -862,12 +865,9 @@ pub fn batch_from_value(v: &Value) -> Result<ArtifactBatch, String> {
         .enumerate()
     {
         let so = |k: &str| op.get(k).and_then(Value::as_str).map(str::to_string);
-        let kind = match so("kind").as_deref() {
-            Some("text.replace") => OpKind::TextReplace,
-            Some("cell.set") => OpKind::CellSet,
-            Some("slide.text_set") => OpKind::SlideTextSet,
-            Some("slide.append") => OpKind::SlideAppend,
-            other => return Err(format!("op {}: unknown kind {other:?}", i + 1)),
+        let kind = match so("kind").as_deref().and_then(OpKind::parse) {
+            Some(k) => k,
+            None => return Err(format!("op {}: unknown kind {:?}", i + 1, so("kind"))),
         };
         let pre = op
             .get("precondition")
@@ -909,6 +909,11 @@ pub fn batch_from_value(v: &Value) -> Result<ArtifactBatch, String> {
 /// `proposed_output_hash` before anything is written.
 pub fn apply_batch(bytes: &[u8], batch: &ArtifactBatch) -> Result<Vec<u8>, ToolError> {
     let tool = "artifact.apply_batch";
+    // A new artifact: the base is the empty artifact and the batch alone
+    // decides the bytes (decision 0008).
+    if batch.is_creation() && bytes.is_empty() {
+        return super::create::render_creation(batch).map_err(|e| ToolError::failed(tool, e));
+    }
     match detect_kind(bytes) {
         ArtifactKind::Docx => apply_docx(tool, bytes, batch),
         ArtifactKind::Xlsx => apply_xlsx(tool, bytes, batch),
@@ -940,6 +945,9 @@ pub struct DiffEntry {
 /// DOCX `text.replace`, formula-or-value for XLSX `cell.set`. Targets the
 /// base no longer contains are reported with `before: None`.
 pub fn proposal_diff(bytes: &[u8], batch: &ArtifactBatch) -> Vec<DiffEntry> {
+    if batch.is_creation() && bytes.is_empty() {
+        return super::create::creation_diff(batch);
+    }
     let kind = detect_kind(bytes);
     let doc = matches!(kind, ArtifactKind::Docx)
         .then(|| DocxDocument::load(bytes).ok())
@@ -1012,7 +1020,13 @@ pub fn proposal_diff(bytes: &[u8], batch: &ArtifactBatch) -> Vec<DiffEntry> {
                     });
                     (format!("{sheet}!{address}"), before, after)
                 }
-                OpKind::SlideTextSet | OpKind::SlideAppend => (
+                OpKind::SlideTextSet
+                | OpKind::SlideAppend
+                | OpKind::SheetInsert
+                | OpKind::SlideInsert
+                | OpKind::SlideUpdate
+                | OpKind::MetadataSet
+                | OpKind::BlockInsert => (
                     op.precondition.target_id.clone(),
                     None,
                     op.args
@@ -1037,7 +1051,7 @@ pub fn proposal_diff(bytes: &[u8], batch: &ArtifactBatch) -> Vec<DiffEntry> {
 /// two different proposals against the same base never share a journal
 /// row (the commit journal treats a repeated batch id as a replay), while
 /// the same proposal stays deterministic for cassettes and evals.
-fn default_batch_id(base_content_hash: &str, ops: &[Operation]) -> String {
+pub(crate) fn default_batch_id(base_content_hash: &str, ops: &[Operation]) -> String {
     let ops_value = JsonValue::Array(
         ops.iter()
             .map(|op| {
@@ -1059,7 +1073,7 @@ fn default_batch_id(base_content_hash: &str, ops: &[Operation]) -> String {
     format!("batch-{}-{}", &base_content_hash[..12], &ops_hash[..8])
 }
 
-fn batch_json(b: &ArtifactBatch) -> Value {
+pub(crate) fn batch_json(b: &ArtifactBatch) -> Value {
     let canonical = b.to_canonical_value();
     let bytes = canonical.to_canonical_bytes().unwrap_or_default();
     serde_json::from_slice(&bytes).unwrap_or(Value::Null)

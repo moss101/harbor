@@ -196,6 +196,15 @@ pub struct PendingApproval {
     /// for `RECEIPT_VALIDITY` from here (02 contract: ≤ 15 minutes).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub requested_at: Option<chrono::DateTime<chrono::Utc>>,
+    /// The proposal creates a new artifact (its base is the empty
+    /// artifact): there is no original to overwrite, and the commit needs
+    /// no base bytes from the host.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub creates: bool,
+    /// File name the proposing tool suggests for a new artifact (the host
+    /// still asks the user where to save it).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub suggested_name: Option<String>,
 }
 
 /// Single-effect receipts are valid for at most 15 minutes (02 contract,
@@ -895,17 +904,19 @@ impl<'a> Executor<'a> {
     }
 
     /// Before/after entries for a proposal while its artifact is attached.
+    /// A new artifact's base is the empty artifact, so its view needs no
+    /// attachment at all.
     fn proposal_diff(&self, batch_value: &Value) -> Vec<crate::tools::builtin::DiffEntry> {
-        let Some(artifact_id) = batch_value.get("artifact_id").and_then(Value::as_str) else {
+        let Ok(batch) = crate::tools::builtin::batch_from_value(batch_value) else {
             return Vec::new();
         };
-        let Some(bytes) = self.host.artifacts.get(artifact_id) else {
-            return Vec::new();
-        };
-        match crate::tools::builtin::batch_from_value(batch_value) {
-            Ok(batch) => crate::tools::builtin::proposal_diff(&bytes.bytes, &batch),
-            Err(_) => Vec::new(),
+        if batch.is_creation() {
+            return crate::tools::builtin::proposal_diff(&[], &batch);
         }
+        let Some(bytes) = self.host.artifacts.get(&batch.artifact_id) else {
+            return Vec::new();
+        };
+        crate::tools::builtin::proposal_diff(&bytes.bytes, &batch)
     }
 
     /// Approve the pending proposal and commit it as one protected effect,
@@ -973,19 +984,36 @@ impl<'a> Executor<'a> {
             .proposed_output_hash
             .clone()
             .ok_or_else(|| ExecError::Commit("approval binds no proposed_output_hash".into()))?;
-        let base = self.host.artifacts.get(&batch.artifact_id).ok_or_else(|| {
-            ExecError::Commit(format!(
-                "base bytes for artifact {} were not supplied",
-                batch.artifact_id
-            ))
-        })?;
-        let base_now = harbor_canonical::sha256_hex(&base.bytes);
+        // A new artifact's base is the empty artifact (02 contract): the
+        // batch alone decides the output, and there is nothing to
+        // overwrite — only Save New Copy writes it.
+        let creates = batch.is_creation() && base_hash == harbor_artifacts::EMPTY_CONTENT_HASH;
+        if creates && matches!(target, CommitTarget::Overwrite { .. }) {
+            return Err(ExecError::Commit(
+                "this proposal creates a new file; there is no original to overwrite — save it as a new copy".into(),
+            ));
+        }
+        let base_bytes: std::sync::Arc<Vec<u8>> = if creates {
+            std::sync::Arc::new(Vec::new())
+        } else {
+            self.host
+                .artifacts
+                .get(&batch.artifact_id)
+                .ok_or_else(|| {
+                    ExecError::Commit(format!(
+                        "base bytes for artifact {} were not supplied",
+                        batch.artifact_id
+                    ))
+                })?
+                .bytes
+        };
+        let base_now = harbor_canonical::sha256_hex(&base_bytes);
         if base_now != base_hash {
             return Err(ExecError::Commit(format!(
                 "base file changed since the proposal (approved {base_hash}, found {base_now})"
             )));
         }
-        let output = crate::tools::builtin::apply_batch(&base.bytes, &batch)
+        let output = crate::tools::builtin::apply_batch(&base_bytes, &batch)
             .map_err(|e| ExecError::Commit(format!("re-applying the batch: {e}")))?;
         let output_hash = harbor_canonical::sha256_hex(&output);
         if output_hash != proposed_hash {
@@ -1888,6 +1916,16 @@ impl<'a> Executor<'a> {
                         .map(str::to_string),
                     diff: self.proposal_diff(&batch_value),
                     requested_at: Some(now()),
+                    creates: batch_value.get("base_content_hash").and_then(Value::as_str)
+                        == Some(harbor_artifacts::EMPTY_CONTENT_HASH),
+                    // Build tools return {batch, file_name, …}: the name
+                    // sits next to the batch like the output hash does.
+                    suggested_name: batch
+                        .rsplit_once('/')
+                        .and_then(|(parent, _)| pointer::get(&snap.state, parent))
+                        .and_then(|parent| parent.get("file_name"))
+                        .and_then(Value::as_str)
+                        .map(str::to_string),
                     batch: batch_value,
                 };
                 snap.trail.push(NodeTrace {

@@ -433,9 +433,292 @@ pub fn table_cell_paragraph_map(xml: &str) -> Result<DocxMergeMap, DocxError> {
     Ok(result)
 }
 
+// ---------------------------------------------------------------------------
+// Creation: a new document from typed blocks (the creation batch's
+// `block.insert` operations). Deterministic — fixed zip timestamps, no
+// clock, no generated ids — so the commit path can re-derive the approved
+// output hash from the batch alone.
+
+/// Paragraph roles a created document can use. Each maps to a named style
+/// in the package's styles.xml, so the result stays editable in Word:
+/// changing "Heading 1" restyles every heading.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BlockStyle {
+    Title,
+    Heading1,
+    Heading2,
+    Heading3,
+    Paragraph,
+    Bullet,
+    Numbered,
+    /// A paragraph without space after it (address lines, sign-offs).
+    Compact,
+}
+
+impl BlockStyle {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            BlockStyle::Title => "title",
+            BlockStyle::Heading1 => "heading1",
+            BlockStyle::Heading2 => "heading2",
+            BlockStyle::Heading3 => "heading3",
+            BlockStyle::Paragraph => "paragraph",
+            BlockStyle::Bullet => "bullet",
+            BlockStyle::Numbered => "numbered",
+            BlockStyle::Compact => "compact",
+        }
+    }
+
+    pub fn parse(s: &str) -> Option<BlockStyle> {
+        Some(match s {
+            "title" => BlockStyle::Title,
+            "heading1" => BlockStyle::Heading1,
+            "heading2" => BlockStyle::Heading2,
+            "heading3" => BlockStyle::Heading3,
+            "paragraph" => BlockStyle::Paragraph,
+            "bullet" => BlockStyle::Bullet,
+            "numbered" => BlockStyle::Numbered,
+            "compact" => BlockStyle::Compact,
+            _ => return None,
+        })
+    }
+
+    /// The styles.xml style id (what `DocxDocument::load` reports).
+    pub fn style_id(&self) -> Option<&'static str> {
+        match self {
+            BlockStyle::Title => Some("Title"),
+            BlockStyle::Heading1 => Some("Heading1"),
+            BlockStyle::Heading2 => Some("Heading2"),
+            BlockStyle::Heading3 => Some("Heading3"),
+            BlockStyle::Paragraph => None,
+            BlockStyle::Bullet => Some("ListBullet"),
+            BlockStyle::Numbered => Some("ListNumber"),
+            BlockStyle::Compact => Some("Compact"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct DocxBlock {
+    pub style: BlockStyle,
+    pub text: String,
+}
+
+fn w_escape(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '&' => out.push_str("&amp;"),
+            '<' => out.push_str("&lt;"),
+            '>' => out.push_str("&gt;"),
+            '"' => out.push_str("&quot;"),
+            // A line break inside one block is not representable without
+            // w:br, which the reader would drop: keep the words apart.
+            '\n' | '\r' => out.push(' '),
+            c if (c as u32) < 0x20 && c != '\t' => {}
+            c => out.push(c),
+        }
+    }
+    out
+}
+
+/// Arabic-script text is laid out right to left. A block is RTL when most
+/// of its letters are Arabic; `docx.inspect` flags Arabic paragraphs that
+/// are not, so created documents must never be the thing it flags.
+fn is_rtl_text(text: &str) -> bool {
+    let (mut arabic, mut latin) = (0usize, 0usize);
+    for ch in text.chars() {
+        let cp = ch as u32;
+        if (0x0600..=0x06FF).contains(&cp)
+            || (0x0750..=0x077F).contains(&cp)
+            || (0xFB50..=0xFDFF).contains(&cp)
+            || (0xFE70..=0xFEFF).contains(&cp)
+        {
+            arabic += 1;
+        } else if ch.is_alphabetic() {
+            latin += 1;
+        }
+    }
+    arabic > 0 && arabic >= latin
+}
+
+fn block_xml(block: &DocxBlock) -> String {
+    let rtl = is_rtl_text(&block.text);
+    let mut ppr = String::new();
+    if let Some(id) = block.style.style_id() {
+        ppr.push_str(&format!("<w:pStyle w:val=\"{id}\"/>"));
+    }
+    match block.style {
+        BlockStyle::Bullet => {
+            ppr.push_str("<w:numPr><w:ilvl w:val=\"0\"/><w:numId w:val=\"1\"/></w:numPr>")
+        }
+        BlockStyle::Numbered => {
+            ppr.push_str("<w:numPr><w:ilvl w:val=\"0\"/><w:numId w:val=\"2\"/></w:numPr>")
+        }
+        _ => {}
+    }
+    if rtl {
+        ppr.push_str("<w:bidi/>");
+    }
+    let rpr = if rtl { "<w:rPr><w:rtl/></w:rPr>" } else { "" };
+    let ppr = if ppr.is_empty() {
+        String::new()
+    } else {
+        format!("<w:pPr>{ppr}</w:pPr>")
+    };
+    format!(
+        "<w:p>{ppr}<w:r>{rpr}<w:t xml:space=\"preserve\">{}</w:t></w:r></w:p>",
+        w_escape(&block.text)
+    )
+}
+
+const DOCX_STYLES: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="Calibri" w:cs="Arial"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:lang w:val="en-US" w:bidi="ar-SA"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="160" w:line="264" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>
+<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>
+<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:after="240"/></w:pPr><w:rPr><w:b/><w:color w:val="07111D"/><w:sz w:val="52"/><w:szCs w:val="52"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="360" w:after="120"/><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:color w:val="1F5FCC"/><w:sz w:val="32"/><w:szCs w:val="32"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="240" w:after="80"/><w:outlineLvl w:val="1"/></w:pPr><w:rPr><w:b/><w:color w:val="1F5FCC"/><w:sz w:val="26"/><w:szCs w:val="26"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="Heading3"><w:name w:val="heading 3"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="200" w:after="60"/><w:outlineLvl w:val="2"/></w:pPr><w:rPr><w:b/><w:color w:val="07111D"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="ListBullet"><w:name w:val="List Bullet"/><w:basedOn w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:after="60"/><w:ind w:left="360" w:hanging="360"/></w:pPr></w:style>
+<w:style w:type="paragraph" w:styleId="ListNumber"><w:name w:val="List Number"/><w:basedOn w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:after="60"/><w:ind w:left="360" w:hanging="360"/></w:pPr></w:style>
+<w:style w:type="paragraph" w:styleId="Compact"><w:name w:val="Compact"/><w:basedOn w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:after="0"/></w:pPr></w:style>
+</w:styles>"#;
+
+const DOCX_NUMBERING: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:abstractNum w:abstractNumId="0"><w:multiLevelType w:val="singleLevel"/><w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="bullet"/><w:lvlText w:val="&#8226;"/><w:lvlJc w:val="left"/><w:pPr><w:ind w:left="360" w:hanging="360"/></w:pPr></w:lvl></w:abstractNum>
+<w:abstractNum w:abstractNumId="1"><w:multiLevelType w:val="singleLevel"/><w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="decimal"/><w:lvlText w:val="%1."/><w:lvlJc w:val="left"/><w:pPr><w:ind w:left="360" w:hanging="360"/></w:pPr></w:lvl></w:abstractNum>
+<w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num>
+<w:num w:numId="2"><w:abstractNumId w:val="1"/></w:num>
+</w:numbering>"#;
+
+/// compatibilityMode 15 keeps Word from opening a new document in
+/// "Compatibility Mode".
+const DOCX_SETTINGS: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:defaultTabStop w:val="720"/><w:characterSpacingControl w:val="doNotCompress"/><w:compat><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/></w:compat></w:settings>"#;
+
+/// Write a new DOCX package holding `blocks` in order. The page is A4 with
+/// one-inch margins; `title` becomes the document's core title property.
+pub fn create_docx(title: &str, blocks: &[DocxBlock]) -> Result<Vec<u8>, DocxError> {
+    let mut body = String::new();
+    for b in blocks {
+        body.push_str(&block_xml(b));
+    }
+    if blocks.is_empty() {
+        body.push_str("<w:p/>");
+    }
+    let document = format!(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>{body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>"#
+    );
+    let content_types = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/><Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>"#;
+    let root_rels = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>"#;
+    let doc_rels = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/></Relationships>"#;
+    let core = format!(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>{}</dc:title><dc:creator>Harbor</dc:creator></cp:coreProperties>"#,
+        w_escape(title)
+    );
+    let app = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>Harbor</Application></Properties>"#;
+    let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    let opts = zip::write::SimpleFileOptions::default();
+    for (name, body) in [
+        ("[Content_Types].xml", content_types),
+        ("_rels/.rels", root_rels),
+        ("word/document.xml", document.as_str()),
+        ("word/_rels/document.xml.rels", doc_rels),
+        ("word/styles.xml", DOCX_STYLES),
+        ("word/numbering.xml", DOCX_NUMBERING),
+        ("word/settings.xml", DOCX_SETTINGS),
+        ("docProps/core.xml", core.as_str()),
+        ("docProps/app.xml", app),
+    ] {
+        zip.start_file(name, opts)?;
+        zip.write_all(body.as_bytes())?;
+    }
+    Ok(zip.finish()?.into_inner())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn created_document_is_sound_deterministic_and_reads_back() {
+        let blocks = vec![
+            DocxBlock {
+                style: BlockStyle::Title,
+                text: "Archive migration proposal".into(),
+            },
+            DocxBlock {
+                style: BlockStyle::Heading1,
+                text: "Summary".into(),
+            },
+            DocxBlock {
+                style: BlockStyle::Paragraph,
+                text: "Move the archive to local storage & keep <two> copies.".into(),
+            },
+            DocxBlock {
+                style: BlockStyle::Bullet,
+                text: "Two engineers for six weeks".into(),
+            },
+            DocxBlock {
+                style: BlockStyle::Numbered,
+                text: "Approve the plan".into(),
+            },
+            DocxBlock {
+                style: BlockStyle::Paragraph,
+                text: "ينتقل الأرشيف إلى التخزين المحلي".into(),
+            },
+        ];
+        let a = create_docx("Archive & plan", &blocks).unwrap();
+        let b = create_docx("Archive & plan", &blocks).unwrap();
+        assert_eq!(a, b, "creation is deterministic");
+        let problems = crate::package_integrity(&a);
+        assert!(problems.is_empty(), "{problems:?}");
+        let doc = DocxDocument::load(&a).unwrap();
+        let texts: Vec<&str> = doc.paragraphs.iter().map(|p| p.text.as_str()).collect();
+        assert_eq!(
+            texts,
+            vec![
+                "Archive migration proposal",
+                "Summary",
+                "Move the archive to local storage & keep <two> copies.",
+                "Two engineers for six weeks",
+                "Approve the plan",
+                "ينتقل الأرشيف إلى التخزين المحلي",
+            ]
+        );
+        assert_eq!(doc.paragraphs[0].style.as_deref(), Some("Title"));
+        assert_eq!(doc.paragraphs[1].style.as_deref(), Some("Heading1"));
+        assert_eq!(doc.paragraphs[2].style, None);
+        assert_eq!(doc.paragraphs[3].style.as_deref(), Some("ListBullet"));
+        // The Arabic paragraph is marked right to left.
+        let mut ar = zip::ZipArchive::new(Cursor::new(a.as_slice())).unwrap();
+        let mut xml = String::new();
+        ar.by_name("word/document.xml")
+            .unwrap()
+            .read_to_string(&mut xml)
+            .unwrap();
+        assert_eq!(xml.matches("<w:bidi/>").count(), 1);
+        for s in [
+            "title",
+            "heading1",
+            "heading2",
+            "heading3",
+            "paragraph",
+            "bullet",
+            "numbered",
+            "compact",
+        ] {
+            assert_eq!(BlockStyle::parse(s).unwrap().as_str(), s);
+        }
+    }
 
     fn minimal_docx(paragraphs: &[&str]) -> Vec<u8> {
         // Build a minimal valid DOCX package with N paragraphs.

@@ -97,6 +97,86 @@
                 "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
               },
               "kind": {
+                "const": "block.insert"
+              },
+              "precondition": {
+                "type": "object",
+                "properties": {
+                  "target_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+                  },
+                  "expected_content_hash": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "target_id",
+                  "expected_content_hash"
+                ],
+                "additionalProperties": false
+              },
+              "args": {
+                "type": "object",
+                "properties": {
+                  "block_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+                  },
+                  "index": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "style": {
+                    "enum": [
+                      "title",
+                      "heading1",
+                      "heading2",
+                      "heading3",
+                      "paragraph",
+                      "bullet",
+                      "numbered",
+                      "compact"
+                    ]
+                  },
+                  "text": {
+                    "type": "string",
+                    "maxLength": 1000000
+                  }
+                },
+                "required": [
+                  "block_id",
+                  "index",
+                  "style",
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "op_id",
+              "kind",
+              "precondition",
+              "args"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+              },
+              "kind": {
                 "const": "table.set"
               },
               "precondition": {

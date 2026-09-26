@@ -467,3 +467,167 @@ fn overwrite_revalidates_the_base_inside_the_protected_interval() {
         0
     );
 }
+
+// ---------------------------------------------------------------------------
+// Creating a new file (decision 0008): the proposal is a creation batch over
+// the empty base, so the commit needs no base bytes from the host, writes
+// the approved bytes to a new destination, and refuses to "overwrite" —
+// there is no original.
+
+fn create_graph(tool: &str, arg: &str) -> Graph {
+    Graph::from_value(&json!({
+        "schema": "harbor.graph/v1",
+        "id": "create-commit",
+        "version": 1,
+        "inputs": {"type": "object"},
+        "entry": "build",
+        "budgets": {"max_steps": 6, "max_tool_calls": 2},
+        "nodes": [
+            {"id": "build", "kind": "tool.call", "tool": tool, "args": {arg: {"$state": "/input/spec"}}, "out": "/proposal", "next": "approve"},
+            {"id": "approve", "kind": "approval", "effect_class": "artifact.commit", "batch": "/proposal/batch", "next_approved": "done", "next_rejected": "rejected"},
+            {"id": "done", "kind": "end", "outcome": "completed", "outputs": ["/approvals/approve"]},
+            {"id": "rejected", "kind": "end", "outcome": "abstained"}
+        ]
+    }))
+    .unwrap()
+}
+
+fn start_create(
+    rig: &Rig,
+    artifacts: &MemoryArtifacts,
+    tool: &str,
+    arg: &str,
+    spec: Value,
+) -> harbor_core::executor::RunReport {
+    rig.executor(artifacts)
+        .start(RunRequest {
+            run_id: None,
+            workspace_id: "ws-create".into(),
+            graph: create_graph(tool, arg),
+            skill_id: None,
+            skill_instructions: None,
+            inputs: json!({"spec": spec}),
+            host_inputs: json!({}),
+            model: None,
+        })
+        .unwrap()
+}
+
+#[test]
+fn a_created_workbook_is_saved_as_a_new_file_exactly_as_approved() {
+    let rig = Rig::new();
+    let none = MemoryArtifacts::new();
+    let spec = json!({
+        "title": "Q4 budget",
+        "sheet": "Budget",
+        "columns": [{"header": "Item", "type": "text"}, {"header": "Amount", "type": "currency"}],
+        "rows": [["Rent", 1200], ["Food", 400]],
+        "total_columns": ["Amount"],
+        "computed": [],
+        "currency_symbol": "$"
+    });
+    let report = start_create(&rig, &none, "workbook.build", "spec", spec);
+    let RunStatus::WaitingApproval { approval } = &report.status else {
+        panic!("expected a pending approval: {:?}", report.status)
+    };
+    assert!(approval.creates, "the approval says it creates a file");
+    assert_eq!(approval.suggested_name.as_deref(), Some("Q4 budget.xlsx"));
+    assert_eq!(
+        approval.base_content_hash.as_deref(),
+        Some(harbor_artifacts::EMPTY_CONTENT_HASH)
+    );
+    // The review view is the new file's rows, computed with no attachment.
+    assert!(approval
+        .diff
+        .iter()
+        .any(|d| d.after.as_deref() == Some("Total  |  =SUM(B2:B3)")));
+    let run_id = report.run_id.clone();
+    let approved_hash = approval.proposed_output_hash.clone().unwrap();
+
+    // Overwrite is refused before anything durable happens.
+    let dest = rig.dir.path().join("out").join("Q4 budget.xlsx");
+    std::fs::create_dir_all(dest.parent().unwrap()).unwrap();
+    let err = rig
+        .executor(&none)
+        .decide_and_commit(
+            &run_id,
+            CommitTarget::Overwrite {
+                destination: dest.clone(),
+            },
+        )
+        .unwrap_err();
+    assert!(
+        matches!(&err, ExecError::Commit(m) if m.contains("no original")),
+        "{err}"
+    );
+    assert!(!dest.exists());
+
+    // Save New Copy writes the approved bytes; the host supplies nothing.
+    let (after, commit) = rig
+        .executor(&none)
+        .decide_and_commit(
+            &run_id,
+            CommitTarget::SaveNewCopy {
+                destination: dest.clone(),
+            },
+        )
+        .unwrap();
+    assert_eq!(after.state, RunState::Completed.as_str());
+    assert_eq!(commit.outcome, "committed");
+    let written = std::fs::read(&dest).unwrap();
+    assert_eq!(harbor_canonical::sha256_hex(&written), approved_hash);
+    let wb = harbor_artifacts::WorkbookDoc::load(&written).unwrap();
+    let total = wb.sheet("Budget").unwrap().cells.get(&(2, 4)).unwrap();
+    assert_eq!(total.formula.as_deref(), Some("SUM(B2:B3)"));
+    assert_eq!(
+        total.cached,
+        Some(harbor_formula::value::CellValue::Number(1600.0))
+    );
+    assert_eq!(
+        rig.resolved_outcomes(&run_id),
+        vec!["committed".to_string()]
+    );
+}
+
+#[test]
+fn created_decks_and_documents_commit_the_same_way() {
+    for (tool, arg, spec, ext) in [
+        (
+            "deck.build",
+            "outline",
+            json!({"title": "Plan", "slides": [{"title": "Why", "bullets": ["Because"], "notes": null}]}),
+            "pptx",
+        ),
+        (
+            "docx.build",
+            "document",
+            json!({"title": "Memo", "sections": [{"heading": "Summary", "paragraphs": ["One line."]}]}),
+            "docx",
+        ),
+    ] {
+        let rig = Rig::new();
+        let none = MemoryArtifacts::new();
+        let report = start_create(&rig, &none, tool, arg, spec);
+        let RunStatus::WaitingApproval { approval } = &report.status else {
+            panic!("{tool}: expected a pending approval: {:?}", report.status)
+        };
+        let hash = approval.proposed_output_hash.clone().unwrap();
+        let dest = rig.dir.path().join(format!("new.{ext}"));
+        let (_, commit) = rig
+            .executor(&none)
+            .decide_and_commit(
+                &report.run_id,
+                CommitTarget::SaveNewCopy {
+                    destination: dest.clone(),
+                },
+            )
+            .unwrap();
+        assert_eq!(commit.outcome, "committed", "{tool}");
+        let written = std::fs::read(&dest).unwrap();
+        assert_eq!(harbor_canonical::sha256_hex(&written), hash, "{tool}");
+        assert!(
+            harbor_artifacts::package_integrity(&written).is_empty(),
+            "{tool}"
+        );
+    }
+}

@@ -203,6 +203,200 @@ impl WorkbookDoc {
         })
     }
 
+    /// A workbook with no sheets and no loaded package: the empty base a
+    /// creation batch builds on. Document properties keep the backend's
+    /// fixed defaults (no clock is read), so the same batch always
+    /// serializes to the same bytes — the commit path re-derives the
+    /// approved output hash from the batch alone.
+    pub fn new_empty() -> Self {
+        WorkbookDoc {
+            book: umya_spreadsheet::new_file_empty_worksheet(),
+            sheets: BTreeMap::new(),
+            original: BTreeMap::new(),
+        }
+    }
+
+    /// Add an empty sheet. The first sheet added becomes the active one.
+    pub fn add_sheet(&mut self, name: &str) -> Result<(), WorkbookError> {
+        if self.sheets.contains_key(name) {
+            return Err(WorkbookError::BadRef(format!(
+                "sheet {name} already exists"
+            )));
+        }
+        let first = self.book.sheet_collection().is_empty();
+        let ws = self
+            .book
+            .new_sheet(name)
+            .map_err(|e| WorkbookError::Load(e.to_string()))?;
+        let mut view = umya_spreadsheet::structs::SheetView::default();
+        view.set_workbook_view_id(0);
+        if first {
+            view.set_tab_selected(true);
+        }
+        let mut views = umya_spreadsheet::structs::SheetViews::default();
+        views.add_sheet_view_list_mut(view);
+        ws.set_sheets_views(views);
+        ws.set_active_cell("A1");
+        if first {
+            self.book.set_active_sheet(0);
+        }
+        self.sheets.insert(
+            name.to_string(),
+            SheetData {
+                name: name.to_string(),
+                cells: BTreeMap::new(),
+            },
+        );
+        Ok(())
+    }
+
+    fn worksheet_mut(
+        &mut self,
+        sheet: &str,
+    ) -> Result<&mut umya_spreadsheet::Worksheet, WorkbookError> {
+        let idx = self
+            .book
+            .sheet_collection()
+            .iter()
+            .position(|s| s.name() == sheet)
+            .ok_or_else(|| WorkbookError::SheetNotFound(sheet.into()))?;
+        self.book
+            .sheet_mut(idx)
+            .map_err(|e| WorkbookError::Load(e.to_string()))
+    }
+
+    /// Write a value or formula WITHOUT recalculating. Creation writes a
+    /// whole sheet this way and then calls [`recalculate_all`] once; the
+    /// per-cell recalculation of [`set_cell`] would make that quadratic.
+    /// Text is stored as text (never re-typed from its spelling).
+    ///
+    /// [`recalculate_all`]: WorkbookDoc::recalculate_all
+    /// [`set_cell`]: WorkbookDoc::set_cell
+    pub fn put_cell(
+        &mut self,
+        sheet: &str,
+        row: u32,
+        col: u32,
+        set: CellSet,
+    ) -> Result<(), WorkbookError> {
+        if col == 0 || col > MAX_COL || row == 0 || row > MAX_ROW {
+            return Err(WorkbookError::BadRef(format!("{col},{row}")));
+        }
+        let ws = self.worksheet_mut(sheet)?;
+        let cell = ws.cell_mut((col, row));
+        let snapshot = match &set {
+            CellSet::Formula(f) => {
+                cell.set_formula(f.trim_start_matches('='));
+                SheetCell {
+                    formula: Some(f.trim_start_matches('=').to_string()),
+                    cached: None,
+                    stored_as_text: false,
+                }
+            }
+            CellSet::Value(v) => {
+                match v {
+                    CellValue::Blank => {
+                        cell.set_value_string("");
+                    }
+                    CellValue::Number(n) => {
+                        cell.set_value_number(*n);
+                    }
+                    CellValue::Text(t) => {
+                        cell.set_value_string(t.clone());
+                    }
+                    CellValue::Bool(b) => {
+                        cell.set_value_bool(*b);
+                    }
+                    CellValue::Error(_) => {
+                        return Err(WorkbookError::BadRef("error literal set".into()))
+                    }
+                }
+                SheetCell {
+                    formula: None,
+                    cached: (!matches!(v, CellValue::Blank)).then(|| v.clone()),
+                    stored_as_text: matches!(v, CellValue::Text(_)),
+                }
+            }
+        };
+        let data = self
+            .sheets
+            .get_mut(sheet)
+            .ok_or_else(|| WorkbookError::SheetNotFound(sheet.into()))?;
+        if snapshot.formula.is_some() || snapshot.cached.is_some() {
+            data.cells.insert((col, row), snapshot);
+        } else {
+            data.cells.remove(&(col, row));
+        }
+        Ok(())
+    }
+
+    /// Bold the cells `col_from..=col_to` of `row` (header and total rows).
+    pub fn set_bold(
+        &mut self,
+        sheet: &str,
+        row: u32,
+        col_from: u32,
+        col_to: u32,
+    ) -> Result<(), WorkbookError> {
+        let ws = self.worksheet_mut(sheet)?;
+        for col in col_from..=col_to {
+            ws.style_mut((col, row)).font_mut().set_bold(true);
+        }
+        Ok(())
+    }
+
+    /// Apply a number format code to `col`, rows `row_from..=row_to`.
+    pub fn set_number_format(
+        &mut self,
+        sheet: &str,
+        col: u32,
+        row_from: u32,
+        row_to: u32,
+        code: &str,
+    ) -> Result<(), WorkbookError> {
+        let ws = self.worksheet_mut(sheet)?;
+        for row in row_from..=row_to {
+            ws.style_mut((col, row))
+                .number_format_mut()
+                .set_format_code(code);
+        }
+        Ok(())
+    }
+
+    pub fn set_column_width(
+        &mut self,
+        sheet: &str,
+        col: u32,
+        width: f64,
+    ) -> Result<(), WorkbookError> {
+        let ws = self.worksheet_mut(sheet)?;
+        ws.column_dimension_mut(&col_letter(col)).set_width(width);
+        Ok(())
+    }
+
+    /// Keep the first row visible while scrolling (a header row).
+    pub fn freeze_first_row(&mut self, sheet: &str) -> Result<(), WorkbookError> {
+        use umya_spreadsheet::structs::{Pane, PaneStateValues, PaneValues};
+        let ws = self.worksheet_mut(sheet)?;
+        let mut pane = Pane::default();
+        pane.set_vertical_split(1.0);
+        pane.top_left_cell_mut().set_coordinate("A2");
+        pane.set_active_pane(PaneValues::BottomLeft);
+        pane.set_state(PaneStateValues::Frozen);
+        if let Some(view) = ws.sheet_views_mut().sheet_view_list_mut().first_mut() {
+            view.set_pane(pane);
+        }
+        Ok(())
+    }
+
+    /// Document title (docProps/core.xml).
+    pub fn set_title(&mut self, title: &str) {
+        let props = self.book.properties_mut();
+        props.set_title(title);
+        props.set_creator("Harbor");
+        props.set_last_modified_by("Harbor");
+    }
+
     /// Parts of the loaded package the edit backend does not model (they
     /// will be carried over verbatim on save).
     pub fn unmodeled_parts(&self) -> Vec<String> {
@@ -960,6 +1154,71 @@ mod tests {
             .unwrap()
             .clone();
         assert_eq!(cell.cached, Some(CellValue::Number(35.0)));
+    }
+
+    fn created_budget() -> Vec<u8> {
+        let mut doc = WorkbookDoc::new_empty();
+        doc.set_title("Household budget");
+        doc.add_sheet("Budget").unwrap();
+        let text = |t: &str| CellSet::Value(CellValue::Text(t.into()));
+        let num = |n: f64| CellSet::Value(CellValue::Number(n));
+        doc.put_cell("Budget", 1, 1, text("Item")).unwrap();
+        doc.put_cell("Budget", 1, 2, text("Amount")).unwrap();
+        doc.put_cell("Budget", 2, 1, text("Rent")).unwrap();
+        doc.put_cell("Budget", 2, 2, num(1200.0)).unwrap();
+        doc.put_cell("Budget", 3, 1, text("001")).unwrap();
+        doc.put_cell("Budget", 3, 2, num(150.5)).unwrap();
+        doc.put_cell("Budget", 4, 1, text("Total")).unwrap();
+        doc.put_cell("Budget", 4, 2, CellSet::Formula("=SUM(B2:B3)".into()))
+            .unwrap();
+        doc.set_bold("Budget", 1, 1, 2).unwrap();
+        doc.set_bold("Budget", 4, 1, 2).unwrap();
+        doc.set_number_format("Budget", 2, 2, 4, "#,##0.00")
+            .unwrap();
+        doc.set_column_width("Budget", 1, 14.0).unwrap();
+        doc.freeze_first_row("Budget").unwrap();
+        let values = doc.recalculate_all().unwrap();
+        assert_eq!(
+            values.get(&("Budget".to_string(), 4, 2)),
+            Some(&CellValue::Number(1350.5))
+        );
+        doc.to_bytes().unwrap()
+    }
+
+    #[test]
+    fn created_workbook_is_deterministic_and_reloads() {
+        let a = created_budget();
+        let b = created_budget();
+        // No clock, no random ids: the commit path re-derives this hash
+        // from the batch alone and must get the approved bytes back.
+        assert_eq!(
+            harbor_canonical::sha256_hex(&a),
+            harbor_canonical::sha256_hex(&b)
+        );
+        let problems = crate::package_integrity(&a);
+        assert!(problems.is_empty(), "{problems:?}");
+        let back = WorkbookDoc::load(&a).unwrap();
+        assert_eq!(back.sheet_names(), vec!["Budget".to_string()]);
+        let sheet = back.sheet("Budget").unwrap();
+        let total = sheet.cells.get(&(2, 4)).unwrap();
+        assert_eq!(total.formula.as_deref(), Some("SUM(B2:B3)"));
+        assert_eq!(total.cached, Some(CellValue::Number(1350.5)));
+        assert_eq!(
+            sheet.cells.get(&(1, 2)).unwrap().cached,
+            Some(CellValue::Text("Rent".into()))
+        );
+        // The empty workbook has no sheet until one is added, and a
+        // duplicate sheet name is refused.
+        let mut empty = WorkbookDoc::new_empty();
+        assert!(empty.sheet_names().is_empty());
+        empty.add_sheet("One").unwrap();
+        assert!(empty.add_sheet("One").is_err());
+        assert!(empty
+            .put_cell("Missing", 1, 1, CellSet::Value(CellValue::Number(1.0)))
+            .is_err());
+        assert!(empty
+            .put_cell("One", 0, 1, CellSet::Value(CellValue::Number(1.0)))
+            .is_err());
     }
 
     #[test]

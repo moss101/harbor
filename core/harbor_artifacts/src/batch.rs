@@ -5,6 +5,14 @@
 
 use harbor_canonical::JsonValue;
 
+/// SHA-256 of zero bytes: the immutable empty base every newly created
+/// artifact starts from (02 contract, "Artifact batches and safe save").
+/// A creation batch binds this as its `base_content_hash`, and every
+/// precondition in it names a target that does not exist yet, so each
+/// one expects this hash too.
+pub const EMPTY_CONTENT_HASH: &str =
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OpKind {
     /// DOCX: replace the text of a paragraph run set identified by
@@ -16,6 +24,18 @@ pub enum OpKind {
     SlideTextSet,
     /// PPTX: append a slide.
     SlideAppend,
+    /// XLSX: add a sheet (`sheet_id` names it inside the batch).
+    SheetInsert,
+    /// PPTX: add a slide at an index.
+    SlideInsert,
+    /// PPTX: set the typed elements of a slide (title, bullets, notes,
+    /// chart) — the slide's whole content, not a patch.
+    SlideUpdate,
+    /// Any format: set a document property (title) or a presentation
+    /// property the IR carries (column number formats).
+    MetadataSet,
+    /// DOCX: add a styled paragraph (title, heading, body, list item).
+    BlockInsert,
 }
 
 impl OpKind {
@@ -25,7 +45,27 @@ impl OpKind {
             OpKind::CellSet => "cell.set",
             OpKind::SlideTextSet => "slide.text_set",
             OpKind::SlideAppend => "slide.append",
+            OpKind::SheetInsert => "sheet.insert",
+            OpKind::SlideInsert => "slide.insert",
+            OpKind::SlideUpdate => "slide.update",
+            OpKind::MetadataSet => "metadata.set",
+            OpKind::BlockInsert => "block.insert",
         }
+    }
+
+    pub fn parse(kind: &str) -> Option<OpKind> {
+        Some(match kind {
+            "text.replace" => OpKind::TextReplace,
+            "cell.set" => OpKind::CellSet,
+            "slide.text_set" => OpKind::SlideTextSet,
+            "slide.append" => OpKind::SlideAppend,
+            "sheet.insert" => OpKind::SheetInsert,
+            "slide.insert" => OpKind::SlideInsert,
+            "slide.update" => OpKind::SlideUpdate,
+            "metadata.set" => OpKind::MetadataSet,
+            "block.insert" => OpKind::BlockInsert,
+            _ => return None,
+        })
     }
 }
 
@@ -126,6 +166,11 @@ impl ArtifactBatch {
             .canonical_sha256()
             .unwrap_or_else(|_| String::new())
     }
+
+    /// A batch that creates a new artifact: it is bound to the empty base.
+    pub fn is_creation(&self) -> bool {
+        self.base_content_hash == EMPTY_CONTENT_HASH
+    }
 }
 
 #[cfg(test)]
@@ -176,6 +221,23 @@ mod tests {
                 .unwrap(),
             "harbor.artifact_batch/v3"
         );
+    }
+
+    #[test]
+    fn empty_content_hash_is_the_hash_of_zero_bytes() {
+        assert_eq!(EMPTY_CONTENT_HASH, harbor_canonical::sha256_hex(b""));
+        for kind in [
+            OpKind::TextReplace,
+            OpKind::CellSet,
+            OpKind::SheetInsert,
+            OpKind::SlideInsert,
+            OpKind::SlideUpdate,
+            OpKind::MetadataSet,
+            OpKind::BlockInsert,
+        ] {
+            assert_eq!(OpKind::parse(kind.as_str()), Some(kind));
+        }
+        assert_eq!(OpKind::parse("file.delete"), None);
     }
 
     #[test]

@@ -22,10 +22,10 @@ pub mod package;
 pub mod pptx;
 pub mod workbook;
 
-pub use batch::{ArtifactBatch, OpKind, Operation, Precondition};
+pub use batch::{ArtifactBatch, OpKind, Operation, Precondition, EMPTY_CONTENT_HASH};
 pub use commit::{CommitJournal, CommitMode, CommitOutcome, SafeCommitError, SafeCommitter};
 pub use diff::{ArtifactDiff, DiffEntry};
-pub use docx::{DocxDocument, DocxError, DocxOp};
+pub use docx::{create_docx, BlockStyle, DocxBlock, DocxDocument, DocxError, DocxOp};
 pub use office_matrix::{
     classify_part, compatibility_report, Classification, CompatibilityReport, MatrixClass,
     OfficeFormat,
