@@ -20,6 +20,13 @@ hashes recorded in eval reports are reproducible:
   font/size/colour overrides, an Arabic paragraph not marked RTL, a
   mixed-direction paragraph, cramped margins and heading sizes in
   styles.xml; exercised by document-style-review and doc-coauthoring.
+- fixtures/office/messy_table.xlsx — a sales table with stray whitespace,
+  numbers stored as text, a region spelled three ways, a blank row inside
+  the table, a duplicate row and a revenue figure stored with its currency
+  symbol; exercised by table-cleanup.
+- fixtures/office/quarterly_report.pdf — a three-page report (plain
+  Helvetica text, uncompressed) whose figures and sentences sit on known
+  pages; exercised by report-to-slides' page citations.
 """
 from __future__ import annotations
 
@@ -440,6 +447,146 @@ def styles_docx() -> None:
     )
 
 
+def messy_xlsx() -> None:
+    def s(ref: str, text: str) -> str:
+        return f'<c r="{ref}" t="inlineStr"><is><t xml:space="preserve">{esc(text)}</t></is></c>'
+
+    def n(ref: str, v: str) -> str:
+        return f'<c r="{ref}"><v>{v}</v></c>'
+
+    rows = [
+        (1, [s("A1", "Region"), s("B1", "Rep"), s("C1", "Units"), s("D1", "Revenue")]),
+        (2, [s("A2", "North"), s("B2", "Amina"), n("C2", "12"), n("D2", "1200")]),
+        (3, [s("A3", "north "), s("B3", "Omar"), s("C3", "15"), n("D3", "1500")]),
+        (4, [s("A4", "South"), s("B4", "  Lina"), n("C4", "9"), s("D4", "1,200")]),
+        (6, [s("A6", "NORTH"), s("B6", "Sara"), n("C6", "11"), s("D6", "$950")]),
+        (7, [s("A7", "South"), s("B7", "Karim"), n("C7", "7"), n("D7", "700")]),
+        (8, [s("A8", "North"), s("B8", "Amina"), n("C8", "12"), n("D8", "1200")]),
+    ]
+    sheet_rows = "".join(f'<row r="{r}">{"".join(cells)}</row>' for r, cells in rows)
+    sheet1 = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+        f"<sheetData>{sheet_rows}</sheetData></worksheet>"
+    )
+    workbook = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+        'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        '<sheets><sheet name="Sales" sheetId="1" r:id="rId1"/></sheets></workbook>'
+    )
+    wb_rels = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+        '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+        "</Relationships>"
+    )
+    styles = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+        '<fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>'
+        '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>'
+        '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+        '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+        '<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>'
+        '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
+        "</styleSheet>"
+    )
+    content_types = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+        '<Default Extension="xml" ContentType="application/xml"/>'
+        '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+        '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+        '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+        "</Types>"
+    )
+    rels = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+        "</Relationships>"
+    )
+    write_zip(
+        OUT / "messy_table.xlsx",
+        [
+            ("[Content_Types].xml", content_types),
+            ("_rels/.rels", rels),
+            ("xl/workbook.xml", workbook),
+            ("xl/_rels/workbook.xml.rels", wb_rels),
+            ("xl/styles.xml", styles),
+            ("xl/worksheets/sheet1.xml", sheet1),
+        ],
+    )
+
+
+REPORT_PAGES = [
+    [
+        "Northwind Clinics - Quarterly Operations Report, Q3 2026",
+        "",
+        "Summary",
+        "Patient visits grew 14% to 48,200 across the six clinics.",
+        "Average wait time fell from 31 to 22 minutes after the new triage desk opened.",
+        "The Dubai Marina clinic reached full staffing in August.",
+    ],
+    [
+        "Finances",
+        "",
+        "Operating revenue was AED 6.4m, 9% above plan.",
+        "Staff costs rose to AED 3.1m because of the two new night shifts.",
+        "Equipment spending was held at AED 0.4m, the same as Q2.",
+    ],
+    [
+        "Risks and next quarter",
+        "",
+        "Two clinics still run on the old booking system; migration is planned for November.",
+        "Nurse turnover reached 11% and is the main staffing risk.",
+        "Next quarter the board is asked to approve a fourth triage desk.",
+    ],
+]
+
+
+def pdf_report() -> None:
+    def pdf_text(t: str) -> str:
+        return t.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+
+    objects: list[bytes] = []
+    n_pages = len(REPORT_PAGES)
+    font_id = 3 + 2 * n_pages
+    page_ids = [3 + 2 * i for i in range(n_pages)]
+    objects.append(b"<< /Type /Catalog /Pages 2 0 R >>")
+    kids = " ".join(f"{i} 0 R" for i in page_ids)
+    objects.append(f"<< /Type /Pages /Kids [{kids}] /Count {n_pages} >>".encode())
+    for i, lines in enumerate(REPORT_PAGES):
+        content = ["BT", "/F1 12 Tf", "16 TL", "72 720 Td"]
+        for j, line in enumerate(lines):
+            if j:
+                content.append("T*")
+            if line:
+                content.append(f"({pdf_text(line)}) Tj")
+        content.append("ET")
+        stream = "\n".join(content).encode("latin-1")
+        objects.append(
+            f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 {font_id} 0 R >> >> /Contents {page_ids[i] + 1} 0 R >>".encode()
+        )
+        objects.append(b"<< /Length %d >>\nstream\n" % len(stream) + stream + b"\nendstream")
+    objects.append(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>")
+    out = bytearray(b"%PDF-1.4\n")
+    offsets = []
+    for i, body in enumerate(objects, start=1):
+        offsets.append(len(out))
+        out += f"{i} 0 obj\n".encode() + body + b"\nendobj\n"
+    xref = len(out)
+    out += f"xref\n0 {len(objects) + 1}\n".encode()
+    out += b"0000000000 65535 f \n"
+    for off in offsets:
+        out += f"{off:010d} 00000 n \n".encode()
+    out += f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n".encode()
+    (OUT / "quarterly_report.pdf").write_bytes(bytes(out))
+
+
 if __name__ == "__main__":
     OUT.mkdir(parents=True, exist_ok=True)
     xlsx()
@@ -447,7 +594,9 @@ if __name__ == "__main__":
     pptx()
     dcf_xlsx()
     styles_docx()
-    for name in ("formula_errors.xlsx", "letter_template.docx", "board_deck.pptx", "dcf_model.xlsx", "report_styles.docx"):
+    messy_xlsx()
+    pdf_report()
+    for name in ("formula_errors.xlsx", "letter_template.docx", "board_deck.pptx", "dcf_model.xlsx", "report_styles.docx", "messy_table.xlsx", "quarterly_report.pdf"):
         path = OUT / name
         import hashlib
 

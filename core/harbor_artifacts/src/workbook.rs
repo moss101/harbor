@@ -20,6 +20,10 @@ pub struct SheetData {
 pub struct SheetCell {
     pub formula: Option<String>,
     pub cached: Option<CellValue>,
+    /// The package stores this literal as a string. `cached` reads a
+    /// numeric-looking string as a number (what a formula sees), so this
+    /// is the only way to tell a number stored as text from a number.
+    pub stored_as_text: bool,
 }
 
 impl SheetData {
@@ -158,8 +162,17 @@ impl WorkbookDoc {
                             } else {
                                 Some(string_to_value(&value))
                             };
+                            let stored_as_text =
+                                formula.is_none() && cell.cell_value().data_type() == "s";
                             if formula.is_some() || cached.is_some() {
-                                data.cells.insert((col, row), SheetCell { formula, cached });
+                                data.cells.insert(
+                                    (col, row),
+                                    SheetCell {
+                                        formula,
+                                        cached,
+                                        stored_as_text,
+                                    },
+                                );
                             }
                         }
                     }
@@ -539,8 +552,17 @@ impl WorkbookDoc {
                             } else {
                                 Some(string_to_value(&value))
                             };
+                            let stored_as_text =
+                                formula.is_none() && cell.cell_value().data_type() == "s";
                             if formula.is_some() || cached.is_some() {
-                                data.cells.insert((col, row), SheetCell { formula, cached });
+                                data.cells.insert(
+                                    (col, row),
+                                    SheetCell {
+                                        formula,
+                                        cached,
+                                        stored_as_text,
+                                    },
+                                );
                             }
                         }
                     }

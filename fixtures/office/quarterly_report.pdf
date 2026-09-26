@@ -1,0 +1,92 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 5 0 R 7 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 9 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 330 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+72 720 Td
+(Northwind Clinics - Quarterly Operations Report, Q3 2026) Tj
+T*
+T*
+(Summary) Tj
+T*
+(Patient visits grew 14% to 48,200 across the six clinics.) Tj
+T*
+(Average wait time fell from 31 to 22 minutes after the new triage desk opened.) Tj
+T*
+(The Dubai Marina clinic reached full staffing in August.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 9 0 R >> >> /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 242 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+72 720 Td
+(Finances) Tj
+T*
+T*
+(Operating revenue was AED 6.4m, 9% above plan.) Tj
+T*
+(Staff costs rose to AED 3.1m because of the two new night shifts.) Tj
+T*
+(Equipment spending was held at AED 0.4m, the same as Q2.) Tj
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 9 0 R >> >> /Contents 8 0 R >>
+endobj
+8 0 obj
+<< /Length 293 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+72 720 Td
+(Risks and next quarter) Tj
+T*
+T*
+(Two clinics still run on the old booking system; migration is planned for November.) Tj
+T*
+(Nurse turnover reached 11% and is the main staffing risk.) Tj
+T*
+(Next quarter the board is asked to approve a fourth triage desk.) Tj
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000127 00000 n 
+0000000253 00000 n 
+0000000634 00000 n 
+0000000760 00000 n 
+0000001053 00000 n 
+0000001179 00000 n 
+0000001523 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+1620
+%%EOF

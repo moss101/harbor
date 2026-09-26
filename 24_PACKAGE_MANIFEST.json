@@ -4,8 +4,8 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "16faee414b0dfc68d9b791f82834319458ffcc92b7ca926a2f1fe1a640b60e93",
-  "file_count_excluding_manifest": 553,
+  "input_manifest_sha256": "53213655b56e5732faf62d5653be58040d29772dba53b1654202f30d3e62ee48",
+  "file_count_excluding_manifest": 556,
   "files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -119,13 +119,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 100837,
-      "sha256": "131b28724ef11f02917b169d084b1b05c7bc4493421af1f3652a194031acfdff"
+      "bytes": 101346,
+      "sha256": "d8ac7eab7c9281f18cb5c419ae53aefcdd84ab7ec746a2affc15946efdff1565"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "8ab503ea87953f1534be84cf6097ccfcbc68f25017db9bb9e6d2ba9b07c43793"
+      "sha256": "c68ccc017740f491cdd52d5705e3fa56b762f237e220947f180a7207ae9f1ff6"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -1419,23 +1419,28 @@
     },
     {
       "path": "core/harbor_artifacts/src/lib.rs",
-      "bytes": 2825,
-      "sha256": "d79c1bc8a7752a372411c0717bb18e3627fe3f26ab6f1f9671f6941997bc38a7"
+      "bytes": 2896,
+      "sha256": "21b979e59a95405cfb19d05ea420c8498993d4bebbc4bf4293ce2ff87deb5d52"
     },
     {
       "path": "core/harbor_artifacts/src/office_matrix.rs",
-      "bytes": 13835,
-      "sha256": "ea718e3e840ec4bed6c7510a486596d0d5bb3271f2899b0dcdcf662b277b3be7"
+      "bytes": 14170,
+      "sha256": "aa0db92ad2937584667ae4c007c65ff84b23156eb69e656489653bf61e542cf8"
+    },
+    {
+      "path": "core/harbor_artifacts/src/package.rs",
+      "bytes": 9011,
+      "sha256": "4ce2abbebb73103140b93cd333a66cb91c55dc00b62ab53bc4f8521888ab9db3"
     },
     {
       "path": "core/harbor_artifacts/src/pptx.rs",
-      "bytes": 37644,
-      "sha256": "2a771c0ccea567e7ad1c834d74c61769dacdb7d7de15e727b8067632bb4dfe5b"
+      "bytes": 56327,
+      "sha256": "fbf8bbd1b4313dd2f759f78609a3f4ae3b20de050a936f3683caa012e5dac219"
     },
     {
       "path": "core/harbor_artifacts/src/workbook.rs",
-      "bytes": 36565,
-      "sha256": "7ccde3e2a8d8d7353ecb0f645ef49a9249bacca3b622c928c0087cb9a04a9e38"
+      "bytes": 37650,
+      "sha256": "13499ac293ab7d055bc58d7b84c156565325061c2fe62d8f4b70342730d4481f"
     },
     {
       "path": "core/harbor_artifacts/tests/malformed_inputs.rs",
@@ -1564,8 +1569,8 @@
     },
     {
       "path": "core/harbor_core/src/tools/builtin.rs",
-      "bytes": 106022,
-      "sha256": "c19fc03287cbb47ff98b7e6805c9fae76cfc5e603afd431a45cfb5fda1ffc718"
+      "bytes": 106155,
+      "sha256": "9e2ba4ee08e95f76885cb0614d2fef8affc86e6278e9c76557588a2cb7ecc85c"
     },
     {
       "path": "core/harbor_core/src/tools/mod.rs",
@@ -1914,8 +1919,8 @@
     },
     {
       "path": "core/harbor_render/src/pdf.rs",
-      "bytes": 2399,
-      "sha256": "37480762c08a5432a5432ae4612403d857208451bc58689080a5439f25613d02"
+      "bytes": 4415,
+      "sha256": "5f2b0b1238153fb07bc8de409226088777bc90e8842e0a6c67832aeb0037929c"
     },
     {
       "path": "core/harbor_render/src/preview.rs",
@@ -2418,6 +2423,16 @@
       "sha256": "e2a664d52ca5c76dacf0a77ea5de99044d4f602d1f97705f4a6b551ed76b5fe8"
     },
     {
+      "path": "fixtures/office/messy_table.xlsx",
+      "bytes": 2236,
+      "sha256": "b00e3e550c17891a49d9a53ef881dcca69d1f45408556367613ee06a21ccdddd"
+    },
+    {
+      "path": "fixtures/office/quarterly_report.pdf",
+      "bytes": 1886,
+      "sha256": "ab31a67e3250e5049ce33cecc6da726038c2f3102e50fc61c2d896e50e9618ae"
+    },
+    {
       "path": "fixtures/office/report_styles.docx",
       "bytes": 2110,
       "sha256": "f18c2b922bc72e60592c174af5c75541eed48ba3df2188b04ca8f263ddd11138"
@@ -2749,8 +2764,8 @@
     },
     {
       "path": "tools/make_skill_eval_fixtures.py",
-      "bytes": 23406,
-      "sha256": "252cf8ffaf11dffd3ffb477763207f535c571600702bafeb473c3e22d952ca87"
+      "bytes": 30954,
+      "sha256": "fd8264fa77536c57bf929af1035aaa02fc0b0bce4a866dc791fdaebd4997ab7d"
     },
     {
       "path": "tools/pin_engine.py",

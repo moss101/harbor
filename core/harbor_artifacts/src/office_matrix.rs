@@ -178,7 +178,13 @@ fn classify_pptx_part(
     p: &str,
     class_reason: impl Fn(MatrixClass, &'static str) -> Classification,
 ) -> Classification {
+    // presProps/viewProps/tableStyles are presentation-level properties
+    // every PowerPoint-saved deck carries (and Harbor-created decks too);
+    // leaving them unknown put the compatibility banner on every real deck.
     if p == "ppt/presentation.xml"
+        || p == "ppt/presProps.xml"
+        || p == "ppt/viewProps.xml"
+        || p == "ppt/tableStyles.xml"
         || p.starts_with("ppt/slides/")
         || p.starts_with("ppt/notesSlides/")
         || p.starts_with("ppt/slideMasters/")

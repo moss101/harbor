@@ -514,7 +514,9 @@ pub fn read_artifact(
                 .pages
                 .iter()
                 .take(max_items)
-                .map(|pg| json!({"index": pg.index + 1, "text": pg.text}))
+                // `index` is already the 1-based page number; adding one here
+                // shifted every page citation by a page.
+                .map(|pg| json!({"index": pg.index, "text": pg.text}))
                 .collect();
             out["pages"] = Value::Array(pages);
             out["page_count"] = json!(p.page_count);

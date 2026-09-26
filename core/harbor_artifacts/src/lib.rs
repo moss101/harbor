@@ -18,6 +18,7 @@ pub mod commit;
 pub mod diff;
 pub mod docx;
 pub mod office_matrix;
+pub mod package;
 pub mod pptx;
 pub mod workbook;
 
@@ -29,7 +30,10 @@ pub use office_matrix::{
     classify_part, compatibility_report, Classification, CompatibilityReport, MatrixClass,
     OfficeFormat,
 };
-pub use pptx::{ChartKind, ChartSpec, PptxDeck, PptxError, PptxOp, SlideContent, SlideImage};
+pub use package::package_integrity;
+pub use pptx::{
+    ChartKind, ChartSpec, DeckStyle, PptxDeck, PptxError, PptxOp, SlideContent, SlideImage,
+};
 pub use workbook::{PreservationReport, SheetData, WorkbookDoc, WorkbookOp, XlsxChartKind};
 
 /// Probe every entry of an OOXML package once before any upstream reader
