@@ -1,0 +1,11 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "email-drafting/draft#1",
+      "response": {
+        "content": "{\"subject\": \"Re: Delivery date for order 4471\", \"greeting\": \"Hi Amina,\", \"paragraphs\": [\"Thanks for checking. Order 4471 will be delivered on 30 September, before your opening on 3 October.\", \"The driver will call an hour before arrival.\"], \"sign_off\": \"Best regards\"}"
+      }
+    }
+  ]
+}

@@ -1,0 +1,155 @@
+{
+  "schema": "harbor.skill_eval/v1",
+  "skill": "table-cleanup",
+  "cases": [
+    {
+      "id": "clean_all_no_model",
+      "title": "Without an instruction every safe fix is proposed and the rest is listed for review; no model call",
+      "inputs": {
+        "artifact_id": "t"
+      },
+      "artifacts": {
+        "t": {
+          "path": "fixtures/office/messy_table.xlsx"
+        }
+      },
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "approval_requested"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/op_count",
+          "value": 5
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/plan/applied/whitespace",
+          "value": 2
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/plan/applied/number_as_text",
+          "value": 2
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/plan/applied/case_variants",
+          "value": 2
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/inspect/review",
+          "min": 3
+        },
+        {
+          "kind": "state_nonempty",
+          "pointer": "/proposal/proposed_output_hash"
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 3
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "instruction_skip_rep",
+      "title": "An instruction narrows the fix classes and skips a column",
+      "inputs": {
+        "artifact_id": "t",
+        "instruction": "Only fix the stray spaces, and leave the Rep column alone."
+      },
+      "artifacts": {
+        "t": {
+          "path": "fixtures/office/messy_table.xlsx"
+        }
+      },
+      "cassette": "cassettes/instruction_skip_rep.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/op_count",
+          "value": 1
+        },
+        {
+          "kind": "state_missing",
+          "pointer": "/plan/applied/case_variants"
+        },
+        {
+          "kind": "state_missing",
+          "pointer": "/plan/applied/number_as_text"
+        },
+        {
+          "kind": "contains",
+          "pointer": "/plan/skipped_columns",
+          "text": "Rep"
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "clean_workbook",
+      "title": "A workbook with nothing to clean ends without a proposal",
+      "inputs": {
+        "artifact_id": "w"
+      },
+      "artifacts": {
+        "w": {
+          "path": "fixtures/office/formula_errors.xlsx"
+        }
+      },
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "completed"
+        },
+        {
+          "kind": "state_missing",
+          "pointer": "/proposal"
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 1
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    }
+  ]
+}

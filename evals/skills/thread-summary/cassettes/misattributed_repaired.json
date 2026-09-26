@@ -1,0 +1,17 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "thread-summary/summarise#1",
+      "response": {
+        "content": "{\"summary\": \"The Medline contract expires on 31 October and will not auto-renew; quotes will be compared first.\", \"decisions\": [\"Do not auto-renew the Medline contract; compare quotes first.\"], \"requests\": [{\"what\": \"Send the usage figures\", \"who\": \"Omar\", \"due\": \"10 October\"}, {\"what\": \"Get two competing quotes\", \"who\": \"Laura\", \"due\": \"17 October\"}], \"open_questions\": [\"Should the new term be one year or two years?\"]}"
+      }
+    },
+    {
+      "trace_key": "thread-summary/summarise#2",
+      "response": {
+        "content": "{\"summary\": \"The Medline contract expires on 31 October and will not auto-renew; quotes will be compared first.\", \"decisions\": [\"Do not auto-renew the Medline contract; compare quotes first.\"], \"requests\": [{\"what\": \"Send the usage figures\", \"who\": \"Omar\", \"due\": \"10 October\"}, {\"what\": \"Get two competing quotes\", \"who\": \"Sara\", \"due\": \"17 October\"}], \"open_questions\": [\"Should the new term be one year or two years?\"]}"
+      }
+    }
+  ]
+}

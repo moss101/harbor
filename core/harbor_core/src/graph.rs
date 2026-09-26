@@ -71,6 +71,13 @@ pub struct ContextItem {
     pub from: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub max_chars: Option<usize>,
+    /// Leave the section out entirely while the value is missing, null or
+    /// empty. This is what makes a repair loop readable to a small model:
+    /// the first attempt sees no "Problems with your previous draft:
+    /// (none)" section, and the retry sees the verifier's problems and
+    /// its own draft (decision 0008).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub optional: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -305,6 +312,35 @@ impl Node {
     }
 }
 
+/// Static upper bound on what one run consumes ([`Graph::worst_case`]).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WorstCase {
+    pub steps: u64,
+    pub tool_calls: u64,
+    /// Model calls including structured-output retries.
+    pub model_calls: u64,
+}
+
+impl WorstCase {
+    fn plus(self, o: WorstCase) -> WorstCase {
+        WorstCase {
+            steps: self.steps + o.steps,
+            tool_calls: self.tool_calls + o.tool_calls,
+            model_calls: self.model_calls + o.model_calls,
+        }
+    }
+
+    /// Per-resource maximum: each budget is checked against the worst path
+    /// for that resource, which need not be the same path.
+    fn max(self, o: WorstCase) -> WorstCase {
+        WorstCase {
+            steps: self.steps.max(o.steps),
+            tool_calls: self.tool_calls.max(o.tool_calls),
+            model_calls: self.model_calls.max(o.model_calls),
+        }
+    }
+}
+
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum GraphError {
     #[error("invalid graph: {0}")]
@@ -447,6 +483,24 @@ impl Graph {
         // Acyclic over forward edges (bounded edges excluded); a forward
         // edge that closes a cycle is the authoring error the bound fixes.
         self.check_acyclic()?;
+        // The declared budgets must cover the worst run the graph allows,
+        // including every bounded repair loop taken to its limit and every
+        // map at max_items. Otherwise a run that follows the graph exactly
+        // as written can still fail on "budget exceeded" — a failure that
+        // is the author's, not the model's.
+        let worst = self.worst_case()?;
+        if worst.steps > self.budgets.max_steps as u64 {
+            return Err(self.err(format!(
+                "a worst-case run takes {} steps but budgets.max_steps is {}",
+                worst.steps, self.budgets.max_steps
+            )));
+        }
+        if worst.tool_calls > self.budgets.max_tool_calls as u64 {
+            return Err(self.err(format!(
+                "a worst-case run makes {} tool calls but budgets.max_tool_calls is {}",
+                worst.tool_calls, self.budgets.max_tool_calls
+            )));
+        }
         // Every bounded edge must actually be a back-edge: its target must
         // reach the edge's source through forward edges, otherwise the
         // bound is meaningless (and the author probably meant a plain edge).
@@ -623,6 +677,125 @@ impl Graph {
                 Ok(())
             }
         }
+    }
+
+    /// The most a single run of this graph can consume, per resource,
+    /// over every path the control flow allows. Bounded edges are counted
+    /// the way the executor counts them (one counter per `from->to` pair,
+    /// shared by every edge between the same two nodes), maps at
+    /// `max_items`, structured model nodes at `1 + max_retries` calls.
+    /// Exact for the graph as written: the forward graph is acyclic and a
+    /// bounded edge can only be followed until its counter is spent, so
+    /// the search space is finite.
+    pub fn worst_case(&self) -> Result<WorstCase, GraphError> {
+        // Counter slots, one per distinct bounded (from, to) pair.
+        let mut slots: BTreeMap<(String, String), u32> = BTreeMap::new();
+        for n in &self.nodes {
+            for e in n.edges() {
+                if let Edge::Bounded {
+                    to, max_iterations, ..
+                } = e
+                {
+                    let slot = slots.entry((n.id().to_string(), to.clone())).or_insert(0);
+                    *slot = (*slot).max(*max_iterations);
+                }
+            }
+        }
+        let keys: Vec<(String, String)> = slots.keys().cloned().collect();
+        let limits: Vec<u32> = slots.values().copied().collect();
+        let states: u64 = limits.iter().map(|m| *m as u64 + 1).product();
+        if states.saturating_mul(self.nodes.len() as u64) > 1_000_000 {
+            return Err(
+                self.err("too many bounded edges to bound the run statically; simplify the loops")
+            );
+        }
+        let mut memo: BTreeMap<(String, Vec<u32>), WorstCase> = BTreeMap::new();
+        let counts = vec![0u32; keys.len()];
+        self.worst_from(&self.entry, &counts, &keys, &limits, &mut memo, 0)
+    }
+
+    fn node_cost(&self, n: &Node) -> WorstCase {
+        match n {
+            Node::ToolCall { .. } => WorstCase {
+                steps: 1,
+                tool_calls: 1,
+                model_calls: 0,
+            },
+            Node::ModelStructured { max_retries, .. } => WorstCase {
+                steps: 1,
+                tool_calls: 0,
+                model_calls: 1 + max_retries.unwrap_or(1) as u64,
+            },
+            Node::ModelText { .. } => WorstCase {
+                steps: 1,
+                tool_calls: 0,
+                model_calls: 1,
+            },
+            Node::Map {
+                body, max_items, ..
+            } => {
+                let body_cost = self
+                    .node(body)
+                    .map(|b| self.node_cost(b))
+                    .unwrap_or_default();
+                let k = *max_items as u64;
+                WorstCase {
+                    steps: 1 + k * body_cost.steps,
+                    tool_calls: k * body_cost.tool_calls,
+                    model_calls: k * body_cost.model_calls,
+                }
+            }
+            _ => WorstCase {
+                steps: 1,
+                tool_calls: 0,
+                model_calls: 0,
+            },
+        }
+    }
+
+    fn worst_from(
+        &self,
+        id: &str,
+        counts: &[u32],
+        keys: &[(String, String)],
+        limits: &[u32],
+        memo: &mut BTreeMap<(String, Vec<u32>), WorstCase>,
+        depth: usize,
+    ) -> Result<WorstCase, GraphError> {
+        if depth > 10_000 {
+            return Err(self.err("control flow too deep to bound statically"));
+        }
+        let key = (id.to_string(), counts.to_vec());
+        if let Some(w) = memo.get(&key) {
+            return Ok(*w);
+        }
+        let node = self
+            .node(id)
+            .ok_or_else(|| self.err(format!("unknown node {id}")))?;
+        let mut best = WorstCase::default();
+        for e in node.edges() {
+            let (next, next_counts) = match e {
+                Edge::To(t) => (t.as_str(), counts.to_vec()),
+                Edge::Bounded { to, exhausted, .. } => {
+                    let slot = keys
+                        .iter()
+                        .position(|(f, t)| f == id && t == to)
+                        .ok_or_else(|| self.err("bounded edge slot missing"))?;
+                    if counts[slot] < limits[slot] {
+                        let mut c = counts.to_vec();
+                        c[slot] += 1;
+                        (to.as_str(), c)
+                    } else {
+                        (exhausted.as_str(), counts.to_vec())
+                    }
+                }
+            };
+            let w = self.worst_from(next, &next_counts, keys, limits, memo, depth + 1)?;
+            best = best.max(w);
+        }
+        let total = self.node_cost(node).plus(best);
+        memo.insert(key, total);
+        Ok(total)
     }
 
     fn forward_adjacency(&self) -> BTreeMap<&str, Vec<&str>> {
@@ -903,6 +1076,60 @@ mod tests {
         ))
         .unwrap_err();
         assert!(err.to_string().contains("not a back-edge"), "{err}");
+    }
+
+    #[test]
+    fn worst_case_counts_repair_loops_maps_and_retries_and_budgets_must_cover_it() {
+        // draft → check → gate: ok → done; else back to draft once, then
+        // give up. Three branch cases share the one draft counter.
+        let g = |max_steps: u32, max_tools: u32| {
+            json!({
+                "schema": "harbor.graph/v1",
+                "id": "t",
+                "version": 1,
+                "inputs": {"type": "object"},
+                "entry": "draft",
+                "budgets": {"max_steps": max_steps, "max_tool_calls": max_tools},
+                "nodes": [
+                    {"id": "draft", "kind": "model.structured", "instructions": "x", "output_schema": {"type": "object"}, "out": "/d", "max_retries": 2, "next": "check"},
+                    {"id": "check", "kind": "tool.call", "tool": "t.check", "args": {}, "out": "/c", "next": "gate"},
+                    {"id": "gate", "kind": "branch", "cases": [
+                        {"when": {"from": "/c/ok", "op": "truthy"}, "next": "each"},
+                        {"when": {"from": "/c/a", "op": "truthy"}, "next": {"to": "draft", "max_iterations": 1, "exhausted": "give_up"}},
+                        {"when": {"from": "/c/b", "op": "truthy"}, "next": {"to": "draft", "max_iterations": 1, "exhausted": "give_up"}}
+                    ], "default": {"to": "draft", "max_iterations": 1, "exhausted": "give_up"}},
+                    {"id": "each", "kind": "map", "over": "/d/items", "item": "/cur", "body": "one", "collect": "/all", "max_items": 3, "next": "done"},
+                    {"id": "one", "kind": "tool.call", "tool": "t.one", "args": {}, "out": "/o"},
+                    {"id": "give_up", "kind": "end", "outcome": "needs_input"},
+                    {"id": "done", "kind": "end", "outcome": "completed"}
+                ]
+            })
+        };
+        // Worst path: draft, check, gate, draft, check, gate (6), then
+        // each (1 + 3 items) and done = 11 steps; tool calls: check ×2 +
+        // 3 map items = 5; model calls: 2 drafts × (1 + 2 retries) = 6.
+        let graph = Graph::from_value(&g(11, 5)).unwrap();
+        assert_eq!(
+            graph.worst_case().unwrap(),
+            WorstCase {
+                steps: 11,
+                tool_calls: 5,
+                model_calls: 6
+            }
+        );
+        let err = Graph::from_value(&g(10, 5)).unwrap_err();
+        assert!(err.to_string().contains("takes 11 steps"), "{err}");
+        let err = Graph::from_value(&g(11, 4)).unwrap_err();
+        assert!(err.to_string().contains("makes 5 tool calls"), "{err}");
+    }
+
+    #[test]
+    fn every_builtin_graph_fits_its_declared_budgets() {
+        for g in crate::skills::builtin_graphs() {
+            g.validate().unwrap_or_else(|e| panic!("{}: {e}", g.id));
+            let w = g.worst_case().unwrap();
+            assert!(w.steps <= g.budgets.max_steps as u64, "{}", g.id);
+        }
     }
 
     #[test]

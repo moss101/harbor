@@ -1,0 +1,227 @@
+{
+  "schema": "harbor.graph/v1",
+  "id": "presentation-builder",
+  "version": 1,
+  "description": "Turn notes into a new slide deck. The model writes the outline — one message per slide, short bullets, speaker notes; deck.verify_outline checks the slide count, one distinct title per slide, bullet counts and lengths, template text and that every number comes from the notes, and a failed check goes back to the model once with the problems listed. deck.build lays out the cover and content slides and proposes the file as a creation batch over the empty base; nothing is saved until the user approves. Improving an existing deck is Deck Review & QA.",
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "notes": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 20000,
+        "description": "The material for the deck: notes, figures, points to make."
+      },
+      "audience": {
+        "type": "string",
+        "maxLength": 200
+      },
+      "slides": {
+        "type": "integer",
+        "minimum": 2,
+        "maximum": 10,
+        "description": "Optional exact number of content slides (the cover is added)."
+      }
+    },
+    "required": [
+      "notes"
+    ],
+    "additionalProperties": false
+  },
+  "entry": "draft",
+  "budgets": {
+    "max_steps": 12,
+    "max_tool_calls": 4,
+    "max_context_tokens": 26000
+  },
+  "nodes": [
+    {
+      "id": "draft",
+      "kind": "model.structured",
+      "description": "Outline only; the layout is not the model's.",
+      "instructions": "Turn the notes into a slide outline for the audience given. One message per slide: a short title that states the point (under 10 words), then two to four short bullets taken from the notes (under 20 words each), and speaker notes with the detail a presenter needs, or null. Every number, name and date must come from the notes; do not add facts, figures or sources the notes do not contain. Do not write a title slide or an agenda: Harbor adds the cover from the deck title and subtitle. When a slide count is given write exactly that many slides, otherwise two to eight. The deck title names the topic; the subtitle may name the audience or the date if the notes give them, otherwise null.",
+      "context": [
+        {
+          "label": "Audience",
+          "from": "/input/audience",
+          "optional": true
+        },
+        {
+          "label": "Number of slides to write",
+          "from": "/input/slides",
+          "optional": true
+        },
+        {
+          "label": "Notes",
+          "from": "/input/notes",
+          "max_chars": 12000
+        },
+        {
+          "label": "Your previous answer was rejected. Write a new answer that fixes every one of these problems",
+          "from": "/check/problems",
+          "max_chars": 4000,
+          "optional": true
+        }
+      ],
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "subtitle": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          },
+          "slides": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 8,
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "bullets": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 4,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 140
+                  }
+                },
+                "notes": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 300
+                }
+              },
+              "required": [
+                "title",
+                "bullets",
+                "notes"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "title",
+          "subtitle",
+          "slides"
+        ],
+        "additionalProperties": false
+      },
+      "out": "/outline",
+      "max_tokens": 1800,
+      "max_retries": 1,
+      "next": "check"
+    },
+    {
+      "id": "check",
+      "kind": "tool.call",
+      "tool": "deck.verify_outline",
+      "args": {
+        "outline": {
+          "$state": "/outline"
+        },
+        "source": {
+          "$state": "/input/notes"
+        },
+        "slides": {
+          "$state": "/input/slides"
+        },
+        "min_slides": 2,
+        "max_slides": 8,
+        "max_bullets": 4,
+        "max_bullet_words": 22
+      },
+      "out": "/check",
+      "next": "gate"
+    },
+    {
+      "id": "gate",
+      "kind": "branch",
+      "description": "A failed check goes back to the model once with its problems; a second failure stops.",
+      "cases": [
+        {
+          "when": {
+            "from": "/check/ok",
+            "op": "truthy"
+          },
+          "next": "build"
+        }
+      ],
+      "default": {
+        "to": "draft",
+        "max_iterations": 1,
+        "exhausted": "unfixable"
+      }
+    },
+    {
+      "id": "build",
+      "kind": "tool.call",
+      "tool": "deck.build",
+      "args": {
+        "outline": {
+          "$state": "/outline"
+        }
+      },
+      "out": "/proposal",
+      "next": "approve"
+    },
+    {
+      "id": "approve",
+      "kind": "approval",
+      "description": "A new file is still a protected artifact commit: nothing is written until the user approves and chooses where to save it.",
+      "effect_class": "artifact.commit",
+      "batch": "/proposal/batch",
+      "next_approved": "done",
+      "next_rejected": "rejected"
+    },
+    {
+      "id": "done",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/proposal/file_name",
+        "/proposal/preview",
+        "/proposal/checks",
+        "/approvals/approve",
+        "/check/warnings",
+        "/check/normalized"
+      ]
+    },
+    {
+      "id": "rejected",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/proposal/file_name",
+        "/proposal/preview",
+        "/approvals/approve"
+      ]
+    },
+    {
+      "id": "unfixable",
+      "kind": "end",
+      "outcome": "needs_input",
+      "outputs": [
+        "/outline",
+        "/check/problems"
+      ]
+    }
+  ]
+}

@@ -103,6 +103,15 @@ pub enum Assertion {
     StepsLe {
         max: u64,
     },
+    /// How many times `node` executed (repair loops: a draft node that ran
+    /// twice was sent back once by its verifier).
+    NodeRuns {
+        node: String,
+        #[serde(default)]
+        min: Option<usize>,
+        #[serde(default)]
+        max: Option<usize>,
+    },
     ToolCallsLe {
         max: u64,
     },
@@ -702,6 +711,13 @@ fn check(
             report.steps <= *max,
             format!("{} steps (max {max})", report.steps),
         ),
+        Assertion::NodeRuns { node, min, max } => {
+            let n = report.trail.iter().filter(|t| t.node_id == *node).count();
+            (
+                min.map(|m| n >= m).unwrap_or(true) && max.map(|m| n <= m).unwrap_or(true),
+                format!("node {node} ran {n} time(s)"),
+            )
+        }
         Assertion::ToolCallsLe { max } => (
             report.tool_calls <= *max,
             format!("{} tool calls (max {max})", report.tool_calls),

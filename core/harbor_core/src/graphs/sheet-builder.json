@@ -1,0 +1,273 @@
+{
+  "schema": "harbor.graph/v1",
+  "id": "sheet-builder",
+  "version": 1,
+  "description": "Build a new workbook from a description. The model only designs the table — title, typed columns, the rows the description lists, which columns to total and which column is computed from two others; workbook.verify_spec checks the shape and that every number comes from the description, and a failed check goes back to the model once with the problems listed. workbook.build then writes every formula itself (totals, computed columns), recalculates through the pinned engine and proposes the file as a creation batch over the empty base; nothing is saved until the user approves.",
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "description": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 12000,
+        "description": "What the spreadsheet is for and the items and figures it should hold."
+      },
+      "title": {
+        "type": "string",
+        "maxLength": 80
+      }
+    },
+    "required": [
+      "description"
+    ],
+    "additionalProperties": false
+  },
+  "entry": "draft",
+  "budgets": {
+    "max_steps": 12,
+    "max_tool_calls": 4,
+    "max_context_tokens": 24000
+  },
+  "nodes": [
+    {
+      "id": "draft",
+      "kind": "model.structured",
+      "description": "Design the table; never write a formula.",
+      "instructions": "Design one spreadsheet table from the user's description. Give it a short title and a sheet name, the columns (a header and a type: text, number, integer, currency, percent or date) and the rows. Copy every item and every figure from the description; when the description gives no figure for a cell, use null — never invent amounts, dates or names. When the description lists no items, return no rows so the user can fill them in. In total_columns name the numeric columns that should get a total row. Use computed only for a column the description implies from two other columns, such as Remaining = Budget minus Spent (op subtract, left Budget, right Spent). Do not write formulas: Harbor writes them. currency_symbol is the symbol the description uses, such as $ or SAR, or null.",
+      "context": [
+        {
+          "label": "Description",
+          "from": "/input/description",
+          "max_chars": 8000
+        },
+        {
+          "label": "Title the user asked for",
+          "from": "/input/title",
+          "optional": true
+        },
+        {
+          "label": "Your previous answer was rejected. Write a new answer that fixes every one of these problems",
+          "from": "/check/problems",
+          "max_chars": 4000,
+          "optional": true
+        }
+      ],
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "sheet": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 31
+          },
+          "columns": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "items": {
+              "type": "object",
+              "properties": {
+                "header": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 40
+                },
+                "type": {
+                  "enum": [
+                    "text",
+                    "number",
+                    "integer",
+                    "currency",
+                    "percent",
+                    "date"
+                  ]
+                }
+              },
+              "required": [
+                "header",
+                "type"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "rows": {
+            "type": "array",
+            "maxItems": 25,
+            "items": {
+              "type": "array",
+              "maxItems": 8,
+              "items": {
+                "type": [
+                  "string",
+                  "number",
+                  "null"
+                ],
+                "maxLength": 80
+              }
+            }
+          },
+          "total_columns": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "type": "string",
+              "maxLength": 40
+            }
+          },
+          "computed": {
+            "type": "array",
+            "maxItems": 3,
+            "items": {
+              "type": "object",
+              "properties": {
+                "header": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 40
+                },
+                "op": {
+                  "enum": [
+                    "add",
+                    "subtract",
+                    "multiply",
+                    "divide"
+                  ]
+                },
+                "left": {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                "right": {
+                  "type": "string",
+                  "maxLength": 40
+                }
+              },
+              "required": [
+                "header",
+                "op",
+                "left",
+                "right"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "currency_symbol": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4
+          }
+        },
+        "required": [
+          "title",
+          "sheet",
+          "columns",
+          "rows",
+          "total_columns",
+          "computed",
+          "currency_symbol"
+        ],
+        "additionalProperties": false
+      },
+      "out": "/spec",
+      "max_tokens": 1500,
+      "max_retries": 1,
+      "next": "check"
+    },
+    {
+      "id": "check",
+      "kind": "tool.call",
+      "description": "Shape and grounding: every number must come from the description.",
+      "tool": "workbook.verify_spec",
+      "args": {
+        "spec": {
+          "$state": "/spec"
+        },
+        "source": {
+          "$state": "/input/description"
+        }
+      },
+      "out": "/check",
+      "next": "gate"
+    },
+    {
+      "id": "gate",
+      "kind": "branch",
+      "description": "A failed check goes back to the model once with its problems; a second failure stops.",
+      "cases": [
+        {
+          "when": {
+            "from": "/check/ok",
+            "op": "truthy"
+          },
+          "next": "build"
+        }
+      ],
+      "default": {
+        "to": "draft",
+        "max_iterations": 1,
+        "exhausted": "unfixable"
+      }
+    },
+    {
+      "id": "build",
+      "kind": "tool.call",
+      "description": "Formulas, layout and bytes are decided here, then recalculated and checked.",
+      "tool": "workbook.build",
+      "args": {
+        "spec": {
+          "$state": "/spec"
+        }
+      },
+      "out": "/proposal",
+      "next": "approve"
+    },
+    {
+      "id": "approve",
+      "kind": "approval",
+      "description": "A new file is still a protected artifact commit: nothing is written until the user approves and chooses where to save it.",
+      "effect_class": "artifact.commit",
+      "batch": "/proposal/batch",
+      "next_approved": "done",
+      "next_rejected": "rejected"
+    },
+    {
+      "id": "done",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/proposal/file_name",
+        "/proposal/preview",
+        "/proposal/checks",
+        "/check/normalized",
+        "/check/suggested_labels",
+        "/approvals/approve"
+      ]
+    },
+    {
+      "id": "rejected",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/proposal/file_name",
+        "/proposal/preview",
+        "/approvals/approve"
+      ]
+    },
+    {
+      "id": "unfixable",
+      "kind": "end",
+      "outcome": "needs_input",
+      "outputs": [
+        "/spec",
+        "/check/problems"
+      ]
+    }
+  ]
+}

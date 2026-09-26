@@ -1,0 +1,132 @@
+{
+  "schema": "harbor.skill_eval/v1",
+  "skill": "thread-summary",
+  "cases": [
+    {
+      "id": "vendor_thread",
+      "title": "Requests keep who and when only as the thread states them",
+      "inputs": {
+        "thread": "From: Laura Grant\nTo: Omar Haddad\nSubject: Vendor contract renewal\n\nOmar, the Medline contract expires on 31 October. Can you send me the usage figures by 10 October so we can negotiate?\n\nFrom: Omar Haddad\nTo: Laura Grant\n\nWill do. We used 1,240 units this year. I'll also ask Sara to get two competing quotes.\n\nFrom: Sara Ali\nTo: Omar Haddad, Laura Grant\n\nI can get the quotes by 17 October. Do we want a one-year or a two-year term?\n\nFrom: Laura Grant\n\nDecision: we will not auto-renew; we'll compare quotes first. The term question is still open."
+      },
+      "cassette": "cassettes/vendor_thread.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "completed"
+        },
+        {
+          "kind": "values_appear_in",
+          "pointer": "/check/results/*/item/who",
+          "source": "/input/thread"
+        },
+        {
+          "kind": "values_appear_in",
+          "pointer": "/check/results/*/item/due",
+          "source": "/input/thread"
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/summary/decisions",
+          "min": 1
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 4
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "misattributed_repaired",
+      "title": "Guard: a request credited to the wrong person goes back once and is corrected",
+      "inputs": {
+        "thread": "From: Laura Grant\nTo: Omar Haddad\nSubject: Vendor contract renewal\n\nOmar, the Medline contract expires on 31 October. Can you send me the usage figures by 10 October so we can negotiate?\n\nFrom: Omar Haddad\nTo: Laura Grant\n\nWill do. We used 1,240 units this year. I'll also ask Sara to get two competing quotes.\n\nFrom: Sara Ali\nTo: Omar Haddad, Laura Grant\n\nI can get the quotes by 17 October. Do we want a one-year or a two-year term?\n\nFrom: Laura Grant\n\nDecision: we will not auto-renew; we'll compare quotes first. The term question is still open."
+      },
+      "cassette": "cassettes/misattributed_repaired.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "node_runs",
+          "node": "summarise",
+          "min": 2,
+          "max": 2
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/ok",
+          "value": true
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/results/1/item/who",
+          "value": "Sara"
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "misattributed_twice",
+      "title": "Guard: a second misattribution completes with that owner nulled, never guessed",
+      "inputs": {
+        "thread": "From: Laura Grant\nTo: Omar Haddad\nSubject: Vendor contract renewal\n\nOmar, the Medline contract expires on 31 October. Can you send me the usage figures by 10 October so we can negotiate?\n\nFrom: Omar Haddad\nTo: Laura Grant\n\nWill do. We used 1,240 units this year. I'll also ask Sara to get two competing quotes.\n\nFrom: Sara Ali\nTo: Omar Haddad, Laura Grant\n\nI can get the quotes by 17 October. Do we want a one-year or a two-year term?\n\nFrom: Laura Grant\n\nDecision: we will not auto-renew; we'll compare quotes first. The term question is still open."
+      },
+      "cassette": "cassettes/misattributed_twice.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "outcome",
+          "equals": "completed"
+        },
+        {
+          "kind": "node_runs",
+          "node": "summarise",
+          "min": 2,
+          "max": 2
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/results/1/item/who",
+          "value": null
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/results/1/dropped/0/reason",
+          "value": "not_attributed"
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    }
+  ]
+}

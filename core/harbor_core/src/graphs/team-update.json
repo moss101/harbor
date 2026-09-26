@@ -1,8 +1,8 @@
 {
   "schema": "harbor.graph/v1",
   "id": "team-update",
-  "version": 1,
-  "description": "Weekly 3P update (Progress, Plans, Problems) from notes the user supplies. The model drafts the three sections in plain sentences; text.verify_numbers then checks every figure in the draft against the notes, and a draft that carries a number the notes never mention ends in needs_input with the invented figures listed instead of an update. Chat and mail are not read: the only material is the notes input.",
+  "version": 2,
+  "description": "Weekly 3P update (Progress, Plans, Problems) from notes the user supplies. The model drafts the three sections in plain sentences; text.verify_numbers then checks every figure in the draft against the notes. A draft carrying a number the notes never mention goes back to the model once, with the invented figures listed; if the second draft still carries one, the run ends in needs_input with the invented figures listed instead of an update. Chat and mail are not read: the only material is the notes input.",
   "inputs": {
     "type": "object",
     "properties": {
@@ -33,8 +33,8 @@
   },
   "entry": "compose",
   "budgets": {
-    "max_steps": 8,
-    "max_tool_calls": 3,
+    "max_steps": 12,
+    "max_tool_calls": 6,
     "max_context_tokens": 20000
   },
   "nodes": [
@@ -56,6 +56,24 @@
           "label": "Notes",
           "from": "/input/notes",
           "max_chars": 40000
+        },
+        {
+          "label": "Figures in your previous draft that are not in the notes (Progress)",
+          "from": "/g_progress/problems",
+          "max_chars": 1500,
+          "optional": true
+        },
+        {
+          "label": "Figures in your previous draft that are not in the notes (Plans)",
+          "from": "/g_plans/problems",
+          "max_chars": 1500,
+          "optional": true
+        },
+        {
+          "label": "Figures in your previous draft that are not in the notes (Problems)",
+          "from": "/g_problems/problems",
+          "max_chars": 1500,
+          "optional": true
         }
       ],
       "output_schema": {
@@ -158,28 +176,40 @@
     {
       "id": "grounded",
       "kind": "branch",
-      "description": "Any invented figure blocks delivery.",
+      "description": "An invented figure sends the draft back once; a second one blocks delivery.",
       "cases": [
         {
           "when": {
             "from": "/g_progress/grounded",
             "op": "falsy"
           },
-          "next": "ungrounded"
+          "next": {
+            "to": "compose",
+            "max_iterations": 1,
+            "exhausted": "ungrounded"
+          }
         },
         {
           "when": {
             "from": "/g_plans/grounded",
             "op": "falsy"
           },
-          "next": "ungrounded"
+          "next": {
+            "to": "compose",
+            "max_iterations": 1,
+            "exhausted": "ungrounded"
+          }
         },
         {
           "when": {
             "from": "/g_problems/grounded",
             "op": "falsy"
           },
-          "next": "ungrounded"
+          "next": {
+            "to": "compose",
+            "max_iterations": 1,
+            "exhausted": "ungrounded"
+          }
         }
       ],
       "default": "done"

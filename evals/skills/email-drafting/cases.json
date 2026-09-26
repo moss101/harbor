@@ -1,0 +1,133 @@
+{
+  "schema": "harbor.skill_eval/v1",
+  "skill": "email-drafting",
+  "cases": [
+    {
+      "id": "reply",
+      "title": "A reply grounded in the message and the notes, laid out with the sender's name; nothing is sent",
+      "inputs": {
+        "notes": "Confirm delivery on 30 September, before their opening. The driver will call an hour before arrival.",
+        "message": "From: Amina Khan <amina@example.com>\nSubject: Delivery date for order 4471\n\nHi Omar,\nCan you confirm the delivery date for order 4471? Our clinic opens on 3 October and we need the equipment before then.\nThanks,\nAmina",
+        "tone": "friendly",
+        "sender_name": "Omar Haddad"
+      },
+      "cassette": "cassettes/reply.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "completed"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/ok",
+          "value": true
+        },
+        {
+          "kind": "contains",
+          "pointer": "/rendered/text",
+          "text": "Subject: "
+        },
+        {
+          "kind": "contains",
+          "pointer": "/rendered/text",
+          "text": "Omar Haddad"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/rendered/sent",
+          "value": false
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 4
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "attachment_claim_repaired",
+      "title": "Guard: a draft that mentions an attachment goes back once; the final text has none",
+      "inputs": {
+        "notes": "Confirm delivery on 30 September, before their opening. The driver will call an hour before arrival.",
+        "message": "From: Amina Khan <amina@example.com>\nSubject: Delivery date for order 4471\n\nHi Omar,\nCan you confirm the delivery date for order 4471? Our clinic opens on 3 October and we need the equipment before then.\nThanks,\nAmina",
+        "sender_name": "Omar Haddad"
+      },
+      "cassette": "cassettes/attachment_claim_repaired.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "outcome",
+          "equals": "completed"
+        },
+        {
+          "kind": "node_runs",
+          "node": "draft",
+          "min": 2,
+          "max": 2
+        },
+        {
+          "kind": "not_contains",
+          "pointer": "/rendered/text",
+          "text": "attached"
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "fresh",
+      "title": "A new email from notes alone",
+      "inputs": {
+        "notes": "Remind the team that the office is closed on 2 October for maintenance. Laptops should be taken home on 1 October.",
+        "sender_name": "Sara"
+      },
+      "cassette": "cassettes/fresh.json",
+      "assertions": [
+        {
+          "kind": "outcome",
+          "equals": "completed"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/ok",
+          "value": true
+        },
+        {
+          "kind": "contains",
+          "pointer": "/rendered/text",
+          "text": "Sara"
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    }
+  ]
+}

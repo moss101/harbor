@@ -6,6 +6,12 @@
       "response": {
         "content": "{\"header\": \"Mobile team — 8–12 Sep 2026\", \"progress\": [\"Shipped offline search with 3 PRs merged; crash-free sessions rose to 99.7%.\"], \"plans\": [\"Finish the Arabic layout audit and cut release 1.1.0-rc1.\"], \"problems\": [\"TestFlight review has been pending since Tuesday.\"]}"
       }
+    },
+    {
+      "trace_key": "team-update/compose#2",
+      "response": {
+        "content": "{\"header\": \"Mobile team — 8–12 Sep 2026\", \"progress\": [\"Shipped offline search with 3 PRs merged; crash-free sessions rose to 99.7%.\"], \"plans\": [\"Finish the Arabic layout audit and cut release 1.1.0-rc1.\"], \"problems\": [\"TestFlight review has been pending since Tuesday.\"]}"
+      }
     }
   ]
 }

@@ -45,10 +45,21 @@ pub fn all() -> Vec<Arc<dyn Tool>> {
         Arc::new(super::create::WorkbookBuild::new()),
         Arc::new(super::create::DeckBuild::new()),
         Arc::new(super::create::DocxBuild::new()),
+        Arc::new(super::authoring::WorkbookVerifySpec::new()),
+        Arc::new(super::authoring::DeckVerifyOutline::new()),
+        Arc::new(super::authoring::DocumentVerifyDraft::new()),
+        Arc::new(super::authoring::EmailVerifyDraft::new()),
+        Arc::new(super::authoring::EmailRender::new()),
+        Arc::new(super::authoring::TextVerifyItems::new()),
+        Arc::new(super::authoring::TextVerifyCitations::new()),
+        Arc::new(super::authoring::DocumentUnits::new()),
+        Arc::new(super::authoring::DocumentSentences::new()),
+        Arc::new(super::table::TableInspect::new()),
+        Arc::new(super::table::TableBuildCleanup::new()),
     ]
 }
 
-fn s(v: &Value, key: &str) -> Option<String> {
+pub(crate) fn s(v: &Value, key: &str) -> Option<String> {
     v.get(key).and_then(Value::as_str).map(str::to_string)
 }
 
@@ -1808,6 +1819,7 @@ impl Tool for FormulaBuildOperations {
         let mut operations = Vec::new();
         let mut review = Vec::new();
         let mut rejected = Vec::new();
+        let mut addressed: BTreeSet<String> = BTreeSet::new();
         for d in args["decisions"].as_array().cloned().unwrap_or_default() {
             let sheet = s(&d, "sheet").unwrap_or_default();
             let address = s(&d, "address").unwrap_or_default().to_ascii_uppercase();
@@ -1816,6 +1828,7 @@ impl Tool for FormulaBuildOperations {
                 rejected.push(json!({"address": key, "reason": "the audit reported no finding for this cell"}));
                 continue;
             };
+            addressed.insert(key.clone());
             match s(&d, "action").as_deref() {
                 Some("review") => review.push(json!({
                     "sheet": sheet, "address": address, "target_id": target_id,
@@ -1865,7 +1878,50 @@ impl Tool for FormulaBuildOperations {
                 _ => rejected.push(json!({"address": key, "reason": "unknown action"})),
             }
         }
-        Ok(json!({"operations": operations, "review": review, "rejected": rejected}))
+        // What a repair round needs to hear, in words a model can act on:
+        // every rejection with what to do instead, and every reported cell
+        // that got no decision at all (decision 0008).
+        let unaddressed: Vec<String> = findings
+            .keys()
+            .filter(|k| !addressed.contains(*k))
+            .cloned()
+            .collect();
+        let mut problems: Vec<String> = rejected
+            .iter()
+            .map(|r| {
+                let address = r["address"].as_str().unwrap_or_default();
+                let reason = r["reason"].as_str().unwrap_or_default();
+                let original = findings
+                    .get(address)
+                    .and_then(|f| f.2.clone())
+                    .map(|f| format!("={}", f.trim_start_matches('=')))
+                    .unwrap_or_default();
+                if reason.contains("unchanged") {
+                    format!("{address}: your fix repeats the current formula {original}, which is not a fix. Give a corrected formula that differs from it, or use review with the options a person could choose.")
+                } else if reason.contains("no finding") {
+                    format!("{address} was not reported by the audit; decide only on reported cells.")
+                } else if reason.contains("without a formula") {
+                    format!("{address}: a fix needs the corrected formula starting with '='; otherwise use review.")
+                } else if reason.starts_with("refused") {
+                    format!("{address}: that formula was {reason}; use review instead.")
+                } else {
+                    format!("{address}: {reason}.")
+                }
+            })
+            .collect();
+        for k in &unaddressed {
+            problems.push(format!(
+                "{k} was reported by the audit but has no decision; decide fix or review for it."
+            ));
+        }
+        Ok(json!({
+            "operations": operations,
+            "review": review,
+            "rejected": rejected,
+            "unaddressed": unaddressed,
+            "problems": problems,
+            "ok": problems.is_empty(),
+        }))
     }
 }
 

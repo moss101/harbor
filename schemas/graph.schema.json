@@ -85,7 +85,7 @@
       "maxLength": 512
     },
     "jsonSchemaObject": {
-      "description": "A JSON Schema document (subset enforced at runtime: type, properties, required, additionalProperties, items, enum, const, minimum, maximum, minLength, maxLength, minItems, maxItems, pattern). For model.structured output schemas, string patterns must be fully anchored (^\u2026$) and may not be combined with minLength/maxLength \u2014 the grammar converter of the pinned runtime rejects those.",
+      "description": "A JSON Schema document (subset enforced at runtime: type, properties, required, additionalProperties, items, enum, const, minimum, maximum, minLength, maxLength, minItems, maxItems, pattern). For model.structured output schemas, string patterns must be fully anchored (^…$) and may not be combined with minLength/maxLength — the grammar converter of the pinned runtime rejects those.",
       "type": "object"
     },
     "stateRef": {
@@ -145,6 +145,10 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 1000000
+        },
+        "optional": {
+          "type": "boolean",
+          "description": "Omit the section while the value is missing, null or empty (repair-loop feedback)."
         }
       },
       "required": [

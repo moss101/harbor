@@ -1,0 +1,11 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "report-to-slides/draft#1",
+      "response": {
+        "content": "{\"title\": \"Northwind Clinics Q3 2026\", \"slides\": [{\"title\": \"More visits, shorter waits\", \"bullets\": [{\"text\": \"Patient visits grew 14% to 48,200\", \"source\": 1}, {\"text\": \"Average wait fell from 31 to 22 minutes\", \"source\": 2}]}, {\"title\": \"Dubai Marina is fully staffed\", \"bullets\": [{\"text\": \"The Dubai Marina clinic reached full staffing in August\", \"source\": 3}]}, {\"title\": \"Revenue beat plan\", \"bullets\": [{\"text\": \"Operating revenue was AED 6.4m, 9% above plan\", \"source\": 4}, {\"text\": \"Staff costs rose to AED 3.1m\", \"source\": 5}]}, {\"title\": \"Equipment spending held flat\", \"bullets\": [{\"text\": \"Equipment spending held at AED 0.4m\", \"source\": 6}]}, {\"title\": \"Risks and the board's decision\", \"bullets\": [{\"text\": \"Nurse turnover of 11% is the main staffing risk\", \"source\": 8}, {\"text\": \"The board is asked to approve a fourth triage desk\", \"source\": 9}]}]}"
+      }
+    }
+  ]
+}

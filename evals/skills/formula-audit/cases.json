@@ -62,7 +62,7 @@
         },
         {
           "kind": "steps_le",
-          "max": 6
+          "max": 9
         },
         {
           "kind": "replay_verified"
@@ -136,13 +136,13 @@
         },
         {
           "kind": "tool_calls_le",
-          "max": 2
+          "max": 3
         }
       ]
     },
     {
       "id": "hallucinated_fixes",
-      "title": "A model that re-emits the same formula or names an unreported cell proposes nothing: rejections are deterministic and the run completes without a batch",
+      "title": "A model that re-emits the same formula or names an unreported cell is sent back once; when it repeats that, nothing is proposed and the rejections stand",
       "inputs": {
         "artifact_id": "wb"
       },
@@ -193,10 +193,68 @@
         },
         {
           "kind": "no_cassette_misses"
+        },
+        {
+          "kind": "node_runs",
+          "node": "triage",
+          "min": 2,
+          "max": 2
         }
       ],
       "tiers": [
         "replay"
+      ]
+    },
+    {
+      "id": "unchanged_fixes_repaired",
+      "title": "Guard: 'fixes' that repeat the current formulas (the pinned model's live behaviour) go back once with each rejection explained; the corrected triage proposes the one real fix",
+      "inputs": {
+        "artifact_id": "wb"
+      },
+      "artifacts": {
+        "wb": {
+          "path": "fixtures/office/formula_errors.xlsx"
+        }
+      },
+      "cassette": "cassettes/unchanged_fixes_repaired.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "node_runs",
+          "node": "triage",
+          "min": 2,
+          "max": 2
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/plan/ok",
+          "value": true
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/op_count",
+          "value": 1
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/plan/review",
+          "min": 3
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
       ]
     }
   ]

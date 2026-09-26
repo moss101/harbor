@@ -1,8 +1,8 @@
 {
   "schema": "harbor.graph/v1",
   "id": "meeting-notes",
-  "version": 2,
-  "description": "Model proposes, tools verify: the structured model node drafts the minutes; every owner and due date is then checked verbatim against the transcript by a deterministic tool (unverifiable values become null and are reported), and the language is detected by script rather than trusted from the model.",
+  "version": 3,
+  "description": "Model proposes, tools verify: the structured model node drafts the minutes; text.verify_items then checks every owner and due date verbatim against the transcript AND that each owner is named next to the action it owns (same line, or the line before a reply). A draft with an unverifiable owner or date goes back to the model once with the problems listed; whatever still cannot be verified is nulled and reported, never guessed. The language is detected by script rather than trusted from the model.",
   "inputs": {
     "type": "object",
     "properties": {
@@ -23,8 +23,8 @@
   },
   "entry": "minutes",
   "budgets": {
-    "max_steps": 110,
-    "max_tool_calls": 105,
+    "max_steps": 10,
+    "max_tool_calls": 5,
     "max_context_tokens": 40000
   },
   "nodes": [
@@ -41,6 +41,18 @@
           "label": "Transcript",
           "from": "/input/transcript",
           "max_chars": 60000
+        },
+        {
+          "label": "Your previous answer was rejected. Write a new answer that fixes every one of these problems",
+          "from": "/check/problems",
+          "max_chars": 3000,
+          "optional": true
+        },
+        {
+          "label": "Your previous minutes — keep everything that is right and change only what the problems above name",
+          "from": "/minutes",
+          "max_chars": 6000,
+          "optional": true
         }
       ],
       "output_schema": {
@@ -124,32 +136,44 @@
     },
     {
       "id": "verify",
-      "kind": "map",
-      "description": "Owners and dates must occur verbatim in the transcript.",
-      "over": "/minutes/actions",
-      "item": "/cur",
-      "body": "verify_one",
-      "collect": "/verified_actions",
-      "max_items": 100,
-      "next": "lang"
-    },
-    {
-      "id": "verify_one",
       "kind": "tool.call",
-      "tool": "text.verify_fields",
+      "description": "Owners and dates must occur verbatim in the transcript, next to the action they belong to.",
+      "tool": "text.verify_items",
       "args": {
         "source": {
           "$state": "/input/transcript"
         },
-        "item": {
-          "$state": "/cur"
+        "items": {
+          "$state": "/minutes/actions"
         },
         "fields": [
           "owner",
           "due"
-        ]
+        ],
+        "anchor_field": "text",
+        "label": "action"
       },
-      "out": "/one"
+      "out": "/check",
+      "next": "gate"
+    },
+    {
+      "id": "gate",
+      "kind": "branch",
+      "description": "An unverifiable owner or date sends the minutes back once; after that it stays nulled.",
+      "cases": [
+        {
+          "when": {
+            "from": "/check/ok",
+            "op": "truthy"
+          },
+          "next": "lang"
+        }
+      ],
+      "default": {
+        "to": "minutes",
+        "max_iterations": 1,
+        "exhausted": "lang"
+      }
     },
     {
       "id": "lang",
@@ -169,7 +193,7 @@
       "outcome": "completed",
       "outputs": [
         "/minutes",
-        "/verified_actions",
+        "/check/results",
         "/language"
       ]
     }

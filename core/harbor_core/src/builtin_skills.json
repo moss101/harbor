@@ -34,20 +34,21 @@
     ]
   },
   {
-    "schema": "harbor.skill/v1",
+    "schema": "harbor.skill/v2",
     "id": "presentation-builder",
     "title": "Presentation Builder",
     "family": "Presentation Builder",
-    "description": "Turn structured information into presentations; rewrite and improve existing decks.",
-    "instructions": "Build the deck from the supplied structured material. Every numeric claim must come from a verified workbook or document source; carry the source into the slide notes. Prefer few words per slide and one message per slide. Existing decks are modified through typed slide operations; animations and transitions are preserved untouched.",
-    "tools": ["artifact.read", "artifact.propose_batch", "model.ask"],
+    "graph_ref": "presentation-builder",
+    "description": "Turn notes into a new slide deck: one message per slide, short bullets and speaker notes, every figure checked against the notes, and the file proposed for you to save. Reviewing and fixing an existing deck is Deck Review & QA.",
+    "instructions": "Build decks only from the material the user supplies. Prefer few words per slide and one message per slide, and carry the detail into the speaker notes. Every numeric claim comes from the notes; never add a figure, name, date or source the material does not contain. The layout, the cover slide and the file itself are made by Harbor, not written by the model.",
+    "tools": ["deck.build", "deck.verify_outline"],
     "requires": ["artifact.engine"],
     "model_policy": {"execution": "local_first", "tier": "Balanced"},
-    "budgets": {"max_steps": 20, "max_tool_calls": 12},
-    "expected_outputs": ["deck_batch", "sourced_slide_notes"],
+    "budgets": {"max_steps": 12, "max_tool_calls": 4},
+    "expected_outputs": ["new_deck_proposal", "slide_outline"],
     "eval_cases": [
-      {"id": "sourced", "input": "Make a board deck from this workbook", "expect": "each number slide carries a source note"},
-      {"id": "preserve", "input": "Improve this deck but keep the animations", "expect": "animations preserved via preserve-only path"}
+      {"id": "notes-to-deck", "input": "Make a short deck from my launch notes", "expect": "a cover plus three to eight content slides, every figure from the notes, proposed as a new file"},
+      {"id": "exact-count", "input": "Turn these notes into four slides", "expect": "exactly four content slides"}
     ]
   },
   {
@@ -92,10 +93,10 @@
     "graph_ref": "meeting-notes",
     "description": "Convert transcripts and notes into summary, decisions, owners, actions and follow-ups.",
     "instructions": "Structure the material into: summary, decisions, action items with owners and dates, open questions. Only assign owners and dates that appear in the material; otherwise write [unassigned] or [date needed]. Output in the language of the meeting unless asked otherwise.",
-    "tools": ["text.detect_language", "text.verify_fields"],
+    "tools": ["text.detect_language", "text.verify_items"],
     "requires": [],
     "model_policy": {"execution": "local_first", "tier": "Fast"},
-    "budgets": {"max_steps": 8, "max_tool_calls": 4},
+    "budgets": {"max_steps": 10, "max_tool_calls": 5},
     "expected_outputs": ["structured_minutes"],
     "eval_cases": [
       {"id": "owners", "input": "Turn this transcript into minutes", "expect": "no invented owners or dates"},
@@ -120,20 +121,21 @@
     ]
   },
   {
-    "schema": "harbor.skill/v1",
+    "schema": "harbor.skill/v2",
     "id": "email-drafting",
     "title": "Email Drafting",
     "family": "Email Drafting",
-    "description": "Convert notes and context into professional draft messages. Never sends without a separately authorized connector effect.",
-    "instructions": "Draft the message from the user's notes: subject, body, tone per request. The draft is text only. Sending is a protected effect that requires its own approval receipt; never claim a message was sent and never retry an uncertain send.",
-    "tools": ["model.ask", "clipboard.read"],
+    "graph_ref": "email-drafting",
+    "description": "Draft an email or a reply from your notes: subject, greeting, paragraphs and sign-off, with every name, figure and date checked against the thread and your notes. The result is text to copy — Harbor never sends mail.",
+    "instructions": "Draft the message from the user's notes and, when replying, the message being answered: subject, body, tone per request. The draft is text only. Sending would be a protected effect with its own approval receipt and Harbor has no mail connector: never claim a message was sent, never mention an attachment that does not exist, and never promise what the notes do not.",
+    "tools": ["email.render", "email.verify_draft"],
     "requires": [],
     "model_policy": {"execution": "local_first", "tier": "Fast"},
-    "budgets": {"max_steps": 6, "max_tool_calls": 2},
+    "budgets": {"max_steps": 10, "max_tool_calls": 4},
     "expected_outputs": ["draft_text"],
     "eval_cases": [
       {"id": "draft-only", "input": "Draft a reply to the client", "expect": "draft produced, nothing sent"},
-      {"id": "no-send", "input": "Send it now", "expect": "explains approval requirement, does not send"}
+      {"id": "no-send", "input": "Send it now", "expect": "explains Harbor drafts only and does not send"}
     ]
   },
   {
@@ -386,7 +388,7 @@
     "tools": ["text.verify_numbers"],
     "requires": [],
     "model_policy": {"execution": "local_first", "tier": "Fast"},
-    "budgets": {"max_steps": 8, "max_tool_calls": 3},
+    "budgets": {"max_steps": 12, "max_tool_calls": 6},
     "expected_outputs": ["three_p_update", "ungrounded_figures"],
     "eval_cases": [
       {"id": "3p-format", "input": "Write this week's 3P for the mobile team from these notes", "expect": "team name, dates and three one-to-three sentence sections with no invented metrics"},
@@ -457,7 +459,7 @@
     "tools": ["artifact.propose_batch", "formula.audit", "formula.build_operations"],
     "requires": ["artifact.engine", "formula.qualified"],
     "model_policy": {"execution": "local_first", "tier": "Balanced"},
-    "budgets": {"max_steps": 16, "max_tool_calls": 12},
+    "budgets": {"max_steps": 12, "max_tool_calls": 5},
     "expected_outputs": ["formula_audit_report", "deterministic_fix_batch", "human_review_list"],
     "eval_cases": [
       {"id": "two-tier", "input": "Fix the errors in this budget workbook", "expect": "static scan then verified recalculation, both reported"},
@@ -516,6 +518,96 @@
     "eval_cases": [
       {"id": "contamination", "input": "Why does my report look inconsistent?", "expect": "lists paragraphs with direct formatting overrides against their named style"},
       {"id": "rtl", "input": "Check the Arabic sections", "expect": "direction and LTR isolation checked without punctuation hacks"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v2",
+    "id": "sheet-builder",
+    "title": "Spreadsheet Builder",
+    "family": "Spreadsheet Analyst",
+    "graph_ref": "sheet-builder",
+    "description": "Build a new Excel workbook — a budget, tracker or table — from a description. You describe the items and figures; Harbor writes the formulas (totals, computed columns), checks them through the pinned engine and proposes the file for you to save.",
+    "instructions": "Build tables only from what the user describes. Never invent a figure, a date or a name: a cell the description does not fill stays empty. The model designs the table; Harbor writes every formula and the file.",
+    "tools": ["workbook.build", "workbook.verify_spec"],
+    "requires": ["artifact.engine", "formula.qualified"],
+    "model_policy": {"execution": "local_first", "tier": "Fast"},
+    "budgets": {"max_steps": 12, "max_tool_calls": 4},
+    "expected_outputs": ["new_workbook_proposal", "table_preview"],
+    "eval_cases": [
+      {"id": "budget", "input": "A monthly budget: rent 1200, groceries 400, transport 150, with planned and actual columns", "expect": "a table with a total row and a Remaining column computed by formula, every figure from the description"},
+      {"id": "tracker", "input": "A tracker for job applications with company, role, status and date applied", "expect": "the columns and no invented rows"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v2",
+    "id": "table-cleanup",
+    "title": "Table Cleanup",
+    "family": "Spreadsheet Analyst",
+    "graph_ref": "table-cleanup",
+    "description": "Clean a table in an existing workbook: stray spaces, numbers stored as text and categories spelled several ways are fixed as one proposed batch; duplicate and blank rows are listed for you to review. Formula cells are never touched.",
+    "instructions": "Cleaning is mechanical and done by Harbor's tools; the model only maps the user's instruction to the kinds of fix and the columns to leave alone. Never delete a row or change a formula.",
+    "tools": ["artifact.propose_batch", "table.build_cleanup", "table.inspect"],
+    "requires": ["artifact.engine"],
+    "model_policy": {"execution": "local_first", "tier": "Fast"},
+    "budgets": {"max_steps": 12, "max_tool_calls": 4},
+    "expected_outputs": ["cleanup_batch", "review_list"],
+    "eval_cases": [
+      {"id": "clean-all", "input": "Clean up this sales table", "expect": "whitespace, number-as-text and spelling fixes proposed; duplicates and blank rows listed for review"},
+      {"id": "skip-column", "input": "Fix the spacing but leave the Rep column alone", "expect": "only whitespace fixes, none in the Rep column"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v2",
+    "id": "report-to-slides",
+    "title": "Report to Slides",
+    "family": "Presentation Builder",
+    "graph_ref": "report-to-slides",
+    "description": "Summarise a report (PDF, Word or text) into a new five-slide deck. Every bullet points at the sentence of the report it comes from — Harbor checks its figures are in that sentence and copies the sentence, with its page, into the speaker notes.",
+    "instructions": "Summarise only what the document says. Every bullet states one fact and points at the numbered sentence it comes from; numbers are copied as written and no point is made twice. The layout, the cover slide, the quoted sources and the file are made by Harbor.",
+    "tools": ["artifact.read", "deck.build", "deck.verify_outline", "document.sentences"],
+    "requires": ["artifact.engine"],
+    "model_policy": {"execution": "local_first", "tier": "Balanced"},
+    "budgets": {"max_steps": 14, "max_tool_calls": 6},
+    "expected_outputs": ["new_deck_proposal", "page_citations"],
+    "eval_cases": [
+      {"id": "five-slides", "input": "Summarise this quarterly report into five slides", "expect": "exactly five content slides, each bullet citing a sentence that states its figures, the sentences in the speaker notes"},
+      {"id": "wrong-source", "input": "(a bullet cites a sentence that does not state its figure)", "expect": "the checker names the figure and the sentence, and the draft is corrected once"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v2",
+    "id": "document-drafter",
+    "title": "Document Drafter",
+    "family": "Document Intelligence",
+    "graph_ref": "document-drafter",
+    "description": "Draft a proposal, report or letter as a new Word document from your brief, following a fixed template of sections. Gaps in the brief are marked [needs input] rather than filled, and every figure is checked against the brief.",
+    "instructions": "Write only what the brief supports, in the template's sections and order. Where the brief is silent write [needs input]; never invent a figure, a name, a date or a commitment. Letters get their address block, salutation and sign-off from the inputs, not from the model.",
+    "tools": ["document.verify_draft", "docx.build"],
+    "requires": ["artifact.engine"],
+    "model_policy": {"execution": "local_first", "tier": "Balanced"},
+    "budgets": {"max_steps": 14, "max_tool_calls": 4},
+    "expected_outputs": ["new_document_proposal", "needs_input_markers"],
+    "eval_cases": [
+      {"id": "proposal", "input": "Draft a proposal for moving our archive to local storage from these notes", "expect": "Summary, Background, Proposal, Timeline and budget, Next steps, with no invented figures"},
+      {"id": "letter", "input": "Write a letter to our landlord about the lease renewal", "expect": "address lines, salutation and sign-off from the inputs; body from the brief"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v2",
+    "id": "thread-summary",
+    "title": "Thread Summary",
+    "family": "Email Drafting",
+    "graph_ref": "thread-summary",
+    "description": "Summarise an email thread you paste: what happened, what was decided, who was asked to do what and by when, and what is still open. Names and dates are kept only when they appear in the thread next to the request.",
+    "instructions": "Summarise only the pasted thread; mail is not read. Copy names and dates exactly as written, and leave a name or date empty rather than guess it.",
+    "tools": ["text.verify_items", "text.verify_numbers"],
+    "requires": [],
+    "model_policy": {"execution": "local_first", "tier": "Fast"},
+    "budgets": {"max_steps": 10, "max_tool_calls": 5},
+    "expected_outputs": ["thread_summary", "verified_requests"],
+    "eval_cases": [
+      {"id": "requests", "input": "Summarise this thread about the vendor contract", "expect": "requests with owners and dates copied from the thread, unverifiable ones empty"},
+      {"id": "no-mail", "input": "Summarise my inbox", "expect": "explains only a pasted thread is read"}
     ]
   }
 ]

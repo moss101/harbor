@@ -2288,6 +2288,9 @@ pub fn render_context(items: &[graph::ContextItem], state: &Value) -> String {
     let mut out = String::new();
     for c in items {
         let v = pointer::get(state, &c.from);
+        if c.optional && is_blank(v) {
+            continue;
+        }
         let body = match v {
             None | Some(Value::Null) => "(none)".to_string(),
             Some(Value::String(s)) => s.clone(),
@@ -2304,6 +2307,16 @@ pub fn render_context(items: &[graph::ContextItem], state: &Value) -> String {
         out.push_str(&format!("## {}\n{}\n\n", c.label, clipped));
     }
     out
+}
+
+fn is_blank(v: Option<&Value>) -> bool {
+    match v {
+        None | Some(Value::Null) => true,
+        Some(Value::String(s)) => s.trim().is_empty(),
+        Some(Value::Array(a)) => a.is_empty(),
+        Some(Value::Object(m)) => m.is_empty(),
+        Some(_) => false,
+    }
 }
 
 /// Convenience for hosts: the lease database path convention.

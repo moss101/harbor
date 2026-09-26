@@ -1,0 +1,11 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "document-drafter/draft#1",
+      "response": {
+        "content": "{\"title\": \"Moving the archive to local storage\", \"sections\": [{\"heading\": \"Summary\", \"paragraphs\": [\"We propose moving the Harbor archive from the cloud bucket to local storage at the Dubai office, for a one-off hardware cost of $42,000.\"]}, {\"heading\": \"Background\", \"paragraphs\": [\"The archive currently costs $1,900 a month in cloud storage fees.\"]}, {\"heading\": \"Proposal\", \"paragraphs\": [\"Two engineers will move the archive to local storage. Before the old bucket is deleted, a restore test will confirm the local copy is complete.\"]}, {\"heading\": \"Timeline and budget\", \"paragraphs\": [\"The move starts on 2 November 2026 and finishes by 12 December 2026. It needs 2 engineers for 6 weeks and $42,000 of hardware.\"]}, {\"heading\": \"Next steps\", \"paragraphs\": [\"Please approve the budget by 15 October.\"]}]}"
+      }
+    }
+  ]
+}

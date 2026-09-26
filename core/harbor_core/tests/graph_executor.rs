@@ -369,24 +369,52 @@ fn approval_node_parks_the_run_and_decide_continues_it() {
 #[test]
 fn budgets_bounded_cycles_and_map_are_enforced() {
     let rig = Rig::new();
-    // Steps budget: a 3-node chain under max_steps=2 fails before node 3.
-    let tight = graph(
-        "tight",
-        "a",
-        (2, 5),
-        json!([
+    // Steps budget: a 3-node chain under max_steps=2 used to start and fail
+    // before node 3. Its worst case is known before it runs, so it is now
+    // refused at validation (decision 0008) — no run, no partial effects.
+    let err = Graph::from_value(&json!({
+        "schema": "harbor.graph/v1",
+        "id": "tight",
+        "version": 1,
+        "inputs": {"type": "object"},
+        "entry": "a",
+        "budgets": {"max_steps": 2, "max_tool_calls": 5},
+        "nodes": [
             {"id": "a", "kind": "tool.call", "tool": "artifact.read", "args": {"artifact_id": "doc"}, "out": "/a", "next": "b"},
             {"id": "b", "kind": "tool.call", "tool": "artifact.read", "args": {"artifact_id": "doc"}, "out": "/b", "next": "c"},
             {"id": "c", "kind": "end", "outcome": "completed"}
-        ]),
-    );
+        ]
+    }))
+    .unwrap_err();
+    assert!(err.to_string().contains("takes 3 steps"), "{err}");
+    // What static analysis cannot bound — context tokens — is enforced at
+    // run time, below the model, and the failure replays.
+    let wordy = Graph::from_value(&json!({
+        "schema": "harbor.graph/v1",
+        "id": "wordy",
+        "version": 1,
+        "inputs": {"type": "object"},
+        "entry": "a",
+        "budgets": {"max_steps": 4, "max_tool_calls": 1, "max_context_tokens": 100},
+        "nodes": [
+            {"id": "a", "kind": "model.text", "instructions": "Write.", "out": "/a", "next": "b"},
+            {"id": "b", "kind": "end", "outcome": "completed"}
+        ]
+    }))
+    .unwrap();
+    let cassette: Cassette = serde_json::from_value(json!({
+        "schema": "harbor.cassette/v1",
+        "entries": [{"trace_key": "wordy/a#1", "response": {"content": "far too long", "prompt_tokens": 80, "completion_tokens": 50}}]
+    }))
+    .unwrap();
+    let provider = RecordReplayProvider::replay(cassette);
     let r = rig
-        .executor(None)
-        .start(rig.request(tight, json!({})))
+        .executor(Some(&provider))
+        .start(rig.request(wordy, json!({})))
         .unwrap();
     assert_eq!(r.state, "FAILED");
     assert!(
-        matches!(&r.status, RunStatus::Failed { error } if error.contains("budget exceeded: steps")),
+        matches!(&r.status, RunStatus::Failed { error } if error.contains("budget exceeded: context_tokens")),
         "{:?}",
         r.status
     );

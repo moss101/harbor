@@ -1,0 +1,213 @@
+{
+  "schema": "harbor.graph/v1",
+  "id": "thread-summary",
+  "version": 1,
+  "description": "Summarise an email thread the user pastes: a short summary, the decisions, the requests with who was asked and by when, and the open questions. text.verify_items keeps a name or date only when it occurs verbatim in the thread and is stated next to the request it is attached to, text.verify_numbers checks the summary's figures, and a failed check goes back to the model once with the problems listed; whatever still cannot be verified is nulled, never guessed. Mail is not read: the only material is the pasted thread.",
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "thread": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 40000,
+        "description": "The email thread, pasted."
+      }
+    },
+    "required": [
+      "thread"
+    ],
+    "additionalProperties": false
+  },
+  "entry": "summarise",
+  "budgets": {
+    "max_steps": 10,
+    "max_tool_calls": 5,
+    "max_context_tokens": 30000
+  },
+  "nodes": [
+    {
+      "id": "summarise",
+      "kind": "model.structured",
+      "instructions": "Summarise the email thread for someone who has not read it: a summary of at most three sentences, the decisions it records, the requests (what was asked, who was asked as named in the thread, and the due date exactly as written, or null when the thread names nobody or no date), and the questions still open. Copy names and dates from the thread character for character. Do not add anything the thread does not say.",
+      "context": [
+        {
+          "label": "Thread",
+          "from": "/input/thread",
+          "max_chars": 24000
+        },
+        {
+          "label": "Your previous answer was rejected. Write a new answer that fixes every one of these problems",
+          "from": "/check/problems",
+          "max_chars": 4000,
+          "optional": true
+        },
+        {
+          "label": "Figures in your previous summary that are not in the thread",
+          "from": "/numbers/problems",
+          "max_chars": 2000,
+          "optional": true
+        },
+        {
+          "label": "Your previous summary — keep everything that is right and change only what the problems above name",
+          "from": "/summary",
+          "max_chars": 6000,
+          "optional": true
+        }
+      ],
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 600
+          },
+          "decisions": {
+            "type": "array",
+            "maxItems": 6,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          },
+          "requests": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "type": "object",
+              "properties": {
+                "what": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "who": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 80
+                },
+                "due": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 60
+                }
+              },
+              "required": [
+                "what",
+                "who",
+                "due"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "open_questions": {
+            "type": "array",
+            "maxItems": 6,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          }
+        },
+        "required": [
+          "summary",
+          "decisions",
+          "requests",
+          "open_questions"
+        ],
+        "additionalProperties": false
+      },
+      "out": "/summary",
+      "max_tokens": 900,
+      "max_retries": 1,
+      "next": "check"
+    },
+    {
+      "id": "check",
+      "kind": "tool.call",
+      "description": "Names and dates verbatim, and next to the request they belong to.",
+      "tool": "text.verify_items",
+      "args": {
+        "source": {
+          "$state": "/input/thread"
+        },
+        "items": {
+          "$state": "/summary/requests"
+        },
+        "fields": [
+          "who",
+          "due"
+        ],
+        "anchor_field": "what",
+        "label": "request"
+      },
+      "out": "/check",
+      "next": "numbers"
+    },
+    {
+      "id": "numbers",
+      "kind": "tool.call",
+      "tool": "text.verify_numbers",
+      "args": {
+        "source": {
+          "$state": "/input/thread"
+        },
+        "texts": [
+          {
+            "$state": "/summary/summary"
+          }
+        ]
+      },
+      "out": "/numbers",
+      "next": "gate"
+    },
+    {
+      "id": "gate",
+      "kind": "branch",
+      "description": "Either check failing sends the summary back once; after that, unverifiable fields stay nulled.",
+      "cases": [
+        {
+          "when": {
+            "from": "/check/ok",
+            "op": "falsy"
+          },
+          "next": {
+            "to": "summarise",
+            "max_iterations": 1,
+            "exhausted": "done"
+          }
+        },
+        {
+          "when": {
+            "from": "/numbers/grounded",
+            "op": "falsy"
+          },
+          "next": {
+            "to": "summarise",
+            "max_iterations": 1,
+            "exhausted": "done"
+          }
+        }
+      ],
+      "default": "done"
+    },
+    {
+      "id": "done",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/summary/summary",
+        "/summary/decisions",
+        "/check/results",
+        "/summary/open_questions",
+        "/numbers/missing"
+      ]
+    }
+  ]
+}

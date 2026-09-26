@@ -30,19 +30,19 @@
         },
         {
           "kind": "values_appear_in",
-          "pointer": "/verified_actions/*/item/owner",
+          "pointer": "/check/results/*/item/owner",
           "source": "/input/transcript",
           "allow_null": true
         },
         {
           "kind": "values_appear_in",
-          "pointer": "/verified_actions/*/item/due",
+          "pointer": "/check/results/*/item/due",
           "source": "/input/transcript",
           "allow_null": true
         },
         {
           "kind": "state_equals",
-          "pointer": "/verified_actions/1/item/owner",
+          "pointer": "/check/results/1/item/owner",
           "value": null
         },
         {
@@ -62,11 +62,11 @@
         },
         {
           "kind": "tool_calls_le",
-          "max": 101
+          "max": 4
         },
         {
           "kind": "steps_le",
-          "max": 105
+          "max": 10
         },
         {
           "kind": "replay_verified"
@@ -76,7 +76,7 @@
         },
         {
           "kind": "state_empty",
-          "pointer": "/verified_actions/0/dropped"
+          "pointer": "/check/results/0/dropped"
         }
       ]
     },
@@ -94,7 +94,7 @@
         },
         {
           "kind": "values_appear_in",
-          "pointer": "/verified_actions/*/item/owner",
+          "pointer": "/check/results/*/item/owner",
           "source": "/input/transcript",
           "allow_null": true
         },
@@ -107,6 +107,134 @@
           "kind": "state_equals",
           "pointer": "/language/code",
           "value": "ar"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "owner_misattributed_repaired",
+      "title": "Guard: a normalised date and an owner credited with a task the transcript leaves unowned go back once; the corrected minutes verify",
+      "inputs": {
+        "transcript": "Sara: Let's decide on the archive migration. I propose we move it to local storage this quarter.\nOmar: Agreed. I can write the migration plan by Friday 26 September.\nSara: Decision then: archive moves to local storage. Omar owns the plan.\nLina: One open question: who covers the backup verification? Nobody yet.\nSara: Park it as open. Also, someone should update the runbook — no owner yet."
+      },
+      "cassette": "cassettes/owner_misattributed_repaired.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "completed"
+        },
+        {
+          "kind": "node_runs",
+          "node": "minutes",
+          "min": 2,
+          "max": 2
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/ok",
+          "value": true
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/results/0/item/due",
+          "value": "Friday 26 September"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/results/1/item/owner",
+          "value": null
+        },
+        {
+          "kind": "state_empty",
+          "pointer": "/check/results/0/dropped"
+        },
+        {
+          "kind": "values_appear_in",
+          "pointer": "/check/results/*/item/owner",
+          "source": "/input/transcript",
+          "allow_null": true
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "owner_misattributed_twice",
+      "title": "Guard: when the second draft repeats them, the date and the misattributed owner are nulled and reported, never kept",
+      "inputs": {
+        "transcript": "Sara: Let's decide on the archive migration. I propose we move it to local storage this quarter.\nOmar: Agreed. I can write the migration plan by Friday 26 September.\nSara: Decision then: archive moves to local storage. Omar owns the plan.\nLina: One open question: who covers the backup verification? Nobody yet.\nSara: Park it as open. Also, someone should update the runbook — no owner yet."
+      },
+      "cassette": "cassettes/owner_misattributed_twice.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "completed"
+        },
+        {
+          "kind": "node_runs",
+          "node": "minutes",
+          "min": 2,
+          "max": 2
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/ok",
+          "value": false
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/results/0/item/due",
+          "value": null
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/results/0/item/owner",
+          "value": "Omar"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/results/1/item/owner",
+          "value": null
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/results/1/dropped/0/reason",
+          "value": "not_attributed"
+        },
+        {
+          "kind": "values_appear_in",
+          "pointer": "/check/results/*/item/owner",
+          "source": "/input/transcript",
+          "allow_null": true
+        },
+        {
+          "kind": "tools_within_graph"
         },
         {
           "kind": "replay_verified"

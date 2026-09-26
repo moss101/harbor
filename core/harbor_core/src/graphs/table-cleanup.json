@@ -1,0 +1,248 @@
+{
+  "schema": "harbor.graph/v1",
+  "id": "table-cleanup",
+  "version": 1,
+  "description": "Clean a table in an existing workbook. table.inspect finds, in code, the stray whitespace, the plain numbers stored as text and the categories spelled several ways (with the canonical spelling), and lists duplicate rows, blank rows and symbol-bearing numbers for review. The model runs only when the user wrote an instruction, and then only chooses which classes of fix to apply and which columns to leave alone; table.build_cleanup recomputes each cell from its original text and copies the preconditions, and the edits are proposed as one batch against the file. Formula cells are never touched and no row is deleted.",
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "artifact_id": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      },
+      "instruction": {
+        "type": "string",
+        "maxLength": 600,
+        "description": "Optional: what to clean or leave alone, e.g. 'fix spacing but leave the Rep column'."
+      },
+      "sheet": {
+        "type": "string",
+        "maxLength": 31
+      }
+    },
+    "required": [
+      "artifact_id"
+    ],
+    "additionalProperties": false
+  },
+  "entry": "inspect",
+  "budgets": {
+    "max_steps": 12,
+    "max_tool_calls": 4,
+    "max_context_tokens": 8000
+  },
+  "nodes": [
+    {
+      "id": "inspect",
+      "kind": "tool.call",
+      "tool": "table.inspect",
+      "args": {
+        "artifact_id": {
+          "$state": "/input/artifact_id"
+        },
+        "sheet": {
+          "$state": "/input/sheet"
+        }
+      },
+      "out": "/inspect",
+      "next": "has_fixes"
+    },
+    {
+      "id": "has_fixes",
+      "kind": "branch",
+      "cases": [
+        {
+          "when": {
+            "from": "/inspect/fixes",
+            "op": "nonempty"
+          },
+          "next": "has_instruction"
+        }
+      ],
+      "default": "clean"
+    },
+    {
+      "id": "has_instruction",
+      "kind": "branch",
+      "cases": [
+        {
+          "when": {
+            "from": "/input/instruction",
+            "op": "nonempty"
+          },
+          "next": "choose"
+        }
+      ],
+      "default": "defaults"
+    },
+    {
+      "id": "defaults",
+      "kind": "const",
+      "description": "No instruction: every safe class, no column skipped.",
+      "value": {
+        "fix": [
+          "whitespace",
+          "number_as_text",
+          "case_variants"
+        ],
+        "skip_columns": []
+      },
+      "out": "/choice",
+      "next": "build"
+    },
+    {
+      "id": "choose",
+      "kind": "model.structured",
+      "description": "Map the user's words to fix classes and skipped columns.",
+      "instructions": "The user asked for a table cleanup in their own words. Choose the fix classes to apply and the columns to leave untouched. The classes are whitespace (remove stray spaces), number_as_text (turn plain numbers stored as text into numbers) and case_variants (use one spelling for a category, such as North for north and NORTH). Include every class the instruction does not rule out. Skip a column only when the instruction names it, and copy its header exactly as listed.",
+      "context": [
+        {
+          "label": "Instruction",
+          "from": "/input/instruction"
+        },
+        {
+          "label": "Column headers",
+          "from": "/inspect/headers",
+          "max_chars": 2000
+        },
+        {
+          "label": "What the inspector found",
+          "from": "/inspect/summary",
+          "max_chars": 1000
+        }
+      ],
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "fix": {
+            "type": "array",
+            "maxItems": 3,
+            "items": {
+              "enum": [
+                "whitespace",
+                "number_as_text",
+                "case_variants"
+              ]
+            }
+          },
+          "skip_columns": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "type": "string",
+              "maxLength": 80
+            }
+          }
+        },
+        "required": [
+          "fix",
+          "skip_columns"
+        ],
+        "additionalProperties": false
+      },
+      "out": "/choice",
+      "max_tokens": 200,
+      "max_retries": 1,
+      "next": "build"
+    },
+    {
+      "id": "build",
+      "kind": "tool.call",
+      "tool": "table.build_cleanup",
+      "args": {
+        "inspection": {
+          "$state": "/inspect"
+        },
+        "fix": {
+          "$state": "/choice/fix"
+        },
+        "skip_columns": {
+          "$state": "/choice/skip_columns"
+        }
+      },
+      "out": "/plan",
+      "next": "has_ops"
+    },
+    {
+      "id": "has_ops",
+      "kind": "branch",
+      "cases": [
+        {
+          "when": {
+            "from": "/plan/operations",
+            "op": "nonempty"
+          },
+          "next": "propose"
+        }
+      ],
+      "default": "nothing"
+    },
+    {
+      "id": "propose",
+      "kind": "tool.call",
+      "description": "Preconditions checked against the live cells; nothing is written.",
+      "tool": "artifact.propose_batch",
+      "args": {
+        "artifact_id": {
+          "$state": "/input/artifact_id"
+        },
+        "operations": {
+          "$state": "/plan/operations"
+        }
+      },
+      "out": "/proposal",
+      "next": "approve"
+    },
+    {
+      "id": "approve",
+      "kind": "approval",
+      "effect_class": "artifact.commit",
+      "batch": "/proposal/batch",
+      "next_approved": "done",
+      "next_rejected": "rejected"
+    },
+    {
+      "id": "done",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/inspect/summary",
+        "/plan/applied",
+        "/plan/skipped_columns",
+        "/inspect/review",
+        "/approvals/approve"
+      ]
+    },
+    {
+      "id": "rejected",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/inspect/summary",
+        "/inspect/review",
+        "/approvals/approve"
+      ]
+    },
+    {
+      "id": "nothing",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/inspect/summary",
+        "/plan/skipped_columns",
+        "/inspect/review"
+      ]
+    },
+    {
+      "id": "clean",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/inspect/summary",
+        "/inspect/review",
+        "/inspect/counts"
+      ]
+    }
+  ]
+}

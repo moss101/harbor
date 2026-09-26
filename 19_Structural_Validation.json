@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "4a3ba34d8254b414b93e7c5e872269b743612b62012643d1c19d1d9b67e00bfd",
+  "input_manifest_sha256": "50dd52e3131445ce865a2f3d65ff36bbe6e0ae8406ab585f4da964559d11dc46",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -1461,8 +1461,8 @@
     },
     {
       "path": "core/harbor_core/src/builtin_skills.json",
-      "bytes": 43527,
-      "sha256": "351931d2b78e5ccc91992336653ea3726694495dd2cf470d9032e2f6779cd6c3"
+      "bytes": 50794,
+      "sha256": "b1d16d5a3e0d77a29c1576c72329437b82514daaeccdaa080d3a6a7ae55a2347"
     },
     {
       "path": "core/harbor_core/src/diagnostics.rs",
@@ -1471,13 +1471,13 @@
     },
     {
       "path": "core/harbor_core/src/executor.rs",
-      "bytes": 90862,
-      "sha256": "d2e6d195b622bd1bfb3727ba99ed32ec7460b22cb0247ded55e52c4d5cb5a09d"
+      "bytes": 91215,
+      "sha256": "fb03363dd1164bb0e92e5dcacd4ca68644039fe4c86bb94f976c049243b87473"
     },
     {
       "path": "core/harbor_core/src/graph.rs",
-      "bytes": 34627,
-      "sha256": "0a283fb0a85534c62f798ed71475e8366bb66e094c01e0ed3badf583ba18469d"
+      "bytes": 44531,
+      "sha256": "99948822480eb52aa194c5266f244dd4426f89661cc1454346b1a0f22165f5ee"
     },
     {
       "path": "core/harbor_core/src/graphs/deck-review.json",
@@ -1490,9 +1490,19 @@
       "sha256": "aff069c1c77d3c4b916478206c8b849ca0ce56c7fad5e8989499a675dffe671c"
     },
     {
+      "path": "core/harbor_core/src/graphs/document-drafter.json",
+      "bytes": 8514,
+      "sha256": "4100206693d10abe27762e648540384f4f48f7234c047dd137b694d02ee08b6c"
+    },
+    {
       "path": "core/harbor_core/src/graphs/document-style-review.json",
       "bytes": 6247,
       "sha256": "5a264bf2ca21648c6d34dc72482381ca525055cad8d1205af7c317caa2211360"
+    },
+    {
+      "path": "core/harbor_core/src/graphs/email-drafting.json",
+      "bytes": 5349,
+      "sha256": "fbe779595a6551433d16f7a60087ea9f34a0ffd480edeba460fe16df52888318"
     },
     {
       "path": "core/harbor_core/src/graphs/financial-model-review.json",
@@ -1501,13 +1511,13 @@
     },
     {
       "path": "core/harbor_core/src/graphs/formula-audit.json",
-      "bytes": 6612,
-      "sha256": "7a853ccf23d39964a248691ef68c444d4e21c1613090e2b47f7d2da8a7d98a3d"
+      "bytes": 7592,
+      "sha256": "eca6e84d4ecc60280ea216c057e9a52c53a686624f744389741e6094f2fe1f2b"
     },
     {
       "path": "core/harbor_core/src/graphs/meeting-notes.json",
-      "bytes": 4816,
-      "sha256": "9bcdd5cf8a64cfe82a2df01b04f2df2e5a9f8e0040679700b9f3852703b21298"
+      "bytes": 5814,
+      "sha256": "ad6750df1aaec124abe4f85087d6ddf0f7938164fe4fd9099aa20673383bc021"
     },
     {
       "path": "core/harbor_core/src/graphs/placeholder-fill.json",
@@ -1515,19 +1525,44 @@
       "sha256": "1d69a7dce28085bf2df0a5be43de6ad23d206ceed88242b4d62491f046a9b856"
     },
     {
+      "path": "core/harbor_core/src/graphs/presentation-builder.json",
+      "bytes": 6627,
+      "sha256": "005ce348f4e71d5b49679acc406b9c3fc7ad53456721d0d1006c5c2882a991a0"
+    },
+    {
+      "path": "core/harbor_core/src/graphs/report-to-slides.json",
+      "bytes": 7757,
+      "sha256": "f1189c7b8741cd73b8b92ebc83dd7f75b875719b8a62b1aaf9bea4a506e7a4ef"
+    },
+    {
       "path": "core/harbor_core/src/graphs/second-look.json",
       "bytes": 5713,
       "sha256": "3c656c67f2f8498640e3f2908d968c85e14b2a06860a817f09c0543360f7f589"
     },
     {
+      "path": "core/harbor_core/src/graphs/sheet-builder.json",
+      "bytes": 8019,
+      "sha256": "fbeeba965cacc19c1e2272bccbf86491c26db7e23e98afa39cfdc63582612863"
+    },
+    {
+      "path": "core/harbor_core/src/graphs/table-cleanup.json",
+      "bytes": 6457,
+      "sha256": "0f85d1a5298c3912dcb022b567d7a94abff59345dff81db2f7c82e2ffb0855e8"
+    },
+    {
       "path": "core/harbor_core/src/graphs/team-update.json",
-      "bytes": 5616,
-      "sha256": "fda9fd9801d69d29ff66276548358167f3f9dfab077e8419e05dfaf851b71826"
+      "bytes": 6682,
+      "sha256": "ebb770aae508cda322b30518ef21a3c6d13f9660065c822e057f69dbeda02a98"
+    },
+    {
+      "path": "core/harbor_core/src/graphs/thread-summary.json",
+      "bytes": 5999,
+      "sha256": "f25c324348d4d1687921ec9d820f81a4507114234cac66c72bde2eb31468bb32"
     },
     {
       "path": "core/harbor_core/src/harness.rs",
-      "bytes": 24917,
-      "sha256": "f38a97ae4b5cc12b8f18f20ccef2e6ae6dfc9088d3b902dc025fefc495e33648"
+      "bytes": 25514,
+      "sha256": "4ba41b5e22844cce0e902719cd85985ab2a550c7ee0f3905f040b575075c3491"
     },
     {
       "path": "core/harbor_core/src/jsonschema.rs",
@@ -1546,13 +1581,18 @@
     },
     {
       "path": "core/harbor_core/src/skills.rs",
-      "bytes": 16789,
-      "sha256": "7f2d5552904224f1b95f00aa38032329d226af766b8c7ea83b1cbcd37324c559"
+      "bytes": 17757,
+      "sha256": "edbae69d04b7282f63587da4d686e2ed40df4e86f5785862fc31b4641b1284bc"
+    },
+    {
+      "path": "core/harbor_core/src/tools/authoring.rs",
+      "bytes": 78362,
+      "sha256": "60a53c4235072e0bcac44ad0cab652883519150fe58bd6d9538a43c39de08ffa"
     },
     {
       "path": "core/harbor_core/src/tools/builtin.rs",
-      "bytes": 106778,
-      "sha256": "6a27b8b2de004cb1886f062e63ca96851f2a1b3c176d69d9bcc41718df475829"
+      "bytes": 109634,
+      "sha256": "ca66813a986f7680288cb2833d7572a04dc475a1af48c947a4548ee20840b8a1"
     },
     {
       "path": "core/harbor_core/src/tools/create.rs",
@@ -1561,13 +1601,18 @@
     },
     {
       "path": "core/harbor_core/src/tools/mod.rs",
-      "bytes": 17270,
-      "sha256": "cca85dc6e1cf0c748d02fda26eccb02f2ffdeffc82dc23b0b727ed14898c80d5"
+      "bytes": 17304,
+      "sha256": "aa24e79bb2c796dafdc69cd43f6f50df8329df81ba1732c6dfb0eefad0f106b3"
     },
     {
       "path": "core/harbor_core/src/tools/review.rs",
-      "bytes": 56463,
-      "sha256": "619d407704fbf3bef71d418dfbd6cc130d508402460a735ba008a54deb2fdf38"
+      "bytes": 56969,
+      "sha256": "f70c06aa08ff8214e4fd8b7b61f134a11517874a461d129bffa9fcdc204ad537"
+    },
+    {
+      "path": "core/harbor_core/src/tools/table.rs",
+      "bytes": 27330,
+      "sha256": "20d4b98ac4fda668e666a33d2e1d44f5df4a11fbbf282acf8b687e0cfd1066a9"
     },
     {
       "path": "core/harbor_core/src/workspace.rs",
@@ -1585,6 +1630,11 @@
       "sha256": "6f6213693cc7bc1378837d5a7023ecee894447e56f85bf2c04f111d95967b0e3"
     },
     {
+      "path": "core/harbor_core/tests/created_samples.rs",
+      "bytes": 4505,
+      "sha256": "1ea9a74acb73373072942e847484622146252d60b6d3e5655b07e88602fa0f1f"
+    },
+    {
       "path": "core/harbor_core/tests/executor_resume.rs",
       "bytes": 15851,
       "sha256": "c998c6b3419ebd012821d4dfe1fa593a39cf28064fdf87e1a3c2ca833c5df34a"
@@ -1596,8 +1646,8 @@
     },
     {
       "path": "core/harbor_core/tests/graph_executor.rs",
-      "bytes": 31623,
-      "sha256": "fc651d4200a4935b1ab7be6f773d447aa86a761f6926043f1a9614c645e731ba"
+      "bytes": 32994,
+      "sha256": "69c3b13fe1cf5f2055bf0e14fcef9e4eaafc7308bd4424421b5beca2c2b07ad2"
     },
     {
       "path": "core/harbor_core/tests/skill_evals.rs",
@@ -1636,8 +1686,8 @@
     },
     {
       "path": "core/harbor_ffi/tests/skill_runs.rs",
-      "bytes": 13400,
-      "sha256": "e36f3fb2c949be95bb48d26be7f746147dff58864d819f71b590166e5be6c1b0"
+      "bytes": 15613,
+      "sha256": "4af9073684e9c0d19ea37a0d506795b3aed4c62933232c63e162b59c8898caae"
     },
     {
       "path": "core/harbor_formula/Cargo.toml",
@@ -2260,6 +2310,31 @@
       "sha256": "375cbd2bab66743604f4b7205e15730eb8456c248dd925f45d597ecadf144847"
     },
     {
+      "path": "evals/skills/document-drafter/cases.json",
+      "bytes": 6558,
+      "sha256": "b5313e8b0e6b24d38aa245a84790c6609a5e7a42dbb98af7f654e046d7e33b4b"
+    },
+    {
+      "path": "evals/skills/document-drafter/cassettes/letter.json",
+      "bytes": 639,
+      "sha256": "ade81c9d99a61b54d40a58fa48f67f7d354fc09a54723ad8b37f9e57b6e373a3"
+    },
+    {
+      "path": "evals/skills/document-drafter/cassettes/letter_repeats_itself.json",
+      "bytes": 2260,
+      "sha256": "57345a66a1de9e5bf2edb78d4396d46abca5e2778811732bc7b8e8e774d73d29"
+    },
+    {
+      "path": "evals/skills/document-drafter/cassettes/missing_section_repaired.json",
+      "bytes": 1927,
+      "sha256": "8286263b19daca995359df68e313e994692a70f1b74c54ad41ea9694c173a0fe"
+    },
+    {
+      "path": "evals/skills/document-drafter/cassettes/proposal.json",
+      "bytes": 1023,
+      "sha256": "d6d23ce384f82c85409cebcc7414cef5ec510a39a9ffbd7b7648dba1e2bb1250"
+    },
+    {
       "path": "evals/skills/document-style-review/cases.json",
       "bytes": 4965,
       "sha256": "3415499be1f22b78b954f5fc54a48e0ed61c9b9c2a13ad25732326f517b1cac8"
@@ -2275,14 +2350,34 @@
       "sha256": "6bc2d702196acbe2cdbbee0532eab69d025100c93cd1218a7a7f0503e3190f74"
     },
     {
+      "path": "evals/skills/email-drafting/cases.json",
+      "bytes": 3706,
+      "sha256": "bbbe725c7cea6d5c13315d4da9c6d17cebd4d0b47a4352c89bffafd197fa6ffd"
+    },
+    {
+      "path": "evals/skills/email-drafting/cassettes/attachment_claim_repaired.json",
+      "bytes": 901,
+      "sha256": "b3ebf7d15ecf9dc1128754a5f79edeb805171d371537503aa56aeae1db0b8b30"
+    },
+    {
+      "path": "evals/skills/email-drafting/cassettes/fresh.json",
+      "bytes": 405,
+      "sha256": "3a78ac508bc6f2f3bdea24a6e6929fa2a88d439ec565bac739a4063ca894cc00"
+    },
+    {
+      "path": "evals/skills/email-drafting/cassettes/reply.json",
+      "bytes": 450,
+      "sha256": "fbd82cc7f55aabd1ddad274adadf79e3378cbc72caa6e327b081433b02d840c0"
+    },
+    {
       "path": "evals/skills/financial-model-review/cases.json",
       "bytes": 3343,
       "sha256": "25559efd2ab58dda9cccea89fe61643410d5177cdcaa4d146bdffcb889481884"
     },
     {
       "path": "evals/skills/formula-audit/cases.json",
-      "bytes": 4732,
-      "sha256": "3f40d2d7345ed6073ff58bbb9911861bc00b62a0566c267820478d151995063f"
+      "bytes": 6124,
+      "sha256": "216673a651031bc9a479975b056a60553bfbd83a08aa475be0f615fbfc17c05f"
     },
     {
       "path": "evals/skills/formula-audit/cassettes/dangling_sheet.json",
@@ -2291,8 +2386,8 @@
     },
     {
       "path": "evals/skills/formula-audit/cassettes/hallucinated_fixes.json",
-      "bytes": 715,
-      "sha256": "dd9035342aebaffa42bebd1e14bca6c1e1ca484f0b2e38df0a4b23eb6a3a5b02"
+      "bytes": 1374,
+      "sha256": "2b6177ddf5cb42a7588a12dd39c482b651e9627e8556d512d9d73678f997581d"
     },
     {
       "path": "evals/skills/formula-audit/cassettes/review_only.json",
@@ -2300,9 +2395,24 @@
       "sha256": "0e11397b3230142db8228b7a3e050765017ebecad6e2545bde1ff56387b4dfe1"
     },
     {
+      "path": "evals/skills/formula-audit/cassettes/unchanged_fixes_repaired.json",
+      "bytes": 2442,
+      "sha256": "ca2b8719ec9e9e5d27d2b8e724f6b0751a3614a14241384d972d7627ce4be8ba"
+    },
+    {
       "path": "evals/skills/meeting-notes/cases.json",
-      "bytes": 3757,
-      "sha256": "393b3a007fd45178f939380e8f6b5fb3e62e4997cd93969b15f48b082ff8c065"
+      "bytes": 7737,
+      "sha256": "7a34db5d2364fbee86234a88013df35a4ed3eaaa28bd9a676bbb844db0273f58"
+    },
+    {
+      "path": "evals/skills/meeting-notes/cassettes/owner_misattributed_repaired.json",
+      "bytes": 1292,
+      "sha256": "d756f92f1b872716fd8e6dea90e7abb3a815787d52a41b4fde27dbe32917ca88"
+    },
+    {
+      "path": "evals/skills/meeting-notes/cassettes/owner_misattributed_twice.json",
+      "bytes": 1216,
+      "sha256": "752ef196c761fc10a3310274f2fcc795fb3891b18d88250e17297106bf8740bd"
     },
     {
       "path": "evals/skills/meeting-notes/cassettes/owners_ar.json",
@@ -2320,6 +2430,41 @@
       "sha256": "76be771cb8bed650b37adb52eb86f3d576b451eb85318d9d5209af72cf65fffd"
     },
     {
+      "path": "evals/skills/presentation-builder/cases.json",
+      "bytes": 5442,
+      "sha256": "72dd1e82cfe2925662aa805b93c37cd0008aa8f73e0bff9c6394fa032e55455c"
+    },
+    {
+      "path": "evals/skills/presentation-builder/cassettes/exact_count.json",
+      "bytes": 696,
+      "sha256": "2538c099f51170389f87fe383aa03e225c38b56d7fce4a316561aca10849130b"
+    },
+    {
+      "path": "evals/skills/presentation-builder/cassettes/invented_figure_repaired.json",
+      "bytes": 1683,
+      "sha256": "9804986d630a56e7f725202d7e725f16e62f2bf823e41a260422ed82e4b34d57"
+    },
+    {
+      "path": "evals/skills/presentation-builder/cassettes/launch_notes.json",
+      "bytes": 847,
+      "sha256": "0c4789acc4a87b8d11a2fd52f4e51d6f3796ccd456eb50425304fbf87cc0bb47"
+    },
+    {
+      "path": "evals/skills/report-to-slides/cases.json",
+      "bytes": 3704,
+      "sha256": "cc01dee8611fbca7071e7d99f4045844176ad25afab0569399259157dbc48348"
+    },
+    {
+      "path": "evals/skills/report-to-slides/cassettes/quarterly_report.json",
+      "bytes": 1118,
+      "sha256": "62e027898b0f89bb8852d247282b232645ad6c2859207d9b78ac4f6db6e4b3bc"
+    },
+    {
+      "path": "evals/skills/report-to-slides/cassettes/wrong_source_repaired.json",
+      "bytes": 2180,
+      "sha256": "666513f57a60b36246658855cfaae075e3b6643187427ca907cdf60ec48439d4"
+    },
+    {
       "path": "evals/skills/second-look/cases.json",
       "bytes": 3554,
       "sha256": "d845bdb10cac3b209c9dfe57a83a15b0386f48122478c94efa9cbcfece93c645"
@@ -2335,9 +2480,54 @@
       "sha256": "9f58cbc82525fefa251f8a76593adab4863f7739831a0c552fc459b4dd4584b4"
     },
     {
+      "path": "evals/skills/sheet-builder/cases.json",
+      "bytes": 10088,
+      "sha256": "9c5ed1ad6f23adc35b93c9895ba94c3cbecfb11dbae8b03d1c9deb095e9d2778"
+    },
+    {
+      "path": "evals/skills/sheet-builder/cassettes/budget.json",
+      "bytes": 691,
+      "sha256": "0fdda82c9854d8dc523cb8385436b8b05b924914d0ba192663ae54797a42d1f6"
+    },
+    {
+      "path": "evals/skills/sheet-builder/cassettes/invented_amount_repaired.json",
+      "bytes": 1347,
+      "sha256": "c53e936117eedaddb4faa53962954ccc6707dc15de0e1ebc350167bd74d047bd"
+    },
+    {
+      "path": "evals/skills/sheet-builder/cassettes/invented_amount_twice.json",
+      "bytes": 1368,
+      "sha256": "ce6ac1288ea3b955ccfa103fe7324ddad810c0028fbba2ed738677b6c3563ce7"
+    },
+    {
+      "path": "evals/skills/sheet-builder/cassettes/structural_slips.json",
+      "bytes": 758,
+      "sha256": "c8f712744a2d6c6890bbe1f779f13fab9e1d4ac74be7bc6f2598e7d01e0f7dc8"
+    },
+    {
+      "path": "evals/skills/sheet-builder/cassettes/tracker.json",
+      "bytes": 511,
+      "sha256": "0c98f9ae3b9d2d467b77c72c93463719a6c29323f7a48f5dbe5df587ab80c1e6"
+    },
+    {
+      "path": "evals/skills/sheet-builder/cassettes/tracker_example_rows.json",
+      "bytes": 846,
+      "sha256": "5b8f19e842096c97c81ab66a2777b91bfad2cf53804f53dbc2ac34d08046285f"
+    },
+    {
+      "path": "evals/skills/table-cleanup/cases.json",
+      "bytes": 3565,
+      "sha256": "14b5ac9080f5ac51ec1913e4fce6be72fad7343694ebfdef08e1f0649b31ea8b"
+    },
+    {
+      "path": "evals/skills/table-cleanup/cassettes/instruction_skip_rep.json",
+      "bytes": 220,
+      "sha256": "0aa2b967804ea4e976dc775ff0273ac4e40d120f19e43eb3366120df84cf9ce6"
+    },
+    {
       "path": "evals/skills/team-update/cases.json",
-      "bytes": 3629,
-      "sha256": "9a6d484263bbb8cda373976484277264e99c7ce2f42e4773fe3f175074b41493"
+      "bytes": 5298,
+      "sha256": "ad3b0c0cebb2a2f7b065c2452bf3dbdcbd650e50ec2055b6addbb406288bc5d1"
     },
     {
       "path": "evals/skills/team-update/cassettes/grounded_3p.json",
@@ -2346,8 +2536,33 @@
     },
     {
       "path": "evals/skills/team-update/cassettes/invented_metric.json",
-      "bytes": 457,
-      "sha256": "670814484bfec8f13b9bbbc075d1db0fe91856768bfd9e596476060bd12d7afc"
+      "bytes": 858,
+      "sha256": "b3afe26b2344312820c2f6b64f33ad10eed41546241f5f95c0abb003599e6bf5"
+    },
+    {
+      "path": "evals/skills/team-update/cassettes/invented_metric_repaired.json",
+      "bytes": 969,
+      "sha256": "6d271938a1f4ed27b0e40928bd8ded15df4b229ae1808f685f22ba2102c084b7"
+    },
+    {
+      "path": "evals/skills/thread-summary/cases.json",
+      "bytes": 4702,
+      "sha256": "430b6c2eec3246be008151a0dcd96d32cc6e1e78190f4de1840976af91767dfb"
+    },
+    {
+      "path": "evals/skills/thread-summary/cassettes/misattributed_repaired.json",
+      "bytes": 1201,
+      "sha256": "1afb3d68485f04ce8d547e4fa610fb08393f555dfc56e1cde526b69c460c3217"
+    },
+    {
+      "path": "evals/skills/thread-summary/cassettes/misattributed_twice.json",
+      "bytes": 1202,
+      "sha256": "7cb76fe572ada24e97653b4fd5e73452fd24f0e4be9ed30f41915c7ca8bd03c2"
+    },
+    {
+      "path": "evals/skills/thread-summary/cassettes/vendor_thread.json",
+      "bytes": 628,
+      "sha256": "cbb2b8be3a6573f2d6cf28f94e0f9c03e3b825f5d4734a81143981458e3905a0"
     },
     {
       "path": "fixtures/catalog/root_public.hex",
@@ -2641,8 +2856,8 @@
     },
     {
       "path": "schemas/graph.schema.json",
-      "bytes": 12778,
-      "sha256": "41c6fd6fd49dbcfaf80b61ee9e859007d381b865a526ea46dca1191555388d53"
+      "bytes": 12944,
+      "sha256": "64f46c453020b474aa5525e20ffc5846197a4c49f7c0a18bf8489df71bb5b6ce"
     },
     {
       "path": "schemas/model_package.schema.json",

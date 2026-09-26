@@ -1,8 +1,8 @@
 {
   "schema": "harbor.graph/v1",
   "id": "formula-audit",
-  "version": 2,
-  "description": "Two-tier formula audit: the tool scans and recalculates on a private copy; the model only triages findings into deterministic fixes (typed cell operations bound to content hashes) and a human-review list; fixes go through approval.",
+  "version": 3,
+  "description": "Formula audit and repair: formula.audit scans and recalculates on a private copy; the model triages each reported cell into fix or review; formula.build_operations copies target ids and content hashes from the audit, refuses fixes that repeat the current formula, name unreported cells or fall outside the qualified-function gate, and lists reported cells that got no decision. Any of those goes back to the model once with the problems listed; after that the valid decisions stand and only deterministic corrections become operations.",
   "inputs": {
     "type": "object",
     "properties": {
@@ -19,8 +19,8 @@
   },
   "entry": "audit",
   "budgets": {
-    "max_steps": 9,
-    "max_tool_calls": 4,
+    "max_steps": 12,
+    "max_tool_calls": 5,
     "max_context_tokens": 60000
   },
   "nodes": [
@@ -67,6 +67,12 @@
           "label": "Recalculation",
           "from": "/audit/after",
           "max_chars": 12000
+        },
+        {
+          "label": "Your previous answer was rejected. Write a new answer that fixes every one of these problems",
+          "from": "/plan/problems",
+          "max_chars": 4000,
+          "optional": true
         }
       ],
       "output_schema": {
@@ -154,7 +160,26 @@
         }
       },
       "out": "/plan",
-      "next": "has_fixes"
+      "next": "gate"
+    },
+    {
+      "id": "gate",
+      "kind": "branch",
+      "description": "Rejected or missing decisions go back to the model once; after that the valid ones stand.",
+      "cases": [
+        {
+          "when": {
+            "from": "/plan/ok",
+            "op": "truthy"
+          },
+          "next": "has_fixes"
+        }
+      ],
+      "default": {
+        "to": "triage",
+        "max_iterations": 1,
+        "exhausted": "has_fixes"
+      }
     },
     {
       "id": "has_fixes",

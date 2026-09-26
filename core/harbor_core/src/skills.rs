@@ -141,6 +141,17 @@ impl Default for CapabilityCatalog {
                 "workbook.build",
                 "deck.build",
                 "docx.build",
+                "workbook.verify_spec",
+                "deck.verify_outline",
+                "document.verify_draft",
+                "email.verify_draft",
+                "email.render",
+                "text.verify_items",
+                "text.verify_citations",
+                "document.units",
+                "document.sentences",
+                "table.inspect",
+                "table.build_cleanup",
                 "model.ask",
                 "model.embed",
                 "clipboard.read",
@@ -316,6 +327,13 @@ const BUILTIN_GRAPH_JSON: &[&str] = &[
     include_str!("graphs/document-style-review.json"),
     include_str!("graphs/team-update.json"),
     include_str!("graphs/doc-coauthoring.json"),
+    include_str!("graphs/sheet-builder.json"),
+    include_str!("graphs/table-cleanup.json"),
+    include_str!("graphs/presentation-builder.json"),
+    include_str!("graphs/report-to-slides.json"),
+    include_str!("graphs/document-drafter.json"),
+    include_str!("graphs/email-drafting.json"),
+    include_str!("graphs/thread-summary.json"),
 ];
 
 pub fn builtin_graphs() -> Vec<crate::graph::Graph> {
@@ -347,24 +365,31 @@ mod tests {
         }
     }
 
-    /// The runnable set is a product claim — "nine runnable graphs" in
+    /// The runnable set is a product claim — "sixteen runnable graphs" in
     /// docs/PRODUCTION_PLAN.md, and what the Skills surface marks as
     /// runnable. Nothing pinned it: a skill demoted from v2 to v1 drops
-    /// the count to eight with every other test still green, and the
-    /// documentation silently becomes wrong. Change this list when the
-    /// set genuinely changes, and change the docs in the same commit.
+    /// the count with every other test still green, and the documentation
+    /// silently becomes wrong. Change this list when the set genuinely
+    /// changes, and change the docs in the same commit.
     #[test]
     fn exactly_the_documented_skills_are_runnable() {
         const RUNNABLE: &[&str] = &[
             "deck-review",
             "doc-coauthoring",
+            "document-drafter",
             "document-style-review",
+            "email-drafting",
             "financial-model-review",
             "formula-audit",
             "meeting-notes",
             "placeholder-fill",
+            "presentation-builder",
+            "report-to-slides",
             "second-look",
+            "sheet-builder",
+            "table-cleanup",
             "team-update",
+            "thread-summary",
         ];
         let skills = builtin_skills().unwrap();
         let mut got: Vec<&str> = skills

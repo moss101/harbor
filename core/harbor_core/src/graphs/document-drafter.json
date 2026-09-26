@@ -1,0 +1,314 @@
+{
+  "schema": "harbor.graph/v1",
+  "id": "document-drafter",
+  "version": 1,
+  "description": "Draft a proposal, report or letter from a brief as a new Word document. The section template is data (a constant per kind), the model fills the sections from the brief and writes [needs input] where the brief is silent, and document.verify_draft checks the template's sections are all there in order, with no template text and no figure the brief does not contain; a failed check goes back to the model once with the problems listed. docx.build lays out a headed document, or for a letter the sender, date, recipient, salutation and sign-off from the inputs, and proposes the file as a creation batch; nothing is saved until the user approves.",
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "kind": {
+        "enum": [
+          "proposal",
+          "report",
+          "letter"
+        ],
+        "description": "Which template to follow."
+      },
+      "brief": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 12000,
+        "description": "Everything the document should say: facts, figures, names, the ask."
+      },
+      "title": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "recipient": {
+        "type": "string",
+        "maxLength": 400,
+        "description": "Letters: the recipient's name (first line) and address lines."
+      },
+      "sender": {
+        "type": "string",
+        "maxLength": 400,
+        "description": "Letters: your name (first line) and address lines."
+      },
+      "date": {
+        "type": "string",
+        "maxLength": 80
+      }
+    },
+    "required": [
+      "kind",
+      "brief"
+    ],
+    "additionalProperties": false
+  },
+  "entry": "template",
+  "budgets": {
+    "max_steps": 14,
+    "max_tool_calls": 4,
+    "max_context_tokens": 30000
+  },
+  "nodes": [
+    {
+      "id": "template",
+      "kind": "branch",
+      "description": "The section template is data, chosen by kind.",
+      "cases": [
+        {
+          "when": {
+            "from": "/input/kind",
+            "op": "eq",
+            "value": "proposal"
+          },
+          "next": "t_proposal"
+        },
+        {
+          "when": {
+            "from": "/input/kind",
+            "op": "eq",
+            "value": "letter"
+          },
+          "next": "t_letter"
+        }
+      ],
+      "default": "t_report"
+    },
+    {
+      "id": "t_proposal",
+      "kind": "const",
+      "value": {
+        "headings": [
+          "Summary",
+          "Background",
+          "Proposal",
+          "Timeline and budget",
+          "Next steps"
+        ],
+        "layout": "headed"
+      },
+      "out": "/template",
+      "next": "draft"
+    },
+    {
+      "id": "t_report",
+      "kind": "const",
+      "value": {
+        "headings": [
+          "Summary",
+          "Background",
+          "Findings",
+          "Recommendations"
+        ],
+        "layout": "headed"
+      },
+      "out": "/template",
+      "next": "draft"
+    },
+    {
+      "id": "t_letter",
+      "kind": "const",
+      "value": {
+        "headings": [
+          "Opening",
+          "Body",
+          "Closing"
+        ],
+        "layout": "letter"
+      },
+      "out": "/template",
+      "next": "draft"
+    },
+    {
+      "id": "draft",
+      "kind": "model.structured",
+      "description": "Fill the template from the brief; [needs input] where it is silent.",
+      "instructions": "Draft the document from the brief alone. Use exactly the section headings given, in that order, with one or two paragraphs in each (under 110 words per paragraph). Write plainly for the reader the brief names. Every figure, date, name and commitment must come from the brief; where the brief has nothing for a section or a detail, write [needs input] instead of inventing it. For a letter, Opening says why you are writing, Body carries the substance and Closing states the next step; do not write the salutation or the sign-off, Harbor adds them. The title is a short name for the document; use the title given, if any.",
+      "context": [
+        {
+          "label": "Kind of document",
+          "from": "/input/kind"
+        },
+        {
+          "label": "Section headings, in order (use exactly these)",
+          "from": "/template/headings"
+        },
+        {
+          "label": "Title to use",
+          "from": "/input/title",
+          "optional": true
+        },
+        {
+          "label": "Brief",
+          "from": "/input/brief",
+          "max_chars": 10000
+        },
+        {
+          "label": "Your previous answer was rejected. Write a new answer that fixes every one of these problems",
+          "from": "/check/problems",
+          "max_chars": 4000,
+          "optional": true
+        }
+      ],
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "sections": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 6,
+            "items": {
+              "type": "object",
+              "properties": {
+                "heading": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60
+                },
+                "paragraphs": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 2,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 700
+                  }
+                }
+              },
+              "required": [
+                "heading",
+                "paragraphs"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "title",
+          "sections"
+        ],
+        "additionalProperties": false
+      },
+      "out": "/draft",
+      "max_tokens": 2000,
+      "max_retries": 1,
+      "next": "check"
+    },
+    {
+      "id": "check",
+      "kind": "tool.call",
+      "tool": "document.verify_draft",
+      "args": {
+        "draft": {
+          "$state": "/draft"
+        },
+        "required_headings": {
+          "$state": "/template/headings"
+        },
+        "source": {
+          "$state": "/input/brief"
+        },
+        "max_paragraph_words": 140,
+        "layout": {
+          "$state": "/template/layout"
+        }
+      },
+      "out": "/check",
+      "next": "gate"
+    },
+    {
+      "id": "gate",
+      "kind": "branch",
+      "description": "A failed check goes back to the model once with its problems; a second failure stops.",
+      "cases": [
+        {
+          "when": {
+            "from": "/check/ok",
+            "op": "truthy"
+          },
+          "next": "build"
+        }
+      ],
+      "default": {
+        "to": "draft",
+        "max_iterations": 1,
+        "exhausted": "unfixable"
+      }
+    },
+    {
+      "id": "build",
+      "kind": "tool.call",
+      "tool": "docx.build",
+      "args": {
+        "document": {
+          "$state": "/draft"
+        },
+        "layout": {
+          "$state": "/template/layout"
+        },
+        "letter": {
+          "date": {
+            "$state": "/input/date"
+          },
+          "recipient": {
+            "$state": "/input/recipient"
+          },
+          "sender": {
+            "$state": "/input/sender"
+          }
+        }
+      },
+      "out": "/proposal",
+      "next": "approve"
+    },
+    {
+      "id": "approve",
+      "kind": "approval",
+      "description": "A new file is still a protected artifact commit: nothing is written until the user approves and chooses where to save it.",
+      "effect_class": "artifact.commit",
+      "batch": "/proposal/batch",
+      "next_approved": "done",
+      "next_rejected": "rejected"
+    },
+    {
+      "id": "done",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/proposal/file_name",
+        "/proposal/preview",
+        "/proposal/checks",
+        "/check/needs_input",
+        "/approvals/approve",
+        "/check/warnings"
+      ]
+    },
+    {
+      "id": "rejected",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/proposal/file_name",
+        "/proposal/preview",
+        "/approvals/approve"
+      ]
+    },
+    {
+      "id": "unfixable",
+      "kind": "end",
+      "outcome": "needs_input",
+      "outputs": [
+        "/draft",
+        "/check/problems"
+      ]
+    }
+  ]
+}

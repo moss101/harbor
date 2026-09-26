@@ -1,0 +1,187 @@
+{
+  "schema": "harbor.graph/v1",
+  "id": "email-drafting",
+  "version": 1,
+  "description": "Draft an email, or a reply to one, from the user's notes. The model writes the subject, greeting, paragraphs and sign-off phrase; email.verify_draft checks that the greeting names someone in the thread, that every figure and date comes from the thread or the notes, and that the draft mentions no attachment and claims nothing was sent — a failed check goes back to the model once with the problems listed. email.render lays out the final text with the sender's name. The result is text for the user to copy: Harbor has no mail connector and sends nothing.",
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "notes": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 6000,
+        "description": "What the email should say."
+      },
+      "message": {
+        "type": "string",
+        "maxLength": 20000,
+        "description": "Optional: the email or thread you are replying to."
+      },
+      "tone": {
+        "enum": [
+          "neutral",
+          "formal",
+          "friendly"
+        ]
+      },
+      "sender_name": {
+        "type": "string",
+        "maxLength": 120
+      }
+    },
+    "required": [
+      "notes"
+    ],
+    "additionalProperties": false
+  },
+  "entry": "draft",
+  "budgets": {
+    "max_steps": 10,
+    "max_tool_calls": 4,
+    "max_context_tokens": 16000
+  },
+  "nodes": [
+    {
+      "id": "draft",
+      "kind": "model.structured",
+      "description": "Draft only; the layout and the name are added by code.",
+      "instructions": "Draft an email from the notes, as a reply to the message when one is given. Subject: when replying keep the message's subject with Re: in front, otherwise write a short subject. Greeting: greet the person who wrote the message by the name they signed with, or use a neutral greeting such as Hello. Body: one to four short paragraphs that say what the notes say, in the requested tone, answering the questions in the message that the notes answer. Use only facts, figures and dates found in the message or the notes; never promise anything the notes do not. Do not mention attachments and do not say that anything was sent. sign_off is only the closing phrase, such as Best regards; Harbor adds the name.",
+      "context": [
+        {
+          "label": "Tone",
+          "from": "/input/tone",
+          "optional": true
+        },
+        {
+          "label": "Message you are replying to",
+          "from": "/input/message",
+          "max_chars": 8000,
+          "optional": true
+        },
+        {
+          "label": "Notes",
+          "from": "/input/notes",
+          "max_chars": 6000
+        },
+        {
+          "label": "Your previous answer was rejected. Write a new answer that fixes every one of these problems",
+          "from": "/check/problems",
+          "max_chars": 4000,
+          "optional": true
+        }
+      ],
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "greeting": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "paragraphs": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 600
+            }
+          },
+          "sign_off": {
+            "type": "string",
+            "maxLength": 40
+          }
+        },
+        "required": [
+          "subject",
+          "greeting",
+          "paragraphs",
+          "sign_off"
+        ],
+        "additionalProperties": false
+      },
+      "out": "/email",
+      "max_tokens": 800,
+      "max_retries": 1,
+      "next": "check"
+    },
+    {
+      "id": "check",
+      "kind": "tool.call",
+      "tool": "email.verify_draft",
+      "args": {
+        "draft": {
+          "$state": "/email"
+        },
+        "sources": [
+          {
+            "$state": "/input/message"
+          },
+          {
+            "$state": "/input/notes"
+          }
+        ],
+        "attachments": false
+      },
+      "out": "/check",
+      "next": "gate"
+    },
+    {
+      "id": "gate",
+      "kind": "branch",
+      "description": "A failed check goes back to the model once with its problems; a second failure stops.",
+      "cases": [
+        {
+          "when": {
+            "from": "/check/ok",
+            "op": "truthy"
+          },
+          "next": "render"
+        }
+      ],
+      "default": {
+        "to": "draft",
+        "max_iterations": 1,
+        "exhausted": "unfixable"
+      }
+    },
+    {
+      "id": "render",
+      "kind": "tool.call",
+      "tool": "email.render",
+      "args": {
+        "draft": {
+          "$state": "/email"
+        },
+        "sender_name": {
+          "$state": "/input/sender_name"
+        }
+      },
+      "out": "/rendered",
+      "next": "done"
+    },
+    {
+      "id": "done",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/rendered/text",
+        "/rendered/subject"
+      ]
+    },
+    {
+      "id": "unfixable",
+      "kind": "end",
+      "outcome": "needs_input",
+      "outputs": [
+        "/email",
+        "/check/problems"
+      ]
+    }
+  ]
+}

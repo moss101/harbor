@@ -1,0 +1,11 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "table-cleanup/choose#1",
+      "response": {
+        "content": "{\"fix\": [\"whitespace\"], \"skip_columns\": [\"Rep\"]}"
+      }
+    }
+  ]
+}

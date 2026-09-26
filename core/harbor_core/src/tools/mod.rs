@@ -13,9 +13,11 @@
 //! [`ToolContext`] traits so the same tools run under the FFI, under the
 //! eval harness with fixtures, and in unit tests.
 
+pub mod authoring;
 pub mod builtin;
 pub mod create;
 pub mod review;
+pub mod table;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;

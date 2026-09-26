@@ -1,0 +1,275 @@
+{
+  "schema": "harbor.graph/v1",
+  "id": "report-to-slides",
+  "version": 1,
+  "description": "Summarise a report (PDF, DOCX or text) into a new five-slide deck where every bullet cites its source. document.sentences numbers the report's statements page by page; the model writes five slides whose bullets each point at the sentence they come from — it never copies a quote; deck.verify_outline checks there are exactly five, that no two bullets repeat or share a sentence, and that every figure in a bullet is in the sentence it cites. A failed check goes back to the model once. deck.build copies each cited sentence, with its page, into the speaker notes and proposes the file as a creation batch; nothing is saved until the user approves.",
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "artifact_id": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      },
+      "audience": {
+        "type": "string",
+        "maxLength": 200
+      },
+      "focus": {
+        "type": "string",
+        "maxLength": 300,
+        "description": "Optional: what the summary should emphasise."
+      }
+    },
+    "required": [
+      "artifact_id"
+    ],
+    "additionalProperties": false
+  },
+  "entry": "read",
+  "budgets": {
+    "max_steps": 14,
+    "max_tool_calls": 6,
+    "max_context_tokens": 40000
+  },
+  "nodes": [
+    {
+      "id": "read",
+      "kind": "tool.call",
+      "tool": "artifact.read",
+      "args": {
+        "artifact_id": {
+          "$state": "/input/artifact_id"
+        }
+      },
+      "out": "/doc",
+      "next": "has_text"
+    },
+    {
+      "id": "has_text",
+      "kind": "branch",
+      "cases": [
+        {
+          "when": {
+            "from": "/doc/text",
+            "op": "nonempty"
+          },
+          "next": "sentences"
+        }
+      ],
+      "default": "empty"
+    },
+    {
+      "id": "sentences",
+      "kind": "tool.call",
+      "tool": "document.sentences",
+      "args": {
+        "document": {
+          "$state": "/doc"
+        }
+      },
+      "out": "/sentences",
+      "next": "draft"
+    },
+    {
+      "id": "draft",
+      "kind": "model.structured",
+      "description": "Five slides; every bullet points at a numbered sentence.",
+      "instructions": "Summarise the document in exactly five slides for the stated audience. Each slide has a title under 10 words that states one point, and one or two bullets. Every bullet is a short sentence of your own (under 20 words) that states one fact from the document, and its source is the number in square brackets of the sentence that fact comes from. Use each numbered sentence for at most one bullet, and do not repeat a point. Copy numbers exactly as the document writes them. Do not add a title or agenda slide: Harbor adds the cover. The deck title names the document's subject.",
+      "context": [
+        {
+          "label": "Audience",
+          "from": "/input/audience",
+          "optional": true
+        },
+        {
+          "label": "Focus",
+          "from": "/input/focus",
+          "optional": true
+        },
+        {
+          "label": "Document, sentence by sentence (the number in brackets is the source)",
+          "from": "/sentences/numbered_text",
+          "max_chars": 14000
+        },
+        {
+          "label": "Your previous answer was rejected. Write a new answer that fixes every one of these problems",
+          "from": "/check/problems",
+          "max_chars": 4000,
+          "optional": true
+        }
+      ],
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "slides": {
+            "type": "array",
+            "minItems": 5,
+            "maxItems": 5,
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "bullets": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 2,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 140
+                      },
+                      "source": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 999
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "source"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "title",
+                "bullets"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "title",
+          "slides"
+        ],
+        "additionalProperties": false
+      },
+      "out": "/outline",
+      "max_tokens": 1200,
+      "max_retries": 1,
+      "next": "check"
+    },
+    {
+      "id": "check",
+      "kind": "tool.call",
+      "description": "Exactly five slides, nothing repeated, and every figure in the sentence its bullet cites.",
+      "tool": "deck.verify_outline",
+      "args": {
+        "outline": {
+          "$state": "/outline"
+        },
+        "source": {
+          "$state": "/doc/text"
+        },
+        "sentences": {
+          "$state": "/sentences"
+        },
+        "slides": 5,
+        "max_bullets": 2,
+        "max_bullet_words": 22
+      },
+      "out": "/check",
+      "next": "gate"
+    },
+    {
+      "id": "gate",
+      "kind": "branch",
+      "description": "A failed check goes back to the model once with its problems; a second failure stops.",
+      "cases": [
+        {
+          "when": {
+            "from": "/check/ok",
+            "op": "truthy"
+          },
+          "next": "build"
+        }
+      ],
+      "default": {
+        "to": "draft",
+        "max_iterations": 1,
+        "exhausted": "unfixable"
+      }
+    },
+    {
+      "id": "build",
+      "kind": "tool.call",
+      "tool": "deck.build",
+      "args": {
+        "outline": {
+          "$state": "/outline"
+        },
+        "sentences": {
+          "$state": "/sentences"
+        }
+      },
+      "out": "/proposal",
+      "next": "approve"
+    },
+    {
+      "id": "approve",
+      "kind": "approval",
+      "description": "A new file is still a protected artifact commit: nothing is written until the user approves and chooses where to save it.",
+      "effect_class": "artifact.commit",
+      "batch": "/proposal/batch",
+      "next_approved": "done",
+      "next_rejected": "rejected"
+    },
+    {
+      "id": "done",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/proposal/file_name",
+        "/proposal/preview",
+        "/proposal/checks",
+        "/check/citations_verified",
+        "/approvals/approve",
+        "/check/warnings",
+        "/check/normalized"
+      ]
+    },
+    {
+      "id": "rejected",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/proposal/file_name",
+        "/proposal/preview",
+        "/approvals/approve"
+      ]
+    },
+    {
+      "id": "unfixable",
+      "kind": "end",
+      "outcome": "needs_input",
+      "outputs": [
+        "/outline",
+        "/check/problems"
+      ]
+    },
+    {
+      "id": "empty",
+      "kind": "end",
+      "outcome": "needs_input",
+      "outputs": [
+        "/doc/kind",
+        "/doc/name"
+      ]
+    }
+  ]
+}

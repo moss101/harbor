@@ -1,0 +1,179 @@
+{
+  "schema": "harbor.skill_eval/v1",
+  "skill": "presentation-builder",
+  "cases": [
+    {
+      "id": "launch_notes",
+      "title": "Notes become a new deck proposal whose figures all come from the notes",
+      "inputs": {
+        "notes": "Launch review for the Harbor 1.1 mobile release.\nShipped: offline search, Arabic layout fixes, faster sync.\nCrash-free sessions reached 99.4% in the beta.\n1,850 beta testers joined in three weeks.\nOpen risks: App Store review is pending; the Android tablet layout needs one more pass.\nNext: release on 6 October, then start the Windows beta."
+      },
+      "cassette": "cassettes/launch_notes.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "approval_requested"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/ok",
+          "value": true
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/kind",
+          "value": "pptx"
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/proposal/preview/slides",
+          "min": 3,
+          "max": 9
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 4
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "launch_notes_layout",
+      "title": "Contract: a cover slide from the deck title, then one slide per outline slide",
+      "inputs": {
+        "notes": "Launch review for the Harbor 1.1 mobile release.\nShipped: offline search, Arabic layout fixes, faster sync.\nCrash-free sessions reached 99.4% in the beta.\n1,850 beta testers joined in three weeks.\nOpen risks: App Store review is pending; the Android tablet layout needs one more pass.\nNext: release on 6 October, then start the Windows beta."
+      },
+      "cassette": "cassettes/launch_notes.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/checks/slide_count",
+          "value": 5
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/preview/slides/0/title",
+          "value": "Harbor 1.1 launch review"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/preview/slides/2/bullets",
+          "value": [
+            "Crash-free sessions reached 99.4%",
+            "1,850 beta testers joined in three weeks"
+          ]
+        },
+        {
+          "kind": "node_runs",
+          "node": "draft",
+          "min": 1,
+          "max": 1
+        },
+        {
+          "kind": "steps_le",
+          "max": 5
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "invented_figure_repaired",
+      "title": "Guard: a figure the notes never gave goes back to the model once; the corrected outline is proposed",
+      "inputs": {
+        "notes": "Launch review for the Harbor 1.1 mobile release.\nShipped: offline search, Arabic layout fixes, faster sync.\nCrash-free sessions reached 99.4% in the beta.\n1,850 beta testers joined in three weeks.\nOpen risks: App Store review is pending; the Android tablet layout needs one more pass.\nNext: release on 6 October, then start the Windows beta."
+      },
+      "cassette": "cassettes/invented_figure_repaired.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "node_runs",
+          "node": "draft",
+          "min": 2,
+          "max": 2
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/ok",
+          "value": true
+        },
+        {
+          "kind": "not_contains",
+          "pointer": "/outline",
+          "text": "12%"
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "exact_count",
+      "title": "A requested slide count is honoured exactly",
+      "inputs": {
+        "notes": "Launch review for the Harbor 1.1 mobile release.\nShipped: offline search, Arabic layout fixes, faster sync.\nCrash-free sessions reached 99.4% in the beta.\n1,850 beta testers joined in three weeks.\nOpen risks: App Store review is pending; the Android tablet layout needs one more pass.\nNext: release on 6 October, then start the Windows beta.",
+        "slides": 3
+      },
+      "cassette": "cassettes/exact_count.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/ok",
+          "value": true
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/outline/slides",
+          "min": 3,
+          "max": 3
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    }
+  ]
+}

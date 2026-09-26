@@ -310,3 +310,63 @@ fn commit_proposal_saves_a_new_copy_through_the_ffi() {
     assert_eq!(state2["state"], "WAITING_APPROVAL", "{state2}");
     assert!(!out.path().join("b.docx").exists());
 }
+
+/// The authoring skills are listed as runnable through the boundary with
+/// the input schemas the Run sheet builds its form from (a `kind` enum is
+/// a choice, `slides` an integer). Each has a model node, so starting one
+/// without a chat package is refused before any work happens; the paths
+/// themselves are exercised by the replay tier.
+#[test]
+fn authoring_skills_are_listed_runnable_with_their_inputs() {
+    let dir = tempfile::tempdir().unwrap();
+    let h = Handle::open(dir.path());
+    let skills = h.call("skills.list", serde_json::json!({}));
+    let list = skills["skills"].as_array().unwrap();
+    for id in [
+        "sheet-builder",
+        "table-cleanup",
+        "presentation-builder",
+        "report-to-slides",
+        "document-drafter",
+        "email-drafting",
+        "thread-summary",
+    ] {
+        let s = list.iter().find(|s| s["id"] == id).unwrap();
+        assert_eq!(s["runnable"], true, "{id}");
+        assert_eq!(s["schema"], "harbor.skill/v2", "{id}");
+        assert!(s["graph"]["model_nodes"].as_u64().unwrap() >= 1, "{id}");
+        let err = h.call_err(
+            "op.start_skill_run",
+            serde_json::json!({"skill_id": id, "inputs": {}}),
+        );
+        assert!(err.contains("chat_package"), "{id}: {err}");
+    }
+    let drafter = list.iter().find(|s| s["id"] == "document-drafter").unwrap();
+    assert_eq!(
+        drafter["graph"]["inputs"]["properties"]["kind"]["enum"],
+        serde_json::json!(["proposal", "report", "letter"])
+    );
+    let deck = list
+        .iter()
+        .find(|s| s["id"] == "presentation-builder")
+        .unwrap();
+    assert_eq!(
+        deck["graph"]["inputs"]["properties"]["slides"]["type"],
+        "integer"
+    );
+    let tools = h.call("tools.list", serde_json::json!({}));
+    let tools = tools["tools"].as_array().unwrap();
+    for (id, risk) in [
+        ("workbook.build", "propose"),
+        ("deck.build", "propose"),
+        ("docx.build", "propose"),
+        ("deck.verify_outline", "read"),
+        ("email.render", "read"),
+        ("table.inspect", "read"),
+    ] {
+        assert!(
+            tools.iter().any(|t| t["id"] == id && t["risk"] == risk),
+            "{id}"
+        );
+    }
+}

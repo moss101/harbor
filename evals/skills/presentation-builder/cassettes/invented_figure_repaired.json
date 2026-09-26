@@ -1,0 +1,17 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "presentation-builder/draft#1",
+      "response": {
+        "content": "{\"title\": \"Harbor 1.1 launch review\", \"subtitle\": null, \"slides\": [{\"title\": \"What shipped in 1.1\", \"bullets\": [\"Offline search\", \"Arabic layout fixes\", \"Faster sync\"], \"notes\": \"The three headline features of the mobile release.\"}, {\"title\": \"The beta went well\", \"bullets\": [\"Crash-free sessions reached 99.4%\", \"1,850 beta testers joined in three weeks\", \"Retention up 12% since the last release\"], \"notes\": null}, {\"title\": \"Risks before release\", \"bullets\": [\"App Store review is pending\", \"Android tablet layout needs one more pass\"], \"notes\": null}, {\"title\": \"Next steps\", \"bullets\": [\"Release on 6 October\", \"Start the Windows beta\"], \"notes\": null}]}"
+      }
+    },
+    {
+      "trace_key": "presentation-builder/draft#2",
+      "response": {
+        "content": "{\"title\": \"Harbor 1.1 launch review\", \"subtitle\": null, \"slides\": [{\"title\": \"What shipped in 1.1\", \"bullets\": [\"Offline search\", \"Arabic layout fixes\", \"Faster sync\"], \"notes\": \"The three headline features of the mobile release.\"}, {\"title\": \"The beta went well\", \"bullets\": [\"Crash-free sessions reached 99.4%\", \"1,850 beta testers joined in three weeks\"], \"notes\": null}, {\"title\": \"Risks before release\", \"bullets\": [\"App Store review is pending\", \"Android tablet layout needs one more pass\"], \"notes\": null}, {\"title\": \"Next steps\", \"bullets\": [\"Release on 6 October\", \"Start the Windows beta\"], \"notes\": null}]}"
+      }
+    }
+  ]
+}

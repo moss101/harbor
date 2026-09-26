@@ -1,0 +1,158 @@
+{
+  "schema": "harbor.skill_eval/v1",
+  "skill": "report-to-slides",
+  "cases": [
+    {
+      "id": "quarterly_report",
+      "title": "A three-page report becomes five slides whose every bullet states what the sentence it cites says",
+      "inputs": {
+        "artifact_id": "r",
+        "audience": "the board"
+      },
+      "artifacts": {
+        "r": {
+          "path": "fixtures/office/quarterly_report.pdf"
+        }
+      },
+      "cassette": "cassettes/quarterly_report.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "approval_requested"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/ok",
+          "value": true
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/outline/slides",
+          "min": 5,
+          "max": 5
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/checks/slide_count",
+          "value": 6
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/sentences/unit",
+          "value": "page"
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 6
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "sources_in_notes",
+      "title": "Contract: every cited sentence is carried into the speaker notes with its page",
+      "inputs": {
+        "artifact_id": "r"
+      },
+      "artifacts": {
+        "r": {
+          "path": "fixtures/office/quarterly_report.pdf"
+        }
+      },
+      "cassette": "cassettes/quarterly_report.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "state_equals",
+          "pointer": "/check/citations_verified",
+          "value": 8
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/sentences/count",
+          "value": 9
+        },
+        {
+          "kind": "contains",
+          "pointer": "/proposal/preview/slides/5/notes",
+          "text": "p. 3: “Nurse turnover reached 11% and is the main staffing risk.”"
+        },
+        {
+          "kind": "node_runs",
+          "node": "draft",
+          "min": 1,
+          "max": 1
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "wrong_source_repaired",
+      "title": "Guard: a bullet whose figure is not in the sentence it cites goes back once with the figure and sentence named",
+      "inputs": {
+        "artifact_id": "r"
+      },
+      "artifacts": {
+        "r": {
+          "path": "fixtures/office/quarterly_report.pdf"
+        }
+      },
+      "cassette": "cassettes/wrong_source_repaired.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "node_runs",
+          "node": "draft",
+          "min": 2,
+          "max": 2
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/ok",
+          "value": true
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/outline/slides/4/bullets/0/source",
+          "value": 8
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    }
+  ]
+}

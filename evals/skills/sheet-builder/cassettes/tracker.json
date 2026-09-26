@@ -1,0 +1,11 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "sheet-builder/draft#1",
+      "response": {
+        "content": "{\"title\": \"Job applications\", \"sheet\": \"Applications\", \"columns\": [{\"header\": \"Company\", \"type\": \"text\"}, {\"header\": \"Role\", \"type\": \"text\"}, {\"header\": \"Status\", \"type\": \"text\"}, {\"header\": \"Date applied\", \"type\": \"date\"}], \"rows\": [], \"total_columns\": [], \"computed\": [], \"currency_symbol\": null}"
+      }
+    }
+  ]
+}

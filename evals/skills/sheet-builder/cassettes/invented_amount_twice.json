@@ -1,0 +1,17 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "sheet-builder/draft#1",
+      "response": {
+        "content": "{\"title\": \"October household budget\", \"sheet\": \"Budget\", \"columns\": [{\"header\": \"Item\", \"type\": \"text\"}, {\"header\": \"Planned\", \"type\": \"currency\"}, {\"header\": \"Spent\", \"type\": \"currency\"}], \"rows\": [[\"Rent\", 1200, 1200], [\"Groceries\", 400, 385], [\"Transport\", 150, 90], [\"Internet\", 60, null], [\"Gym\", 45, null]], \"total_columns\": [\"Planned\", \"Spent\", \"Left\"], \"computed\": [{\"header\": \"Left\", \"op\": \"subtract\", \"left\": \"Planned\", \"right\": \"Spent\"}], \"currency_symbol\": \"$\"}"
+      }
+    },
+    {
+      "trace_key": "sheet-builder/draft#2",
+      "response": {
+        "content": "{\"title\": \"October household budget\", \"sheet\": \"Budget\", \"columns\": [{\"header\": \"Item\", \"type\": \"text\"}, {\"header\": \"Planned\", \"type\": \"currency\"}, {\"header\": \"Spent\", \"type\": \"currency\"}], \"rows\": [[\"Rent\", 1200, 1200], [\"Groceries\", 400, 385], [\"Transport\", 150, 90], [\"Internet\", 60, null], [\"Gym\", 45, null]], \"total_columns\": [\"Planned\", \"Spent\", \"Left\"], \"computed\": [{\"header\": \"Left\", \"op\": \"subtract\", \"left\": \"Planned\", \"right\": \"Spent\"}], \"currency_symbol\": \"$\"}"
+      }
+    }
+  ]
+}

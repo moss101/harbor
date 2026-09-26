@@ -1,0 +1,11 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "sheet-builder/draft#1",
+      "response": {
+        "content": "{\"columns\": [{\"header\": \"Company\", \"type\": \"text\"}, {\"header\": \"Role\", \"type\": \"text\"}, {\"header\": \"Status\", \"type\": \"text\"}, {\"header\": \"Date Applied\", \"type\": \"date\"}], \"computed\": [{\"header\": \"Total\", \"left\": \"Status\", \"op\": \"add\", \"right\": \"Status\"}], \"currency_symbol\": null, \"rows\": [[\"Company\", \"Role\", \"Status\", \"Date Applied\"], [\"Company1\", \"Role1\", \"Status1\", \"2023-01-01\"], [\"Company2\", \"Role2\", \"Status2\", \"2023-02-01\"], [\"Company3\", \"Role3\", \"Status3\", \"2023-03-01\"]], \"sheet\": \"Job Applications Tracker\", \"title\": \"Job Applications Tracker\", \"total_columns\": [\"Total\"]}"
+      }
+    }
+  ]
+}

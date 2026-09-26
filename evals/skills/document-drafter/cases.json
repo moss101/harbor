@@ -1,0 +1,209 @@
+{
+  "schema": "harbor.skill_eval/v1",
+  "skill": "document-drafter",
+  "cases": [
+    {
+      "id": "proposal",
+      "title": "A proposal brief becomes a Word document in the template's five sections",
+      "inputs": {
+        "kind": "proposal",
+        "brief": "Proposal to move the Harbor archive from the cloud bucket to local storage at the Dubai office. Reader: the operations director, Laura Grant. Today the archive costs $1,900 a month in storage fees. The move needs 2 engineers for 6 weeks and a one-off hardware cost of $42,000. It would start on 2 November 2026 and finish by 12 December 2026. Risk: a restore test is needed before the old bucket is deleted. Ask: approve the budget by 15 October."
+      },
+      "cassette": "cassettes/proposal.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "approval_requested"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/ok",
+          "value": true
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/kind",
+          "value": "docx"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/checks/layout",
+          "value": "headed"
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/draft/sections",
+          "min": 5,
+          "max": 5
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 4
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "letter",
+      "title": "A letter takes its address block, salutation and sign-off from the inputs",
+      "inputs": {
+        "kind": "letter",
+        "brief": "Tell our landlord we want to renew the lease on Unit 4, 22 Harbour Street for another two years from 1 January 2027. We accept the proposed rent of AED 96,000 a year. Ask them to send the renewal contract by 30 November 2026.",
+        "recipient": "Ms. Laura Grant\nHarbour Properties LLC\nPO Box 1120, Dubai",
+        "sender": "Omar Haddad\nOperations Manager, Northwind Clinics",
+        "date": "26 September 2026"
+      },
+      "cassette": "cassettes/letter.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/ok",
+          "value": true
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/checks/layout",
+          "value": "letter"
+        },
+        {
+          "kind": "contains",
+          "pointer": "/proposal/preview/paragraphs",
+          "text": "Dear Ms. Laura Grant,"
+        },
+        {
+          "kind": "contains",
+          "pointer": "/proposal/preview/paragraphs",
+          "text": "Yours sincerely,"
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "missing_section_repaired",
+      "title": "Guard: a missing section and an invented figure go back to the model once",
+      "inputs": {
+        "kind": "proposal",
+        "brief": "Proposal to move the Harbor archive from the cloud bucket to local storage at the Dubai office. Reader: the operations director, Laura Grant. Today the archive costs $1,900 a month in storage fees. The move needs 2 engineers for 6 weeks and a one-off hardware cost of $42,000. It would start on 2 November 2026 and finish by 12 December 2026. Risk: a restore test is needed before the old bucket is deleted. Ask: approve the budget by 15 October."
+      },
+      "cassette": "cassettes/missing_section_repaired.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "node_runs",
+          "node": "draft",
+          "min": 2,
+          "max": 2
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/ok",
+          "value": true
+        },
+        {
+          "kind": "not_contains",
+          "pointer": "/draft",
+          "text": "5,000"
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "letter_furniture_stripped",
+      "title": "Contract (the pinned model's live output): its own salutation and '[Your Name]' sign-off are removed because Harbor writes them; repetition is reported as a warning, not a reason to withhold the letter",
+      "inputs": {
+        "kind": "letter",
+        "brief": "Tell our landlord we want to renew the lease on Unit 4, 22 Harbour Street for another two years from 1 January 2027. We accept the proposed rent of AED 96,000 a year. Ask them to send the renewal contract by 30 November 2026.",
+        "recipient": "Ms. Laura Grant\nHarbour Properties LLC\nPO Box 1120, Dubai",
+        "sender": "Omar Haddad\nOperations Manager, Northwind Clinics",
+        "date": "26 September 2026"
+      },
+      "cassette": "cassettes/letter_repeats_itself.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "node_runs",
+          "node": "draft",
+          "min": 1,
+          "max": 1
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/ok",
+          "value": true
+        },
+        {
+          "kind": "contains",
+          "pointer": "/check/warnings",
+          "text": "repeats a sentence"
+        },
+        {
+          "kind": "contains",
+          "pointer": "/proposal/preview/paragraphs",
+          "text": "Dear Ms. Laura Grant,"
+        },
+        {
+          "kind": "not_contains",
+          "pointer": "/proposal/preview/paragraphs",
+          "text": "Your Name"
+        },
+        {
+          "kind": "not_contains",
+          "pointer": "/proposal/preview/paragraphs",
+          "text": "Dear Sir/Madam"
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    }
+  ]
+}

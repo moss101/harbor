@@ -1,0 +1,11 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "document-drafter/draft#1",
+      "response": {
+        "content": "{\"title\": \"Lease renewal for Unit 4\", \"sections\": [{\"heading\": \"Opening\", \"paragraphs\": [\"I am writing to confirm that we would like to renew the lease on Unit 4, 22 Harbour Street.\"]}, {\"heading\": \"Body\", \"paragraphs\": [\"We would like to renew for another two years from 1 January 2027, and we accept the proposed rent of AED 96,000 a year.\"]}, {\"heading\": \"Closing\", \"paragraphs\": [\"Please send the renewal contract by 30 November 2026.\"]}]}"
+      }
+    }
+  ]
+}

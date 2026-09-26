@@ -1,0 +1,370 @@
+{
+  "schema": "harbor.skill_eval/v1",
+  "skill": "sheet-builder",
+  "cases": [
+    {
+      "id": "budget",
+      "title": "A budget described in prose becomes a workbook proposal whose totals the tool wrote",
+      "inputs": {
+        "description": "Monthly household budget for October. Planned: rent 1,200, groceries 400, transport 150, internet 60. Spent so far: rent 1,200, groceries 385, transport 90. I want planned, spent and what is left for each item, with totals. Amounts in dollars."
+      },
+      "cassette": "cassettes/budget.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "approval_requested"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/ok",
+          "value": true
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/kind",
+          "value": "xlsx"
+        },
+        {
+          "kind": "batch_proposed",
+          "pointer": "/proposal/batch",
+          "min_ops": 10
+        },
+        {
+          "kind": "state_empty",
+          "pointer": "/proposal/checks/errors"
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/proposal/checks/totals",
+          "min": 1
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/base_content_hash",
+          "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 4
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "budget_formulas_exact",
+      "title": "Contract: totals and the computed column are formulas the tool wrote, recalculated by the engine",
+      "inputs": {
+        "description": "Monthly household budget for October. Planned: rent 1,200, groceries 400, transport 150, internet 60. Spent so far: rent 1,200, groceries 385, transport 90. I want planned, spent and what is left for each item, with totals. Amounts in dollars."
+      },
+      "cassette": "cassettes/budget.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/file_name",
+          "value": "October household budget.xlsx"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/checks/totals/0/formula",
+          "value": "=SUM(B2:B5)"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/checks/totals/0/value",
+          "value": "1810"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/checks/totals/1/value",
+          "value": "1675"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/checks/totals/2/value",
+          "value": "135"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/preview/rows/3",
+          "value": [
+            "Internet",
+            "60",
+            "",
+            "60"
+          ]
+        },
+        {
+          "kind": "node_runs",
+          "node": "draft",
+          "min": 1,
+          "max": 1
+        },
+        {
+          "kind": "steps_le",
+          "max": 5
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 2
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "invented_amount_repaired",
+      "title": "Guard: an amount the description never gave goes back to the model once and the corrected table is proposed",
+      "inputs": {
+        "description": "Monthly household budget for October. Planned: rent 1,200, groceries 400, transport 150, internet 60. Spent so far: rent 1,200, groceries 385, transport 90. I want planned, spent and what is left for each item, with totals. Amounts in dollars."
+      },
+      "cassette": "cassettes/invented_amount_repaired.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "node_runs",
+          "node": "draft",
+          "min": 2,
+          "max": 2
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/ok",
+          "value": true
+        },
+        {
+          "kind": "not_contains",
+          "pointer": "/spec/rows",
+          "text": "Gym"
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 3
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "invented_amount_twice",
+      "title": "Guard: a second invented amount stops the run in needs_input with the problem named; nothing is proposed",
+      "inputs": {
+        "description": "Monthly household budget for October. Planned: rent 1,200, groceries 400, transport 150, internet 60. Spent so far: rent 1,200, groceries 385, transport 90. I want planned, spent and what is left for each item, with totals. Amounts in dollars."
+      },
+      "cassette": "cassettes/invented_amount_twice.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "needs_input"
+        },
+        {
+          "kind": "node_runs",
+          "node": "draft",
+          "min": 2,
+          "max": 2
+        },
+        {
+          "kind": "contains",
+          "pointer": "/check/problems",
+          "text": "45"
+        },
+        {
+          "kind": "state_missing",
+          "pointer": "/proposal"
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 2
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "tracker",
+      "title": "A tracker with no items gets its columns and no invented rows",
+      "inputs": {
+        "description": "A tracker for my job applications: company, role, status and the date I applied."
+      },
+      "cassette": "cassettes/tracker.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/ok",
+          "value": true
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/preview/row_count",
+          "value": 0
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/proposal/preview/header",
+          "min": 3
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "structural_slips_repaired",
+      "title": "Contract (the pinned model's live output): a column both typed and computed is built once, by formula, and the repair is reported",
+      "inputs": {
+        "description": "Monthly household budget for October. Planned: rent 1,200, groceries 400, transport 150, internet 60. Spent so far: rent 1,200, groceries 385, transport 90. I want planned, spent and what is left for each item, with totals. Amounts in dollars."
+      },
+      "cassette": "cassettes/structural_slips.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "node_runs",
+          "node": "draft",
+          "min": 1,
+          "max": 1
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/check/ok",
+          "value": true
+        },
+        {
+          "kind": "contains",
+          "pointer": "/check/normalized",
+          "text": "Remaining\\\" is computed by a formula"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/preview/header",
+          "value": [
+            "Item",
+            "Planned",
+            "Spent",
+            "Remaining"
+          ]
+        },
+        {
+          "kind": "state_empty",
+          "pointer": "/proposal/checks/errors"
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "tracker_example_rows_removed",
+      "title": "Contract (the pinned model's live output): a repeated header row and \"Company1\" example rows are removed, not built",
+      "inputs": {
+        "description": "A tracker for my job applications: company, role, status and the date I applied."
+      },
+      "cassette": "cassettes/tracker_example_rows.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/preview/row_count",
+          "value": 0
+        },
+        {
+          "kind": "contains",
+          "pointer": "/check/normalized",
+          "text": "example row"
+        },
+        {
+          "kind": "contains",
+          "pointer": "/check/normalized",
+          "text": "repeated the column headers"
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    }
+  ]
+}

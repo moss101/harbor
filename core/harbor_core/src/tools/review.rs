@@ -80,7 +80,7 @@ fn number_re() -> &'static regex::Regex {
 
 /// Digits-only key of a number span so `$540k` in the output matches
 /// `540k` or `540,000`-free prose in the source only when the digits agree.
-fn number_key(span: &str) -> String {
+pub(crate) fn number_key(span: &str) -> String {
     span.chars().filter(|c| c.is_ascii_digit()).collect()
 }
 
@@ -154,10 +154,22 @@ impl Tool for TextVerifyNumbers {
                 }
             }
         }
+        // One actionable sentence per figure, for a repair round.
+        let problems: Vec<String> = missing
+            .iter()
+            .map(|m| {
+                format!(
+                    "{} in sentence {} does not occur in the source; remove it or write [needs figure].",
+                    m["number"].as_str().unwrap_or_default(),
+                    m["index"].as_u64().unwrap_or(0) + 1
+                )
+            })
+            .collect();
         Ok(json!({
             "grounded": missing.is_empty(),
             "checked": checked,
             "missing": missing,
+            "problems": problems,
         }))
     }
 }

@@ -1,0 +1,11 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "email-drafting/draft#1",
+      "response": {
+        "content": "{\"subject\": \"Office closed on 2 October\", \"greeting\": \"Hello team,\", \"paragraphs\": [\"A reminder that the office is closed on 2 October for maintenance.\", \"Please take your laptops home on 1 October.\"], \"sign_off\": \"Thanks\"}"
+      }
+    }
+  ]
+}

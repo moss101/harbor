@@ -1,0 +1,11 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "sheet-builder/draft#1",
+      "response": {
+        "content": "{\"columns\": [{\"header\": \"Item\", \"type\": \"text\"}, {\"header\": \"Planned\", \"type\": \"number\"}, {\"header\": \"Spent\", \"type\": \"number\"}, {\"header\": \"Remaining\", \"type\": \"number\"}], \"computed\": [{\"header\": \"Remaining\", \"left\": \"Planned\", \"op\": \"subtract\", \"right\": \"Spent\"}], \"currency_symbol\": \"$\", \"rows\": [[\"Rent\", 1200, 1200, 0], [\"Groceries\", 400, 385, 15], [\"Transport\", 150, 90, 60], [\"Internet\", 60, 60, 0]], \"sheet\": \"Monthly Budget\", \"title\": \"October Budget\", \"total_columns\": [\"Planned\", \"Spent\", \"Remaining\"]}"
+      }
+    }
+  ]
+}

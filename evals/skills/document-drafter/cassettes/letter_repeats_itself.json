@@ -1,0 +1,17 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "document-drafter/draft#1",
+      "response": {
+        "content": "{\"sections\": [{\"heading\": \"Opening\", \"paragraphs\": [\"Dear Sir/Madam,\\n\\nWe hope this letter finds you well. We are writing to express our desire to renew the lease on Unit 4, 22 Harbour Street for another two years from 1 January 2027. We accept the proposed rent of AED 96,000 a year.\\n\\nWe kindly request that you send the renewal contract by 30 November 2026.\\n\\nThank you for your attention to this matter.\\n\\nYours sincerely,\\n[Your Name]\"]}, {\"heading\": \"Body\", \"paragraphs\": [\"We are pleased to renew our lease on Unit 4, 22 Harbour Street for another two years from 1 January 2027. We accept the proposed rent of AED 96,000 a year. We kindly request that you send the renewal contract by 30 November 2026.\\n\\nThank you for your attention to this matter.\\n\\nYours sincerely,\\n[Your Name]\"]}, {\"heading\": \"Closing\", \"paragraphs\": [\"We look forward to your prompt response.\\n\\nYours sincerely,\\n[Your Name]\"]}], \"title\": \"Renewal of Lease\"}"
+      }
+    },
+    {
+      "trace_key": "document-drafter/draft#2",
+      "response": {
+        "content": "{\"sections\": [{\"heading\": \"Opening\", \"paragraphs\": [\"Dear Sir/Madam,\\n\\nWe hope this letter finds you well. We are writing to express our desire to renew the lease on Unit 4, 22 Harbour Street for another two years from 1 January 2027. We accept the proposed rent of AED 96,000 a year.\\n\\nWe kindly request that you send the renewal contract by 30 November 2026.\\n\\nThank you for your attention to this matter.\\n\\nYours sincerely,\\n[Your Name]\"]}, {\"heading\": \"Body\", \"paragraphs\": [\"We are pleased to renew our lease on Unit 4, 22 Harbour Street for another two years from 1 January 2027. We accept the proposed rent of AED 96,000 a year. We kindly request that you send the renewal contract by 30 November 2026.\\n\\nThank you for your attention to this matter.\\n\\nYours sincerely,\\n[Your Name]\"]}, {\"heading\": \"Closing\", \"paragraphs\": [\"We look forward to your prompt response.\\n\\nYours sincerely,\\n[Your Name]\"]}], \"title\": \"Renewal of Lease\"}"
+      }
+    }
+  ]
+}
