@@ -109,7 +109,7 @@ model to copy.
     misattributed runbook owner is now nulled by the attribution check, so one of the two
     failing meeting-notes assertions passes. doc-coauthoring and second-look have no loop
     and did not move.
-  - the 13 new live cases: **12/13** — sheet-builder 2/2, table-cleanup 3/3,
+  - the 13 new live cases: **12/13** — sheet-builder 2/2 (but see the 27 Sep correction below), table-cleanup 3/3,
     report-to-slides 1/1, document-drafter 2/2, email-drafting 2/2, thread-summary 1/1,
     presentation-builder 1/2. The failure is an exact slide count: asked for three
     slides from short notes, the model repeats a slide; once the repeat is removed two
@@ -161,3 +161,14 @@ omitted. Reproduce from `core/` with
 - `workbook-to-deck` (a deck whose charts come from verified workbook values): the chart
   element exists in `slide.update`; the graph is the next step.
 - Editing an existing deck through batches (Deck Review still returns fixes).
+
+## Correction and follow-up (27 September 2026)
+Running the skills on the iPhone simulator (STATUS, session 42) showed that
+the budget sheet-builder live pass above proposed a Spent of 60 for Internet,
+a figure the description gives only as planned; the replayed contract case
+asserted it as correct. `workbook.verify_spec` now refuses a figure the
+description gives once in two columns of a row, and `repair_duplicated_figures`
+empties the copy when the description names the right column before the
+figure. The same run found four more defects (number format, "null" words,
+the email greeting the sender, save-name collisions on mobile), all fixed
+there.

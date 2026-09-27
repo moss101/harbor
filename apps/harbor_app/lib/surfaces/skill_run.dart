@@ -89,6 +89,25 @@ String suggestedCopyName(String original) {
   return '${original.substring(0, dot)} (Harbor)${original.substring(dot)}';
 }
 
+/// `October Budget.xlsx` → `October Budget (2).xlsx`, `(3)`, … — the
+/// first name in [dir] that [exists] says is free. Save New Copy never
+/// overwrites, so on mobile (no save dialog to ask) a second run that
+/// suggests the same name must pick another one, or the core refuses the
+/// commit and the approved file is lost (found on the iOS simulator).
+String firstFreePath(
+    String dir, String name, bool Function(String path) exists) {
+  final sep = Platform.pathSeparator;
+  String at(String n) => '$dir$sep$n';
+  if (!exists(at(name))) return at(name);
+  final dot = name.lastIndexOf('.');
+  final stem = dot <= 0 ? name : name.substring(0, dot);
+  final ext = dot <= 0 ? '' : name.substring(dot);
+  for (var i = 2;; i++) {
+    final candidate = at('$stem ($i)$ext');
+    if (!exists(candidate)) return candidate;
+  }
+}
+
 /// Run a graph skill (decision 0006): the form is generated from the
 /// graph's input schema, the run executes on the durable executor in the
 /// core, and a proposal parks the run for an explicit approval here. The
@@ -360,7 +379,8 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
     // channel or a share sheet. Untouched, and flagged rather than
     // papered over.
     final dir = await getApplicationDocumentsDirectory();
-    return '${dir.path}${Platform.pathSeparator}$suggestedName';
+    return firstFreePath(
+        dir.path, suggestedName, (path) => File(path).existsSync());
   }
 
   /// Approve and write the proposal (production plan B1). Save New Copy is

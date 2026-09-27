@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "216784892b6f4685e4fb81ace24d331a2338d5b0f3295ab512cbb3a049dec413",
+  "input_manifest_sha256": "218da679948524dad354ea752cd7fe8f489b9a57e2fff9ecfa4d2eecf85cf3b2",
   "file_count_excluding_manifest": 602,
   "files": [
     {
@@ -119,13 +119,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 109998,
-      "sha256": "da255099168b4325118068f07d787c94390dc00b3dcc66c43c0a990a506f2d3d"
+      "bytes": 109999,
+      "sha256": "4f555530448b4d05e0e3975835320990c7e21f5cb88b733e5be47f140cc483e2"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "a9cef81d8aabf6d0e88d6de1693db9ba1d42304118178dc430893d20a92e963c"
+      "sha256": "8868d077ada9845c1b6b06837c3a15b4ccf10e642541340ad61b56b0bc03fe6c"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -644,8 +644,8 @@
     },
     {
       "path": "apps/harbor_app/lib/surfaces/skill_run.dart",
-      "bytes": 33121,
-      "sha256": "f44cb1ca295564866884eee0c5e760d7afd46a033afe72d9368a2873c41e6723"
+      "bytes": 33990,
+      "sha256": "b0dda539d73546a142410150b419faa22a085f79d27165e6e57c7b9a5d94f321"
     },
     {
       "path": "apps/harbor_app/lib/surfaces/skills_surface.dart",
@@ -884,8 +884,8 @@
     },
     {
       "path": "apps/harbor_app/test/skill_run_test.dart",
-      "bytes": 2982,
-      "sha256": "44bfc3a89983bf9e6f53f54519eebbd636ee7eacefbb5906f8a953175e459e53"
+      "bytes": 3588,
+      "sha256": "bd0092043aef9f39d5f29e5ac09d6939db61680dd8f8c3bbcf7aba23ab20bb5c"
     },
     {
       "path": "apps/harbor_app/windows/.gitignore",
@@ -1524,8 +1524,8 @@
     },
     {
       "path": "core/harbor_core/src/graphs/email-drafting.json",
-      "bytes": 5349,
-      "sha256": "fbe779595a6551433d16f7a60087ea9f34a0ffd480edeba460fe16df52888318"
+      "bytes": 5726,
+      "sha256": "1aadbe49a77d49ed77d1d81e00a1f073dc16d25d2450c7348f2fc5584ef14351"
     },
     {
       "path": "core/harbor_core/src/graphs/financial-model-review.json",
@@ -1564,8 +1564,8 @@
     },
     {
       "path": "core/harbor_core/src/graphs/sheet-builder.json",
-      "bytes": 8019,
-      "sha256": "fbeeba965cacc19c1e2272bccbf86491c26db7e23e98afa39cfdc63582612863"
+      "bytes": 8091,
+      "sha256": "98419c6e277dcf7c1bce544f4696257faf959e670d61f3a5b5e5afbd5017ad0c"
     },
     {
       "path": "core/harbor_core/src/graphs/table-cleanup.json",
@@ -1609,8 +1609,8 @@
     },
     {
       "path": "core/harbor_core/src/tools/authoring.rs",
-      "bytes": 78362,
-      "sha256": "60a53c4235072e0bcac44ad0cab652883519150fe58bd6d9538a43c39de08ffa"
+      "bytes": 89184,
+      "sha256": "c2504396e33377d9759c6674255f30d24d39cae6f594fe25ca387ed62c7a1d94"
     },
     {
       "path": "core/harbor_core/src/tools/builtin.rs",
@@ -1619,8 +1619,8 @@
     },
     {
       "path": "core/harbor_core/src/tools/create.rs",
-      "bytes": 104607,
-      "sha256": "c3cb12edf81d8adeccffc3ce74a9f5d1af5b202ae2a176e27a0cd1d640fbab8e"
+      "bytes": 112409,
+      "sha256": "6697e2b002bde41012149a17f9f2afdcf802d8b3350398680f4a2fb2f617bd79"
     },
     {
       "path": "core/harbor_core/src/tools/mod.rs",
@@ -2129,8 +2129,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 97963,
-      "sha256": "ff4b0e6d5a2dc9566ad49c34581648d4a68bb8ef18b4f74effbfc343b74e6077"
+      "bytes": 101078,
+      "sha256": "3e3a08916578c194c4a9cd8a3d118ac02ab4da1f3a784bf3dfc600d1253b74a5"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -2169,8 +2169,8 @@
     },
     {
       "path": "docs/decisions/0008-authoring-skills-creation-and-repair-loop.md",
-      "bytes": 11909,
-      "sha256": "708f90894b98e3167092d071f8a09fe934a873bb4bcd1f95d661ac0e0fca2ef0"
+      "bytes": 12605,
+      "sha256": "ab26d35dd4fe0b3976be41d0d216ee904c2a1e73ef0e13b2d951f87bd0d6fa9d"
     },
     {
       "path": "docs/release/THIRD_PARTY_NOTICES.md",
@@ -2509,8 +2509,8 @@
     },
     {
       "path": "evals/skills/sheet-builder/cases.json",
-      "bytes": 10088,
-      "sha256": "9c5ed1ad6f23adc35b93c9895ba94c3cbecfb11dbae8b03d1c9deb095e9d2778"
+      "bytes": 10494,
+      "sha256": "b07a35ad2aa5f861a027e1ab265457efb433f171137717439fe3dee41d950b39"
     },
     {
       "path": "evals/skills/sheet-builder/cassettes/budget.json",

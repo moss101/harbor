@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:harbor_app/surfaces/skill_run.dart';
 
@@ -85,5 +86,19 @@ void main() {
             .canCommit,
         isFalse);
     expect(suggestedCopyName('notes'), 'notes (Harbor)');
+  });
+
+  test('a saved copy never takes a name that is already used', () {
+    final taken = {
+      '/docs/October Budget.xlsx',
+      '/docs/October Budget (2).xlsx'
+    };
+    String norm(String p) => p.replaceAll(Platform.pathSeparator, '/');
+    bool exists(String p) => taken.contains(norm(p));
+    expect(
+        norm(firstFreePath('/docs', 'Lease.docx', exists)), '/docs/Lease.docx');
+    expect(norm(firstFreePath('/docs', 'October Budget.xlsx', exists)),
+        '/docs/October Budget (3).xlsx');
+    expect(norm(firstFreePath('/docs', 'notes', (_) => false)), '/docs/notes');
   });
 }

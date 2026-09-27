@@ -271,7 +271,7 @@
     },
     {
       "id": "structural_slips_repaired",
-      "title": "Contract (the pinned model's live output): a column both typed and computed is built once, by formula, and the repair is reported",
+      "title": "Contract (the pinned model's live output): a column both typed and computed is built once, by formula; the Spent of 60 it copied from Internet's plan (the description gives 60 once, under Planned) is emptied by code; both repairs are reported",
       "inputs": {
         "description": "Monthly household budget for October. Planned: rent 1,200, groceries 400, transport 150, internet 60. Spent so far: rent 1,200, groceries 385, transport 90. I want planned, spent and what is left for each item, with totals. Amounts in dollars."
       },
@@ -299,6 +299,16 @@
           "kind": "contains",
           "pointer": "/check/normalized",
           "text": "Remaining\\\" is computed by a formula"
+        },
+        {
+          "kind": "contains",
+          "pointer": "/check/normalized",
+          "text": "gives 60 once, under \\\"Planned\\\""
+        },
+        {
+          "kind": "contains",
+          "pointer": "/proposal/preview/rows",
+          "text": "\"Internet\",\"60\",\"\""
         },
         {
           "kind": "state_equals",

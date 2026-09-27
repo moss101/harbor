@@ -341,6 +341,25 @@ pub fn parse_number_text(raw: &str) -> Option<(f64, bool)> {
     Some((if negative { -v } else { v }, percent))
 }
 
+/// A stand-in the model writes for "no value" — `"null"`, `"none"`,
+/// `"N/A"` — as text. Printed, it reads as content ("null" on a cover
+/// slide, found on the iOS simulator run); every optional text a build
+/// tool reads treats it as absent.
+pub(crate) fn is_null_word(t: &str) -> bool {
+    matches!(
+        t.trim().to_ascii_lowercase().as_str(),
+        "null" | "none" | "n/a" | "undefined" | "nil"
+    )
+}
+
+/// An optional text field: trimmed, and absent when empty or a null word.
+fn optional_text(v: Option<&Value>) -> Option<String> {
+    v.and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|t| !t.is_empty() && !is_null_word(t))
+        .map(str::to_string)
+}
+
 fn cell_from_json(v: &Value, kind: ColumnType) -> Result<CellValue, String> {
     match v {
         Value::Null => Ok(CellValue::Blank),
@@ -368,7 +387,7 @@ fn cell_from_json(v: &Value, kind: ColumnType) -> Result<CellValue, String> {
         }
         Value::String(s) => {
             let t = s.trim();
-            if t.is_empty() {
+            if t.is_empty() || is_null_word(t) {
                 return Ok(CellValue::Blank);
             }
             if kind.is_numeric() {
@@ -639,6 +658,160 @@ impl WorkbookSpec {
 /// be totalled. Every repair is returned as a note. Figures are never
 /// touched: whether they come from the description is the verifier's
 /// question, not this function's.
+/// Where a figure is written in the text, whatever its formatting
+/// ("1,200" and "1200" are the same figure): byte offsets of each match.
+pub(crate) fn figure_positions(text: &str, x: f64) -> Vec<usize> {
+    static RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+    let re = RE.get_or_init(|| regex::Regex::new(r"\d[\d,]*(?:\.\d+)?").expect("number regex"));
+    re.find_iter(text)
+        .filter(|m| {
+            m.as_str()
+                .replace(',', "")
+                .parse::<f64>()
+                .is_ok_and(|y| (y - x).abs() < 1e-9)
+        })
+        .map(|m| m.start())
+        .collect()
+}
+
+/// A figure the description gives once, copied into a second column of
+/// the same row (the iOS simulator run: "internet 60" under Planned also
+/// written as Spent 60). Code can tell where it belongs without guessing
+/// when the description names a column before the figure — "Planned: …
+/// internet 60. Spent so far: …" — so the copy under the other column is
+/// emptied and the repair reported. Like [`normalize_table_spec`] it only
+/// removes; when no column is named before the figure nothing changes and
+/// the verifier's problem stands.
+pub fn repair_duplicated_figures(v: &Value, source: &str) -> (Value, Vec<String>) {
+    let mut out = v.clone();
+    let mut notes = Vec::new();
+    if source.trim().is_empty() {
+        return (out, notes);
+    }
+    let lower_source = source.to_lowercase();
+    let columns: Vec<(String, String)> = out
+        .get("columns")
+        .and_then(Value::as_array)
+        .map(|a| {
+            a.iter()
+                .map(|c| {
+                    (
+                        c.get("header")
+                            .and_then(Value::as_str)
+                            .unwrap_or("")
+                            .trim()
+                            .to_string(),
+                        c.get("type")
+                            .and_then(Value::as_str)
+                            .unwrap_or("")
+                            .to_string(),
+                    )
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    let numeric = |t: &str| matches!(t, "number" | "integer" | "currency" | "percent");
+    let label_col = columns.iter().position(|(_, t)| t == "text");
+    // The last column named at or before `pos` in the description.
+    let named_before = |pos: usize, candidates: &[usize]| -> Option<usize> {
+        candidates
+            .iter()
+            .filter_map(|&ci| {
+                let h = columns[ci].0.to_lowercase();
+                if h.is_empty() {
+                    return None;
+                }
+                lower_source[..pos].rfind(&h).map(|at| (at, ci))
+            })
+            .max()
+            .map(|(_, ci)| ci)
+    };
+    let Some(rows) = out.get_mut("rows").and_then(Value::as_array_mut) else {
+        return (out, notes);
+    };
+    for (ri, row) in rows.iter_mut().enumerate() {
+        let Some(cells) = row.as_array_mut() else {
+            continue;
+        };
+        let label = label_col
+            .and_then(|c| cells.get(c))
+            .and_then(Value::as_str)
+            .map(|l| l.trim().to_string())
+            .unwrap_or_default();
+        let value_at = |c: &Value| {
+            c.as_f64()
+                .or_else(|| c.as_str().and_then(parse_number_text).map(|(x, _)| x))
+        };
+        let mut groups: Vec<(f64, Vec<usize>)> = Vec::new();
+        for (ci, cell) in cells.iter().enumerate() {
+            let Some((_, t)) = columns.get(ci) else {
+                continue;
+            };
+            if !numeric(t) {
+                continue;
+            }
+            if let Some(x) = value_at(cell) {
+                match groups.iter_mut().find(|(y, _)| *y == x) {
+                    Some((_, cis)) => cis.push(ci),
+                    None => groups.push((x, vec![ci])),
+                }
+            }
+        }
+        for (x, cis) in groups {
+            let mut positions = figure_positions(source, x);
+            if cis.len() < 2 || positions.len() >= cis.len() || positions.is_empty() {
+                continue;
+            }
+            // Prefer the mentions that follow the row's own label.
+            if !label.is_empty() {
+                let l = label.to_lowercase();
+                let near: Vec<usize> = positions
+                    .iter()
+                    .copied()
+                    .filter(|&p| {
+                        let from = p.saturating_sub(l.len() + 24);
+                        lower_source.get(from..p).is_some_and(|w| w.contains(&l))
+                    })
+                    .collect();
+                if !near.is_empty() {
+                    positions = near;
+                }
+            }
+            let keep: Vec<usize> = positions
+                .iter()
+                .filter_map(|&p| named_before(p, &cis))
+                .collect();
+            if keep.is_empty() || keep.len() >= cis.len() {
+                continue;
+            }
+            let mut emptied = Vec::new();
+            for &ci in &cis {
+                if !keep.contains(&ci) {
+                    cells[ci] = Value::Null;
+                    emptied.push(format!("{:?}", columns[ci].0));
+                }
+            }
+            let shown = if x.fract() == 0.0 {
+                format!("{}", x as i64)
+            } else {
+                format!("{x}")
+            };
+            let row_name = if label.is_empty() {
+                String::new()
+            } else {
+                format!(" ({label})")
+            };
+            notes.push(format!(
+                "row {}{row_name}: the description gives {shown} once, under {:?}; the copy under {} was removed",
+                ri + 1,
+                columns[keep[0]].0,
+                emptied.join(" and ")
+            ));
+        }
+    }
+    (out, notes)
+}
+
 pub fn normalize_table_spec(v: &Value) -> (Value, Vec<String>) {
     let mut out = v.clone();
     let mut notes = Vec::new();
@@ -820,7 +993,9 @@ fn number_format(kind: ColumnType, symbol: Option<&str>) -> Option<String> {
             None => "#,##0.00".into(),
         }),
         ColumnType::Integer => Some("#,##0".into()),
-        ColumnType::Number => Some("#,##0.##".into()),
+        // Not "#,##0.##": Excel shows 1200 as "1,200." and Apple's
+        // renderer (Files preview, Quick Look) shows the cell blank.
+        ColumnType::Number => Some("#,##0.00".into()),
         ColumnType::Percent => Some("0.0%".into()),
         ColumnType::Text | ColumnType::Date => None,
     }
@@ -1051,12 +1226,7 @@ impl DeckOutline {
         if title.is_empty() {
             problems.push("the deck needs a title".into());
         }
-        let subtitle = v
-            .get("subtitle")
-            .and_then(Value::as_str)
-            .map(str::trim)
-            .filter(|s| !s.is_empty())
-            .map(str::to_string);
+        let subtitle = optional_text(v.get("subtitle"));
         let mut slides = Vec::new();
         let raw = v
             .get("slides")
@@ -1085,7 +1255,7 @@ impl DeckOutline {
             {
                 match &b {
                     Value::String(text) => {
-                        if !text.trim().is_empty() {
+                        if !text.trim().is_empty() && !is_null_word(text) {
                             bullets.push(OutlineBullet {
                                 text: text.trim().to_string(),
                                 cite: None,
@@ -1100,7 +1270,7 @@ impl DeckOutline {
                             .unwrap_or("")
                             .trim()
                             .to_string();
-                        if text.is_empty() {
+                        if text.is_empty() || is_null_word(&text) {
                             continue;
                         }
                         let cite = match (
@@ -1122,12 +1292,7 @@ impl DeckOutline {
             slides.push(OutlineSlide {
                 title: t,
                 bullets,
-                notes: s
-                    .get("notes")
-                    .and_then(Value::as_str)
-                    .map(str::trim)
-                    .filter(|n| !n.is_empty())
-                    .map(str::to_string),
+                notes: optional_text(s.get("notes")),
             });
         }
         if !problems.is_empty() {
@@ -1322,7 +1487,7 @@ impl DocumentSpec {
                     a.iter()
                         .filter_map(Value::as_str)
                         .map(str::trim)
-                        .filter(|p| !p.is_empty())
+                        .filter(|p| !p.is_empty() && !is_null_word(p))
                         .map(str::to_string)
                         .collect()
                 })
@@ -2226,7 +2391,8 @@ impl WorkbookBuild {
                     "type": "object",
                     "properties": {
                         "spec": {"type": "object"},
-                        "file_name": {"type": "string", "maxLength": 160}
+                        "file_name": {"type": "string", "maxLength": 160},
+                        "source": {"type": ["string", "null"], "maxLength": 2000000}
                     },
                     "required": ["spec"],
                     "additionalProperties": false
@@ -2253,7 +2419,9 @@ impl Tool for WorkbookBuild {
 
     fn call(&self, _ctx: &ToolContext<'_>, args: &Value) -> Result<Value, ToolError> {
         let tool = self.spec.id.clone();
-        let spec = WorkbookSpec::from_value(&args["spec"])
+        let source = args.get("source").and_then(Value::as_str).unwrap_or("");
+        let (repaired, _) = repair_duplicated_figures(&args["spec"], source);
+        let spec = WorkbookSpec::from_value(&repaired)
             .map_err(|p| ToolError::failed(&tool, p.join("; ")))?;
         let batch = workbook_batch(&spec);
         batch
@@ -2547,6 +2715,35 @@ mod tests {
             "computed": [{"header": "Remaining", "op": "subtract", "left": "Planned", "right": "Actual"}],
             "currency_symbol": "$"
         })
+    }
+
+    /// The iOS simulator run printed "null" on a cover slide and in the
+    /// speaker notes: the model wrote the word, not JSON null.
+    #[test]
+    fn null_words_are_absent_values_not_text() {
+        let outline = DeckOutline::from_value(&json!({
+            "title": "Harbor 1.1", "subtitle": "null",
+            "slides": [{"title": "Shipped", "bullets": ["Offline search", "N/A"], "notes": "None"}]
+        }))
+        .unwrap();
+        assert_eq!(outline.subtitle, None);
+        assert_eq!(outline.slides[0].notes, None);
+        assert_eq!(outline.slides[0].bullets.len(), 1);
+        assert!(matches!(
+            cell_from_json(&json!("null"), ColumnType::Number),
+            Ok(CellValue::Blank)
+        ));
+        assert!(!is_null_word("Nullable"));
+    }
+
+    /// "#,##0.##" rendered 1200 as "1,200." in Excel and as a blank cell
+    /// in Apple's Files preview and Quick Look.
+    #[test]
+    fn plain_numbers_use_a_format_every_renderer_shows() {
+        assert_eq!(
+            number_format(ColumnType::Number, None).as_deref(),
+            Some("#,##0.00")
+        );
     }
 
     #[test]

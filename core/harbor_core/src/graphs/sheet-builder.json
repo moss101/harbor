@@ -223,6 +223,9 @@
       "args": {
         "spec": {
           "$state": "/spec"
+        },
+        "source": {
+          "$state": "/input/description"
         }
       },
       "out": "/proposal",

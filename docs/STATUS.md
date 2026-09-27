@@ -7,6 +7,58 @@ ran at.
 
 ---
 
+## Session 42 (2026-09-27): the authoring skills on the iPhone simulator — five defects the Mac runs did not show
+
+Uncommitted on top of `8a09909` at the time of writing. iPhone 17 Pro
+simulator, CPU-only (`SIMCTL_CHILD_HARBOR_GGUF_CPU_ONLY=1`, the
+simulator's Metal path is known-degenerate), same pinned model, the eval
+inputs pasted through the simulator clipboard (iOS autocorrect turned a
+typed "I'll" into "I'love").
+
+- **First pass: all seven skills ran to their end state on iOS.** New-file
+  approval and save to Documents (hash of every saved file equals the
+  approved hash), the file picker, the Harbor folder in Files, Save New
+  Copy on an edit, the repair loop (Thread Summary retried once), Table
+  Cleanup with no model call. Model time 4–15 s per draft.
+- **Defects found and fixed:**
+  1. Plain number columns used `#,##0.##`: Excel shows 1200 as "1,200.",
+     and Apple's renderer (Files preview, Quick Look) shows the cells
+     blank. Now `#,##0.00`.
+  2. The model wrote the word "null" for an absent subtitle and notes;
+     the deck printed it. Null words ("null", "none", "N/A", …) are now
+     absent values wherever the build tools read optional text.
+  3. Email Drafting greeted the sender ("Dear Omar"), signed the body as
+     the customer and still passed. The draft node now sees who it
+     writes as, and `email.verify_draft` (new `sender_name`) rejects a
+     greeting that addresses the sender, a name in `sign_off` and a
+     closing paragraph in the body. Re-run: "Hi Amina … Best regards,
+     Omar Haddad", first try.
+  4. Spreadsheet Builder copied Internet's planned 60 into Spent. The
+     checker now refuses a figure the description gives once in two
+     columns of a row, and `repair_duplicated_figures` (checker and
+     build, both given the description) keeps it under the column the
+     description names before it and empties the copy — reported, never
+     invented. Re-run: Internet Planned 60, Spent empty, one draft; the
+     Files preview shows every figure.
+  5. A second run of any creating skill failed on save: the suggested
+     name existed, the core (correctly) refused to overwrite, and the
+     approved file was lost with "Run failed". Mobile saves now take the
+     first free name ("October Budget (2).xlsx", `firstFreePath`).
+- **Correction to session 41:** the Mac live run's sheet-builder
+  "2/2" included the same copied 60 — the recorded output that
+  `structural_slips_repaired` replays has it. The case now asserts the
+  code repair.
+- **Still open (not fixed):** Presentation Builder can drop content
+  (the risks from the launch notes); Document Drafter can repeat a
+  paragraph (repetition is a warning); Thread Summary blanks an owner
+  named by first name only ("Omar" vs "Omar Haddad"). The core turns a
+  refused commit into a failed run rather than letting the user pick
+  another destination.
+- **Gates.** fmt, clippy `-D warnings`, `cargo test --workspace` 0
+  failures (harbor_core lib 72), replay 54/54, dossier 124/124 contract
+  cases (seal regenerated at commit), `flutter analyze` clean, app tests
+  53/53.
+
 ## Session 41 (2026-09-26): Harbor makes files — seven authoring skills, a repair loop, and what the live tier said about both
 
 Decision 0008. Uncommitted on top of `eec218b` at the time of writing.

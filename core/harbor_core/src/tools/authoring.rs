@@ -515,9 +515,12 @@ impl Tool for WorkbookVerifySpec {
         // Check the table that would be built: structural slips are
         // repaired first (and reported), so the problems a model hears
         // are about substance it can fix.
-        let (normalized, notes) = normalize_table_spec(&args["spec"]);
-        let raw = &normalized;
         let source = s(args, "source");
+        let (repaired, mut notes) =
+            super::create::repair_duplicated_figures(&args["spec"], &source);
+        let (normalized, more) = normalize_table_spec(&repaired);
+        notes.extend(more);
+        let raw = &normalized;
         let mut problems: Vec<String> = Vec::new();
         let mut suggested = Vec::new();
         let mut checked = 0usize;
@@ -538,11 +541,19 @@ impl Tool for WorkbookVerifySpec {
                         .and_then(Value::as_str)
                         .map(|l| format!(" ({l})"))
                         .unwrap_or_default();
+                    let mut numeric_cells: Vec<(f64, &str)> = Vec::new();
                     for (ci, cell) in cells.iter().enumerate() {
                         let Some((header, kind)) = spec.columns.get(ci) else {
                             continue;
                         };
                         if kind.is_numeric() {
+                            if let Some(x) = cell.as_f64().or_else(|| {
+                                cell.as_str()
+                                    .and_then(super::create::parse_number_text)
+                                    .map(|(x, _)| x)
+                            }) {
+                                numeric_cells.push((x, header.as_str()));
+                            }
                             let (grounded, shown) = match cell {
                                 Value::Number(n) => (
                                     n.as_f64().map(|x| g.has_value(x)).unwrap_or(false),
@@ -581,6 +592,35 @@ impl Tool for WorkbookVerifySpec {
                             }
                         }
                     }
+                    // A figure the description gives once cannot fill two
+                    // columns of a row: "internet 60" under Planned is not
+                    // also a Spent of 60 (the iOS simulator run did this).
+                    let mut seen: Vec<f64> = Vec::new();
+                    for (x, _) in &numeric_cells {
+                        if seen.contains(x) {
+                            continue;
+                        }
+                        seen.push(*x);
+                        let headers: Vec<&str> = numeric_cells
+                            .iter()
+                            .filter(|(y, _)| y == x)
+                            .map(|(_, h)| *h)
+                            .collect();
+                        let given = occurrences_of(&source, *x);
+                        if headers.len() > 1 && given < headers.len() {
+                            let shown = decimal_display(*x);
+                            let times = if given == 1 { "once" } else { "fewer times" };
+                            problems.push(format!(
+                                "Row {}{label}: {shown} is under {}, but the description gives {shown} {times}; put it only under the column it belongs to and leave the others empty (null).",
+                                ri + 1,
+                                headers
+                                    .iter()
+                                    .map(|h| format!("{h:?}"))
+                                    .collect::<Vec<_>>()
+                                    .join(" and ")
+                            ));
+                        }
+                    }
                 }
                 for text in std::iter::once(spec.title.as_str())
                     .chain(spec.columns.iter().map(|(h, _)| h.as_str()))
@@ -598,6 +638,20 @@ impl Tool for WorkbookVerifySpec {
             "numbers_checked": checked,
             "normalized": notes,
         }))
+    }
+}
+
+/// How many times a figure is written in the text, whatever its
+/// formatting ("1,200" and "1200" are the same figure).
+fn occurrences_of(text: &str, x: f64) -> usize {
+    super::create::figure_positions(text, x).len()
+}
+
+fn decimal_display(x: f64) -> String {
+    if x.fract() == 0.0 && x.abs() < 1e15 {
+        format!("{}", x as i64)
+    } else {
+        format!("{x}")
     }
 }
 
@@ -1096,6 +1150,49 @@ fn greeting_names(greeting: &str) -> Vec<String> {
         .collect()
 }
 
+const CLOSING_WORDS: &[&str] = &[
+    "best",
+    "regards",
+    "kind",
+    "warm",
+    "warmest",
+    "thanks",
+    "thank",
+    "you",
+    "sincerely",
+    "yours",
+    "cheers",
+    "many",
+    "all",
+    "the",
+    "with",
+    "faithfully",
+    "truly",
+];
+
+/// A paragraph that is itself a closing ("Thank you,\nAmina"): Harbor lays
+/// out the sign-off and the sender's name, so one in the body is either a
+/// duplicate or — as on the iOS simulator run — someone else's signature.
+fn closing_paragraph_re() -> &'static regex::Regex {
+    static RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+    RE.get_or_init(|| {
+        regex::Regex::new(
+            r"(?i)^(many thanks|thanks|thank you|best regards|kind regards|warm regards|best wishes|best|regards|yours sincerely|yours faithfully|sincerely|cheers)\b[,.!]?(\s+[\p{L}.'-]+){0,3}[,.]?$",
+        )
+        .expect("closing regex")
+    })
+}
+
+/// The first name of whoever wrote the message being replied to, from its
+/// `From:` line ("From: Amina Khan <amina@…>" → Amina).
+fn message_author(source: &str) -> Option<String> {
+    source.lines().find_map(|l| {
+        let rest = l.trim().strip_prefix("From:")?;
+        let name = rest.split('<').next()?.trim();
+        name.split_whitespace().next().map(str::to_string)
+    })
+}
+
 pub struct EmailVerifyDraft {
     spec: ToolSpec,
 }
@@ -1112,7 +1209,8 @@ impl EmailVerifyDraft {
                         "draft": {"type": "object"},
                         "source": {"type": "string", "maxLength": 2000000},
                         "sources": {"type": "array", "maxItems": 8, "items": {"type": ["string", "null"], "maxLength": 2000000}},
-                        "attachments": {"type": "boolean"}
+                        "attachments": {"type": "boolean"},
+                        "sender_name": {"type": ["string", "null"], "maxLength": 120}
                     },
                     "required": ["draft"],
                     "additionalProperties": false
@@ -1189,6 +1287,42 @@ impl Tool for EmailVerifyDraft {
             ));
         }
         let lower_source = source.to_lowercase();
+        let sender = s(args, "sender_name").trim().to_string();
+        let sender_words: Vec<String> = sender
+            .split_whitespace()
+            .filter(|w| w.chars().count() >= 2)
+            .map(str::to_lowercase)
+            .collect();
+        let author = message_author(&source).filter(|a| !sender_words.contains(&a.to_lowercase()));
+        for name in greeting_names(&greeting) {
+            if sender_words.contains(&name.to_lowercase()) {
+                let whom = author
+                    .as_deref()
+                    .map(|a| format!(" — {a}, who wrote the message"))
+                    .unwrap_or_default();
+                problems.push(format!(
+                    "The greeting addresses {name}, but {name} is the sender of this email; greet the person you are writing to{whom}."
+                ));
+            }
+        }
+        let sign_off = s(draft, "sign_off").trim().to_string();
+        let named_in_sign_off = sign_off
+            .split(|c: char| !c.is_alphanumeric() && c != '-' && c != '\'')
+            .filter(|t| t.chars().next().is_some_and(char::is_uppercase))
+            .any(|t| !CLOSING_WORDS.contains(&t.to_lowercase().as_str()));
+        if sign_off.contains('\n') || named_in_sign_off {
+            problems.push(format!(
+                "sign_off {sign_off:?} contains a name; it must be only the closing phrase, such as Best regards — Harbor adds the sender's name."
+            ));
+        }
+        for p in &paragraphs {
+            let flat = p.split_whitespace().collect::<Vec<_>>().join(" ");
+            if closing_paragraph_re().is_match(&flat) {
+                problems.push(format!(
+                    "The body contains its own closing {flat:?}; remove that paragraph — sign_off holds the closing phrase and Harbor adds the sender's name."
+                ));
+            }
+        }
         for name in greeting_names(&greeting) {
             if !lower_source.contains(&name.to_lowercase()) {
                 problems.push(format!(
@@ -1596,6 +1730,101 @@ mod tests {
             .call(&ctx, tool, &args, &allow)
             .unwrap_or_else(|e| panic!("{tool}: {e}"))
             .output
+    }
+
+    /// The spec the pinned model drafted on the iOS simulator: Internet's
+    /// planned 60 copied into Spent, which the description never gives.
+    #[test]
+    fn a_figure_given_once_cannot_fill_two_columns_of_a_row() {
+        let spec = json!({"title": "October Budget", "sheet": "Budget",
+            "columns": [{"header": "Item", "type": "text"},
+                        {"header": "Planned", "type": "number"},
+                        {"header": "Spent", "type": "number"}],
+            "rows": [["rent", 1200, 1200], ["groceries", 400, 385],
+                     ["transport", 150, 90], ["internet", 60, 60]]});
+        // The description names the column before the figure, so code
+        // keeps 60 under Planned and empties the copy; rent's 1,200 is
+        // given twice and stays in both.
+        let description = "Monthly household budget for October. Planned: rent 1,200, groceries 400, transport 150, internet 60. Spent so far: rent 1,200, groceries 385, transport 90.";
+        let out = call(
+            "workbook.verify_spec",
+            json!({"spec": spec, "source": description}),
+        );
+        assert_eq!(out["ok"], true, "{}", out["problems"]);
+        let note = out["normalized"][0].as_str().unwrap();
+        assert!(
+            note.contains("row 4 (internet)")
+                && note.contains("under \"Planned\"")
+                && note.contains("\"Spent\" was removed"),
+            "{note}"
+        );
+        let (repaired, _) = super::super::create::repair_duplicated_figures(&spec, description);
+        assert_eq!(repaired["rows"][3], json!(["internet", 60, null]));
+        assert_eq!(repaired["rows"][0], json!(["rent", 1200, 1200]));
+        // No column named before the figure: code cannot tell which copy is
+        // right, so nothing is repaired and the model hears the problem.
+        let vague =
+            "Rent 1,200 and 1,200, groceries 400 and 385, transport 150 and 90, internet 60.";
+        let out = call(
+            "workbook.verify_spec",
+            json!({"spec": spec, "source": vague}),
+        );
+        assert_eq!(out["ok"], false);
+        let problems = out["problems"].as_array().unwrap();
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        let p = problems[0].as_str().unwrap();
+        assert!(p.contains("Row 4 (internet)") && p.contains("once"), "{p}");
+    }
+
+    /// The reply the pinned model drafted on the iOS simulator: it greeted
+    /// the sender, signed the body as the customer and put a second name
+    /// in the sign-off — and the checker used to pass it.
+    #[test]
+    fn a_reply_that_greets_or_signs_as_the_wrong_person_is_rejected() {
+        let message = "From: Amina Khan <amina@example.com>\nSubject: Delivery date for order 4471\n\nHi Omar,\nCan you confirm the delivery date for order 4471? Our clinic opens on 3 October and we need the equipment before then.\nThanks,\nAmina";
+        let notes = "Confirm delivery on 30 September, before their opening. The driver will call an hour before arrival.";
+        let bad = json!({
+            "subject": "Delivery date for order 4471",
+            "greeting": "Dear Omar,",
+            "paragraphs": [
+                "The delivery date for order 4471 is confirmed as 30 September. The driver will call an hour before arrival.",
+                "Thank you,\nAmina"
+            ],
+            "sign_off": "Best regards,\nAmina Khan"
+        });
+        let out = call(
+            "email.verify_draft",
+            json!({"draft": bad, "sources": [message, notes], "sender_name": "Omar Haddad"}),
+        );
+        assert_eq!(out["ok"], false);
+        let problems: Vec<&str> = out["problems"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(Value::as_str)
+            .collect();
+        assert_eq!(problems.len(), 3, "{problems:?}");
+        assert!(problems[0].contains("Omar is the sender") && problems[0].contains("Amina"));
+        assert!(problems.iter().any(|p| p.starts_with("sign_off")));
+        assert!(problems.iter().any(|p| p.contains("its own closing")));
+        let good = json!({
+            "subject": "Re: Delivery date for order 4471",
+            "greeting": "Hi Amina,",
+            "paragraphs": ["Delivery is confirmed for 30 September, before your opening. The driver will call an hour before arrival."],
+            "sign_off": "Best regards"
+        });
+        let out = call(
+            "email.verify_draft",
+            json!({"draft": good, "sources": [message, notes], "sender_name": "Omar Haddad"}),
+        );
+        assert_eq!(out["ok"], true, "{}", out["problems"]);
+        // Without a sender name the greeting cannot be judged; the other
+        // checks still hold.
+        let out = call(
+            "email.verify_draft",
+            json!({"draft": bad, "sources": [message, notes]}),
+        );
+        assert_eq!(out["problems"].as_array().unwrap().len(), 2);
     }
 
     #[test]

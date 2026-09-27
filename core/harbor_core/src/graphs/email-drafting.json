@@ -45,8 +45,13 @@
       "id": "draft",
       "kind": "model.structured",
       "description": "Draft only; the layout and the name are added by code.",
-      "instructions": "Draft an email from the notes, as a reply to the message when one is given. Subject: when replying keep the message's subject with Re: in front, otherwise write a short subject. Greeting: greet the person who wrote the message by the name they signed with, or use a neutral greeting such as Hello. Body: one to four short paragraphs that say what the notes say, in the requested tone, answering the questions in the message that the notes answer. Use only facts, figures and dates found in the message or the notes; never promise anything the notes do not. Do not mention attachments and do not say that anything was sent. sign_off is only the closing phrase, such as Best regards; Harbor adds the name.",
+      "instructions": "Draft an email from the notes, as a reply to the message when one is given. Subject: when replying keep the message's subject with Re: in front, otherwise write a short subject. You write as the sender named above, to the person who wrote the message. Greeting: greet the person who wrote the message by the name they signed with, or use a neutral greeting such as Hello. Body: one to four short paragraphs that say what the notes say, in the requested tone, answering the questions in the message that the notes answer. Use only facts, figures and dates found in the message or the notes; never promise anything the notes do not. Do not mention attachments and do not say that anything was sent. sign_off is only the closing phrase, such as Best regards; Harbor adds the name. Never end the body with a closing or a name.",
       "context": [
+        {
+          "label": "You are writing as (the sender — never greet or sign as anyone else)",
+          "from": "/input/sender_name",
+          "optional": true
+        },
         {
           "label": "Tone",
           "from": "/input/tone",
@@ -126,7 +131,10 @@
             "$state": "/input/notes"
           }
         ],
-        "attachments": false
+        "attachments": false,
+        "sender_name": {
+          "$state": "/input/sender_name"
+        }
       },
       "out": "/check",
       "next": "gate"
