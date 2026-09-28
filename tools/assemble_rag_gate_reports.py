@@ -317,7 +317,7 @@ def main() -> None:
                 "commit_sha": commit,
                 "completed_at": now,
                 "requirement": gate_rows[gid]["Requirement"],
-                "test_ids": [f"gate_results.json#{x}" for x in suites],
+                "test_ids": [f"gate_results.{x}" for x in suites],
                 "scenario_results": [],
                 "source_evidence": {
                     "bundle_commit": bundle["commit"],
