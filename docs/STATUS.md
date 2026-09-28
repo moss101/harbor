@@ -158,7 +158,7 @@ SEC-012/044 (catalog tamper + epoch rollback), SEC-007 (tool argument
 injection fails schema validation), SEC-004 (external relationships marked,
 never fetched), SEC-023 (new-copy default; overwrite protected by base hash).
 10 new tests across harbor_security (new suite), harbor_modelhub, harbor_core
-and harbor_artifacts; bundle 20/20. Classification: 33 gates scenario-complete
+and harbor_artifacts; bundle 20/20. Classification: 31 gates scenario-complete
 awaiting substance evidence, 14 citing non-executable SEC ids, 7
 operator-bound. Commit 9ec639b.
 
