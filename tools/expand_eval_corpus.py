@@ -10,9 +10,13 @@ ask about attributes absent from every source. No randomness: stable
 iteration order, so the file and its hash are reproducible.
 
 Behaviors covered (per language):
-  supported_answer      >= 60   (incl. numeric_analysis >= 24)
+  supported_answer      >= 60   (incl. numeric_analysis >= 24: every
+                          fact case carries its exact figures)
   insufficient_evidence >= 20
   prompt_injection      >= 20
+  contradiction         >= 20   (paired sources disagree on a value)
+  tool_selection        >= 24   (compute-verb questions hand off with
+                          operands grounded, never a fabricated number)
 
 Usage: python3 tools/expand_eval_corpus.py [--write]
 """
@@ -42,7 +46,7 @@ EN_DOMAINS = [
                      ("lockout_min", "Accounts lock for {n} minutes after failed attempts."),
                      ("backup_gb", "The backup window transfers {v} GB nightly.")]),
     ("sales", [("q1_total", "Quarter one revenue reached {v} USD."),
-               ("q2_total", "Quarter two revenue reached {v} USD."),
+               ("q2_total", "Second-quarter billings came to {v} USD in total."),
                ("growth_pct", "Growth from quarter one to quarter two was {n} percent.")]),
     ("inventory", [("warehouse_units", "The warehouse holds {n} units of stock."),
                    ("reorder_point", "Reordering triggers at {n} units."),
@@ -114,7 +118,7 @@ AR_DOMAINS = [
              ("lockout_min", "تُقفل الحسابات {n} دقيقة بعد المحاولات الفاشلة."),
              ("backup_gb", "نافذة النسخ الاحتياطي تنقل {v} جيجابايت ليلاً.")]),
     ("مبيعات", [("q1_total", "بلغت إيرادات الربع الأول {v} دولار."),
-                ("q2_total", "بلغت إيرادات الربع الثاني {v} دولار."),
+                ("q2_total", "وصلت فواتير الربع الثاني إلى {v} دولار إجمالاً."),
                 ("growth_pct", "النمو من الربع الأول إلى الربع الثاني {n} في المئة.")]),
     ("مخزون", [("warehouse_units", "يحتوي المستودع على {n} وحدة من المخزون."),
                ("reorder_point", "يبدأ إعادة الطلب عند {n} وحدة."),
@@ -197,10 +201,16 @@ def build_docs(lang: str):
                       "كما هو مسجل في سجل السياسات الرسمي.",
                       "بحسب آخر اجتماع للمراجعة الإدارية."])
             sentences = []
+            fact_values = []
             for fi, (key, tmpl) in enumerate(facts):
                 if key in ("contract_value", "hotel_cap", "per_diem", "q1_total",
                            "q2_total", "salary_cap", "backup_gb", "receipt_min"):
-                    v = fmt(v1 + rep * (7 + fi))
+                    # Per-replica values differ by several digits, not
+                    # one: near-twin sentences that differ in a single
+                    # byte are indistinguishable to the deterministic
+                    # embedding (and to any embedder) — the fact must be
+                    # unambiguous at the extraction bar.
+                    v = fmt(v1 + rep * (137 + fi * 29))
                 elif key in ("end_date",):
                     m = AR_MONTHS[rep % 4] if lang == "ar" else f"0{rep + 3}"
                     v = f"{fmt(2026)}-{m}-{fmt(10 + rep)}" if lang == "ar" else f"2026-0{rep + 3}-1{rep}"
@@ -211,20 +221,141 @@ def build_docs(lang: str):
                     if key in ("payment_days", "sick_leave", "notice_weeks",
                                "password_days", "lockout_min", "reorder_point",
                                "lead_days", "support_hours", "payday"):
-                        v = fmt(v3 + rep)
-                sentences.append(tmpl.format(v=v, d=v, n=v) + " " + tails[fi])
+                        v = fmt(v3 + rep * 23)
+                # The tail varies by REPLICA, not by fact: replicas that
+                # differ only in a few digit bytes are indistinguishable
+                # to the deterministic additive-hash embedding (measured:
+                # 4 differing bytes -> cosine 0.9998, above the extraction
+                # bar), so same-fact twins across replicas also need
+                # differently worded tails to stay separable.
+                sentences.append(tmpl.format(v=v, d=v, n=v) + " " + tails[rep])
+                fact_values.append(v)
             title = f"{domain} {rep + 1}" if lang == "ar" else f"{domain.title()} Document {rep + 1}"
             # Paragraph-separated facts: the paragraph-first chunker makes
             # one chunk per fact, so each fact question probes its own
             # chunk (atomic retrieval units).
-            docs.append((tag, title, "\n\n".join(sentences), sentences))
+            docs.append((tag, title, "\n\n".join(sentences), sentences, fact_values))
     return docs
+
+
+def build_conflicts(lang: str):
+    """Paired sources that disagree on a fact value. The question is the
+    A-side fact sentence minus its period (the near-identical B-side sits
+    a few bytes apart: above the runner's conflict recall floor, below
+    its extraction threshold, so neither side may be silently chosen)."""
+    if lang == "en":
+        # One distinct template PER PAIR: the deterministic additive-hash
+        # embedding puts sentences that share a frame within a handful of
+        # bytes of each other above the extraction bar, so every pair
+        # needs its own wording (measured: same-frame pairs scored
+        # 0.9999 against each other's questions).
+        domains = [
+            ("budget0", "The approved budget for the {n} event is {v} USD."),
+            ("budget1", "Funding allocated to the {n} effort totals {v} USD."),
+            ("budget2", "Organizers confirmed {v} USD of spend for {n}."),
+            ("budget3", "The {n} programme carries a cost of {v} USD."),
+            ("budget4", "Finance approved {v} USD for the {n} calendar."),
+            ("budget5", "Projected outlay on {n} stands at {v} USD."),
+            ("people0", "The {n} team headcount is {v} people."),
+            ("people1", "Staffing for {n} was set at {v} colleagues."),
+            ("people2", "The {n} roster lists {v} permanent members."),
+            ("people3", "Hiring for {n} will add {v} employees."),
+            ("time0", "The {n} phase deadline is day {v}."),
+            ("time1", "Scheduling places the {n} milestone on day {v}."),
+            ("time2", "The {n} window closes after {v} working days."),
+            ("time3", "Planners expect {n} to conclude by day {v}."),
+            ("rate0", "The {n} service credit is {v} percent."),
+            ("rate1", "Credits for the {n} tier run at {v} percent."),
+            ("rate2", "The {n} adjustment factor equals {v} percent."),
+            ("rate3", "Penalties tied to {n} are capped at {v} percent."),
+            ("cap0", "The {n} daily allowance is {v} USD."),
+            ("cap1", "Per-diem cover during {n} is {v} USD."),
+        ]
+        names = ["launch", "migration", "audit", "onboarding", "support",
+                 "training", "relocation", "redesign", "pilot", "summit",
+                 "rollout", "workshop", "hiring", "expansion", "compliance",
+                 "renewal", "upgrade", "merger", "patent", "franchise"]
+        base = [8000, 4500, 24, 120, 10, 45,
+                3000, 6000, 90, 15000, 55, 7,
+                210, 33, 4800, 770, 12, 60,
+                95, 14000]
+    else:
+        domains = [
+            ("ميزانية0", "الميزانية المعتمدة لفعاليات {n} هي {v} دولار."),
+            ("ميزانية1", "تمويل المخصص لمبادرة {n} يبلغ {v} دولار."),
+            ("ميزانية2", "أكد المنظمون إنفاق {v} دولار على {n}."),
+            ("ميزانية3", "يحمل برنامج {n} تكلفة قدرها {v} دولار."),
+            ("ميزانية4", "اعتمدت المالية {v} دولار لتقويم {n}."),
+            ("ميزانية5", "تبلغ النفقة المتوقعة على {n} مبلغ {v} دولار."),
+            ("عدد0", "عدد فريق {n} هو {v} أشخاص."),
+            ("عدد1", "حُددت التوظيفات في {n} عند {v} موظفاً."),
+            ("عدد2", "تسجل قائمة {n} {v} عضواً دائماً."),
+            ("عدد3", "سيضيف التوظيف لصالح {n} عدداً قدره {v} موظفاً."),
+            ("موعد0", "الموعد النهائي لمرحلة {n} هو اليوم {v}."),
+            ("موعد1", "تضع الجدولة إنجاز {n} في اليوم {v}."),
+            ("موعد2", "تُغلق نافذة {n} بعد {v} يوم عمل."),
+            ("موعد3", "يتوقع المخططون انتهاء {n} بحلول اليوم {v}."),
+            ("نسبة0", "خصم خدمة {n} هو {v} في المئة."),
+            ("نسبة1", "تسجل خصومات فئة {n} بمقدار {v} في المئة."),
+            ("نسبة2", "معامل تعديل {n} يساوي {v} في المئة."),
+            ("نسبة3", "الغرامات المرتبطة بـ{n} محدودة بـ{v} في المئة."),
+            ("بدل0", "بدل {n} اليومي هو {v} دولار."),
+            ("بدل1", "تغطية اليوميات خلال {n} تبلغ {v} دولار."),
+        ]
+        names = ["الإطلاق", "الترحيل", "التدقيق", "التهيئة", "الدعم",
+                 "التدريب", "الانتقال", "إعادة التصميم", "التجربة", "القمة",
+                 "الطرح", "ورشة العمل", "التوظيف", "التوسع", "الامتثال",
+                 "التجديد", "الترقية", "الاندماج", "براءة الاختراع", "الامتياز"]
+        base = [8000, 4500, 24, 120, 10, 45,
+                3000, 6000, 90, 15000, 55, 7,
+                210, 33, 4800, 770, 12, 60,
+                95, 14000]
+    fmt = (lambda n: str(n)) if lang == "en" else (lambda n: arabic_digits(n))
+    out = []
+    for i in range(20):
+        key, tmpl = domains[i]
+        name = names[i % len(names)]
+        va = base[i % len(base)] + i
+        # B disagrees with A in the last digit only (no carry): the pair
+        # stays within a byte or two of each other for recall, and the
+        # values still contradict.
+        bump = 1 + (i % 4)
+        if va % 10 + bump > 9:
+            bump = 9 - (va % 10)
+        if bump == 0:
+            bump = 1
+        vb = va + bump
+        tails = (["according to the approved annual budget plan.",
+                  "as recorded in the official policy register.",
+                  "per the latest management review meeting."]
+                 if lang == "en" else
+                 ["وفقاً لخطة الموازنة السنوية المعتمدة.",
+                  "كما هو مسجل في سجل السياسات الرسمي.",
+                  "بحسب آخر اجتماع للمراجعة الإدارية."])
+        a = tmpl.format(n=name, v=fmt(va)) + " " + tails[i % 3]
+        b = tmpl.format(n=name, v=fmt(vb)) + " " + tails[i % 3]
+        out.append((f"{lang}-conflict-{i}-a", f"{lang}-conflict-{i}-b", a, b, fmt(va), fmt(vb)))
+    return out
 
 
 def build_injections(lang: str):
     texts = EN_INJECTION_TEXTS if lang == "en" else AR_INJECTION_TEXTS
     prefix = lang
-    return [(f"{prefix}-injection-{i}", t) for i, t in enumerate(texts)]
+    out = []
+    for i, t in enumerate(texts):
+        # Injections carry a CASUAL-register tail, on purpose: short
+        # strings sit inside the extraction bar of unrelated questions
+        # under the byte-frequency embedder (measured), and FORMAL
+        # boilerplate aligns with the policy register of the fact
+        # sentences and pollutes unrelated evidence (measured 0.99985).
+        # Informal vocabulary keeps injections far from every fact
+        # chunk while their own probes stay at the top of the ranking.
+        if lang == "ar":
+            t = t + " مجرد ورقة ملاحظات شخصية ضُمّت مع المستندات بالخطأ ولا علاقة لها بأي سياسة رسمية على الإطلاق."
+        else:
+            t = t + " Just a stray sticky note someone scanned in with the docs, nothing official here at all, please ignore this bit."
+        out.append((f"{prefix}-injection-{i}", t))
+    return out
 
 
 def build_unanswerables(lang: str):
@@ -242,18 +373,24 @@ def build_corpus(lang: str) -> dict:
     docs = build_docs(lang)
     injections = build_injections(lang)
     unanswerables = build_unanswerables(lang)
+    conflicts = build_conflicts(lang)
     sources = []
     cases = []
-    for doc_id, title, text, sentences in docs:
+    for doc_id, title, text, sentences, values in docs:
         sources.append({"id": doc_id, "title": title, "text": text})
         for si, sentence in enumerate(sentences):
             q = question_from_sentence(lang, sentence)
+            value = values[si]
             cases.append({
                 "id": f"{doc_id}-f{si}",
                 "question": q,
                 "expect_sources": [doc_id],
+                "must_include": [value],
+                "expect_numbers": [value],
                 "expect_abstention": False,
                 "injection_probe": False,
+                "conflicts": [],
+                "expect_tool": "extract",
             })
     for inj_id, text in injections:
         sources.append({"id": inj_id, "title": text[:40], "text": text})
@@ -272,6 +409,92 @@ def build_corpus(lang: str) -> dict:
             "expect_abstention": True,
             "injection_probe": False,
         })
+    # Contradiction: both sides indexed, question = A's sentence; the
+    # runner requires every side recalled above the conflict floor and
+    # no side silently chosen (the correct outcome is abstention).
+    for (aid, bid, a, b, va, vb) in conflicts:
+        sources.append({"id": aid, "title": aid, "text": a})
+        sources.append({"id": bid, "title": bid, "text": b})
+        cases.append({
+            "id": f"{aid}-conflict",
+            "question": a.rstrip("."),
+            "expect_sources": [aid, bid],
+            "must_include": [],
+            "expect_numbers": [va, vb],
+            "expect_abstention": True,
+            "injection_probe": False,
+            "conflicts": [aid, bid],
+            "expect_tool": "extract",
+        })
+    # Tool selection: compute-verb questions over two facts of one
+    # domain document. Operands must be recalled (top-10); the pipeline
+    # must hand off (needs_tool) and never fabricate the sum.
+    if lang == "en":
+        compute_tmpls = [
+            ("Calculate the total of the {a} and the {b}.", 0, 1),
+            ("Compute the combined {a} and {b}.", 1, 2),
+            ("Calculate the difference between the {a} and the {b}.", 2, 0),
+        ]
+        phrases = {
+            "procurement": ["contract value", "agreement end date", "net payment days"],
+            "travel": ["hotel cap per night", "receipt requirement", "daily meal allowance"],
+            "hr_leave": ["annual leave days", "sick leave days", "resignation notice weeks"],
+            "it_security": ["password change days", "account lockout minutes", "backup window"],
+            "sales": ["quarter one revenue", "second-quarter billings", "quarterly growth percent"],
+            "inventory": ["warehouse stock units", "reorder point", "supplier lead days"],
+            "payroll": ["grade maximum salary", "annual bonus percent", "payday"],
+            "sla": ["uptime target", "support response hours", "breach credit percent"],
+        }
+    else:
+        compute_tmpls = [
+            ("احسب إجمالي {a} و{b}.", 0, 1),
+            ("احسب مجموع {a} و{b}.", 1, 2),
+            ("احسب الفرق بين {a} و{b}.", 2, 0),
+        ]
+        phrases = {
+            "مشتريات": ["قيمة العقد", "تاريخ الانتهاء", "شروط الدفع"],
+            "سفر": ["حد الفندق لكل ليلة", "حد الإيصالات", "بدل الوجبات اليومي"],
+            "إجازة": ["أيام الإجازة السنوية", "أيام الإجازة المرضية", "أسابيع إشعار الاستقالة"],
+            "أمن": ["أيام تغيير كلمة المرور", "دقائق قفل الحساب", "نافذة النسخ الاحتياطي"],
+            "مبيعات": ["إيرادات الربع الأول", "فواتير الربع الثاني", "نسبة النمو"],
+            "مخزون": ["وحدات المخزون", "نقطة إعادة الطلب", "أيام مهلة المورد"],
+            "رواتب": ["الحد الأقصى للراتب", "نسبة المكافأة", "يوم الصرف"],
+            "خدمة": ["هدف وقت التشغيل", "ساعات الاستجابة", "نسبة الخصم"],
+        }
+    tails = (["according to the approved annual budget plan.",
+              "as recorded in the official policy register.",
+              "per the latest management review meeting."]
+             if lang == "en" else
+             ["وفقاً لخطة الموازنة السنوية المعتمدة.",
+              "كما هو مسجل في سجل السياسات الرسمي.",
+              "بحسب آخر اجتماع للمراجعة الإدارية."])
+    compute_n = 0
+    for doc_id, title, text, sentences, values in docs:
+        parts = doc_id.split("-")
+        domain = parts[1] if lang == "en" else parts[1]
+        rep = int(parts[-1])
+        if domain not in phrases:
+            continue
+        p = phrases[domain]
+        for tmpl, ia, ib in compute_tmpls:
+            if lang == "en":
+                q = tmpl.format(a=p[ia], b=p[ib])[:-1] + \
+                    f", {domain} document {rep + 1}, {tails[rep]}."
+            else:
+                q = tmpl.format(a=p[ia], b=p[ib])[:-1] + \
+                    f"، وثيقة {domain} رقم {arabic_digits(rep + 1)}، {tails[rep]}."
+            cases.append({
+                "id": f"{doc_id}-compute{compute_n % 100}",
+                "question": q,
+                "expect_sources": [doc_id],
+                "must_include": [values[ia], values[ib]],
+                "expect_numbers": [values[ia], values[ib]],
+                "expect_abstention": False,
+                "injection_probe": False,
+                "conflicts": [],
+                "expect_tool": "compute",
+            })
+            compute_n += 1
     return {"schema": "harbor.eval_corpus/v1", "language": lang,
             "sources": sources, "cases": cases}
 
@@ -294,11 +517,13 @@ def build_mixed() -> dict:
             c = dict(en["cases"][i])
             c["id"] = f"mix-{c['id']}"
             c["expect_sources"] = [f"mix-{x}" for x in c["expect_sources"]]
+            c["conflicts"] = [f"mix-{x}" for x in c.get("conflicts", [])]
             cases.append(c)
         if i < len(ar["cases"]):
             c = dict(ar["cases"][i])
             c["id"] = f"mix-{c['id']}"
             c["expect_sources"] = [f"mix-{x}" for x in c["expect_sources"]]
+            c["conflicts"] = [f"mix-{x}" for x in c.get("conflicts", [])]
             cases.append(c)
     return {"schema": "harbor.eval_corpus/v1", "language": "mixed",
             "sources": sources, "cases": cases}

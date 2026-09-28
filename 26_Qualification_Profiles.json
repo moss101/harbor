@@ -27,7 +27,7 @@
   "formula_engine_sha256": "64b7771c27fcd3da6229ae4653acc4269cf6635412b283fa0dd16e8359b54139",
   "formula_adapter_revision": "harbor_formula/1",
   "binary_fixture_bundle_sha256": "f5c97506bf348b6d009f2ebe3818ebb948cb7925efad499b87325da7527f0e54",
-  "evaluation_corpus_sha256": "a0b605a758f7a8f6c070c01be702789ca391bfc0ed332a2f520f5aabc66829dc",
+  "evaluation_corpus_sha256": "9ff1a4353e887ed50b9a547a5158b05b01ddbc492a35ed143ba93d3d136c800a",
   "qualified_device_manifest_sha256": "42f662aec03cd82f3c8825a757979ccf738983c2b93e21043b9ad286ac7e8c17"
  },
  "performance": {
@@ -118,7 +118,7 @@
    "field": "evaluation_corpus_sha256",
    "date": "2026-09-12",
    "previous": "9e2a7e4d30e00f540db42b3529e7c595352aee54861b7d05c57437a1bcd00083",
-   "new": "a0b605a758f7a8f6c070c01be702789ca391bfc0ed332a2f520f5aabc66829dc",
+   "new": "9ff1a4353e887ed50b9a547a5158b05b01ddbc492a35ed143ba93d3d136c800a",
    "reason": "Deterministic corpus expansion (tools/expand_eval_corpus.py): 116 EN + 116 AR + 232 mixed cases toward the 100/language minimum; harness evidence threshold recalibrated with measured distributions (eval.rs DEFAULT_MIN_SCORE note)."
   }
  ]

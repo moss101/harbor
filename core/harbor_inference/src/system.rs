@@ -135,10 +135,13 @@ impl SystemHostBridge {
                 "system host returned no descriptor".into(),
             ));
         }
-        let text = unsafe { CStr::from_ptr(raw) }.to_string_lossy().into_owned();
+        let text = unsafe { CStr::from_ptr(raw) }
+            .to_string_lossy()
+            .into_owned();
         unsafe { (vtable.free_string)(raw) };
-        let d = harbor_canonical::parse(&text)
-            .map_err(|e| ProviderError::Backend(format!("descriptor is not canonical JSON: {e}")))?;
+        let d = harbor_canonical::parse(&text).map_err(|e| {
+            ProviderError::Backend(format!("descriptor is not canonical JSON: {e}"))
+        })?;
         if d.get("schema").and_then(|v| v.as_str()) != Some("harbor.system_host/v1") {
             return Err(ProviderError::Backend(
                 "descriptor schema must be harbor.system_host/v1".into(),
@@ -165,7 +168,11 @@ impl SystemHostBridge {
             }
         }
         let mut caps = Vec::new();
-        for c in d.get("capabilities").and_then(|v| v.as_array()).unwrap_or(&[]) {
+        for c in d
+            .get("capabilities")
+            .and_then(|v| v.as_array())
+            .unwrap_or(&[])
+        {
             let Some(c) = c.as_str().and_then(capability_from_wire) else {
                 return Err(ProviderError::Backend(format!(
                     "descriptor has unknown capability {:?}",
@@ -174,7 +181,10 @@ impl SystemHostBridge {
             };
             caps.push(c);
         }
-        let available = d.get("available").and_then(|v| v.as_bool()).unwrap_or(false);
+        let available = d
+            .get("available")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
         let unavailable_reason = d
             .get("unavailable_reason")
             .filter(|v| !v.is_null())
@@ -234,10 +244,7 @@ impl SystemHostBridge {
             JsonValue::int(v).map_err(|e| ProviderError::Backend(format!("{what}: {e}")))
         };
         let mut pairs: Vec<(String, JsonValue)> = vec![
-            (
-                "schema".into(),
-                JsonValue::str("harbor.system_request/v1"),
-            ),
+            ("schema".into(), JsonValue::str("harbor.system_request/v1")),
             (
                 "model".into(),
                 JsonValue::object([
@@ -246,7 +253,10 @@ impl SystemHostBridge {
                 ]),
             ),
             ("messages".into(), JsonValue::Array(req.messages.clone())),
-            ("max_tokens".into(), int(req.max_tokens as i64, "max_tokens")?),
+            (
+                "max_tokens".into(),
+                int(req.max_tokens as i64, "max_tokens")?,
+            ),
             (
                 "temperature_milli".into(),
                 int((req.temperature * 1000.0).round() as i64, "temperature")?,
@@ -297,7 +307,9 @@ impl SystemHostBridge {
         if !self.available {
             return Err(ProviderError::ModelNotFound(format!(
                 "system model unavailable: {}",
-                self.unavailable_reason.as_deref().unwrap_or("unknown reason")
+                self.unavailable_reason
+                    .as_deref()
+                    .unwrap_or("unknown reason")
             )));
         }
         let wire = self.request_wire(&req)?;
@@ -306,7 +318,9 @@ impl SystemHostBridge {
         let response_text = if out.is_null() {
             None
         } else {
-            let t = unsafe { CStr::from_ptr(out) }.to_string_lossy().into_owned();
+            let t = unsafe { CStr::from_ptr(out) }
+                .to_string_lossy()
+                .into_owned();
             unsafe { (self.vtable.free_string)(out) };
             Some(t)
         };
@@ -336,7 +350,11 @@ impl SystemHostBridge {
             }
             host_status::CANCELLED => return Err(ProviderError::Cancelled),
             host_status::BACKEND | host_status::POLICY => {
-                let kind = if status == host_status::POLICY { "policy" } else { "backend" };
+                let kind = if status == host_status::POLICY {
+                    "policy"
+                } else {
+                    "backend"
+                };
                 return Err(ProviderError::Backend(format!(
                     "system host {kind}: {}",
                     body.get("error").and_then(|v| v.as_str()).unwrap_or("")
@@ -359,9 +377,7 @@ impl SystemHostBridge {
                 )))
             }
         }
-        *self.last_host_metadata.lock().unwrap() = body
-            .get("host_metadata")
-            .cloned();
+        *self.last_host_metadata.lock().unwrap() = body.get("host_metadata").cloned();
         let content = body
             .get("content")
             .and_then(|v| v.as_str())
@@ -407,7 +423,9 @@ impl ModelProvider for SystemHostBridge {
         if !self.available {
             return Err(ProviderError::ModelNotFound(format!(
                 "system model unavailable: {}",
-                self.unavailable_reason.as_deref().unwrap_or("unknown reason")
+                self.unavailable_reason
+                    .as_deref()
+                    .unwrap_or("unknown reason")
             )));
         }
         // The OS owns the model lifecycle; there is nothing to preload.
@@ -458,10 +476,7 @@ mod tests {
         d.respect_cancel = false;
     }
 
-    fn double_descriptor(
-        available: bool,
-        capabilities: &[&str],
-    ) -> String {
+    fn double_descriptor(available: bool, capabilities: &[&str]) -> String {
         serde_json::json!({
             "schema": "harbor.system_host/v1",
             "provider_id": "double-system",
@@ -550,7 +565,10 @@ mod tests {
         reset_double(r#"{"ok": true}"#);
         let bridge = SystemHostBridge::from_vtable(double_vtable()).unwrap();
         let resp = bridge
-            .generate(request(vec![Capabilities::Chat, Capabilities::StructuredOutput], None))
+            .generate(request(
+                vec![Capabilities::Chat, Capabilities::StructuredOutput],
+                None,
+            ))
             .unwrap();
         assert_eq!(resp.content, "{\"ok\": true}");
         assert_eq!(resp.executed_on, "double-system/double-model");
@@ -562,7 +580,11 @@ mod tests {
         assert_eq!(resp.usage.completion_tokens, 34);
         // The host metadata is surfaced for diagnostics.
         assert_eq!(
-            bridge.last_host_metadata().unwrap().get("guided").and_then(|v| v.as_bool()),
+            bridge
+                .last_host_metadata()
+                .unwrap()
+                .get("guided")
+                .and_then(|v| v.as_bool()),
             Some(true)
         );
         // The wire request carried the canonical schema and trace key.
@@ -572,7 +594,10 @@ mod tests {
             parsed.get("schema").and_then(|v| v.as_str()),
             Some("harbor.system_request/v1")
         );
-        assert_eq!(parsed.get("trace_key").and_then(|v| v.as_str()), Some("g/n#0"));
+        assert_eq!(
+            parsed.get("trace_key").and_then(|v| v.as_str()),
+            Some("g/n#0")
+        );
     }
 
     #[test]
@@ -581,7 +606,9 @@ mod tests {
         reset_double("x");
         let bridge = SystemHostBridge::from_vtable(double_vtable()).unwrap();
         DOUBLE.lock().unwrap().response_location = "remote";
-        let err = bridge.generate(request(vec![Capabilities::Chat], None)).unwrap_err();
+        let err = bridge
+            .generate(request(vec![Capabilities::Chat], None))
+            .unwrap_err();
         assert!(matches!(err, ProviderError::Policy(_)), "{err}");
     }
 
@@ -617,7 +644,9 @@ mod tests {
         };
         let bridge = SystemHostBridge::from_vtable(vt).unwrap();
         assert_eq!(bridge.unavailable_reason(), Some("modelNotReady"));
-        let err = bridge.generate(request(vec![Capabilities::Chat], None)).unwrap_err();
+        let err = bridge
+            .generate(request(vec![Capabilities::Chat], None))
+            .unwrap_err();
         assert!(
             matches!(&err, ProviderError::ModelNotFound(m) if m.contains("modelNotReady")),
             "{err}"
@@ -632,7 +661,8 @@ mod tests {
     }
 
     #[test]
-    fn descriptor_must_declare_on_device_execution() {        // A vtable whose descriptor claims remote execution is refused
+    fn descriptor_must_declare_on_device_execution() {
+        // A vtable whose descriptor claims remote execution is refused
         // at registration, not discovered mid-run.
         unsafe extern "C" fn remote_descriptor() -> *mut c_char {
             CString::new(
@@ -678,6 +708,9 @@ mod tests {
             provider_id: "apple-system".into(),
             model_id: "foundation-model".into(),
         };
-        assert!(matches!(r.chat(other), Err(ProviderError::ModelNotFound(_))));
+        assert!(matches!(
+            r.chat(other),
+            Err(ProviderError::ModelNotFound(_))
+        ));
     }
 }

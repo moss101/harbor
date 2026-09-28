@@ -4,12 +4,14 @@
 //! from the repo's evals/ directory); their combined SHA-256 is the
 //! `evaluation_corpus_sha256` recorded in 26_Qualification_Profiles.json.
 
+use std::collections::BTreeSet;
+
 use harbor_inference::backend::TestBackend;
 use harbor_inference::provider::{ModelProvider, ModelRef};
 
 use crate::chunk::Chunker;
 use crate::chunk::ChunkerConfig;
-use crate::eval::{run_eval, EvalCase, EvalReport, GroundedExtractor};
+use crate::eval::{run_eval, EvalCase, EvalReport, GroundedExtractor, ToolExpectation};
 use crate::identity::{embed_model_identity, ChunkerConfig as CC, IndexIdentity, Normalization};
 use crate::index::{KnowledgeIndex, Source, SourceChunk};
 
@@ -44,9 +46,24 @@ pub struct PinnedCorpus {
     pub language: String,
     pub sources: Vec<CorpusSource>,
     pub cases: Vec<EvalCase>,
+    /// Injection source ids (the generator's `*-injection-*` naming is
+    /// the corpus-side convention; the harness enforces it).
+    pub injection_sources: BTreeSet<String>,
 }
 
-fn parse_corpus(json: &str) -> Result<PinnedCorpus, CorpusError> {
+fn strings(v: &serde_json::Value, key: &str) -> Vec<String> {
+    v[key]
+        .as_array()
+        .map(|a| {
+            a.iter()
+                .filter_map(|x| x.as_str().map(String::from))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// Parse one pinned corpus (public for the live qualification tier).
+pub fn parse_corpus(json: &str) -> Result<PinnedCorpus, CorpusError> {
     let v: serde_json::Value =
         serde_json::from_str(json).map_err(|e| CorpusError::Json(e.to_string()))?;
     let language = v["language"].as_str().unwrap_or_default().to_string();
@@ -64,23 +81,28 @@ fn parse_corpus(json: &str) -> Result<PinnedCorpus, CorpusError> {
             id: c["id"].as_str().unwrap_or_default().into(),
             language: "pinned",
             question: c["question"].as_str().unwrap_or_default().into(),
-            expect_sources: c["expect_sources"]
-                .as_array()
-                .map(|a| {
-                    a.iter()
-                        .filter_map(|x| x.as_str().map(String::from))
-                        .collect()
-                })
-                .unwrap_or_default(),
-            must_include: vec![],
+            expect_sources: strings(c, "expect_sources"),
+            must_include: strings(c, "must_include"),
             expect_abstention: c["expect_abstention"].as_bool().unwrap_or(false),
             injection_probe: c["injection_probe"].as_bool().unwrap_or(false),
+            conflicts: strings(c, "conflicts"),
+            expect_numbers: strings(c, "expect_numbers"),
+            expect_tool: match c["expect_tool"].as_str() {
+                Some("compute") => ToolExpectation::Compute,
+                _ => ToolExpectation::Extract,
+            },
         });
     }
+    let injection_sources = sources
+        .iter()
+        .filter(|s| s.id.contains("-injection-"))
+        .map(|s| s.id.clone())
+        .collect();
     Ok(PinnedCorpus {
         language,
         sources,
         cases,
+        injection_sources,
     })
 }
 
@@ -141,27 +163,32 @@ pub fn build_index(corpus: &PinnedCorpus, provider: &TestBackend) -> KnowledgeIn
     index
 }
 
-/// Run all three pinned corpora end-to-end.
+/// Run all three pinned corpora end-to-end on the deterministic
+/// reference embedding.
 pub fn run_pinned_evals() -> Result<(String, Vec<(String, EvalReport)>), CorpusError> {
     let provider = TestBackend::default();
     let model = ModelRef::InstalledPackage {
         package_id: "eval-embed".into(),
     };
-    let pipeline = GroundedExtractor {
-        provider: &provider,
-        model: model.clone(),
-    };
     let mut out = Vec::new();
     for json in [CORPUS_EN, CORPUS_AR, CORPUS_MIXED] {
         let corpus = parse_corpus(json)?;
         let index = build_index(&corpus, &provider);
+        let pipeline = GroundedExtractor {
+            provider: &provider,
+            model: model.clone(),
+        };
         let embed = |q: &str| -> Option<Vec<f32>> {
             provider
                 .embed(&model, &[q.to_string()])
                 .ok()
                 .and_then(|v| v.into_iter().next())
         };
-        let report = run_eval(&index, &pipeline, &embed, &corpus.cases);
+        let facts = crate::eval::CorpusFacts {
+            injection_sources: corpus.injection_sources.clone(),
+            conflict_pairs: BTreeSet::new(),
+        };
+        let report = run_eval(&index, &pipeline, &embed, &corpus.cases, &facts);
         out.push((corpus.language, report));
     }
     Ok((evaluation_corpus_sha256(), out))
@@ -170,24 +197,31 @@ pub fn run_pinned_evals() -> Result<(String, Vec<(String, EvalReport)>), CorpusE
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::eval::profile_min_per_behavior;
 
     #[test]
-    fn pinned_corpora_pass_retrieval_abstention_and_injection() {
+    fn pinned_corpora_pass_every_behavior_and_clear_profile_thresholds() {
         let (hash, reports) = run_pinned_evals().unwrap();
         assert_eq!(hash.len(), 64);
         for (lang, report) in &reports {
             for case in &report.cases {
                 assert!(
                     case.passed,
-                    "{lang}/{} failed: retrieval={} citation={} abstain={} injection={}",
-                    case.case_id,
-                    case.retrieval_hit,
-                    case.citation_supported,
-                    case.abstained_correctly,
-                    case.injection_resisted
+                    "{lang}/{} failed: {}",
+                    case.case_id, case.detail
                 );
             }
             assert_eq!(report.failed, 0, "{lang}: {} failures", report.failed);
+            // Every per-language metric clears its profile threshold.
+            for (name, m) in &report.metrics {
+                assert!(
+                    m.clears(),
+                    "{lang}: {name} = {}/{} below {}",
+                    m.passed,
+                    m.total,
+                    m.threshold
+                );
+            }
         }
         let total: usize = reports.iter().map(|(_, r)| r.passed).sum();
         // Every case in every pinned corpus must pass; the expected total
@@ -203,6 +237,46 @@ mod tests {
             })
             .sum();
         assert_eq!(total, expected, "all pinned corpus cases must pass");
+    }
+
+    #[test]
+    fn every_behavior_has_its_profile_minimum_per_language() {
+        // 16 §11: report every language stratum; the corpus must carry
+        // >= minimum_cases_per_behavior_per_language of each behavior the
+        // profile names, in every language (mixed included).
+        let min = profile_min_per_behavior();
+        for json in [CORPUS_EN, CORPUS_AR, CORPUS_MIXED] {
+            let corpus = parse_corpus(json).unwrap();
+            let lang = corpus.language.clone();
+            let mut counts: BTreeSet<&str> = BTreeSet::new();
+            for b in [
+                "supported_answer",
+                "insufficient_evidence",
+                "contradiction",
+                "prompt_injection",
+                "tool_selection",
+            ] {
+                let n = corpus.cases.iter().filter(|c| c.behavior() == b).count();
+                assert!(
+                    n >= min,
+                    "{lang}: behavior {b} has {n} cases, profile minimum is {min}"
+                );
+                counts.insert(b);
+            }
+            // numeric_analysis is a metric over every case carrying
+            // expect_numbers (may overlap supported_answer).
+            let numeric = corpus
+                .cases
+                .iter()
+                .filter(|c| !c.expect_numbers.is_empty())
+                .count();
+            assert!(
+                numeric >= min,
+                "{lang}: numeric_analysis has {numeric} < {min}"
+            );
+            assert!(corpus.cases.len() >= 100, "{lang} below 100 cases");
+            let _ = counts;
+        }
     }
 
     #[test]

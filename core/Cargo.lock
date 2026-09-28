@@ -1649,6 +1649,7 @@ dependencies = [
  "chrono",
  "harbor_canonical",
  "harbor_inference",
+ "harbor_modelhub",
  "harbor_security",
  "hex",
  "rusqlite",

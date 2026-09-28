@@ -157,6 +157,21 @@ impl KnowledgeIndex {
             .collect()
     }
 
+    /// The chunk texts of one source (retrieval-independent view, used
+    /// by evaluation for operand-integrity checks).
+    pub fn chunks_of(&self, source_id: &str) -> Option<Vec<String>> {
+        if !self.sources.contains_key(source_id) {
+            return None;
+        }
+        Some(
+            self.chunks
+                .iter()
+                .filter(|c| c.source_id == source_id)
+                .map(|c| c.text.clone())
+                .collect(),
+        )
+    }
+
     /// Like [`search`], but each citation carries its chunk text so
     /// grounded generation can quote evidence.
     pub fn search_with_text(&self, query: &[f32], top_k: usize) -> Vec<CitationWithText> {

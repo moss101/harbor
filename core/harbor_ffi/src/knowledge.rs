@@ -119,9 +119,65 @@ impl KnowledgeStore {
                 text_sealed BLOB NOT NULL,
                 vector_sealed BLOB NOT NULL,
                 PRIMARY KEY (source_id, chunk_id)
+            );
+            CREATE TABLE IF NOT EXISTS knowledge_meta (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
             );",
         )
         .map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
+        Ok(())
+    }
+
+    /// Read a metadata value (index identity hash lives here).
+    pub fn get_meta(&self, key: &str) -> Result<Option<String>, KnowledgeFfiError> {
+        let conn = self.connect()?;
+        let mut stmt = conn
+            .prepare("SELECT value FROM knowledge_meta WHERE key = ?1")
+            .map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
+        let mut rows = stmt
+            .query_map([key], |r| r.get::<_, String>(0))
+            .map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
+        match rows.next() {
+            Some(row) => Ok(Some(row.map_err(|e| KnowledgeFfiError::Db(e.to_string()))?)),
+            None => Ok(None),
+        }
+    }
+
+    /// Write a metadata value.
+    pub fn set_meta(&self, key: &str, value: &str) -> Result<(), KnowledgeFfiError> {
+        let conn = self.connect()?;
+        conn.execute(
+            "INSERT INTO knowledge_meta (key, value) VALUES (?1, ?2)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            [key, value],
+        )
+        .map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
+        Ok(())
+    }
+
+    /// Rewrite every chunk's sealed vector in one transaction (identity
+    /// rebuild): texts, hashes and ordinals stay, vectors are replaced.
+    pub fn rewrite_vectors(
+        &self,
+        vectors: &std::collections::BTreeMap<(String, String), Vec<f32>>,
+    ) -> Result<(), KnowledgeFfiError> {
+        let mut conn = self.connect()?;
+        let tx = conn
+            .transaction()
+            .map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
+        for ((sid, cid), vector) in vectors {
+            let sealed = harbor_store::kcipher::seal_vector(&self.key, sid, cid, vector)
+                .map_err(|_| KnowledgeFfiError::Crypto)?;
+            tx.execute(
+                "UPDATE knowledge_chunks SET vector_sealed = ?3
+                 WHERE source_id = ?1 AND chunk_id = ?2",
+                rusqlite::params![sid, cid, sealed],
+            )
+            .map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
+        }
+        tx.commit()
+            .map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
         Ok(())
     }
 
@@ -411,8 +467,51 @@ impl KnowledgeService {
             store,
             models_root: data_root.join("models"),
         };
+        // ACC-055: an index built under a different embedding identity is
+        // rebuilt from its sealed texts, never mixed. The identity hash
+        // binds embedding model, runtime revision, dimension, chunker and
+        // policy; on mismatch every chunk is re-embedded through the
+        // current model before any retrieval can serve stale vectors.
+        const IDENTITY_KEY: &str = "index_identity_hash";
+        let new_hash = svc.identity_hash();
+        match svc.store.get_meta(IDENTITY_KEY)? {
+            None => {
+                svc.store.set_meta(IDENTITY_KEY, &new_hash)?;
+            }
+            Some(old_hash) if old_hash == new_hash => {}
+            Some(_old_hash) => {
+                svc.rebuild_vectors_for_new_identity(&model_ref)?;
+                svc.store.set_meta(IDENTITY_KEY, &new_hash)?;
+            }
+        }
         svc.load_persisted()?;
         Ok(svc)
+    }
+
+    /// Re-embed every persisted chunk's text under the CURRENT embedding
+    /// model and rewrite the sealed vectors. Texts and source hashes are
+    /// unchanged; only the vectors were identity-bound. A failure leaves
+    /// the old vectors on disk with the old identity hash — the next
+    /// open retries the rebuild; vectors are never mixed.
+    fn rebuild_vectors_for_new_identity(
+        &self,
+        model: &ModelRef,
+    ) -> Result<usize, KnowledgeFfiError> {
+        let persisted = self.store.load_chunks()?;
+        let mut vectors = std::collections::BTreeMap::new();
+        for chunk in &persisted {
+            let embedded = self
+                .provider
+                .embed(model, std::slice::from_ref(&chunk.text))
+                .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?;
+            let Some(vector) = embedded.into_iter().next() else {
+                return Err(KnowledgeFfiError::Provider("empty embedding".into()));
+            };
+            vectors.insert((chunk.source_id.clone(), chunk.chunk_id.clone()), vector);
+        }
+        let count = vectors.len();
+        self.store.rewrite_vectors(&vectors)?;
+        Ok(count)
     }
 
     pub fn identity_hash(&self) -> String {

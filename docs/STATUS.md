@@ -7,6 +7,55 @@ ran at.
 
 ---
 
+## Session 43 (2026-09-28): decision 0009 (system providers measured) and decision 0010 (RAG harness made trustworthy)
+
+Two decisions, one commit each.
+
+**0009 — system model providers over a host bridge.** `harbor_inference::system`
+(C-ABI vtable + `SystemHostBridge`, 7 contract tests), the Apple
+FoundationModels adapter (`native/apple/system_host/AFMHost.swift`, dlopened
+dylib, `tools/build_apple_system_host.sh`), and a live tier through the bridge
+(`core/harbor_core/tests/skill_evals_system.rs`). Measured on this M5 Pro
+(macOS 26.5.1): FoundationModels **22/31** vs Qwen2.5-1.5B 25/31. It fixes the
+small-model reasoning failures (attribution, model-skip) and adds three hard
+edges: every Regex generation guide is rejected (GenerativeError 1020000),
+total context is 4096 tokens, Arabic is outside supportedLanguages (typed
+unavailable error, descriptor publishes the list). Verdict: an opt-in quality
+tier, not a GGUF replacement; the live-tier gap still needs the larger GGUF
+tier (catalog root key, operator) and grammar/repair work. Evidence:
+`evidence/skill_evals/system-apple-b1bd304c39cf.json` (five runs, one
+invalidated by a translation defect found and fixed between runs).
+
+**0010 — RAG activation stage 1.** The knowledge eval harness could not be
+trusted (injection check `|| true`, `must_include` never checked, three of
+six profile behaviors without corpus cases, TestBackend-only, and a real
+ACC-055 defect: reopening with a different same-dimension embedding model
+silently mixed vectors). All fixed:
+- Six behaviors with honest runner semantics (extraction grounding,
+  contradiction abstains-before-answering, compute hands off with operands
+  grounded, numeric known-answers), thresholds read from
+  26_Qualification_Profiles.json at compile time, per-language strata.
+- Corpora regenerated (208/lang, 832 total; corpus hash updated in the
+  profile). Calibration discipline documented in the generator: same-frame
+  sentences defeat any bar under the byte-frequency embedder — unique
+  templates per conflict pair, per-replica tails, last-digit disagreements,
+  casual-register injections. Evidence bar recalibrated: 0.99981.
+- Identity rebuild: the durable store records its index identity hash;
+  mismatch re-embeds every sealed text and rewrites vectors atomically.
+  Proven with real models bge→qwen→bge (`harbor_ffi/tests/knowledge_identity.rs`).
+- Live tier (`harbor_knowledge/tests/qualification_live.rs`): pinned
+  bge-small-en-v1.5 measured. **EN qualifies on every profile threshold**
+  (separation 0.982/0.917). **AR does not** (separation inverted
+  0.946/0.976; retrieval 0.665) — an English-only embedding cannot serve
+  Arabic; pinning a multilingual embedding package is the measured blocker
+  before ACC-014/ACC-055 can pass. feature:rag stays off; registry
+  unchanged, check_optional_disabled passes.
+
+Gates this session: `cargo test -p harbor_knowledge` 19/19 (incl. the
+832-case six-behavior corpora at profile minimums), `harbor_ffi`
+knowledge_identity end-to-end, `cargo test -p harbor_core` all targets,
+contracts 124/0, clippy/fmt clean, dossier regenerated at commit.
+
 ## Session 42 (2026-09-27): the authoring skills on the iPhone simulator — five defects the Mac runs did not show
 
 Uncommitted on top of `8a09909` at the time of writing. iPhone 17 Pro

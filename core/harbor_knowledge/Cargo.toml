@@ -20,3 +20,6 @@ unicode-segmentation = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3"
+# The live qualification tier links the pinned llama.cpp runtime.
+harbor_inference = { workspace = true, features = ["gguf-backend"] }
+harbor_modelhub = { workspace = true }

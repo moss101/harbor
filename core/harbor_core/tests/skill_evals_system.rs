@@ -41,8 +41,7 @@ fn host_dylib_path() -> PathBuf {
     if let Ok(p) = std::env::var("HARBOR_SYSTEM_HOST_DYLIB") {
         return PathBuf::from(p);
     }
-    repo_root()
-        .join("native/apple/system_host/build/libharbor_system_host.dylib")
+    repo_root().join("native/apple/system_host/build/libharbor_system_host.dylib")
 }
 
 /// dlopen the adapter and expose it as a vtable. The Library must
