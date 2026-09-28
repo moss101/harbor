@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "403be04f36f65b7afe79c78d540d681c4d6f4ba10b008feb5ea355804f1081c1",
+  "input_manifest_sha256": "d7e488126da35bed9a201d5fe13a87b42523a8ebaa66ac63ad0732e3158bc2a6",
   "file_count_excluding_manifest": 614,
   "files": [
     {
@@ -120,12 +120,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 112140,
-      "sha256": "436ad6deda01c6582af760cde50024aa39ff56d91ccb9ca331c39ab17b784b33"
+      "sha256": "3902fb02e84f299fe268a51c043380d186be7f577900d3aa2493dae618cc2f41"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "a6d666c39903a805c613b835fff95cc65fdee720f9952ebce80218fe56327055"
+      "sha256": "cac4bafaff18a3cc6c76622cfebcd83be2ddadbae64467819e64f18c1dfb4af7"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -2159,8 +2159,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 107623,
-      "sha256": "33faba54b6d34e0e27498d3eeb163814b4341f9b2fa8a8c302eb129ac64a61f6"
+      "bytes": 108455,
+      "sha256": "372f14feb1c28b97ac9f05adc61aa428951534e44ee83d6974000624145d724c"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -2209,8 +2209,8 @@
     },
     {
       "path": "docs/decisions/0010-rag-qualification-harness.md",
-      "bytes": 16018,
-      "sha256": "7b8ba6df82e946ac4690a33f6c5cb81e927a8b6d82210d6d16467a8b1bea0636"
+      "bytes": 17597,
+      "sha256": "bdc705ede1ad9e7a087e2cf29966f431cd2db5769b65cf080bdebbcfe013194c"
     },
     {
       "path": "docs/release/THIRD_PARTY_NOTICES.md",
@@ -2979,8 +2979,8 @@
     },
     {
       "path": "tools/assemble_rag_gate_reports.py",
-      "bytes": 14226,
-      "sha256": "f17d4f5d99fb8e4b5e5da07f21984f1b4b58c5f8c6e3eb84dfe81c8342c33f68"
+      "bytes": 22579,
+      "sha256": "e8b0525e5bb5b34bd595ae1f1667719cf66d3092b5a6b55c6af6ef8f0cebe3dd"
     },
     {
       "path": "tools/assemble_release_evidence.py",

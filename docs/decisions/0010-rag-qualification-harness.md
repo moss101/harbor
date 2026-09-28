@@ -267,3 +267,28 @@ are done for feature:rag's own gates:
   registry by contract, and `required_at_core_ga` already forces RAG
   into every core-GA descriptor — the contract tests enforce it).
 
+## Fourth addendum (2026-09-28, late): machine gates assembled; the operator list is explicit
+`assemble_rag_gate_reports.py --with-machine-gates` now also assembles
+every gate whose substance IS the green `gate_results.json` bundle and
+whose security-scenario demands are empty: ACC-027 (data migration),
+ACC-064 (capability dispatch), ACC-075 (contract freeze) join ACC-014
+and ACC-055 as validated records — `evaluate_release` reports zero
+errors naming any of the five. The tool deliberately refuses the rest
+with reasons: ACC-054's own text demands minimum-device results the
+performance evidence still reports blocked; ACC-063 cites four security
+scenarios with no executable controls; ACC-056 binds the pinned CHAT
+model's answer-quality thresholds, not the knowledge tier's.
+
+`evidence/releases/rag-activation-2026-09-28/OPERATOR_UNBLOCK.md` is
+the operator handoff: 61 outstanding required gates, classified —
+7 operator-bound (Apple signing identity; physical iOS/Android devices;
+a Windows host; min-spec hardware — each mapped to the gates it
+unblocks: ACC-040, ACC-018/080/081, ACC-024/054, ACC-053) and 54
+machine-work gates, each naming the executable security-scenario
+controls it awaits. The dominant remaining gap is exactly that: most
+gates cite 09_Security_Test_Matrix scenarios that have no executable
+control yet, and recording those as PASS would fabricate evidence —
+which every tool on this path refuses to do. That is the honest
+frontier between "release blocked on operator resources" and "release
+blocked on writing ~40 scenario executables".
+

@@ -110,6 +110,20 @@ tools/generate_gate_evidence.py, which now runs the knowledge security
 scenarios and the live qualification tier; operator-bound share unchanged).
 A release descriptor can list feature:rag on bound, verified evidence.
 
+## Session 43 fourth addendum (2026-09-28, late): machine gates + the operator unblock list
+
+--with-machine-gates assembles ACC-027/064/075 alongside ACC-014/055 (five
+validated records, zero evaluator errors naming them; ACC-054/063/056
+refused with recorded reasons - min-device text, non-executable scenarios,
+chat-model binding). OPERATOR_UNBLOCK.md in the rag-activation release
+directory classifies the 61 outstanding gates: 7 operator-bound (Apple
+signing identity -> ACC-040; physical iOS/Android devices -> ACC-018/080
+and, with the Windows host, ACC-081; Windows host -> ACC-080/081/040;
+min-spec hardware -> ACC-024/054, ACC-053) and 54 machine-work gates, each
+naming the security-scenario executables it awaits. The honest frontier:
+a full release needs ~40 scenario executables written, not operator
+resources alone.
+
 ## Session 42 (2026-09-27): the authoring skills on the iPhone simulator — five defects the Mac runs did not show
 
 Uncommitted on top of `8a09909` at the time of writing. iPhone 17 Pro
