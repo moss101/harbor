@@ -89,11 +89,14 @@ fn bundled_catalog_imports_lists_offline_and_estimates_fit() {
 
     args["root_public_hex"] = serde_json::json!(root_hex);
     let accepted = h.call("catalog.import", args);
-    assert_eq!(accepted["accepted_epoch"], 1);
+    // The epoch is whatever the signed fixture carries (bumped when
+    // packages are added); import must accept exactly it.
+    let fixture_epoch = catalog["epoch"].as_u64().unwrap();
+    assert_eq!(accepted["accepted_epoch"], fixture_epoch);
 
     let list = h.call("catalog.list", serde_json::json!({}));
     assert_eq!(list["imported"], true);
-    assert_eq!(list["epoch"], 1);
+    assert_eq!(list["epoch"], fixture_epoch);
     let packages = list["packages"].as_array().unwrap();
     assert!(packages.len() >= 3, "{list}");
     let qwen = packages

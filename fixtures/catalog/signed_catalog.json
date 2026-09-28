@@ -54,12 +54,30 @@
         "tiers": [
           "Test"
         ]
+      },
+      {
+        "context_tokens": 512,
+        "files": [
+          {
+            "path": "multilingual-e5-small-q8_0.gguf",
+            "role": "weights",
+            "sha256": "e011debc1208e31bf7b6aebee2d9fc8bd2ca11694a77ed66ac9d0c9d0a877c93"
+          }
+        ],
+        "id": "multilingual-e5-small",
+        "license": "MIT",
+        "quantization": "Q8_0",
+        "repo_id": "TwinSunsLLC/multilingual-e5-small-gguf",
+        "revision": "main",
+        "tiers": [
+          "Embeddings"
+        ]
       }
     ]
   },
-  "epoch": 1,
+  "epoch": 2,
   "key_id": "5cff12934466e591",
-  "published_at": "2026-09-12T00:00:00Z",
+  "published_at": "2026-09-28T00:00:00Z",
   "schema": "harbor.catalog/v1",
-  "signature": "8b101275f0a338ddde98de65c838288fe94e4f4f87e898a141c9367f75b700f8e8470f86021915ff6acbdbf1fc21541067a75bc6caad117f888096dda3bb2703"
+  "signature": "9fd5989fa5bd4d0072b1cce5ffa8b241c69c60d17dff9e097596424362d7d1f8a5e92ddf17884be25a2336314aed0fc2e7d58ecdf8dcc80b7616c08aaeacbd0e"
 }

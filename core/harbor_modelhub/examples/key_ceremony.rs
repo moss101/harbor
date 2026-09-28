@@ -47,12 +47,14 @@ fn main() {
         "packages": [
             {"context_tokens": 4096, "files": [{"path": "qwen2.5-1.5b-instruct-q4_k_m.gguf", "role": "weights", "sha256": "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e"}], "id": "qwen2.5-1.5b-instruct", "license": "Apache-2.0", "quantization": "Q4_K_M", "repo_id": "Qwen/Qwen2.5-1.5B-Instruct-GGUF", "revision": "main", "tiers": ["Balanced"]},
             {"context_tokens": 512, "files": [{"path": "bge-small-en-v1.5-q8_0.gguf", "role": "weights", "sha256": "f046db1dc724cf4f6f0a0c5917e922823b73eb1d27b8f9a9c2797f7866974804"}], "id": "bge-small-en-v1.5", "license": "MIT", "quantization": "Q8_0", "repo_id": "ggml-org/bge-small-en-v1.5-Q8_0-GGUF", "revision": "main", "tiers": ["Embeddings"]},
-            {"context_tokens": 512, "files": [{"path": "tinyllamas/stories260K.gguf", "role": "weights", "sha256": "270cba1bd5109f42d03350f60406024560464db173c0e387d91f0426d3bd256d"}], "id": "stories260k", "license": "Apache-2.0", "quantization": "Q8_0", "repo_id": "ggml-org/models", "revision": "main", "tiers": ["Test"]}
+            {"context_tokens": 512, "files": [{"path": "tinyllamas/stories260K.gguf", "role": "weights", "sha256": "270cba1bd5109f42d03350f60406024560464db173c0e387d91f0426d3bd256d"}], "id": "stories260k", "license": "Apache-2.0", "quantization": "Q8_0", "repo_id": "ggml-org/models", "revision": "main", "tiers": ["Test"]},
+            {"context_tokens": 512, "files": [{"path": "multilingual-e5-small-q8_0.gguf", "role": "weights", "sha256": "e011debc1208e31bf7b6aebee2d9fc8bd2ca11694a77ed66ac9d0c9d0a877c93"}], "id": "multilingual-e5-small", "license": "MIT", "quantization": "Q8_0", "repo_id": "TwinSunsLLC/multilingual-e5-small-gguf", "revision": "main", "tiers": ["Embeddings"]}
         ]
     }"#).unwrap();
 
-    // 3. Sign at epoch 1.
-    let signed = sign_catalog(&key, 1, "2026-09-12T00:00:00Z", entries).unwrap();
+    // 3. Sign at epoch 2 (multilingual embedding package added; the AR
+    // knowledge stratum's prerequisite — decision 0010).
+    let signed = sign_catalog(&key, 2, "2026-09-28T00:00:00Z", entries).unwrap();
 
     // 4. Public artifacts.
     let cat_dir = repo_root.join("fixtures/catalog");

@@ -22,8 +22,10 @@ apps/harbor_app/ios/Flutter/ephemeral/
 # OS
 .DS_Store
 
-# Large model fixture: re-acquire via core/harbor_modelhub example or direct download (sha256 6a1a2eb6...)
+# Large model fixtures: re-acquire via core/harbor_modelhub example or direct download (shas in fixtures/catalog/signed_catalog.json)
 fixtures/models/qwen2.5-1.5b-instruct-q4_k_m.gguf
+# 132MB: exceeds the 100MB push limit; TwinSunsLLC/multilingual-e5-small-gguf, sha e011debc1208...
+fixtures/models/multilingual-e5-small-q8_0.gguf
 
 # Bulk model store: re-acquire via the perf example or brokered acquisition
 fixtures/models-store/

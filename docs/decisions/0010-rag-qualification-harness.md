@@ -151,3 +151,40 @@ Pinned `bge-small-en-v1.5-q8_0.gguf` (384-d, llama.cpp 0.1.156), evidence
   answering Arabic questions from English sources) — the corpus asserts
   same-language expectations today; the profile does not yet define a
   cross-lingual policy.
+
+## Correction and follow-up (28 September 2026, later): the multilingual attempt
+The AR blocker above was attacked the same day: a multilingual-e5-small
+Q8_0 GGUF is now pinned (fixtures/models + catalog entry
+`multilingual-e5-small`, epoch 2, same dev root key), and the live tier
+attempted the AR stratum with it. What the attempt established:
+
+- **Three of four public Q8_0 conversions are unusable on the pinned
+  llama.cpp 0.1.156.** cstr's lacks `bert.token_type_count` (load error);
+  milimyname's aborts in ggml compute; keisuke-miyako's LOADS but produces
+  degenerate embeddings through our mean-pool path — unrelated pairs at
+  0.92-0.997, Arabic unrelated ABOVE related (a sanity probe,
+  `harbor_inference/examples/embed_probe.rs`, now exists to test any
+  candidate in seconds: bge on it reads 0.98 related / 0.34 unrelated).
+- **The one healthy conversion (TwinSunsLLC, sha
+  e011debc...) with e5's query/passage prefixes achieves what bge never
+  did on Arabic: global separation** (AR rel-min 0.9499 > unr-max 0.9386),
+  and lifts AR retrieval from 0.665 (bge) to 0.707.
+- **It still does not clear the profile thresholds** (recall 0.707 <
+  0.85; citation 0.674 < 0.95). The measured reason: a 117M-parameter
+  model scores the corpus's office-flavored unanswerable questions
+  (0.95-0.974) ABOVE paraphrased facts (0.913-0.950), so no absolute
+  abstention bar admits evidence without breaking abstention — verified
+  under both a conservative max-ceiling and the profile-budget quantile
+  the abstention threshold itself permits (the harness now documents and
+  applies that calibration rule).
+- **Paths forward, in order of expected effect:** (1) a stronger
+  multilingual embedder (bge-m3 class, symmetric, no prefixes needed);
+  (2) margin/rank-based abstention in the product's answer path instead
+  of an absolute bar — a design change with its own qualification;
+  (3) a llama.cpp revision bump so modern conversions load at all.
+
+The catalog entry and fixture stay pinned: acquisition of the package is
+real, the harness's e5 prefix rule is recorded, and the next candidate
+reuses the whole apparatus. feature:rag remains off; the AR stratum's
+blocker is now "a strong enough multilingual embedding", no longer
+"any multilingual embedding".

@@ -469,7 +469,7 @@ mod tests {
     /// otherwise and would read each other's scenarios).
     static TEST_LOCK: Mutex<()> = Mutex::new(());
 
-    fn reset_double(content: &str) -> () {
+    fn reset_double(content: &str) {
         let mut d = DOUBLE.lock().unwrap();
         d.response_content = content.into();
         d.response_location = "on_device";

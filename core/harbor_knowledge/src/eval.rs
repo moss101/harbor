@@ -534,9 +534,8 @@ pub fn run_eval_with<P: AnswerPipeline>(
         // cases the operand-integrity oracle above covers it (ranking is
         // the live tier's measurement). Known-answer fixtures; the
         // fraction must be 1.0.
-        let numeric_grounded = case.expect_numbers.is_empty()
-            || case.expect_tool == ToolExpectation::Compute
-            || {
+        let numeric_grounded =
+            case.expect_numbers.is_empty() || case.expect_tool == ToolExpectation::Compute || {
                 let spans = cited_texts.join("\n");
                 case.expect_numbers
                     .iter()

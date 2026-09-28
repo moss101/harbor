@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "8b0389e0a30ab7d495ad6378d93f064bb60923975bb8a250bf2b26bfd2e554db",
+  "input_manifest_sha256": "38aba8dfbb823683d0455738cb4861259916028df8ab24c4b7b80a3dd5b07082",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -16,8 +16,8 @@
     },
     {
       "path": ".gitignore",
-      "bytes": 910,
-      "sha256": "ad6707826f20c0b26801df969fc433aa47b046cbc805d27c7480f0413cbddb44"
+      "bytes": 1084,
+      "sha256": "45c25baf690427bc7041046b92ce99340602f8fd2972559b9df7d4888f1ac10c"
     },
     {
       "path": "00_README.md",
@@ -132,7 +132,7 @@
     {
       "path": "26_Qualification_Profiles.json",
       "bytes": 5020,
-      "sha256": "81d62e957745726f581b7db67b7c14113a8c7f249ee79ad7b1a8a46b3183bee5"
+      "sha256": "67609331915e9870bc639cf2e10f2c8036f6c67012e04781093e18d36431ea7b"
     },
     {
       "path": "27_Artifact_Commit_Qualification.md",
@@ -1026,8 +1026,8 @@
     },
     {
       "path": "core/Cargo.lock",
-      "bytes": 99778,
-      "sha256": "b6288b266b738075313d4b9bbd7e95f700b8263674d2339606eb60e547f0cad9"
+      "bytes": 99798,
+      "sha256": "e8d3f5583b3c684c2aa71723bc0c8f78887fa83808bed57cd8a01eb5bb67b197"
     },
     {
       "path": "core/Cargo.toml",
@@ -1666,8 +1666,8 @@
     },
     {
       "path": "core/harbor_core/tests/skill_evals_system.rs",
-      "bytes": 9800,
-      "sha256": "fd31034e83bb880652df342c3d34d7aea136f907fed0b4db25d95d0da3ac7601"
+      "bytes": 9791,
+      "sha256": "f4365fef75aec5b74f649271a217b12d82882056915f9b294b6695fe9d9c3d9a"
     },
     {
       "path": "core/harbor_ffi/Cargo.toml",
@@ -1676,8 +1676,8 @@
     },
     {
       "path": "core/harbor_ffi/src/knowledge.rs",
-      "bytes": 30264,
-      "sha256": "8436dd577becab9da0a568903e5587fb57b96264bf71659d62b807a72a0abf7f"
+      "bytes": 34602,
+      "sha256": "1a58284f5d6a1919072b76ad3cca52c679df2bd4bd9301bbf85b326453ebb06a"
     },
     {
       "path": "core/harbor_ffi/src/lib.rs",
@@ -1686,13 +1686,18 @@
     },
     {
       "path": "core/harbor_ffi/tests/catalog_first_run.rs",
-      "bytes": 5184,
-      "sha256": "fd32460d0baeb98f91c5f0dc7cfdc1df189ff949201bc715305e36f3f3fdd069"
+      "bytes": 5396,
+      "sha256": "32d855fcbe80f2fe0e44aa603c3ebfd03f2cb19db185825229ece7210b501d8a"
     },
     {
       "path": "core/harbor_ffi/tests/diagnostics.rs",
       "bytes": 5948,
       "sha256": "084d80ae540e247f2e682037b40ca066858f20668cab74994eb20d8eb1573a85"
+    },
+    {
+      "path": "core/harbor_ffi/tests/knowledge_identity.rs",
+      "bytes": 5864,
+      "sha256": "c1aa54750ebf5a97e90068a95ea9a9b67e0606f4f7e12b4a95bcafb84c7ea447"
     },
     {
       "path": "core/harbor_ffi/tests/skill_runs.rs",
@@ -1745,6 +1750,11 @@
       "sha256": "29b1663d3ba647dc76f490a070b45cb2eb283b5c59f9b95bac226ee0ca52c9d6"
     },
     {
+      "path": "core/harbor_inference/examples/embed_probe.rs",
+      "bytes": 3966,
+      "sha256": "8ae346609ee5141fcd1cf3de95a155d8322d6448c3cc1dd74c6d503a4194080e"
+    },
+    {
       "path": "core/harbor_inference/src/backend.rs",
       "bytes": 5766,
       "sha256": "2bb6b0a407cb7267f4e20440d84a5b1ac433c8c51c0f8c84cfbfa3325c016102"
@@ -1776,8 +1786,8 @@
     },
     {
       "path": "core/harbor_inference/src/system.rs",
-      "bytes": 27184,
-      "sha256": "dbac5c425dfcbdceec28f5b282e7c4165165e4b76662202cfaaa6adc409c08e5"
+      "bytes": 27678,
+      "sha256": "aca3ebcd68c3ca3c9cc51a1299ef19d00bb0359ef8db4c74a25abd3313fac2c8"
     },
     {
       "path": "core/harbor_inference/tests/gguf_provider.rs",
@@ -1826,8 +1836,8 @@
     },
     {
       "path": "core/harbor_knowledge/Cargo.toml",
-      "bytes": 563,
-      "sha256": "6b369cc2c349b84adce87e5cfa1217f14b2fdf541ae5256a38c4a13f1a212b35"
+      "bytes": 737,
+      "sha256": "ff7c4ef6fd44f5eff26ee132a574033d38e7ac45cc6c63cd9a89a8887f133ca3"
     },
     {
       "path": "core/harbor_knowledge/src/chunk.rs",
@@ -1836,13 +1846,13 @@
     },
     {
       "path": "core/harbor_knowledge/src/corpus.rs",
-      "bytes": 7570,
-      "sha256": "42ffd8eae612e734074792ea3150c6bbc48a6102891f3235b2f0df6f26a37a85"
+      "bytes": 10436,
+      "sha256": "691adbf56de48fb428901c48f04cf3860d0fee55aed354ce4702e73eadc7d53a"
     },
     {
       "path": "core/harbor_knowledge/src/eval.rs",
-      "bytes": 11469,
-      "sha256": "9964bd5fa1458a03637401a005ab1807b54f24bb377e9dfc2cbcf704e394df0d"
+      "bytes": 36949,
+      "sha256": "f707c403a6f1e55c7a2ff621db09a3b47617d3399c194ac74409add01e390d2f"
     },
     {
       "path": "core/harbor_knowledge/src/identity.rs",
@@ -1851,13 +1861,18 @@
     },
     {
       "path": "core/harbor_knowledge/src/index.rs",
-      "bytes": 11404,
-      "sha256": "7652d0baee5d7410d370841637df7cd5eaeec8a4656aea7841a7a70d70a0214b"
+      "bytes": 11887,
+      "sha256": "ea5fbe2d369feed9cdf2e98927c36bb100cf2ecdbb3ae53e640b2b7c94e2461e"
     },
     {
       "path": "core/harbor_knowledge/src/lib.rs",
-      "bytes": 1132,
-      "sha256": "547307554dda740e7943edcf8e9a5861c4c862bccdc83214d53e36634748ada2"
+      "bytes": 1212,
+      "sha256": "74e5ff221b270f69465746963f26caf11cc392f453372576e3d6b2e0a2bea897"
+    },
+    {
+      "path": "core/harbor_knowledge/tests/qualification_live.rs",
+      "bytes": 14928,
+      "sha256": "b2c39dc865c23e403b64756e922e655d90fc54619c354eca4641dfdf9ca965b4"
     },
     {
       "path": "core/harbor_modelhub/Cargo.toml",
@@ -1871,8 +1886,8 @@
     },
     {
       "path": "core/harbor_modelhub/examples/key_ceremony.rs",
-      "bytes": 4128,
-      "sha256": "5010b1d1026cffd686188a5b5f860f40919cd4056f19a7ae8c88348003de78d2"
+      "bytes": 4594,
+      "sha256": "c5bfe007b9abd57da605c494805e48d486ddfebc4565139a2e84a3c49414be51"
     },
     {
       "path": "core/harbor_modelhub/src/acquire.rs",
@@ -2121,8 +2136,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 101078,
-      "sha256": "3e3a08916578c194c4a9cd8a3d118ac02ab4da1f3a784bf3dfc600d1253b74a5"
+      "bytes": 105312,
+      "sha256": "3fa2218242b01d08cd00ec8454f31b2a6d37d5c3ba14530966bd013ee5e2b202"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -2168,6 +2183,11 @@
       "path": "docs/decisions/0009-system-model-providers-over-a-host-bridge.md",
       "bytes": 10244,
       "sha256": "95edbd25c1cb84e67f8cecb864dcd463fe3a5ec66597d82daca4fbbf11659a4d"
+    },
+    {
+      "path": "docs/decisions/0010-rag-qualification-harness.md",
+      "bytes": 11311,
+      "sha256": "3d61d61e4c160930385c6e666ebb50f315138f16877469ef7a65fed95ed950b5"
     },
     {
       "path": "docs/release/THIRD_PARTY_NOTICES.md",
@@ -2296,18 +2316,18 @@
     },
     {
       "path": "evals/ar/corpus.json",
-      "bytes": 47428,
-      "sha256": "2795b0327226a2a02168e7fdbd76260c2924c62981421c0e0387160da646e11f"
+      "bytes": 120789,
+      "sha256": "3cfb5b476b9ebef19d7c13cfa4ec9dc8e6671596c8d7fd8b4164d486158ca19f"
     },
     {
       "path": "evals/en/corpus.json",
-      "bytes": 38439,
-      "sha256": "50170954e909ac2e50441f39d7e4d80739f3311057a1003b4e166ec67ab5d5c6"
+      "bytes": 101232,
+      "sha256": "ff7eecd4c59c7296cf5292346b8b82a8f37bd83c35537d62aac1c9bbf4bea290"
     },
     {
       "path": "evals/mixed/corpus.json",
-      "bytes": 87796,
-      "sha256": "529e417537f9cc04758ea74a1823799ebaac10eb37f1451e021cad69700e479b"
+      "bytes": 227982,
+      "sha256": "e4e28bf6e1c590ff3b73cdd166e5c79c49e98b8bc72407d579d1555d51e8a6ec"
     },
     {
       "path": "evals/skills/deck-review/cases.json",
@@ -2596,8 +2616,8 @@
     },
     {
       "path": "fixtures/catalog/signed_catalog.json",
-      "bytes": 1815,
-      "sha256": "f4cd7d8951ce1a5f5ba3e1d6c0df23fe8116ee68581ded9444b0b6587170c142"
+      "bytes": 2330,
+      "sha256": "16fa00c27ee83bc5b7aef49cb5d1fa17eacc0f407f3ca076f6c980bd95d305ee"
     },
     {
       "path": "fixtures/contracts/records.json",
@@ -2976,8 +2996,8 @@
     },
     {
       "path": "tools/expand_eval_corpus.py",
-      "bytes": 18920,
-      "sha256": "b6d4bb6ad1bff61ac0b917e21792a996e9e73212f8073a8fb9f20a2f8bed0bc1"
+      "bytes": 32631,
+      "sha256": "e8d47db0a9cd7baa8d8f0498f0daf58bff5dfd1e661a50197962296a97de9f3f"
     },
     {
       "path": "tools/fuzz.sh",

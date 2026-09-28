@@ -56,6 +56,23 @@ Gates this session: `cargo test -p harbor_knowledge` 19/19 (incl. the
 knowledge_identity end-to-end, `cargo test -p harbor_core` all targets,
 contracts 124/0, clippy/fmt clean, dossier regenerated at commit.
 
+## Session 43 addendum (2026-09-28, later): the multilingual embedding attempt
+
+Decision 0010's AR blocker was attacked the same day. `multilingual-e5-small`
+(Q8_0) is pinned (fixtures/models + catalog epoch 2 via the dev root key),
+and the live tier attempted the AR stratum: three of four public conversions
+are unusable on llama.cpp 0.1.156 (missing bert metadata, compute abort, or
+degenerate embeddings — a new `embed_probe` example sanity-checks candidates
+in seconds); the healthy TwinSunsLLC conversion with e5 query/passage
+prefixes achieves global AR separation (0.950 > 0.939 — bge never did) and
+lifts AR retrieval 0.665 → 0.707, but still misses the profile thresholds:
+the 117M model scores office-flavored unanswerables above paraphrased
+facts, so no absolute abstention bar works (verified under max and
+profile-budget quantile calibration; the rule is documented in the
+harness). Recorded paths: a stronger multilingual embedder (bge-m3 class),
+margin-based abstention as a product change, or a llama.cpp bump.
+Evidence: `evidence/knowledge_evals/live-e011debc1208.json`.
+
 ## Session 42 (2026-09-27): the authoring skills on the iPhone simulator — five defects the Mac runs did not show
 
 Uncommitted on top of `8a09909` at the time of writing. iPhone 17 Pro
