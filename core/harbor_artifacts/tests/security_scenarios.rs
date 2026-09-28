@@ -389,3 +389,115 @@ fn sec_042_active_content_is_preserved_never_executed() {
         );
     }
 }
+
+/// SEC-004 (external OOXML relationships): a package with an External
+/// relationship (a linked image, a linked workbook) passes integrity
+/// with the relationship MARKED external and its target never required
+/// as a part — and Harbor has no fetch path for it (SEC-035's transport
+/// scan forbids transport construction outside harbor_net, which the
+/// artifact engine never touches).
+#[test]
+fn sec_004_external_relationships_are_marked_never_fetched() {
+    // Build a minimal OOXML-shaped package: root rels with one internal
+    // officeDocument target and one EXTERNAL target.
+    let mut pkg = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+    use std::io::Write;
+    let rels = r#"<?xml version="1.0"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="https://attacker.example/pixel.gif" TargetMode="External"/>
+</Relationships>"#;
+    pkg.start_file("_rels/.rels", zip::write::SimpleFileOptions::default())
+        .unwrap();
+    pkg.write_all(rels.as_bytes()).unwrap();
+    pkg.start_file(
+        "word/document.xml",
+        zip::write::SimpleFileOptions::default(),
+    )
+    .unwrap();
+    pkg.write_all(
+        br#"<document xmlns="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>"#,
+    )
+    .unwrap();
+    pkg.start_file(
+        "[Content_Types].xml",
+        zip::write::SimpleFileOptions::default(),
+    )
+    .unwrap();
+    pkg.write_all(
+        br#"<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+</Types>"#,
+    )
+    .unwrap();
+    let bytes = pkg.finish().unwrap().into_inner();
+
+    // The external target does NOT exist as a part, and integrity does
+    // not demand it: external relationships are marked, never fetched.
+    let problems = harbor_artifacts::package::package_integrity(&bytes);
+    assert!(
+        !problems.iter().any(|p| p.contains("attacker.example")),
+        "an external target must not be treated as a missing part: {problems:?}"
+    );
+    assert!(
+        problems.is_empty(),
+        "the well-formed package with an external rel passes: {problems:?}"
+    );
+
+    // And there is no fetch path: the artifact engine constructs no
+    // transport anywhere (SEC-035 enforces this core-wide; assert it
+    // directly for this crate's sources too).
+    let src = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    for entry in std::fs::read_dir(&src).unwrap() {
+        let path = entry.unwrap().path();
+        if path.extension().and_then(|e| e.to_str()) != Some("rs") {
+            continue;
+        }
+        let code = std::fs::read_to_string(&path).unwrap();
+        let code = &code[..code.find("#[cfg(test)]").unwrap_or(code.len())];
+        assert!(
+            !code.contains("ureq::") && !code.contains("reqwest::"),
+            "the artifact engine must not fetch: {}",
+            path.display()
+        );
+    }
+}
+
+/// SEC-023 (unsafe overwrite): new-copy is the default and REFUSES an
+/// existing destination; overwriting an original is a protected effect
+/// that requires the exact approved base hash.
+#[test]
+fn sec_023_overwrite_is_protected_new_copy_is_default() {
+    let dir = tempfile::tempdir().unwrap();
+    let dest = dir.path().join("out.xlsx");
+    std::fs::write(&dest, b"precious-user-bytes").unwrap();
+    let committer = SafeCommitter::new(dir.path().join("journal.db")).unwrap();
+    let output = b"harbor-output".to_vec();
+    let out_hash = harbor_canonical::sha256_hex(&output);
+
+    // New-copy mode refuses to touch an existing destination.
+    let err = committer
+        .commit_new_copy("batch-nc", "a", &dest, &out_hash, &output)
+        .unwrap_err();
+    assert!(
+        matches!(err, harbor_artifacts::commit::SafeCommitError::Conflict),
+        "new-copy must refuse an existing destination: {err}"
+    );
+    assert_eq!(
+        std::fs::read(&dest).unwrap(),
+        b"precious-user-bytes",
+        "the original is untouched"
+    );
+
+    // The overwrite path is protected: only the exact approved base
+    // hash opens it (a mismatched guess is refused).
+    let wrong_base = harbor_canonical::sha256_hex(b"guess");
+    let err = committer
+        .commit_external("batch-ow", "a", &dest, &wrong_base, &out_hash, &output)
+        .unwrap_err();
+    assert!(matches!(
+        err,
+        harbor_artifacts::commit::SafeCommitError::BaseChanged { .. }
+    ));
+}

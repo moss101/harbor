@@ -246,3 +246,88 @@ fn sec_009_credentials_never_in_query_strings() {
         "credentials must stay in headers: {violations:?}"
     );
 }
+
+/// SEC-012 (catalog tampering): the detached signature covers the
+/// canonical bytes of {epoch, published_at, entries} — tampered bytes,
+/// foreign signatures and unknown keys all fail verification.
+#[test]
+fn sec_012_tampered_catalog_entries_fail_verification() {
+    use harbor_modelhub::catalog_signing::{sign_catalog, CatalogSigningKey, CatalogVerifier};
+    let key = CatalogSigningKey::generate();
+    let entries = harbor_canonical::parse(
+        r#"{"packages":[{"id":"pkg-a","license":"MIT","context_tokens":512,
+           "repo_id":"org/repo","revision":"main","quantization":"Q8_0","tiers":["Test"],
+           "files":[{"role":"weights","path":"m.gguf","sha256":"aa","size_bytes":1}]}]}"#,
+    )
+    .unwrap();
+    let signed = sign_catalog(&key, 7, "2026-09-29T00:00:00Z", entries).unwrap();
+    let public = hex::encode(key.public_bytes());
+    let mut verifier = CatalogVerifier::new(&public).unwrap();
+    verifier.verify(&signed).unwrap();
+
+    // Tamper: mutate a hash inside the signed entries (re-serialize with
+    // the swap so canonical shape stays valid) — signature must fail.
+    let swapped = serde_json::to_string(&signed.entries)
+        .unwrap()
+        .replace("aa", "bb");
+    let mut tampered = signed.clone();
+    tampered.entries = harbor_canonical::parse(&swapped).unwrap();
+    assert!(
+        verifier.verify(&tampered).is_err(),
+        "tampered entries must fail the detached signature"
+    );
+
+    // Signature stripping/replay: a different entries value wearing the
+    // original signature fails.
+    let mut forged = signed.clone();
+    forged.entries = harbor_canonical::parse(r#"{"packages":[{"id":"evil"}]}"#).unwrap();
+    assert!(
+        verifier.verify(&forged).is_err(),
+        "a signature over different canonical bytes must fail"
+    );
+
+    // An attacker's own key is unknown to the verifier.
+    let attacker = CatalogSigningKey::generate();
+    let attack = sign_catalog(
+        &attacker,
+        8,
+        "2026-09-29T02:00:00Z",
+        harbor_canonical::parse(r#"{"packages":[]}"#).unwrap(),
+    )
+    .unwrap();
+    assert!(verifier.verify(&attack).is_err());
+}
+
+/// SEC-044 (catalog key rollback/expiry): after accepting epoch N, a
+/// catalog at a LOWER or equal epoch is rejected — rollback and replay
+/// cannot walk the accepted catalog backwards.
+#[test]
+fn sec_044_catalog_epoch_rollback_rejected() {
+    use harbor_modelhub::catalog_signing::{sign_catalog, CatalogSigningKey, CatalogVerifier};
+    let key = CatalogSigningKey::generate();
+    let entries = harbor_canonical::parse(r#"{"packages":[]}"#).unwrap();
+    let v5 = sign_catalog(&key, 5, "2026-09-29T00:00:00Z", entries.clone()).unwrap();
+    let v6 = sign_catalog(&key, 6, "2026-09-29T01:00:00Z", entries.clone()).unwrap();
+    let public = hex::encode(key.public_bytes());
+    let mut verifier = CatalogVerifier::new(&public).unwrap();
+
+    // Accept epoch 6...
+    verifier.verify(&v6).unwrap();
+    // ...then epoch 5 (rollback) and a replay of epoch 6 are refused.
+    let err = verifier.verify(&v5).unwrap_err();
+    assert!(matches!(
+        err,
+        harbor_modelhub::catalog_signing::CatalogSignError::StaleEpoch {
+            accepted: 6,
+            got: 5
+        }
+    ));
+    let err = verifier.verify(&v6).unwrap_err();
+    assert!(matches!(
+        err,
+        harbor_modelhub::catalog_signing::CatalogSignError::StaleEpoch {
+            accepted: 6,
+            got: 6
+        }
+    ));
+}

@@ -36,3 +36,41 @@ fn sec_018_crash_logs_are_content_free_by_default() {
         "non-content context stays"
     );
 }
+
+/// SEC-007 (tool argument injection): tool arguments are schema-validated
+/// BEFORE the executor runs anything — injected extra fields, wrong
+/// types and enum smuggles produce violations the executor treats as
+/// refusals, never as best-effort execution.
+#[test]
+fn sec_007_injected_tool_arguments_fail_schema_validation() {
+    let schema: serde_json::Value = serde_json::json!({
+        "type": "object",
+        "properties": {
+            "path": {"type": "string"},
+            "mode": {"enum": ["preview", "commit"]}
+        },
+        "required": ["path", "mode"],
+        "additionalProperties": false
+    });
+    // Benign call validates.
+    let ok = serde_json::json!({"path": "report.docx", "mode": "preview"});
+    assert!(harbor_core::jsonschema::validate(&schema, &ok).is_empty());
+
+    // Injected extra argument ("just a flag") is refused.
+    let injected = serde_json::json!({
+        "path": "report.docx", "mode": "preview",
+        "overwrite": true, "skip_approval": true
+    });
+    assert!(
+        !harbor_core::jsonschema::validate(&schema, &injected).is_empty(),
+        "injected arguments must fail validation"
+    );
+
+    // Type confusion (mode as a number) is refused.
+    let confused = serde_json::json!({"path": "report.docx", "mode": 7});
+    assert!(!harbor_core::jsonschema::validate(&schema, &confused).is_empty());
+
+    // Enum smuggle (a mode the tool never declared) is refused.
+    let smuggled = serde_json::json!({"path": "report.docx", "mode": "force"});
+    assert!(!harbor_core::jsonschema::validate(&schema, &smuggled).is_empty());
+}
