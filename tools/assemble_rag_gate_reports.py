@@ -398,9 +398,11 @@ def main() -> None:
             operator_gates.append(entry)
         else:
             sec = [x for x in gate_rows[gid]["Security IDs"].split(";") if x]
-            EXECUTABLE_SEC = {"SEC-006", "SEC-011", "SEC-019", "SEC-021",
-                              "SEC-030", "SEC-031", "SEC-033", "SEC-035",
-                              "SEC-041", "SEC-043", "SEC-046", "SEC-047"}
+            EXECUTABLE_SEC = {"SEC-006", "SEC-009", "SEC-011", "SEC-014",
+                              "SEC-018", "SEC-019", "SEC-021", "SEC-030",
+                              "SEC-031", "SEC-032", "SEC-033", "SEC-035",
+                              "SEC-041", "SEC-042", "SEC-043", "SEC-045",
+                              "SEC-046", "SEC-047"}
             pending = [x for x in sec if x not in EXECUTABLE_SEC]
             if pending:
                 entry["machine_work"] = (

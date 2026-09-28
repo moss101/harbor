@@ -138,3 +138,111 @@ fn sec_021_no_remote_code_honored_anywhere_in_modelhub() {
         "modelhub must stay data-only: {violations:?}"
     );
 }
+
+/// SEC-014: file scope escape — a package path that tries to climb out
+/// of the install root is refused before anything is staged.
+#[test]
+fn sec_014_package_path_escape_refused() {
+    let dir = tempfile::tempdir().unwrap();
+    let installer = PackageInstaller::new(dir.path());
+    let mut payload = b"GGUF".to_vec();
+    payload.extend(vec![0u8; 32]);
+    let sha = harbor_canonical::sha256_hex(&payload);
+    let mut m = manifest("escape", &sha, payload.len() as u64);
+    m.files[0].path = "../../outside-root.gguf".into();
+    let mut staged = installer.begin("escape").unwrap();
+    let err = installer
+        .ingest_file(&mut staged, &m.files[0], &payload)
+        .unwrap_err();
+    assert!(
+        matches!(err, harbor_modelhub::install::InstallError::PathEscape(_)),
+        "a scope-escaping path must be refused: {err}"
+    );
+    assert!(!dir
+        .path()
+        .parent()
+        .unwrap()
+        .join("outside-root.gguf")
+        .exists());
+}
+
+/// SEC-045: a partially installed multi-file package is INVISIBLE —
+/// nothing appears in the installed list until every file is verified
+/// and the atomic commit completes.
+#[test]
+fn sec_045_partial_install_is_invisible_until_atomic_commit() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().join("installed");
+    let installer = PackageInstaller::new(&root);
+    let mut weights = b"GGUF".to_vec();
+    weights.extend(vec![1u8; 64]);
+    let config = b"{}".to_vec();
+    let m = PackageManifest {
+        schema: "harbor.model/v3".into(),
+        id: "partial".into(),
+        reference_type: "installed_package".into(),
+        files: vec![
+            PackageFile {
+                role: "weights".into(),
+                path: "model.gguf".into(),
+                sha256: harbor_canonical::sha256_hex(&weights),
+                size_bytes: weights.len() as u64,
+            },
+            PackageFile {
+                role: "config".into(),
+                path: "config.json".into(),
+                sha256: harbor_canonical::sha256_hex(&config),
+                size_bytes: config.len() as u64,
+            },
+        ],
+        runtime: RuntimeBinding {
+            kind: "gguf/llama.cpp".into(),
+            min_revision: "0.1.156".into(),
+            targets: vec![std::env::consts::ARCH.into()],
+        },
+    };
+    let mut staged = installer.begin("partial").unwrap();
+    // Crash after the FIRST file of a multi-file package: one file
+    // verified, the second never arrives, commit never runs.
+    installer
+        .ingest_file(&mut staged, &m.files[0], &weights)
+        .unwrap();
+    drop(staged); // the "crash"
+    assert!(
+        installer.installed_packages().unwrap().is_empty(),
+        "a partial install must be invisible"
+    );
+    assert!(
+        !root.join("partial").exists(),
+        "no partial directory leaked"
+    );
+}
+
+/// SEC-009: hub credentials ride the Authorization HEADER, never a
+/// query string — a static scan of the acquisition sources keeps it
+/// that way (tokens in URLs land in logs, captures and referers).
+#[test]
+fn sec_009_credentials_never_in_query_strings() {
+    let src = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let mut violations = Vec::new();
+    for entry in std::fs::read_dir(&src).unwrap() {
+        let path = entry.unwrap().path();
+        if path.extension().and_then(|e| e.to_str()) != Some("rs") {
+            continue;
+        }
+        let text = std::fs::read_to_string(&path).unwrap();
+        let code = match text.find("#[cfg(test)]") {
+            Some(i) => &text[..i],
+            None => &text[..],
+        };
+        for needle in ["?token=", "&token=", "?access_token=", "api_key="] {
+            if code.contains(needle) {
+                violations.push(format!("{}: {}", path.display(), needle));
+            }
+        }
+    }
+    assert!(
+        violations.is_empty(),
+        "credentials must stay in headers: {violations:?}"
+    );
+}

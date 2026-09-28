@@ -307,3 +307,85 @@ fn corrupt_formula_cache(bytes: &[u8], formula_text: &str, stale: &str) -> Vec<u
     }
     writer.finish().unwrap().into_inner()
 }
+
+/// SEC-032: a provider outcome that could not be established enters
+/// OUTCOME_UNKNOWN and automatic retry is PROHIBITED — commit_external
+/// refuses the batch until an operator/tool reconciles via recover().
+#[test]
+fn sec_032_outcome_unknown_prohibits_automatic_retry() {
+    let dir = tempfile::tempdir().unwrap();
+    let dest = dir.path().join("out.xlsx");
+    std::fs::write(&dest, b"base").unwrap();
+    let base_hash = harbor_canonical::sha256_hex(b"base");
+    let committer = SafeCommitter::new(dir.path().join("journal.db")).unwrap();
+    // A crash between replace and finalize left the journal in
+    // outcome_unknown (injected the way a crash would have written it).
+    use harbor_artifacts::commit::CommitJournal;
+    let journal = CommitJournal {
+        batch_id: "batch-ou".into(),
+        artifact_id: "a".into(),
+        state: harbor_artifacts::commit::JournalState::OutcomeUnknown,
+        mode: harbor_artifacts::commit::CommitMode::ProviderCompareAndSwap,
+        base_content_hash: base_hash.clone(),
+        proposed_output_hash: harbor_canonical::sha256_hex(b"out"),
+        staging_path: None,
+        target_identity: dest.to_string_lossy().to_string(),
+        destination_identity: dest.to_string_lossy().to_string(),
+        committed_version_id: None,
+        created_at: chrono::Utc::now(),
+        updated_at: chrono::Utc::now(),
+    };
+    committer.journal.upsert(&journal).unwrap();
+
+    // Recovery says exactly what happened: unknown, human decision.
+    let action = committer.recover("batch-ou").unwrap();
+    assert_eq!(
+        action,
+        harbor_artifacts::commit::RecoveryAction::OutcomeUnknown
+    );
+    // Automatic retry is refused.
+    let err = committer
+        .commit_external(
+            "batch-ou",
+            "a",
+            &dest,
+            &base_hash,
+            &harbor_canonical::sha256_hex(b"out"),
+            b"out",
+        )
+        .unwrap_err();
+    assert!(
+        matches!(
+            err,
+            harbor_artifacts::commit::SafeCommitError::OutcomeUnknown
+        ),
+        "unknown outcomes must not retry automatically: {err}"
+    );
+}
+
+/// SEC-042: macros/OLE/active content are classified PRESERVE_NO_EXECUTE
+/// in every format — Harbor's preview and engine treat them as opaque
+/// parts to preserve or warn about, and there is no execution path.
+#[test]
+fn sec_042_active_content_is_preserved_never_executed() {
+    use harbor_artifacts::office_matrix::{classify_part, MatrixClass, OfficeFormat};
+    for (format, part) in [
+        (OfficeFormat::Xlsx, "xl/vbaProject.bin"),
+        (OfficeFormat::Docx, "word/embeddings/oleObject1.bin"),
+        (OfficeFormat::Pptx, "ppt/activeX/ax1.bin"),
+        (OfficeFormat::Xlsx, "xl/bin/thing.bin"),
+    ] {
+        let c = classify_part(format, part);
+        assert_eq!(
+            c.class,
+            MatrixClass::PreserveNoExecute,
+            "{part} must classify as preserve-no-execute: {:?}",
+            c.reason
+        );
+        assert!(
+            c.reason.contains("never execute"),
+            "the matrix says it outright: {}",
+            c.reason
+        );
+    }
+}

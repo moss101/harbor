@@ -261,6 +261,15 @@ impl SafeCommitter {
         // A third version at the destination is a conflict, never a
         // silent success (02 contract, recovery rule 5).
         if let Some(j) = self.journal.get(batch_id)? {
+            // SEC-032: a batch whose outcome could not be established
+            // must never retry automatically — the caller has to
+            // reconcile first (recover()), then decide.
+            if matches!(
+                j.state,
+                JournalState::OutcomeUnknown | JournalState::Replaced
+            ) {
+                return Err(SafeCommitError::OutcomeUnknown);
+            }
             if j.state == JournalState::Committed {
                 let dest_hash = std::fs::read(destination)
                     .map(|bytes| harbor_canonical::sha256_hex(&bytes))
