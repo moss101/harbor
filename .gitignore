@@ -37,3 +37,6 @@ core/harbor_artifacts/tests/dbg_map.rs
 # harness in record mode (HARBOR_RECORD_CASSETTES=1); reproducible from the
 # model, promoted by hand into the committed replay cassettes after review.
 evals/skills/*/cassettes/live/
+
+# Local tooling artifact (not Harbor)
+plugins/
