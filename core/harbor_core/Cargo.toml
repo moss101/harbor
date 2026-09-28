@@ -34,3 +34,7 @@ tempfile = "3"
 [dev-dependencies]
 # The live eval tier links the pinned llama.cpp runtime.
 harbor_inference = { workspace = true, features = ["gguf-backend"] }
+# The system-model live tier dlopens the platform host adapter
+# (native/apple/system_host) rather than linking it, so the product
+# dependency graph never carries it.
+libloading = "0.8"

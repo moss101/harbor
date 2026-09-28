@@ -4,8 +4,8 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "218da679948524dad354ea752cd7fe8f489b9a57e2fff9ecfa4d2eecf85cf3b2",
-  "file_count_excluding_manifest": 602,
+  "input_manifest_sha256": "8b0389e0a30ab7d495ad6378d93f064bb60923975bb8a250bf2b26bfd2e554db",
+  "file_count_excluding_manifest": 608,
   "files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -119,13 +119,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 109999,
-      "sha256": "4f555530448b4d05e0e3975835320990c7e21f5cb88b733e5be47f140cc483e2"
+      "bytes": 111066,
+      "sha256": "04936a090d9f9657bda930e6781ded18ee359570f95fdc7071fe4b0b2f85005f"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "8868d077ada9845c1b6b06837c3a15b4ccf10e642541340ad61b56b0bc03fe6c"
+      "sha256": "a15bd2ee66a038a7f5a254a83625c7d3a554ea84e5a884e48d3219fe44cb1813"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -1044,8 +1044,8 @@
     },
     {
       "path": "core/Cargo.lock",
-      "bytes": 99763,
-      "sha256": "a5fbff3d8496c71eb9c26d55362384ce6a63a81ab092f844a0aa08e4a2661184"
+      "bytes": 99778,
+      "sha256": "b6288b266b738075313d4b9bbd7e95f700b8263674d2339606eb60e547f0cad9"
     },
     {
       "path": "core/Cargo.toml",
@@ -1479,8 +1479,8 @@
     },
     {
       "path": "core/harbor_core/Cargo.toml",
-      "bytes": 1073,
-      "sha256": "2293a9ea5a3c5f633af8f8339d1afea34f6f5ffdb6d537c85dc652bf542932d2"
+      "bytes": 1260,
+      "sha256": "27c88be530cda2174d48332ad02fdae206fe9eea4433db71781987d94aa9e7de"
     },
     {
       "path": "core/harbor_core/src/builtin_skills.json",
@@ -1683,6 +1683,11 @@
       "sha256": "3bfd371a9cfcc6cb804f62f115fec4b6feafeb949e5eceddb917b4b715b19647"
     },
     {
+      "path": "core/harbor_core/tests/skill_evals_system.rs",
+      "bytes": 9800,
+      "sha256": "fd31034e83bb880652df342c3d34d7aea136f907fed0b4db25d95d0da3ac7601"
+    },
+    {
       "path": "core/harbor_ffi/Cargo.toml",
       "bytes": 1130,
       "sha256": "ac40500fe968616563e990d47ede7817f83bb5f2146d51f1ea7b4b5c95cdefb3"
@@ -1774,8 +1779,8 @@
     },
     {
       "path": "core/harbor_inference/src/lib.rs",
-      "bytes": 1512,
-      "sha256": "9f606c4e7437ab4b5c7ab4c3644a0a804835280382332a22301f7212176fcf8d"
+      "bytes": 1582,
+      "sha256": "450ac012a051ed522bc04a5d19de275803079324778ac4e439a63fe0883e7f6a"
     },
     {
       "path": "core/harbor_inference/src/provider.rs",
@@ -1786,6 +1791,11 @@
       "path": "core/harbor_inference/src/router.rs",
       "bytes": 6014,
       "sha256": "8d80beba02427b74c980c4ddfb80638cb886528e70c90772cf857a1e848d6b11"
+    },
+    {
+      "path": "core/harbor_inference/src/system.rs",
+      "bytes": 27184,
+      "sha256": "dbac5c425dfcbdceec28f5b282e7c4165165e4b76662202cfaaa6adc409c08e5"
     },
     {
       "path": "core/harbor_inference/tests/gguf_provider.rs",
@@ -2171,6 +2181,11 @@
       "path": "docs/decisions/0008-authoring-skills-creation-and-repair-loop.md",
       "bytes": 12605,
       "sha256": "ab26d35dd4fe0b3976be41d0d216ee904c2a1e73ef0e13b2d951f87bd0d6fa9d"
+    },
+    {
+      "path": "docs/decisions/0009-system-model-providers-over-a-host-bridge.md",
+      "bytes": 10244,
+      "sha256": "95edbd25c1cb84e67f8cecb864dcd463fe3a5ec66597d82daca4fbbf11659a4d"
     },
     {
       "path": "docs/release/THIRD_PARTY_NOTICES.md",
@@ -2688,6 +2703,16 @@
       "sha256": "42f662aec03cd82f3c8825a757979ccf738983c2b93e21043b9ad286ac7e8c17"
     },
     {
+      "path": "native/apple/include/harbor_system_host.h",
+      "bytes": 2353,
+      "sha256": "f29ebd6aa4a8b65677315154dac5dbf9946d5c232be5aeadb02b6ff4ebe3de0e"
+    },
+    {
+      "path": "native/apple/system_host/AFMHost.swift",
+      "bytes": 20891,
+      "sha256": "f10faa12b2e91d44c921431cd366b3fb205a4e840eaa7763f49d8645ae2aec07"
+    },
+    {
       "path": "outputs/Harbor_Dossier_Original_Backup.zip",
       "bytes": 7433732,
       "sha256": "bc6cf8049a1b88eed6cb79ef49112e1faa1b8b07adf66ba5d6fa86df196d661c"
@@ -2931,6 +2956,11 @@
       "path": "tools/assemble_release_evidence.py",
       "bytes": 32283,
       "sha256": "799669840d541a563b7f55d717a3a6ae59fdeec433d63d8669692794da39eea8"
+    },
+    {
+      "path": "tools/build_apple_system_host.sh",
+      "bytes": 1305,
+      "sha256": "760fede2dffca2c027842366c6e7ae50df7928a414b5df2247037b3d8e1866ef"
     },
     {
       "path": "tools/check_advisory_ignores.py",

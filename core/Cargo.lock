@@ -1549,6 +1549,7 @@ dependencies = [
  "harbor_security",
  "harbor_store",
  "hex",
+ "libloading",
  "rand 0.8.8",
  "regex",
  "roxmltree",

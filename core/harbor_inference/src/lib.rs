@@ -18,6 +18,7 @@ pub mod cassette;
 pub mod gguf;
 pub mod provider;
 pub mod router;
+pub mod system;
 
 pub use backend::TestBackend;
 pub use cassette::{Cassette, CassetteMode, RecordReplayProvider};
@@ -28,6 +29,7 @@ pub use provider::{
     ProviderError, Usage,
 };
 pub use router::{RouterPolicy, Substitution};
+pub use system::{SystemHostBridge, SystemHostVtable};
 
 /// The inference runtime identity this build links, feature-agnostic so
 /// eval reports can always record it.
