@@ -180,6 +180,7 @@ def main() -> None:
             "harbor_ffi::security_rag::sec_006_retrieved_content_is_tagged_untrusted",
             "harbor_ffi::security_rag::sec_006_injection_cannot_ground_a_normal_question",
             "security.sec_006",
+            "security.sec_047",
         ],
         "scenario_results": stratum_scenarios("ACC-014") + [sec006, sec047],
         "source_evidence": {"path": live_rel, "sha256": live_sha,
