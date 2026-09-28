@@ -229,3 +229,41 @@ decision to enable the feature (the registry keeps every feature
 default-off; activation rides the release descriptor, and the
 contract tests enforce that core releases cannot disable RAG).
 
+## Third addendum (2026-09-28, night): the activation gates are assembled and validate
+The activation mechanics this decision kept naming as the remaining step
+are done for feature:rag's own gates:
+
+- **SEC-006 and SEC-047 are executable controls now**
+  (`harbor_ffi/tests/security_rag.rs`, four always-on tests). The
+  grounded-generation composition (`compose_rag_context`, extracted from
+  `generate_rag`) tags retrieved content UNTRUSTED and forbids following
+  instructions inside it; injected chunks cannot ground normal questions
+  at the retrieval layer; revocation excludes retrieval immediately,
+  deletes the durable rows (no reopen resurrection) and reports Removed
+  citations.
+- **`tools/assemble_rag_gate_reports.py` assembles the ACC-014/ACC-055
+  gate reports through the release evidence path**: a RAG-activation
+  release descriptor (M3_GA_CORE, the core-GA feature set plus
+  feature:rag, the qualified macOS reference target, the release dylib's
+  sha256), reports bound to the descriptor's canonical digest and a
+  clean commit, evidence files under `evidence/gates/` and
+  `evidence/security/`, and gate records under
+  `evidence/releases/rag-activation-2026-09-28/`. The tool refuses to
+  fabricate: it aborts unless the live evidence says every stratum
+  qualified and the tree is clean, and it hashes what is on disk.
+- **The authority's own machinery accepts them**: `evaluate_release`
+  (contracts.py, the same code the dossier validators use) reports both
+  gates REQUIRED with ZERO errors naming ACC-014 or ACC-055 — every
+  error that remains names the OTHER 64 required gates of a full M3
+  release. That is the honest state of a RAG-activation bundle: the
+  feature's own gates pass on measured evidence; the full release still
+  needs the rest of its gates (the machine-verifiable share re-runs via
+  `tools/generate_gate_evidence.py`, which now includes the knowledge
+  security scenarios and the live qualification tier; the
+  operator-bound share is the standing external blocker list).
+- A release descriptor CAN therefore list feature:rag with bound,
+  verified gate evidence; flipping the release itself on remains the
+  release process's to run (every feature stays default-off in the
+  registry by contract, and `required_at_core_ga` already forces RAG
+  into every core-GA descriptor — the contract tests enforce it).
+

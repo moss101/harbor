@@ -91,6 +91,25 @@ ACC-014/ACC-055 gate reports from this evidence and the release
 descriptor's feature list. Evidence:
 `evidence/knowledge_evals/live-950f4a8e5e19.json`.
 
+## Session 43 third addendum (2026-09-28, night): the RAG activation gates assemble and validate
+
+The activation mechanics are done for feature:rag's own gates. SEC-006 and
+SEC-047 are executable controls (harbor_ffi/tests/security_rag.rs, four
+always-on tests; the grounded composition now tags retrieved content
+UNTRUSTED via the extracted compose_rag_context).
+tools/assemble_rag_gate_reports.py builds a RAG-activation release
+descriptor (M3_GA_CORE, core-GA features + feature:rag, macOS reference
+target, release-dylib sha), emits the bound ACC-014/ACC-055 gate reports
+under evidence/gates/ plus the SEC evidence files and gate records under
+evidence/releases/rag-activation-2026-09-28/, refuses to fabricate (clean
+tree + every stratum qualified or it aborts), and verifies through the
+contracts machinery's own evaluate_release: both gates REQUIRED, ZERO
+errors naming them; the remaining 64 errors are the other required gates
+of a full M3 release (machine-verifiable share via
+tools/generate_gate_evidence.py, which now runs the knowledge security
+scenarios and the live qualification tier; operator-bound share unchanged).
+A release descriptor can list feature:rag on bound, verified evidence.
+
 ## Session 42 (2026-09-27): the authoring skills on the iPhone simulator — five defects the Mac runs did not show
 
 Uncommitted on top of `8a09909` at the time of writing. iPhone 17 Pro
