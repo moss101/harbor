@@ -21,11 +21,12 @@ COMMIT = subprocess.check_output(
 ).strip()
 
 
-def run(name: str, cwd: str, cmd: list, timeout: int = 1800) -> dict:
+def run(name: str, cwd: str, cmd: list, timeout: int = 1800,
+        env: dict = None) -> dict:
     print(f"RUN  {name}: {' '.join(cmd)} (in {cwd})")
     try:
         proc = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True,
-                              timeout=timeout)
+                              timeout=timeout, env=env)
         output = proc.stdout + proc.stderr
         passed = failed = 0
         for line in output.splitlines():
@@ -67,10 +68,33 @@ def tool(name: str, vendored: Path):
 
 
 def main() -> None:
+    skipped: list = []
     harbor_tools = Path.home() / "harbor-tools/flutter/bin"
     flutter = tool("flutter", harbor_tools / "flutter")
     dart = tool("dart", harbor_tools / "cache/dart-sdk/bin/dart")
     core = str(ROOT / "core")
+    # The knowledge security scenarios (SEC-006/SEC-047) are always-on
+    # workspace tests; the live qualification tier needs weights and is
+    # recorded as SKIPPED, never dropped, when the fixture is absent.
+    bge_m3 = ROOT / "fixtures/models/bge-m3-q8_0.gguf"
+    knowledge_suites = [
+        run("knowledge_security_scenarios", core,
+            ["cargo", "test", "-p", "harbor_ffi", "--test", "security_rag"]),
+        run("knowledge_identity_rebuild", core,
+            ["cargo", "test", "-p", "harbor_ffi", "--test", "knowledge_identity"]),
+    ]
+    if bge_m3.exists():
+        import os
+        env = dict(os.environ)
+        env["HARBOR_EMBED_MODEL_GGUF"] = str(bge_m3)
+        knowledge_suites.append(
+            run("knowledge_live_qualification", core,
+                ["cargo", "test", "-p", "harbor_knowledge", "--test",
+                 "qualification_live", "--", "--ignored"], env=env))
+    else:
+        skipped.append({"suite": "knowledge_live_qualification",
+                        "reason": "bge-m3 fixture absent "
+                                  "(fixtures/models/bge-m3-q8_0.gguf)"})
     suites = [
         run("rust_workspace", core, ["cargo", "test", "--workspace"]),
         run("rust_gguf_backend", core,
@@ -79,8 +103,7 @@ def main() -> None:
         run("contract_tests", str(ROOT), ["python3", "tools/test_contracts.py"]),
         run("engine_pin", str(ROOT), ["python3", "tools/pin_engine.py", "--check"]),
         run("contrast_audit", str(ROOT), ["python3", "tools/check_contrast.py"]),
-    ]
-    skipped: list = []
+    ] + knowledge_suites
     if flutter:
         suites.append(run("harbor_ui", str(ROOT / "packages/harbor_ui"), [flutter, "test"]))
         suites.append(run("harbor_app", str(ROOT / "apps/harbor_app"), [flutter, "test"]))
@@ -101,6 +124,9 @@ def main() -> None:
     gate_map = {
         "rust_workspace": ["ACC-027", "ACC-064", "ACC-075"],
         "rust_gguf_backend": ["ACC-054", "ACC-063"],
+        "knowledge_security_scenarios": ["ACC-014", "ACC-055"],
+        "knowledge_identity_rebuild": ["ACC-055"],
+        "knowledge_live_qualification": ["ACC-014", "ACC-056"],
         "dossier_validation": ["ACC-075"],
         "contract_tests": ["ACC-075"],
         "contrast_audit": ["ACC-070"],

@@ -4,8 +4,8 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "2486f4d2415e3e0a7f544213ba0819c072335985e4de8318cd7126602c66aecc",
-  "file_count_excluding_manifest": 612,
+  "input_manifest_sha256": "0031e72492ceae1f03f1503641cc0165764376fd45f6c62ffeea1239726e22a5",
+  "file_count_excluding_manifest": 614,
   "files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -119,13 +119,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 111798,
-      "sha256": "84a9f2990b73839071ba8e430019a5ea0fd3d4df13c49f574daca118991df990"
+      "bytes": 112140,
+      "sha256": "862345e1c818e729e265eff29de3766bca3ae0e8bfc8a841d8e1110f72b23fa4"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "318fce64aba7881d731ad36613a08fc1f7c4a3518ec770b16de9c800c405bf47"
+      "sha256": "b8cb04a1fad8029e7b6d007134fd44a4e717a51e3aa4d0cda51c7254d72d6a65"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -1694,8 +1694,8 @@
     },
     {
       "path": "core/harbor_ffi/src/knowledge.rs",
-      "bytes": 34602,
-      "sha256": "1a58284f5d6a1919072b76ad3cca52c679df2bd4bd9301bbf85b326453ebb06a"
+      "bytes": 35349,
+      "sha256": "f57602b986493267f54e6e6994ff19e8d54d5d9a4eb8bc16d41668f5e16224e2"
     },
     {
       "path": "core/harbor_ffi/src/lib.rs",
@@ -1716,6 +1716,11 @@
       "path": "core/harbor_ffi/tests/knowledge_identity.rs",
       "bytes": 5864,
       "sha256": "c1aa54750ebf5a97e90068a95ea9a9b67e0606f4f7e12b4a95bcafb84c7ea447"
+    },
+    {
+      "path": "core/harbor_ffi/tests/security_rag.rs",
+      "bytes": 8735,
+      "sha256": "b58191092cb145b63ca8fae745fbacc2eb4667816a0ba6408f27dcf2da112b06"
     },
     {
       "path": "core/harbor_ffi/tests/skill_runs.rs",
@@ -2973,6 +2978,11 @@
       "sha256": "0b84f79f9740249f6d1b44417ef77fe6061152d338ad095e344f9bcffdef2920"
     },
     {
+      "path": "tools/assemble_rag_gate_reports.py",
+      "bytes": 14194,
+      "sha256": "ce3df9701f4d3065dcdb45bf79105778010ff4c336eed7d41a8617ffea92707c"
+    },
+    {
       "path": "tools/assemble_release_evidence.py",
       "bytes": 32283,
       "sha256": "799669840d541a563b7f55d717a3a6ae59fdeec433d63d8669692794da39eea8"
@@ -3029,8 +3039,8 @@
     },
     {
       "path": "tools/generate_gate_evidence.py",
-      "bytes": 6401,
-      "sha256": "1cb1809e3cd6a3338a256c582e48e00fff21821eddf640afe05e84a5c8027adc"
+      "bytes": 7752,
+      "sha256": "c53e58ac95fc388abcb45d9f1381dc20c7db4289bfa40a5f484a7ee6d1ecfbd2"
     },
     {
       "path": "tools/generate_sbom.py",
