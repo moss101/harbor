@@ -92,6 +92,12 @@ def main() -> None:
     ap.add_argument("--release-id",
                     default="rag-activation-" + datetime.now(timezone.utc).strftime("%Y-%m-%d"))
     ap.add_argument("--write", action="store_true")
+    ap.add_argument("--with-machine-gates", action="store_true",
+                    help="also assemble gate records for the remaining "
+                         "machine-verifiable M3 gates whose substance is "
+                         "the green gate_results.json suites AND whose "
+                         "security-scenario demands are all executable "
+                         "(the tool refuses the rest, with reasons)")
     args = ap.parse_args()
 
     live_path = ROOT / args.live_evidence
@@ -261,6 +267,98 @@ def main() -> None:
         print(f"written {rec_dir.relative_to(ROOT)}/ACC-014.json")
         print(f"written {rec_dir.relative_to(ROOT)}/ACC-055.json")
 
+    # Machine gates: every gate whose SUBSTANCE is the green suite
+    # bundle and whose SEC demands are empty (a gate citing a security
+    # scenario without an executable control cannot honestly claim PASS;
+    # ACC-054 stays out because its own text demands minimum-device
+    # results the perf evidence still reports blocked; ACC-063 cites
+    # four scenarios with no executables; ACC-056 binds the pinned CHAT
+    # model's answer-quality thresholds, not the knowledge tier).
+    MACHINE_GATES = {
+        "ACC-027": (["rust_workspace"],
+                    "App N-2 data migration with fixtures and rollback "
+                    "guidance: the workspace migration suite"),
+        "ACC-064": (["rust_workspace", "harbor_app"],
+                    "Disabled/unqualified capabilities absent from tool "
+                    "dispatch, deep links, background jobs and UI: the "
+                    "workspace + app suites incl. check_optional_disabled"),
+        "ACC-075": (["rust_workspace", "dossier_validation", "contract_tests",
+                     "harbor_native_ffi"],
+                    "Contract freeze: packaged validator, contract "
+                    "regressions and FFI facade suites"),
+    }
+    OPERATOR_BOUND = {
+        "ACC-018": "VoiceOver/TalkBack/Narrator on physical devices",
+        "ACC-024": "minimum-device performance results (min-spec hardware)",
+        "ACC-040": "store/notarization review (Apple signing identity, Play Console, Windows host)",
+        "ACC-053": "device-class manifest verification on shipped hardware",
+        "ACC-054": "minimum-device results; blocked thresholds must clear (min-spec hardware)",
+        "ACC-080": "platform lifecycle on iOS/Android/Windows (physical devices, Windows host)",
+        "ACC-081": "reference workflow on every shipped platform target (devices, Windows host)",
+    }
+    machine_records = []
+    if args.with_machine_gates:
+        bundle = json.loads((EVIDENCE_ROOT / "gate_results.json").read_text())
+        green = {x["suite"]: x for x in bundle["suites"] if x.get("ok")}
+        from validate_dossier import rows as csv_rows
+        gate_rows = {g["ID"]: g for g in csv_rows("05_Acceptance_Matrix.csv")}
+        for gid, (suites, note) in MACHINE_GATES.items():
+            missing = [x for x in suites if x not in green]
+            sec_ids = [x for x in gate_rows[gid]["Security IDs"].split(";") if x]
+            if missing:
+                print(f"SKIP {gid}: suites not green: {missing}")
+                continue
+            if sec_ids:
+                print(f"SKIP {gid}: cites non-executable security scenarios {sec_ids}")
+                continue
+            report = {
+                "gate_id": gid, "status": "PASS",
+                "release_descriptor_sha256": digest,
+                "commit_sha": commit,
+                "completed_at": now,
+                "requirement": gate_rows[gid]["Requirement"],
+                "test_ids": [f"gate_results.json#{x}" for x in suites],
+                "scenario_results": [],
+                "source_evidence": {
+                    "bundle_commit": bundle["commit"],
+                    "suites": {x: {"passed": green[x]["passed"],
+                                   "failed": green[x]["failed"]}
+                               for x in suites},
+                    "note": note,
+                },
+            }
+            rpath = EVIDENCE_ROOT / f"gates/{gid}/report.json"
+            import hashlib as _h
+            def _sha(value):
+                return _h.sha256(
+                    (json.dumps(value, indent=1, ensure_ascii=False) + "\n")
+                    .encode()).hexdigest()
+            record = {
+                "schema": "harbor.gate_result/v2",
+                "gate_id": gid,
+                "status": "PASS",
+                "release_descriptor_sha256": digest,
+                "commit_sha": commit,
+                "build_sha256": args.build_sha256,
+                "target": descriptor["target"],
+                "features": descriptor["features"],
+                "evidence": [{
+                    "path": f"gates/{gid}/report.json",
+                    "sha256": _sha(report),
+                    "test_ids": report["test_ids"],
+                    "media_type": "application/json",
+                }],
+                "completed_at": now,
+            }
+            if args.write:
+                rpath.parent.mkdir(parents=True, exist_ok=True)
+                rpath.write_text(json.dumps(report, indent=1, ensure_ascii=False) + "\n")
+                record["evidence"][0]["sha256"] = sha256_file(rpath)
+                recp = out_dir / "gate_records" / f"{gid}.json"
+                recp.write_text(json.dumps(record, indent=1) + "\n")
+                print(f"written {recp.relative_to(ROOT)}")
+            machine_records.append(record)
+
     # Verification through the authority's own machinery. The gate
     # records are rebuilt (or would be) against what we just wrote.
     from validate_dossier import rows
@@ -272,7 +370,7 @@ def main() -> None:
                     ["security.sec_006", "security.sec_047"]),
         gate_record(targets["gates/ACC-055/report.json"][0], acc055,
                     ["security.sec_047"]),
-    ]
+    ] + machine_records
     if args.write:
         # hash what is ON DISK now
         for r in records:
@@ -280,8 +378,56 @@ def main() -> None:
             r["evidence"][0]["sha256"] = sha256_file(p)
     verdict = contracts.evaluate_release(
         descriptor, records, gates_csv, security, registry, EVIDENCE_ROOT)
-    ours = [e for e in verdict["errors"] if "ACC-014" in e or "ACC-055" in e]
+    ours = [e for e in verdict["errors"]
+            if any(g in e for g in list(MACHINE_GATES) + ["ACC-014", "ACC-055"])]
     other = [e for e in verdict["errors"] if e not in ours]
+    # Classify the outstanding required gates honestly: operator-bound
+    # resources vs remaining machine work (security-scenario executables
+    # are the dominant machine gap and are named per gate).
+    from validate_dossier import rows as csv_rows
+    gate_rows = {g["ID"]: g for g in csv_rows("05_Acceptance_Matrix.csv")}
+    outstanding = sorted(
+        gid for gid, st in verdict["gate_states"].items()
+        if st == "REQUIRED"
+        and not any(r["gate_id"] == gid and r["status"] == "PASS" for r in records))
+    operator_gates, machine_gates = [], []
+    for gid in outstanding:
+        entry = {"gate": gid, "requirement": gate_rows[gid]["Requirement"][:160]}
+        if gid in OPERATOR_BOUND:
+            entry["unblock"] = OPERATOR_BOUND[gid]
+            operator_gates.append(entry)
+        else:
+            sec = [x for x in gate_rows[gid]["Security IDs"].split(";") if x]
+            entry["machine_work"] = ("executable security-scenario controls: "
+                                     + ", ".join(sec)) if sec else \
+                                    "release-path evidence assembly"
+            machine_gates.append(entry)
+    unblock_md = [
+        "# Operator unblock list — rag-activation release",
+        "",
+        f"Descriptor: {args.release_id} (digest {digest[:16]}…, commit {commit}).",
+        f"Assembled and validated: "
+        + ", ".join(sorted(r['gate_id'] for r in records if r['status'] == 'PASS')),
+        f"Outstanding required gates: {len(outstanding)} "
+        f"({len(operator_gates)} operator-bound, {len(machine_gates)} machine work).",
+        "",
+        "## Operator resources needed (cannot be closed on this machine)",
+        "",
+        "1. **Apple signing identity (Developer ID + notarization profile)** — unblocks ACC-040.",
+        "2. **Physical iOS and Android devices** — unblock ACC-018 (screen readers on device),",
+        "   ACC-080 (platform lifecycle) and, with the Windows host, ACC-081.",
+        "3. **A Windows host** — unblocks the Windows halves of ACC-080/ACC-081",
+        "   and ACC-040's Windows packaging review.",
+        "4. **Min-spec hardware (lowest-floor macOS Apple silicon, min-spec device classes)** —",
+        "   unblocks ACC-024 and ACC-054 (no blocked thresholds may remain).",
+        "",
+        "## Remaining machine work (code, not operator resources)",
+        "",
+        "The dominant gap: most gates cite security scenarios (09_Security_Test_Matrix)",
+        "that have no executable control yet — recording those as PASS would fabricate",
+        "evidence, which every tool in this path refuses to do.",
+        "",
+    ] + [f"- **{m['gate']}** — {m['machine_work']}" for m in machine_gates]
     summary = {
         "qualified": verdict["qualified"],
         "acc_014_state": verdict["gate_states"].get("ACC-014"),
@@ -291,17 +437,22 @@ def main() -> None:
         "other_errors_sample": other[:8],
     }
     print(json.dumps(summary, indent=1))
+    summary["outstanding_total"] = len(outstanding)
+    summary["operator_bound_gates"] = operator_gates
+    summary["machine_work_gates"] = machine_gates
     if args.write:
         (out_dir / "verification.json").write_text(
             json.dumps({"descriptor_sha256": digest, "evaluation": verdict,
                         "summary": summary}, indent=1) + "\n")
         print(f"written {out_dir.relative_to(ROOT)}/verification.json")
+        (out_dir / "OPERATOR_UNBLOCK.md").write_text("\n".join(unblock_md) + "\n")
+        print(f"written {out_dir.relative_to(ROOT)}/OPERATOR_UNBLOCK.md")
     if ours:
         print("REFUSING: the activation gates' own evidence did not validate.")
         sys.exit(1)
-    print(f"OK: ACC-014 and ACC-055 validate against the descriptor; "
-          f"{len(other)} OTHER required gates remain for a full release "
-          f"(expected: this is a RAG-activation bundle, not a release).")
+    print(f"OK: activation + machine gates validate against the descriptor; "
+          f"{len(outstanding)} required gates remain "
+          f"({len(operator_gates)} operator-bound, {len(machine_gates)} machine work).")
 
 
 if __name__ == "__main__":
