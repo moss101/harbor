@@ -124,6 +124,21 @@ naming the security-scenario executables it awaits. The honest frontier:
 a full release needs ~40 scenario executables written, not operator
 resources alone.
 
+## Session 43 fifth addendum (2026-09-28, night): five more security scenarios executable
+
+SEC-011/019/021/030/035 joined SEC-006/047 as executable controls (11 new
+tests across harbor_inference, harbor_net, harbor_modelhub; bundle 16/16).
+Real hardenings fell out: the installer now REFUSES non-GGUF weights at
+ingest (SEC-021's data-only boundary, new NotGguf error), and
+TestBackend.generate was aligned with the provider contract (unload gates
+generation — SEC-019 found the spec gap). The broker scenarios verify
+denials are audited with a chain read back from the durable SQLite sink;
+the transport scan asserts exactly ONE shared UreqTransport in harbor_ffi.
+The assembler's classification now shows 7 gates (ACC-001/002/003/004/007/
+016/056) with their whole scenario demand executable — awaiting gate-
+substance evidence — plus 38 gates still citing non-executable SEC ids.
+Commit 0fb4660.
+
 ## Session 42 (2026-09-27): the authoring skills on the iPhone simulator — five defects the Mac runs did not show
 
 Uncommitted on top of `8a09909` at the time of writing. iPhone 17 Pro
