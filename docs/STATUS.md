@@ -139,6 +139,18 @@ The assembler's classification now shows 7 gates (ACC-001/002/003/004/007/
 substance evidence — plus 38 gates still citing non-executable SEC ids.
 Commit 0fb4660.
 
+## Session 44 (2026-09-29): the scenario sweep continues — twelve SEC ids executable
+
+SEC-046/031/033/041/043 joined the executable set (8 new tests in harbor_agent and
+harbor_artifacts; bundle 18/18). Hardening that fell out: the commit-replay branch
+reported the output length as bytes_written (would read as a second write in a
+crash-retry audit) — now 0 on replay. SEC-041's test proves the verified-claim
+path end to end: a corrupted cached SUM (999 vs 42) is visible to the reader, and
+recalculate_all seeds literal cells only, so the claim is the engine's 42.
+Classification after this batch: 16 gates scenario-complete awaiting substance
+evidence (ACC-001/002/003/004/007/013/016/020/032/042/043/044/047/051/056/063),
+29 gates still citing non-executable SEC ids, 7 operator-bound. Commit 1b522ee.
+
 ## Session 42 (2026-09-27): the authoring skills on the iPhone simulator — five defects the Mac runs did not show
 
 Uncommitted on top of `8a09909` at the time of writing. iPhone 17 Pro
