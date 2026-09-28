@@ -26,6 +26,8 @@ apps/harbor_app/ios/Flutter/ephemeral/
 fixtures/models/qwen2.5-1.5b-instruct-q4_k_m.gguf
 # 132MB: exceeds the 100MB push limit; TwinSunsLLC/multilingual-e5-small-gguf, sha e011debc1208...
 fixtures/models/multilingual-e5-small-q8_0.gguf
+# 635MB: exceeds the 100MB push limit; gpustack/bge-m3-GGUF, sha 950f4a8e5e19...
+fixtures/models/bge-m3-q8_0.gguf
 
 # Bulk model store: re-acquire via the perf example or brokered acquisition
 fixtures/models-store/

@@ -73,6 +73,24 @@ harness). Recorded paths: a stronger multilingual embedder (bge-m3 class),
 margin-based abstention as a product change, or a llama.cpp bump.
 Evidence: `evidence/knowledge_evals/live-e011debc1208.json`.
 
+## Session 43 second addendum (2026-09-28, evening): bge-m3 qualifies the knowledge tier
+
+`bge-m3` (Q8_0, gpustack, sha 950f4a8e...) is pinned (catalog epoch 3) and
+the live qualification tier passes EVERY profile threshold in every language
+stratum — EN, AR and mixed (recall 164/164 each, citation 144/144,
+abstention 41/44, tool 72/72, numeric 164/164) — with genuine separation
+(AR relevant-min 0.993 > unrelated-max 0.977). Fixing the qualification
+found a harness bug: the abstention bar was calibrated on a stratum
+polluted by contradiction cases (their questions are near-verbatim their
+own sources, 0.998+), starving all evidence on every model; the bar now
+uses the pure insufficient-evidence stratum, and all three pinned
+embeddings were re-measured (thresholds clear on all; only bge-m3
+separates in every stratum — bge-en's AR pass rides digit tokens through
+an English vocabulary). What remains for RAG-on is activation mechanics:
+ACC-014/ACC-055 gate reports from this evidence and the release
+descriptor's feature list. Evidence:
+`evidence/knowledge_evals/live-950f4a8e5e19.json`.
+
 ## Session 42 (2026-09-27): the authoring skills on the iPhone simulator — five defects the Mac runs did not show
 
 Uncommitted on top of `8a09909` at the time of writing. iPhone 17 Pro

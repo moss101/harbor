@@ -199,6 +199,7 @@ fn live_embedding_qualifies_the_six_behaviors() {
         let mut rel_min = f32::INFINITY;
         let mut unr_max = f32::NEG_INFINITY;
         let mut abstention_tops: Vec<f32> = Vec::new();
+        let mut abstention_offenders: Vec<(String, String, f32)> = Vec::new();
         let mut conflict_side_min = f32::INFINITY;
         for case in &corpus.cases {
             if case.expect_tool == ToolExpectation::Compute {
@@ -220,9 +221,23 @@ fn live_embedding_qualifies_the_six_behaviors() {
             if best_rel > f32::NEG_INFINITY {
                 rel_min = rel_min.min(best_rel);
             }
-            if case.expect_abstention {
+            // The bar calibrates on the PURE insufficient-evidence
+            // stratum. Contradiction cases also abstain, but their
+            // questions are near-verbatim sentences of their own
+            // conflicting sources (that is the point of the behavior);
+            // lumping them into the noise stratum sets the bar above
+            // real evidence (measured: conflicts at 0.998+, evidence at
+            // 0.99) and starves retrieval on every model.
+            if case.expect_abstention && case.conflicts.is_empty() {
                 if let Some(top) = hits.first() {
                     abstention_tops.push(top.score);
+                    if top.score > 0.99f32 {
+                        abstention_offenders.push((
+                            case.id.clone(),
+                            top.source_id.clone(),
+                            top.score,
+                        ));
+                    }
                 }
             }
             if !case.conflicts.is_empty() {
@@ -252,6 +267,9 @@ fn live_embedding_qualifies_the_six_behaviors() {
             .get(failure_budget)
             .copied()
             .unwrap_or(f32::NEG_INFINITY);
+        for (cid, sid, score) in abstention_offenders.iter().take(6) {
+            println!("    abstention-offender: {cid} -> {sid} at {score:.6}");
+        }
         let global_separation = rel_min > unr_max;
         let above_noise = rel_min > bar;
         let recall_floor = if conflict_side_min.is_finite() && conflict_side_min > bar {

@@ -188,3 +188,44 @@ real, the harness's e5 prefix rule is recorded, and the next candidate
 reuses the whole apparatus. feature:rag remains off; the AR stratum's
 blocker is now "a strong enough multilingual embedding", no longer
 "any multilingual embedding".
+
+## Second addendum (2026-09-28, evening): bge-m3 qualifies, and the bar was buggy
+Pinned `bge-m3` (Q8_0, gpustack conversion, sha 950f4a8e..., catalog
+epoch 3; fixture gitignored at 635 MB with the sha and repo recorded)
+and re-ran the live tier. Two findings, one embarrassing and one that
+closes the AR blocker:
+
+- **The abstention-stratum calibration was polluted by contradiction
+  cases.** Conflict cases also carry `expect_abstention`, and their
+  questions are near-verbatim sentences of their own conflicting sources
+  (that is the behavior's design) — so the "noise ceiling" was reading
+  0.998+ on every model and starving all evidence. The bar now
+  calibrates on the PURE insufficient-evidence stratum only. This also
+  rewrites the earlier addendum's numbers: e5-small and bge-small-en
+  both clear the metric thresholds under the corrected bar; their
+  recorded AR failures were bar artifacts, not purely model limits.
+- **bge-m3 qualifies in all three language strata with genuine
+  separation**: every profile threshold CLEAR in EN, AR and mixed
+  (recall 164/164 per language, citation 144/144, abstention 41/44,
+  tool 72/72, numeric 164/164), and — the differentiator the metric
+  thresholds cannot show — the similarity space separates in every
+  stratum (EN 0.990 vs 0.963, AR 0.993 vs 0.977, mixed 0.990 vs
+  0.977). The other two models clear the thresholds but with inverted
+  separation somewhere: e5-small's EN margins are negative
+  (0.913 < 0.926), and bge-small-en's AR "pass" rides digit tokens
+  through an English-only vocabulary (0.946 < 0.976, unr-max above
+  relevant-min) — not trustworthy for real Arabic retrieval, which is
+  why bge-m3 is the qualification model recorded here.
+
+Evidence (all three re-measured under the corrected harness):
+`evidence/knowledge_evals/live-950f4a8e5e19.json` (bge-m3),
+`live-f046db1dc724.json` (bge-small-en), `live-e011debc1208.json`
+(multilingual-e5-small).
+
+What remains between here and "RAG on" is no longer evaluation: it is
+the activation mechanics — assembling the ACC-014 and ACC-055 gate
+reports from this evidence through the release path, and the release
+decision to enable the feature (the registry keeps every feature
+default-off; activation rides the release descriptor, and the
+contract tests enforce that core releases cannot disable RAG).
+

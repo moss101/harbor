@@ -72,12 +72,30 @@
         "tiers": [
           "Embeddings"
         ]
+      },
+      {
+        "context_tokens": 8192,
+        "files": [
+          {
+            "path": "bge-m3-q8_0.gguf",
+            "role": "weights",
+            "sha256": "950f4a8e5e19477a6d3c26d2f162233c20002c601f75e4b002e3239997821167"
+          }
+        ],
+        "id": "bge-m3",
+        "license": "MIT",
+        "quantization": "Q8_0",
+        "repo_id": "gpustack/bge-m3-GGUF",
+        "revision": "main",
+        "tiers": [
+          "Embeddings"
+        ]
       }
     ]
   },
-  "epoch": 2,
+  "epoch": 3,
   "key_id": "5cff12934466e591",
   "published_at": "2026-09-28T00:00:00Z",
   "schema": "harbor.catalog/v1",
-  "signature": "9fd5989fa5bd4d0072b1cce5ffa8b241c69c60d17dff9e097596424362d7d1f8a5e92ddf17884be25a2336314aed0fc2e7d58ecdf8dcc80b7616c08aaeacbd0e"
+  "signature": "92b96a2f25ffbb7d55a86f78fd37cf6efcb1902f484dcf3057e6e7d370c5b063bbbb9bbc79e2ddba08d22b5ee095d625006fd79d11bfd20d08f4ef375f90630c"
 }
