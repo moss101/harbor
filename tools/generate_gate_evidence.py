@@ -82,6 +82,12 @@ def main() -> None:
             ["cargo", "test", "-p", "harbor_ffi", "--test", "security_rag"]),
         run("knowledge_identity_rebuild", core,
             ["cargo", "test", "-p", "harbor_ffi", "--test", "knowledge_identity"]),
+        run("inference_security_scenarios", core,
+            ["cargo", "test", "-p", "harbor_inference", "--test", "security_scenarios"]),
+        run("net_security_scenarios", core,
+            ["cargo", "test", "-p", "harbor_net", "--test", "security_scenarios"]),
+        run("modelhub_security_scenarios", core,
+            ["cargo", "test", "-p", "harbor_modelhub", "--test", "security_scenarios"]),
     ]
     if bge_m3.exists():
         import os
@@ -127,6 +133,14 @@ def main() -> None:
         "knowledge_security_scenarios": ["ACC-014", "ACC-055"],
         "knowledge_identity_rebuild": ["ACC-055"],
         "knowledge_live_qualification": ["ACC-014", "ACC-056"],
+        # Scenario executables by SEC id (09_Security_Test_Matrix):
+        # sec_011 -> ACC-001/004/016; sec_019 -> ACC-003/076;
+        # sec_030+sec_035 -> ACC-002/038/048; sec_021 -> ACC-007/015.
+        # These record the SCENARIO side of those gates; each gate's
+        # full substance still needs its own evidence.
+        "inference_security_scenarios": ["SEC-011", "SEC-019"],
+        "net_security_scenarios": ["SEC-030", "SEC-035"],
+        "modelhub_security_scenarios": ["SEC-021"],
         "dossier_validation": ["ACC-075"],
         "contract_tests": ["ACC-075"],
         "contrast_audit": ["ACC-070"],

@@ -398,9 +398,18 @@ def main() -> None:
             operator_gates.append(entry)
         else:
             sec = [x for x in gate_rows[gid]["Security IDs"].split(";") if x]
-            entry["machine_work"] = ("executable security-scenario controls: "
-                                     + ", ".join(sec)) if sec else \
-                                    "release-path evidence assembly"
+            EXECUTABLE_SEC = {"SEC-006", "SEC-011", "SEC-019", "SEC-021",
+                              "SEC-030", "SEC-035", "SEC-047"}
+            pending = [x for x in sec if x not in EXECUTABLE_SEC]
+            if pending:
+                entry["machine_work"] = (
+                    "executable security-scenario controls: " + ", ".join(pending))
+            elif sec:
+                entry["machine_work"] = (
+                    "scenario executables exist ("
+                    + ", ".join(sec) + "); gate-substance evidence pending")
+            else:
+                entry["machine_work"] = "release-path evidence assembly"
             machine_gates.append(entry)
     unblock_md = [
         "# Operator unblock list — rag-activation release",

@@ -75,6 +75,12 @@ impl ModelProvider for TestBackend {
             ModelRef::InstalledPackage { package_id } => package_id.clone(),
             _ => return Err(ProviderError::ModelNotFound("unknown ref".into())),
         };
+        // The provider contract's executable spec: generation requires a
+        // loaded model — unload drops it and nothing answers afterwards
+        // (SEC-019's best-effort residue clearing is observable here).
+        if !self.loaded.lock().unwrap().contains_key(&package) {
+            return Err(ProviderError::ModelNotFound(package));
+        }
         let prompt = req
             .messages
             .last()

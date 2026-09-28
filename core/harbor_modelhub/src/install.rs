@@ -72,6 +72,8 @@ pub enum InstallError {
     HashMismatch(String),
     #[error("size mismatch for {0}")]
     SizeMismatch(String),
+    #[error("weights file {0} is not a GGUF container (data-only imports, SEC-021)")]
+    NotGguf(String),
     #[error("package path escape: {0}")]
     PathEscape(String),
     #[error("io error: {0}")]
@@ -169,6 +171,15 @@ impl PackageInstaller {
         if bytes.len() as u64 != expect.size_bytes {
             let _ = std::fs::remove_file(&out);
             return Err(InstallError::SizeMismatch(expect.path.clone()));
+        }
+        // SEC-021: model imports are DATA-ONLY. A weights file that is
+        // not a GGUF container is refused here — a repository payload
+        // that smuggles executable content (trust_remote_code-style)
+        // never reaches the runtime, which only ever parses GGUF as
+        // data (llama.cpp executes nothing from the file).
+        if expect.role == "weights" && !bytes.starts_with(b"GGUF") {
+            let _ = std::fs::remove_file(&out);
+            return Err(InstallError::NotGguf(expect.path.clone()));
         }
         staged
             .verified_files
@@ -318,7 +329,8 @@ mod tests {
     fn staged_install_happy_path() {
         let dir = tempfile::tempdir().unwrap();
         let inst = PackageInstaller::new(dir.path().join("installed"));
-        let weights = vec![1u8; 4096];
+        let mut weights = b"GGUF".to_vec();
+        weights.extend(vec![1u8; 4096]);
         let config = br#"{"ctx":4096}"#.to_vec();
         let m = manifest("tiny-test-model", &weights, &config);
         let mut staged = inst.begin("tiny-test-model").unwrap();
@@ -373,9 +385,10 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let root = dir.path().join("installed");
         let inst = PackageInstaller::new(&root);
-        let m = manifest("m3", &[1], b"{}");
+        let m = manifest("m3", b"GGUF\x03", b"{}");
         let mut staged = inst.begin("m3").unwrap();
-        inst.ingest_file(&mut staged, &m.files[0], &[1]).unwrap();
+        inst.ingest_file(&mut staged, &m.files[0], b"GGUF\x03")
+            .unwrap();
         // Never committed: staging exists but package is NOT installed.
         assert!(inst.installed_packages().unwrap().is_empty());
         assert!(root.join(".staging-m3").exists());
