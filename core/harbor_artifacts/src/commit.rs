@@ -270,7 +270,10 @@ impl SafeCommitter {
                 }
                 return Ok(CommitOutcome::Committed {
                     version_id: j.committed_version_id.unwrap_or_default(),
-                    bytes_written: output.len() as u64,
+                    // Nothing is written on replay; reporting the output
+                    // length here would read as a second write in the
+                    // crash-retry audit (SEC-043).
+                    bytes_written: 0,
                 });
             }
         }

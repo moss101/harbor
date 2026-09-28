@@ -88,6 +88,10 @@ def main() -> None:
             ["cargo", "test", "-p", "harbor_net", "--test", "security_scenarios"]),
         run("modelhub_security_scenarios", core,
             ["cargo", "test", "-p", "harbor_modelhub", "--test", "security_scenarios"]),
+        run("agent_security_scenarios", core,
+            ["cargo", "test", "-p", "harbor_agent", "--test", "security_scenarios"]),
+        run("artifacts_security_scenarios", core,
+            ["cargo", "test", "-p", "harbor_artifacts", "--test", "security_scenarios"]),
     ]
     if bge_m3.exists():
         import os
@@ -141,6 +145,10 @@ def main() -> None:
         "inference_security_scenarios": ["SEC-011", "SEC-019"],
         "net_security_scenarios": ["SEC-030", "SEC-035"],
         "modelhub_security_scenarios": ["SEC-021"],
+        # sec_046 -> ACC-020/042/043/076; sec_031 -> ACC-010/020/044/063/081;
+        # sec_033+sec_041+sec_043 -> ACC-013/032/046/047/051/063/081.
+        "agent_security_scenarios": ["SEC-046", "SEC-031"],
+        "artifacts_security_scenarios": ["SEC-033", "SEC-041", "SEC-043"],
         "dossier_validation": ["ACC-075"],
         "contract_tests": ["ACC-075"],
         "contrast_audit": ["ACC-070"],

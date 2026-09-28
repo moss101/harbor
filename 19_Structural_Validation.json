@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "001df1e2f0c796fecba8734d1b3017e7d7d6752b44141610ce2a1ef037090e53",
+  "input_manifest_sha256": "35a98fcdff5af58dc4329d777599585cbc5b96f5be7a0ab955f611d018729cff",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -1375,6 +1375,11 @@
       "sha256": "fb5ff31cfe704f7d46f3c96618b96f6b51ead093ec8ad1135e424f4e275cc7cf"
     },
     {
+      "path": "core/harbor_agent/tests/security_scenarios.rs",
+      "bytes": 6728,
+      "sha256": "3827a0e11c2fd95e12eb10ccd2fd89d0b9d299714387e966a47b83b74b151341"
+    },
+    {
       "path": "core/harbor_artifacts/Cargo.toml",
       "bytes": 760,
       "sha256": "a6dd9fe74069f9581fcb852ad79f6aa4f881b166c85720f025ddb0c0a2f432e5"
@@ -1391,8 +1396,8 @@
     },
     {
       "path": "core/harbor_artifacts/src/commit.rs",
-      "bytes": 21729,
-      "sha256": "3fba785f9b2aa71f7592be57ca0b2c8aacd0441a4b71fabd97f5b2f807209521"
+      "bytes": 21908,
+      "sha256": "9863311a6957576614e9e2335e2cbda701f2006eab4c6c50cb50c8259230ba62"
     },
     {
       "path": "core/harbor_artifacts/src/diff.rs",
@@ -1448,6 +1453,11 @@
       "path": "core/harbor_artifacts/tests/regressions/unclosed_attribute.xlsx",
       "bytes": 2290,
       "sha256": "a4439f942edd73505d370d59d6bf996c43ba655d4a602a3c26f8b381fe885259"
+    },
+    {
+      "path": "core/harbor_artifacts/tests/security_scenarios.rs",
+      "bytes": 11765,
+      "sha256": "8da62cd9cf035f2a34c9ae3e68453da69d881a1e1d5bc49029219cb931119bc9"
     },
     {
       "path": "core/harbor_canonical/Cargo.toml",
@@ -2976,8 +2986,8 @@
     },
     {
       "path": "tools/assemble_rag_gate_reports.py",
-      "bytes": 22998,
-      "sha256": "1c3d9c03a6cbd4e2c316aa498d93ce9e8ba98168a9b4f49fc0f97dc1c323fa0f"
+      "bytes": 23083,
+      "sha256": "8b22706f0ef991b8d21937467583e735bd833db5acaa976ac9356500e21d84f7"
     },
     {
       "path": "tools/assemble_release_evidence.py",
@@ -3036,8 +3046,8 @@
     },
     {
       "path": "tools/generate_gate_evidence.py",
-      "bytes": 8656,
-      "sha256": "d303f3cf43bae309a9d72649d9944afc2c3087d6a873b5ffccaeeb760b957a1a"
+      "bytes": 9211,
+      "sha256": "7bd5f1ff572f05dbd3d527cc6904e2939721ef182c7b0c9a9a9b53f58ff1ca4a"
     },
     {
       "path": "tools/generate_sbom.py",
