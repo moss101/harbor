@@ -151,6 +151,17 @@ Classification after this batch: 16 gates scenario-complete awaiting substance
 evidence (ACC-001/002/003/004/007/013/016/020/032/042/043/044/047/051/056/063),
 29 gates still citing non-executable SEC ids, 7 operator-bound. Commit 1b522ee.
 
+## Session 44 addendum (2026-09-29): twenty-four SEC ids executable
+
+Fourth batch: SEC-008 (single-use approval receipts, full effect binding),
+SEC-012/044 (catalog tamper + epoch rollback), SEC-007 (tool argument
+injection fails schema validation), SEC-004 (external relationships marked,
+never fetched), SEC-023 (new-copy default; overwrite protected by base hash).
+10 new tests across harbor_security (new suite), harbor_modelhub, harbor_core
+and harbor_artifacts; bundle 20/20. Classification: 33 gates scenario-complete
+awaiting substance evidence, 14 citing non-executable SEC ids, 7
+operator-bound. Commit 9ec639b.
+
 ## Session 42 (2026-09-27): the authoring skills on the iPhone simulator — five defects the Mac runs did not show
 
 Uncommitted on top of `8a09909` at the time of writing. iPhone 17 Pro
