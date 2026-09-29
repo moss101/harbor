@@ -15,13 +15,13 @@ use crate::engine::{engine_identity, HarborWorkbook};
 use crate::fixtures::{bundle_sha256, pinned_clock};
 use crate::value::CellValue;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
 pub enum CaseStatus {
     Pass,
     Fail(String),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct CaseResult {
     pub case_id: String,
     pub target: String,
@@ -29,7 +29,7 @@ pub struct CaseResult {
     pub status: CaseStatus,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct QualificationReport {
     pub engine_family: String,
     pub engine_version: String,
