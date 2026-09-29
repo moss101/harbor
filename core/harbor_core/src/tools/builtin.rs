@@ -2377,7 +2377,9 @@ mod tests {
             assert!(q.contains(f), "{f}");
         }
         assert!(!q.contains("ARITHMETIC_OPERATORS"));
-        assert_eq!(q.len(), 66);
+        // 99 authority targets - 5 operator/reference pseudo-targets
+        // (tier-2 engine expansion grew the set; see 22_Formula_Coverage).
+        assert_eq!(q.len(), 94);
     }
 
     #[test]
