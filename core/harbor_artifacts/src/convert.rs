@@ -1,9 +1,9 @@
-//! Markdown → DOCX conversion (GenOffice-informed, Phase 4 office
-//! conversions). Line-based CommonMark subset mapped onto Harbor's
-//! qualified DOCX block model: ATX headings, bullet/ordered lists,
-//! paragraphs and compact lines. Inline emphasis and code spans are
-//! carried as plain text (the qualified block model has no inline-run
-//! mutation yet); the conversion report says so instead of guessing.
+//! Office conversions (GenOffice-informed, Phase 4): Markdown → DOCX and
+//! PDF → DOCX (text-extraction level). The Markdown path maps a
+//! line-based CommonMark subset onto Harbor's qualified DOCX block model;
+//! the PDF path extracts per-page text (harbor_render's qualified
+//! extractor) and maps it to paragraphs with per-page headings — NO
+//! layout, table or image fidelity is claimed, and the report says so.
 
 use crate::docx::{BlockStyle, DocxBlock};
 
@@ -109,6 +109,63 @@ fn strip_inline(s: &str) -> &str {
 pub fn markdown_to_docx(markdown: &str, title: &str) -> Result<Vec<u8>, crate::docx::DocxError> {
     let blocks = markdown_to_blocks(markdown);
     crate::docx::create_docx(title, &blocks)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn headings_lists_paragraphs() {
+        let md = "# Quarterly Report\n\nIntro paragraph one.\n\n## Details\n\n- first\n- second\n\n1. step one\n2. step two\n\n### Notes\n\nclosing text\n";
+        let blocks = markdown_to_blocks(md);
+        let styles: Vec<&str> = blocks.iter().map(|b| b.style.as_str()).collect();
+        assert_eq!(
+            styles,
+            vec![
+                "title",
+                "paragraph",
+                "heading2",
+                "bullet",
+                "bullet",
+                "numbered",
+                "numbered",
+                "heading3",
+                "paragraph",
+            ]
+        );
+        assert_eq!(blocks[0].text, "Quarterly Report");
+        assert_eq!(blocks[3].text, "first");
+        assert_eq!(blocks[5].text, "step one");
+    }
+
+    #[test]
+    fn only_one_title_deep_levels_degrade_not_drop() {
+        let md = "# A\n# B\n#### deep\n";
+        let blocks = markdown_to_blocks(md);
+        let styles: Vec<&str> = blocks.iter().map(|b| b.style.as_str()).collect();
+        assert_eq!(styles, vec!["title", "heading1", "heading3"]);
+    }
+
+    #[test]
+    fn lone_hash_and_plain_lines_stay_paragraphs() {
+        // A lone "#" is not a heading; as a soft-wrapped line it joins the
+        // next line into one paragraph (documented behavior).
+        let md = "#\nplain line\n+ plus bullet\n7) paren ordered\n";
+        let blocks = markdown_to_blocks(md);
+        let styles: Vec<&str> = blocks.iter().map(|b| b.style.as_str()).collect();
+        assert_eq!(styles, vec!["paragraph", "bullet", "numbered"]);
+        assert!(blocks[0].text.contains("plain line"));
+    }
+
+    #[test]
+    fn produces_a_loadable_docx() {
+        let md = "# T\n\nbody\n\n- x\n";
+        let bytes = markdown_to_docx(md, "T").unwrap();
+        let doc = crate::docx::DocxDocument::load(&bytes).unwrap();
+        assert!(!doc.paragraphs.is_empty());
+        assert!(doc.preserved_parts.is_empty());
+    }
 }
 
 #[cfg(test)]

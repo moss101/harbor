@@ -1205,8 +1205,11 @@ impl CfOperator {
 fn valid_sqref(s: &str) -> bool {
     fn cell(part: &str) -> bool {
         let digits = part.chars().take_while(|c| c.is_ascii_alphabetic()).count();
-        let letters_ok = digits >= 1 && digits <= 3
-            && part[..digits].chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_lowercase());
+        let letters_ok = digits >= 1
+            && digits <= 3
+            && part[..digits]
+                .chars()
+                .all(|c| c.is_ascii_uppercase() || c.is_ascii_lowercase());
         let num = &part[digits..];
         letters_ok && !num.is_empty() && num.len() <= 7 && num.chars().all(|c| c.is_ascii_digit())
     }
@@ -1235,10 +1238,13 @@ fn inject_conditional_formats(
         .map_err(|e| WorkbookError::BadZip(e.to_string()))?;
     let mut entries: Vec<(String, Vec<u8>)> = Vec::new();
     for i in 0..ar.len() {
-        let mut e = ar.by_index(i).map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+        let mut e = ar
+            .by_index(i)
+            .map_err(|e| WorkbookError::BadZip(e.to_string()))?;
         let name = e.name().to_string();
         let mut buf = Vec::new();
-        e.read_to_end(&mut buf).map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+        e.read_to_end(&mut buf)
+            .map_err(|e| WorkbookError::BadZip(e.to_string()))?;
         entries.push((name, buf));
     }
 
@@ -1277,7 +1283,10 @@ fn inject_conditional_formats(
                 insert_before_styles_anchor(&xml, &block)
             };
             *buf = injected.into_bytes();
-        } else if let Some(idx) = name.strip_prefix("xl/worksheets/sheet").and_then(|r| r.strip_suffix(".xml")) {
+        } else if let Some(idx) = name
+            .strip_prefix("xl/worksheets/sheet")
+            .and_then(|r| r.strip_suffix(".xml"))
+        {
             let _ = idx;
             // Only sheets with pending rules are touched; resolve names
             // from the part's own content is not possible (name is in
@@ -1295,7 +1304,9 @@ fn inject_conditional_formats(
         .skip(1)
         .filter_map(|seg| {
             let seg = seg.split("/>").next().unwrap_or("");
-            seg.split("name=\"").nth(1).map(|rest| rest.split('\"').next().unwrap_or("").to_string())
+            seg.split("name=\"")
+                .nth(1)
+                .map(|rest| rest.split('\"').next().unwrap_or("").to_string())
         })
         .collect();
     for (sheet, blocks) in &by_sheet {
@@ -1320,9 +1331,11 @@ fn inject_conditional_formats(
         for (name, buf) in &entries {
             zw.start_file(name.as_str(), opts)
                 .map_err(|e| WorkbookError::BadZip(e.to_string()))?;
-            zw.write_all(buf).map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+            zw.write_all(buf)
+                .map_err(|e| WorkbookError::BadZip(e.to_string()))?;
         }
-        zw.finish().map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+        zw.finish()
+            .map_err(|e| WorkbookError::BadZip(e.to_string()))?;
     }
     Ok((out.into_inner(), PreservationReport::default()))
 }
@@ -1382,12 +1395,23 @@ fn insert_before_styles_anchor(xml: &str, block: &str) -> String {
 }
 
 fn insert_before_sheet_anchor(xml: &str, block: &str) -> String {
-    for anchor in ["<pageMargins", "<pageSetup", "<headerFooter", "<rowBreaks", "<colBreaks", "<drawing"] {
+    for anchor in [
+        "<pageMargins",
+        "<pageSetup",
+        "<headerFooter",
+        "<rowBreaks",
+        "<colBreaks",
+        "<drawing",
+    ] {
         if let Some(i) = xml.find(anchor) {
             return format!("{}{}{}", &xml[..i], block, &xml[i..]);
         }
     }
-    format!("{}{}</worksheet>", &xml[..xml.len() - "</worksheet>".len()], block)
+    format!(
+        "{}{}</worksheet>",
+        &xml[..xml.len() - "</worksheet>".len()],
+        block
+    )
 }
 
 #[cfg(test)]
@@ -1454,14 +1478,8 @@ mod tests {
     fn authored_conditional_format_roundtrips() {
         let bytes = roundtrip_workbook();
         let mut doc = WorkbookDoc::load(&bytes).unwrap();
-        doc.add_conditional_format(
-            "Sheet1",
-            "A1:B4",
-            CfOperator::GreaterThan,
-            15.0,
-            "FFC7CE",
-        )
-        .unwrap();
+        doc.add_conditional_format("Sheet1", "A1:B4", CfOperator::GreaterThan, 15.0, "FFC7CE")
+            .unwrap();
         let out = doc.to_bytes().unwrap();
         let out_bytes = out.clone();
 
@@ -1477,7 +1495,10 @@ mod tests {
         let cf_pos = sheet_xml.find("<conditionalFormatting").unwrap();
         let data_end = sheet_xml.find("</sheetData>").unwrap();
         let margins = sheet_xml.find("<pageMargins").unwrap();
-        assert!(cf_pos > data_end && cf_pos < margins, "cf at schema position");
+        assert!(
+            cf_pos > data_end && cf_pos < margins,
+            "cf at schema position"
+        );
         let mut styles_xml = String::new();
         ar.by_name("xl/styles.xml")
             .unwrap()
@@ -1498,7 +1519,10 @@ mod tests {
         let ws = &re.book.sheet_collection()[idx];
         let cfs = ws.conditional_formatting_collection();
         assert_eq!(cfs.len(), 1);
-        assert!(cfs[0].get_sequence_of_references().get_sqref().contains("A1:B4"));
+        assert!(cfs[0]
+            .get_sequence_of_references()
+            .get_sqref()
+            .contains("A1:B4"));
         let rules = cfs[0].get_conditional_collection();
         assert_eq!(rules.len(), 1);
         use umya_spreadsheet::EnumTrait as _;

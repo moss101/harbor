@@ -849,6 +849,30 @@ fn acquire_model(
         .map_err(|e| HarborError::Other(e.to_string()))
 }
 
+/// Split extracted page text into paragraphs on blank lines; single
+/// newlines are soft wraps (collapsed to spaces), as the extractor emits.
+fn split_pdf_paragraphs(text: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut current = String::new();
+    for line in text.lines() {
+        if line.trim().is_empty() {
+            if !current.trim().is_empty() {
+                out.push(current.trim().to_string());
+            }
+            current.clear();
+        } else {
+            if !current.is_empty() {
+                current.push(' ');
+            }
+            current.push_str(line.trim());
+        }
+    }
+    if !current.trim().is_empty() {
+        out.push(current.trim().to_string());
+    }
+    out
+}
+
 /// SEC-029: product acquisition paths carry explicit limits parsed from
 /// the call — the user-confirmed byte total is REQUIRED (the UI quotes
 /// via `models.acquire_preflight` and the user confirms), the disk
@@ -1516,24 +1540,28 @@ fn dispatch(
                     }
                     "conditional_format" => {
                         use harbor_artifacts::workbook::CfOperator;
-                        let op_name = op
-                            .get("cf_operator")
-                            .and_then(|v| v.as_str())
-                            .ok_or_else(|| {
-                                HarborError::Other("conditional_format missing cf_operator".into())
-                            })?;
+                        let op_name =
+                            op.get("cf_operator")
+                                .and_then(|v| v.as_str())
+                                .ok_or_else(|| {
+                                    HarborError::Other(
+                                        "conditional_format missing cf_operator".into(),
+                                    )
+                                })?;
                         let operator = CfOperator::parse(op_name).ok_or_else(|| {
                             HarborError::Other(format!("unknown cf_operator {op_name}"))
                         })?;
-                        let threshold = op.get("threshold").and_then(|v| v.as_f64()).ok_or_else(|| {
-                            HarborError::Other("conditional_format missing threshold".into())
+                        let threshold =
+                            op.get("threshold")
+                                .and_then(|v| v.as_f64())
+                                .ok_or_else(|| {
+                                    HarborError::Other(
+                                        "conditional_format missing threshold".into(),
+                                    )
+                                })?;
+                        let range = op.get("range").and_then(|v| v.as_str()).ok_or_else(|| {
+                            HarborError::Other("conditional_format missing range".into())
                         })?;
-                        let range = op
-                            .get("range")
-                            .and_then(|v| v.as_str())
-                            .ok_or_else(|| {
-                                HarborError::Other("conditional_format missing range".into())
-                            })?;
                         let fill = op.get("fill").and_then(|v| v.as_str()).unwrap_or("FFC7CE");
                         wb.add_conditional_format(sheet, range, operator, threshold, fill)
                             .map_err(|e| HarborError::Other(format!("conditional_format: {e}")))?;
@@ -1563,6 +1591,55 @@ fn dispatch(
         // Markdown → DOCX through the qualified block model. Inline
         // emphasis is carried as plain text (no inline-run mutation in
         // the qualified model yet) — the report says so, never guesses.
+        // PDF → DOCX at TEXT-EXTRACTION level (GenOffice-informed): the
+        // qualified pdf extractor supplies per-page text; pages become
+        // Heading2 markers + paragraphs. NO layout/table/image fidelity
+        // is claimed — the report says so, never guesses.
+        "convert.pdf_to_docx" => {
+            let data_b64 = args
+                .get("data_b64")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing data_b64".into()))?;
+            use base64::Engine as _;
+            let bytes = base64::engine::general_purpose::STANDARD
+                .decode(data_b64)
+                .map_err(|e| HarborError::Other(format!("b64: {e}")))?;
+            let title = args
+                .get("title")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Converted from PDF");
+            let preview = harbor_render::pdf::extract_pages(&bytes)
+                .map_err(|e| HarborError::Other(format!("pdf: {e}")))?;
+            use harbor_artifacts::docx::{create_docx, BlockStyle, DocxBlock};
+            let mut blocks: Vec<DocxBlock> = Vec::new();
+            let mut paragraphs = 0usize;
+            for page in &preview.pages {
+                if page.text.trim().is_empty() {
+                    continue;
+                }
+                blocks.push(DocxBlock {
+                    style: BlockStyle::Heading2,
+                    text: format!("Page {}", page.index),
+                });
+                for para in split_pdf_paragraphs(&page.text) {
+                    blocks.push(DocxBlock {
+                        style: BlockStyle::Paragraph,
+                        text: para,
+                    });
+                    paragraphs += 1;
+                }
+            }
+            let out = create_docx(title, &blocks)
+                .map_err(|e| HarborError::Other(format!("docx: {e}")))?;
+            Ok(serde_json::json!({
+                "data_b64": base64::engine::general_purpose::STANDARD.encode(&out),
+                "pages": preview.pages.len(),
+                "blocks": blocks.len(),
+                "paragraphs": paragraphs,
+                "bytes": out.len(),
+                "extraction_level": "text-only (no layout, tables or images)",
+            }))
+        }
         "convert.markdown_to_docx" => {
             let markdown = args
                 .get("markdown")

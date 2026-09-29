@@ -227,3 +227,54 @@ fn markdown_to_docx_produces_loadable_package() {
         .unwrap()
         .contains("stripped"));
 }
+
+#[test]
+fn pdf_to_docx_is_text_extraction_level() {
+    let dir = tempfile::tempdir().unwrap();
+    let h = Handle::open(dir.path());
+    use base64::Engine as _;
+    let pdf = std::fs::read(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../fixtures/office/quarterly_report.pdf"),
+    )
+    .expect("fixture pdf");
+    let result = h.call(
+        "convert.pdf_to_docx",
+        serde_json::json!({
+            "data_b64": base64::engine::general_purpose::STANDARD.encode(&pdf),
+            "title": "Quarterly Report",
+        }),
+    );
+    assert!(result["pages"].as_u64().unwrap() >= 1);
+    assert!(result["paragraphs"].as_u64().unwrap() >= 1);
+    assert_eq!(
+        result["extraction_level"].as_str().unwrap(),
+        "text-only (no layout, tables or images)"
+    );
+    let docx = base64::engine::general_purpose::STANDARD
+        .decode(result["data_b64"].as_str().unwrap())
+        .unwrap();
+    let doc = harbor_artifacts::docx::DocxDocument::load(&docx).unwrap();
+    let styles: Vec<&str> = doc
+        .paragraphs
+        .iter()
+        .filter_map(|p| p.style.as_deref())
+        .collect();
+    assert!(styles.contains(&"Heading2"));
+    assert!(!doc.paragraphs.iter().all(|p| p.text.is_empty()));
+
+    // A non-PDF payload is a typed refusal, never a guessed conversion.
+    let req = CString::new(
+        serde_json::json!({
+            "method": "convert.pdf_to_docx",
+            "args": {"data_b64": base64::engine::general_purpose::STANDARD.encode(b"not a pdf"), "title": "x"},
+        })
+        .to_string(),
+    )
+    .unwrap();
+    let raw = unsafe { harbor_core_call(h.0, req.as_ptr()) };
+    let text = unsafe { CStr::from_ptr(raw) }.to_string_lossy().to_string();
+    unsafe { harbor_core_string_free(raw) };
+    let v: serde_json::Value = serde_json::from_str(&text).unwrap();
+    assert_eq!(v["ok"], false);
+}
