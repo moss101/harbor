@@ -1535,6 +1535,30 @@ fn dispatch(
                 "unmodeled_parts": unmodeled,
             }))
         }
+        // --- office conversions (GenOffice-informed) -----------------------
+        // Markdown → DOCX through the qualified block model. Inline
+        // emphasis is carried as plain text (no inline-run mutation in
+        // the qualified model yet) — the report says so, never guesses.
+        "convert.markdown_to_docx" => {
+            let markdown = args
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing markdown".into()))?;
+            let title = args
+                .get("title")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Converted from Markdown");
+            let blocks = harbor_artifacts::convert::markdown_to_blocks(markdown);
+            let bytes = harbor_artifacts::convert::markdown_to_docx(markdown, title)
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            use base64::Engine as _;
+            Ok(serde_json::json!({
+                "data_b64": base64::engine::general_purpose::STANDARD.encode(&bytes),
+                "blocks": blocks.len(),
+                "bytes": bytes.len(),
+                "inline_formatting": "stripped (qualified block model has no inline runs yet)",
+            }))
+        }
         "artifact.preview" => {
             let data_b64 = args
                 .get("data_b64")

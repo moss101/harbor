@@ -196,3 +196,34 @@ fn unknown_op_fails_honestly() {
     assert_eq!(v["ok"], false);
     assert!(v["error"].as_str().unwrap().contains("unknown op"));
 }
+
+#[test]
+fn markdown_to_docx_produces_loadable_package() {
+    let dir = tempfile::tempdir().unwrap();
+    let h = Handle::open(dir.path());
+    use base64::Engine as _;
+    let md = "# Harbor Office\n\nOpens markdown as a real document.\n\n- bullet one\n- bullet two\n\n1. first\n2. second\n";
+    let result = h.call(
+        "convert.markdown_to_docx",
+        serde_json::json!({ "markdown": md, "title": "Harbor Office" }),
+    );
+    assert!(result["blocks"].as_u64().unwrap() >= 6);
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(result["data_b64"].as_str().unwrap())
+        .unwrap();
+    // The package loads through Harbor's own DOCX reader with the
+    // qualified styles present.
+    let doc = harbor_artifacts::docx::DocxDocument::load(&bytes).unwrap();
+    let styles: Vec<&str> = doc
+        .paragraphs
+        .iter()
+        .filter_map(|p| p.style.as_deref())
+        .collect();
+    assert!(styles.contains(&"Title"));
+    assert!(styles.contains(&"ListBullet"));
+    assert!(styles.contains(&"ListNumber"));
+    assert!(result["inline_formatting"]
+        .as_str()
+        .unwrap()
+        .contains("stripped"));
+}
