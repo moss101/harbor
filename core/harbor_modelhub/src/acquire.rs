@@ -28,6 +28,41 @@ pub const HF_CDN_ORIGINS: [&str; 4] = [
     "https://cas-bridge.xethub.hf.co",
 ];
 
+/// SEC-029 preflight reserve: a transfer may start only when the install
+/// root still holds this much free space ON TOP OF the quoted bytes when
+/// the download finishes. This guards the install root specifically and
+/// is independent of (smaller than) the OS/UI reserve policy in
+/// 12_Office_and_Device_Feasibility.md.
+pub const DEFAULT_MIN_FREE_AFTER_BYTES: u64 = 1 << 30; // 1 GiB
+
+/// SEC-029 acquisition limits. The product paths set these explicitly;
+/// there is no implicit "just download it" default.
+#[derive(Debug, Clone, Copy)]
+pub struct AcquireLimits {
+    /// The transfer may start only when the repository's quoted byte
+    /// total (from brokered repo metadata) is <= this value — the size
+    /// the user actually confirmed in the UI. A repo that grew between
+    /// quote and confirm is refused and must be re-quoted.
+    pub confirmed_total_bytes: u64,
+    /// Free space that must remain at the install root after the
+    /// download (`0` disables the reserve check; the default policy is
+    /// [`DEFAULT_MIN_FREE_AFTER_BYTES`]).
+    pub min_free_after_bytes: u64,
+    /// Per-chunk delay for background/low-priority transfers (0 =
+    /// full speed). Real backpressure, applied in the chunk sink.
+    pub throttle: std::time::Duration,
+}
+
+impl Default for AcquireLimits {
+    fn default() -> Self {
+        AcquireLimits {
+            confirmed_total_bytes: 0,
+            min_free_after_bytes: DEFAULT_MIN_FREE_AFTER_BYTES,
+            throttle: std::time::Duration::ZERO,
+        }
+    }
+}
+
 pub struct HfAcquirer<'a> {
     pub broker: &'a EgressBroker,
     pub transport: &'a dyn Transport,
@@ -43,6 +78,8 @@ pub struct HfAcquirer<'a> {
     /// during the download (chunk granularity). When set, a cancel
     /// request stops the acquisition at the next chunk or file boundary.
     pub progress: Option<std::sync::Arc<crate::progress::AcquireProgress>>,
+    /// SEC-029 limits (confirmed size, disk reserve, throttle).
+    pub limits: AcquireLimits,
 }
 
 impl HfAcquirer<'_> {
@@ -52,6 +89,12 @@ impl HfAcquirer<'_> {
         progress: std::sync::Arc<crate::progress::AcquireProgress>,
     ) -> Self {
         self.progress = Some(progress);
+        self
+    }
+
+    /// Attach SEC-029 acquisition limits.
+    pub fn with_limits(mut self, limits: AcquireLimits) -> Self {
+        self.limits = limits;
         self
     }
 
@@ -172,6 +215,7 @@ impl HfAcquirer<'_> {
                 std::cell::RefCell::new(None);
             {
                 let progress = self.progress.clone();
+                let throttle = self.limits.throttle;
                 let mut sink = |chunk: &[u8]| -> std::io::Result<()> {
                     if let Some(p) = &progress {
                         if p.is_cancelled() {
@@ -187,7 +231,14 @@ impl HfAcquirer<'_> {
                     file.write_all(chunk).inspect_err(|e| {
                         *write_failure.borrow_mut() =
                             Some(std::io::Error::new(e.kind(), e.to_string()));
-                    })
+                    })?;
+                    // SEC-029 background throttling: real backpressure
+                    // between chunks when the caller marks the transfer
+                    // low-priority.
+                    if !throttle.is_zero() {
+                        std::thread::sleep(throttle);
+                    }
+                    Ok(())
                 };
                 let result = self.broker.dispatch_streaming(
                     session,
@@ -353,6 +404,31 @@ impl HfAcquirer<'_> {
             p.bytes_total
                 .store(total, std::sync::atomic::Ordering::Relaxed);
             p.set_phase("downloading");
+        }
+        // SEC-029 preflight, before the first weight byte is requested:
+        // (1) the user-confirmed size still covers what the repository
+        // now offers, and (2) the install root can absorb the transfer
+        // plus the reserve. Both refusals discard the staging directory
+        // via `acquire`, so a refused download leaves nothing behind.
+        let quoted: u64 = files
+            .iter()
+            .filter_map(|(path, _, _)| expected_sizes.get(path).copied())
+            .sum();
+        if quoted > self.limits.confirmed_total_bytes {
+            return Err(AcquireError::SizeNotConfirmed {
+                quoted,
+                confirmed: self.limits.confirmed_total_bytes,
+            });
+        }
+        let available = free_disk_bytes(self.installer.root())
+            .map_err(|e| AcquireError::Install(e.to_string()))?;
+        let needed = quoted.saturating_add(self.limits.min_free_after_bytes);
+        if available < needed {
+            return Err(AcquireError::InsufficientDisk {
+                needed,
+                available,
+                path: self.installer.root().to_string_lossy().to_string(),
+            });
         }
         for (index, (path, role, sha256)) in files.iter().enumerate() {
             if self.cancelled() {
@@ -525,6 +601,10 @@ mod tests {
             sessions,
             auth_token: None,
             progress: None,
+            limits: AcquireLimits {
+                confirmed_total_bytes: u64::MAX,
+                ..Default::default()
+            },
         };
         let sha = "270cba1bd5109f42d03350f60406024560464db173c0e387d91f0426d3bd256d";
         let result = acquirer
@@ -595,6 +675,10 @@ mod tests {
             sessions,
             auth_token: None,
             progress: None,
+            limits: AcquireLimits {
+                confirmed_total_bytes: u64::MAX,
+                ..Default::default()
+            },
         };
         // Without a CDN session the redirect hop must be refused.
         let result = acquirer.acquire(
@@ -663,6 +747,10 @@ mod tests {
             sessions,
             auth_token: None,
             progress: None,
+            limits: AcquireLimits {
+                confirmed_total_bytes: u64::MAX,
+                ..Default::default()
+            },
         };
         let sha = "270cba1bd5109f42d03350f60406024560464db173c0e387d91f0426d3bd256d";
         let result = acquirer.acquire(
@@ -731,6 +819,10 @@ mod tests {
             sessions: sessions2,
             auth_token: None,
             progress: None,
+            limits: AcquireLimits {
+                confirmed_total_bytes: u64::MAX,
+                ..Default::default()
+            },
         };
         let blocked = acquirer2.acquire(
             "m",
@@ -907,6 +999,59 @@ pub enum AcquireError {
     Catalog(String),
     #[error("package {0} not in catalog")]
     PackageNotInCatalog(String),
+    #[error(
+        "download size not confirmed (SEC-029): repository now offers {quoted} bytes, user confirmed {confirmed}"
+    )]
+    SizeNotConfirmed { quoted: u64, confirmed: u64 },
+    #[error(
+        "insufficient disk space (SEC-029): {needed} bytes required at {path}, {available} available"
+    )]
+    InsufficientDisk {
+        needed: u64,
+        available: u64,
+        path: String,
+    },
+}
+
+/// Free space at `path`'s filesystem, probed natively per platform
+/// (SEC-029 preflight; no third-party dependency).
+#[cfg(unix)]
+pub fn free_disk_bytes(path: &Path) -> std::io::Result<u64> {
+    use std::os::unix::ffi::OsStrExt as _;
+    let c = std::ffi::CString::new(path.as_os_str().as_bytes())
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidInput, e))?;
+    let mut fs: libc::statvfs = unsafe { std::mem::zeroed() };
+    let rc = unsafe { libc::statvfs(c.as_ptr(), &mut fs) };
+    if rc != 0 {
+        return Err(std::io::Error::last_os_error());
+    }
+    // f_bavail: blocks available to unprivileged users (the honest bound
+    // for an app writing into its own container).
+    Ok(fs.f_bavail as u64 * fs.f_frsize as u64)
+}
+
+/// Free space at `path`'s filesystem (Windows: GetDiskFreeSpaceExW).
+#[cfg(windows)]
+pub fn free_disk_bytes(path: &Path) -> std::io::Result<u64> {
+    use std::os::windows::ffi::OsStrExt as _;
+    let wide: Vec<u16> = path
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
+    let mut free: u64 = 0;
+    let rc = unsafe {
+        windows_sys::Win32::Storage::FileSystem::GetDiskFreeSpaceExW(
+            wide.as_ptr(),
+            &mut free,
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+        )
+    };
+    if rc == 0 {
+        return Err(std::io::Error::last_os_error());
+    }
+    Ok(free)
 }
 
 /// Verify a signed catalog and acquire one of its packages. The pinned
@@ -939,6 +1084,10 @@ pub fn acquire_signed(
         sessions: sessions.clone(),
         auth_token: None,
         progress: None,
+        limits: AcquireLimits {
+            confirmed_total_bytes: u64::MAX,
+            ..Default::default()
+        },
     };
     acquirer.acquire(
         &package.id,
@@ -1150,6 +1299,10 @@ mod token_tests {
             sessions,
             auth_token: Some("hf_secret_token".to_string()),
             progress: None,
+            limits: AcquireLimits {
+                confirmed_total_bytes: u64::MAX,
+                ..Default::default()
+            },
         };
         let bytes = acquirer
             .fetch("https://huggingface.co/repo/resolve/main/file.bin", None)
@@ -1195,6 +1348,10 @@ mod token_tests {
             sessions,
             auth_token: None,
             progress: None,
+            limits: AcquireLimits {
+                confirmed_total_bytes: u64::MAX,
+                ..Default::default()
+            },
         };
         acquirer
             .fetch("https://huggingface.co/repo/resolve/main/file.bin", None)
@@ -1340,6 +1497,10 @@ mod staging_cleanup_tests {
             sessions: sessions_for(&broker),
             auth_token: None,
             progress: None,
+            limits: AcquireLimits {
+                confirmed_total_bytes: u64::MAX,
+                ..Default::default()
+            },
         };
         // 1. A listing path that escapes the staging directory is refused.
         let err = acquirer
@@ -1398,6 +1559,10 @@ mod staging_cleanup_tests {
             sessions: sessions_for(&broker2),
             auth_token: None,
             progress: Some(progress.clone()),
+            limits: AcquireLimits {
+                confirmed_total_bytes: u64::MAX,
+                ..Default::default()
+            },
         };
         progress.request_cancel();
         let err = dropping
@@ -1421,5 +1586,272 @@ mod staging_cleanup_tests {
         assert_eq!(removed, vec!["orphan".to_string()]);
         assert!(!models.join(".staging-orphan").exists());
         assert!(models.join("installed-one").exists());
+    }
+}
+
+/// SEC-029 executable controls (09_Security_Test_Matrix.csv):
+/// "Denial via huge model download — preflight disk quota; user-confirmed
+/// size; background throttling." The size quote comes from brokered repo
+/// metadata; a transfer starts only when the user-confirmed total covers
+/// the quote and the install root can absorb the transfer plus reserve.
+#[cfg(test)]
+mod sec029_tests {
+    use super::*;
+    use crate::install::PackageInstaller;
+    use harbor_net::audit::SqliteAuditSink;
+    use harbor_net::broker::{
+        EgressBroker, EgressClass, Transport, TransportRequest, TransportResponse,
+    };
+    use harbor_security::policy::PrivacyMode;
+    use std::collections::BTreeMap;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use tempfile::TempDir;
+
+    /// Serves repo-tree metadata (w.gguf = 4 bytes) and a weight body.
+    struct QuotingTransport {
+        chunks_seen: AtomicUsize,
+    }
+
+    impl Transport for QuotingTransport {
+        fn execute(
+            &self,
+            req: &TransportRequest,
+            _t: std::time::Duration,
+        ) -> std::io::Result<TransportResponse> {
+            if req.url.contains("/api/models/") {
+                return Ok(TransportResponse {
+                    status: 200,
+                    headers: Vec::new(),
+                    body: br#"[{"path": "w.gguf", "size": 4}]"#.to_vec(),
+                    final_url: String::new(),
+                });
+            }
+            self.chunks_seen.fetch_add(1, Ordering::Relaxed);
+            Ok(TransportResponse {
+                status: 200,
+                headers: Vec::new(),
+                body: b"data".to_vec(),
+                final_url: String::new(),
+            })
+        }
+    }
+
+    fn broker_with_sessions() -> (
+        EgressBroker,
+        BTreeMap<String, harbor_net::broker::EgressSession>,
+    ) {
+        let broker = EgressBroker::new(Box::new(SqliteAuditSink::open_in_memory().unwrap()));
+        let mut sessions = BTreeMap::new();
+        for origin in ["https://huggingface.co", "https://cdn-lfs.hf.co"] {
+            let s = broker
+                .open_session(
+                    EgressClass::WeightTransfer,
+                    origin,
+                    chrono::Duration::minutes(5),
+                    PrivacyMode::LocalOnly,
+                )
+                .unwrap();
+            sessions.insert(origin.to_string(), s);
+        }
+        (broker, sessions)
+    }
+
+    fn files() -> Vec<(String, String, String)> {
+        vec![("w.gguf".into(), "weights".into(), String::new())]
+    }
+
+    #[test]
+    fn unconfirmed_size_refused_and_leaves_no_residue() {
+        let dir = TempDir::new().unwrap();
+        let models = dir.path().join("models");
+        let installer = PackageInstaller::new(&models);
+        let (broker, sessions) = broker_with_sessions();
+        let transport = QuotingTransport {
+            chunks_seen: AtomicUsize::new(0),
+        };
+        let acquirer = HfAcquirer {
+            broker: &broker,
+            transport: &transport,
+            installer: &installer,
+            sessions,
+            auth_token: None,
+            progress: None,
+            // confirmed = 0: nothing the user agreed to.
+            limits: AcquireLimits::default(),
+        };
+        let err = acquirer
+            .acquire("m", "org/repo", "main", &files(), Utc::now())
+            .unwrap_err();
+        assert!(
+            matches!(
+                err,
+                AcquireError::SizeNotConfirmed {
+                    quoted: 4,
+                    confirmed: 0
+                }
+            ),
+            "got: {err}"
+        );
+        // No weight request was ever issued and nothing lingers.
+        assert_eq!(transport.chunks_seen.load(Ordering::Relaxed), 0);
+        assert!(!models.join(".staging-m").exists());
+        assert!(installer.installed_packages().unwrap().is_empty());
+    }
+
+    #[test]
+    fn repo_growth_between_quote_and_confirm_refused() {
+        let dir = TempDir::new().unwrap();
+        let models = dir.path().join("models");
+        let installer = PackageInstaller::new(&models);
+        let (broker, sessions) = broker_with_sessions();
+        let transport = QuotingTransport {
+            chunks_seen: AtomicUsize::new(0),
+        };
+        let acquirer = HfAcquirer {
+            broker: &broker,
+            transport: &transport,
+            installer: &installer,
+            sessions,
+            auth_token: None,
+            progress: None,
+            // The user confirmed 3 bytes; the repo now offers 4.
+            limits: AcquireLimits {
+                confirmed_total_bytes: 3,
+                ..Default::default()
+            },
+        };
+        let err = acquirer
+            .acquire("m", "org/repo", "main", &files(), Utc::now())
+            .unwrap_err();
+        assert!(
+            matches!(
+                err,
+                AcquireError::SizeNotConfirmed {
+                    quoted: 4,
+                    confirmed: 3
+                }
+            ),
+            "{err}"
+        );
+        assert!(!models.join(".staging-m").exists());
+    }
+
+    #[test]
+    fn insufficient_disk_preflight_refused() {
+        let dir = TempDir::new().unwrap();
+        let models = dir.path().join("models");
+        let installer = PackageInstaller::new(&models);
+        let (broker, sessions) = broker_with_sessions();
+        let transport = QuotingTransport {
+            chunks_seen: AtomicUsize::new(0),
+        };
+        let acquirer = HfAcquirer {
+            broker: &broker,
+            transport: &transport,
+            installer: &installer,
+            sessions,
+            auth_token: None,
+            progress: None,
+            // Correct confirmation, but the reserve cannot be met on any
+            // real filesystem: the preflight must refuse before the wire.
+            limits: AcquireLimits {
+                confirmed_total_bytes: 4,
+                min_free_after_bytes: u64::MAX,
+                throttle: std::time::Duration::ZERO,
+            },
+        };
+        let err = acquirer
+            .acquire("m", "org/repo", "main", &files(), Utc::now())
+            .unwrap_err();
+        let AcquireError::InsufficientDisk {
+            needed,
+            available,
+            path,
+        } = err
+        else {
+            panic!("expected InsufficientDisk, got {err}");
+        };
+        assert_eq!(needed, u64::MAX);
+        assert!(available > 0, "probe returned real free space");
+        assert!(path.ends_with("models"));
+        assert!(!models.join(".staging-m").exists());
+    }
+
+    #[test]
+    fn confirmed_and_fitting_download_succeeds() {
+        let dir = TempDir::new().unwrap();
+        let models = dir.path().join("models");
+        let installer = PackageInstaller::new(&models);
+        let (broker, sessions) = broker_with_sessions();
+        let transport = QuotingTransport {
+            chunks_seen: AtomicUsize::new(0),
+        };
+        let acquirer = HfAcquirer {
+            broker: &broker,
+            transport: &transport,
+            installer: &installer,
+            sessions,
+            auth_token: None,
+            progress: None,
+            limits: AcquireLimits {
+                confirmed_total_bytes: 4,
+                // Any real tempdir has > 0 free; 0 disables the reserve.
+                min_free_after_bytes: 0,
+                throttle: std::time::Duration::ZERO,
+            },
+        };
+        let out = acquirer
+            .acquire("m", "org/repo", "main", &files(), Utc::now())
+            .unwrap();
+        assert_eq!(out["installed"], "m");
+        assert_eq!(
+            installer.installed_packages().unwrap(),
+            vec!["m".to_string()]
+        );
+    }
+
+    #[test]
+    fn throttle_delays_chunk_sinks() {
+        let dir = TempDir::new().unwrap();
+        let models = dir.path().join("models");
+        let installer = PackageInstaller::new(&models);
+        let (broker, sessions) = broker_with_sessions();
+        let transport = QuotingTransport {
+            chunks_seen: AtomicUsize::new(0),
+        };
+        let acquirer = HfAcquirer {
+            broker: &broker,
+            transport: &transport,
+            installer: &installer,
+            sessions,
+            auth_token: None,
+            progress: None,
+            limits: AcquireLimits {
+                confirmed_total_bytes: 4,
+                min_free_after_bytes: 0,
+                throttle: std::time::Duration::from_millis(60),
+            },
+        };
+        let started = std::time::Instant::now();
+        acquirer
+            .acquire("m", "org/repo", "main", &files(), Utc::now())
+            .unwrap();
+        let elapsed = started.elapsed();
+        // The 4-byte body arrives as one chunked response; the sink fires
+        // at least once, so the transfer must take at least one throttle
+        // interval (generous lower bound for CI jitter).
+        assert!(
+            elapsed >= std::time::Duration::from_millis(50),
+            "throttled transfer finished in {elapsed:?}"
+        );
+    }
+
+    #[test]
+    fn free_disk_probe_reports_plausible_values() {
+        // The probe itself: a real path succeeds and reports something
+        // nonzero; a nonsense path is an io error, not a panic.
+        let ok = free_disk_bytes(std::path::Path::new("/tmp")).unwrap();
+        assert!(ok > 0);
+        assert!(free_disk_bytes(std::path::Path::new("/nonexistent-harbor-probe-xyz")).is_err());
     }
 }

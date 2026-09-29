@@ -1671,6 +1671,7 @@ dependencies = [
  "harbor_net",
  "harbor_security",
  "hex",
+ "libc",
  "rand 0.8.8",
  "rand_core 0.6.4",
  "serde",
@@ -1679,6 +1680,7 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.20",
  "url",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

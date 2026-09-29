@@ -415,6 +415,14 @@ pub struct KnowledgeService {
 }
 
 impl KnowledgeService {
+    /// The embedding package backing the durable index (SEC-024 in-use
+    /// guard: deleting it would orphan the index identity).
+    pub fn embedding_package(&self) -> &str {
+        &self.embedding_package
+    }
+}
+
+impl KnowledgeService {
     /// Open (or create) the durable index. `embedding_package` names an
     /// installed GGUF embedding model from the modelhub store; `chunk_key`
     /// is the workspace-derived knowledge key (chunks are sealed at rest).
@@ -758,6 +766,12 @@ impl ChatHandle {
     /// contract directly; grounded Ask keeps using the RAG path).
     pub fn provider(&self) -> &GgufLlamaCppProvider {
         &self.provider
+    }
+
+    /// Package ids currently loaded for generation (SEC-024 in-use guard:
+    /// a loaded model must not be deleted underneath a live handle).
+    pub fn loaded_package_ids(&self) -> Vec<String> {
+        self.loaded.lock().unwrap().keys().cloned().collect()
     }
 
     pub fn new(models_root: &Path) -> Self {

@@ -49,6 +49,10 @@ fn main() {
         sessions,
         auth_token: None,
         progress: None,
+        limits: harbor_modelhub::acquire::AcquireLimits {
+            confirmed_total_bytes: u64::MAX,
+            ..Default::default()
+        },
     };
     let result = acquirer
         .acquire(

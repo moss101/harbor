@@ -64,6 +64,10 @@ pub struct WorkspaceHandle {
 /// A completed (or failed/cancelled) operation's terminal state.
 struct OpEntry {
     kind: &'static str,
+    /// The resource this op acts on (e.g. the package id of an acquire);
+    /// the SEC-024 in-use guard blocks deletion of a package that has a
+    /// live op against it.
+    subject: String,
     progress: Arc<harbor_modelhub::progress::AcquireProgress>,
     result: Mutex<Option<Result<serde_json::Value, String>>>,
     cancelled: AtomicBool,
@@ -76,10 +80,11 @@ fn ops_registry() -> &'static Mutex<BTreeMap<String, Arc<OpEntry>>> {
     OPS.get_or_init(|| Mutex::new(BTreeMap::new()))
 }
 
-fn register_op(kind: &'static str) -> (String, Arc<OpEntry>) {
+fn register_op(kind: &'static str, subject: &str) -> (String, Arc<OpEntry>) {
     let op_id = harbor_security::HarborId::generate("op");
     let entry = Arc::new(OpEntry {
         kind,
+        subject: subject.to_string(),
         progress: Arc::new(harbor_modelhub::progress::AcquireProgress::new()),
         result: Mutex::new(None),
         cancelled: AtomicBool::new(false),
@@ -553,23 +558,40 @@ pub extern "C" fn harbor_core_open_ex(
         let hub_token = load_hub_token(&data_root, &keystore);
         let diagnostics = Arc::new(ws.diagnostics(&data_root)?);
         // Crash residue from an interrupted acquisition is removed before
-        // the first call, like temp working windows (C2 recovery).
-        if let Ok(removed) =
-            harbor_modelhub::install::PackageInstaller::new(data_root.join("models"))
-                .sweep_staging()
+        // the first call, like temp working windows (C2 recovery). Expired
+        // SEC-024 trash entries (undo window closed) are reclaimed too.
         {
-            if !removed.is_empty() {
-                let _ = diagnostics.record(harbor_core::diagnostics::DiagnosticRecord {
-                    at: chrono::Utc::now(),
-                    level: "info".into(),
-                    source: "core".into(),
-                    message: format!(
-                        "removed interrupted acquisition staging for {} package(s)",
-                        removed.len()
-                    ),
-                    context: Some("open".into()),
-                    backtrace: None,
-                });
+            let installer =
+                harbor_modelhub::install::PackageInstaller::new(data_root.join("models"));
+            if let Ok(removed) = installer.sweep_staging() {
+                if !removed.is_empty() {
+                    let _ = diagnostics.record(harbor_core::diagnostics::DiagnosticRecord {
+                        at: chrono::Utc::now(),
+                        level: "info".into(),
+                        source: "core".into(),
+                        message: format!(
+                            "removed interrupted acquisition staging for {} package(s)",
+                            removed.len()
+                        ),
+                        context: Some("open".into()),
+                        backtrace: None,
+                    });
+                }
+            }
+            if let Ok(reclaimed) = installer.sweep_trash(TRASH_UNDO_WINDOW) {
+                if !reclaimed.is_empty() {
+                    let _ = diagnostics.record(harbor_core::diagnostics::DiagnosticRecord {
+                        at: chrono::Utc::now(),
+                        level: "info".into(),
+                        source: "core".into(),
+                        message: format!(
+                            "reclaimed {} uninstalled package(s) whose undo window closed",
+                            reclaimed.len()
+                        ),
+                        context: Some("open".into()),
+                        backtrace: None,
+                    });
+                }
             }
         }
         harbor_core::diagnostics::DiagnosticsLog::install_panic_hook(diagnostics.clone());
@@ -800,6 +822,7 @@ fn acquire_model(
     revision: &str,
     files: &[(String, String, String)],
     progress: Option<Arc<harbor_modelhub::progress::AcquireProgress>>,
+    limits: harbor_modelhub::acquire::AcquireLimits,
 ) -> Result<serde_json::Value, HarborError> {
     let installer = harbor_modelhub::install::PackageInstaller::new(data_root.join("models"));
     let sessions = open_weight_sessions(broker, mode);
@@ -810,6 +833,7 @@ fn acquire_model(
         sessions,
         auth_token: hub_token,
         progress: progress.clone(),
+        limits,
     };
     if let Some(p) = progress {
         acquirer = acquirer.with_progress(p);
@@ -823,6 +847,38 @@ fn acquire_model(
             harbor_core::Workspace::now(),
         )
         .map_err(|e| HarborError::Other(e.to_string()))
+}
+
+/// SEC-029: product acquisition paths carry explicit limits parsed from
+/// the call — the user-confirmed byte total is REQUIRED (the UI quotes
+/// via `models.acquire_preflight` and the user confirms), the disk
+/// reserve defaults to the modelhub policy, and background throttling is
+/// a caller knob.
+fn acquire_limits_from_args(
+    args: &serde_json::Value,
+) -> Result<harbor_modelhub::acquire::AcquireLimits, HarborError> {
+    let confirmed = args
+        .get("confirmed_total_bytes")
+        .and_then(|v| v.as_u64())
+        .ok_or_else(|| {
+            HarborError::Other(
+                "missing confirmed_total_bytes (SEC-029: quote the download via models.acquire_preflight and confirm before transfer)"
+                    .into(),
+            )
+        })?;
+    let min_free = args
+        .get("min_free_after_bytes")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(harbor_modelhub::acquire::DEFAULT_MIN_FREE_AFTER_BYTES);
+    let throttle_ms = args
+        .get("throttle_ms")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0);
+    Ok(harbor_modelhub::acquire::AcquireLimits {
+        confirmed_total_bytes: confirmed,
+        min_free_after_bytes: min_free,
+        throttle: std::time::Duration::from_millis(throttle_ms),
+    })
 }
 
 /// `artifacts: [{id, name, data_b64}]` → in-memory artifact source.
@@ -849,6 +905,43 @@ fn decode_artifacts(
         artifacts.insert(id, name, bytes);
     }
     Ok(artifacts)
+}
+
+/// The SEC-024 undo window: trashed packages keep their bytes until this
+/// age (swept at workspace open).
+const TRASH_UNDO_WINDOW: chrono::Duration = chrono::Duration::hours(72);
+
+/// SEC-024 in-use blockers for uninstalling one package, computed from
+/// the live process state. Pure so the guard is unit-testable without a
+/// workspace: a package with any blocker must never leave the store.
+fn uninstall_blockers(
+    running_op_subjects: &[String],
+    loaded_chat_packages: &[String],
+    embedding_package: Option<&str>,
+    package_id: &str,
+) -> Vec<String> {
+    let mut blockers = Vec::new();
+    if running_op_subjects.iter().any(|s| s == package_id) {
+        blockers.push("an acquisition for this package is running".into());
+    }
+    if loaded_chat_packages.iter().any(|s| s == package_id) {
+        blockers.push("the model is loaded for generation".into());
+    }
+    if embedding_package == Some(package_id) {
+        blockers.push("the model backs the knowledge index".into());
+    }
+    blockers
+}
+
+/// Live subjects of running ops (ops registry, acquire kind).
+fn running_acquire_subjects() -> Vec<String> {
+    ops_registry()
+        .lock()
+        .unwrap()
+        .iter()
+        .filter(|(_, e)| e.kind == "acquire" && e.result.lock().unwrap().is_none())
+        .map(|(_, e)| e.subject.clone())
+        .collect()
 }
 
 fn dispatch(
@@ -1441,7 +1534,7 @@ fn dispatch(
                         .into(),
                 ));
             }
-            let (op_id, entry) = register_op("skill_run");
+            let (op_id, entry) = register_op("skill_run", "");
             let knowledge = ws.knowledge.clone();
             let chat = if chat_package.is_some() {
                 Some(
@@ -1816,6 +1909,9 @@ fn dispatch(
                 },
                 auth_token: ws.hub_token.clone(),
                 progress: None,
+                // Metadata-only fetch: the limits bind transfers, not
+                // quoting.
+                limits: harbor_modelhub::acquire::AcquireLimits::default(),
             };
             let tree_url = format!("https://huggingface.co/api/models/{repo_id}/tree/{revision}");
             let body = acquirer
@@ -1862,6 +1958,7 @@ fn dispatch(
                 .unwrap_or("main")
                 .to_string();
             let files = parse_acquire_files(args)?;
+            let limits = acquire_limits_from_args(args)?;
             acquire_model(
                 &ws.data_root,
                 &ws.inner.broker,
@@ -1873,6 +1970,7 @@ fn dispatch(
                 &revision,
                 &files,
                 None,
+                limits,
             )
         }
         // --- signed catalog ------------------------------------------------
@@ -1992,6 +2090,7 @@ fn dispatch(
                     .map(|(p, r, h)| (p.clone(), r.clone(), h.clone()))
                     .collect::<Vec<_>>(),
                 None,
+                acquire_limits_from_args(args)?,
             )
         }
         // --- model install (local file) -----------------------------------
@@ -2115,6 +2214,179 @@ fn dispatch(
                 .commit(&mut staged, &manifest, chrono::Utc::now())
                 .map_err(|e| HarborError::Other(format!("commit: {e}")))?;
             Ok(serde_json::json!({ "installed": package_id, "bytes": bytes.len() }))
+        }
+        // --- store: download preflight (SEC-029) ---------------------------
+        // Quote a package's transfer through brokered metadata and probe
+        // the install root — no staging, no download. The UI shows the
+        // quote, the user confirms, and the acquire call must echo
+        // confirmed_total_bytes.
+        "models.acquire_preflight" => {
+            let repo_id = args
+                .get("repo_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing repo_id".into()))?;
+            let revision = args
+                .get("revision")
+                .and_then(|v| v.as_str())
+                .unwrap_or("main");
+            let files = parse_acquire_files(args)?;
+            let session = ws
+                .inner
+                .broker
+                .open_session(
+                    harbor_net::broker::EgressClass::AcquisitionMetadata,
+                    "https://huggingface.co",
+                    harbor_core::Workspace::acquisition_session_ttl(),
+                    ws.inner.privacy_mode,
+                )
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let installer =
+                harbor_modelhub::install::PackageInstaller::new(ws.data_root.join("models"));
+            let acquirer = harbor_modelhub::acquire::HfAcquirer {
+                broker: &ws.inner.broker,
+                transport: &*ws.transport,
+                installer: &installer,
+                sessions: {
+                    let mut m = std::collections::BTreeMap::new();
+                    m.insert("https://huggingface.co".to_string(), session);
+                    m
+                },
+                auth_token: ws.hub_token.clone(),
+                progress: None,
+                limits: harbor_modelhub::acquire::AcquireLimits::default(),
+            };
+            let tree_url = format!("https://huggingface.co/api/models/{repo_id}/tree/{revision}");
+            let body = acquirer
+                .fetch(&tree_url, None)
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let tree: serde_json::Value = serde_json::from_slice(&body)
+                .map_err(|e| HarborError::Other(format!("tree: {e}")))?;
+            let sizes: std::collections::BTreeMap<String, u64> = tree
+                .as_array()
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|f| {
+                            Some((
+                                f.get("path")?.as_str()?.to_string(),
+                                f.get("size")?.as_u64()?,
+                            ))
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            let quoted: u64 = files
+                .iter()
+                .filter_map(|(path, _, _)| sizes.get(path).copied())
+                .sum();
+            let covered = files
+                .iter()
+                .filter(|(path, _, _)| sizes.contains_key(path))
+                .count();
+            let available = harbor_modelhub::acquire::free_disk_bytes(installer.root())
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let min_free = args
+                .get("min_free_after_bytes")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(harbor_modelhub::acquire::DEFAULT_MIN_FREE_AFTER_BYTES);
+            let fits = available >= quoted.saturating_add(min_free);
+            Ok(serde_json::json!({
+                "quoted_bytes": quoted,
+                "files_total": files.len(),
+                "files_covered": covered,
+                "available_bytes": available,
+                "min_free_after_bytes": min_free,
+                "fits": fits,
+            }))
+        }
+        // --- store: uninstall (SEC-024) ------------------------------------
+        "models.uninstall_preview" => {
+            let package_id = args
+                .get("package_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing package_id".into()))?;
+            let installer =
+                harbor_modelhub::install::PackageInstaller::new(ws.data_root.join("models"));
+            let preview = installer
+                .deletion_preview(package_id)
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let blockers = uninstall_blockers(
+                &running_acquire_subjects(),
+                &ws.chat
+                    .as_ref()
+                    .map(|c| c.loaded_package_ids())
+                    .unwrap_or_default(),
+                ws.knowledge.as_ref().map(|k| k.embedding_package()),
+                package_id,
+            );
+            Ok(serde_json::json!({
+                "package_id": preview.package_id,
+                "scope_digest": preview.scope_digest,
+                "files": preview.files.iter().map(|f| serde_json::json!({
+                    "path": f.path, "size_bytes": f.size_bytes,
+                })).collect::<Vec<_>>(),
+                "manifest_bytes_total": preview.manifest_bytes_total,
+                "dir_bytes_total": preview.dir_bytes_total,
+                "in_use": !blockers.is_empty(),
+                "in_use_reasons": blockers,
+            }))
+        }
+        "models.uninstall_commit" => {
+            let package_id = args
+                .get("package_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing package_id".into()))?;
+            let scope_digest = args
+                .get("scope_digest")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| {
+                    HarborError::Other(
+                        "missing scope_digest (confirm against a fresh preview)".into(),
+                    )
+                })?;
+            // The in-use guard is re-checked at commit time: a preview
+            // taken before the model was loaded must not authorize a
+            // deletion under it.
+            let blockers = uninstall_blockers(
+                &running_acquire_subjects(),
+                &ws.chat
+                    .as_ref()
+                    .map(|c| c.loaded_package_ids())
+                    .unwrap_or_default(),
+                ws.knowledge.as_ref().map(|k| k.embedding_package()),
+                package_id,
+            );
+            if !blockers.is_empty() {
+                return Err(HarborError::Other(format!(
+                    "package {package_id} is in use: {}",
+                    blockers.join("; ")
+                )));
+            }
+            let installer =
+                harbor_modelhub::install::PackageInstaller::new(ws.data_root.join("models"));
+            let (trash_entry, freed) = installer
+                .trash(package_id, scope_digest)
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let available =
+                harbor_modelhub::acquire::free_disk_bytes(installer.root()).unwrap_or(0);
+            Ok(serde_json::json!({
+                "uninstalled": package_id,
+                "trash_entry": trash_entry,
+                "freed_bytes": freed,
+                "available_bytes": available,
+                "undo_window_hours": TRASH_UNDO_WINDOW.num_hours(),
+            }))
+        }
+        "models.uninstall_restore" => {
+            let trash_entry = args
+                .get("trash_entry")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing trash_entry".into()))?;
+            let installer =
+                harbor_modelhub::install::PackageInstaller::new(ws.data_root.join("models"));
+            let restored = installer
+                .restore_trashed(trash_entry)
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            Ok(serde_json::json!({ "restored": restored }))
         }
         // --- knowledge ---------------------------------------------------
         "knowledge.open" => {
@@ -2244,7 +2516,8 @@ fn dispatch(
                 .unwrap_or("main")
                 .to_string();
             let files = parse_acquire_files(args)?;
-            let (op_id, entry) = register_op("acquire");
+            let limits = acquire_limits_from_args(args)?;
+            let (op_id, entry) = register_op("acquire", &package_id);
             let data_root = ws.data_root.clone();
             let broker = ws.inner.broker.clone();
             let transport = ws.transport.clone();
@@ -2264,6 +2537,7 @@ fn dispatch(
                     &revision,
                     &files,
                     Some(progress.clone()),
+                    limits,
                 );
                 let cancelled = matches!(&result, Err(e) if e.to_string().contains("cancelled"));
                 complete_op(&entry_clone, result.map_err(|e| e.to_string()), cancelled);
@@ -2289,7 +2563,7 @@ fn dispatch(
                 .get("run_id")
                 .and_then(|v| v.as_str())
                 .map(str::to_string);
-            let (op_id, entry) = register_op("generate");
+            let (op_id, entry) = register_op("generate", &chat_package);
             let knowledge = ws.knowledge.clone();
             let chat = ws
                 .chat
@@ -2413,7 +2687,7 @@ fn dispatch(
         }
         "op.start_ingest" => {
             let sources = parse_sources(args)?;
-            let (op_id, entry) = register_op("ingest");
+            let (op_id, entry) = register_op("ingest", "");
             let knowledge = ws
                 .knowledge
                 .clone()
@@ -2761,7 +3035,7 @@ mod trust_persistence_tests {
     /// nothing shown to the user.
     #[test]
     fn a_panicking_op_body_still_reaches_a_terminal_state() {
-        let (op_id, entry) = register_op("test");
+        let (op_id, entry) = register_op("test", "");
         // The hook would print this panic to stderr and confuse the test
         // log; the op's terminal state is what is under test.
         let previous = std::panic::take_hook();
@@ -2799,7 +3073,7 @@ mod trust_persistence_tests {
             )
             .unwrap(),
         );
-        let (_op_id, entry) = register_op("test");
+        let (_op_id, entry) = register_op("test", "");
         entry.progress.set_phase("fill");
         let watched = entry.clone();
         let diag = diagnostics.clone();
@@ -2844,7 +3118,7 @@ mod trust_persistence_tests {
             )
             .unwrap(),
         );
-        let (_op_id, entry) = register_op("test");
+        let (_op_id, entry) = register_op("test", "");
         entry.progress.set_phase("downloading");
         let watched = entry.clone();
         let diag = diagnostics.clone();
@@ -2876,7 +3150,7 @@ mod trust_persistence_tests {
     /// normally and then panics on the way out keeps its own outcome.
     #[test]
     fn the_panic_net_never_overwrites_a_completed_op() {
-        let (op_id, entry) = register_op("test");
+        let (op_id, entry) = register_op("test", "");
         let previous = std::panic::take_hook();
         std::panic::set_hook(Box::new(|_| {}));
         let for_body = entry.clone();
@@ -2894,5 +3168,51 @@ mod trust_persistence_tests {
         let status = op_status_json(&op_id, &entry);
         assert_eq!(status["state"], "done");
         assert_eq!(status["result"]["kept"], true);
+    }
+}
+
+/// SEC-024/SEC-029 guard units: the uninstall blocker rule and the
+/// confirmed-size parsing are product policy, so they are tested as pure
+/// functions, not only through live acquisition paths.
+#[cfg(test)]
+mod store_guard_tests {
+    use super::*;
+
+    #[test]
+    fn uninstall_blockers_cover_all_live_uses() {
+        let running = vec!["m-a".to_string()];
+        let loaded = vec!["m-b".to_string()];
+        assert_eq!(
+            uninstall_blockers(&running, &loaded, Some("m-c"), "m-idle"),
+            Vec::<String>::new()
+        );
+        assert_eq!(uninstall_blockers(&running, &[], None, "m-a").len(), 1);
+        assert_eq!(uninstall_blockers(&[], &loaded, None, "m-b").len(), 1);
+        assert_eq!(uninstall_blockers(&[], &[], Some("m-c"), "m-c").len(), 1);
+        // A package that is both downloading and loaded reports both.
+        assert_eq!(uninstall_blockers(&running, &loaded, None, "m-a").len(), 1);
+        assert_eq!(uninstall_blockers(&running, &loaded, None, "m-b").len(), 1);
+    }
+
+    #[test]
+    fn confirmed_total_bytes_is_required_for_product_acquire() {
+        let err = acquire_limits_from_args(&serde_json::json!({})).unwrap_err();
+        assert!(err.to_string().contains("confirmed_total_bytes"));
+        let limits =
+            acquire_limits_from_args(&serde_json::json!({ "confirmed_total_bytes": 42 })).unwrap();
+        assert_eq!(limits.confirmed_total_bytes, 42);
+        assert_eq!(
+            limits.min_free_after_bytes,
+            harbor_modelhub::acquire::DEFAULT_MIN_FREE_AFTER_BYTES
+        );
+        assert_eq!(limits.throttle, std::time::Duration::ZERO);
+        let throttled = acquire_limits_from_args(&serde_json::json!({
+            "confirmed_total_bytes": 42,
+            "min_free_after_bytes": 1,
+            "throttle_ms": 25,
+        }))
+        .unwrap();
+        assert_eq!(throttled.throttle, std::time::Duration::from_millis(25));
+        assert_eq!(throttled.min_free_after_bytes, 1);
     }
 }
