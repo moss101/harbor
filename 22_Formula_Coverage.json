@@ -365,6 +365,125 @@
           "status": "REQUIRED_UNQUALIFIED"
         }
       ]
+    },
+    {
+      "group": "engine_expansion_tier2",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "notes": "Phase 3 engine-wide expansion, tier 2: next-rung functions beyond the original 71, curated by probing the pinned engine for Excel-faithful semantics before fixture authoring.",
+      "functions": [
+        {
+          "name": "CHAR",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CHOOSE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "COUNTBLANK",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "EXACT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "EXP",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "FIND",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "GCD",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ISBLANK",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ISNA",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ISNUMBER",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ISODD",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ISTEXT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "LARGE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "LCM",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "LN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "LOG10",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "MAXIFS",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "PROPER",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "QUOTIENT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "REPLACE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "REPT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SEARCH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SIGN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SMALL",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SUBSTITUTE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SWITCH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TRUNC",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "WEEKDAY",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
     }
   ],
   "preserve_only_until_separately_qualified": [
@@ -400,7 +519,9 @@
       "engine_sha256": "64b7771c27fcd3da6229ae4653acc4269cf6635412b283fa0dd16e8359b54139",
       "adapter_revision": "harbor_formula/1",
       "fixture_bundle_sha256": "f5c97506bf348b6d009f2ebe3818ebb948cb7925efad499b87325da7527f0e54",
-      "platform_architecture_set": ["macos/aarch64"],
+      "platform_architecture_set": [
+        "macos/aarch64"
+      ],
       "commit": "5b44bf07",
       "cases_passed": 99,
       "cases_failed": 1,

@@ -1700,7 +1700,7 @@
    "target": "LEN",
    "dimension": "values",
    "cells": [],
-   "formula": "=LEN(\"مرفأ\")",
+   "formula": "=LEN(\"\u0645\u0631\u0641\u0623\")",
    "expect": {
     "n": 4
    }
@@ -2574,6 +2574,576 @@
      }
     }
    ]
+  },
+  {
+   "id": "t2-sign-1",
+   "group": "engine_expansion_tier2",
+   "target": "SIGN",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=SIGN(-3)",
+   "expect": {
+    "n": -1
+   }
+  },
+  {
+   "id": "t2-sign-2",
+   "group": "engine_expansion_tier2",
+   "target": "SIGN",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=SIGN(0)",
+   "expect": {
+    "n": 0
+   }
+  },
+  {
+   "id": "t2-exp-1",
+   "group": "engine_expansion_tier2",
+   "target": "EXP",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=EXP(1)",
+   "expect": {
+    "n": 2.718281828459045,
+    "tol": 1e-12
+   }
+  },
+  {
+   "id": "t2-ln-1",
+   "group": "engine_expansion_tier2",
+   "target": "LN",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=LN(EXP(2))",
+   "expect": {
+    "n": 2,
+    "tol": 1e-12
+   }
+  },
+  {
+   "id": "t2-ln-2",
+   "group": "engine_expansion_tier2",
+   "target": "LN",
+   "dimension": "errors",
+   "cells": [],
+   "formula": "=LN(0)",
+   "expect": {
+    "e": "#NUM!"
+   }
+  },
+  {
+   "id": "t2-log10-1",
+   "group": "engine_expansion_tier2",
+   "target": "LOG10",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=LOG10(1000)",
+   "expect": {
+    "n": 3
+   }
+  },
+  {
+   "id": "t2-trunc-1",
+   "group": "engine_expansion_tier2",
+   "target": "TRUNC",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=TRUNC(8.97)",
+   "expect": {
+    "n": 8
+   }
+  },
+  {
+   "id": "t2-trunc-2",
+   "group": "engine_expansion_tier2",
+   "target": "TRUNC",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=TRUNC(-8.97)",
+   "expect": {
+    "n": -8
+   },
+   "notes": "TRUNC truncates toward zero (Excel)."
+  },
+  {
+   "id": "t2-quotient-1",
+   "group": "engine_expansion_tier2",
+   "target": "QUOTIENT",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=QUOTIENT(7,2)",
+   "expect": {
+    "n": 3
+   }
+  },
+  {
+   "id": "t2-quotient-2",
+   "group": "engine_expansion_tier2",
+   "target": "QUOTIENT",
+   "dimension": "errors",
+   "cells": [],
+   "formula": "=QUOTIENT(7,0)",
+   "expect": {
+    "e": "#DIV/0!"
+   }
+  },
+  {
+   "id": "t2-gcd-1",
+   "group": "engine_expansion_tier2",
+   "target": "GCD",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=GCD(12,18)",
+   "expect": {
+    "n": 6
+   }
+  },
+  {
+   "id": "t2-lcm-1",
+   "group": "engine_expansion_tier2",
+   "target": "LCM",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=LCM(4,6)",
+   "expect": {
+    "n": 12
+   }
+  },
+  {
+   "id": "t2-proper-1",
+   "group": "engine_expansion_tier2",
+   "target": "PROPER",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=PROPER(\"harbor office suite\")",
+   "expect": {
+    "t": "Harbor Office Suite"
+   }
+  },
+  {
+   "id": "t2-substitute-1",
+   "group": "engine_expansion_tier2",
+   "target": "SUBSTITUTE",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=SUBSTITUTE(\"a-b-c\",\"-\",\"+\")",
+   "expect": {
+    "t": "a+b+c"
+   }
+  },
+  {
+   "id": "t2-substitute-2",
+   "group": "engine_expansion_tier2",
+   "target": "SUBSTITUTE",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=SUBSTITUTE(\"a-a-a\",\"a\",\"X\",2)",
+   "expect": {
+    "t": "a-X-a"
+   },
+   "notes": "instance-number form replaces only the 2nd occurrence."
+  },
+  {
+   "id": "t2-replace-1",
+   "group": "engine_expansion_tier2",
+   "target": "REPLACE",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=REPLACE(\"abcdef\",2,3,\"XY\")",
+   "expect": {
+    "t": "aXYef"
+   }
+  },
+  {
+   "id": "t2-rept-1",
+   "group": "engine_expansion_tier2",
+   "target": "REPT",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=REPT(\"ab\",3)",
+   "expect": {
+    "t": "ababab"
+   }
+  },
+  {
+   "id": "t2-find-1",
+   "group": "engine_expansion_tier2",
+   "target": "FIND",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=FIND(\"b\",\"abcb\")",
+   "expect": {
+    "n": 2
+   }
+  },
+  {
+   "id": "t2-find-2",
+   "group": "engine_expansion_tier2",
+   "target": "FIND",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=FIND(\"b\",\"abcb\",3)",
+   "expect": {
+    "n": 4
+   }
+  },
+  {
+   "id": "t2-find-3",
+   "group": "engine_expansion_tier2",
+   "target": "FIND",
+   "dimension": "errors",
+   "cells": [],
+   "formula": "=FIND(\"z\",\"abcb\")",
+   "expect": {
+    "e": "#VALUE!"
+   }
+  },
+  {
+   "id": "t2-search-1",
+   "group": "engine_expansion_tier2",
+   "target": "SEARCH",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=SEARCH(\"B\",\"abcb\")",
+   "expect": {
+    "n": 2
+   },
+   "notes": "SEARCH is case-insensitive."
+  },
+  {
+   "id": "t2-exact-1",
+   "group": "engine_expansion_tier2",
+   "target": "EXACT",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=EXACT(\"abc\",\"abc\")",
+   "expect": {
+    "b": true
+   }
+  },
+  {
+   "id": "t2-char-1",
+   "group": "engine_expansion_tier2",
+   "target": "CHAR",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=CHAR(65)",
+   "expect": {
+    "t": "A"
+   }
+  },
+  {
+   "id": "t2-isnumber-1",
+   "group": "engine_expansion_tier2",
+   "target": "ISNUMBER",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=ISNUMBER(5)",
+   "expect": {
+    "b": true
+   }
+  },
+  {
+   "id": "t2-isnumber-2",
+   "group": "engine_expansion_tier2",
+   "target": "ISNUMBER",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=ISNUMBER(A1)",
+   "expect": {
+    "b": false
+   }
+  },
+  {
+   "id": "t2-istext-1",
+   "group": "engine_expansion_tier2",
+   "target": "ISTEXT",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=ISTEXT(\"x\")",
+   "expect": {
+    "b": true
+   }
+  },
+  {
+   "id": "t2-isblank-1",
+   "group": "engine_expansion_tier2",
+   "target": "ISBLANK",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=ISBLANK(A1)",
+   "expect": {
+    "b": true
+   }
+  },
+  {
+   "id": "t2-isna-1",
+   "group": "engine_expansion_tier2",
+   "target": "ISNA",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=ISNA(NA())",
+   "expect": {
+    "b": true
+   }
+  },
+  {
+   "id": "t2-isodd-1",
+   "group": "engine_expansion_tier2",
+   "target": "ISODD",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=ISODD(3)",
+   "expect": {
+    "b": true
+   }
+  },
+  {
+   "id": "t2-countblank-1",
+   "group": "engine_expansion_tier2",
+   "target": "COUNTBLANK",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ]
+   ],
+   "formula": "=COUNTBLANK(A1:A3)",
+   "expect": {
+    "n": 2
+   }
+  },
+  {
+   "id": "t2-countblank-2",
+   "group": "engine_expansion_tier2",
+   "target": "COUNTBLANK",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "t": "x"
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "b": false
+     }
+    ]
+   ],
+   "formula": "=COUNTBLANK(A1:A3)",
+   "expect": {
+    "n": 0
+   },
+   "notes": "text and FALSE are non-blank (Excel)."
+  },
+  {
+   "id": "t2-large-1",
+   "group": "engine_expansion_tier2",
+   "target": "LARGE",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 5
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "n": 9
+     }
+    ],
+    [
+     "Sheet1",
+     4,
+     1,
+     {
+      "n": 3
+     }
+    ]
+   ],
+   "formula": "=LARGE(A1:A4,2)",
+   "expect": {
+    "n": 5
+   }
+  },
+  {
+   "id": "t2-large-2",
+   "group": "engine_expansion_tier2",
+   "target": "LARGE",
+   "dimension": "errors",
+   "cells": [],
+   "formula": "=LARGE(A1:A4,10)",
+   "expect": {
+    "e": "#NUM!"
+   }
+  },
+  {
+   "id": "t2-small-1",
+   "group": "engine_expansion_tier2",
+   "target": "SMALL",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 4
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 2
+     }
+    ]
+   ],
+   "formula": "=SMALL(A1:A4,1)",
+   "expect": {
+    "n": 2
+   }
+  },
+  {
+   "id": "t2-maxifs-1",
+   "group": "engine_expansion_tier2",
+   "target": "MAXIFS",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 10
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 20
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     2,
+     {
+      "n": 2
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "n": 30
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     2,
+     {
+      "n": 1
+     }
+    ]
+   ],
+   "formula": "=MAXIFS(A1:A3,B1:B3,\">1\")",
+   "expect": {
+    "n": 20
+   }
+  },
+  {
+   "id": "t2-choose-1",
+   "group": "engine_expansion_tier2",
+   "target": "CHOOSE",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=CHOOSE(2,\"a\",\"b\",\"c\")",
+   "expect": {
+    "t": "b"
+   }
+  },
+  {
+   "id": "t2-switch-1",
+   "group": "engine_expansion_tier2",
+   "target": "SWITCH",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=SWITCH(2,1,\"one\",2,\"two\",\"other\")",
+   "expect": {
+    "t": "two"
+   }
+  },
+  {
+   "id": "t2-switch-2",
+   "group": "engine_expansion_tier2",
+   "target": "SWITCH",
+   "dimension": "errors",
+   "cells": [],
+   "formula": "=SWITCH(9,1,\"one\",2,\"two\")",
+   "expect": {
+    "e": "#N/A"
+   },
+   "notes": "no match and no default."
+  },
+  {
+   "id": "t2-weekday-1",
+   "group": "engine_expansion_tier2",
+   "target": "WEEKDAY",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=WEEKDAY(DATE(2026,9,12))",
+   "expect": {
+    "n": 7
+   },
+   "notes": "2026-09-12 is a Saturday; default return_type 1 (Sun=1)."
   }
  ]
 }
