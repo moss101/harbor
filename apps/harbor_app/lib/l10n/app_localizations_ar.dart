@@ -1462,4 +1462,91 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get skillsCopied => 'نُسخ إلى الحافظة';
+
+  @override
+  String get surfaceStore => 'المتجر';
+
+  @override
+  String get storeTagline => 'المنتجات المضمّنة والنماذج الأولى';
+
+  @override
+  String get storeOfficeTitle => 'Harbor Office';
+
+  @override
+  String get storeOfficeIncluded => 'مضمّن مع هذا التطبيق';
+
+  @override
+  String get storeOfficeStatus =>
+      'معاينة للقراءة فقط في «العمل» اليوم؛ تحرير جداول البيانات وتأهيل الصيغ يصلان عندما تنجح بواباتهما.';
+
+  @override
+  String get storeOfficeOpen => 'فتح «العمل»';
+
+  @override
+  String storeModelsHeading(int count) {
+    return 'نماذج Harbor ($count)';
+  }
+
+  @override
+  String get storeModelsBody =>
+      'إدخالات الفهرس الموقّع الأول. تُعرض أحجام التنزيلات ويُؤكَّد قبل النقل.';
+
+  @override
+  String get storeInstalledHeading => 'المثبّت على هذا الجهاز';
+
+  @override
+  String get storeUninstall => 'إزالة';
+
+  @override
+  String storeUninstallTitle(String id) {
+    return 'إزالة $id؟';
+  }
+
+  @override
+  String storeUninstallBody(String bytes, int files) {
+    return 'يزيل $bytes عبر $files ملفات. يبقى التراجع متاحاً لمدة 72 ساعة.';
+  }
+
+  @override
+  String storeUninstallInUse(String reasons) {
+    return 'قيد الاستخدام: $reasons';
+  }
+
+  @override
+  String storeUninstallDone(String id) {
+    return 'أُزيل $id';
+  }
+
+  @override
+  String get storeUndo => 'تراجع';
+
+  @override
+  String get storeUndoFailed => 'فشل الاستعادة';
+
+  @override
+  String get storeAcquireTitle => 'تأكيد التنزيل';
+
+  @override
+  String storeAcquireBody(String quoted, String available) {
+    return '$quoted للتنزيل؛ $available حراً على هذا الجهاز.';
+  }
+
+  @override
+  String get storeAcquireNoFit => 'لا توجد مساحة حرة كافية لهذا التنزيل.';
+
+  @override
+  String get storeAcquireConfirm => 'تنزيل';
+
+  @override
+  String get storeUninstallFailed => 'فشلت الإزالة';
+
+  @override
+  String get storePreviewFailed => 'تعذّرت قراءة الحزمة';
+
+  @override
+  String get storeEmpty => 'فهرس التوقيع المقبول فارغ على هذا الجهاز.';
+
+  @override
+  String get storeManageHint =>
+      'الإزالة تحرّر كل ملف مملوك؛ تعرض المعاينة النطاق الدقيق قبل أي حركة.';
 }

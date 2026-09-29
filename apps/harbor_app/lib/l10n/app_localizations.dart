@@ -2311,6 +2311,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copied to the clipboard'**
   String get skillsCopied;
+
+  /// No description provided for @surfaceStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Store'**
+  String get surfaceStore;
+
+  /// No description provided for @storeTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Included products and first-party models'**
+  String get storeTagline;
+
+  /// No description provided for @storeOfficeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Harbor Office'**
+  String get storeOfficeTitle;
+
+  /// No description provided for @storeOfficeIncluded.
+  ///
+  /// In en, this message translates to:
+  /// **'Included with this app'**
+  String get storeOfficeIncluded;
+
+  /// No description provided for @storeOfficeStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only preview in Work today; spreadsheet editing and formula qualification land as their gates pass.'**
+  String get storeOfficeStatus;
+
+  /// No description provided for @storeOfficeOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Work'**
+  String get storeOfficeOpen;
+
+  /// No description provided for @storeModelsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Harbor models ({count})'**
+  String storeModelsHeading(int count);
+
+  /// No description provided for @storeModelsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed, first-party catalog entries. Downloads are quoted and confirmed before transfer.'**
+  String get storeModelsBody;
+
+  /// No description provided for @storeInstalledHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed on this device'**
+  String get storeInstalledHeading;
+
+  /// No description provided for @storeUninstall.
+  ///
+  /// In en, this message translates to:
+  /// **'Uninstall'**
+  String get storeUninstall;
+
+  /// No description provided for @storeUninstallTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Uninstall {id}?'**
+  String storeUninstallTitle(String id);
+
+  /// No description provided for @storeUninstallBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Removes {bytes} across {files} files. Undo stays available for 72 hours.'**
+  String storeUninstallBody(String bytes, int files);
+
+  /// No description provided for @storeUninstallInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'In use: {reasons}'**
+  String storeUninstallInUse(String reasons);
+
+  /// No description provided for @storeUninstallDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Uninstalled {id}'**
+  String storeUninstallDone(String id);
+
+  /// No description provided for @storeUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get storeUndo;
+
+  /// No description provided for @storeUndoFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore failed'**
+  String get storeUndoFailed;
+
+  /// No description provided for @storeAcquireTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm download'**
+  String get storeAcquireTitle;
+
+  /// No description provided for @storeAcquireBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{quoted} to download; {available} free on this device.'**
+  String storeAcquireBody(String quoted, String available);
+
+  /// No description provided for @storeAcquireNoFit.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough free space for this download.'**
+  String get storeAcquireNoFit;
+
+  /// No description provided for @storeAcquireConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get storeAcquireConfirm;
+
+  /// No description provided for @storeUninstallFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Uninstall failed'**
+  String get storeUninstallFailed;
+
+  /// No description provided for @storePreviewFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the package'**
+  String get storePreviewFailed;
+
+  /// No description provided for @storeEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'The accepted signed catalog is empty on this device.'**
+  String get storeEmpty;
+
+  /// No description provided for @storeManageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Uninstall frees every owned file; a preview shows the exact scope before anything moves.'**
+  String get storeManageHint;
 }
 
 class _AppLocalizationsDelegate

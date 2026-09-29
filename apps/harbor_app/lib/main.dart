@@ -53,14 +53,15 @@ Future<bool> importBundledCatalog(HarborService service) async {
   }
 }
 
-/// The nine product surfaces (goal §3): Home · Ask · Work · Agents ·
-/// Models · Skills · Knowledge · Activity · Settings.
+/// The ten product surfaces: Home · Ask · Work · Agents · Models · Store ·
+/// Skills · Knowledge · Activity · Settings.
 enum HarborSurface {
   home,
   ask,
   work,
   agents,
   models,
+  store,
   skills,
   knowledge,
   activity,
@@ -68,7 +69,22 @@ enum HarborSurface {
 
   /// Primary compact destinations (bottom bar); the rest live under More.
   static const primary = [home, ask, work, models];
-  static const secondary = [agents, skills, knowledge, activity, settings];
+  static const secondary = [agents, store, skills, knowledge, activity, settings];
+
+  /// ⌘1–9 map to this stable order (a published desktop contract the
+  /// tests pin). Store is reachable from the rail, the More sheet and the
+  /// palette but takes no digit.
+  static const shortcutOrder = [
+    home,
+    ask,
+    work,
+    agents,
+    models,
+    skills,
+    knowledge,
+    activity,
+    settings
+  ];
 }
 
 /// App-level UI state (language, theme, current surface, Lens). The Rust
@@ -411,6 +427,8 @@ List<HarborDestination> harborDestinations(AppLocalizations l10n) => [
           selectedIcon: Icons.smart_toy),
       HarborDestination(l10n.surfaceModels, Icons.memory_outlined,
           selectedIcon: Icons.memory),
+      HarborDestination(l10n.surfaceStore, Icons.storefront_outlined,
+          selectedIcon: Icons.storefront),
       HarborDestination(l10n.surfaceSkills, Icons.construction_outlined,
           selectedIcon: Icons.construction),
       HarborDestination(l10n.surfaceKnowledge, Icons.library_books_outlined,
@@ -433,6 +451,8 @@ Widget surfaceFor(int index, AppState state) {
       return const AgentsSurface();
     case HarborSurface.models:
       return const ModelsSurface();
+    case HarborSurface.store:
+      return StoreSurface(state: state);
     case HarborSurface.skills:
       return const SkillsSurface();
     case HarborSurface.knowledge:

@@ -1405,4 +1405,92 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get skillsCopied => 'Copied to the clipboard';
+
+  @override
+  String get surfaceStore => 'Store';
+
+  @override
+  String get storeTagline => 'Included products and first-party models';
+
+  @override
+  String get storeOfficeTitle => 'Harbor Office';
+
+  @override
+  String get storeOfficeIncluded => 'Included with this app';
+
+  @override
+  String get storeOfficeStatus =>
+      'Read-only preview in Work today; spreadsheet editing and formula qualification land as their gates pass.';
+
+  @override
+  String get storeOfficeOpen => 'Open Work';
+
+  @override
+  String storeModelsHeading(int count) {
+    return 'Harbor models ($count)';
+  }
+
+  @override
+  String get storeModelsBody =>
+      'Signed, first-party catalog entries. Downloads are quoted and confirmed before transfer.';
+
+  @override
+  String get storeInstalledHeading => 'Installed on this device';
+
+  @override
+  String get storeUninstall => 'Uninstall';
+
+  @override
+  String storeUninstallTitle(String id) {
+    return 'Uninstall $id?';
+  }
+
+  @override
+  String storeUninstallBody(String bytes, int files) {
+    return 'Removes $bytes across $files files. Undo stays available for 72 hours.';
+  }
+
+  @override
+  String storeUninstallInUse(String reasons) {
+    return 'In use: $reasons';
+  }
+
+  @override
+  String storeUninstallDone(String id) {
+    return 'Uninstalled $id';
+  }
+
+  @override
+  String get storeUndo => 'Undo';
+
+  @override
+  String get storeUndoFailed => 'Restore failed';
+
+  @override
+  String get storeAcquireTitle => 'Confirm download';
+
+  @override
+  String storeAcquireBody(String quoted, String available) {
+    return '$quoted to download; $available free on this device.';
+  }
+
+  @override
+  String get storeAcquireNoFit => 'Not enough free space for this download.';
+
+  @override
+  String get storeAcquireConfirm => 'Download';
+
+  @override
+  String get storeUninstallFailed => 'Uninstall failed';
+
+  @override
+  String get storePreviewFailed => 'Could not read the package';
+
+  @override
+  String get storeEmpty =>
+      'The accepted signed catalog is empty on this device.';
+
+  @override
+  String get storeManageHint =>
+      'Uninstall frees every owned file; a preview shows the exact scope before anything moves.';
 }

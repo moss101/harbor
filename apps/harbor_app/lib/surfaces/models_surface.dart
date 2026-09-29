@@ -10,6 +10,7 @@ import '../main.dart';
 import '../services/harbor_service.dart';
 import '../widgets/ops.dart';
 import '../widgets/trust.dart';
+import 'store_surface.dart';
 
 /// Models surface (goal §23): Recommended / Library / Hugging Face /
 /// Installed / Benchmark with Fit Score first, plus Import (a real local
@@ -273,17 +274,32 @@ class _CatalogCardState extends State<_CatalogCard> {
       _error = null;
     });
     try {
+      // SEC-029: quote the real transfer, get an explicit confirmation
+      // for that size, then acquire. The core refuses a transfer whose
+      // quoted bytes exceed the confirmed total.
+      final files = [
+        for (final f in _files)
+          {
+            'path': f['path'] as String,
+            'role': f['role'] as String? ?? 'weights',
+            'sha256': f['sha256'] as String? ?? '',
+          },
+      ];
+      final quote = await widget.service.acquirePreflight(
+        repoId: p['repo_id'] as String,
+        files: files,
+      );
+      if (!mounted) return;
+      final confirmed = await showAcquireConfirmDialog(context, quote);
+      if (!mounted || !confirmed) {
+        setState(() => _installing = false);
+        return;
+      }
       await widget.service.acquireModelHf(
         packageId: p['id'] as String,
         repoId: p['repo_id'] as String,
-        files: [
-          for (final f in _files)
-            {
-              'path': f['path'] as String,
-              'role': f['role'] as String? ?? 'weights',
-              'sha256': f['sha256'] as String? ?? '',
-            },
-        ],
+        files: files,
+        confirmedTotalBytes: (quote['quoted_bytes'] as num? ?? 0).toInt(),
       );
     } on ffi.HarborCoreException catch (e) {
       if (!mounted) return;
@@ -643,13 +659,24 @@ class _HfSearchViewState extends State<_HfSearchView> {
       return;
     }
     try {
+      final acquireFiles = [
+        for (final f in files)
+          {'path': f['path'] as String, 'role': 'weights', 'sha256': ''},
+      ];
+      // SEC-029: quote the transfer and require an explicit confirmation
+      // for exactly that size before the op starts.
+      final quote = await service.acquirePreflight(
+        repoId: repoId,
+        files: acquireFiles,
+      );
+      if (!mounted) return;
+      final confirmed = await showAcquireConfirmDialog(context, quote);
+      if (!mounted || !confirmed) return;
       final result = await service.acquireModelHf(
         packageId: repoId.split('/').last,
         repoId: repoId,
-        files: [
-          for (final f in files)
-            {'path': f['path'] as String, 'role': 'weights', 'sha256': ''},
-        ],
+        files: acquireFiles,
+        confirmedTotalBytes: (quote['quoted_bytes'] as num? ?? 0).toInt(),
       );
       if (!mounted) return;
       setState(() {

@@ -90,7 +90,8 @@ class _AdaptiveShellState extends State<AdaptiveShell> {
     return Actions(
       actions: <Type, Action<Intent>>{
         GoToSurfaceIntent: CallbackAction<GoToSurfaceIntent>(
-            onInvoke: (i) => state.selectSurface(i.index)),
+            onInvoke: (i) => state
+                .selectSurface(HarborSurface.shortcutOrder[i.index].index)),
         CommandPaletteIntent: CallbackAction<CommandPaletteIntent>(
             onInvoke: (_) => showCommandPalette(context, state)),
         ToggleLensIntent:
@@ -305,7 +306,15 @@ class _RailShell extends StatelessWidget {
       destinations: destinations,
       selectedIndex: state.surfaceIndex,
       onSelected: state.selectSurface,
-      shortcutHint: desktop ? (i) => harborShortcutHint('${i + 1}') : null,
+      shortcutHint: desktop
+          ? (int i) {
+              // Hints follow the ⌘1–9 contract, not the raw index: Store
+              // takes no digit, so it shows none.
+              final digit =
+                  HarborSurface.shortcutOrder.indexOf(HarborSurface.values[i]);
+              return digit >= 0 ? harborShortcutHint('${digit + 1}') : '';
+            }
+          : null,
       footer: footer,
     );
 

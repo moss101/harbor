@@ -177,7 +177,7 @@ class _RailItem extends StatelessWidget {
                     ? t.text.bodyStrongOf(c.ink)
                     : t.text.bodyOf(c.ink)),
           ),
-          if (shortcut != null)
+          if (shortcut != null && shortcut!.isNotEmpty)
             Text(shortcut!, style: t.text.captionOf(c.inkMuted)),
         ]),
       HarborRailMode.collapsed => Center(child: iconWithBadge),

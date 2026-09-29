@@ -295,20 +295,68 @@ class HarborService extends ChangeNotifier {
     }
   }
 
+  /// SEC-029 preflight: quote the transfer size from brokered repo
+  /// metadata and probe the install root, without staging anything.
+  /// Throws [ffi.HarborCoreException] on failure (honest, never null).
+  Future<Map<String, dynamic>> acquirePreflight({
+    required String repoId,
+    String revision = 'main',
+    required List<Map<String, String>> files,
+  }) async {
+    return await _call('models.acquire_preflight', {
+      'repo_id': repoId,
+      'revision': revision,
+      'files': files,
+    });
+  }
+
   /// Acquire a model package as a cancellable background op: brokered
   /// download + staged install + hash identity, with live progress in
-  /// [kindProgress]['acquire']. Throws [ffi.HarborCoreException] on
-  /// failure or cancellation (honest, never silently null).
+  /// [kindProgress]['acquire']. SEC-029: [confirmedTotalBytes] is the
+  /// size the user confirmed (must cover the quoted bytes; the core
+  /// refuses the transfer otherwise). Throws [ffi.HarborCoreException]
+  /// on failure or cancellation (honest, never silently null).
   Future<Map<String, dynamic>> acquireModelHf({
     required String packageId,
     required String repoId,
     required List<Map<String, String>> files,
+    required int confirmedTotalBytes,
+    int throttleMs = 0,
   }) async {
     final result = await _runOp('op.start_acquire', {
       'package_id': packageId,
       'repo_id': repoId,
       'files': files,
+      'confirmed_total_bytes': confirmedTotalBytes,
+      'throttle_ms': throttleMs,
     });
+    await refresh();
+    return result;
+  }
+
+  /// SEC-024 uninstall preview: the exact owned-file scope a deletion
+  /// would remove, bound by a scope digest, plus in-use blockers.
+  Future<Map<String, dynamic>> uninstallPreview(String packageId) async {
+    return await _call('models.uninstall_preview', {'package_id': packageId});
+  }
+
+  /// SEC-024 uninstall commit: the scope digest must match a fresh
+  /// preview and the package must not be in use; the package moves to
+  /// the trash window (undo via [uninstallRestore] until swept).
+  Future<Map<String, dynamic>> uninstallCommit(
+      String packageId, String scopeDigest) async {
+    final result = await _call('models.uninstall_commit', {
+      'package_id': packageId,
+      'scope_digest': scopeDigest,
+    });
+    await refresh();
+    return result;
+  }
+
+  /// SEC-024 undo: restore a trashed package while the window is open.
+  Future<Map<String, dynamic>> uninstallRestore(String trashEntry) async {
+    final result =
+        await _call('models.uninstall_restore', {'trash_entry': trashEntry});
     await refresh();
     return result;
   }
