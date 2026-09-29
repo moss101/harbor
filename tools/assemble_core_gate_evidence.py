@@ -49,7 +49,8 @@ SUITES = [
     ("harbor_security", ["cargo", "test", "-p", "harbor_security", "--test", "security_scenarios"]),
     ("harbor_store_security", ["cargo", "test", "-p", "harbor_store", "--test", "security_scenarios"]),
     ("supply_chain", [sys.executable, str(ROOT / "tools" / "check_supply_chain.py")]),
-    ("harbor_native_ffi", [str(ROOT.parent / "harbor-tools" / "flutter" / "bin" / "dart"), "test"],
+    ("harbor_native_ffi",
+     [str(Path.home() / "harbor-tools" / "flutter" / "bin" / "dart"), "test"],
      str(ROOT / "packages" / "harbor_native")),
 ]
 
