@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "14e97e946b0f6cbed480869fc5ca766c6bc13595a769820b990a84b8df1325e7",
+  "input_manifest_sha256": "78b915d45f4ad694df1ad114e97e08fd1e9160f6c2ac617477d4c1959b48b649",
   "file_count_excluding_manifest": 1045,
   "files": [
     {
@@ -125,17 +125,17 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 197453,
-      "sha256": "f7d95ad6c8126ec056b33b5f36468521f2d9e7c07c7a143abff31aace3881daf"
+      "sha256": "0268b71fc90f06478dd87739c26931a45a460692c834c8cb681337b42e830c85"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "1792322949585ad7ab5c05a8ce17fad959f9a98642cdedde75dcb89b7fee51f5"
+      "sha256": "0a4f0dc8dd102cb216972f2032fade7d75ec0ecaff1e7a0417336b0c285a4023"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
-      "bytes": 3992,
-      "sha256": "cbc8a289ca897c82ed92250212ebe72f96a2b3bf3b675c39dc229b553f46cb0c"
+      "bytes": 4021,
+      "sha256": "cb234f0636a9d92a31762e1f411083c758637e256f9d10ff4f46d87d75355a3b"
     },
     {
       "path": "22_Formula_Coverage.json",
@@ -1449,8 +1449,8 @@
     },
     {
       "path": "core/harbor_artifacts/src/lib.rs",
-      "bytes": 3026,
-      "sha256": "575a450a14bebb8ccf9cf9d688a74bed8ae145d64350afae4cb995b46823de4d"
+      "bytes": 3038,
+      "sha256": "09e6d59eb63e59c3d22b06f8cc7f965949c7ef61fe12372bb9befe982a837088"
     },
     {
       "path": "core/harbor_artifacts/src/office_matrix.rs",
@@ -1469,8 +1469,8 @@
     },
     {
       "path": "core/harbor_artifacts/src/workbook.rs",
-      "bytes": 52945,
-      "sha256": "17e3beeea10685d3c6447a7485d95edeec25932a15fd2970edfdffaa99f65c80"
+      "bytes": 67706,
+      "sha256": "b285f663067e1fde46601e1b75cb47c2cb8e31b9e917d0eac04171561851c3c7"
     },
     {
       "path": "core/harbor_artifacts/tests/malformed_inputs.rs",
@@ -1734,8 +1734,8 @@
     },
     {
       "path": "core/harbor_ffi/src/lib.rs",
-      "bytes": 149568,
-      "sha256": "0c9328c8eaa35e803a19b31a8f9048ea674d091431d8947ba5a59d3c8760363f"
+      "bytes": 151042,
+      "sha256": "fdd951301f80e33bc2bf73b2c2fc825e9f756848404193f9ab1af43a0bde82e8"
     },
     {
       "path": "core/harbor_ffi/tests/catalog_first_run.rs",

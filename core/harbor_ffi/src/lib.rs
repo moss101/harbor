@@ -1514,6 +1514,30 @@ fn dispatch(
                         )
                         .map_err(|e| HarborError::Other(format!("add_chart: {e}")))?;
                     }
+                    "conditional_format" => {
+                        use harbor_artifacts::workbook::CfOperator;
+                        let op_name = op
+                            .get("cf_operator")
+                            .and_then(|v| v.as_str())
+                            .ok_or_else(|| {
+                                HarborError::Other("conditional_format missing cf_operator".into())
+                            })?;
+                        let operator = CfOperator::parse(op_name).ok_or_else(|| {
+                            HarborError::Other(format!("unknown cf_operator {op_name}"))
+                        })?;
+                        let threshold = op.get("threshold").and_then(|v| v.as_f64()).ok_or_else(|| {
+                            HarborError::Other("conditional_format missing threshold".into())
+                        })?;
+                        let range = op
+                            .get("range")
+                            .and_then(|v| v.as_str())
+                            .ok_or_else(|| {
+                                HarborError::Other("conditional_format missing range".into())
+                            })?;
+                        let fill = op.get("fill").and_then(|v| v.as_str()).unwrap_or("FFC7CE");
+                        wb.add_conditional_format(sheet, range, operator, threshold, fill)
+                            .map_err(|e| HarborError::Other(format!("conditional_format: {e}")))?;
+                    }
                     other => {
                         return Err(HarborError::Other(format!("unknown op {other}")));
                     }

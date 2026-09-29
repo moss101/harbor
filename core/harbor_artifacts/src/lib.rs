@@ -36,7 +36,7 @@ pub use package::package_integrity;
 pub use pptx::{
     ChartKind, ChartSpec, DeckStyle, PptxDeck, PptxError, PptxOp, SlideContent, SlideImage,
 };
-pub use workbook::{PreservationReport, SheetData, WorkbookDoc, WorkbookOp, XlsxChartKind};
+pub use workbook::{CfOperator, PreservationReport, SheetData, WorkbookDoc, WorkbookOp, XlsxChartKind};
 
 /// Probe every entry of an OOXML package once before any upstream reader
 /// sees it: inflate each entry (a corrupt compressed stream is a typed

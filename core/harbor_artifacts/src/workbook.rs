@@ -98,6 +98,21 @@ pub struct WorkbookDoc {
     /// Every entry of the loaded package (name -> bytes), the source for
     /// carry-over on save.
     original: BTreeMap<String, Vec<u8>>,
+    /// Conditional formats authored through Harbor's own serializer
+    /// (umya 3.1's cfRule operand is address-typed; Harbor never guesses
+    /// XML, so these are injected at strict CT_Worksheet/CT_Stylesheet
+    /// element positions after the umya write).
+    pending_cf: Vec<PendingCf>,
+}
+
+/// One authored conditional format rule (cellIs, single numeric operand,
+/// highlight fill). `dxf_id` is assigned at serialization time.
+struct PendingCf {
+    sheet: String,
+    sqref: String,
+    operator: &'static str,
+    operand: f64,
+    fill_rgb: String,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -200,6 +215,7 @@ impl WorkbookDoc {
             book,
             sheets,
             original,
+            pending_cf: Vec::new(),
         })
     }
 
@@ -213,6 +229,7 @@ impl WorkbookDoc {
             book: umya_spreadsheet::new_file_empty_worksheet(),
             sheets: BTreeMap::new(),
             original: BTreeMap::new(),
+            pending_cf: Vec::new(),
         }
     }
 
@@ -549,7 +566,47 @@ impl WorkbookDoc {
             .into_inner()
             .map_err(|e| WorkbookError::Load(e.to_string()))?;
         let emitted = inner.into_inner();
-        merge_carried_parts(emitted, &self.original)
+        let (merged, report) = merge_carried_parts(emitted, &self.original)?;
+        if self.pending_cf.is_empty() {
+            return Ok((merged, report));
+        }
+        // Conditional-format injection preserves the upstream report.
+        let (bytes, _) = inject_conditional_formats(merged, &self.pending_cf)?;
+        Ok((bytes, report))
+    }
+
+    /// Author a conditional highlight (cellIs comparison against one
+    /// numeric operand with a solid fill). Harbor's serializer emits the
+    /// cfRule + differential format at schema-valid positions; existing
+    /// CF parts from the loaded package are carried over untouched.
+    pub fn add_conditional_format(
+        &mut self,
+        sheet: &str,
+        sqref: &str,
+        operator: CfOperator,
+        operand: f64,
+        fill_rgb: &str,
+    ) -> Result<(), WorkbookError> {
+        if !self.sheets.contains_key(sheet) {
+            return Err(WorkbookError::SheetNotFound(sheet.into()));
+        }
+        if !valid_sqref(sqref) {
+            return Err(WorkbookError::BadRef(sqref.into()));
+        }
+        let rgb = fill_rgb.trim_start_matches('#').to_ascii_uppercase();
+        if rgb.len() != 6 || !rgb.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err(WorkbookError::BadRef(format!(
+                "fill color must be 6 hex digits: {fill_rgb}"
+            )));
+        }
+        self.pending_cf.push(PendingCf {
+            sheet: sheet.to_string(),
+            sqref: sqref.to_string(),
+            operator: operator.as_str(),
+            operand,
+            fill_rgb: rgb,
+        });
+        Ok(())
     }
 
     pub fn sheets_snapshot(&self) -> &BTreeMap<String, SheetData> {
@@ -1107,6 +1164,232 @@ fn replace_override_content_type(xml: &str, part_name: &str, new_ct: &str) -> St
     )
 }
 
+/// Authored cellIs operators (single numeric operand).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CfOperator {
+    GreaterThan,
+    LessThan,
+    Equal,
+    NotEqual,
+    GreaterThanOrEqual,
+    LessThanOrEqual,
+}
+
+impl CfOperator {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            CfOperator::GreaterThan => "greaterThan",
+            CfOperator::LessThan => "lessThan",
+            CfOperator::Equal => "equal",
+            CfOperator::NotEqual => "notEqual",
+            CfOperator::GreaterThanOrEqual => "greaterThanOrEqual",
+            CfOperator::LessThanOrEqual => "lessThanOrEqual",
+        }
+    }
+
+    pub fn parse(s: &str) -> Option<CfOperator> {
+        Some(match s {
+            "greater_than" | "greaterThan" => CfOperator::GreaterThan,
+            "less_than" | "lessThan" => CfOperator::LessThan,
+            "equal" => CfOperator::Equal,
+            "not_equal" | "notEqual" => CfOperator::NotEqual,
+            "greater_than_or_equal" | "greaterThanOrEqual" => CfOperator::GreaterThanOrEqual,
+            "less_than_or_equal" | "lessThanOrEqual" => CfOperator::LessThanOrEqual,
+            _ => return None,
+        })
+    }
+}
+
+/// A1-style range ("B2:B21" or single cell "B2"), no sheet prefix — the
+/// sheet comes from the rule's own worksheet part.
+fn valid_sqref(s: &str) -> bool {
+    fn cell(part: &str) -> bool {
+        let digits = part.chars().take_while(|c| c.is_ascii_alphabetic()).count();
+        let letters_ok = digits >= 1 && digits <= 3
+            && part[..digits].chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_lowercase());
+        let num = &part[digits..];
+        letters_ok && !num.is_empty() && num.len() <= 7 && num.chars().all(|c| c.is_ascii_digit())
+    }
+    match s.split_once(':') {
+        Some((a, b)) => cell(a) && cell(b),
+        None => cell(s),
+    }
+}
+
+/// Harbor's conditional-format serializer: rewrites the umya-emitted
+/// package inserting (1) `<dxfs>` into styles.xml at its CT_Stylesheet
+/// position (before tableStyles/colors/extLst) and (2) each
+/// `<conditionalFormatting>` into its sheet part at the CT_Worksheet
+/// position (before pageMargins/pageSetup, after mergeCells-level
+/// elements). dxfId values continue from any dxfs the loaded package
+/// already carried.
+fn inject_conditional_formats(
+    bytes: Vec<u8>,
+    pending: &[PendingCf],
+) -> Result<(Vec<u8>, PreservationReport), WorkbookError> {
+    use std::io::{Read, Write};
+    // Sheet name -> part path via workbook.xml + rels (umya's writer
+    // names sheets sheet1.xml.. in order; resolve robustly instead of
+    // assuming: map through xl/workbook.xml order).
+    let mut ar = zip::ZipArchive::new(Cursor::new(bytes))
+        .map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+    let mut entries: Vec<(String, Vec<u8>)> = Vec::new();
+    for i in 0..ar.len() {
+        let mut e = ar.by_index(i).map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+        let name = e.name().to_string();
+        let mut buf = Vec::new();
+        e.read_to_end(&mut buf).map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+        entries.push((name, buf));
+    }
+
+    // Existing dxfs count (loaded packages may carry one).
+    let existing_dxfs = entries
+        .iter()
+        .find(|(n, _)| n == "xl/styles.xml")
+        .map(|(_, b)| count_dxfs(&String::from_utf8_lossy(b)))
+        .unwrap_or(0);
+
+    let mut styles_dxf_xml = String::new();
+    let mut next_dxf = existing_dxfs;
+    let mut by_sheet: std::collections::BTreeMap<String, Vec<String>> = Default::default();
+    for cf in pending {
+        let fill = &cf.fill_rgb;
+        styles_dxf_xml.push_str(&format!(
+            "<dxf><fill><patternFill><bgColor rgb=\"FF{fill}\"/></patternFill></fill></dxf>"
+        ));
+        // Excel writes numbers in canonical form; operand text is plain.
+        let operand = format_operand(cf.operand);
+        by_sheet.entry(cf.sheet.clone()).or_default().push(format!(
+            "<conditionalFormatting sqref=\"{}\"><cfRule type=\"cellIs\" dxfId=\"{}\" priority=\"{}\" operator=\"{}\"><formula>{}</formula></cfRule></conditionalFormatting>",
+            cf.sqref, next_dxf, next_dxf + 1, cf.operator, operand
+        ));
+        next_dxf += 1;
+    }
+
+    for (name, buf) in &mut entries {
+        if name == "xl/styles.xml" {
+            let xml = String::from_utf8_lossy(buf).to_string();
+            let injected = if existing_dxfs > 0 {
+                // Grow the existing dxfs container's count and items.
+                grow_dxfs(&xml, &styles_dxf_xml)
+            } else {
+                let block = format!("<dxfs count=\"{}\">{}</dxfs>", next_dxf, styles_dxf_xml);
+                insert_before_styles_anchor(&xml, &block)
+            };
+            *buf = injected.into_bytes();
+        } else if let Some(idx) = name.strip_prefix("xl/worksheets/sheet").and_then(|r| r.strip_suffix(".xml")) {
+            let _ = idx;
+            // Only sheets with pending rules are touched; resolve names
+            // from the part's own content is not possible (name is in
+            // workbook.xml), so match below via order map.
+        }
+    }
+    // Resolve sheet order -> part names from workbook.xml.
+    let wb_xml = entries
+        .iter()
+        .find(|(n, _)| n == "xl/workbook.xml")
+        .map(|(_, b)| String::from_utf8_lossy(b).to_string())
+        .unwrap_or_default();
+    let sheet_names: Vec<String> = wb_xml
+        .split("<sheet ")
+        .skip(1)
+        .filter_map(|seg| {
+            let seg = seg.split("/>").next().unwrap_or("");
+            seg.split("name=\"").nth(1).map(|rest| rest.split('\"').next().unwrap_or("").to_string())
+        })
+        .collect();
+    for (sheet, blocks) in &by_sheet {
+        let Some(pos) = sheet_names.iter().position(|s| s == sheet) else {
+            return Err(WorkbookError::SheetNotFound(sheet.clone()));
+        };
+        let part = format!("xl/worksheets/sheet{}.xml", pos + 1);
+        for (name, buf) in &mut entries {
+            if *name == part {
+                let xml = String::from_utf8_lossy(buf).to_string();
+                let all = blocks.join("");
+                let injected = insert_before_sheet_anchor(&xml, &all);
+                *buf = injected.into_bytes();
+            }
+        }
+    }
+
+    let mut out = Cursor::new(Vec::new());
+    {
+        let mut zw = zip::ZipWriter::new(&mut out);
+        let opts: zip::write::SimpleFileOptions = zip::write::FileOptions::default();
+        for (name, buf) in &entries {
+            zw.start_file(name.as_str(), opts)
+                .map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+            zw.write_all(buf).map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+        }
+        zw.finish().map_err(|e| WorkbookError::BadZip(e.to_string()))?;
+    }
+    Ok((out.into_inner(), PreservationReport::default()))
+}
+
+fn format_operand(v: f64) -> String {
+    if v.fract() == 0.0 && v.abs() < 1e15 {
+        format!("{}", v as i64)
+    } else {
+        format!("{v}")
+    }
+}
+
+fn count_dxfs(styles_xml: &str) -> usize {
+    styles_xml
+        .split("<dxfs count=\"")
+        .nth(1)
+        .and_then(|rest| rest.split('\"').next())
+        .and_then(|n| n.parse().ok())
+        .unwrap_or(0)
+}
+
+fn grow_dxfs(styles_xml: &str, items: &str) -> String {
+    // Re-emit the dxfs container with the existing items plus the new
+    // ones (count continues from what the loaded package carried).
+    let open = match styles_xml.find("<dxfs ") {
+        Some(i) => i,
+        None => return styles_xml.to_string(),
+    };
+    let close = match styles_xml.find("</dxfs>") {
+        Some(i) => i + "</dxfs>".len(),
+        None => return styles_xml.to_string(),
+    };
+    let inner_start = styles_xml[open..]
+        .find('>')
+        .map(|i| open + i + 1)
+        .unwrap_or(open);
+    let inner_end = close - "</dxfs>".len();
+    let inner = &styles_xml[inner_start..inner_end];
+    let count = count_dxfs(styles_xml) + items.matches("<dxf>").count();
+    format!(
+        "{}<dxfs count=\"{}\">{inner}{items}</dxfs>{}",
+        &styles_xml[..open],
+        count,
+        &styles_xml[close..]
+    )
+}
+
+fn insert_before_styles_anchor(xml: &str, block: &str) -> String {
+    for anchor in ["<tableStyles", "<colors", "<extLst"] {
+        if let Some(i) = xml.find(anchor) {
+            return format!("{}{}{}", &xml[..i], block, &xml[i..]);
+        }
+    }
+    // No later elements: insert before the closing tag.
+    let i = xml.len() - "</styleSheet>".len();
+    format!("{}{}{}", &xml[..i], block, &xml[i..])
+}
+
+fn insert_before_sheet_anchor(xml: &str, block: &str) -> String {
+    for anchor in ["<pageMargins", "<pageSetup", "<headerFooter", "<rowBreaks", "<colBreaks", "<drawing"] {
+        if let Some(i) = xml.find(anchor) {
+            return format!("{}{}{}", &xml[..i], block, &xml[i..]);
+        }
+    }
+    format!("{}{}</worksheet>", &xml[..xml.len() - "</worksheet>".len()], block)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1165,6 +1448,95 @@ mod tests {
             zw.finish().unwrap();
         }
         out.into_inner()
+    }
+
+    #[test]
+    fn authored_conditional_format_roundtrips() {
+        let bytes = roundtrip_workbook();
+        let mut doc = WorkbookDoc::load(&bytes).unwrap();
+        doc.add_conditional_format(
+            "Sheet1",
+            "A1:B4",
+            CfOperator::GreaterThan,
+            15.0,
+            "FFC7CE",
+        )
+        .unwrap();
+        let out = doc.to_bytes().unwrap();
+        let out_bytes = out.clone();
+
+        // 1. Schema positions: cf after </sheetData> and before
+        //    <pageMargins; dxfs before <tableStyles.
+        let mut ar = zip::ZipArchive::new(Cursor::new(&out_bytes[..])).unwrap();
+        use std::io::Read as _;
+        let mut sheet_xml = String::new();
+        ar.by_name("xl/worksheets/sheet1.xml")
+            .unwrap()
+            .read_to_string(&mut sheet_xml)
+            .unwrap();
+        let cf_pos = sheet_xml.find("<conditionalFormatting").unwrap();
+        let data_end = sheet_xml.find("</sheetData>").unwrap();
+        let margins = sheet_xml.find("<pageMargins").unwrap();
+        assert!(cf_pos > data_end && cf_pos < margins, "cf at schema position");
+        let mut styles_xml = String::new();
+        ar.by_name("xl/styles.xml")
+            .unwrap()
+            .read_to_string(&mut styles_xml)
+            .unwrap();
+        let dxfs = styles_xml.find("<dxfs").unwrap();
+        let table_styles = styles_xml.find("<tableStyles").unwrap();
+        assert!(dxfs < table_styles, "dxfs before tableStyles");
+
+        // 2. umya reads the authored rule back (operator, range, fill).
+        let re = WorkbookDoc::load(&out).unwrap();
+        let idx = re
+            .book
+            .sheet_collection()
+            .iter()
+            .position(|s| s.name() == "Sheet1")
+            .unwrap();
+        let ws = &re.book.sheet_collection()[idx];
+        let cfs = ws.conditional_formatting_collection();
+        assert_eq!(cfs.len(), 1);
+        assert!(cfs[0].get_sequence_of_references().get_sqref().contains("A1:B4"));
+        let rules = cfs[0].get_conditional_collection();
+        assert_eq!(rules.len(), 1);
+        use umya_spreadsheet::EnumTrait as _;
+        assert_eq!(rules[0].get_operator().value_string(), "greaterThan");
+
+        // 3. The rule survives a subsequent edit round trip (the earlier
+        //    preservation contract, now starting from an AUTHORED rule).
+        let mut doc2 = WorkbookDoc::load(&out).unwrap();
+        doc2.set_cell("Sheet1", 2, 1, CellSet::Value(CellValue::Number(99.0)))
+            .unwrap();
+        let out2 = doc2.to_bytes().unwrap();
+        let mut sheet2 = String::new();
+        zip::ZipArchive::new(Cursor::new(out2))
+            .unwrap()
+            .by_name("xl/worksheets/sheet1.xml")
+            .unwrap()
+            .read_to_string(&mut sheet2)
+            .unwrap();
+        assert!(sheet2.contains("<conditionalFormatting sqref=\"A1:B4\""));
+    }
+
+    #[test]
+    fn authored_conditional_format_validates_inputs() {
+        let bytes = roundtrip_workbook();
+        let mut doc = WorkbookDoc::load(&bytes).unwrap();
+        // Unknown sheet, bad range, bad color: typed refusals.
+        assert!(matches!(
+            doc.add_conditional_format("Nope", "A1:A2", CfOperator::Equal, 1.0, "FF0000"),
+            Err(WorkbookError::SheetNotFound(_))
+        ));
+        assert!(matches!(
+            doc.add_conditional_format("Sheet1", "A1:..", CfOperator::Equal, 1.0, "FF0000"),
+            Err(WorkbookError::BadRef(_))
+        ));
+        assert!(matches!(
+            doc.add_conditional_format("Sheet1", "A1:A2", CfOperator::Equal, 1.0, "red"),
+            Err(WorkbookError::BadRef(_))
+        ));
     }
 
     #[test]
