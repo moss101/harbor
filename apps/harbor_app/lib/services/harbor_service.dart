@@ -697,6 +697,18 @@ class HarborService extends ChangeNotifier {
     }
   }
 
+  /// Convert Markdown text to a real .docx package through the core's
+  /// qualified block model. Inline emphasis is stripped (reported by the
+  /// core, not guessed here). Throws [ffi.HarborCoreException] on failure.
+  Future<List<int>> convertMarkdownToDocx(String markdown,
+      {String? title}) async {
+    final result = await _call('convert.markdown_to_docx', {
+      'markdown': markdown,
+      if (title != null) 'title': title,
+    });
+    return base64Decode(result['data_b64'] as String);
+  }
+
   /// Release the native core (idempotent). The worker closes the handle
   /// inside its isolate, then stops.
   Future<void> close() async {

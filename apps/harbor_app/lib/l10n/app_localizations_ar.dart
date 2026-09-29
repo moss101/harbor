@@ -1561,4 +1561,15 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get workAddChart => 'إدراج مخطط من العمود';
+
+  @override
+  String get workConvertMarkdown => 'تحويل Markdown…';
+
+  @override
+  String workConvertedSaved(String path) {
+    return 'حُفظ في $path';
+  }
+
+  @override
+  String get workConvertFailed => 'فشل التحويل';
 }

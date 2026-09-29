@@ -1505,4 +1505,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get workAddChart => 'Insert chart from column';
+
+  @override
+  String get workConvertMarkdown => 'Convert Markdown…';
+
+  @override
+  String workConvertedSaved(String path) {
+    return 'Saved $path';
+  }
+
+  @override
+  String get workConvertFailed => 'Conversion failed';
 }

@@ -2479,6 +2479,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Insert chart from column'**
   String get workAddChart;
+
+  /// No description provided for @workConvertMarkdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert Markdown…'**
+  String get workConvertMarkdown;
+
+  /// No description provided for @workConvertedSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved {path}'**
+  String workConvertedSaved(String path);
+
+  /// No description provided for @workConvertFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversion failed'**
+  String get workConvertFailed;
 }
 
 class _AppLocalizationsDelegate

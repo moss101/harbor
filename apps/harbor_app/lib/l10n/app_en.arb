@@ -856,5 +856,15 @@
   "workEditHint": "Enter a value or =formula",
   "workEditCommit": "Commit cell",
   "workBoldRow": "Bold row",
-  "workAddChart": "Insert chart from column"
+  "workAddChart": "Insert chart from column",
+  "workConvertMarkdown": "Convert Markdown…",
+  "workConvertedSaved": "Saved {path}",
+  "@workConvertedSaved": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "workConvertFailed": "Conversion failed"
 }

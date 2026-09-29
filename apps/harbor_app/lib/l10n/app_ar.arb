@@ -714,5 +714,15 @@
   "workEditHint": "أدخل قيمة أو =صيغة",
   "workEditCommit": "تثبيت الخلية",
   "workBoldRow": "تغميق الصف",
-  "workAddChart": "إدراج مخطط من العمود"
+  "workAddChart": "إدراج مخطط من العمود",
+  "workConvertMarkdown": "تحويل Markdown…",
+  "workConvertedSaved": "حُفظ في {path}",
+  "@workConvertedSaved": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "workConvertFailed": "فشل التحويل"
 }

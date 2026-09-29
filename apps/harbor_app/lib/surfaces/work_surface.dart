@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:harbor_native/harbor_ffi.dart' as ffi;
 import 'package:harbor_ui/harbor_ui.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../services/file_types.dart';
 
@@ -10,6 +14,7 @@ import '../services/harbor_service.dart';
 import 'work/deck_view.dart';
 import 'work/document_view.dart';
 import 'work/pdf_view.dart';
+import 'skill_run.dart' show firstFreePath;
 import 'work/workbook_view.dart';
 
 /// Work Canvas (goal §22): the artifact workspace. The user must always be
@@ -55,6 +60,59 @@ class _WorkSurfaceState extends State<WorkSurface> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _openFile();
     });
+  }
+
+  /// Convert a picked Markdown file to a real .docx through the core,
+  /// preview it in the canvas, and save a copy where the user chooses
+  /// (desktop save picker; mobile documents directory).
+  Future<void> _convertMarkdown() async {
+    final service = HarborServiceProvider.of(context).notifier;
+    if (service == null) return;
+    final XFile? file;
+    try {
+      file = await openFile(
+          acceptedTypeGroups: [documentTypeGroup('Markdown')]);
+    } catch (_) {
+      return; // picker dismissed
+    }
+    if (file == null || !mounted) return;
+    if (!file.name.toLowerCase().endsWith('.md')) return;
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final text = await file.readAsString();
+      final bytes = await service.convertMarkdownToDocx(text,
+          title: file.name.replaceFirst(RegExp(r'\.md\$'), ''));
+      await service.loadPreviewFromBytes(bytes,
+          name: file.name.replaceFirst(RegExp(r'\.md\$'), '.docx'));
+      final dest = await _saveConvertedCopy(
+          file.name.replaceFirst(RegExp(r'\.md\$'), '.docx'), bytes);
+      if (mounted && dest != null) {
+        messenger.showSnackBar(
+            SnackBar(content: Text(l10n.workConvertedSaved(dest))));
+      }
+    } on ffi.HarborCoreException catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+            SnackBar(content: Text('${l10n.workConvertFailed}: ${e.message}')));
+      }
+    }
+  }
+
+  /// Where a converted copy lands: the user's choice on desktop, the
+  /// app's documents directory on mobile (same policy as skill saves).
+  Future<String?> _saveConvertedCopy(String name, List<int> bytes) async {
+    String? dest;
+    if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+      final location = await getSaveLocation(suggestedName: name);
+      dest = location?.path;
+    } else {
+      final dir = await getApplicationDocumentsDirectory();
+      dest = firstFreePath(dir.path, name, (p) => File(p).existsSync());
+    }
+    if (dest == null) return null;
+    await File(dest).writeAsBytes(bytes, flush: true);
+    return dest;
   }
 
   Future<void> _openFile() async {
@@ -214,6 +272,8 @@ class _WorkSurfaceState extends State<WorkSurface> {
                 body: l10n.workEmptyBody,
                 actionLabel: l10n.openFile,
                 onAction: _openFile,
+                secondaryActionLabel: l10n.workConvertMarkdown,
+                onSecondaryAction: _convertMarkdown,
                 footer: Column(children: [
                   Text(l10n.workSupportedTypes,
                       style: t.text.captionOf(t.colors.inkMuted)),
