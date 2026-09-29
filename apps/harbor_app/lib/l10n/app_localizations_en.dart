@@ -1493,4 +1493,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get storeManageHint =>
       'Uninstall frees every owned file; a preview shows the exact scope before anything moves.';
+
+  @override
+  String get workEditHint => 'Enter a value or =formula';
+
+  @override
+  String get workEditCommit => 'Commit cell';
 }

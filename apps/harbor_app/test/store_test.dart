@@ -10,6 +10,7 @@ import 'package:harbor_app/services/preferences.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
 final repoRoot = Directory.current.parent.parent.path; // apps/harbor_app
+const arabic = false;
 final dylibPath = '$repoRoot/core/target/debug/libharbor_ffi.dylib';
 final coreAvailable = File(dylibPath).existsSync();
 
@@ -44,11 +45,12 @@ Future<void> pumpApp(WidgetTester tester,
       GlobalWidgetsLocalizations.delegate,
       GlobalCupertinoLocalizations.delegate,
     ],
-    supportedLocales: const [Locale('en')],
+    supportedLocales: const [Locale('en')], // keep
+
     theme: harborThemeData(dark: false, arabic: false),
     builder: (_, child) => HarborTheme(
       colors: HarborColors.light,
-      text: HarborType(arabic: false),
+      text: const HarborType(arabic: arabic),
       child: child!,
     ),
     home: HarborApp(

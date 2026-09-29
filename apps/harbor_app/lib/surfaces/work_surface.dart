@@ -124,7 +124,7 @@ class _WorkSurfaceState extends State<WorkSurface> {
                   child: Icon(_kindIcon(kind), size: 20, color: t.colors.brand),
                 ),
           actions: [
-            if (preview != null)
+            if (preview != null && kind != 'workbook')
               StatusBadge(
                 semantic: ExecutionSemantic.hybrid,
                 icon: Icons.visibility_outlined,

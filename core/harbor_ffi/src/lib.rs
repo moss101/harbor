@@ -1356,6 +1356,107 @@ fn dispatch(
             }))
         }
         // --- artifact previews (Work Canvas) -----------------------------
+        // --- work: user workbook editing (office sub-product) --------------
+        // One stateless round trip: current xlsx bytes + a typed edit list
+        // in, recalculated xlsx bytes + the calculation diagnostics out.
+        // Edits go through harbor_artifacts' typed CellSet (no raw XML
+        // writes), recalculation is the pinned engine (SEC-041: cached
+        // values never satisfy a verified number), and unsupported
+        // formulas stay preserved-and-unverified per the office authority.
+        "workbook.edit" => {
+            let data_b64 = args
+                .get("data_b64")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing data_b64".into()))?;
+            use base64::Engine as _;
+            let bytes = base64::engine::general_purpose::STANDARD
+                .decode(data_b64)
+                .map_err(|e| HarborError::Other(format!("b64: {e}")))?;
+            let edits = args
+                .get("edits")
+                .and_then(|v| v.as_array())
+                .ok_or_else(|| HarborError::Other("missing edits".into()))?;
+            use harbor_artifacts::workbook::WorkbookDoc;
+            use harbor_artifacts::workbook::{CellSet};
+            use harbor_formula::value::CellValue;
+            let mut wb = WorkbookDoc::load(&bytes)
+                .map_err(|e| HarborError::Other(format!("load: {e}")))?;
+            let mut applied = 0usize;
+            for e in edits {
+                let sheet = e
+                    .get("sheet")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| HarborError::Other("edit missing sheet".into()))?;
+                let row = e
+                    .get("row")
+                    .and_then(|v| v.as_u64())
+                    .ok_or_else(|| HarborError::Other("edit missing row".into()))?
+                    as u32;
+                let col = e
+                    .get("col")
+                    .and_then(|v| v.as_u64())
+                    .ok_or_else(|| HarborError::Other("edit missing col".into()))?
+                    as u32;
+                let kind = e
+                    .get("kind")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("value");
+                let set = match kind {
+                    "formula" => {
+                        let f = e
+                            .get("value")
+                            .and_then(|v| v.as_str())
+                            .ok_or_else(|| {
+                                HarborError::Other("formula edit missing value".into())
+                            })?;
+                        CellSet::Formula(f.to_string())
+                    }
+                    "number" => CellSet::Value(CellValue::Number(
+                            e.get("value")
+                                .and_then(|v| v.as_f64())
+                                .ok_or_else(|| {
+                                    HarborError::Other("number edit missing value".into())
+                                })?,
+                        ),
+                    ),
+                    "text" => CellSet::Value(CellValue::Text(
+                        e.get("value")
+                            .and_then(|v| v.as_str())
+                            .ok_or_else(|| {
+                                HarborError::Other("text edit missing value".into())
+                            })?
+                            .to_string(),
+                    )),
+                    "bool" => CellSet::Value(CellValue::Bool(
+                        e.get("value").and_then(|v| v.as_bool()).ok_or_else(|| {
+                            HarborError::Other("bool edit missing value".into())
+                        })?,
+                    )),
+                    "blank" => CellSet::Value(CellValue::Blank),
+                    other => {
+                        return Err(HarborError::Other(format!(
+                            "unknown edit kind {other}"
+                        )));
+                    }
+                };
+                wb.put_cell(sheet, row, col, set)
+                    .map_err(|e| HarborError::Other(format!("edit: {e}")))?;
+                applied += 1;
+            }
+            let recalculated = wb
+                .recalculate_all()
+                .map_err(|e| HarborError::Other(format!("recalc: {e}")))?;
+            let unmodeled = wb.unmodeled_parts();
+            let out = wb
+                .to_bytes()
+                .map_err(|e| HarborError::Other(format!("save: {e}")))?;
+            Ok(serde_json::json!({
+                "data_b64": base64::engine::general_purpose::STANDARD.encode(&out),
+                "applied": applied,
+                "recalculated": recalculated.len(),
+                "unmodeled_parts": unmodeled,
+            }))
+        }
         "artifact.preview" => {
             let data_b64 = args
                 .get("data_b64")

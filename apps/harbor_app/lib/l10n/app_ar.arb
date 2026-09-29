@@ -443,17 +443,50 @@
   "skillsDeclarationBody": "هذه المهارة إعلان نصي: لا مخطط تنفيذياً لها بعد، لذا لا شيء يشغّلها. تعليماتها وقائمة أدواتها هي مواصفة لمخطط مستقبلي.",
   "skillsGraphHeading": "المخطط",
   "skillsGraphNodes": "{count, plural, zero{لا عقد} one{عقدة واحدة} two{عقدتان} few{{count} عقد} many{{count} عقدة} other{{count} عقدة}}",
-  "@skillsGraphNodes": {"placeholders": {"count": {"type": "int"}}},
+  "@skillsGraphNodes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "skillsGraphModelNodes": "{count, plural, =0{بدون استدعاءات للنموذج — حتمي بالكامل} one{عقدة نموذج واحدة مقيّدة بالمخطط} two{عقدتا نموذج مقيّدتان بالمخطط} few{{count} عقد نموذج مقيّدة بالمخطط} many{{count} عقدة نموذج مقيّدة بالمخطط} other{{count} عقدة نموذج مقيّدة بالمخطط}}",
-  "@skillsGraphModelNodes": {"placeholders": {"count": {"type": "int"}}},
+  "@skillsGraphModelNodes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "skillsGraphBudgets": "الميزانية: {steps} خطوة، {tools} استدعاء أداة",
-  "@skillsGraphBudgets": {"placeholders": {"steps": {"type": "int"}, "tools": {"type": "int"}}},
+  "@skillsGraphBudgets": {
+    "placeholders": {
+      "steps": {
+        "type": "int"
+      },
+      "tools": {
+        "type": "int"
+      }
+    }
+  },
   "skillsRun": "تشغيل",
   "skillsRunTitle": "تشغيل {title}",
-  "@skillsRunTitle": {"placeholders": {"title": {"type": "String"}}},
+  "@skillsRunTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "skillsAttachFile": "إرفاق ملف",
   "skillsAttached": "المرفق: {name}",
-  "@skillsAttached": {"placeholders": {"name": {"type": "String"}}},
+  "@skillsAttached": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "skillsValuesHint": "قيمة في كل سطر: المفتاح = القيمة",
   "skillsNeedsModel": "لهذه المهارة عقد نموذج. ثبّت نموذج محادثة من قسم النماذج لتشغيلها؛ النموذج يملأ حقولاً منظّمة فقط.",
   "skillsModelLabel": "النموذج",
@@ -467,7 +500,16 @@
   "skillsTrailHeading": "مسار العقد",
   "skillsApprovalTitle": "الموافقة مطلوبة",
   "skillsApprovalBody": "اقترح التشغيل {effect} يمسّ {count, plural, zero{لا عمليات} one{عملية واحدة} two{عمليتين} few{{count} عمليات} many{{count} عملية} other{{count} عملية}}. لم يُكتب شيء بعد. الاقتراح مرتبط بتجزئة المحتوى الأساسي وتجزئة المخرج الذي سينتجه.",
-  "@skillsApprovalBody": {"placeholders": {"effect": {"type": "String"}, "count": {"type": "int"}}},
+  "@skillsApprovalBody": {
+    "placeholders": {
+      "effect": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "skillsApprove": "موافقة",
   "skillsReject": "رفض",
   "skillsBaseHash": "تجزئة المحتوى الأساسي",
@@ -477,31 +519,82 @@
   "skillsCancelRun": "إلغاء التشغيل",
   "skillsInputsHeading": "المدخلات",
   "skillsExecutedOn": "نُفّذ على {model}",
-  "@skillsExecutedOn": {"placeholders": {"model": {"type": "String"}}},
+  "@skillsExecutedOn": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
   "skillsStructuredMode": "المخرج المنظّم: {mode}",
-  "@skillsStructuredMode": {"placeholders": {"mode": {"type": "String"}}},
+  "@skillsStructuredMode": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
   "skillsCommitBody": "اقترح التشغيل {effect} يؤثر على {count, plural, one{عملية واحدة} other{{count} عمليات}}. لم يُكتب شيء بعد. «حفظ نسخة جديدة» يكتب المخرج المعتمد كملف جديد ولا يُعدَّل الأصل أبداً. الاقتراح مرتبط بتجزئة المحتوى الأساسي وتجزئة المخرج الذي ينتجه.",
-  "@skillsCommitBody": {"placeholders": {"effect": {"type": "String"}, "count": {"type": "int"}}},
+  "@skillsCommitBody": {
+    "placeholders": {
+      "effect": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "skillsSaveNewCopy": "حفظ نسخة جديدة",
   "skillsOverwrite": "استبدال الأصل…",
   "skillsOverwriteConfirmTitle": "استبدال الملف الأصلي؟",
   "skillsOverwriteConfirmBody": "سيستبدل Harbor الملف {name} في مكانه. يحدث ذلك فقط إذا كان الملف لا يزال مطابقاً للأساس المعتمد؛ وإلا لا يُكتب شيء ويتوقف التشغيل مع ذكر السبب.",
-  "@skillsOverwriteConfirmBody": {"placeholders": {"name": {"type": "String"}}},
+  "@skillsOverwriteConfirmBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "skillsSavedNewCopy": "حُفظ كنسخة جديدة",
   "skillsOverwritten": "استُبدل الأصل",
   "skillsCommittedTo": "{path} · الإصدار {version}",
-  "@skillsCommittedTo": {"placeholders": {"path": {"type": "String"}, "version": {"type": "String"}}},
+  "@skillsCommittedTo": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      },
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "skillsDiffBase": "الأساس",
   "skillsDiffProposed": "المقترح",
   "settingsDiagnostics": "التشخيص",
   "settingsDiagnosticsBody": "يحتفظ Harbor بسجل مشفّر للأعطال والأخطاء على هذا الجهاز ولا يرفعه أبداً. صدّره لمشاركته مع الدعم يدوياً.",
   "settingsDiagnosticsContains": "يحتوي التصدير على سجلات أخطاء منقّحة وإصدار التطبيق والنواة ووقت التشغيل وفئة الجهاز ومعرّفات النماذج المثبّتة. لا يحتوي أبداً على محتوى المستندات أو مقاطع المعرفة أو التعليمات.",
   "settingsDiagnosticsRecords": "{count, plural, =0{لا سجلات بعد} one{سجل واحد} other{{count} سجلات}}",
-  "@settingsDiagnosticsRecords": {"placeholders": {"count": {"type": "int"}}},
+  "@settingsDiagnosticsRecords": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "settingsDiagnosticsExport": "تصدير التشخيص",
   "settingsDiagnosticsExported": "تم تصدير التشخيص",
   "settingsDiagnosticsExportedBody": "{path} · {count, plural, one{سجل واحد} other{{count} سجلات}}",
-  "@settingsDiagnosticsExportedBody": {"placeholders": {"path": {"type": "String"}, "count": {"type": "int"}}},
+  "@settingsDiagnosticsExportedBody": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "settingsDiagnosticsExportFailed": "فشل التصدير",
   "homeFirstRunTitle": "ثبّت نموذجاً للبدء",
   "homeFirstRunBody": "يعمل Harbor بالكامل على هذا الجهاز — لا يغادره أي شيء تفتحه. تحتاج كل إجابة ومهارة وفهرس إلى نموذج محلي، لذا الخطوة الأولى هي اختيار نموذج يناسب جهازك.",
@@ -509,18 +602,39 @@
   "modelsFirstRunTitle": "محلي فقط",
   "modelsFirstRunBody": "هذه الحزم من كتالوج Harbor الموقّع. «التحقق من الحجم والملاءمة» يقرأ قائمة الملفات من Hugging Face عبر الوسيط؛ و«تثبيت» يحمّل مرة واحدة ويتحقق من التجزئة المثبّتة. لا يغادر أي شيء آخر الجهاز.",
   "modelsCatalogHeading": "{count, plural, one{حزمة واحدة في الكتالوج} other{{count} حزم في الكتالوج}}",
-  "@modelsCatalogHeading": {"placeholders": {"count": {"type": "int"}}},
+  "@modelsCatalogHeading": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "modelsCatalogFooter": "تحسب النواة درجة الملاءمة من ذاكرة هذا الجهاز ومسرّعه؛ ولا تُخمَّن أبداً. تأتي الأحجام من قائمة المستودع لا من الكتالوج.",
   "modelsCatalogCheckFit": "التحقق من الحجم والملاءمة",
   "modelsCatalogInstall": "تثبيت",
   "modelsCatalogSizeUnavailable": "الحجم غير متاح (تعذّرت قراءة قائمة المستودع).",
   "modelsInstalledBadge": "مثبّت",
   "modelsContextTokens": "سياق {count} رمز",
-  "@modelsContextTokens": {"placeholders": {"count": {"type": "int"}}},
+  "@modelsContextTokens": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "opAcquireRunning": "جارٍ التثبيت…",
   "modelsCatalogDoesNotFit": "لا يناسب هذا الجهاز",
   "skillsCreateBody": "اقترح التشغيل ملفاً جديداً، {name}، مبنياً من {count, plural, one{عملية واحدة} other{{count} عمليات}}. لم يُكتب شيء بعد. «حفظ ملف جديد» يكتبه في المكان الذي تختاره ولا يتغيّر شيء آخر على هذا الجهاز. الاقتراح مرتبط بتجزئة الملف الذي ينتجه.",
-  "@skillsCreateBody": {"placeholders": {"name": {"type": "String"}, "count": {"type": "int"}}},
+  "@skillsCreateBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "skillsSaveNewFile": "حفظ ملف جديد",
   "skillsSavedNewFile": "حُفظ كملف جديد",
   "skillsCopy": "نسخ",
@@ -532,27 +646,71 @@
   "storeOfficeStatus": "معاينة للقراءة فقط في «العمل» اليوم؛ تحرير جداول البيانات وتأهيل الصيغ يصلان عندما تنجح بواباتهما.",
   "storeOfficeOpen": "فتح «العمل»",
   "storeModelsHeading": "نماذج Harbor ({count})",
-  "@storeModelsHeading": {"placeholders": {"count": {"type": "int"}}},
+  "@storeModelsHeading": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "storeModelsBody": "إدخالات الفهرس الموقّع الأول. تُعرض أحجام التنزيلات ويُؤكَّد قبل النقل.",
   "storeInstalledHeading": "المثبّت على هذا الجهاز",
   "storeUninstall": "إزالة",
   "storeUninstallTitle": "إزالة {id}؟",
-  "@storeUninstallTitle": {"placeholders": {"id": {"type": "String"}}},
+  "@storeUninstallTitle": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
   "storeUninstallBody": "يزيل {bytes} عبر {files} ملفات. يبقى التراجع متاحاً لمدة 72 ساعة.",
-  "@storeUninstallBody": {"placeholders": {"bytes": {"type": "String"}, "files": {"type": "int"}}},
+  "@storeUninstallBody": {
+    "placeholders": {
+      "bytes": {
+        "type": "String"
+      },
+      "files": {
+        "type": "int"
+      }
+    }
+  },
   "storeUninstallInUse": "قيد الاستخدام: {reasons}",
-  "@storeUninstallInUse": {"placeholders": {"reasons": {"type": "String"}}},
+  "@storeUninstallInUse": {
+    "placeholders": {
+      "reasons": {
+        "type": "String"
+      }
+    }
+  },
   "storeUninstallDone": "أُزيل {id}",
-  "@storeUninstallDone": {"placeholders": {"id": {"type": "String"}}},
+  "@storeUninstallDone": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
   "storeUndo": "تراجع",
   "storeUndoFailed": "فشل الاستعادة",
   "storeAcquireTitle": "تأكيد التنزيل",
   "storeAcquireBody": "{quoted} للتنزيل؛ {available} حراً على هذا الجهاز.",
-  "@storeAcquireBody": {"placeholders": {"quoted": {"type": "String"}, "available": {"type": "String"}}},
+  "@storeAcquireBody": {
+    "placeholders": {
+      "quoted": {
+        "type": "String"
+      },
+      "available": {
+        "type": "String"
+      }
+    }
+  },
   "storeAcquireNoFit": "لا توجد مساحة حرة كافية لهذا التنزيل.",
   "storeAcquireConfirm": "تنزيل",
   "storeUninstallFailed": "فشلت الإزالة",
   "storePreviewFailed": "تعذّرت قراءة الحزمة",
   "storeEmpty": "فهرس التوقيع المقبول فارغ على هذا الجهاز.",
-  "storeManageHint": "الإزالة تحرّر كل ملف مملوك؛ تعرض المعاينة النطاق الدقيق قبل أي حركة."
+  "storeManageHint": "الإزالة تحرّر كل ملف مملوك؛ تعرض المعاينة النطاق الدقيق قبل أي حركة.",
+  "workEditHint": "أدخل قيمة أو =صيغة",
+  "workEditCommit": "تثبيت الخلية"
 }

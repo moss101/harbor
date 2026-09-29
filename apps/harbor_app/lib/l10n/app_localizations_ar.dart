@@ -1549,4 +1549,10 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get storeManageHint =>
       'الإزالة تحرّر كل ملف مملوك؛ تعرض المعاينة النطاق الدقيق قبل أي حركة.';
+
+  @override
+  String get workEditHint => 'أدخل قيمة أو =صيغة';
+
+  @override
+  String get workEditCommit => 'تثبيت الخلية';
 }

@@ -1,4 +1,4 @@
-import 'dart:convert' show base64Encode;
+import 'dart:convert' show base64Decode, base64Encode;
 import 'dart:io' show Platform;
 import 'dart:math';
 
@@ -52,6 +52,7 @@ class HarborService extends ChangeNotifier {
   List<Map<String, dynamic>> _runs = [];
   List<SkillSummary> _skills = [];
   Map<String, dynamic>? _preview;
+  List<int>? _sourceBytes;
   String? _previewName;
   String? _previewError;
   bool _previewLoading = false;
@@ -619,6 +620,8 @@ class HarborService extends ChangeNotifier {
 
   /// Load a Work Canvas preview for artifact bytes through the core.
   /// Failure is reported (not swallowed) so the canvas can explain it.
+  /// The source bytes are retained so the workbook editor can round-trip
+  /// edits through the core (stateless per call, no stale handles).
   Future<void> loadPreviewFromBytes(List<int> bytes, {String? name}) async {
     _previewLoading = true;
     _previewError = null;
@@ -627,13 +630,43 @@ class HarborService extends ChangeNotifier {
       _preview =
           await _call('artifact.preview', {'data_b64': base64Encode(bytes)});
       _previewName = name;
+      _sourceBytes = bytes;
     } on ffi.HarborCoreException catch (e) {
       _preview = null;
       _previewName = name;
       _previewError = e.message;
+      _sourceBytes = null;
     }
     _previewLoading = false;
     notifyListeners();
+  }
+
+  /// Apply typed workbook edits through the core: the current source
+  /// bytes go in, recalculated xlsx bytes come out (the pinned engine
+  /// recomputes; cached values never satisfy a verified number). On
+  /// success the working copy and its preview refresh. Throws
+  /// [ffi.HarborCoreException] honestly on failure.
+  Future<Map<String, dynamic>> editWorkbookCells(
+      List<Map<String, dynamic>> edits) async {
+    final source = _sourceBytes;
+    final current = _preview;
+    if (source == null || current == null) {
+      throw ffi.HarborCoreException('no workbook open');
+    }
+    if (current['kind'] != 'workbook') {
+      throw ffi.HarborCoreException('the open artifact is not a workbook');
+    }
+    final result = await _call('workbook.edit', {
+      'data_b64': base64Encode(source),
+      'edits': edits,
+    });
+    final newBytes =
+        base64Decode(result['data_b64'] as String).toList(growable: false);
+    _sourceBytes = newBytes;
+    _preview = await _call('artifact.preview',
+        {'data_b64': base64Encode(newBytes)});
+    notifyListeners();
+    return result;
   }
 
   /// Close the open artifact (presentation state only).
@@ -641,6 +674,7 @@ class HarborService extends ChangeNotifier {
     _preview = null;
     _previewName = null;
     _previewError = null;
+    _sourceBytes = null;
     notifyListeners();
   }
 

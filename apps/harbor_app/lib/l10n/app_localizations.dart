@@ -2455,6 +2455,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Uninstall frees every owned file; a preview shows the exact scope before anything moves.'**
   String get storeManageHint;
+
+  /// No description provided for @workEditHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a value or =formula'**
+  String get workEditHint;
+
+  /// No description provided for @workEditCommit.
+  ///
+  /// In en, this message translates to:
+  /// **'Commit cell'**
+  String get workEditCommit;
 }
 
 class _AppLocalizationsDelegate

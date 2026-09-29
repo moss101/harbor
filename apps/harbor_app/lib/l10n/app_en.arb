@@ -585,17 +585,50 @@
   "skillsDeclarationBody": "This skill is a prose declaration: it has no executable graph yet, so nothing runs it. Its instructions and allowlist are the spec for a future graph.",
   "skillsGraphHeading": "Graph",
   "skillsGraphNodes": "{count, plural, one{1 node} other{{count} nodes}}",
-  "@skillsGraphNodes": {"placeholders": {"count": {"type": "int"}}},
+  "@skillsGraphNodes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "skillsGraphModelNodes": "{count, plural, =0{No model calls — fully deterministic} one{1 model node, schema-constrained} other{{count} model nodes, schema-constrained}}",
-  "@skillsGraphModelNodes": {"placeholders": {"count": {"type": "int"}}},
+  "@skillsGraphModelNodes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "skillsGraphBudgets": "Budget: {steps} steps, {tools} tool calls",
-  "@skillsGraphBudgets": {"placeholders": {"steps": {"type": "int"}, "tools": {"type": "int"}}},
+  "@skillsGraphBudgets": {
+    "placeholders": {
+      "steps": {
+        "type": "int"
+      },
+      "tools": {
+        "type": "int"
+      }
+    }
+  },
   "skillsRun": "Run",
   "skillsRunTitle": "Run {title}",
-  "@skillsRunTitle": {"placeholders": {"title": {"type": "String"}}},
+  "@skillsRunTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "skillsAttachFile": "Attach file",
   "skillsAttached": "Attached: {name}",
-  "@skillsAttached": {"placeholders": {"name": {"type": "String"}}},
+  "@skillsAttached": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "skillsValuesHint": "One value per line: key = value",
   "skillsNeedsModel": "This skill has model nodes. Install a chat model in Models to run it; the model only fills typed slots.",
   "skillsModelLabel": "Model",
@@ -609,7 +642,16 @@
   "skillsTrailHeading": "Node trail",
   "skillsApprovalTitle": "Approval required",
   "skillsApprovalBody": "The run proposed a {effect} affecting {count, plural, one{1 operation} other{{count} operations}}. Nothing has been written. The proposal is bound to the base content hash and the hash of the output it would produce.",
-  "@skillsApprovalBody": {"placeholders": {"effect": {"type": "String"}, "count": {"type": "int"}}},
+  "@skillsApprovalBody": {
+    "placeholders": {
+      "effect": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "skillsApprove": "Approve",
   "skillsReject": "Reject",
   "skillsBaseHash": "Base content hash",
@@ -619,31 +661,82 @@
   "skillsCancelRun": "Cancel run",
   "skillsInputsHeading": "Inputs",
   "skillsExecutedOn": "Executed on {model}",
-  "@skillsExecutedOn": {"placeholders": {"model": {"type": "String"}}},
+  "@skillsExecutedOn": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
   "skillsStructuredMode": "Structured output: {mode}",
-  "@skillsStructuredMode": {"placeholders": {"mode": {"type": "String"}}},
+  "@skillsStructuredMode": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
   "skillsCommitBody": "The run proposed a {effect} affecting {count, plural, one{1 operation} other{{count} operations}}. Nothing has been written yet. Save new copy writes the approved output as a new file; the original is never modified. The proposal is bound to the base content hash and the hash of the output it produces.",
-  "@skillsCommitBody": {"placeholders": {"effect": {"type": "String"}, "count": {"type": "int"}}},
+  "@skillsCommitBody": {
+    "placeholders": {
+      "effect": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "skillsSaveNewCopy": "Save new copy",
   "skillsOverwrite": "Overwrite original…",
   "skillsOverwriteConfirmTitle": "Overwrite the original?",
   "skillsOverwriteConfirmBody": "Harbor will replace {name} in place. This only happens if the file still matches the approved base; otherwise nothing is written and the run stops with the reason.",
-  "@skillsOverwriteConfirmBody": {"placeholders": {"name": {"type": "String"}}},
+  "@skillsOverwriteConfirmBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "skillsSavedNewCopy": "Saved as a new copy",
   "skillsOverwritten": "Original replaced",
   "skillsCommittedTo": "{path} · version {version}",
-  "@skillsCommittedTo": {"placeholders": {"path": {"type": "String"}, "version": {"type": "String"}}},
+  "@skillsCommittedTo": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      },
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "skillsDiffBase": "base",
   "skillsDiffProposed": "proposed",
   "settingsDiagnostics": "Diagnostics",
   "settingsDiagnosticsBody": "Harbor keeps an encrypted crash and error log on this device and never uploads it. Export it to share with support by hand.",
   "settingsDiagnosticsContains": "The export contains redacted error records, the app and core versions, the runtime, the device class and installed model ids. It never contains document content, knowledge chunks or prompts.",
   "settingsDiagnosticsRecords": "{count, plural, =0{No records yet} one{1 record} other{{count} records}}",
-  "@settingsDiagnosticsRecords": {"placeholders": {"count": {"type": "int"}}},
+  "@settingsDiagnosticsRecords": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "settingsDiagnosticsExport": "Export diagnostics",
   "settingsDiagnosticsExported": "Diagnostics exported",
   "settingsDiagnosticsExportedBody": "{path} · {count, plural, one{1 record} other{{count} records}}",
-  "@settingsDiagnosticsExportedBody": {"placeholders": {"path": {"type": "String"}, "count": {"type": "int"}}},
+  "@settingsDiagnosticsExportedBody": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "settingsDiagnosticsExportFailed": "Export failed",
   "homeFirstRunTitle": "Install a model to get started",
   "homeFirstRunBody": "Harbor runs entirely on this device — nothing you open leaves it. Every answer, skill and index needs a local model, so the first step is choosing one that fits your device.",
@@ -651,18 +744,39 @@
   "modelsFirstRunTitle": "Local only",
   "modelsFirstRunBody": "These packages come from Harbor's signed catalog. Check size & fit reads the file list from Hugging Face through the broker; Install downloads once and verifies the pinned hash. Nothing else leaves the device.",
   "modelsCatalogHeading": "{count, plural, one{1 catalog package} other{{count} catalog packages}}",
-  "@modelsCatalogHeading": {"placeholders": {"count": {"type": "int"}}},
+  "@modelsCatalogHeading": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "modelsCatalogFooter": "Fit Score is computed by the core from this device's memory and accelerator; it is never guessed. Sizes come from the repository listing, not the catalog.",
   "modelsCatalogCheckFit": "Check size & fit",
   "modelsCatalogInstall": "Install",
   "modelsCatalogSizeUnavailable": "Size unavailable (the repository listing could not be read).",
   "modelsInstalledBadge": "Installed",
   "modelsContextTokens": "{count} tokens context",
-  "@modelsContextTokens": {"placeholders": {"count": {"type": "int"}}},
+  "@modelsContextTokens": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "opAcquireRunning": "Installing…",
   "modelsCatalogDoesNotFit": "Does not fit this device",
   "skillsCreateBody": "The run proposed a new file, {name}, built from {count, plural, one{1 operation} other{{count} operations}}. Nothing has been written yet. Save new file writes it where you choose; nothing else on this device changes. The proposal is bound to the hash of the file it produces.",
-  "@skillsCreateBody": {"placeholders": {"name": {"type": "String"}, "count": {"type": "int"}}},
+  "@skillsCreateBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "skillsSaveNewFile": "Save new file",
   "skillsSavedNewFile": "Saved as a new file",
   "skillsCopy": "Copy",
@@ -674,27 +788,71 @@
   "storeOfficeStatus": "Read-only preview in Work today; spreadsheet editing and formula qualification land as their gates pass.",
   "storeOfficeOpen": "Open Work",
   "storeModelsHeading": "Harbor models ({count})",
-  "@storeModelsHeading": {"placeholders": {"count": {"type": "int"}}},
+  "@storeModelsHeading": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "storeModelsBody": "Signed, first-party catalog entries. Downloads are quoted and confirmed before transfer.",
   "storeInstalledHeading": "Installed on this device",
   "storeUninstall": "Uninstall",
   "storeUninstallTitle": "Uninstall {id}?",
-  "@storeUninstallTitle": {"placeholders": {"id": {"type": "String"}}},
+  "@storeUninstallTitle": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
   "storeUninstallBody": "Removes {bytes} across {files} files. Undo stays available for 72 hours.",
-  "@storeUninstallBody": {"placeholders": {"bytes": {"type": "String"}, "files": {"type": "int"}}},
+  "@storeUninstallBody": {
+    "placeholders": {
+      "bytes": {
+        "type": "String"
+      },
+      "files": {
+        "type": "int"
+      }
+    }
+  },
   "storeUninstallInUse": "In use: {reasons}",
-  "@storeUninstallInUse": {"placeholders": {"reasons": {"type": "String"}}},
+  "@storeUninstallInUse": {
+    "placeholders": {
+      "reasons": {
+        "type": "String"
+      }
+    }
+  },
   "storeUninstallDone": "Uninstalled {id}",
-  "@storeUninstallDone": {"placeholders": {"id": {"type": "String"}}},
+  "@storeUninstallDone": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
   "storeUndo": "Undo",
   "storeUndoFailed": "Restore failed",
   "storeAcquireTitle": "Confirm download",
   "storeAcquireBody": "{quoted} to download; {available} free on this device.",
-  "@storeAcquireBody": {"placeholders": {"quoted": {"type": "String"}, "available": {"type": "String"}}},
+  "@storeAcquireBody": {
+    "placeholders": {
+      "quoted": {
+        "type": "String"
+      },
+      "available": {
+        "type": "String"
+      }
+    }
+  },
   "storeAcquireNoFit": "Not enough free space for this download.",
   "storeAcquireConfirm": "Download",
   "storeUninstallFailed": "Uninstall failed",
   "storePreviewFailed": "Could not read the package",
   "storeEmpty": "The accepted signed catalog is empty on this device.",
-  "storeManageHint": "Uninstall frees every owned file; a preview shows the exact scope before anything moves."
+  "storeManageHint": "Uninstall frees every owned file; a preview shows the exact scope before anything moves.",
+  "workEditHint": "Enter a value or =formula",
+  "workEditCommit": "Commit cell"
 }

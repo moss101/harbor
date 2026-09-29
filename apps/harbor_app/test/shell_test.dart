@@ -525,12 +525,13 @@ void _appendPreviewTest() {
     expect(find.textContaining('SUM(B2:B5)'), findsOneWidget);
     expect(find.text('=SUM(B2:B5)'), findsOneWidget);
     // Real spreadsheet chrome: column letters, row numbers, cached-value
-    // disclaimer, read-only badge.
+    // disclaimer. Workbooks are editable now (the formula bar commits
+    // typed edits through the core), so no read-only badge renders.
     expect(find.text('A'), findsOneWidget);
     expect(find.text('B'), findsOneWidget);
     expect(find.text('1'), findsOneWidget);
     expect(find.textContaining('not verified'), findsOneWidget);
-    expect(find.text('Read-only preview'), findsOneWidget);
+    expect(find.text('Read-only preview'), findsNothing);
     // Selecting another cell rebinds the formula bar.
     await tester.tap(find.text('A').first);
     await tester.pump();

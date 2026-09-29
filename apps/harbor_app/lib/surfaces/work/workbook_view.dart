@@ -1,9 +1,11 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:harbor_native/harbor_ffi.dart' as ffi;
 import 'package:harbor_ui/harbor_ui.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../services/harbor_service.dart';
 
 /// Excel column letters for a 1-based column index.
 String columnLetter(int col) {
@@ -53,6 +55,8 @@ class _WorkbookViewState extends State<WorkbookView> {
   late int _cols;
   (int, int)? _selected;
   bool _showFormulas = false;
+  bool _savingEdit = false;
+  String? _editError;
 
   final _hScroll = ScrollController();
   final _bodyV = ScrollController();
@@ -115,6 +119,46 @@ class _WorkbookViewState extends State<WorkbookView> {
     super.dispose();
   }
 
+  /// Commit one cell edit through the core's typed edit path: '=' input
+  /// becomes a formula, a parseable number a number, empty a blank,
+  /// anything else text. The core recalculates with the pinned engine and
+  /// the refreshed preview replaces this view's data.
+  Future<void> _commitEdit(String input) async {
+    if (_selected == null || _savingEdit) return;
+    final sp = HarborServiceProvider.of(context);
+    final service = sp.notifier;
+    if (service == null || sp.failed) return;
+    final sheet = widget.preview['sheet'] as String? ?? '';
+    final trimmed = input.trim();
+    final kind = trimmed.startsWith('=')
+        ? 'formula'
+        : trimmed.isEmpty
+            ? 'blank'
+            : double.tryParse(trimmed) != null
+                ? 'number'
+                : 'text';
+    final value = kind == 'blank' ? null : trimmed;
+    setState(() {
+      _savingEdit = true;
+      _editError = null;
+    });
+    try {
+      await service.editWorkbookCells([
+        {
+          'sheet': sheet,
+          'row': _selected!.$1,
+          'col': _selected!.$2,
+          'kind': kind,
+          if (value != null) 'value': value,
+        },
+      ]);
+    } on ffi.HarborCoreException catch (e) {
+      if (mounted) setState(() => _editError = e.message);
+    } finally {
+      if (mounted) setState(() => _savingEdit = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -144,6 +188,9 @@ class _WorkbookViewState extends State<WorkbookView> {
             cell: selected,
             showFormulas: _showFormulas,
             onToggleFormulas: (v) => setState(() => _showFormulas = v),
+            onCommit: _commitEdit,
+            saving: _savingEdit,
+            error: _editError,
           ),
           Expanded(
             child: Container(
@@ -243,23 +290,66 @@ class _WorkbookViewState extends State<WorkbookView> {
   }
 }
 
-class _FormulaBar extends StatelessWidget {
+class _FormulaBar extends StatefulWidget {
   const _FormulaBar({
     required this.cellRef,
     required this.cell,
     required this.showFormulas,
     required this.onToggleFormulas,
+    required this.onCommit,
+    required this.saving,
+    this.error,
   });
   final String cellRef;
   final GridCell? cell;
   final bool showFormulas;
   final ValueChanged<bool> onToggleFormulas;
+  final ValueChanged<String> onCommit;
+  final bool saving;
+  final String? error;
+
+  @override
+  State<_FormulaBar> createState() => _FormulaBarState();
+}
+
+class _FormulaBarState extends State<_FormulaBar> {
+  final _controller = TextEditingController();
+  final _focus = FocusNode();
+  (int, int)? _editedFor;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  /// Load the selected cell's content into the input only when the
+  /// selection actually changes — never while the user is typing.
+  void _syncInput() {
+    final cell = widget.cell;
+    final key = cell == null ? null : (cell.row, cell.col);
+    if (key != _editedFor) {
+      _editedFor = key;
+      _controller.text = cell == null
+          ? ''
+          : cell.hasFormula
+              ? '=${cell.formula}'
+              : (cell.value ?? '');
+    }
+  }
+
+  void _commit() {
+    widget.onCommit(_controller.text);
+    _focus.requestFocus();
+  }
 
   @override
   Widget build(BuildContext context) {
+    _syncInput();
     final l10n = AppLocalizations.of(context)!;
     final t = HarborTheme.of(context);
-    final formula = cell?.hasFormula == true ? '=${cell!.formula}' : null;
+    final cell = widget.cell;
     final value = cell?.value;
     final wc = HarborBreakpoints.of(context);
     final compact = HarborBreakpoints.isCompact(wc);
@@ -283,8 +373,10 @@ class _FormulaBar extends StatelessWidget {
                 ),
               ),
               child: Center(
-                child: HarborIdentifier(cellRef.isEmpty ? '—' : cellRef,
-                    size: 12, color: t.colors.brand),
+                child: HarborIdentifier(
+                    widget.cellRef.isEmpty ? '—' : widget.cellRef,
+                    size: 12,
+                    color: t.colors.brand),
               ),
             ),
             const SizedBox(width: HarborSpace.s2),
@@ -292,56 +384,73 @@ class _FormulaBar extends StatelessWidget {
                 style: t.text.monoOf(t.colors.inkMuted, size: 12, weight: 600)),
             const SizedBox(width: HarborSpace.s2),
             Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: HarborSpace.s3, vertical: HarborSpace.s1 + 2),
-                decoration: ShapeDecoration(
-                  color: t.colors.surface,
-                  shape: RoundedRectangleBorder(
+              child: TextField(
+                controller: _controller,
+                focusNode: _focus,
+                enabled: cell != null && !widget.saving,
+                minLines: 1,
+                maxLines: 1,
+                style: t.text.monoOf(t.colors.ink, size: 13),
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: l10n.workEditHint,
+                  border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(HarborRadius.sm),
-                    side: BorderSide(color: t.colors.border),
+                    borderSide: BorderSide(color: t.colors.border),
                   ),
                 ),
-                child: formula != null
-                    ? HarborIdentifier(formula, size: 13, selectable: true)
-                    : value != null
-                        ? Text(value,
-                            style: t.text.smallOf(t.colors.ink),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis)
-                        : Text(cell == null ? l10n.workNoSelection : '',
-                            style: t.text.smallOf(t.colors.inkMuted)),
+                onSubmitted: (_) => _commit(),
               ),
             ),
+            const SizedBox(width: HarborSpace.s2),
+            IconButton(
+              tooltip: l10n.workEditCommit,
+              onPressed: cell == null || widget.saving ? null : _commit,
+              icon: widget.saving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.check),
+            ),
             if (!compact) ...[
-              const SizedBox(width: HarborSpace.s3),
+              const SizedBox(width: HarborSpace.s2),
               FilterChip(
                 label: Text(l10n.workShowFormulas),
-                selected: showFormulas,
-                onSelected: onToggleFormulas,
+                selected: widget.showFormulas,
+                onSelected: widget.onToggleFormulas,
                 avatar: Icon(Icons.functions, size: 16, color: t.colors.brand),
               ),
             ],
           ]),
-          if (formula != null && value != null)
+          if (value != null || widget.error != null)
             Padding(
               padding: const EdgeInsets.only(top: HarborSpace.s2),
               child: Row(children: [
-                Text('${l10n.workValue}: ',
-                    style: t.text.captionOf(t.colors.inkMuted)),
-                Flexible(
-                  child: Text(value,
-                      style: t.text.captionOf(t.colors.ink),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                ),
-                const SizedBox(width: HarborSpace.s2),
-                Flexible(
-                  child: Text('· ${l10n.workCellUnverified}',
-                      style: t.text.captionOf(t.colors.statusHybridText),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                ),
+                if (widget.error != null)
+                  Flexible(
+                    child: Text(widget.error!,
+                        style: t.text.captionOf(t.colors.statusDangerText),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis),
+                  )
+                else ...[
+                  Text('${l10n.workValue}: ',
+                      style: t.text.captionOf(t.colors.inkMuted)),
+                  Flexible(
+                    child: Text(value ?? '',
+                        style: t.text.captionOf(t.colors.ink),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                  ),
+                  const SizedBox(width: HarborSpace.s2),
+                  Flexible(
+                    child: Text('· ${l10n.workCellUnverified}',
+                        style: t.text.captionOf(t.colors.statusHybridText),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                  ),
+                ],
               ]),
             ),
           if (compact)
@@ -351,8 +460,8 @@ class _FormulaBar extends StatelessWidget {
                 alignment: AlignmentDirectional.centerStart,
                 child: FilterChip(
                   label: Text(l10n.workShowFormulas),
-                  selected: showFormulas,
-                  onSelected: onToggleFormulas,
+                  selected: widget.showFormulas,
+                  onSelected: widget.onToggleFormulas,
                   avatar:
                       Icon(Icons.functions, size: 16, color: t.colors.brand),
                 ),
