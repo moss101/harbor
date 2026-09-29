@@ -537,6 +537,58 @@
       ],
       "evidence_path": "evidence/formula_evals/macos-arm64-bc4ee53.json",
       "evidence_sha256": "bcd291b67371309dc00783d264795daaef965ffd9f7287c062f20e83b50f894b"
+    },
+    {
+      "result_type": "platform_tier",
+      "tier_note": "iOS SIMULATOR arm64 (iPhone 17 Pro, iOS 26.5), not the physical iOS/iPadOS arm64 entry of qualified_platform_set \u2014 that tier requires a physical device (operator-bound).",
+      "engine_source_revision": "crates.io/formualizer@0.9.3",
+      "engine_sha256": "64b7771c27fcd3da6229ae4653acc4269cf6635412b283fa0dd16e8359b54139",
+      "adapter_revision": "harbor_formula/1",
+      "fixture_bundle_sha256": "e1fc88a383b2b2805a2030c05a13bff32e6f94287103c1a8cd9ab968b1fafded",
+      "platform_architecture_set": [
+        "ios-simulator/aarch64"
+      ],
+      "commit": "baa88f9",
+      "binding_note": "commit bound by the clean host tree that cross-built the binary; the in-container git probe is empty by design (no git in the simulator container).",
+      "cases_passed": 138,
+      "cases_failed": 1,
+      "targets_all_pass": 98,
+      "targets_total": 99,
+      "known_deviations": [
+        {
+          "case_id": "txt-text-2",
+          "target": "TEXT",
+          "detail": "TEXT(0.285,\"0.0%\") truncates to 28% instead of Excel's round-half-away 28.5% (docs/decisions/0001-formula-engine-pin.md; TEXT stays REQUIRED_UNQUALIFIED on this engine revision)"
+        }
+      ],
+      "evidence_path": "evidence/formula_evals/ios-sim-arm64-baa88f9.json",
+      "evidence_sha256": "d421889c92aabcef515e742aa5c198a723a68b442f771a52a5b56160fa5d152c"
+    },
+    {
+      "result_type": "platform_tier",
+      "tier_note": "Android EMULATOR arm64-v8a (AVD cvbase_test), not the physical Android arm64-v8a entry of qualified_platform_set \u2014 that tier requires a physical device (operator-bound).",
+      "engine_source_revision": "crates.io/formualizer@0.9.3",
+      "engine_sha256": "64b7771c27fcd3da6229ae4653acc4269cf6635412b283fa0dd16e8359b54139",
+      "adapter_revision": "harbor_formula/1",
+      "fixture_bundle_sha256": "e1fc88a383b2b2805a2030c05a13bff32e6f94287103c1a8cd9ab968b1fafded",
+      "platform_architecture_set": [
+        "android-emulator/aarch64"
+      ],
+      "commit": "baa88f9",
+      "binding_note": "commit bound by the clean host tree that cross-built the binary (NDK 28.2 clang, API 35); the in-container git probe is empty by design.",
+      "cases_passed": 138,
+      "cases_failed": 1,
+      "targets_all_pass": 98,
+      "targets_total": 99,
+      "known_deviations": [
+        {
+          "case_id": "txt-text-2",
+          "target": "TEXT",
+          "detail": "TEXT(0.285,\"0.0%\") truncates to 28% instead of Excel's round-half-away 28.5% (docs/decisions/0001-formula-engine-pin.md; TEXT stays REQUIRED_UNQUALIFIED on this engine revision)"
+        }
+      ],
+      "evidence_path": "evidence/formula_evals/android-emulator-arm64-baa88f9.json",
+      "evidence_sha256": "10962570e0db485a76baaba0be18bdc5cdb16475acfe5fdd322076ae5dd02194"
     }
   ]
 }

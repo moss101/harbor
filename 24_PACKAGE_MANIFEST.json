@@ -4,8 +4,8 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "c621f1fd4af8a70af6cc88c828d2e5fd99b664f22991e07e8e5a97868fa805b9",
-  "file_count_excluding_manifest": 627,
+  "input_manifest_sha256": "e392a6708aed94ba8f6c17f9ad59212a657ff9a7016034e2a9a9412d4c326115",
+  "file_count_excluding_manifest": 629,
   "files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -124,13 +124,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 114450,
-      "sha256": "6384501fd297f41d2031379ac70f0c363587a64ce67873292d603e5226d04e9a"
+      "bytes": 114793,
+      "sha256": "9ab3ebd468284c8cde2a102c2e20eb3095179d1c3086b28e8155c50dc387c956"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "cd7d10410ce48ffd9034530cfb445f5c0c30bd02a19b393d84f3ac1198a2e566"
+      "sha256": "e3e0089ea552f8c42848e9ad448ce4c926ac1dff58614791861dc0bf30a14371"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -139,8 +139,8 @@
     },
     {
       "path": "22_Formula_Coverage.json",
-      "bytes": 13808,
-      "sha256": "9f24787548e58a0fbc67ec41475f45dde0b006fbad1823a22d0d44c6089746cc"
+      "bytes": 16657,
+      "sha256": "792f8cd482b488eeeb7795ef30702e6a01c9a8cf6be558c2b715b3f0bf9747c6"
     },
     {
       "path": "23_Review_Reconciliation_Matrix.md",
@@ -534,28 +534,28 @@
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_ar.arb",
-      "bytes": 37242,
-      "sha256": "5b6a9b1217cc309994c3ce72400da63583eea971e9481c9cd38da6d8f0413631"
+      "bytes": 37498,
+      "sha256": "347639080326c7bc0dd0871dd220ce9b2fab2ae3b1a47303578aca760d8182ed"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_en.arb",
-      "bytes": 30449,
-      "sha256": "d5c8f8048eabe1006157b861660cbc0957b5caef424f82dce48ab4e8b33347b0"
+      "bytes": 30690,
+      "sha256": "34b8edcd00e1c9f19bed25632bdfb62e436a2cb9b982711761528ca3b2895ad2"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations.dart",
-      "bytes": 75782,
-      "sha256": "da94a0173fc3f370a28c049915f304173bc6a3af1ef76f4cbb8a53cc75e78c84"
+      "bytes": 76286,
+      "sha256": "134036ef42139add374833cb65060716709b5a22fb6dc9f893ff1f7f86a776fe"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations_ar.dart",
-      "bytes": 46553,
-      "sha256": "524b4eb6a9d03b974aec36956a04179f2c2828088477b2933744c61631e1f6f0"
+      "bytes": 46794,
+      "sha256": "3cf997c6c25437780d6f9c6c4ed27f0deeafc0cb71b58a7a9e72bb0531c7da8e"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations_en.dart",
-      "bytes": 36838,
-      "sha256": "dd4c759330dfdaeee3cda48f4d20df17cb74ffd8379ad317f0dd75c8fd558cb2"
+      "bytes": 37064,
+      "sha256": "64a2710c44081b1ae60407de8067616595bec2bbcee303746b344bbfaac767b0"
     },
     {
       "path": "apps/harbor_app/lib/main.dart",
@@ -574,8 +574,8 @@
     },
     {
       "path": "apps/harbor_app/lib/services/harbor_service.dart",
-      "bytes": 27472,
-      "sha256": "fbee800d45e4089a7df7683fa57d7925dad7daaa04fec18462b731ccf3edad7e"
+      "bytes": 27981,
+      "sha256": "232a0e88d8810bf84214966f771e69d0085b24c8a91d8ca698c6702075b88e75"
     },
     {
       "path": "apps/harbor_app/lib/services/preferences.dart",
@@ -689,8 +689,8 @@
     },
     {
       "path": "apps/harbor_app/lib/surfaces/work_surface.dart",
-      "bytes": 12236,
-      "sha256": "59e4e024342c4d75ffa346219f11c507c5fc30b446a3e62211acc4d00cf4fab2"
+      "bytes": 14669,
+      "sha256": "16bcce06a299daa8ea40d14fdfdad20d21d01225b0b94289ed22901ba88c65a0"
     },
     {
       "path": "apps/harbor_app/lib/widgets/ops.dart",
@@ -1433,6 +1433,11 @@
       "sha256": "2e4d9b86ee9a953fa796e75cf5a60d5693eea47c37d8b6d66e25a80a386de1cf"
     },
     {
+      "path": "core/harbor_artifacts/src/convert.rs",
+      "bytes": 6226,
+      "sha256": "593da4c5f23f1f3a51691c4e49892ce7d547a7b17deafde92b97f5fc6e529267"
+    },
+    {
       "path": "core/harbor_artifacts/src/diff.rs",
       "bytes": 2828,
       "sha256": "faed7d1ab651240a262c541ae39f96408ea2b0614bc241ebae08e659ba8ad4d7"
@@ -1444,8 +1449,8 @@
     },
     {
       "path": "core/harbor_artifacts/src/lib.rs",
-      "bytes": 2952,
-      "sha256": "44b60e47808bb3f1f36e3ab7704d71d41369a615be42fb4555809971535ae506"
+      "bytes": 3026,
+      "sha256": "575a450a14bebb8ccf9cf9d688a74bed8ae145d64350afae4cb995b46823de4d"
     },
     {
       "path": "core/harbor_artifacts/src/office_matrix.rs",
@@ -1464,8 +1469,8 @@
     },
     {
       "path": "core/harbor_artifacts/src/workbook.rs",
-      "bytes": 53036,
-      "sha256": "f78f3a957d0a65f0e19297cc66cc5ec5f595b9e4d7b48117bf1038d907664ef7"
+      "bytes": 52945,
+      "sha256": "17e3beeea10685d3c6447a7485d95edeec25932a15fd2970edfdffaa99f65c80"
     },
     {
       "path": "core/harbor_artifacts/tests/malformed_inputs.rs",
@@ -1729,8 +1734,8 @@
     },
     {
       "path": "core/harbor_ffi/src/lib.rs",
-      "bytes": 148392,
-      "sha256": "2e780b3d97a22848e2656ca93190f0b744914fcc3d8234f4dde17724fa0cdae3"
+      "bytes": 149568,
+      "sha256": "0c9328c8eaa35e803a19b31a8f9048ea674d091431d8947ba5a59d3c8760363f"
     },
     {
       "path": "core/harbor_ffi/tests/catalog_first_run.rs",
@@ -1759,8 +1764,8 @@
     },
     {
       "path": "core/harbor_ffi/tests/workbook_edit.rs",
-      "bytes": 7565,
-      "sha256": "802f5803db215e54f96a7c390727a40cb4b7d31a81a5f560937d7c62671ef011"
+      "bytes": 8733,
+      "sha256": "42aa0eb53a921dfc4356481787d93b799c24d054d3647e4e7d5f0384c146892b"
     },
     {
       "path": "core/harbor_formula/Cargo.toml",
@@ -3051,6 +3056,11 @@
       "path": "tools/assemble_release_evidence.py",
       "bytes": 32283,
       "sha256": "799669840d541a563b7f55d717a3a6ae59fdeec433d63d8669692794da39eea8"
+    },
+    {
+      "path": "tools/assemble_store_gate_reports.py",
+      "bytes": 13475,
+      "sha256": "9747c84e2850edd7182965c1337a4eb869ebc22351e0b5f70f4f19574221eb1c"
     },
     {
       "path": "tools/build_apple_system_host.sh",
