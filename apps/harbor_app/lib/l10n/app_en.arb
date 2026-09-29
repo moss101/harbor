@@ -854,5 +854,7 @@
   "storeEmpty": "The accepted signed catalog is empty on this device.",
   "storeManageHint": "Uninstall frees every owned file; a preview shows the exact scope before anything moves.",
   "workEditHint": "Enter a value or =formula",
-  "workEditCommit": "Commit cell"
+  "workEditCommit": "Commit cell",
+  "workBoldRow": "Bold row",
+  "workAddChart": "Insert chart from column"
 }

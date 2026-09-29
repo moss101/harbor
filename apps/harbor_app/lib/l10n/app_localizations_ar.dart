@@ -1555,4 +1555,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get workEditCommit => 'تثبيت الخلية';
+
+  @override
+  String get workBoldRow => 'تغميق الصف';
+
+  @override
+  String get workAddChart => 'إدراج مخطط من العمود';
 }

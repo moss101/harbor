@@ -648,6 +648,14 @@ class HarborService extends ChangeNotifier {
   /// [ffi.HarborCoreException] honestly on failure.
   Future<Map<String, dynamic>> editWorkbookCells(
       List<Map<String, dynamic>> edits) async {
+    return editWorkbook(edits: edits);
+  }
+
+  /// General workbook edit: typed cell edits and/or ops (bold, number
+  /// format, column width, freeze, add chart) in one round trip.
+  Future<Map<String, dynamic>> editWorkbook(
+      {List<Map<String, dynamic>> edits = const [],
+      List<Map<String, dynamic>> ops = const []}) async {
     final source = _sourceBytes;
     final current = _preview;
     if (source == null || current == null) {
@@ -659,6 +667,7 @@ class HarborService extends ChangeNotifier {
     final result = await _call('workbook.edit', {
       'data_b64': base64Encode(source),
       'edits': edits,
+      'ops': ops,
     });
     final newBytes =
         base64Decode(result['data_b64'] as String).toList(growable: false);

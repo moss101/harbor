@@ -1499,4 +1499,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get workEditCommit => 'Commit cell';
+
+  @override
+  String get workBoldRow => 'Bold row';
+
+  @override
+  String get workAddChart => 'Insert chart from column';
 }

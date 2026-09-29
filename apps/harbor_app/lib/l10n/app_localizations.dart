@@ -2467,6 +2467,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Commit cell'**
   String get workEditCommit;
+
+  /// No description provided for @workBoldRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold row'**
+  String get workBoldRow;
+
+  /// No description provided for @workAddChart.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert chart from column'**
+  String get workAddChart;
 }
 
 class _AppLocalizationsDelegate

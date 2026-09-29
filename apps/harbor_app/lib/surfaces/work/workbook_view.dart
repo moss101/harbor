@@ -119,6 +119,62 @@ class _WorkbookViewState extends State<WorkbookView> {
     super.dispose();
   }
 
+  /// Bold the selected row (first 12 columns) through the typed ops path.
+  Future<void> _boldRow() async {
+    if (_selected == null || _savingEdit) return;
+    final sp = HarborServiceProvider.of(context);
+    final service = sp.notifier;
+    if (service == null || sp.failed) return;
+    setState(() => _savingEdit = true);
+    try {
+      await service.editWorkbook(ops: [
+        {
+          'op': 'bold',
+          'sheet': widget.preview['sheet'] as String? ?? '',
+          'row': _selected!.$1,
+          'col_from': 1,
+          'col_to': 12,
+        },
+      ]);
+    } on ffi.HarborCoreException catch (e) {
+      if (mounted) setState(() => _editError = e.message);
+    } finally {
+      if (mounted) setState(() => _savingEdit = false);
+    }
+  }
+
+  /// Insert a bar chart over the selected column (rows 2..21) through the
+  /// typed ops path; the refreshed preview reports the new chart count.
+  Future<void> _addChart() async {
+    if (_selected == null || _savingEdit) return;
+    final sp = HarborServiceProvider.of(context);
+    final service = sp.notifier;
+    if (service == null || sp.failed) return;
+    final sheet = widget.preview['sheet'] as String? ?? '';
+    final col = columnLetter(_selected!.$2);
+    // 'DCF!$B$2:$B$21' — absolute form, sheet-qualified; the dollars are
+    // escaped in the literal so they stay literal.
+    // ignore: unnecessary_string_escapes
+    final series = '$sheet!' '\$$col' '\$2:' '\$$col' '\$21';
+    setState(() => _savingEdit = true);
+    try {
+      await service.editWorkbook(ops: [
+        {
+          'op': 'add_chart',
+          'sheet': sheet,
+          'from': 'E2',
+          'to': 'K18',
+          'series': [series],
+          'title': col,
+        },
+      ]);
+    } on ffi.HarborCoreException catch (e) {
+      if (mounted) setState(() => _editError = e.message);
+    } finally {
+      if (mounted) setState(() => _savingEdit = false);
+    }
+  }
+
   /// Commit one cell edit through the core's typed edit path: '=' input
   /// becomes a formula, a parseable number a number, empty a blank,
   /// anything else text. The core recalculates with the pinned engine and
@@ -283,6 +339,8 @@ class _WorkbookViewState extends State<WorkbookView> {
             chartCount: chartCount,
             cellCount: _cells.length,
             l10n: l10n,
+            onBoldRow: _boldRow,
+            onAddChart: _addChart,
           ),
         ],
       ),
@@ -584,12 +642,16 @@ class _SheetTabs extends StatelessWidget {
     required this.chartCount,
     required this.cellCount,
     required this.l10n,
+    this.onBoldRow,
+    this.onAddChart,
   });
   final List<String> sheets;
   final String active;
   final int chartCount;
   final int cellCount;
   final AppLocalizations l10n;
+  final VoidCallback? onBoldRow;
+  final VoidCallback? onAddChart;
 
   @override
   Widget build(BuildContext context) {
@@ -625,6 +687,20 @@ class _SheetTabs extends StatelessWidget {
         ),
         const SizedBox(width: HarborSpace.s3),
         Wrap(spacing: HarborSpace.s2, children: [
+          if (onBoldRow != null)
+            IconButton(
+              tooltip: l10n.workBoldRow,
+              onPressed: onBoldRow,
+              icon: const Icon(Icons.format_bold),
+              visualDensity: VisualDensity.compact,
+            ),
+          if (onAddChart != null)
+            IconButton(
+              tooltip: l10n.workAddChart,
+              onPressed: onAddChart,
+              icon: const Icon(Icons.insert_chart_outlined),
+              visualDensity: VisualDensity.compact,
+            ),
           HarborPill(l10n.workCells(cellCount), icon: Icons.grid_on_outlined),
           if (chartCount > 0)
             HarborPill(l10n.workCharts(chartCount),
