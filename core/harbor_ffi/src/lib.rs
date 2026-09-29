@@ -1456,12 +1456,9 @@ fn dispatch(
                         .map_err(|e| HarborError::Other(format!("bold: {e}")))?;
                     }
                     "number_format" => {
-                        let code = op
-                            .get("code")
-                            .and_then(|v| v.as_str())
-                            .ok_or_else(|| {
-                                HarborError::Other("number_format missing code".into())
-                            })?;
+                        let code = op.get("code").and_then(|v| v.as_str()).ok_or_else(|| {
+                            HarborError::Other("number_format missing code".into())
+                        })?;
                         wb.set_number_format(
                             sheet,
                             op.get("col").and_then(|v| v.as_u64()).unwrap_or(1) as u32,

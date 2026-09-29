@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "bf60abb295e7b6a241c0fa89fa9f6aa7445387dbd7ea06f03f6811c7c88be5d2",
+  "input_manifest_sha256": "c621f1fd4af8a70af6cc88c828d2e5fd99b664f22991e07e8e5a97868fa805b9",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -116,8 +116,8 @@
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
-      "bytes": 3752,
-      "sha256": "0b23110e2d3aaf560d2586e0dcfb19b71077ac633941114d3cf3dbbc45eefb72"
+      "bytes": 3992,
+      "sha256": "cbc8a289ca897c82ed92250212ebe72f96a2b3bf3b675c39dc229b553f46cb0c"
     },
     {
       "path": "22_Formula_Coverage.json",
@@ -516,28 +516,28 @@
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_ar.arb",
-      "bytes": 37143,
-      "sha256": "df55ebf1bbdd16e04d06f3b082988823ef664a4cab169f225b0c4295774d1d1d"
+      "bytes": 37242,
+      "sha256": "5b6a9b1217cc309994c3ce72400da63583eea971e9481c9cd38da6d8f0413631"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_en.arb",
-      "bytes": 30374,
-      "sha256": "ba65be153f2e8ed1f2f47d8b8af97214d24e9bdf442d9eeac9c9c575b62144c2"
+      "bytes": 30449,
+      "sha256": "d5c8f8048eabe1006157b861660cbc0957b5caef424f82dce48ab4e8b33347b0"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations.dart",
-      "bytes": 75478,
-      "sha256": "6476d2719e13c5550c8b2b6d03c70030ec466e9f67bca65955c8d52b6629a3af"
+      "bytes": 75782,
+      "sha256": "da94a0173fc3f370a28c049915f304173bc6a3af1ef76f4cbb8a53cc75e78c84"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations_ar.dart",
-      "bytes": 46406,
-      "sha256": "ade2077b5106408d7bde5fa6c81fc82b2c11de39e24ebb2403c1ae512c5d9b52"
+      "bytes": 46553,
+      "sha256": "524b4eb6a9d03b974aec36956a04179f2c2828088477b2933744c61631e1f6f0"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations_en.dart",
-      "bytes": 36715,
-      "sha256": "8b219e1ec54046be7e318a58f80464321d1c9a14da487b6cf1aa1e509cb59f26"
+      "bytes": 36838,
+      "sha256": "dd4c759330dfdaeee3cda48f4d20df17cb74ffd8379ad317f0dd75c8fd558cb2"
     },
     {
       "path": "apps/harbor_app/lib/main.dart",
@@ -556,8 +556,8 @@
     },
     {
       "path": "apps/harbor_app/lib/services/harbor_service.dart",
-      "bytes": 27118,
-      "sha256": "6264f91da1c41eea621d6d0ae2d1202e347ec23a75fd7e6f0a56ff1b1c8bfc41"
+      "bytes": 27472,
+      "sha256": "fbee800d45e4089a7df7683fa57d7925dad7daaa04fec18462b731ccf3edad7e"
     },
     {
       "path": "apps/harbor_app/lib/services/preferences.dart",
@@ -666,8 +666,8 @@
     },
     {
       "path": "apps/harbor_app/lib/surfaces/work/workbook_view.dart",
-      "bytes": 21755,
-      "sha256": "70a3486d69649a52856da9aed3408341fd2c4faf40187f51ed8759224822e3f1"
+      "bytes": 24373,
+      "sha256": "7d56e0c237c95528be02ae3b4f7d59d152c4caae975eb5ce453fb77080540fd6"
     },
     {
       "path": "apps/harbor_app/lib/surfaces/work_surface.dart",
@@ -1446,8 +1446,8 @@
     },
     {
       "path": "core/harbor_artifacts/src/workbook.rs",
-      "bytes": 47285,
-      "sha256": "d8fa2fd88b07202852cd47386869c4e7f990e351e7e4095d0affd530dd974d62"
+      "bytes": 53036,
+      "sha256": "f78f3a957d0a65f0e19297cc66cc5ec5f595b9e4d7b48117bf1038d907664ef7"
     },
     {
       "path": "core/harbor_artifacts/tests/malformed_inputs.rs",
@@ -1711,8 +1711,8 @@
     },
     {
       "path": "core/harbor_ffi/src/lib.rs",
-      "bytes": 143481,
-      "sha256": "0c6614e3221169f83f52f174f2664a0e062d42dbbbda784b6af075a08e2fb16e"
+      "bytes": 148392,
+      "sha256": "2e780b3d97a22848e2656ca93190f0b744914fcc3d8234f4dde17724fa0cdae3"
     },
     {
       "path": "core/harbor_ffi/tests/catalog_first_run.rs",
@@ -1741,8 +1741,8 @@
     },
     {
       "path": "core/harbor_ffi/tests/workbook_edit.rs",
-      "bytes": 5144,
-      "sha256": "64a968a85b3abf0fc648bddfbed91e706966fa4321a35e9d58e5b3ac99005a15"
+      "bytes": 7565,
+      "sha256": "802f5803db215e54f96a7c390727a40cb4b7d31a81a5f560937d7c62671ef011"
     },
     {
       "path": "core/harbor_formula/Cargo.toml",

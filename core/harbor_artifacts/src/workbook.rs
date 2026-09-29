@@ -1119,6 +1119,81 @@ mod tests {
         wb.to_xlsx_bytes()
     }
 
+    /// Inject a real conditionalFormatting part into the sheet XML by
+    /// hand (umya 3.1 cfRule authoring is address-typed and unqualified,
+    /// so Harbor does not author CF — it must PRESERVE it).
+    fn with_conditional_format(bytes: &[u8]) -> Vec<u8> {
+        use std::io::{Read, Write};
+        let mut ar = zip::ZipArchive::new(std::io::Cursor::new(bytes.to_vec())).unwrap();
+        let mut entries: Vec<(String, Vec<u8>)> = Vec::new();
+        for i in 0..ar.len() {
+            let mut e = ar.by_index(i).unwrap();
+            let name = e.name().to_string();
+            let mut buf = Vec::new();
+            e.read_to_end(&mut buf).unwrap();
+            entries.push((name, buf));
+        }
+        let cf = br#"<conditionalFormatting sqref="A1:A5"><cfRule type="cellIs" dxfId="0" priority="1" operator="greaterThan"><formula>15</formula></cfRule></conditionalFormatting>"#;
+        // The rule references dxfId 0, so styles.xml must carry the dxfs
+        // table too (a cfRule without its dxf is unreadable even to Excel).
+        let dxf = br#"<dxfs count="1"><dxf><fill><patternFill><bgColor rgb="FFFFC7CE"/></patternFill></fill></dxf></dxfs>"#;
+        for (name, buf) in &mut entries {
+            if name == "xl/worksheets/sheet1.xml" {
+                let xml = String::from_utf8_lossy(buf).to_string();
+                let injected = xml.replace(
+                    "</worksheet>",
+                    &format!("{}</worksheet>", std::str::from_utf8(cf).unwrap()),
+                );
+                *buf = injected.into_bytes();
+            } else if name == "xl/styles.xml" {
+                let xml = String::from_utf8_lossy(buf).to_string();
+                let injected = xml.replace(
+                    "</styleSheet>",
+                    &format!("{}</styleSheet>", std::str::from_utf8(dxf).unwrap()),
+                );
+                *buf = injected.into_bytes();
+            }
+        }
+        let mut out = std::io::Cursor::new(Vec::new());
+        {
+            let mut zw = zip::ZipWriter::new(&mut out);
+            for (name, buf) in &entries {
+                let opts: zip::write::SimpleFileOptions = zip::write::FileOptions::default();
+                zw.start_file(name.as_str(), opts).unwrap();
+                zw.write_all(buf).unwrap();
+            }
+            zw.finish().unwrap();
+        }
+        out.into_inner()
+    }
+
+    #[test]
+    fn conditional_formatting_preserved_through_edit() {
+        let bytes = with_conditional_format(&roundtrip_workbook());
+        // The package loads despite the unmodeled CF part.
+        let mut doc = WorkbookDoc::load(&bytes).unwrap();
+        doc.set_cell("Sheet1", 2, 1, CellSet::Value(CellValue::Number(25.0)))
+            .unwrap();
+        let out = doc.to_bytes().unwrap();
+        // The CF rule survived the edit round trip byte-for-byte in the
+        // sheet XML (preserve-only: Harbor never rewrites it).
+        let mut ar = zip::ZipArchive::new(std::io::Cursor::new(out)).unwrap();
+        let mut sheet_bytes = Vec::new();
+        use std::io::Read as _;
+        ar.by_name("xl/worksheets/sheet1.xml")
+            .unwrap()
+            .read_to_end(&mut sheet_bytes)
+            .unwrap();
+        let sheet = String::from_utf8(sheet_bytes).unwrap();
+        // umya parses and re-emits the CF model (attribute order may
+        // differ), so the honest contract is structural preservation:
+        // the rule, its range, operator and operand all survive.
+        assert!(sheet.contains("<conditionalFormatting sqref=\"A1:A5\""));
+        assert!(sheet.contains("type=\"cellIs\""));
+        assert!(sheet.contains("operator=\"greaterThan\""));
+        assert!(sheet.contains("<formula>15</formula>"));
+    }
+
     #[test]
     fn formatting_ops_roundtrip() {
         let bytes = roundtrip_workbook();
@@ -1138,8 +1213,16 @@ mod tests {
             .position(|s| s.name() == "Sheet1")
             .unwrap();
         let ws = &re.book.sheet_collection()[idx];
-        assert!(ws.style((2, 1)).get_font().map(|f| f.get_bold()).unwrap_or(false));
-        assert!(!ws.style((2, 2)).get_font().map(|f| f.get_bold()).unwrap_or(false));
+        assert!(ws
+            .style((2, 1))
+            .get_font()
+            .map(|f| f.get_bold())
+            .unwrap_or(false));
+        assert!(!ws
+            .style((2, 2))
+            .get_font()
+            .map(|f| f.get_bold())
+            .unwrap_or(false));
         assert_eq!(
             ws.style((2, 2))
                 .get_number_format()

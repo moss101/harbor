@@ -14,6 +14,7 @@ XLSX,Calculate,function not PASS / stale dependency,PRESERVE_ONLY,no verified de
 XLSX,Charts,bar/column/line/pie/scatter basic series,REQUIRED_UNQUALIFIED,limited,chart fixtures + image diff,until PASS: preserve and preview fallback,compatibility-report-v1
 XLSX,Preserve,pivot tables / slicers / Power Query,PRESERVE_ONLY,no,package relationship preservation,do not recalc; compatibility report,compatibility-report-v1
 XLSX,Preserve,external workbook/data links,PRESERVE_ONLY,no automatic fetch,offline + link integrity tests,show stale/external dependency,compatibility-report-v1
+XLSX,Formatting,conditional formatting rules,PRESERVE_ONLY,no,"structural preservation through edit round trips (rule/range/operator/operand; tested)","compatibility report; authoring not offered (cfRule operand serialization unqualified)",compatibility-report-v1
 XLSX,Security,VBA/macros/ActiveX,PRESERVE_NO_EXECUTE,no,malicious fixture suite,never execute; warn before export,compatibility-report-v1
 PPTX,Read/render,"text boxes, shapes, images, themes",SUPPORTED_GA,yes,visual + round-trip fixtures,render normally,office-core-v1
 PPTX,Read/render,speaker notes,SUPPORTED_GA,yes,round-trip fixtures,render in notes panel,office-core-v1
