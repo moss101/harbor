@@ -1431,6 +1431,98 @@ fn dispatch(
                     .map_err(|e| HarborError::Other(format!("edit: {e}")))?;
                 applied += 1;
             }
+            // Non-cell operations (formatting, structure, charts) in
+            // order, after cell edits: same typed harbor_artifacts API,
+            // never raw XML.
+            let ops = args.get("ops").and_then(|v| v.as_array());
+            let mut ops_applied = 0usize;
+            for op in ops.into_iter().flatten() {
+                let name = op
+                    .get("op")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| HarborError::Other("op missing name".into()))?;
+                let sheet = op
+                    .get("sheet")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| HarborError::Other("op missing sheet".into()))?;
+                match name {
+                    "bold" => {
+                        wb.set_bold(
+                            sheet,
+                            op.get("row").and_then(|v| v.as_u64()).unwrap_or(1) as u32,
+                            op.get("col_from").and_then(|v| v.as_u64()).unwrap_or(1) as u32,
+                            op.get("col_to").and_then(|v| v.as_u64()).unwrap_or(1) as u32,
+                        )
+                        .map_err(|e| HarborError::Other(format!("bold: {e}")))?;
+                    }
+                    "number_format" => {
+                        let code = op
+                            .get("code")
+                            .and_then(|v| v.as_str())
+                            .ok_or_else(|| {
+                                HarborError::Other("number_format missing code".into())
+                            })?;
+                        wb.set_number_format(
+                            sheet,
+                            op.get("col").and_then(|v| v.as_u64()).unwrap_or(1) as u32,
+                            op.get("row_from").and_then(|v| v.as_u64()).unwrap_or(1) as u32,
+                            op.get("row_to").and_then(|v| v.as_u64()).unwrap_or(1) as u32,
+                            code,
+                        )
+                        .map_err(|e| HarborError::Other(format!("number_format: {e}")))?;
+                    }
+                    "column_width" => {
+                        wb.set_column_width(
+                            sheet,
+                            op.get("col").and_then(|v| v.as_u64()).unwrap_or(1) as u32,
+                            op.get("width").and_then(|v| v.as_f64()).unwrap_or(80.0),
+                        )
+                        .map_err(|e| HarborError::Other(format!("column_width: {e}")))?;
+                    }
+                    "freeze_first_row" => {
+                        wb.freeze_first_row(sheet)
+                            .map_err(|e| HarborError::Other(format!("freeze: {e}")))?;
+                    }
+                    "add_chart" => {
+                        let kind = op.get("chart_kind").and_then(|v| v.as_str());
+                        let kind = kind
+                            .map(|k| match k {
+                                "line" => harbor_artifacts::workbook::XlsxChartKind::Line,
+                                "pie" => harbor_artifacts::workbook::XlsxChartKind::Pie,
+                                "scatter" => harbor_artifacts::workbook::XlsxChartKind::Scatter,
+                                _ => harbor_artifacts::workbook::XlsxChartKind::Bar,
+                            })
+                            .unwrap_or(harbor_artifacts::workbook::XlsxChartKind::Bar);
+                        let series = op
+                            .get("series")
+                            .and_then(|v| v.as_array())
+                            .map(|a| {
+                                a.iter()
+                                    .filter_map(|s| s.as_str().map(str::to_string))
+                                    .collect::<Vec<_>>()
+                            })
+                            .unwrap_or_default();
+                        if series.is_empty() {
+                            return Err(HarborError::Other(
+                                "add_chart needs at least one series range".into(),
+                            ));
+                        }
+                        wb.add_chart(
+                            kind,
+                            sheet,
+                            op.get("from").and_then(|v| v.as_str()).unwrap_or("E2"),
+                            op.get("to").and_then(|v| v.as_str()).unwrap_or("K18"),
+                            series,
+                            op.get("title").and_then(|v| v.as_str()).unwrap_or("Chart"),
+                        )
+                        .map_err(|e| HarborError::Other(format!("add_chart: {e}")))?;
+                    }
+                    other => {
+                        return Err(HarborError::Other(format!("unknown op {other}")));
+                    }
+                }
+                ops_applied += 1;
+            }
             let recalculated = wb
                 .recalculate_all()
                 .map_err(|e| HarborError::Other(format!("recalc: {e}")))?;
@@ -1441,6 +1533,7 @@ fn dispatch(
             Ok(serde_json::json!({
                 "data_b64": base64::engine::general_purpose::STANDARD.encode(&out),
                 "applied": applied,
+                "ops_applied": ops_applied,
                 "recalculated": recalculated.len(),
                 "unmodeled_parts": unmodeled,
             }))

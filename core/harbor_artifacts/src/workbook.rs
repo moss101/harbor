@@ -1120,6 +1120,60 @@ mod tests {
     }
 
     #[test]
+    fn formatting_ops_roundtrip() {
+        let bytes = roundtrip_workbook();
+        let mut doc = WorkbookDoc::load(&bytes).unwrap();
+        doc.set_bold("Sheet1", 1, 1, 3).unwrap();
+        doc.set_number_format("Sheet1", 2, 1, 5, "0.0%").unwrap();
+        doc.set_column_width("Sheet1", 1, 42.5).unwrap();
+        doc.freeze_first_row("Sheet1").unwrap();
+        let out = doc.to_bytes().unwrap();
+        // Reload through the umya backend and verify the styling survived
+        // the round trip (bold on B1..D1, format on B2, width, frozen pane).
+        let re = WorkbookDoc::load(&out).unwrap();
+        let idx = re
+            .book
+            .sheet_collection()
+            .iter()
+            .position(|s| s.name() == "Sheet1")
+            .unwrap();
+        let ws = &re.book.sheet_collection()[idx];
+        assert!(ws.style((2, 1)).get_font().map(|f| f.get_bold()).unwrap_or(false));
+        assert!(!ws.style((2, 2)).get_font().map(|f| f.get_bold()).unwrap_or(false));
+        assert_eq!(
+            ws.style((2, 2))
+                .get_number_format()
+                .map(|f| f.get_format_code()),
+            Some("0.0%")
+        );
+        assert_eq!(ws.get_column_dimension("A").unwrap().get_width(), 42.5);
+        assert!(ws
+            .get_sheets_views()
+            .get_sheet_view_list()
+            .first()
+            .and_then(|v| v.get_pane())
+            .is_some());
+    }
+
+    #[test]
+    fn add_bar_chart_persists_chart_part() {
+        let bytes = roundtrip_workbook();
+        let before = WorkbookDoc::count_charts_in_bytes(&bytes).unwrap();
+        let mut doc = WorkbookDoc::load(&bytes).unwrap();
+        doc.add_bar_chart(
+            "Sheet1",
+            "E2",
+            "K18",
+            vec!["Sheet1!$B$2:$B$5".to_string()],
+            "Quarterly",
+        )
+        .unwrap();
+        let out = doc.to_bytes().unwrap();
+        let after = WorkbookDoc::count_charts_in_bytes(&out).unwrap();
+        assert_eq!(after, before + 1);
+    }
+
+    #[test]
     fn load_edit_save_roundtrip() {
         let bytes = roundtrip_workbook();
         let mut doc = WorkbookDoc::load(&bytes).unwrap();

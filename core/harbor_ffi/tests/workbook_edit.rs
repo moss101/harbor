@@ -136,3 +136,63 @@ fn bad_edits_fail_honestly() {
     assert_eq!(v["ok"], false);
     assert!(v["error"].as_str().unwrap().contains("load:"));
 }
+
+#[test]
+fn ops_format_and_chart_round_trip() {
+    let dir = tempfile::tempdir().unwrap();
+    let h = Handle::open(dir.path());
+    let original = fixture_xlsx();
+    let sheet = first_sheet(&original);
+    use base64::Engine as _;
+    let data_b64 = base64::engine::general_purpose::STANDARD.encode(&original);
+
+    let result = h.call(
+        "workbook.edit",
+        serde_json::json!({
+            "data_b64": data_b64,
+            "edits": [],
+            "ops": [
+                {"op": "bold", "sheet": sheet, "row": 1, "col_from": 1, "col_to": 3},
+                {"op": "number_format", "sheet": sheet, "col": 2, "row_from": 2, "row_to": 5, "code": "0.0%"},
+                {"op": "column_width", "sheet": sheet, "col": 1, "width": 42.5},
+                {"op": "freeze_first_row", "sheet": sheet},
+                {"op": "add_chart", "sheet": sheet, "from": "E2", "to": "K18",
+                 "series": [format!("{sheet}!$B$2:$B$5")], "title": "Quarterly"},
+            ],
+        }),
+    );
+    assert_eq!(result["ops_applied"], 5);
+    let out = base64::engine::general_purpose::STANDARD
+        .decode(result["data_b64"].as_str().unwrap())
+        .unwrap();
+    // The chart part is really in the package.
+    assert_eq!(
+        harbor_artifacts::workbook::WorkbookDoc::count_charts_in_bytes(&out).unwrap(),
+        harbor_artifacts::workbook::WorkbookDoc::count_charts_in_bytes(&original).unwrap() + 1
+    );
+    // And the package still loads as a workbook.
+    assert!(harbor_artifacts::workbook::WorkbookDoc::load(&out).is_ok());
+}
+
+#[test]
+fn unknown_op_fails_honestly() {
+    let dir = tempfile::tempdir().unwrap();
+    let h = Handle::open(dir.path());
+    use base64::Engine as _;
+    let data_b64 = base64::engine::general_purpose::STANDARD.encode(fixture_xlsx());
+    let req = CString::new(
+        serde_json::json!({
+            "method": "workbook.edit",
+            "args": {"data_b64": data_b64, "edits": [], "ops": [
+                {"op": "pivot_table", "sheet": "Sheet1"}]},
+        })
+        .to_string(),
+    )
+    .unwrap();
+    let raw = unsafe { harbor_core_call(h.0, req.as_ptr()) };
+    let text = unsafe { CStr::from_ptr(raw) }.to_string_lossy().to_string();
+    unsafe { harbor_core_string_free(raw) };
+    let v: serde_json::Value = serde_json::from_str(&text).unwrap();
+    assert_eq!(v["ok"], false);
+    assert!(v["error"].as_str().unwrap().contains("unknown op"));
+}
