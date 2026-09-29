@@ -7,6 +7,64 @@ ran at.
 
 ---
 
+## Session 46 (2026-09-29): the remaining Office/Store list — every slice executable
+
+Session 45's "remaining" list, executed end to end (bc4ee53..4760689).
+
+**Phase 3 engine-wide expansion.** 28-function tier-2 group added by
+probing the pinned engine FIRST (all 32 probe formulas matched Excel
+semantics) and only then authoring fixtures: corpus 100→139 cases,
+71→99 targets (94 real functions after the 5 operator/reference
+pseudo-targets). macOS tier: **138/139 cases, 98/99 targets** — the one
+failure is still the documented TEXT truncation. The
+qualified_functions authority test in harbor_core now pins 94.
+
+**Platform tiers.** iOS SIMULATOR (iPhone 17 Pro, iOS 26.5) and Android
+EMULATOR (AVD cvbase_test, headless) both ran the cross-compiled
+qualify_dump: **identical 138/139 · 98/99 · same bundle sha · same TEXT
+deviation** as macOS. Recorded as explicit simulator/emulator tiers in
+22_Formula_Coverage.json — the physical iOS/Android/Windows entries of
+the qualified platform set stay operator-bound (no devices, no Windows
+host), and the tier notes say so. Cross-build gotcha: Homebrew rust
+shadows rustup and carries no cross stds — build with
+`rustup run 1.97.1-aarch64-apple-darwin cargo …` (Android via NDK 28.2
+clang wrapper, API 35).
+
+**Office editing depth + charts.** workbook.edit grew an `ops` array
+through the same typed artifact engine: bold, number format, column
+width, freeze first row, add_chart (bar/line/pie/scatter) with a
+chart-part round-trip test; the Work sheet-tab row gained Bold-row and
+Insert-chart-from-column actions (l10n en/ar).
+
+**Conditional formatting.** Investigated umya 3.1's CF authoring: the
+cfRule formula operand is address-typed and unqualified — authoring is
+REFUSED (recorded in 21_Office_Feature_Matrix.csv as PRESERVE_ONLY) and
+instead a structural-preservation test proves rule/range/operator/
+operand survive edit round trips (a hand-injected cellIs+dxfs part).
+
+**GenOffice-informed conversion.** `convert.markdown_to_docx`: headings/
+lists/paragraphs through the qualified block model (first `#` is the
+Title, deeper levels degrade to H3 never dropped, inline emphasis
+stripped and REPORTED, not guessed). Work gained "Convert Markdown…" —
+picks .md, core-converts, previews the real docx, saves a copy (desktop
+save picker / mobile documents dir).
+
+**Gate reports for the store gates.** tools/assemble_store_gate_reports.py
+(runs its own five suites, refuses on any red) assembled ACC-005
+(fit envelope), ACC-021 (uninstall frees owned files only) and ACC-065
+(security coverage) at a clean commit: **zero errors naming the three
+gates**; the 63 remaining errors name other required core gates — the
+honest state of a scoped bundle (same precedent as the RAG bundle).
+SEC-024/SEC-029 evidence reports landed under evidence/security/.
+
+Gates: workspace 65 suites 0 failed (one pinned count updated),
+contracts 124/0, check_optional_disabled clean, deny/fmt/clippy clean,
+Flutter 54/54. Still open, honestly: physical-device + Windows formula
+tiers (operator-bound), TEXT deviation (gates any engine bump),
+CF authoring (needs a fixture-qualified serializer), office Phase 4
+beyond markdown (pdf→office, md→pptx), substance evidence for the
+remaining ~60 core gates.
+
 ## Session 45 (2026-09-29): Harbor Office + Store — both product tracks land their first executable slice
 
 Two tracks, one session, six commits (23c8c6d..2ede6ce + this one).
