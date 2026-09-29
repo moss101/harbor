@@ -236,6 +236,7 @@ def main() -> None:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(value, indent=1, ensure_ascii=False) + "\n")
             print(f"written {path.relative_to(ROOT)}")
+        out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / "release_descriptor.json").write_text(
             json.dumps(descriptor, indent=1, ensure_ascii=False) + "\n")
         rec_dir = out_dir / "gate_records"
