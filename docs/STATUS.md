@@ -7,6 +7,71 @@ ran at.
 
 ---
 
+## Session 47 (2026-09-29): the "genuinely still open" list — closed as far as machines allow
+
+Session 46's honest-open list, executed (93ad692..HEAD).
+
+**The TEXT deviation is FIXED.** Upstream formualizer's `format_percent`
+hard-coded `{:.0}%` — it ignored `"0.0%"`'s decimal count AND fell to
+binary float error (0.285×100 = 28.499…996 → "28%"). Harbor now vendors
+the exact 0.9.3 source at `third_party/formualizer-eval` with one
+patched function (decimal-count parsing + half-away rounding with a
+binary-error correction), wired through `[patch.crates-io]`. Engine
+identity `0.9.3+harbor-textfix`; the pin hash now covers the patched
+source tree deterministically (`tools/pin_engine.py` grew the branch).
+Per decision 0001's own rule the FULL corpus re-ran on every available
+tier: **139/139 cases · 99/99 targets on macOS, iOS Simulator and
+Android emulator** — zero known deviations on any tier. Decision 0001
+carries the addendum; if upstream ships the fix, prefer the registry
+release and drop the patch (re-pin + full re-run either way).
+
+**CF authoring now exists.** umya 3.1's cfRule operand serialization is
+address-typed, so Harbor writes its OWN serializer:
+`WorkbookDoc::add_conditional_format` (cellIs operators + highlight
+fill, validated inputs) queues rules; the writer injects `<dxfs>` at its
+CT_Stylesheet position and each `<conditionalFormatting>` at its
+CT_Worksheet position after the umya write, continuing dxfId from any
+loaded package. Tests prove schema positions, umya read-back, and
+survival through later edits; exposed as a `workbook.edit` op; matrix
+row moved PRESERVE_ONLY → REQUIRED_UNQUALIFIED.
+
+**PDF → DOCX (text-extraction level).** `convert.pdf_to_docx`: per-page
+Heading2 + paragraphs from the qualified pdf extractor; the report
+carries `extraction_level: text-only` — layout/tables/images explicitly
+not claimed. Lives in the FFI layer because harbor_render depends on
+harbor_artifacts (cycle avoided), with an e2e fixture test.
+
+**Windows + physical-device tiers: confirmed operator-bound, made
+turn-key.** No mingw/MSVC on these hosts (no Windows link), no physical
+iOS (`devicectl`: no devices) or Android (adb: none) devices. What IS
+done: `docs/operations/formula-tier-runbook.md` with the exact verified
+commands (rustup toolchain — Homebrew rust has no cross stds; NDK 28.2
+API-35 linker flag; host-side commit binding) plus the tier-recording
+procedure. Meanwhile the last two non-executable SEC ids became
+executable: **SEC-027** (`tools/check_supply_chain.py`: lockfile
+pinning across 407 Rust + 192 Dart versions, engine provenance, SBOM
+coverage — it immediately caught real drift from the patch session and
+forced an SBOM regen — and cargo-deny advisories) and **SEC-028** (ABI
+handshake: `harbor_core_abi_version()` export, Dart binding refuses a
+mismatched core before any handle exists, tests both sides).
+
+**Core-gate substance sweep.** `tools/assemble_core_gate_evidence.py`
+derives the SEC→executable registry from the tree, runs 16 suites
+itself (rust workspace, app, security suites, supply chain, dart ffi)
+and refuses on any red. Result at ea2b755: **33 of 42 M3_GA_CORE gates
+assembled and validated with ZERO errors naming them**; 9 refused with
+named reasons (4 operator-bound, 2 non-REQUIRED states — ACC-025 is
+N/A on macOS, ACC-060 is feature-gated off, 3 UX gates needing
+walkthrough evidence: ACC-033/034/035). Every remaining evaluator error
+names gates outside the bundle (same honest shape as the RAG bundle).
+
+Gates: workspace 65 suites 0 failed, contracts 124/0, deny/fmt/clippy
+clean, supply chain PASS, Flutter 54/54, dossier PASS. What remains is
+operator work plus the three UX walkthroughs: physical iOS/Android and
+Windows formula tiers (runbook above — the last step to flipping the 99
+targets to PASS), signing/notarization/min-spec devices, and the
+ACC-033/034/035 walkthroughs.
+
 ## Session 46 (2026-09-29): the remaining Office/Store list — every slice executable
 
 Session 45's "remaining" list, executed end to end (bc4ee53..4760689).
