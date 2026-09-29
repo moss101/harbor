@@ -12,6 +12,7 @@
         ],
         "id": "qwen2.5-1.5b-instruct",
         "license": "Apache-2.0",
+        "publisher": "harbor",
         "quantization": "Q4_K_M",
         "repo_id": "Qwen/Qwen2.5-1.5B-Instruct-GGUF",
         "revision": "main",
@@ -30,6 +31,7 @@
         ],
         "id": "bge-small-en-v1.5",
         "license": "MIT",
+        "publisher": "harbor",
         "quantization": "Q8_0",
         "repo_id": "ggml-org/bge-small-en-v1.5-Q8_0-GGUF",
         "revision": "main",
@@ -48,6 +50,7 @@
         ],
         "id": "stories260k",
         "license": "Apache-2.0",
+        "publisher": "harbor",
         "quantization": "Q8_0",
         "repo_id": "ggml-org/models",
         "revision": "main",
@@ -66,6 +69,7 @@
         ],
         "id": "multilingual-e5-small",
         "license": "MIT",
+        "publisher": "harbor",
         "quantization": "Q8_0",
         "repo_id": "TwinSunsLLC/multilingual-e5-small-gguf",
         "revision": "main",
@@ -84,6 +88,7 @@
         ],
         "id": "bge-m3",
         "license": "MIT",
+        "publisher": "harbor",
         "quantization": "Q8_0",
         "repo_id": "gpustack/bge-m3-GGUF",
         "revision": "main",
@@ -93,9 +98,9 @@
       }
     ]
   },
-  "epoch": 3,
+  "epoch": 4,
   "key_id": "5cff12934466e591",
-  "published_at": "2026-09-28T00:00:00Z",
+  "published_at": "2026-09-29T00:00:00Z",
   "schema": "harbor.catalog/v1",
-  "signature": "92b96a2f25ffbb7d55a86f78fd37cf6efcb1902f484dcf3057e6e7d370c5b063bbbb9bbc79e2ddba08d22b5ee095d625006fd79d11bfd20d08f4ef375f90630c"
+  "signature": "fdd5fe5ea79a5bb14c438fe77a2de4d285da06096b52c20fd45043a924e6ba71272076052d01ad8fce48f3dddf582c2c307982cda1f2a0437939da360743b70b"
 }

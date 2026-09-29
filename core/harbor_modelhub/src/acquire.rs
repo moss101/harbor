@@ -903,6 +903,10 @@ pub struct CatalogPackage {
     pub files: Vec<(String, String, String)>,
     pub quantization: String,
     pub context_tokens: u64,
+    /// First-party marker: "harbor" marks a Harbor-curated, Harbor-signed
+    /// listing (the Store's first-party section); anything else (default
+    /// "community") renders as a community entry.
+    pub publisher: String,
 }
 
 /// Parse a signed catalog document (the canonical `entries` JSON of a
@@ -939,6 +943,11 @@ pub fn parse_catalog_document(entries: &JsonValue) -> Result<Vec<CatalogPackage>
             .and_then(|v| v.as_int())
             .map(|i| i.max(0) as u64)
             .unwrap_or(2048);
+        let publisher = p
+            .get("publisher")
+            .and_then(|v| v.as_str())
+            .unwrap_or("community")
+            .to_string();
         let mut files = Vec::new();
         for f in p
             .get("files")
@@ -974,6 +983,7 @@ pub fn parse_catalog_document(entries: &JsonValue) -> Result<Vec<CatalogPackage>
             files,
             quantization,
             context_tokens,
+            publisher,
         });
     }
     Ok(out)

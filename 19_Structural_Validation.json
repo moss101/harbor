@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "f160e5c0e60df785d86ff8bb7df16b16723a6806b1b681d2d8efbf6df0bb8891",
+  "input_manifest_sha256": "798922a04164cc8c24f5bcbea46156eeefe2e014485c8d57f3fd9be52dc1816b",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -296,8 +296,8 @@
     },
     {
       "path": "apps/harbor_app/assets/catalog/signed_catalog.json",
-      "bytes": 2798,
-      "sha256": "8dcb314bf5834b4b1cd272c50f87f6d0e760d8d0c4a2837af697480a22360012"
+      "bytes": 2953,
+      "sha256": "f02c84a4dfcd8d82457998ee9885d54a937d728155f9499b379bd0865f0272d7"
     },
     {
       "path": "apps/harbor_app/ios/.gitignore",
@@ -641,8 +641,8 @@
     },
     {
       "path": "apps/harbor_app/lib/surfaces/store_surface.dart",
-      "bytes": 14837,
-      "sha256": "fee31736679827f831c129e98691fb1eba11c8a3c69611bfd5dffa6e45c92aa5"
+      "bytes": 15199,
+      "sha256": "5fb88f740fadf01055f25fd3ecffb2b9abe54e0ca7e4d63b0bb90b2684e59bbc"
     },
     {
       "path": "apps/harbor_app/lib/surfaces/surfaces.dart",
@@ -1711,8 +1711,8 @@
     },
     {
       "path": "core/harbor_ffi/src/lib.rs",
-      "bytes": 143820,
-      "sha256": "f716f711efc8b3c832388f5f89321dea2280790667200e85ce8808979462abdb"
+      "bytes": 143870,
+      "sha256": "b8d4020f6f5848cff375cb22c7069cf7f9968d5946b50d34aaab5d8b60d4e068"
     },
     {
       "path": "core/harbor_ffi/tests/catalog_first_run.rs",
@@ -1936,13 +1936,13 @@
     },
     {
       "path": "core/harbor_modelhub/examples/key_ceremony.rs",
-      "bytes": 4985,
-      "sha256": "4d10c45d4654bfb9d5bbcf07faef8e635015891d1eceebe075bb0bb8b220b4ad"
+      "bytes": 5097,
+      "sha256": "4903c0b19cc88cc80ba85b1fe06e80391d86243b18d7801f5286a372214a26cb"
     },
     {
       "path": "core/harbor_modelhub/src/acquire.rs",
-      "bytes": 72808,
-      "sha256": "bcb8406dc5ad792d694ff0b70e151e6bf4b0f18b6384d1ec9a85339dac17cbe4"
+      "bytes": 73214,
+      "sha256": "3637390a9780fed128ff6c691673406b14064dee680b4d3a61b66b380518b3c3"
     },
     {
       "path": "core/harbor_modelhub/src/catalog.rs",
@@ -2686,8 +2686,8 @@
     },
     {
       "path": "fixtures/catalog/signed_catalog.json",
-      "bytes": 2798,
-      "sha256": "8dcb314bf5834b4b1cd272c50f87f6d0e760d8d0c4a2837af697480a22360012"
+      "bytes": 2953,
+      "sha256": "f02c84a4dfcd8d82457998ee9885d54a937d728155f9499b379bd0865f0272d7"
     },
     {
       "path": "fixtures/contracts/records.json",

@@ -1301,6 +1301,7 @@ fn dispatch(
                         "id": p.id,
                         "repo_id": p.repo_id,
                         "revision": p.revision,
+                        "publisher": p.publisher,
                         "quantization": meta.get("quantization").cloned().unwrap_or(serde_json::Value::Null),
                         "context_tokens": meta.get("context_tokens").cloned().unwrap_or(serde_json::Value::Null),
                         "tiers": meta.get("tiers").cloned().unwrap_or(serde_json::json!([])),

@@ -111,7 +111,11 @@ class _HarborModelsSection extends StatelessWidget {
     }
     final packages = service.catalog
         .where((p) => !(p['tiers'] as List? ?? const []).contains('Test'))
-        .toList();
+        .toList()
+      ..sort((a, b) {
+        int first(Map p) => p['publisher'] == 'harbor' ? 0 : 1;
+        return first(a).compareTo(first(b));
+      });
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -200,6 +204,11 @@ class _StoreModelCardState extends State<_StoreModelCard> {
               child: Text(p['id'] as String? ?? '',
                   style: t.text.bodyStrongOf(t.colors.ink)),
             ),
+            if (p['publisher'] == 'harbor')
+              const Padding(
+                padding: EdgeInsetsDirectional.only(end: HarborSpace.s2),
+                child: HarborPill('Harbor', brand: true),
+              ),
             if (_installed)
               HarborPill(AppLocalizations.of(context)!.modelsInstalledBadge),
           ]),
