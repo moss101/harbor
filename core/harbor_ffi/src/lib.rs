@@ -931,6 +931,18 @@ fn decode_artifacts(
     Ok(artifacts)
 }
 
+/// SEC-028: ABI handshake constant. The Dart binding refuses to open a
+/// native core whose reported ABI version differs from the one it was
+/// built against — an incompatible dylib never binds, it is a typed
+/// error naming both versions.
+pub const HARBOR_ABI_VERSION: u32 = 1;
+
+/// The native side of the SEC-028 handshake.
+#[no_mangle]
+pub extern "C" fn harbor_core_abi_version() -> u32 {
+    HARBOR_ABI_VERSION
+}
+
 /// The SEC-024 undo window: trashed packages keep their bytes until this
 /// age (swept at workspace open).
 const TRASH_UNDO_WINDOW: chrono::Duration = chrono::Duration::hours(72);

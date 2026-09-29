@@ -27,6 +27,24 @@ typedef _CloseDart = void Function(Pointer<Void>);
 /// Privacy modes mirror `harbor_security::policy::PrivacyMode`.
 enum HarborPrivacyMode { localOnly, hybrid, remoteAllowed }
 
+/// ABI version this binding is built against (SEC-028 handshake).
+const int expectedAbiVersion = 1;
+
+/// The handshake rule: the native core must report EXACTLY the version
+/// this binding was built against (no forward compatibility claims).
+bool abiCompatible(int expected, int native_) => expected == native_;
+
+/// SEC-028: the native core's ABI version does not match the binding.
+class HarborAbiMismatchException implements Exception {
+  HarborAbiMismatchException(this.expected, this.found);
+  final int expected;
+  final int found;
+  @override
+  String toString() =>
+      'HarborAbiMismatchException: binding expects ABI $expected, '
+      'native core reports $found';
+}
+
 class HarborCoreException implements Exception {
   HarborCoreException(this.message);
   final String message;
@@ -75,6 +93,14 @@ class HarborCoreClient {
         rethrow;
       }
       lib = process;
+    }
+    // SEC-028: version handshake BEFORE any workspace handle exists —
+    // an incompatible native core is refused, never partially bound.
+    final versionFn = lib.lookupFunction<Int32 Function(), int Function()>(
+        'harbor_core_abi_version');
+    final nativeAbi = versionFn();
+    if (!abiCompatible(expectedAbiVersion, nativeAbi)) {
+      throw HarborAbiMismatchException(expectedAbiVersion, nativeAbi);
     }
     final openFn =
         lib.lookupFunction<_OpenExNative, _OpenExDart>('harbor_core_open_ex');

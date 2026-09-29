@@ -8,6 +8,7 @@ final repoRoot =
 final dylibPath = '$repoRoot/core/target/debug/libharbor_ffi.dylib';
 
 void main() {
+  _sec028();
   test('boundary round-trips runs and blobs with policy facts', () {
     if (!File(dylibPath).existsSync()) {
       fail('build core first: cargo build -p harbor_ffi');
@@ -50,5 +51,21 @@ void main() {
     expect(preview['kind'], 'docx');
     final paras = (preview['preview']['paragraphs'] as List).cast<Map>();
     expect(paras.first['text'], contains('Harbor Plan'));
+  });
+}
+
+// SEC-028: the ABI handshake rule is a pure function — the binding
+// accepts exactly its own version and refuses every other (an
+// incompatible native core never binds).
+// (executed inside the suite's main above)
+// coverage:ignore-start
+void _sec028() {
+  test('SEC-028 ABI handshake: binding accepts exactly its version', () {
+    expect(abiCompatible(expectedAbiVersion, expectedAbiVersion), isTrue);
+    expect(abiCompatible(expectedAbiVersion, expectedAbiVersion + 1), isFalse);
+    expect(abiCompatible(expectedAbiVersion, expectedAbiVersion - 1), isFalse);
+    final err = HarborAbiMismatchException(1, 2);
+    expect(err.toString(), contains('expects ABI 1'));
+    expect(err.toString(), contains('reports 2'));
   });
 }
