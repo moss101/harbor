@@ -1213,28 +1213,18 @@ mod tests {
             .position(|s| s.name() == "Sheet1")
             .unwrap();
         let ws = &re.book.sheet_collection()[idx];
-        assert!(ws
-            .style((2, 1))
-            .get_font()
-            .map(|f| f.get_bold())
-            .unwrap_or(false));
-        assert!(!ws
-            .style((2, 2))
-            .get_font()
-            .map(|f| f.get_bold())
-            .unwrap_or(false));
+        assert!(ws.style((2, 1)).font().map(|f| f.bold()).unwrap_or(false));
+        assert!(!ws.style((2, 2)).font().map(|f| f.bold()).unwrap_or(false));
         assert_eq!(
-            ws.style((2, 2))
-                .get_number_format()
-                .map(|f| f.get_format_code()),
+            ws.style((2, 2)).number_format().map(|f| f.format_code()),
             Some("0.0%")
         );
-        assert_eq!(ws.get_column_dimension("A").unwrap().get_width(), 42.5);
+        assert_eq!(ws.get_column_dimension("A").unwrap().width(), 42.5);
         assert!(ws
             .get_sheets_views()
-            .get_sheet_view_list()
+            .sheet_view_list()
             .first()
-            .and_then(|v| v.get_pane())
+            .and_then(|v| v.pane())
             .is_some());
     }
 
