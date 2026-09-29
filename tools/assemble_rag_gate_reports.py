@@ -398,7 +398,7 @@ def main() -> None:
             operator_gates.append(entry)
         else:
             sec = [x for x in gate_rows[gid]["Security IDs"].split(";") if x]
-            EXECUTABLE_SEC = {"SEC-002", "SEC-003", "SEC-004", "SEC-005",
+            EXECUTABLE_SEC = {"SEC-001", "SEC-002", "SEC-003", "SEC-004", "SEC-005",
                               "SEC-006", "SEC-007", "SEC-008", "SEC-009",
                               "SEC-011", "SEC-012", "SEC-013", "SEC-014",
                               "SEC-018", "SEC-019", "SEC-020", "SEC-021",

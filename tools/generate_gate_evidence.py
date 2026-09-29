@@ -149,7 +149,7 @@ def main() -> None:
         # sec_030+sec_035 -> ACC-002/038/048; sec_021 -> ACC-007/015.
         # These record the SCENARIO side of those gates; each gate's
         # full substance still needs its own evidence.
-        "inference_security_scenarios": ["SEC-011", "SEC-019"],
+        "inference_security_scenarios": ["SEC-011", "SEC-019", "SEC-001"],
         "net_security_scenarios": ["SEC-030", "SEC-035", "SEC-034"],
         "modelhub_security_scenarios": ["SEC-021", "SEC-014", "SEC-045", "SEC-009", "SEC-012", "SEC-044", "SEC-013"],
         # sec_046 -> ACC-020/042/043/076; sec_031 -> ACC-010/020/044/063/081;

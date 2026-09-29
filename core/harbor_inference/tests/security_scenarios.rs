@@ -107,3 +107,80 @@ fn sec_019_unload_clears_resident_model_state() {
         .generate(request("pkg-a"))
         .expect("answers again after reload");
 }
+
+/// SEC-001 (malicious GGUF metadata): hostile metadata — huge declared
+/// lengths, invalid offsets, truncated headers — is rejected by the load
+/// path as a typed error. No panic, no hang: the boundary holds at
+/// Harbor's seam with llama.cpp's bounded parser underneath.
+#[test]
+#[cfg(feature = "gguf-backend")]
+fn sec_001_malicious_gguf_metadata_is_rejected_bounded() {
+    use harbor_inference::GgufLlamaCppProvider;
+    use harbor_modelhub::install::{
+        PackageFile, PackageInstaller, PackageManifest, RuntimeBinding,
+    };
+
+    fn install_and_load(
+        root: &std::path::Path,
+        bytes: &[u8],
+    ) -> Result<(), harbor_inference::ProviderError> {
+        let installer = PackageInstaller::new(root);
+        let sha = harbor_canonical::sha256_hex(bytes);
+        let id = format!("evil-{}", &sha[..8]);
+        let manifest = PackageManifest {
+            schema: "harbor.model/v3".into(),
+            id: id.clone(),
+            reference_type: "installed_package".into(),
+            files: vec![PackageFile {
+                role: "weights".into(),
+                path: "model.gguf".into(),
+                sha256: sha,
+                size_bytes: bytes.len() as u64,
+            }],
+            runtime: RuntimeBinding {
+                kind: "gguf/llama.cpp".into(),
+                min_revision: "0.1.156".into(),
+                targets: vec![std::env::consts::ARCH.into()],
+            },
+        };
+        let mut staged = installer.begin(&id).unwrap();
+        installer
+            .ingest_file(&mut staged, &manifest.files[0], bytes)
+            .map_err(|e| harbor_inference::ProviderError::Backend(e.to_string()))?;
+        installer
+            .commit(&mut staged, &manifest, chrono::Utc::now())
+            .unwrap();
+        let provider = GgufLlamaCppProvider::new(root).unwrap();
+        provider.load(&ModelRef::InstalledPackage { package_id: id })
+    }
+
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().join("models");
+    std::fs::create_dir_all(&root).unwrap();
+
+    // Valid magic + a huge tensor-count field (u64::MAX) with nothing
+    // behind it: invalid offsets/lengths, refused.
+    let mut huge = b"GGUF".to_vec();
+    huge.extend_from_slice(&3u32.to_le_bytes());
+    huge.extend_from_slice(&u64::MAX.to_le_bytes());
+    huge.extend_from_slice(&u64::MAX.to_le_bytes());
+    let err = install_and_load(&root, &huge).unwrap_err();
+    assert!(
+        matches!(err, harbor_inference::ProviderError::Backend(_)),
+        "huge lengths must be a typed backend error: {err}"
+    );
+
+    // Truncated right after the magic.
+    let truncated = b"GGU".to_vec();
+    let err = install_and_load(&root, &truncated).unwrap_err();
+    assert!(matches!(err, harbor_inference::ProviderError::Backend(_)));
+
+    // Valid header, garbage body (invalid offsets into nothing).
+    let mut garbage = b"GGUF".to_vec();
+    garbage.extend_from_slice(&2u32.to_le_bytes());
+    garbage.extend_from_slice(&1u64.to_le_bytes());
+    garbage.extend_from_slice(&1u64.to_le_bytes());
+    garbage.extend_from_slice(&[0u8; 8]); // string-kind KV with a broken length
+    let err = install_and_load(&root, &garbage).unwrap_err();
+    assert!(matches!(err, harbor_inference::ProviderError::Backend(_)));
+}

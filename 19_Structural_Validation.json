@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "c1c1af536f761fa8a63640b8b3afeccbd58895ad639e29bbdfda7baeb018e819",
+  "input_manifest_sha256": "f5c35cefd635abe41a476b17cb55c8a61eaebc62abf8e76c9c0918ee3bb434e6",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -1771,8 +1771,8 @@
     },
     {
       "path": "core/harbor_inference/Cargo.toml",
-      "bytes": 832,
-      "sha256": "29b1663d3ba647dc76f490a070b45cb2eb283b5c59f9b95bac226ee0ca52c9d6"
+      "bytes": 871,
+      "sha256": "24beaf25ba1e2d3b7c7fdafc9803fa85352ff2a5a31b4b2db1f6c5827b7ec64f"
     },
     {
       "path": "core/harbor_inference/examples/embed_probe.rs",
@@ -1831,8 +1831,8 @@
     },
     {
       "path": "core/harbor_inference/tests/security_scenarios.rs",
-      "bytes": 4579,
-      "sha256": "c342f4308792e0bbb923183d2a52ac8a578cb00088fa07c4bcf6e13910e9cd02"
+      "bytes": 7840,
+      "sha256": "6160682a4949ba2f42cc4ba760ee9f0a32a0d8b8493f31f9e7e215a097f72aec"
     },
     {
       "path": "core/harbor_integration/Cargo.toml",
@@ -3006,8 +3006,8 @@
     },
     {
       "path": "tools/assemble_rag_gate_reports.py",
-      "bytes": 23516,
-      "sha256": "db3ccc977929747169733f873b7e3d21cb30d6ebb8c83b57df97364f5dc6c2f8"
+      "bytes": 23527,
+      "sha256": "5be7c176e7c03ab324186a7edc0340669264a6de5acd34965fb1ea5b2fd99bf6"
     },
     {
       "path": "tools/assemble_release_evidence.py",
@@ -3066,8 +3066,8 @@
     },
     {
       "path": "tools/generate_gate_evidence.py",
-      "bytes": 10314,
-      "sha256": "eff2030308091bbd322c683e470ce1c7118f961820d9c25f066cf2a8b83241b9"
+      "bytes": 10325,
+      "sha256": "d2384b161e09d7ff18035b1741aee5b8ac78587a07565650da5d5c9433c4c443"
     },
     {
       "path": "tools/generate_sbom.py",
