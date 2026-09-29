@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "b9d1064bcc7867f6e8d6fd2648af795f7386a42a8fba2fbcf86771ea21033006",
+  "input_manifest_sha256": "c43d6578c06398c8f0a10d273fb010193e2212ff4db18d205a33c6d3dd88a5e7",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -121,8 +121,8 @@
     },
     {
       "path": "22_Formula_Coverage.json",
-      "bytes": 9456,
-      "sha256": "894b27933ad11f179e9f3ef6f47a8362559ce86bece977186c0e211fa9ba70e9"
+      "bytes": 9557,
+      "sha256": "8b73e886e5eb60f6d6abe7dba892597759c48bc68411b26238dcb8a472e76c4f"
     },
     {
       "path": "23_Review_Reconciliation_Matrix.md",

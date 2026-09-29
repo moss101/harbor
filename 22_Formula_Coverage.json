@@ -4,10 +4,10 @@
   "adapter": "harbor_formula",
   "selected_engine": {
     "family": "Formualizer",
-    "candidate_version": "0.9.0",
-    "production_source_revision": "MUST_BE_PINNED_BY_HBR-153",
-    "production_integrity_hash": "MUST_BE_RECORDED_BY_HBR-153",
-    "license_review": "REQUIRED"
+    "candidate_version": "0.9.3",
+    "production_source_revision": "crates.io/formualizer@0.9.3",
+    "production_integrity_hash": "64b7771c27fcd3da6229ae4653acc4269cf6635412b283fa0dd16e8359b54139",
+    "license_review": "APPROVED: MIT OR Apache-2.0, docs/decisions/0001-formula-engine-pin.md"
   },
   "verification_rule": "Only entries with qualification_status=PASS for the exact engine source revision, Harbor adapter revision, fixture corpus version and platform set are verified. Presence in this file is not itself evidence.",
   "qualified_platform_set": [
