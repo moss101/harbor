@@ -203,7 +203,7 @@ def main() -> None:
             if sid in ("SEC-024", "SEC-029"):
                 sec_report = {
                     "scenario": sid,
-                    "control": sec_rows[sid]["Control"],
+                    "control": sec_rows[sid]["Required control/test"],
                     "status": "PASS",
                     "commit": commit,
                     "executed_by": backing["executed_by"],
