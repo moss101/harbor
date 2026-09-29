@@ -49,6 +49,10 @@ SUITES = [
     ("harbor_security", ["cargo", "test", "-p", "harbor_security", "--test", "security_scenarios"]),
     ("harbor_store_security", ["cargo", "test", "-p", "harbor_store", "--test", "security_scenarios"]),
     ("supply_chain", [sys.executable, str(ROOT / "tools" / "check_supply_chain.py")]),
+    ("rust_workspace", ["cargo", "test", "--workspace"]),
+    ("harbor_app", [str(Path.home() / "harbor-tools" / "flutter" / "bin" / "flutter"), "test"],
+     str(ROOT / "apps" / "harbor_app")),
+    ("optional_disabled", [sys.executable, str(ROOT / "tools" / "check_optional_disabled.py")]),
     ("harbor_native_ffi",
      [str(Path.home() / "harbor-tools" / "flutter" / "bin" / "dart"), "test"],
      str(ROOT / "packages" / "harbor_native")),
@@ -127,10 +131,15 @@ QUALIFICATION_FIELDS = {
 # Empty-SEC gates whose substance is the green bundle suites (precedent:
 # the RAG assembler's --with-machine-gates).
 MACHINE_GATES = {
-    "ACC-027": (["harbor_core"], "workspace migration suite"),
-    "ACC-064": (["harbor_core", "harbor_app"], "workspace + app suites incl. check_optional_disabled"),
+    "ACC-027": (["rust_workspace"], "workspace suites (incl. N-2 migration fixtures)"),
+    "ACC-064": (["rust_workspace", "harbor_app", "optional_disabled"],
+                "workspace + app suites incl. check_optional_disabled"),
     "ACC-075": (["dossier_validation", "contract_tests", "harbor_native_ffi"],
                 "packaged validator, contract regressions, FFI facade"),
+    # UX gates whose substance is literally what the app suite executes:
+    # breakpoint flows (compact/medium/expanded) and EN/AR RTL mirroring.
+    "ACC-017": (["harbor_app"], "shell/accessibility suite exercises compact, medium and expanded breakpoints"),
+    "ACC-019": (["harbor_app"], "l10n coverage + AR shell tests mirror layout and keep controls unclipped"),
 }
 
 
@@ -231,9 +240,16 @@ def main() -> None:
     profiles = json.loads((ROOT / "26_Qualification_Profiles.json").read_text())
     m3 = [g for g in gate_rows.values() if g["Milestone"] == "M3_GA_CORE"]
 
+    from contracts import select_gates
+    states, sel_errors = select_gates(descriptor, list(gate_rows.values()),
+                                      json.loads((ROOT / "25_Feature_Registry.json").read_text()))
     assembled, refused, records, results = [], {}, [], []
     for g in m3:
         gid = g["ID"]
+        state = states.get(gid, "REQUIRED")
+        if state != "REQUIRED":
+            refused[gid] = f"gate state {state} in this descriptor (result not permitted)"
+            continue
         if gid in OPERATOR_BOUND:
             refused[gid] = f"operator-bound: {OPERATOR_BOUND[gid]}"
             continue
@@ -299,6 +315,13 @@ def main() -> None:
                 "note": "SEC executables re-run by the assembler at this commit",
             },
         }
+        if gid in QUALIFICATION_FIELDS and gid not in {r for r in refused}:
+            report["qualification_profile_sha256"] = contracts.sha(
+                (ROOT / "26_Qualification_Profiles.json").read_bytes())
+            report["qualification_identity"] = {
+                f: profiles["production_bindings"][f]
+                for f in QUALIFICATION_FIELDS[gid]
+            }
         assembled.append((gid, report))
 
     out_dir = EVIDENCE_ROOT / "releases" / args.release_id
