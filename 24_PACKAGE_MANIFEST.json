@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "615729b83ae568647b72f50ae2d3d50c8aa355f36ab89e368e49617c84fa5b51",
+  "input_manifest_sha256": "bf60abb295e7b6a241c0fa89fa9f6aa7445387dbd7ea06f03f6811c7c88be5d2",
   "file_count_excluding_manifest": 627,
   "files": [
     {
@@ -125,12 +125,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 114450,
-      "sha256": "95054446ddf1221568b2cfb6fa3d591cb3101d36b0702514cd9b3902b073c320"
+      "sha256": "a8a0b4b551e2665959c6559fb33ae33ce25100567dc0f48cfe31dc6c92ffb064"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "8ae32a3340b434fcb7daa00693e8abf26e4db0d78cf8e04611a5039faefcaa7e"
+      "sha256": "28464e39510d84446b9aea44575bdc983f3d36d7ff4c88b3a0b46aed104447d0"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -139,8 +139,8 @@
     },
     {
       "path": "22_Formula_Coverage.json",
-      "bytes": 10834,
-      "sha256": "92707a9902abcb09cc474759d56ec4948b90b6ea0f70034feda1a2931954e383"
+      "bytes": 13808,
+      "sha256": "9f24787548e58a0fbc67ec41475f45dde0b006fbad1823a22d0d44c6089746cc"
     },
     {
       "path": "23_Review_Reconciliation_Matrix.md",
@@ -1774,8 +1774,8 @@
     },
     {
       "path": "core/harbor_formula/fixtures/formula_corpus.json",
-      "bytes": 33384,
-      "sha256": "f5c97506bf348b6d009f2ebe3818ebb948cb7925efad499b87325da7527f0e54"
+      "bytes": 42938,
+      "sha256": "e1fc88a383b2b2805a2030c05a13bff32e6f94287103c1a8cd9ab968b1fafded"
     },
     {
       "path": "core/harbor_formula/src/corpus.rs",

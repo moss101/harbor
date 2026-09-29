@@ -10,9 +10,9 @@ Required core GA gates by platform for public Hub, RAG and Arabic OCR: iOS: 66, 
 
 Contract regression cases: 124 passed, 0 failed.
 
-Product readiness remains **BLOCKED**. No product gate is marked PASS by this report. Formula qualification remains 0 of 71; model, engine, adapter, fixture, evaluation and device bindings require implementation evidence. Performance thresholds must be approved and measured.
+Product readiness remains **BLOCKED**. No product gate is marked PASS by this report. Formula qualification remains 0 of 99; model, engine, adapter, fixture, evaluation and device bindings require implementation evidence. Performance thresholds must be approved and measured.
 
-Input manifest SHA-256: `615729b83ae568647b72f50ae2d3d50c8aa355f36ab89e368e49617c84fa5b51`. File 19 records every input digest. The package manifest excludes itself and includes this report.
+Input manifest SHA-256: `bf60abb295e7b6a241c0fa89fa9f6aa7445387dbd7ea06f03f6811c7c88be5d2`. File 19 records every input digest. The package manifest excludes itself and includes this report.
 
 Reproduce: install `requirements-validation.txt`, then run `python3 tools/validate_dossier.py`. Regenerate derived reports only after authority edits with `python3 tools/validate_dossier.py --write`.
 
