@@ -162,6 +162,18 @@ and harbor_artifacts; bundle 20/20. Classification: 31 gates scenario-complete
 awaiting substance evidence, 14 citing non-executable SEC ids, 7
 operator-bound. Commit 9ec639b.
 
+## Session 44 final sweep (2026-09-29): 36 of 47 SEC ids executable
+
+Twelve ids this turn (001/002/003/005/013/020/025/027/034/036/037/038), two of them
+product hardenings that did not exist before: package integrity now enforces ZIP-bomb
+ceilings (200x ratio, 512 MiB total) and rejects traversal entry names; the temp-window
+sweep now ATTRIBUTES the files it removes instead of silently deleting them via Drop
+(found by the test). Bundle 22/22. The scenario side of the machine-work backlog is
+closed except two recorded blockers: SEC-024 (deletion preview is app-layer UI
+evidence) and SEC-029 (download preflight needs a quota-policy product decision) —
+they gate ACC-005/021/065 only. Everything else on the 54 machine-work gates is now
+substance evidence for scenario-complete gates. Commits a29a2b0 + follow-up.
+
 ## Session 42 (2026-09-27): the authoring skills on the iPhone simulator — five defects the Mac runs did not show
 
 Uncommitted on top of `8a09909` at the time of writing. iPhone 17 Pro
