@@ -112,7 +112,21 @@ impl TempRegistry {
     /// was found. Runs before new workspace work.
     pub fn sweep_on_restart(&self) -> Result<ResidueReport> {
         let mut removed = Vec::new();
-        self.open.lock().unwrap().clear();
+        {
+            // Open handles from a dead process are residue too: attribute
+            // their files to this sweep BEFORE dropping the clones —
+            // Drop would delete them silently and the report would
+            // undercount what was cleaned (found by SEC-037's test).
+            let mut open = self.open.lock().unwrap();
+            for handle in open.iter_mut() {
+                if !handle.removed && handle.path.exists() {
+                    let _ = std::fs::remove_file(&handle.path);
+                    removed.push(handle.path.clone());
+                }
+                handle.removed = true; // prevent Drop from double-deleting
+            }
+            open.clear();
+        }
         if self.dir.exists() {
             for entry in std::fs::read_dir(&self.dir)? {
                 let p = entry?.path();

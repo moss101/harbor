@@ -236,3 +236,46 @@ fn sec_047_revocation_survives_the_durable_store() {
         "a reopened store must not resurrect a removed source"
     );
 }
+
+/// SEC-025 (prompt cross-workspace leak): knowledge content is sealed
+/// under the workspace-derived key — a store written under workspace A's
+/// key cannot be opened under workspace B's key, so no prompt context
+/// crosses workspaces at rest or on reopen.
+#[test]
+fn sec_025_knowledge_content_is_workspace_scoped() {
+    use harbor_store::keys::KeyMaterial;
+    let dir = tempfile::tempdir().unwrap();
+    let db = dir.path().join("knowledge.db");
+    let key_a = KeyMaterial::random();
+    let key_b = KeyMaterial::random();
+
+    {
+        let store = harbor_ffi::knowledge::KnowledgeStore::open(&db, key_a.clone()).unwrap();
+        store
+            .replace_source(
+                "ws-a-doc",
+                "A",
+                "hash-1",
+                &[(
+                    0u32,
+                    "workspace A confidential content".into(),
+                    vec![0.1f32; 8],
+                )],
+            )
+            .unwrap();
+    }
+    // Workspace B's key cannot unseal A's chunks: the read is a crypto
+    // error, never a silent cross-workspace read.
+    let store_b = harbor_ffi::knowledge::KnowledgeStore::open(&db, key_b).unwrap();
+    let err = store_b.load_chunks();
+    assert!(
+        matches!(err, Err(harbor_ffi::knowledge::KnowledgeFfiError::Crypto)),
+        "cross-workspace knowledge reads must fail closed: {:?}",
+        err.map(|_| ()).map_err(|e| e.to_string())
+    );
+    // And A's own key still reads its content.
+    let store_a = harbor_ffi::knowledge::KnowledgeStore::open(&db, key_a).unwrap();
+    let chunks = store_a.load_chunks().unwrap();
+    assert_eq!(chunks.len(), 1);
+    assert_eq!(chunks[0].text, "workspace A confidential content");
+}

@@ -18,8 +18,11 @@ use std::io::{Cursor, Read};
 /// - each part has a content type (an `Override`, or a `Default` for its
 ///   extension), and each `Override` names a part that exists;
 /// - the package has a root `_rels/.rels` with an officeDocument target.
+pub const MAX_PACKAGE_UNCOMPRESSED: u64 = 512 * 1024 * 1024;
+
 pub fn package_integrity(bytes: &[u8]) -> Vec<String> {
     let mut problems = Vec::new();
+    let mut total_uncompressed: u64 = 0;
     let mut archive = match zip::ZipArchive::new(Cursor::new(bytes)) {
         Ok(a) => a,
         Err(e) => return vec![format!("not a zip package: {e}")],
@@ -34,10 +37,37 @@ pub fn package_integrity(bytes: &[u8]) -> Vec<String> {
             }
         };
         let name = entry.name().to_string();
+        // SEC-003 (OOXML path traversal): entry names are canonicalized
+        // part paths — absolute or climbing names are rejected outright
+        // (Harbor never extracts to the filesystem, but a package whose
+        // names claim to escape is malformed at best, hostile at worst).
+        if name.starts_with('/') || name.split('/').any(|seg| seg == "..") {
+            problems.push(format!("{name}: traversal entry name rejected (SEC-003)"));
+            continue;
+        }
+        // SEC-002 (ZIP bomb): per-entry compression ratio and total
+        // uncompressed ceilings. A part that expands more than 200x its
+        // stored bytes, or a package over 512 MiB uncompressed, is
+        // refused before any parsing.
+        let stored = entry.compressed_size().max(1);
         let mut buf = Vec::new();
         if let Err(e) = entry.read_to_end(&mut buf) {
             problems.push(format!("{name}: {e}"));
             continue;
+        }
+        if buf.len() as u64 > stored.saturating_mul(200) {
+            problems.push(format!(
+                "{name}: compression ratio {} exceeds 200x (SEC-002)",
+                buf.len() as u64 / stored
+            ));
+            continue;
+        }
+        total_uncompressed += buf.len() as u64;
+        if total_uncompressed > MAX_PACKAGE_UNCOMPRESSED {
+            problems.push(format!(
+                "package exceeds {MAX_PACKAGE_UNCOMPRESSED} uncompressed bytes (SEC-002)"
+            ));
+            break;
         }
         if parts.insert(name.clone(), buf).is_some() {
             problems.push(format!("duplicate part {name}"));

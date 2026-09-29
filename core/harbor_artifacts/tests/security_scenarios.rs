@@ -501,3 +501,59 @@ fn sec_023_overwrite_is_protected_new_copy_is_default() {
         harbor_artifacts::commit::SafeCommitError::BaseChanged { .. }
     ));
 }
+
+/// SEC-003 (OOXML path traversal): entry names that are absolute or
+/// climb with `..` are rejected by integrity outright.
+#[test]
+fn sec_003_traversal_entry_names_rejected() {
+    fn pkg_with_entry(name: &str) -> Vec<u8> {
+        let mut pkg = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+        use std::io::Write;
+        pkg.start_file(name, zip::write::SimpleFileOptions::default())
+            .unwrap();
+        pkg.write_all(b"x").unwrap();
+        pkg.finish().unwrap().into_inner()
+    }
+    for bad in ["../escape.xml", "a/../../escape.xml", "/absolute.xml"] {
+        let problems = harbor_artifacts::package::package_integrity(&pkg_with_entry(bad));
+        assert!(
+            problems.iter().any(|p| p.contains("traversal")),
+            "{bad} must be rejected: {problems:?}"
+        );
+    }
+}
+
+/// SEC-002 (ZIP bomb): a part expanding beyond the compression-ratio
+/// ceiling is refused before parsing (1 MiB of zeros Deflated to ~1 KiB
+/// is >200x; a Stored-method package of the same body is 1x and passes).
+#[test]
+fn sec_002_zip_bomb_ratio_ceiling_enforced() {
+    let mut pkg = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+    use std::io::Write;
+    // Control case: Stored method is 1x expansion.
+    pkg.start_file(
+        "bomb.xml",
+        zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored),
+    )
+    .unwrap();
+    pkg.write_all(&vec![b'x'; 4096]).unwrap();
+    let bytes = pkg.finish().unwrap().into_inner();
+    // The bomb: 1 MiB of zeros, Deflated.
+    let mut bomb = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+    bomb.start_file(
+        "zeros.xml",
+        zip::write::SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated),
+    )
+    .unwrap();
+    bomb.write_all(&vec![0u8; 1024 * 1024]).unwrap();
+    let bomb_bytes = bomb.finish().unwrap().into_inner();
+    let problems = harbor_artifacts::package::package_integrity(&bomb_bytes);
+    assert!(
+        problems.iter().any(|p| p.contains("SEC-002")),
+        "a >200x expansion must be refused: {problems:?}"
+    );
+    // The non-bomb package is fine on this axis.
+    let ok_problems = harbor_artifacts::package::package_integrity(&bytes);
+    assert!(!ok_problems.iter().any(|p| p.contains("SEC-002")));
+}

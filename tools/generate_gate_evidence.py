@@ -96,6 +96,9 @@ def main() -> None:
             ["cargo", "test", "-p", "harbor_core", "--test", "security_scenarios"]),
         run("security_receipt_scenarios", core,
             ["cargo", "test", "-p", "harbor_security", "--test", "security_scenarios"]),
+        run("store_security_scenarios", core,
+            ["cargo", "test", "-p", "harbor_store", "--test", "security_scenarios"]),
+        run("supply_chain_advisories", core, ["cargo", "deny", "check"]),
     ]
     if bge_m3.exists():
         import os
@@ -147,17 +150,20 @@ def main() -> None:
         # These record the SCENARIO side of those gates; each gate's
         # full substance still needs its own evidence.
         "inference_security_scenarios": ["SEC-011", "SEC-019"],
-        "net_security_scenarios": ["SEC-030", "SEC-035"],
-        "modelhub_security_scenarios": ["SEC-021", "SEC-014", "SEC-045", "SEC-009", "SEC-012", "SEC-044"],
+        "net_security_scenarios": ["SEC-030", "SEC-035", "SEC-034"],
+        "modelhub_security_scenarios": ["SEC-021", "SEC-014", "SEC-045", "SEC-009", "SEC-012", "SEC-044", "SEC-013"],
         # sec_046 -> ACC-020/042/043/076; sec_031 -> ACC-010/020/044/063/081;
         # sec_033+sec_041+sec_043 -> ACC-013/032/046/047/051/063/081.
         "agent_security_scenarios": ["SEC-046", "SEC-031"],
         "artifacts_security_scenarios": ["SEC-033", "SEC-041", "SEC-043",
                                          "SEC-032", "SEC-042", "SEC-004",
-                                         "SEC-023"],
+                                         "SEC-023", "SEC-002", "SEC-003"],
         "security_receipt_scenarios": ["SEC-008"],
-        # sec_014/045/009 -> modelhub; sec_018 -> diagnostics.
-        "core_security_scenarios": ["SEC-018", "SEC-007"],
+        "store_security_scenarios": ["SEC-036", "SEC-037", "SEC-038"],
+        "supply_chain_advisories": ["SEC-027"],
+        # knowledge security_rag now also carries SEC-025 (workspace scoping).
+        "knowledge_security_scenarios": ["ACC-014", "ACC-055", "SEC-025"],
+        "core_security_scenarios": ["SEC-018", "SEC-007", "SEC-005", "SEC-020"],
         "dossier_validation": ["ACC-075"],
         "contract_tests": ["ACC-075"],
         "contrast_audit": ["ACC-070"],

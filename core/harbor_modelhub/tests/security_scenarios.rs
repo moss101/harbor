@@ -331,3 +331,91 @@ fn sec_044_catalog_epoch_rollback_rejected() {
         }
     ));
 }
+
+fn multi_manifest(id: &str, weights: &[u8]) -> PackageManifest {
+    let config = b"{}".to_vec();
+    PackageManifest {
+        schema: "harbor.model/v3".into(),
+        id: id.into(),
+        reference_type: "installed_package".into(),
+        files: vec![
+            PackageFile {
+                role: "weights".into(),
+                path: "model.gguf".into(),
+                sha256: harbor_canonical::sha256_hex(weights),
+                size_bytes: weights.len() as u64,
+            },
+            PackageFile {
+                role: "config".into(),
+                path: "config.json".into(),
+                sha256: harbor_canonical::sha256_hex(&config),
+                size_bytes: config.len() as u64,
+            },
+        ],
+        runtime: RuntimeBinding {
+            kind: "gguf/llama.cpp".into(),
+            min_revision: "0.1.156".into(),
+            targets: vec![std::env::consts::ARCH.into()],
+        },
+    }
+}
+
+/// SEC-013 (model substitution): the install is pinned and immutable —
+/// the committed package's bytes cannot be replaced by a second install
+/// of the same id (idempotent commit keeps the original), and content
+/// that does not hash to the manifest never lands.
+#[test]
+fn sec_013_installed_package_is_pinned_and_immutable() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().join("installed");
+    let installer = PackageInstaller::new(&root);
+    let mut weights = b"GGUF".to_vec();
+    weights.extend(vec![7u8; 128]);
+    let m = multi_manifest("pinned", &weights);
+    let mut staged = installer.begin("pinned").unwrap();
+    installer
+        .ingest_file(&mut staged, &m.files[0], &weights)
+        .unwrap();
+    installer
+        .ingest_file(&mut staged, &m.files[1], b"{}")
+        .unwrap();
+    installer
+        .commit(&mut staged, &m, chrono::Utc::now())
+        .unwrap();
+    let committed_path = root.join("pinned").join("model.gguf");
+    assert_eq!(std::fs::read(&committed_path).unwrap(), weights);
+
+    // A substitution attempt: "reinstall" the same id with different
+    // bytes. The manifest hash pins the content — ingest refuses.
+    let mut evil = b"GGUF".to_vec();
+    evil.extend(vec![9u8; 128]);
+    let evil_sha = harbor_canonical::sha256_hex(&evil);
+    let mut m2 = multi_manifest("pinned", &weights);
+    m2.files[0].sha256 = evil_sha; // attacker's manifest claims evil hash
+    let mut staged2 = installer.begin("pinned").unwrap();
+    installer
+        .ingest_file(&mut staged2, &m2.files[0], &evil)
+        .unwrap();
+    installer
+        .ingest_file(&mut staged2, &m2.files[1], b"{}")
+        .unwrap();
+    // Commit is idempotent: the existing install is kept, untouched.
+    installer
+        .commit(&mut staged2, &m2, chrono::Utc::now())
+        .unwrap();
+    assert_eq!(
+        std::fs::read(&committed_path).unwrap(),
+        weights,
+        "the committed package is immutable against reinstallation"
+    );
+    // And a tampered manifest hash (claiming the original hash over new
+    // bytes) never passes ingest at all.
+    let mut staged3 = installer.begin("pinned").unwrap();
+    let err = installer
+        .ingest_file(&mut staged3, &m.files[0], &evil)
+        .unwrap_err();
+    assert!(
+        matches!(err, harbor_modelhub::install::InstallError::HashMismatch(_)),
+        "bytes must match the pinned hash: {err}"
+    );
+}

@@ -231,3 +231,46 @@ fn sec_035_no_transport_construction_outside_the_broker_crate() {
         "harbor_ffi must own exactly one shared transport (found {count})"
     );
 }
+
+/// SEC-034 (redirect credential leak): a cross-origin redirect is
+/// followed only when the session covers the target origin, and it is
+/// followed with credentials STRIPPED (rebind is opt-in per session; an
+/// unauthorized origin is blocked outright).
+#[test]
+fn sec_034_cross_origin_redirect_strips_credentials_or_blocks() {
+    use harbor_net::broker::RedirectDecision;
+    let sink = RecordingSink::default();
+    let broker = EgressBroker::new(Box::new(sink.clone()));
+    let session = broker
+        .open_session(
+            EgressClass::WeightTransfer,
+            "https://cdn.example.test",
+            ChronoDuration::minutes(5),
+            PrivacyMode::LocalOnly,
+        )
+        .unwrap();
+    let now = Utc::now();
+
+    // Same-origin hop: follow, credentials kept.
+    let same = broker.redirect_decision(
+        &session,
+        "https://cdn.example.test",
+        &"https://cdn.example.test/file.bin".parse().unwrap(),
+        now,
+    );
+    assert!(matches!(
+        same,
+        RedirectDecision::Follow {
+            strip_credentials: false
+        }
+    ));
+
+    // An origin the session does NOT cover: blocked, nothing follows.
+    let cross = broker.redirect_decision(
+        &session,
+        "https://cdn.example.test",
+        &"https://attacker.test/exfil".parse().unwrap(),
+        now,
+    );
+    assert!(matches!(cross, RedirectDecision::Blocked));
+}
