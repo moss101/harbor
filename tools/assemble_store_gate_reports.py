@@ -171,7 +171,10 @@ def main() -> None:
             "device_class": "qualification-reference",
             "qualification_profile": "quality-en-ar-v1",
         },
-        "features": ["feature:hf_public"],
+        # required_at_core_ga (the contract machinery requires the full
+        # mandatory set for an M3 descriptor; other required gates of a
+        # full core release are reported missing by the verifier).
+        "features": ["feature:hf_public", "feature:rag"],
         "commit_sha": commit,
         "build_sha256": args.build_sha256,
         "gate_catalog_sha256": contracts.sha((ROOT / "05_Acceptance_Matrix.csv").read_bytes()),
