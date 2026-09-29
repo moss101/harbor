@@ -7,6 +7,57 @@ ran at.
 
 ---
 
+## Session 45 (2026-09-29): Harbor Office + Store — both product tracks land their first executable slice
+
+Two tracks, one session, six commits (23c8c6d..2ede6ce + this one).
+
+**Office (native sub-product inside Work, GenOffice Apache-2.0 as reference
+only).** Phase 0: HBR-153's pin (already recorded in `engine.rs` by decision
+0001) is now synced into `22_Formula_Coverage.json` — 0.9.3, integrity
+64b7771c…, license review APPROVED. Phase 1: user workbook editing — FFI
+`workbook.edit` takes current xlsx bytes + typed CellSet edits, recalculates
+on the pinned engine (SEC-041: cached values never satisfy a verified
+number), returns new bytes + diagnostics; the formula bar in
+`workbook_view.dart` is now an editable input with a commit action, and the
+service keeps a working-copy byte source for round trips. Read-only badge
+dropped for workbooks (still shown for docx/pptx/pdf). Phase 2: the macOS
+tier of formula qualification ran at a clean commit — **99/100 cases,
+70/71 targets PASS**, the one failure being the documented TEXT deviation
+(`TEXT(0.285,"0.0%")` truncates to 28%). Recorded in `22_Formula_Coverage.json`
+as a `platform_tier` result with full bindings (engine revision+sha, adapter,
+bundle sha, evidence sha) and explicitly NOT as target PASS — the
+verification rule requires the five-platform set. Evidence:
+`evidence/formula_evals/macos-arm64-5b44bf0.json` via the new
+`harbor_formula/examples/qualify_dump.rs`.
+
+**Store (ten-product surface).** SEC-029 is executable and decided:
+acquisitions now carry `AcquireLimits` — a user-confirmed byte total
+(FFI refuses transfers whose brokered quote exceeds it), a free-space
+preflight with a 1 GiB post-transfer reserve (statvfs/GetDiskFreeSpaceExW,
+no new third-party deps), and per-chunk background throttling.
+`models.acquire_preflight` quotes without staging; every product acquire
+path requires `confirmed_total_bytes`. SEC-024 is executable end to end:
+`models.uninstall_preview` (owned-file scope from the manifest + scope
+digest + in-use blockers: running acquire op, loaded chat model, knowledge
+embedding), `models.uninstall_commit` (trash, not delete; stale scope
+refused), `models.uninstall_restore` (72-hour undo window, swept at open),
+all surfaced in the new Store surface with confirm dialogs. Catalog epoch 4:
+`publisher` field (all five current entries are Harbor-curated → "harbor"),
+exposed through `catalog.list`, sorted + badged in the Store's first-party
+section; ceremony re-run with the dev root key, assets synced byte-identical.
+The Store's office card is informational (Included; no download — platform
+policy and the compiled-in engine make "download office" meaningless), and
+the ⌘1–9 desktop shortcut contract is pinned via `HarborSurface.shortcutOrder`
+(Store takes no digit) so the published shortcuts survive the tenth surface.
+
+Gates: `cargo test --workspace` 65 suites 0 failed; contracts 124/0;
+check_optional_disabled clean; cargo deny ok; fmt/clippy clean; Flutter
+54/54 (new store_test against the real dylib; workbook test updated for
+editability). Next slices: iOS/Android/Windows tiers of the formula
+qualification (then targets can flip to PASS), Phase 3 coverage expansion
+(engine-wide function enablement beyond the 71), SEC-024/029 gate reports
+for ACC-005/021/065, office charts/CF, GenOffice-informed conversions.
+
 ## Session 43 (2026-09-28): decision 0009 (system providers measured) and decision 0010 (RAG harness made trustworthy)
 
 Two decisions, one commit each.

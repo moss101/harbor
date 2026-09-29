@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "798922a04164cc8c24f5bcbea46156eeefe2e014485c8d57f3fd9be52dc1816b",
+  "input_manifest_sha256": "615729b83ae568647b72f50ae2d3d50c8aa355f36ab89e368e49617c84fa5b51",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -1711,8 +1711,8 @@
     },
     {
       "path": "core/harbor_ffi/src/lib.rs",
-      "bytes": 143870,
-      "sha256": "b8d4020f6f5848cff375cb22c7069cf7f9968d5946b50d34aaab5d8b60d4e068"
+      "bytes": 143481,
+      "sha256": "0c6614e3221169f83f52f174f2664a0e062d42dbbbda784b6af075a08e2fb16e"
     },
     {
       "path": "core/harbor_ffi/tests/catalog_first_run.rs",
@@ -1741,8 +1741,8 @@
     },
     {
       "path": "core/harbor_ffi/tests/workbook_edit.rs",
-      "bytes": 5110,
-      "sha256": "6d15f0f6091374c4f08418689218b4b15c02ec4c6365f56f45486b9542020c96"
+      "bytes": 5144,
+      "sha256": "64a968a85b3abf0fc648bddfbed91e706966fa4321a35e9d58e5b3ac99005a15"
     },
     {
       "path": "core/harbor_formula/Cargo.toml",
@@ -1751,8 +1751,8 @@
     },
     {
       "path": "core/harbor_formula/examples/qualify_dump.rs",
-      "bytes": 1563,
-      "sha256": "868aba2dd846ae1e17323b5cc9ea284182bd2a6d3f1a7c7a74ff09db10808758"
+      "bytes": 1615,
+      "sha256": "55081f3d06e42e25012c29955f0e79e003b3c3280b0e57afc27e246b5f4a2a79"
     },
     {
       "path": "core/harbor_formula/fixtures/formula_corpus.json",
@@ -1841,8 +1841,8 @@
     },
     {
       "path": "core/harbor_inference/tests/qwen_qualification.rs",
-      "bytes": 9077,
-      "sha256": "baeafa75092ee18d05d0befc288c9dc7f67332b0a4e64c44308ffeeb328a410d"
+      "bytes": 9387,
+      "sha256": "165c2e917346f899608b8d31f768a672291eb2d6806569d5b4ee4c9567b31690"
     },
     {
       "path": "core/harbor_inference/tests/schema_grammar_probe.rs",
@@ -2206,8 +2206,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 111617,
-      "sha256": "1f59b74ad3cd21e570e8a932dbf0c1c1153db96d4e1a7b4752ff95c2ba4117d7"
+      "bytes": 114974,
+      "sha256": "552d2dca768a521f9caf1c9ecdb45f9364928dde7443c3e330200a81c6e40f77"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",

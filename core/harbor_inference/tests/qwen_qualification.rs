@@ -62,6 +62,10 @@ fn acquire_streaming_and_install_production_model() {
         sessions,
         auth_token: None,
         progress: None,
+        limits: harbor_modelhub::acquire::AcquireLimits {
+            confirmed_total_bytes: u64::MAX,
+            ..Default::default()
+        },
     };
     // Streaming path: 1.1GB acquired in 64KiB chunks with incremental
     // SHA-256; the pinned hash enforces package identity.
@@ -146,6 +150,10 @@ fn qualify_installed_production_model_chat() {
             sessions,
             auth_token: None,
             progress: None,
+            limits: harbor_modelhub::acquire::AcquireLimits {
+                confirmed_total_bytes: u64::MAX,
+                ..Default::default()
+            },
         };
         // First acquisition: identity recorded from the downloaded bytes.
         acquirer

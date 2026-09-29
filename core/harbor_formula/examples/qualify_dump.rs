@@ -38,7 +38,11 @@ fn main() {
         "cases: {} pass / {} fail; targets PASS {}/{} [{}]",
         report.passed,
         report.failed,
-        report.target_status.values().filter(|s| **s == "PASS").count(),
+        report
+            .target_status
+            .values()
+            .filter(|s| **s == "PASS")
+            .count(),
         report.target_status.len(),
         report.platform,
     );

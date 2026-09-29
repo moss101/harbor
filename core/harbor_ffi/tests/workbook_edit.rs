@@ -7,7 +7,9 @@
 use std::ffi::{CStr, CString};
 use std::path::Path;
 
-use harbor_ffi::{harbor_core_call, harbor_core_close, harbor_core_open_ex, harbor_core_string_free};
+use harbor_ffi::{
+    harbor_core_call, harbor_core_close, harbor_core_open_ex, harbor_core_string_free,
+};
 
 struct Handle(*mut harbor_ffi::WorkspaceHandle);
 
@@ -43,8 +45,7 @@ impl Drop for Handle {
 
 fn fixture_xlsx() -> Vec<u8> {
     std::fs::read(
-        Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../fixtures/office/dcf_model.xlsx"),
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/office/dcf_model.xlsx"),
     )
     .expect("fixture workbook")
 }
@@ -77,14 +78,19 @@ fn typed_edits_recalculate_and_round_trip() {
     );
     assert_eq!(result["applied"], 2);
     let out_b64 = result["data_b64"].as_str().unwrap();
-    let out = base64::engine::general_purpose::STANDARD.decode(out_b64).unwrap();
+    let out = base64::engine::general_purpose::STANDARD
+        .decode(out_b64)
+        .unwrap();
     assert_ne!(out, original, "edited bytes must differ");
 
     // 2. The returned package reloads and carries the edits.
     let doc = harbor_artifacts::workbook::WorkbookDoc::load(&out).unwrap();
     let data = doc.sheet(&sheet).unwrap();
     let b1 = data.cells.get(&(1, 1)).expect("B1 edited");
-    assert_eq!(b1.cached, Some(harbor_formula::value::CellValue::Number(1234.5)));
+    assert_eq!(
+        b1.cached,
+        Some(harbor_formula::value::CellValue::Number(1234.5))
+    );
     let b2 = data.cells.get(&(1, 2)).expect("B2 edited");
     assert!(b2.formula.is_some());
 }

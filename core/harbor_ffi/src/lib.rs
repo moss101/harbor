@@ -1377,11 +1377,11 @@ fn dispatch(
                 .get("edits")
                 .and_then(|v| v.as_array())
                 .ok_or_else(|| HarborError::Other("missing edits".into()))?;
+            use harbor_artifacts::workbook::CellSet;
             use harbor_artifacts::workbook::WorkbookDoc;
-            use harbor_artifacts::workbook::{CellSet};
             use harbor_formula::value::CellValue;
-            let mut wb = WorkbookDoc::load(&bytes)
-                .map_err(|e| HarborError::Other(format!("load: {e}")))?;
+            let mut wb =
+                WorkbookDoc::load(&bytes).map_err(|e| HarborError::Other(format!("load: {e}")))?;
             let mut applied = 0usize;
             for e in edits {
                 let sheet = e
@@ -1398,46 +1398,33 @@ fn dispatch(
                     .and_then(|v| v.as_u64())
                     .ok_or_else(|| HarborError::Other("edit missing col".into()))?
                     as u32;
-                let kind = e
-                    .get("kind")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("value");
+                let kind = e.get("kind").and_then(|v| v.as_str()).unwrap_or("value");
                 let set = match kind {
                     "formula" => {
-                        let f = e
-                            .get("value")
-                            .and_then(|v| v.as_str())
-                            .ok_or_else(|| {
-                                HarborError::Other("formula edit missing value".into())
-                            })?;
+                        let f = e.get("value").and_then(|v| v.as_str()).ok_or_else(|| {
+                            HarborError::Other("formula edit missing value".into())
+                        })?;
                         CellSet::Formula(f.to_string())
                     }
                     "number" => CellSet::Value(CellValue::Number(
-                            e.get("value")
-                                .and_then(|v| v.as_f64())
-                                .ok_or_else(|| {
-                                    HarborError::Other("number edit missing value".into())
-                                })?,
-                        ),
-                    ),
+                        e.get("value").and_then(|v| v.as_f64()).ok_or_else(|| {
+                            HarborError::Other("number edit missing value".into())
+                        })?,
+                    )),
                     "text" => CellSet::Value(CellValue::Text(
                         e.get("value")
                             .and_then(|v| v.as_str())
-                            .ok_or_else(|| {
-                                HarborError::Other("text edit missing value".into())
-                            })?
+                            .ok_or_else(|| HarborError::Other("text edit missing value".into()))?
                             .to_string(),
                     )),
                     "bool" => CellSet::Value(CellValue::Bool(
-                        e.get("value").and_then(|v| v.as_bool()).ok_or_else(|| {
-                            HarborError::Other("bool edit missing value".into())
-                        })?,
+                        e.get("value")
+                            .and_then(|v| v.as_bool())
+                            .ok_or_else(|| HarborError::Other("bool edit missing value".into()))?,
                     )),
                     "blank" => CellSet::Value(CellValue::Blank),
                     other => {
-                        return Err(HarborError::Other(format!(
-                            "unknown edit kind {other}"
-                        )));
+                        return Err(HarborError::Other(format!("unknown edit kind {other}")));
                     }
                 };
                 wb.put_cell(sheet, row, col, set)
