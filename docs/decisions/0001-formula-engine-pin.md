@@ -30,3 +30,25 @@ Harbor (Apache-2.0) with attribution in the distribution license inventory.
 ## Consequences
 - Any engine bump invalidates `qualification_results` and requires a full corpus re-run.
 - Qualification reports stamp engine family/version/source revision/corpus bundle hash.
+
+## Addendum (2026-09-29, session 47): TEXT percent patch
+
+The known TEXT deviation is fixed by a Harbor-maintained patch:
+`third_party/formualizer-eval` is the exact 0.9.3 crates.io source with
+one change — `format_percent` now parses the decimal count from the
+format code and rounds half-away-from-zero with a binary-error correction
+(upstream hard-coded `{:.0}%`, which ignored `"0.0%"`'s decimal count and
+truncated 0.285 → 28% via float error). Wired through
+`[patch.crates-io]` in core/Cargo.toml.
+
+Consequences:
+- The engine identity is now `0.9.3+harbor-textfix`; the integrity hash
+  covers the patched SOURCE TREE (deterministic file-order hash) plus the
+  packed archives of the other pinned crates — `tools/pin_engine.py`
+  implements both branches.
+- Per this decision's own rule, the full corpus re-ran on every
+  available tier after the patch: 139/139 cases, 99/99 targets on macOS,
+  iOS Simulator and Android emulator (evidence/formula_evals/, session 47).
+- Upstream remains MIT OR Apache-2.0; the vendored tree keeps both
+  LICENSE files. If upstream ships the fix, prefer the registry release
+  and drop the patch (re-pin + full re-run required either way).

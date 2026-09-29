@@ -26,10 +26,10 @@ pub struct EngineIdentity {
 
 pub const ENGINE: EngineIdentity = EngineIdentity {
     family: "Formualizer",
-    version: "0.9.3",
-    source_revision: "crates.io/formualizer@0.9.3",
+    version: "0.9.3+harbor-textfix",
+    source_revision: "crates.io/formualizer@0.9.3 + third_party/formualizer-eval (TEXT percent patch, decision 0001 addendum)",
     // Recorded by tools/pin_engine.py (see docs/decisions/0001-formula-engine-pin.md).
-    integrity_sha256: "64b7771c27fcd3da6229ae4653acc4269cf6635412b283fa0dd16e8359b54139",
+    integrity_sha256: "35c17c3bc2866282cdf492ab6c681ef157acbd2ff2c092b9311953da66599b9d",
     adapter_revision: "harbor_formula/1",
 };
 

@@ -68,3 +68,9 @@ unicode-segmentation = "1"
 lto = "thin"
 codegen-units = 1
 strip = "debuginfo"
+
+# HARBOR PATCH (decision 0001 addendum): formualizer-eval 0.9.3 with the
+# TEXT percent deviation fixed (txt-text-2). Everything else is the exact
+# crates.io source; the patched tree is pinned by tools/pin_engine.py.
+[patch.crates-io]
+formualizer-eval = { path = "../third_party/formualizer-eval" }

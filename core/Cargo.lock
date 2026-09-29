@@ -1300,8 +1300,6 @@ dependencies = [
 [[package]]
 name = "formualizer-eval"
 version = "0.9.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6fe4be1693b4fde2ee0f69890409fe7d8b5c6e605864c66dc9b2f6da565463b1"
 dependencies = [
  "arrow",
  "arrow-array",

@@ -36,6 +36,16 @@ def cache_paths() -> list[Path]:
     home = Path.home() / ".cargo" / "registry" / "cache"
     out = []
     for pkg in CRATES:
+        # The patched formualizer-eval lives in-tree (decision 0001
+        # addendum: TEXT percent fix); its integrity contribution is a
+        # deterministic hash over the SOURCE TREE instead of the packed
+        # crate archive.
+        if pkg == "formualizer-eval":
+            patched = ROOT / "third_party" / "formualizer-eval" / "src"
+            if not patched.is_dir():
+                sys.exit("ERROR: third_party/formualizer-eval/src missing")
+            out.append(patched)
+            continue
         ver = cargo_lock_version(pkg)
         if ver is None:
             sys.exit(f"ERROR: {pkg} not found in core/Cargo.lock")
@@ -50,7 +60,15 @@ def cache_paths() -> list[Path]:
 def integrity() -> str:
     h = hashlib.sha256()
     for p in cache_paths():
-        h.update(p.read_bytes())
+        if p.is_dir():
+            # Patched source tree: hash every file's relative path and
+            # bytes in sorted order — deterministic across checkouts.
+            for f in sorted(p.rglob("*")):
+                if f.is_file():
+                    h.update(str(f.relative_to(p)).encode())
+                    h.update(f.read_bytes())
+        else:
+            h.update(p.read_bytes())
     return h.hexdigest()
 
 
