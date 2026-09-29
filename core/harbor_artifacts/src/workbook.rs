@@ -1219,9 +1219,9 @@ mod tests {
             ws.style((2, 2)).number_format().map(|f| f.format_code()),
             Some("0.0%")
         );
-        assert_eq!(ws.get_column_dimension("A").unwrap().width(), 42.5);
+        assert_eq!(ws.column_dimension("A").unwrap().width(), 42.5);
         assert!(ws
-            .get_sheets_views()
+            .sheets_views()
             .sheet_view_list()
             .first()
             .and_then(|v| v.pane())
