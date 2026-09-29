@@ -1205,8 +1205,7 @@ impl CfOperator {
 fn valid_sqref(s: &str) -> bool {
     fn cell(part: &str) -> bool {
         let digits = part.chars().take_while(|c| c.is_ascii_alphabetic()).count();
-        let letters_ok = digits >= 1
-            && digits <= 3
+        let letters_ok = (1..=3).contains(&digits)
             && part[..digits]
                 .chars()
                 .all(|c| c.is_ascii_uppercase() || c.is_ascii_lowercase());
@@ -1520,13 +1519,13 @@ mod tests {
         let cfs = ws.conditional_formatting_collection();
         assert_eq!(cfs.len(), 1);
         assert!(cfs[0]
-            .get_sequence_of_references()
+            .sequence_of_references()
             .get_sqref()
             .contains("A1:B4"));
-        let rules = cfs[0].get_conditional_collection();
+        let rules = cfs[0].conditional_collection();
         assert_eq!(rules.len(), 1);
         use umya_spreadsheet::EnumTrait as _;
-        assert_eq!(rules[0].get_operator().value_string(), "greaterThan");
+        assert_eq!(rules[0].operator().value_string(), "greaterThan");
 
         // 3. The rule survives a subsequent edit round trip (the earlier
         //    preservation contract, now starting from an AUTHORED rule).
