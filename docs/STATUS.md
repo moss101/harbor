@@ -7,6 +7,23 @@ ran at.
 
 ---
 
+## Session 49 (2026-09-30): the Store office card becomes a real product listing
+
+User feedback: the Store card read like a redirect ("Open Work" was the
+only action; no sense of a product). Redesigned: title "Harbor Office
+Suite", brand **Installed** pill, "Part of the app you already have —
+nothing to download." caption (the honest answer to the download
+question: the suite compiles into the app; Apple 2.5.2 / Play forbid
+downloadable native code), an expandable "What's inside" listing every
+component with Live-vs-Preview status pills (Spreadsheets /
+Conversions / Formulas live; Documents / Presentations / PDF preview),
+and "Open in Work" demoted to a secondary action. Verified on the
+iPhone 17 Pro simulator with screenshots. l10n en+ar; store_test
+updated (Installed/What's-inside/Live×3/Preview×3 asserted); suite
+57/57.
+
+---
+
 ## Session 48 addendum (2026-09-30): the app checked on the iPhone 17 Pro simulator — one real product bug found and fixed
 
 Built `flutter build ios --simulator` (the Xcode phase cargo-builds and
