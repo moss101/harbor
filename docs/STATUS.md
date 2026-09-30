@@ -7,6 +7,30 @@ ran at.
 
 ---
 
+## Session 48 addendum (2026-09-30): the app checked on the iPhone 17 Pro simulator — one real product bug found and fixed
+
+Built `flutter build ios --simulator` (the Xcode phase cargo-builds and
+embeds the fresh libharbor_ffi.dylib), installed and launched on the
+booted iPhone 17 Pro (iOS 26.5, `HARBOR_GGUF_CPU_ONLY=1`), and walked
+Home → Work → Models → Advanced → More → Store → Uninstall via cliclick
+taps with screenshots at every step. The core loads (LOCAL badge, real
+durable runs, installed model with Fit gating), Work shows the new
+"Convert Markdown / PDF…" entry, Models shows the ACC-033 novice card
+and the ACC-034 expert expander live, the Store shows the Harbor Office
+included-card, first-party badges, and the SEC-024 uninstall preview
+("Removes 1.04 GB across 1 file. Undo stays available for 72 hours.").
+
+The walk found one real product bug: **an existing install never
+received newer bundled-catalog entries** — bootstrap imported the
+bundled catalog only when none was accepted, so this data root sat at
+epoch 1 (3 entries) while the app shipped epoch 4 (5 entries). Fix:
+import when the bundled epoch is NEWER than the accepted one (epoch
+monotonicity is the core's; older/equal is rejected, so no rollback is
+possible). Verified live: Models now lists 5 catalog packages, Store
+shows "Harbor models (4)" with Harbor publisher badges. Also fixed:
+office-card copy still said "read-only preview" after editing shipped,
+and the uninstall dialog's "1 files" pluralization.
+
 ## Session 48 (2026-09-30): the last three gates — UX walkthroughs made executable
 
 Session 47 refused ACC-033/034/035 as "needs walkthrough evidence". The
