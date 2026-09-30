@@ -25,20 +25,25 @@ class OfficeShell extends StatelessWidget {
       ],
     );
 
+    // SafeArea: the surface headers must never paint under the status
+    // bar (found on the simulator — the subtitle sat behind the clock).
     return Scaffold(
-      body: compact
-          ? body
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                HarborRail(
-                  destinations: destinations,
-                  selectedIndex: state.surfaceIndex,
-                  onSelected: state.selectSurface,
-                ),
-                Expanded(child: body),
-              ],
-            ),
+      body: SafeArea(
+        bottom: false,
+        child: compact
+            ? body
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  HarborRail(
+                    destinations: destinations,
+                    selectedIndex: state.surfaceIndex,
+                    onSelected: state.selectSurface,
+                  ),
+                  Expanded(child: body),
+                ],
+              ),
+      ),
       bottomNavigationBar: compact
           ? NavigationBar(
               selectedIndex: state.surfaceIndex,

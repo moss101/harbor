@@ -149,7 +149,7 @@
       }
     }
   },
-  "trustLocalOnlyBody": "الطلبات والملفات لا تغادر هذا الجهاز أبداً. الحصول على النماذج هو الجلسة الوحيدة الصريحة عبر الإنترنت، وتمر عبر وسيط الخروج.",
+  "trustLocalOnlyBody": "Files and data never leave this device. The suite performs no online sessions.",
   "trustChipLabel": "محلي",
   "trustChipTooltip": "سياسة محلي فقط · التنفيذ على الجهاز. افتح نبض الثقة.",
   "commandPaletteTooltip": "البحث في الأوامر",
@@ -409,7 +409,7 @@
   "settingsSubtitle": "المظهر واللغة والخصوصية والهوية",
   "settingsThemeSystem": "النظام",
   "settingsLanguageBody": "تعكس العربية التنقل والمحاذاة؛ وتحتفظ أسماء الملفات والصيغ والمعرّفات باتجاهها الخاص.",
-  "settingsPrivacyBody": "محلي فقط هو الافتراضي والسياسة الوحيدة في هذا الإصدار.",
+  "settingsPrivacyBody": "Local Only is the default and the only policy in this release.",
   "settingsAbout": "حول",
   "settingsVersion": "الإصدار",
   "settingsCoreStatus": "النواة الأصلية",
@@ -738,5 +738,26 @@
   "storeSuiteSlides": "العروض التقديمية — معاينة",
   "storeSuitePdf": "PDF — معاينة واستخراج",
   "suiteStatusLive": "متاح",
-  "suiteStatusPreview": "معاينة"
+  "suiteStatusPreview": "معاينة",
+  "workNewSpreadsheet": "جدول جديد",
+  "workNewDocument": "مستند جديد",
+  "workRecents": "الأخيرة",
+  "workUntitledSheet": "جدول بلا عنوان",
+  "workUntitledDoc": "مستند بلا عنوان",
+  "workRecentFailed": "تعذّرت إعادة فتح {name} — لم يعد النظام يمنح الوصول لهذا الموقع.",
+  "@workRecentFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "workEditParagraphTitle": "تحرير الفقرة {index}",
+  "@workEditParagraphTitle": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  }
 }

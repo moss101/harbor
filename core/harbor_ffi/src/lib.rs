@@ -1652,6 +1652,100 @@ fn dispatch(
                 "extraction_level": "text-only (no layout, tables or images)",
             }))
         }
+        // --- office authoring + document editing ---------------------------
+        // DOCX paragraph/table-cell editing through the typed DocxOp
+        // model: every op carries an implicit content-hash precondition
+        // (harbor_artifacts owns the XML writes; nothing is guessed).
+        "docx.edit" => {
+            let data_b64 = args
+                .get("data_b64")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing data_b64".into()))?;
+            use base64::Engine as _;
+            let bytes = base64::engine::general_purpose::STANDARD
+                .decode(data_b64)
+                .map_err(|e| HarborError::Other(format!("b64: {e}")))?;
+            let ops_json = args
+                .get("ops")
+                .and_then(|v| v.as_array())
+                .ok_or_else(|| HarborError::Other("missing ops".into()))?;
+            use harbor_artifacts::docx::{DocxDocument, DocxOp};
+            let doc = DocxDocument::load(&bytes)
+                .map_err(|e| HarborError::Other(format!("load: {e}")))?;
+            let mut ops = Vec::new();
+            for op in ops_json {
+                let kind = op
+                    .get("kind")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| HarborError::Other("op missing kind".into()))?;
+                let text = op
+                    .get("text")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| HarborError::Other("op missing text".into()))?;
+                match kind {
+                    "paragraph" => ops.push(DocxOp::TextReplace {
+                        index: op.get("index").and_then(|v| v.as_u64()).ok_or_else(|| HarborError::Other("paragraph op missing index".into()))? as u32,
+                        new_text: text.to_string(),
+                    }),
+                    "table_cell" => ops.push(DocxOp::TableCellSet {
+                        table: op.get("table").and_then(|v| v.as_u64()).unwrap_or(0) as usize,
+                        row: op.get("row").and_then(|v| v.as_u64()).unwrap_or(0) as usize,
+                        col: op.get("col").and_then(|v| v.as_u64()).unwrap_or(0) as usize,
+                        new_text: text.to_string(),
+                    }),
+                    other => {
+                        return Err(HarborError::Other(format!("unknown docx op kind {other}")));
+                    }
+                }
+            }
+            if ops.is_empty() {
+                return Err(HarborError::Other("no ops supplied".into()));
+            }
+            let out = doc
+                .apply(&bytes, &ops)
+                .map_err(|e| HarborError::Other(format!("apply: {e}")))?;
+            Ok(serde_json::json!({
+                "data_b64": base64::engine::general_purpose::STANDARD.encode(&out),
+                "applied": ops.len(),
+            }))
+        }
+        // New blank workbook for the suite's New flow.
+        "workbook.create_empty" => {
+            let sheet = args
+                .get("sheet")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Sheet1");
+            use harbor_artifacts::workbook::WorkbookDoc;
+            let mut wb = WorkbookDoc::new_empty();
+            wb.add_sheet(sheet)
+                .map_err(|e| HarborError::Other(format!("sheet: {e}")))?;
+            let out = wb
+                .to_bytes()
+                .map_err(|e| HarborError::Other(format!("save: {e}")))?;
+            use base64::Engine as _;
+            Ok(serde_json::json!({
+                "data_b64": base64::engine::general_purpose::STANDARD.encode(&out),
+                "sheet": sheet,
+            }))
+        }
+        // New blank document: a title block and nothing else.
+        "docx.create" => {
+            let title = args
+                .get("title")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Untitled");
+            use harbor_artifacts::docx::{create_docx, BlockStyle, DocxBlock};
+            let blocks = vec![DocxBlock {
+                style: BlockStyle::Title,
+                text: title.to_string(),
+            }];
+            let out = create_docx(title, &blocks)
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            use base64::Engine as _;
+            Ok(serde_json::json!({
+                "data_b64": base64::engine::general_purpose::STANDARD.encode(&out),
+            }))
+        }
         "convert.markdown_to_docx" => {
             let markdown = args
                 .get("markdown")

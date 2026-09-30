@@ -11,6 +11,7 @@ import '../services/file_types.dart';
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/harbor_service.dart';
+import '../services/preferences.dart' show RecentFile;
 import 'work/deck_view.dart';
 import 'work/document_view.dart';
 import 'work/pdf_view.dart';
@@ -117,6 +118,89 @@ class _WorkSurfaceState extends State<WorkSurface> {
     return dest;
   }
 
+  /// Create a new blank workbook, preview it and offer a save location.
+  Future<void> _newWorkbook() async {
+    final l10n = AppLocalizations.of(context)!;
+    await _createAndOffer(
+      bytes: await HarborServiceProvider.of(context)
+          .notifier!
+          .createWorkbook(),
+      name: '${l10n.workUntitledSheet}.xlsx',
+      previewName: l10n.workUntitledSheet,
+    );
+  }
+
+  /// Create a new document (title block only) and offer a save location.
+  Future<void> _newDocument() async {
+    final l10n = AppLocalizations.of(context)!;
+    final name = l10n.workUntitledDoc;
+    await _createAndOffer(
+      bytes: await HarborServiceProvider.of(context)
+          .notifier!
+          .createDocument(title: name),
+      name: '$name.docx',
+      previewName: name,
+    );
+  }
+
+  Future<void> _createAndOffer(
+      {required List<int> bytes,
+      required String name,
+      required String previewName}) async {
+    final service = HarborServiceProvider.of(context).notifier;
+    if (service == null) return;
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await service.loadPreviewFromBytes(bytes, name: previewName);
+      if (!mounted) return;
+      final dest = await _saveConvertedCopy(name, bytes);
+      if (mounted && dest != null) {
+        _recordRecent(name, dest);
+        // The full container path is noise on mobile: the saved NAME is
+        // what the user recognizes (it is in Files / the recents list).
+        final shown = dest.split(Platform.pathSeparator).last;
+        messenger.showSnackBar(
+            SnackBar(content: Text(l10n.workConvertedSaved(shown))));
+      }
+    } on ffi.HarborCoreException catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+            SnackBar(content: Text('${l10n.workConvertFailed}: ${e.message}')));
+      }
+    }
+  }
+
+  /// Record a successfully opened/created file for the Work recents list.
+  void _recordRecent(String name, String path) {
+    final kind = name.toLowerCase().endsWith('.xlsx')
+        ? 'workbook'
+        : name.toLowerCase().endsWith('.pdf')
+            ? 'pdf'
+            : 'docx';
+    final now = DateTime.now();
+    final at =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    AppStateScope.of(context).addRecentFile(
+        RecentFile(name: name, path: path, kind: kind, at: at));
+  }
+
+  /// Reopen a recent file: bytes are read honestly (a path the system no
+  /// longer grants surfaces an error, never a silent failure).
+  Future<void> _openRecent(RecentFile r) async {
+    final l10n = AppLocalizations.of(context)!;
+    final service = HarborServiceProvider.of(context).notifier;
+    if (service == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final bytes = await File(r.path).readAsBytes();
+      await service.loadPreviewFromBytes(bytes, name: r.name);
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(
+          content: Text(l10n.workRecentFailed(r.name))));
+    }
+  }
+
   Future<void> _openFile() async {
     final service = HarborServiceProvider.of(context).notifier;
     if (service == null) return;
@@ -140,6 +224,7 @@ class _WorkSurfaceState extends State<WorkSurface> {
     final bytes = await file.readAsBytes();
     setState(() => _showParts = false);
     await service.loadPreviewFromBytes(bytes, name: file.name);
+    if (mounted) _recordRecent(file.name, file.path);
   }
 
   @override
@@ -277,6 +362,45 @@ class _WorkSurfaceState extends State<WorkSurface> {
                 secondaryActionLabel: l10n.workConvertMarkdown,
                 onSecondaryAction: _convertMarkdown,
                 footer: Column(children: [
+                  Wrap(
+                    spacing: HarborSpace.s2,
+                    runSpacing: HarborSpace.s2,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: _newWorkbook,
+                        icon: const Icon(Icons.table_chart_outlined, size: 18),
+                        label: Text(l10n.workNewSpreadsheet),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: _newDocument,
+                        icon: const Icon(Icons.description_outlined, size: 18),
+                        label: Text(l10n.workNewDocument),
+                      ),
+                    ],
+                  ),
+                  if (AppStateScope.of(context).recentFiles.isNotEmpty) ...[
+                    const SizedBox(height: HarborSpace.s4),
+                    Text(l10n.workRecents,
+                        style: t.text.bodyStrongOf(t.colors.ink)),
+                    const SizedBox(height: HarborSpace.s2),
+                    for (final r
+                        in AppStateScope.of(context).recentFiles.take(4))
+                      HarborListRow(
+                        dense: true,
+                        title: Text(r.name),
+                        subtitle: r.at.isEmpty ? null : Text(r.at),
+                        leading: Icon(
+                            r.kind == 'workbook'
+                                ? Icons.table_chart_outlined
+                                : r.kind == 'pdf'
+                                    ? Icons.picture_as_pdf_outlined
+                                    : Icons.description_outlined,
+                            size: 20),
+                        onTap: () => _openRecent(r),
+                      ),
+                  ],
+                  const SizedBox(height: HarborSpace.s3),
                   Text(l10n.workSupportedTypes,
                       style: t.text.captionOf(t.colors.inkMuted)),
                   const SizedBox(height: HarborSpace.s2),

@@ -512,7 +512,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get trustLocalOnlyBody =>
-      'الطلبات والملفات لا تغادر هذا الجهاز أبداً. الحصول على النماذج هو الجلسة الوحيدة الصريحة عبر الإنترنت، وتمر عبر وسيط الخروج.';
+      'Files and data never leave this device. The suite performs no online sessions.';
 
   @override
   String get trustChipLabel => 'محلي';
@@ -1105,7 +1105,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsPrivacyBody =>
-      'محلي فقط هو الافتراضي والسياسة الوحيدة في هذا الإصدار.';
+      'Local Only is the default and the only policy in this release.';
 
   @override
   String get settingsAbout => 'حول';
@@ -1621,4 +1621,29 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get suiteStatusPreview => 'معاينة';
+
+  @override
+  String get workNewSpreadsheet => 'جدول جديد';
+
+  @override
+  String get workNewDocument => 'مستند جديد';
+
+  @override
+  String get workRecents => 'الأخيرة';
+
+  @override
+  String get workUntitledSheet => 'جدول بلا عنوان';
+
+  @override
+  String get workUntitledDoc => 'مستند بلا عنوان';
+
+  @override
+  String workRecentFailed(String name) {
+    return 'تعذّرت إعادة فتح $name — لم يعد النظام يمنح الوصول لهذا الموقع.';
+  }
+
+  @override
+  String workEditParagraphTitle(int index) {
+    return 'تحرير الفقرة $index';
+  }
 }

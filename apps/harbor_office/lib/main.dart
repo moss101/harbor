@@ -71,6 +71,10 @@ class AppState extends ChangeNotifier {
 
   void setThemeMode(ThemeMode m) => _update(_prefs.copyWith(themeMode: m));
 
+  List<RecentFile> get recentFiles => _prefs.recentFiles;
+
+  void addRecentFile(RecentFile f) => _update(_prefs.withRecentFile(f));
+
   void selectSurface(int i) {
     if (i == surfaceIndex) return;
     surfaceIndex = i;

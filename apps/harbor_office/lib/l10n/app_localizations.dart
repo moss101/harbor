@@ -953,7 +953,7 @@ abstract class AppLocalizations {
   /// No description provided for @trustLocalOnlyBody.
   ///
   /// In en, this message translates to:
-  /// **'Requests and files never leave this device. Model acquisition is the only explicit online session, and it runs through the egress broker.'**
+  /// **'Files and data never leave this device. The suite performs no online sessions.'**
   String get trustLocalOnlyBody;
 
   /// No description provided for @trustChipLabel.
@@ -2581,6 +2581,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Preview'**
   String get suiteStatusPreview;
+
+  /// No description provided for @workNewSpreadsheet.
+  ///
+  /// In en, this message translates to:
+  /// **'New spreadsheet'**
+  String get workNewSpreadsheet;
+
+  /// No description provided for @workNewDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'New document'**
+  String get workNewDocument;
+
+  /// No description provided for @workRecents.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get workRecents;
+
+  /// No description provided for @workUntitledSheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled workbook'**
+  String get workUntitledSheet;
+
+  /// No description provided for @workUntitledDoc.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled document'**
+  String get workUntitledDoc;
+
+  /// No description provided for @workRecentFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reopen {name} — the system no longer grants access to this location.'**
+  String workRecentFailed(String name);
+
+  /// No description provided for @workEditParagraphTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit paragraph {index}'**
+  String workEditParagraphTitle(int index);
 }
 
 class _AppLocalizationsDelegate

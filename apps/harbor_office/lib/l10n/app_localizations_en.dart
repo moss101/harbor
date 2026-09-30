@@ -507,7 +507,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get trustLocalOnlyBody =>
-      'Requests and files never leave this device. Model acquisition is the only explicit online session, and it runs through the egress broker.';
+      'Files and data never leave this device. The suite performs no online sessions.';
 
   @override
   String get trustChipLabel => 'LOCAL';
@@ -1566,4 +1566,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get suiteStatusPreview => 'Preview';
+
+  @override
+  String get workNewSpreadsheet => 'New spreadsheet';
+
+  @override
+  String get workNewDocument => 'New document';
+
+  @override
+  String get workRecents => 'Recent';
+
+  @override
+  String get workUntitledSheet => 'Untitled workbook';
+
+  @override
+  String get workUntitledDoc => 'Untitled document';
+
+  @override
+  String workRecentFailed(String name) {
+    return 'Could not reopen $name — the system no longer grants access to this location.';
+  }
+
+  @override
+  String workEditParagraphTitle(int index) {
+    return 'Edit paragraph $index';
+  }
 }

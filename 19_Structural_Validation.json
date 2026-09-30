@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "9ffd8932e2714b21b71f8618c027a2eda14b7c8bd6e268960fdd039e3b6e34fa",
+  "input_manifest_sha256": "5336bd0b5b0406627f970f90aa48bfc95d312e63a2cd272a437d1733711e08d7",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -1026,8 +1026,8 @@
     },
     {
       "path": "apps/harbor_office/android/app/src/main/jniLibs/arm64-v8a/libharbor_ffi.so",
-      "bytes": 34947528,
-      "sha256": "2c677a2b67b8c0cab0f38cfb0065a8c7fb1d3004bc7f190ab291540d96f2d288"
+      "bytes": 34960408,
+      "sha256": "ff8c073505c089db0d4ca4fd885494105194f92e05020e21f15a0d0aaaff7462"
     },
     {
       "path": "apps/harbor_office/android/app/src/main/kotlin/dev/harbor/office/MainActivity.kt",
@@ -1046,28 +1046,28 @@
     },
     {
       "path": "apps/harbor_office/android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
-      "bytes": 544,
-      "sha256": "6a7c8f0d703e3682108f9662f813302236240d3f8f638bb391e32bfb96055fef"
+      "bytes": 1333,
+      "sha256": "a3a91e95d4f76a872529c71b0bb3be2e13a029f6a819e131b51556bd8c9d5a99"
     },
     {
       "path": "apps/harbor_office/android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
-      "bytes": 442,
-      "sha256": "c7c0c0189145e4e32a401c61c9bdc615754b0264e7afae24e834bb81049eaf81"
+      "bytes": 810,
+      "sha256": "b83de0bf50b58ca0dff742315366269c87a7b3a0ffd52216741f3e1647f19db0"
     },
     {
       "path": "apps/harbor_office/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png",
-      "bytes": 721,
-      "sha256": "e14aa40904929bf313fded22cf7e7ffcbf1d1aac4263b5ef1be8bfce650397aa"
+      "bytes": 1481,
+      "sha256": "dc2b20b55884b7cdcf19e41c95de7d7736f9535c485693fc6796aef0829f41f4"
     },
     {
       "path": "apps/harbor_office/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
-      "bytes": 1031,
-      "sha256": "4d470bf22d5c17d84edc5f82516d1ba8a1c09559cd761cefb792f86d9f52b540"
+      "bytes": 2316,
+      "sha256": "a982f4a93b431bc20c261ef8a4f15d4576384cabc5909faf047b2efa4ec1811d"
     },
     {
       "path": "apps/harbor_office/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
-      "bytes": 1443,
-      "sha256": "3c34e1f298d0c9ea3455d46db6b7759c8211a49e9ec6e44b635fc5c87dfb4180"
+      "bytes": 2502,
+      "sha256": "3c0ba6dac33e00c60ebafd6aece59e963237807455d08d8a2a18bd3d2b64b966"
     },
     {
       "path": "apps/harbor_office/android/app/src/main/res/values/styles.xml",
@@ -1131,83 +1131,83 @@
     },
     {
       "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json",
-      "bytes": 2519,
-      "sha256": "3b1e214f466ffedff74baa5598ad5c4421130eea6bc8d57b8fe23435e8280ae4"
+      "bytes": 2097,
+      "sha256": "59aee64f32dab46ad775da6ea2f3fc4efe6e8a78289a9185cd0d2d7e055845dd"
     },
     {
       "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png",
-      "bytes": 10932,
-      "sha256": "7770183009e914112de7d8ef1d235a6a30c5834424858e0d2f8253f6b8d31926"
+      "bytes": 7121,
+      "sha256": "8f2f5d40344ae793e1b1b39304e92608ed8e0be0c665d7c7b284558a91387651"
     },
     {
       "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@1x.png",
-      "bytes": 295,
-      "sha256": "cab10a0d391ec5bc09ef50ce49e8ad401cee7ef03707ec0923a222c5c2b3d212"
+      "bytes": 364,
+      "sha256": "4cd7c37fb31dea00c87e8d3cd50a324c1c81cd14fb28d79c70a86b5b8a2ceacc"
     },
     {
       "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@2x.png",
-      "bytes": 406,
-      "sha256": "b9ad02cf6576a04d1b6806ac02a2431481b448dd0c2e505ce25842d1f7c4730b"
+      "bytes": 612,
+      "sha256": "051c57f449a8047da3ee54814d354b9e06dcad6336cc58ef43639083d9dce6be"
     },
     {
       "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@3x.png",
-      "bytes": 450,
-      "sha256": "c6e6d3b215ae744a9c391f4c4d44157eff5e739d6ad6c39f9bfa5df66dddd267"
+      "bytes": 906,
+      "sha256": "9ce368b488a2279111e097c61b02158c77e8c38ef1b35f8853549a41879514b0"
     },
     {
       "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@1x.png",
-      "bytes": 282,
-      "sha256": "5dee24dc104ac76dc162e42ae0beb163d426bf365562ee28ba7b3ad368559a60"
+      "bytes": 484,
+      "sha256": "3f3187969df660b4e2656bcdbec4816482a415ea1f646eb9ec72938b2d2ae785"
     },
     {
       "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@2x.png",
-      "bytes": 462,
-      "sha256": "a9b21eb6f4271385655a8771f76e29eef8c1107d7879cbcfc567e6619d1f716a"
+      "bytes": 890,
+      "sha256": "a80f76037fda71e8beee3f364721a0a07a873c5133e926da73dd9c3caa940ca2"
     },
     {
       "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@3x.png",
-      "bytes": 704,
-      "sha256": "e677d701ffe4af7bc2935098d6b3984cc9ab7ace573e6900955a5535b12410cf"
+      "bytes": 1266,
+      "sha256": "689e743b2217b75c305a05939fab86238d5bb9d34d1c8d0258c0796bc2508984"
     },
     {
       "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@1x.png",
-      "bytes": 406,
-      "sha256": "b9ad02cf6576a04d1b6806ac02a2431481b448dd0c2e505ce25842d1f7c4730b"
+      "bytes": 612,
+      "sha256": "051c57f449a8047da3ee54814d354b9e06dcad6336cc58ef43639083d9dce6be"
     },
     {
       "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@2x.png",
-      "bytes": 586,
-      "sha256": "7c61c42fc7b657d9cf314d32a4ec458f0647c3aaf360be1b9377857266ec2499"
+      "bytes": 1177,
+      "sha256": "06762d60885495786162db83c73081c909f703a4edf4bffccb573d8bb648f07c"
     },
     {
       "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@3x.png",
-      "bytes": 862,
-      "sha256": "19be171481dc71a0b2803ebcd01dd8b0c5fd5778dee34c0a3cabc948c225f24e"
+      "bytes": 1626,
+      "sha256": "ab3cc0ace2349d43476cccbc7d7b2e57d1993b6da11498c551fb897760894d38"
     },
     {
       "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@2x.png",
-      "bytes": 862,
-      "sha256": "19be171481dc71a0b2803ebcd01dd8b0c5fd5778dee34c0a3cabc948c225f24e"
+      "bytes": 1626,
+      "sha256": "ab3cc0ace2349d43476cccbc7d7b2e57d1993b6da11498c551fb897760894d38"
     },
     {
       "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@3x.png",
-      "bytes": 1674,
-      "sha256": "4209a49e44a92ec40a327d3455eb1b1c153ee83d75de1c2be0a12ab18b2ff9de"
+      "bytes": 2307,
+      "sha256": "92dc55a93c608851de26f5ac56414cc239e26d0e62fd65a60dbac3747ece8686"
     },
     {
       "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@1x.png",
-      "bytes": 762,
-      "sha256": "836c918cb613249eba0483a6b02fa3df3c1c0a89a315ee4d3b88509b83c7ab73"
+      "bytes": 1170,
+      "sha256": "0e34abfbb7ced860061648ac2ed5ff1aeb53d924c666843bdcf8b14b2181c812"
     },
     {
       "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@2x.png",
-      "bytes": 1226,
-      "sha256": "41c7d42f6e61f8fe7f30b1ffa2256aecbc9682be06d18c4a3062043e1a2e547c"
+      "bytes": 2279,
+      "sha256": "1da8cff3016c2f22ff18ac5a43b442271885216c1a1578b9b5a032a9f62a8639"
     },
     {
       "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-83.5x83.5@2x.png",
-      "bytes": 1418,
-      "sha256": "5d7e5bdf01b93802bc973345b3a78c038907147625035952a08a115a563b7f81"
+      "bytes": 2185,
+      "sha256": "787a3ce6e7cdda50c921fdcf1be8cdbcd2e7d6b60df9685c062d0ef837b2effd"
     },
     {
       "path": "apps/harbor_office/ios/Runner/Assets.xcassets/LaunchImage.imageset/Contents.json",
@@ -1266,8 +1266,8 @@
     },
     {
       "path": "apps/harbor_office/ios/Runner.xcodeproj/project.pbxproj",
-      "bytes": 31256,
-      "sha256": "6bcb24a97844580fbe807de534d09d9ce359c29adc843fb9cbb5cacb156e30a4"
+      "bytes": 31264,
+      "sha256": "0bbbeb8d2444f2a9f81b3221579248e203516bfe9a2c3782020867946cb26409"
     },
     {
       "path": "apps/harbor_office/ios/Runner.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
@@ -1321,33 +1321,33 @@
     },
     {
       "path": "apps/harbor_office/lib/l10n/app_ar.arb",
-      "bytes": 38451,
-      "sha256": "79ac1b9fac6eb72317f4e9f915b707e6b6c3dbf0bf57869134f937fa80fd2bd4"
+      "bytes": 38913,
+      "sha256": "f739aa98131e69e5166c0f2d241e7828ec1763352542c20076758b219337fc28"
     },
     {
       "path": "apps/harbor_office/lib/l10n/app_en.arb",
-      "bytes": 31486,
-      "sha256": "6c9e4b21d9151dcc12fc75e5693a62738c2f5c5c1240ca29f78a91697b7b6dfb"
+      "bytes": 31998,
+      "sha256": "49f09d2a70e6582c3445505e6d761ddb6f15e3e79c63683c49c4df64f16f4333"
     },
     {
       "path": "apps/harbor_office/lib/l10n/app_localizations.dart",
-      "bytes": 78760,
-      "sha256": "75ff6d42f8191140ee1fda5b448bf04654dfe6ec6ef9a0dc6eff6f79083b8dee"
+      "bytes": 79905,
+      "sha256": "5732f69728a454ba161ad7f86bd011f6170140bed7c2096f62a842b1fb149fdc"
     },
     {
       "path": "apps/harbor_office/lib/l10n/app_localizations_ar.dart",
-      "bytes": 48187,
-      "sha256": "4170648184dc40d6466124e41d58d2a2b8f6bea14e0c7edf842dc10066c3ce5e"
+      "bytes": 48641,
+      "sha256": "b720b7d8b778c4bb080d0af79aa789ae5a017f3ad43b1935135eaa5cf9162a0f"
     },
     {
       "path": "apps/harbor_office/lib/l10n/app_localizations_en.dart",
-      "bytes": 38307,
-      "sha256": "0c743019115d13c1ae393879ae7dc9a1535e520c66a19a861b78fa2b89e8ecb8"
+      "bytes": 38811,
+      "sha256": "6bd1b3be0a39cb2bf5bc68f54c591382766eaa6b497e9732cc7196e70b8e1713"
     },
     {
       "path": "apps/harbor_office/lib/main.dart",
-      "bytes": 11453,
-      "sha256": "97e51911eef6c3c620deb48f88d5ff7609dc304232661901be542c3912668d68"
+      "bytes": 11586,
+      "sha256": "fa8e783ff3e3b924a76134976f63559c3098ac978cf709167d960bc00b219b4a"
     },
     {
       "path": "apps/harbor_office/lib/services/diagnostics.dart",
@@ -1361,18 +1361,18 @@
     },
     {
       "path": "apps/harbor_office/lib/services/harbor_service.dart",
-      "bytes": 28905,
-      "sha256": "659960f4bbb1cd37da7a2e049e5417fd49aed3666ec0c66e8942a10d4bd7f33d"
+      "bytes": 30475,
+      "sha256": "cd3486d37b421e230fefac5ca13fcc5c8bae017df35f91b9bd74694244d395c7"
     },
     {
       "path": "apps/harbor_office/lib/services/preferences.dart",
-      "bytes": 3918,
-      "sha256": "446198bda66b6156b98f93eb82230984c5182aea7539f31d2aad3670ef3f07bc"
+      "bytes": 5830,
+      "sha256": "6c3f1b16147d2b0c0fa174e7805c2f8d99fe4c75a4f1c0a0198896f77fda73a6"
     },
     {
       "path": "apps/harbor_office/lib/shell/office_shell.dart",
-      "bytes": 1913,
-      "sha256": "da1b58689a6875e9d826ba746321076715a5aef81ce4e53ec1db4afe02e39121"
+      "bytes": 2140,
+      "sha256": "2817b4fde8780561eabc587a02ddf3f838a1e0f8374bb7838993c6559c5f6761"
     },
     {
       "path": "apps/harbor_office/lib/surfaces/save_destination.dart",
@@ -1391,8 +1391,8 @@
     },
     {
       "path": "apps/harbor_office/lib/surfaces/work/document_view.dart",
-      "bytes": 7438,
-      "sha256": "b177a40f590d84a6f0959266dece78965ca85c50a6808a24c08fb0574fb3b9cb"
+      "bytes": 9885,
+      "sha256": "c949074c4761ce4ebecc95e9e706b1fb38b36dc215847ac4bdcac1d6d835ab10"
     },
     {
       "path": "apps/harbor_office/lib/surfaces/work/pdf_view.dart",
@@ -1406,23 +1406,23 @@
     },
     {
       "path": "apps/harbor_office/lib/surfaces/work_surface.dart",
-      "bytes": 14778,
-      "sha256": "246205db6fda3b0d5311f878de762ac32896db6139f0c7404ed6373fdd2b80cf"
+      "bytes": 19847,
+      "sha256": "e9ddb7b110cd620401a6f80c28bbd7ebf24970d1fc6567c35940dfd55cb47a4a"
     },
     {
       "path": "apps/harbor_office/pubspec.lock",
-      "bytes": 15312,
-      "sha256": "ff2e9a737fc099866bf4df0a8a244200d64d74d1358c1cb07d0587b738506345"
+      "bytes": 16939,
+      "sha256": "e28e24a4d1e936d36ce66cc31f47672a1165dadd639f5013bc897004956eda36"
     },
     {
       "path": "apps/harbor_office/pubspec.yaml",
-      "bytes": 695,
-      "sha256": "1fd10271c00e5e3f90ac8e4e6f2340e59c8bb906bed8e8df52b4b374082d8408"
+      "bytes": 927,
+      "sha256": "52b1d7a2b7a6d8899f97cc31bf5a0a584b057d79a9bcc185034df0088c348186"
     },
     {
       "path": "apps/harbor_office/test/smoke_test.dart",
-      "bytes": 2677,
-      "sha256": "35da1ef9ed8b7497846e0def1405e9b417c4750aebadb778b00a03fddb67a34e"
+      "bytes": 2683,
+      "sha256": "07e4a95959cdce8ce7cc741bf24ca7fe8b85fbb139ce4c3db7abc2e25e08a9f2"
     },
     {
       "path": "assets/Harbor_Concept_Board.png",
@@ -2166,8 +2166,8 @@
     },
     {
       "path": "core/harbor_ffi/src/lib.rs",
-      "bytes": 154672,
-      "sha256": "9e3ed3da6564b964821d89fbd4ae5158947ef5e44405f3895ce8a052b42f68af"
+      "bytes": 159106,
+      "sha256": "2f3ab0039b2b49f3b96b694ee2462ca7cf65df4b9a50305beb22df6ef9bfbb4f"
     },
     {
       "path": "core/harbor_ffi/tests/catalog_first_run.rs",
@@ -2196,8 +2196,8 @@
     },
     {
       "path": "core/harbor_ffi/tests/workbook_edit.rs",
-      "bytes": 10615,
-      "sha256": "33b486513c9cac319a2c96984781454e5474a457cb33a5ae79b73a0567bd966b"
+      "bytes": 14163,
+      "sha256": "60de4f9470e61025e0ceada81756cf1573ecf936aaab98115afc7f33c4a1fcc3"
     },
     {
       "path": "core/harbor_formula/Cargo.toml",

@@ -305,7 +305,7 @@
       }
     }
   },
-  "trustLocalOnlyBody": "Requests and files never leave this device. Model acquisition is the only explicit online session, and it runs through the egress broker.",
+  "trustLocalOnlyBody": "Files and data never leave this device. The suite performs no online sessions.",
   "trustChipLabel": "LOCAL",
   "trustChipTooltip": "Local Only policy · executing on device. Open the Trust Pulse.",
   "commandPaletteTooltip": "Search commands",
@@ -880,5 +880,26 @@
   "storeSuiteSlides": "Presentations — preview",
   "storeSuitePdf": "PDF — preview and extraction",
   "suiteStatusLive": "Live",
-  "suiteStatusPreview": "Preview"
+  "suiteStatusPreview": "Preview",
+  "workNewSpreadsheet": "New spreadsheet",
+  "workNewDocument": "New document",
+  "workRecents": "Recent",
+  "workUntitledSheet": "Untitled workbook",
+  "workUntitledDoc": "Untitled document",
+  "workRecentFailed": "Could not reopen {name} — the system no longer grants access to this location.",
+  "@workRecentFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "workEditParagraphTitle": "Edit paragraph {index}",
+  "@workEditParagraphTitle": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:harbor_native/harbor_ffi.dart' as ffi;
 import 'package:harbor_ui/harbor_ui.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../services/harbor_service.dart';
 
 /// Document workspace (UX-008): paragraphs rendered with typographic
 /// hierarchy from their DOCX styles, a page-like reading column and an
@@ -17,6 +19,57 @@ class DocumentView extends StatefulWidget {
 class _DocumentViewState extends State<DocumentView> {
   final _scroll = ScrollController();
   final Map<int, GlobalKey> _anchors = {};
+  bool _savingEdit = false;
+  String? _editError;
+
+  /// Long-press edit: a typed paragraph replace through the core (the
+  /// op carries a content-hash precondition; a stale edit is refused).
+  Future<void> _editParagraph(Map paragraph) async {
+    if (_savingEdit) return;
+    final sp = HarborServiceProvider.of(context);
+    final service = sp.notifier;
+    if (service == null || sp.failed) return;
+    final l10n = AppLocalizations.of(context)!;
+    final index = (paragraph['index'] as num).toInt();
+    final current = paragraph['text'] as String? ?? '';
+    final controller = TextEditingController(text: current);
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.workEditParagraphTitle(index)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: 6,
+          minLines: 1,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(MaterialLocalizations.of(context).okButtonLabel),
+          ),
+        ],
+      ),
+    );
+    final newText = controller.text;
+    controller.dispose();
+    if (saved != true || !mounted) return;
+    if (newText == current) return;
+    setState(() => _savingEdit = true);
+    try {
+      await service.editDocumentOps([
+        {'kind': 'paragraph', 'index': index, 'text': newText},
+      ]);
+    } on ffi.HarborCoreException catch (e) {
+      if (mounted) setState(() => _editError = e.message);
+    } finally {
+      if (mounted) setState(() => _savingEdit = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -87,11 +140,19 @@ class _DocumentViewState extends State<DocumentView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (_editError != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: HarborSpace.s3),
+                      child: Text(_editError!,
+                          style: t.text.captionOf(t.colors.statusDangerText)),
+                    ),
                   for (final p in paras)
                     _Paragraph(
                       key: _anchors.putIfAbsent(
                           (p['index'] as num).toInt(), GlobalKey.new),
                       paragraph: p,
+                      onLongPress:
+                          _savingEdit ? null : () => _editParagraph(p),
                     ),
                 ],
               ),
@@ -166,8 +227,9 @@ class _Outline extends StatelessWidget {
 }
 
 class _Paragraph extends StatelessWidget {
-  const _Paragraph({super.key, required this.paragraph});
+  const _Paragraph({super.key, required this.paragraph, this.onLongPress});
   final Map paragraph;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -199,7 +261,10 @@ class _Paragraph extends StatelessWidget {
       padding = const EdgeInsets.only(bottom: HarborSpace.s3);
     }
     if (text.trim().isEmpty) return const SizedBox(height: HarborSpace.s3);
-    final body = SelectableText(text, style: ts);
+    final body = GestureDetector(
+      onLongPress: onLongPress,
+      child: SelectableText(text, style: ts),
+    );
     if (_DocumentViewState.isList(style) && level == null) {
       return Padding(
         padding: padding,

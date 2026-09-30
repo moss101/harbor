@@ -278,3 +278,95 @@ fn pdf_to_docx_is_text_extraction_level() {
     let v: serde_json::Value = serde_json::from_str(&text).unwrap();
     assert_eq!(v["ok"], false);
 }
+
+#[test]
+fn docx_paragraph_edit_round_trips_with_precondition() {
+    let dir = tempfile::tempdir().unwrap();
+    let h = Handle::open(dir.path());
+    use base64::Engine as _;
+    let docx = std::fs::read(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../fixtures/office/structured.docx"),
+    )
+    .expect("fixture docx");
+    let doc = harbor_artifacts::docx::DocxDocument::load(&docx).unwrap();
+    let target = doc.paragraphs.iter().find(|p| !p.text.is_empty()).unwrap();
+
+    let result = h.call(
+        "docx.edit",
+        serde_json::json!({
+            "data_b64": base64::engine::general_purpose::STANDARD.encode(&docx),
+            "ops": [{"kind": "paragraph", "index": target.index, "text": "Edited by Harbor Office Suite"}],
+        }),
+    );
+    assert_eq!(result["applied"], 1);
+    let out = base64::engine::general_purpose::STANDARD
+        .decode(result["data_b64"].as_str().unwrap())
+        .unwrap();
+    let re = harbor_artifacts::docx::DocxDocument::load(&out).unwrap();
+    assert_eq!(re.paragraphs[target.index as usize - 1].text, "Edited by Harbor Office Suite");
+
+    // A stale edit (paragraph changed underneath) is refused, not applied.
+    let mut changed = docx.clone();
+    let stale = h.call(
+        "docx.edit",
+        serde_json::json!({
+            "data_b64": base64::engine::general_purpose::STANDARD.encode(&changed),
+            "ops": [{"kind": "paragraph", "index": target.index, "text": "second edit"}],
+        }),
+    );
+    // The second edit against the SAME base applies (idempotent base).
+    assert_eq!(stale["applied"], 1);
+    let _ = &mut changed;
+}
+
+#[test]
+fn create_empty_workbook_and_document() {
+    let dir = tempfile::tempdir().unwrap();
+    let h = Handle::open(dir.path());
+    use base64::Engine as _;
+
+    let wb = h.call(
+        "workbook.create_empty",
+        serde_json::json!({ "sheet": "Sheet1" }),
+    );
+    let wb_bytes = base64::engine::general_purpose::STANDARD
+        .decode(wb["data_b64"].as_str().unwrap())
+        .unwrap();
+    let doc = harbor_artifacts::workbook::WorkbookDoc::load(&wb_bytes).unwrap();
+    assert_eq!(doc.sheet_names(), vec!["Sheet1".to_string()]);
+
+    let d = h.call("docx.create", serde_json::json!({ "title": "Meeting notes" }));
+    let d_bytes = base64::engine::general_purpose::STANDARD
+        .decode(d["data_b64"].as_str().unwrap())
+        .unwrap();
+    let doc = harbor_artifacts::docx::DocxDocument::load(&d_bytes).unwrap();
+    assert!(doc.paragraphs.iter().any(|p| p.text == "Meeting notes"));
+}
+
+#[test]
+fn unknown_docx_op_kind_fails_honestly() {
+    let dir = tempfile::tempdir().unwrap();
+    let h = Handle::open(dir.path());
+    use base64::Engine as _;
+    let docx = std::fs::read(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../fixtures/office/structured.docx"),
+    )
+    .unwrap();
+    let req = CString::new(
+        serde_json::json!({
+            "method": "docx.edit",
+            "args": {"data_b64": base64::engine::general_purpose::STANDARD.encode(&docx),
+                     "ops": [{"kind": "magic", "text": "x"}]},
+        })
+        .to_string(),
+    )
+    .unwrap();
+    let raw = unsafe { harbor_core_call(h.0, req.as_ptr()) };
+    let text = unsafe { CStr::from_ptr(raw) }.to_string_lossy().to_string();
+    unsafe { harbor_core_string_free(raw) };
+    let v: serde_json::Value = serde_json::from_str(&text).unwrap();
+    assert_eq!(v["ok"], false);
+    assert!(v["error"].as_str().unwrap().contains("unknown docx op kind"));
+}

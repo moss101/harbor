@@ -720,6 +720,46 @@ class HarborService extends ChangeNotifier {
     return base64Decode(result['data_b64'] as String);
   }
 
+  /// Apply typed DOCX ops (paragraph text replace by 1-based index,
+  /// table-cell set) through the core. Every op carries an implicit
+  /// content-hash precondition inside the core; on success the working
+  /// copy and its preview refresh. Throws [ffi.HarborCoreException].
+  Future<Map<String, dynamic>> editDocumentOps(
+      List<Map<String, dynamic>> ops) async {
+    final source = _sourceBytes;
+    final current = _preview;
+    if (source == null || current == null) {
+      throw ffi.HarborCoreException('no document open');
+    }
+    if (current['kind'] != 'docx') {
+      throw ffi.HarborCoreException('the open artifact is not a document');
+    }
+    final result = await _call('docx.edit', {
+      'data_b64': base64Encode(source),
+      'ops': ops,
+    });
+    final newBytes =
+        base64Decode(result['data_b64'] as String).toList(growable: false);
+    _sourceBytes = newBytes;
+    _preview =
+        await _call('artifact.preview', {'data_b64': base64Encode(newBytes)});
+    notifyListeners();
+    return result;
+  }
+
+  /// Create a new empty workbook (.xlsx) with one sheet.
+  Future<List<int>> createWorkbook({String sheet = 'Sheet1'}) async {
+    final result =
+        await _call('workbook.create_empty', {'sheet': sheet});
+    return base64Decode(result['data_b64'] as String);
+  }
+
+  /// Create a new document (.docx) with a single title block.
+  Future<List<int>> createDocument({required String title}) async {
+    final result = await _call('docx.create', {'title': title});
+    return base64Decode(result['data_b64'] as String);
+  }
+
   /// Convert Markdown text to a real .docx package through the core's
   /// qualified block model. Inline emphasis is stripped (reported by the
   /// core, not guessed here). Throws [ffi.HarborCoreException] on failure.
