@@ -1470,7 +1470,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get storeTagline => 'المنتجات المضمّنة والنماذج الأولى';
 
   @override
-  String get storeOfficeTitle => 'Harbor Office';
+  String get storeOfficeTitle => 'حزمة Harbor Office';
 
   @override
   String get storeOfficeIncluded => 'مضمّن مع هذا التطبيق';
@@ -1480,7 +1480,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'تحرير جداول البيانات والمخططات والتظليل متاح في «العمل»؛ وتأهيل الصيغ يصل مع بوابات المنصات.';
 
   @override
-  String get storeOfficeOpen => 'فتح «العمل»';
+  String get storeOfficeOpen => 'فتح في «العمل»';
 
   @override
   String storeModelsHeading(int count) {
@@ -1587,4 +1587,38 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get workAddHighlight => 'تظليل ما فوق المحدد';
+
+  @override
+  String get storeOfficeInstalled => 'مثبّتة';
+
+  @override
+  String get storeOfficeShips =>
+      'جزء من التطبيق الذي لديك بالفعل — لا شيء للتنزيل.';
+
+  @override
+  String get storeOfficeInside => 'المحتويات';
+
+  @override
+  String get storeSuiteSheets => 'جداول البيانات — تحرير ومخططات وتظليل';
+
+  @override
+  String get storeSuiteConvert => 'التحويلات — Markdown / PDF إلى Word';
+
+  @override
+  String get storeSuiteFormulas => 'الصيغ — 99 هدفاً عبر 3 مستويات مؤهلة';
+
+  @override
+  String get storeSuiteDocs => 'المستندات — معاينة وحفظ';
+
+  @override
+  String get storeSuiteSlides => 'العروض التقديمية — معاينة';
+
+  @override
+  String get storeSuitePdf => 'PDF — معاينة واستخراج';
+
+  @override
+  String get suiteStatusLive => 'متاح';
+
+  @override
+  String get suiteStatusPreview => 'معاينة';
 }

@@ -2327,7 +2327,7 @@ abstract class AppLocalizations {
   /// No description provided for @storeOfficeTitle.
   ///
   /// In en, this message translates to:
-  /// **'Harbor Office'**
+  /// **'Harbor Office Suite'**
   String get storeOfficeTitle;
 
   /// No description provided for @storeOfficeIncluded.
@@ -2345,7 +2345,7 @@ abstract class AppLocalizations {
   /// No description provided for @storeOfficeOpen.
   ///
   /// In en, this message translates to:
-  /// **'Open Work'**
+  /// **'Open in Work'**
   String get storeOfficeOpen;
 
   /// No description provided for @storeModelsHeading.
@@ -2515,6 +2515,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Highlight above selected'**
   String get workAddHighlight;
+
+  /// No description provided for @storeOfficeInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get storeOfficeInstalled;
+
+  /// No description provided for @storeOfficeShips.
+  ///
+  /// In en, this message translates to:
+  /// **'Part of the app you already have — nothing to download.'**
+  String get storeOfficeShips;
+
+  /// No description provided for @storeOfficeInside.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s inside'**
+  String get storeOfficeInside;
+
+  /// No description provided for @storeSuiteSheets.
+  ///
+  /// In en, this message translates to:
+  /// **'Spreadsheets — editing, charts, highlights'**
+  String get storeSuiteSheets;
+
+  /// No description provided for @storeSuiteConvert.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversions — Markdown / PDF to Word'**
+  String get storeSuiteConvert;
+
+  /// No description provided for @storeSuiteFormulas.
+  ///
+  /// In en, this message translates to:
+  /// **'Formulas — 99 targets across 3 qualified tiers'**
+  String get storeSuiteFormulas;
+
+  /// No description provided for @storeSuiteDocs.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents — preview and preservation'**
+  String get storeSuiteDocs;
+
+  /// No description provided for @storeSuiteSlides.
+  ///
+  /// In en, this message translates to:
+  /// **'Presentations — preview'**
+  String get storeSuiteSlides;
+
+  /// No description provided for @storeSuitePdf.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF — preview and extraction'**
+  String get storeSuitePdf;
+
+  /// No description provided for @suiteStatusLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Live'**
+  String get suiteStatusLive;
+
+  /// No description provided for @suiteStatusPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get suiteStatusPreview;
 }
 
 class _AppLocalizationsDelegate

@@ -783,10 +783,10 @@
   "skillsCopied": "Copied to the clipboard",
   "surfaceStore": "Store",
   "storeTagline": "Included products and first-party models",
-  "storeOfficeTitle": "Harbor Office",
+  "storeOfficeTitle": "Harbor Office Suite",
   "storeOfficeIncluded": "Included with this app",
   "storeOfficeStatus": "Spreadsheet editing, charts and highlights are live in Work; formula targets qualify as their platform gates pass.",
-  "storeOfficeOpen": "Open Work",
+  "storeOfficeOpen": "Open in Work",
   "storeModelsHeading": "Harbor models ({count})",
   "@storeModelsHeading": {
     "placeholders": {
@@ -869,5 +869,16 @@
   "workConvertFailed": "Conversion failed",
   "modelsAdvancedDetails": "Advanced details",
   "modelsBackendLabel": "Backend",
-  "workAddHighlight": "Highlight above selected"
+  "workAddHighlight": "Highlight above selected",
+  "storeOfficeInstalled": "Installed",
+  "storeOfficeShips": "Part of the app you already have — nothing to download.",
+  "storeOfficeInside": "What's inside",
+  "storeSuiteSheets": "Spreadsheets — editing, charts, highlights",
+  "storeSuiteConvert": "Conversions — Markdown / PDF to Word",
+  "storeSuiteFormulas": "Formulas — 99 targets across 3 qualified tiers",
+  "storeSuiteDocs": "Documents — preview and preservation",
+  "storeSuiteSlides": "Presentations — preview",
+  "storeSuitePdf": "PDF — preview and extraction",
+  "suiteStatusLive": "Live",
+  "suiteStatusPreview": "Preview"
 }

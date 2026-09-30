@@ -1413,7 +1413,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storeTagline => 'Included products and first-party models';
 
   @override
-  String get storeOfficeTitle => 'Harbor Office';
+  String get storeOfficeTitle => 'Harbor Office Suite';
 
   @override
   String get storeOfficeIncluded => 'Included with this app';
@@ -1423,7 +1423,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Spreadsheet editing, charts and highlights are live in Work; formula targets qualify as their platform gates pass.';
 
   @override
-  String get storeOfficeOpen => 'Open Work';
+  String get storeOfficeOpen => 'Open in Work';
 
   @override
   String storeModelsHeading(int count) {
@@ -1531,4 +1531,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get workAddHighlight => 'Highlight above selected';
+
+  @override
+  String get storeOfficeInstalled => 'Installed';
+
+  @override
+  String get storeOfficeShips =>
+      'Part of the app you already have — nothing to download.';
+
+  @override
+  String get storeOfficeInside => 'What\'s inside';
+
+  @override
+  String get storeSuiteSheets => 'Spreadsheets — editing, charts, highlights';
+
+  @override
+  String get storeSuiteConvert => 'Conversions — Markdown / PDF to Word';
+
+  @override
+  String get storeSuiteFormulas =>
+      'Formulas — 99 targets across 3 qualified tiers';
+
+  @override
+  String get storeSuiteDocs => 'Documents — preview and preservation';
+
+  @override
+  String get storeSuiteSlides => 'Presentations — preview';
+
+  @override
+  String get storeSuitePdf => 'PDF — preview and extraction';
+
+  @override
+  String get suiteStatusLive => 'Live';
+
+  @override
+  String get suiteStatusPreview => 'Preview';
 }

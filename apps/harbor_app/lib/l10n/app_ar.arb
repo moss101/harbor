@@ -641,10 +641,10 @@
   "skillsCopied": "نُسخ إلى الحافظة",
   "surfaceStore": "المتجر",
   "storeTagline": "المنتجات المضمّنة والنماذج الأولى",
-  "storeOfficeTitle": "Harbor Office",
+  "storeOfficeTitle": "حزمة Harbor Office",
   "storeOfficeIncluded": "مضمّن مع هذا التطبيق",
   "storeOfficeStatus": "تحرير جداول البيانات والمخططات والتظليل متاح في «العمل»؛ وتأهيل الصيغ يصل مع بوابات المنصات.",
-  "storeOfficeOpen": "فتح «العمل»",
+  "storeOfficeOpen": "فتح في «العمل»",
   "storeModelsHeading": "نماذج Harbor ({count})",
   "@storeModelsHeading": {
     "placeholders": {
@@ -727,5 +727,16 @@
   "workConvertFailed": "فشل التحويل",
   "modelsAdvancedDetails": "تفاصيل متقدمة",
   "modelsBackendLabel": "المحرّك",
-  "workAddHighlight": "تظليل ما فوق المحدد"
+  "workAddHighlight": "تظليل ما فوق المحدد",
+  "storeOfficeInstalled": "مثبّتة",
+  "storeOfficeShips": "جزء من التطبيق الذي لديك بالفعل — لا شيء للتنزيل.",
+  "storeOfficeInside": "المحتويات",
+  "storeSuiteSheets": "جداول البيانات — تحرير ومخططات وتظليل",
+  "storeSuiteConvert": "التحويلات — Markdown / PDF إلى Word",
+  "storeSuiteFormulas": "الصيغ — 99 هدفاً عبر 3 مستويات مؤهلة",
+  "storeSuiteDocs": "المستندات — معاينة وحفظ",
+  "storeSuiteSlides": "العروض التقديمية — معاينة",
+  "storeSuitePdf": "PDF — معاينة واستخراج",
+  "suiteStatusLive": "متاح",
+  "suiteStatusPreview": "معاينة"
 }

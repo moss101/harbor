@@ -71,14 +71,23 @@ void main() {
     await tester.tap(find.text('Store').first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    // The office card is a status card: included, with an Open Work
-    // action — and there is no "download office" control anywhere.
-    expect(find.text('Harbor Office'), findsOneWidget);
-    expect(find.text('Included with this app'), findsOneWidget);
-    expect(find.text('Open Work'), findsOneWidget);
+    // The office card is an INSTALLED-product listing: the suite ships
+    // inside the app, so the store shows Installed (never a download)
+    // with the contents expandable; Open in Work is secondary.
+    expect(find.text('Harbor Office Suite'), findsOneWidget);
+    expect(find.text('Installed'), findsOneWidget);
+    expect(find.text('Part of the app you already have — nothing to download.'),
+        findsOneWidget);
     expect(find.text('Download office'), findsNothing);
-    // Open Work navigates to the Work surface.
-    await tester.tap(find.text('Open Work'));
+    // What's inside expands to the suite component list.
+    await tester.tap(find.text("What's inside"));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.textContaining('Spreadsheets'), findsOneWidget);
+    expect(find.text('Live'), findsNWidgets(3));
+    expect(find.text('Preview'), findsNWidgets(3));
+    // Open in Work navigates to the Work surface.
+    await tester.tap(find.text('Open in Work'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Work'), findsWidgets);

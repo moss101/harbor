@@ -50,14 +50,23 @@ class StoreSurface extends StatelessWidget {
   }
 }
 
-/// The Harbor Office card: the product ships inside this app. The card is
-/// informational until the office activation gates pass; it never offers a
-/// download, and there is deliberately no runtime "enable" toggle (the
-/// feature registry is a build-time contract — dormant code keeps no live
-/// authority path).
-class _OfficeCard extends StatelessWidget {
+/// The Harbor Office Suite card: the product ships inside this app, so
+/// the honest store presentation is an INSTALLED state with the suite's
+/// contents listed — never a download (platform policy 2.5.2 / Play
+/// forbid downloadable native code, and the engine is compiled into the
+/// binary). "Open in Work" is a secondary action; there is deliberately
+/// no runtime "enable" toggle (the feature registry is a build-time
+/// contract — dormant code keeps no live authority path).
+class _OfficeCard extends StatefulWidget {
   const _OfficeCard({required this.onOpenWork});
   final VoidCallback onOpenWork;
+
+  @override
+  State<_OfficeCard> createState() => _OfficeCardState();
+}
+
+class _OfficeCardState extends State<_OfficeCard> {
+  bool _insideExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -74,14 +83,49 @@ class _OfficeCard extends StatelessWidget {
               child: Text(l10n.storeOfficeTitle,
                   style: t.text.bodyStrongOf(t.colors.ink)),
             ),
-            HarborPill(l10n.storeOfficeIncluded),
+            HarborPill(l10n.storeOfficeInstalled, brand: true),
           ]),
+          const SizedBox(height: HarborSpace.s2),
+          Text(l10n.storeOfficeShips,
+              style: t.text.captionOf(t.colors.inkMuted)),
           const SizedBox(height: HarborSpace.s2),
           Text(l10n.storeOfficeStatus,
               style: t.text.captionOf(t.colors.inkMuted)),
           const SizedBox(height: HarborSpace.s3),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              onPressed: () => setState(() => _insideExpanded = !_insideExpanded),
+              icon: Icon(_insideExpanded ? Icons.expand_less : Icons.expand_more,
+                  size: 18),
+              label: Text(l10n.storeOfficeInside),
+            ),
+          ),
+          if (_insideExpanded)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(bottom: HarborSpace.s2),
+              child: Column(children: [
+                for (final (name, live) in [
+                  (l10n.storeSuiteSheets, true),
+                  (l10n.storeSuiteConvert, true),
+                  (l10n.storeSuiteFormulas, true),
+                  (l10n.storeSuiteDocs, false),
+                  (l10n.storeSuiteSlides, false),
+                  (l10n.storeSuitePdf, false),
+                ])
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: HarborSpace.s1),
+                    child: Row(children: [
+                      Expanded(
+                        child: Text(name, style: t.text.smallOf(t.colors.ink)),
+                      ),
+                      HarborPill(live ? l10n.suiteStatusLive : l10n.suiteStatusPreview),
+                    ]),
+                  ),
+              ]),
+            ),
           OutlinedButton.icon(
-            onPressed: onOpenWork,
+            onPressed: widget.onOpenWork,
             icon: const Icon(Icons.work_outline),
             label: Text(l10n.storeOfficeOpen),
           ),
