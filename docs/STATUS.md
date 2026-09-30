@@ -7,6 +7,47 @@ ran at.
 
 ---
 
+## Session 52 (2026-10-01): "Open in Harbor Office Suite" made real on both platforms
+
+Found at session start: one uncommitted enhancement — an Android VIEW
+intent filter + `dev.harbor.office/open` channel in `MainActivity.kt`
+that **nothing in Dart called** (dead code), with no warm-start handling,
+no iOS side, and a `text/plain` filter the core cannot preview. Upgraded
+to a complete feature:
+
+- **Dart** `services/open_intake.dart`: `getInitialPath` (launch document,
+  consumed once) + native-pushed `openPath` (running app). Validates type
+  (docx/xlsx/pptx/pdf only — Markdown/text go through Convert), re-
+  sanitizes names (no traversal), imports the platform temp copy into
+  `Documents/Opened/` (identical bytes reuse the file, different bytes get
+  "(2)"), deletes the temp copy, never throws. Work consumes the request
+  once the core is up (cold delivery arrives before bootstrap), records
+  recents only on a successful core preview, and states refusals
+  (unsupported / unreadable) in en + ar.
+- **Android**: `onNewIntent` (singleTop warm start), one-shot launch
+  consumption (handled-extra + launched-from-history guard), background
+  copy with 256 MB cap, MIME→extension recovery, per-delivery cache dir
+  pruned after 24 h; manifest narrowed to the four previewable types.
+- **iOS**: `OfficeOpenIntake` scene-lifecycle delegate (registered via the
+  implicit-engine plugin registry — no pbxproj edit), `CFBundleDocumentTypes`
+  (Alternate rank), security-scoped copy, and deletion of the system's
+  `Documents/Inbox` copy (only inside our own Inbox).
+- **Verified**: `flutter test` 14/14 (9 intake unit tests + 3 against the
+  real dylib: delivered workbook opens + recents, unsupported refused,
+  fake .docx hits the core error and is NOT recorded), analyze clean.
+  On the Android emulator: cold start and warm start (`onNewIntent`) with
+  real `content://media` URIs, temp dir empty afterwards, recents
+  persisted, same document twice = one file. On the iPhone 17 Pro
+  simulator: warm (`simctl openurl`) and cold (terminated app) delivery
+  open in Work; temp + Inbox copies removed; dedupe holds.
+- **Process lesson**: `flutter build ... | tail` reports tail's exit code.
+  A Swift selector error (`willConnectTo`, not `willConnectToSession`)
+  was hidden and a STALE app was installed and "tested" — the first iOS
+  "failure" was a failed build. Redirect to a file and check `$?`.
+- Not verified: physical devices; a provider that reports no display
+  name AND no MIME type (falls back to "document" and is refused as
+  unsupported).
+
 ## Session 51 (2026-09-30): Harbor Office Suite features — DOCX editing, creation, recents
 
 The suite gained its core office features, all through typed core ops:

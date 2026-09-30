@@ -759,5 +759,17 @@
         "type": "int"
       }
     }
+  },
+  "workOpenUnsupported": "تعذّر فتح {name} — تفتح الحزمة ملفات Word وExcel وPowerPoint وPDF.",
+  "@workOpenUnsupported": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "workOpenUnreadable": "تعذّرت قراءة {name} — لم يمنح التطبيق الذي شاركه حق الوصول.",
+  "@workOpenUnreadable": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
   }
 }

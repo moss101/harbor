@@ -1646,4 +1646,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String workEditParagraphTitle(int index) {
     return 'تحرير الفقرة $index';
   }
+
+  @override
+  String workOpenUnsupported(String name) {
+    return 'تعذّر فتح $name — تفتح الحزمة ملفات Word وExcel وPowerPoint وPDF.';
+  }
+
+  @override
+  String workOpenUnreadable(String name) {
+    return 'تعذّرت قراءة $name — لم يمنح التطبيق الذي شاركه حق الوصول.';
+  }
 }

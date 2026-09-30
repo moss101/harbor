@@ -2623,6 +2623,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit paragraph {index}'**
   String workEditParagraphTitle(int index);
+
+  /// No description provided for @workOpenUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t open {name} — the suite opens Word, Excel, PowerPoint and PDF files.'**
+  String workOpenUnsupported(String name);
+
+  /// No description provided for @workOpenUnreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read {name} — the app that shared it did not grant access.'**
+  String workOpenUnreadable(String name);
 }
 
 class _AppLocalizationsDelegate

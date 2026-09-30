@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "4199c198b88dedd32960f78c618cfcd297e02c90382bad8eaabcb535a0f91ad4",
+  "input_manifest_sha256": "3ea87a0aacea20f1a8b6b280075f0f446a8bd6a8ace4ea69ea2f1f1cf81ee1e8",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -1016,8 +1016,8 @@
     },
     {
       "path": "apps/harbor_office/android/app/src/main/AndroidManifest.xml",
-      "bytes": 2840,
-      "sha256": "db65aa936704b7ebab3be15749f05878960290a029a170ef83052d76a5f3427f"
+      "bytes": 3798,
+      "sha256": "45cfb589e27638f8f640fb9b4a219cfc38397066352a4420074e5037e45ec932"
     },
     {
       "path": "apps/harbor_office/android/app/src/main/jniLibs/arm64-v8a/libc++_shared.so",
@@ -1031,8 +1031,8 @@
     },
     {
       "path": "apps/harbor_office/android/app/src/main/kotlin/dev/harbor/office/MainActivity.kt",
-      "bytes": 3715,
-      "sha256": "7f4defb9874e864678e87e5d0e7cf9afa479b3b808c8c41dd3103c4e85e8fb4e"
+      "bytes": 9733,
+      "sha256": "7bdad16b3c6c9bb6f441cb91b592096809bb0051f02e21ab41c008d3cd5c7eac"
     },
     {
       "path": "apps/harbor_office/android/app/src/main/res/drawable/launch_background.xml",
@@ -1166,8 +1166,8 @@
     },
     {
       "path": "apps/harbor_office/ios/Runner/AppDelegate.swift",
-      "bytes": 539,
-      "sha256": "451c6d9ba0a2b3ff43092ea349c60fa79a91f1158b915eb29dbdd357cb95d7b8"
+      "bytes": 4711,
+      "sha256": "00b8744bd5fe6af8747c1187283b70006ada498fa4e1bcfe17e317676375abda"
     },
     {
       "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json",
@@ -1316,8 +1316,8 @@
     },
     {
       "path": "apps/harbor_office/ios/Runner/Info.plist",
-      "bytes": 2379,
-      "sha256": "1b5b5504dbd28bea1f1f4f4e898e4a7cbf912f281d7f0b18a31e12adc969eb3e"
+      "bytes": 4136,
+      "sha256": "701a82a1f5eba493117cb3876216e7a74c49d05b96181e9c5b561278291b3577"
     },
     {
       "path": "apps/harbor_office/ios/Runner/PrivacyInfo.xcprivacy",
@@ -1391,33 +1391,33 @@
     },
     {
       "path": "apps/harbor_office/lib/l10n/app_ar.arb",
-      "bytes": 38913,
-      "sha256": "f739aa98131e69e5166c0f2d241e7828ec1763352542c20076758b219337fc28"
+      "bytes": 39353,
+      "sha256": "c8674b51d85ff0bb3ed227b27ed5f4b7df4aa74d3e94d577ee5a38c858f4baaa"
     },
     {
       "path": "apps/harbor_office/lib/l10n/app_en.arb",
-      "bytes": 31998,
-      "sha256": "49f09d2a70e6582c3445505e6d761ddb6f15e3e79c63683c49c4df64f16f4333"
+      "bytes": 32388,
+      "sha256": "3a30ed8c018446d3d01fa3c7367e748032aa39580a6ef55cc2e2973e57da78cf"
     },
     {
       "path": "apps/harbor_office/lib/l10n/app_localizations.dart",
-      "bytes": 79905,
-      "sha256": "5732f69728a454ba161ad7f86bd011f6170140bed7c2096f62a842b1fb149fdc"
+      "bytes": 80370,
+      "sha256": "0fbf3dd049963827a81ae321d724dcc3e64e0438fc64921b550331a6397c4403"
     },
     {
       "path": "apps/harbor_office/lib/l10n/app_localizations_ar.dart",
-      "bytes": 48641,
-      "sha256": "b720b7d8b778c4bb080d0af79aa789ae5a017f3ad43b1935135eaa5cf9162a0f"
+      "bytes": 48986,
+      "sha256": "471cb0becc7faffdc6ec981125224d6531925667b7902e80d773b149c49f3c50"
     },
     {
       "path": "apps/harbor_office/lib/l10n/app_localizations_en.dart",
-      "bytes": 38811,
-      "sha256": "6bd1b3be0a39cb2bf5bc68f54c591382766eaa6b497e9732cc7196e70b8e1713"
+      "bytes": 39107,
+      "sha256": "b2e097642c93a7a9d181ba01d38f070981e2c330c3d3b6cf88b8b9dae7f82b46"
     },
     {
       "path": "apps/harbor_office/lib/main.dart",
-      "bytes": 11586,
-      "sha256": "fa8e783ff3e3b924a76134976f63559c3098ac978cf709167d960bc00b219b4a"
+      "bytes": 15632,
+      "sha256": "8a62efd16e216d3aac729135c8e55188c07a9f5bc6c461364350a12a70429537"
     },
     {
       "path": "apps/harbor_office/lib/services/diagnostics.dart",
@@ -1476,8 +1476,8 @@
     },
     {
       "path": "apps/harbor_office/lib/surfaces/work_surface.dart",
-      "bytes": 19847,
-      "sha256": "e9ddb7b110cd620401a6f80c28bbd7ebf24970d1fc6567c35940dfd55cb47a4a"
+      "bytes": 21416,
+      "sha256": "64f2c1122fb52555bf6e37197fe5a72b903cc6e93faebf477f723e18eb040acb"
     },
     {
       "path": "apps/harbor_office/pubspec.lock",
@@ -2731,8 +2731,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 130585,
-      "sha256": "d26f9d34c1dc7aa878ddb4cf732030cd2ec041fcde72b757f85cf7ad9de3ee16"
+      "bytes": 133158,
+      "sha256": "2fe8ba799081077c06e75b5dd99d0190da84adb644425c83f4dd73ac192f56b5"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",

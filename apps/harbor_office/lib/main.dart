@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
@@ -10,8 +11,10 @@ import 'package:path_provider/path_provider.dart';
 import 'l10n/app_localizations.dart';
 import 'services/diagnostics.dart';
 import 'services/harbor_service.dart';
+import 'services/open_intake.dart';
 import 'services/preferences.dart';
 import 'shell/office_shell.dart';
+import 'surfaces/save_destination.dart';
 import 'surfaces/settings_surface.dart';
 import 'surfaces/work_surface.dart';
 
@@ -51,6 +54,10 @@ class AppState extends ChangeNotifier {
   /// arrival.
   bool pendingOpenFile = false;
 
+  /// A document handed to the suite by the platform ("Open in…", Android
+  /// VIEW). Work consumes it once the core is up and Work is showing.
+  OpenRequest? pendingOpen;
+
   Locale get locale => _prefs.locale;
   ThemeMode get themeMode => _prefs.themeMode;
   OfficeSurface get surface => OfficeSurface.values[surfaceIndex];
@@ -83,6 +90,13 @@ class AppState extends ChangeNotifier {
 
   void goTo(OfficeSurface s) => selectSurface(s.index);
 
+  /// Navigate to Work with a platform-delivered document to open.
+  void requestOpen(OpenRequest r) {
+    pendingOpen = r;
+    surfaceIndex = OfficeSurface.work.index;
+    notifyListeners();
+  }
+
   /// Navigate to Work and ask it to open the file picker.
   void requestOpenFile() {
     pendingOpenFile = true;
@@ -105,7 +119,8 @@ class AppStateScope extends InheritedNotifier<AppState> {
 }
 
 class HarborOfficeApp extends StatefulWidget {
-  const HarborOfficeApp({super.key, this.service, this.preferences});
+  const HarborOfficeApp(
+      {super.key, this.service, this.preferences, this.openIntake});
 
   /// Injectable for tests; when null a real FFI service is created over
   /// the persistent application-support data root.
@@ -114,6 +129,10 @@ class HarborOfficeApp extends StatefulWidget {
   /// Injectable preferences store; when null and [service] is injected an
   /// in-memory store is used, otherwise a file store under app support.
   final PreferencesStore? preferences;
+
+  /// Injectable platform "open with" intake; when null the real app
+  /// listens on the native channel, tests listen to nothing.
+  final OpenIntake? openIntake;
 
   @override
   State<HarborOfficeApp> createState() => _HarborOfficeAppState();
@@ -126,6 +145,8 @@ class _HarborOfficeAppState extends State<HarborOfficeApp>
   bool _serviceFailed = false;
   String? _serviceError;
   bool _initializing = false;
+  OpenIntake? _intake;
+  StreamSubscription<OpenRequest>? _intakeSub;
 
   HarborService? get service => widget.service ?? _service;
 
@@ -138,6 +159,88 @@ class _HarborOfficeAppState extends State<HarborOfficeApp>
     if (widget.service == null) {
       _initializing = true;
       _bootstrap();
+    }
+    // The real app listens for documents the platform hands it; an
+    // injected service (tests) only does so when an intake is injected.
+    _intake = widget.openIntake ?? (widget.service == null ? OpenIntake() : null);
+    final intake = _intake;
+    if (intake != null) {
+      _intakeSub = intake.requests.listen(_state.requestOpen);
+      intake.start();
+    }
+  }
+
+  static const _openChannel = MethodChannel('dev.harbor.office/open');
+
+  /// "Open in Harbor Office Suite": the platform layer resolves the
+  /// handed document (VIEW intent / openURL) to a readable path and a
+  /// name (content URIs land in a platform intake cache). The suite
+  /// imports the copy into its OWN Documents store (security scope and
+  /// content grants do not survive the session) and opens it — at launch
+  /// via getInitialPath, mid-session via the openPath push. A failure is
+  /// recorded, never a crash.
+  Future<void> _openHandedDocument(HarborService opened) async {
+    try {
+      _openChannel.setMethodCallHandler((call) async {
+        if (call.method == 'openPath' && call.arguments is Map) {
+          final args = (call.arguments as Map).cast<String, dynamic>();
+          final path = args['path'];
+          final name = args['name'];
+          if (path is String && name is String) {
+            await _importHandedFile(opened, path, name);
+          }
+        }
+      });
+      final payload = await _openChannel.invokeMethod('getInitialPath');
+      if (payload is Map) {
+        final args = payload.cast<String, dynamic>();
+        final error = args['error'];
+        final path = args['path'];
+        final name = args['name'];
+        if (error is String) {
+          DiagnosticsSink.instance.record(
+              level: 'warn',
+              message: 'handed document unreadable ($error): $name',
+              context: 'bootstrap');
+          return;
+        }
+        if (path is String && name is String) {
+          await _importHandedFile(opened, path, name);
+        }
+      }
+    } catch (_) {
+      // Channel unavailable (tests) or nothing handed over: the normal
+      // empty state stands.
+    }
+  }
+
+  Future<void> _importHandedFile(
+      HarborService opened, String path, String name) async {
+    try {
+      final bytes = await File(path).readAsBytes();
+      final docs = await getApplicationDocumentsDirectory();
+      final dest = firstFreePath(docs.path, name, (p) => File(p).existsSync());
+      await File(dest).writeAsBytes(bytes, flush: true);
+      final lower = name.toLowerCase();
+      final kind = lower.endsWith('.xlsx')
+          ? 'workbook'
+          : lower.endsWith('.pdf')
+              ? 'pdf'
+              : 'docx';
+      await opened.loadPreviewFromBytes(bytes, name: name);
+      final now = DateTime.now();
+      _state.addRecentFile(RecentFile(
+        name: name,
+        path: dest,
+        kind: kind,
+        at:
+            '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}',
+      ));
+    } catch (e) {
+      DiagnosticsSink.instance.record(
+          level: 'warn',
+          message: 'handed document could not be imported ($name): $e',
+          context: 'bootstrap');
     }
   }
 
@@ -170,6 +273,7 @@ class _HarborOfficeAppState extends State<HarborOfficeApp>
         deviceRootHex: deviceRootHex,
       );
       await opened.refresh();
+      await _openHandedDocument(opened);
     } catch (e, stack) {
       DiagnosticsSink.instance.record(
           level: 'error',
@@ -211,6 +315,8 @@ class _HarborOfficeAppState extends State<HarborOfficeApp>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _intakeSub?.cancel();
+    if (widget.openIntake == null) _intake?.dispose();
     final s = _service;
     _service = null;
     s?.close();

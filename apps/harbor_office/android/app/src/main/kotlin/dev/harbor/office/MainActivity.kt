@@ -1,5 +1,8 @@
 package dev.harbor.office
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.OpenableColumns
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import io.flutter.embedding.android.FlutterActivity
@@ -45,6 +48,145 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+        // "Open in Harbor Office Suite": documents other apps hand us.
+        // Content URIs are copied to a per-delivery folder in cacheDir
+        // (off the UI thread); Dart imports the copy into the suite's own
+        // store and deletes it. `getInitialPath` is the LAUNCH document
+        // (consumed once); `onNewIntent` pushes `openPath` while running.
+        val channel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger, openChannelName
+        )
+        openChannel = channel
+        channel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "getInitialPath" -> {
+                    val launch = intent
+                    if (launch == null || launch.getBooleanExtra(handledExtra, false) ||
+                        launch.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0
+                    ) {
+                        result.success(null)
+                    } else {
+                        resolveAsync(launch) { result.success(it) }
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+        pruneIntakeCache()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        resolveAsync(intent) { payload ->
+            if (payload != null) openChannel?.invokeMethod("openPath", payload)
+        }
+    }
+
+    private val openChannelName = "dev.harbor.office/open"
+    private val handledExtra = "dev.harbor.office.HANDLED"
+    private val maxOpenBytes = 256L * 1024 * 1024
+    private var openChannel: MethodChannel? = null
+
+    /**
+     * Resolve a VIEW intent to `{path, name}` / `{error, name}` on a worker
+     * thread and deliver it on the UI thread. null when the intent carries
+     * no document. The intent is marked handled so a recreated activity
+     * never re-opens the same document.
+     */
+    private fun resolveAsync(i: Intent, deliver: (Map<String, String>?) -> Unit) {
+        val uri = i.data
+        if (i.action != Intent.ACTION_VIEW || uri == null) {
+            deliver(null)
+            return
+        }
+        i.putExtra(handledExtra, true)
+        Thread {
+            val payload = resolveDocument(uri)
+            runOnUiThread { deliver(payload) }
+        }.start()
+    }
+
+    private fun resolveDocument(uri: Uri): Map<String, String> {
+        val mime = contentResolver.getType(uri)
+        val display = displayName(uri)
+        val name = safeName(display, mime)
+        if (uri.scheme == "file") {
+            // Direct file paths only work for files we can already read.
+            val f = File(uri.path ?: return mapOf("error" to "unreadable", "name" to name))
+            return if (f.canRead()) mapOf("path" to f.absolutePath, "name" to name)
+            else mapOf("error" to "unreadable", "name" to name)
+        }
+        return try {
+            val dir = File(File(cacheDir, "open-intake"), System.nanoTime().toString())
+            dir.mkdirs()
+            val out = File(dir, name)
+            var copied = 0L
+            val input = contentResolver.openInputStream(uri)
+                ?: return mapOf("error" to "unreadable", "name" to name)
+            input.use { src ->
+                out.outputStream().use { dst ->
+                    val buf = ByteArray(64 * 1024)
+                    while (true) {
+                        val n = src.read(buf)
+                        if (n < 0) break
+                        copied += n
+                        if (copied > maxOpenBytes) {
+                            dst.close()
+                            out.delete()
+                            dir.delete()
+                            return mapOf("error" to "too_large", "name" to name)
+                        }
+                        dst.write(buf, 0, n)
+                    }
+                }
+            }
+            mapOf("path" to out.absolutePath, "name" to name)
+        } catch (e: Exception) {
+            mapOf("error" to "unreadable", "name" to name)
+        }
+    }
+
+    private fun displayName(uri: Uri): String? = try {
+        if (uri.scheme == "content") {
+            contentResolver.query(uri, null, null, null, null)?.use { c ->
+                val idx = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (idx >= 0 && c.moveToFirst()) c.getString(idx) else null
+            }
+        } else uri.lastPathSegment
+    } catch (e: Exception) {
+        null
+    }
+
+    /**
+     * Basename only, no separators/control characters/leading dots, and an
+     * extension recovered from the MIME type when the provider's display
+     * name has none (several providers report "document" + a MIME type).
+     */
+    private fun safeName(raw: String?, mime: String?): String {
+        var name = (raw ?: "document").substringAfterLast('/').substringAfterLast('\\')
+            .replace(Regex("[\\u0000-\\u001f<>:\"|?*]"), "_")
+            .trimStart('.')
+            .trim()
+        if (name.isEmpty()) name = "document"
+        if (!name.contains('.')) {
+            val ext = when (mime) {
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document" -> "docx"
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" -> "xlsx"
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation" -> "pptx"
+                "application/pdf" -> "pdf"
+                else -> null
+            }
+            if (ext != null) name = "$name.$ext"
+        }
+        return if (name.length > 120) name.take(120) else name
+    }
+
+    /** Copies Dart never imported (crash mid-delivery) must not accumulate. */
+    private fun pruneIntakeCache() {
+        val root = File(cacheDir, "open-intake")
+        val cutoff = System.currentTimeMillis() - 24L * 60 * 60 * 1000
+        root.listFiles()?.forEach { if (it.lastModified() < cutoff) it.deleteRecursively() }
     }
 
     private fun wrapKey(): SecretKey {

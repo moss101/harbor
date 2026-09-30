@@ -1591,4 +1591,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String workEditParagraphTitle(int index) {
     return 'Edit paragraph $index';
   }
+
+  @override
+  String workOpenUnsupported(String name) {
+    return 'Can\'t open $name — the suite opens Word, Excel, PowerPoint and PDF files.';
+  }
+
+  @override
+  String workOpenUnreadable(String name) {
+    return 'Could not read $name — the app that shared it did not grant access.';
+  }
 }

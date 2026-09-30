@@ -901,5 +901,17 @@
         "type": "int"
       }
     }
+  },
+  "workOpenUnsupported": "Can't open {name} — the suite opens Word, Excel, PowerPoint and PDF files.",
+  "@workOpenUnsupported": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "workOpenUnreadable": "Could not read {name} — the app that shared it did not grant access.",
+  "@workOpenUnreadable": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
   }
 }

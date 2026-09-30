@@ -11,6 +11,7 @@ import '../services/file_types.dart';
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/harbor_service.dart';
+import '../services/open_intake.dart';
 import '../services/preferences.dart' show RecentFile;
 import 'work/deck_view.dart';
 import 'work/document_view.dart';
@@ -55,12 +56,59 @@ class _WorkSurfaceState extends State<WorkSurface> {
   /// ⌘O / palette: open the picker once we are the visible surface.
   void _consumePending() {
     final state = _state;
-    if (state == null || !state.pendingOpenFile) return;
-    if (state.surface != OfficeSurface.work) return;
-    state.pendingOpenFile = false;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _openFile();
-    });
+    if (state == null || state.surface != OfficeSurface.work) return;
+    if (state.pendingOpenFile) {
+      state.pendingOpenFile = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _openFile();
+      });
+    }
+    // A document delivered by the platform waits until the core is up
+    // (a cold "Open in…" arrives before bootstrap finishes).
+    final request = state.pendingOpen;
+    if (request != null &&
+        HarborServiceProvider.of(context).notifier != null) {
+      state.pendingOpen = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _openDelivered(request);
+      });
+    }
+  }
+
+  /// Open a document the platform handed to the suite. Refusals are
+  /// stated, never silent: an unsupported type names the supported ones,
+  /// an unreadable handle says the system did not grant the file.
+  Future<void> _openDelivered(OpenRequest request) async {
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    if (!request.ok) {
+      messenger.showSnackBar(SnackBar(
+          content: Text(request.failure == OpenFailure.unsupportedType
+              ? l10n.workOpenUnsupported(request.name)
+              : l10n.workOpenUnreadable(request.name))));
+      return;
+    }
+    await _loadPath(request.path!, request.name);
+  }
+
+  /// Read [path], preview it through the core and record it in recents.
+  /// A core refusal (not a real document) lands in the preview-error
+  /// state; a path that cannot be read surfaces a snackbar.
+  Future<void> _loadPath(String path, String name) async {
+    final service = HarborServiceProvider.of(context).notifier;
+    if (service == null) return;
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final List<int> bytes;
+    try {
+      bytes = await File(path).readAsBytes();
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.workRecentFailed(name))));
+      return;
+    }
+    setState(() => _showParts = false);
+    await service.loadPreviewFromBytes(bytes, name: name);
+    if (mounted && service.previewError == null) _recordRecent(name, path);
   }
 
   /// Convert a picked Markdown file to a real .docx through the core,
@@ -187,19 +235,7 @@ class _WorkSurfaceState extends State<WorkSurface> {
 
   /// Reopen a recent file: bytes are read honestly (a path the system no
   /// longer grants surfaces an error, never a silent failure).
-  Future<void> _openRecent(RecentFile r) async {
-    final l10n = AppLocalizations.of(context)!;
-    final service = HarborServiceProvider.of(context).notifier;
-    if (service == null) return;
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      final bytes = await File(r.path).readAsBytes();
-      await service.loadPreviewFromBytes(bytes, name: r.name);
-    } catch (e) {
-      messenger.showSnackBar(SnackBar(
-          content: Text(l10n.workRecentFailed(r.name))));
-    }
-  }
+  Future<void> _openRecent(RecentFile r) => _loadPath(r.path, r.name);
 
   Future<void> _openFile() async {
     final service = HarborServiceProvider.of(context).notifier;
