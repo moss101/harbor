@@ -1477,7 +1477,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get storeOfficeStatus =>
-      'معاينة للقراءة فقط في «العمل» اليوم؛ تحرير جداول البيانات وتأهيل الصيغ يصلان عندما تنجح بواباتهما.';
+      'تحرير جداول البيانات والمخططات والتظليل متاح في «العمل»؛ وتأهيل الصيغ يصل مع بوابات المنصات.';
 
   @override
   String get storeOfficeOpen => 'فتح «العمل»';
@@ -1504,7 +1504,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String storeUninstallBody(String bytes, int files) {
-    return 'يزيل $bytes عبر $files ملفات. يبقى التراجع متاحاً لمدة 72 ساعة.';
+    String _temp0 = intl.Intl.pluralLogic(
+      files,
+      locale: localeName,
+      other: '$files ملفات',
+      one: 'ملف واحد',
+    );
+    return 'يزيل $bytes عبر $_temp0. يبقى التراجع متاحاً لمدة 72 ساعة.';
   }
 
   @override

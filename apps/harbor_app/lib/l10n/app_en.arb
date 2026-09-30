@@ -785,7 +785,7 @@
   "storeTagline": "Included products and first-party models",
   "storeOfficeTitle": "Harbor Office",
   "storeOfficeIncluded": "Included with this app",
-  "storeOfficeStatus": "Read-only preview in Work today; spreadsheet editing and formula qualification land as their gates pass.",
+  "storeOfficeStatus": "Spreadsheet editing, charts and highlights are live in Work; formula targets qualify as their platform gates pass.",
   "storeOfficeOpen": "Open Work",
   "storeModelsHeading": "Harbor models ({count})",
   "@storeModelsHeading": {
@@ -806,7 +806,7 @@
       }
     }
   },
-  "storeUninstallBody": "Removes {bytes} across {files} files. Undo stays available for 72 hours.",
+  "storeUninstallBody": "Removes {bytes} across {files, plural, one{1 file} other{{files} files}}. Undo stays available for 72 hours.",
   "@storeUninstallBody": {
     "placeholders": {
       "bytes": {

@@ -643,7 +643,7 @@
   "storeTagline": "المنتجات المضمّنة والنماذج الأولى",
   "storeOfficeTitle": "Harbor Office",
   "storeOfficeIncluded": "مضمّن مع هذا التطبيق",
-  "storeOfficeStatus": "معاينة للقراءة فقط في «العمل» اليوم؛ تحرير جداول البيانات وتأهيل الصيغ يصلان عندما تنجح بواباتهما.",
+  "storeOfficeStatus": "تحرير جداول البيانات والمخططات والتظليل متاح في «العمل»؛ وتأهيل الصيغ يصل مع بوابات المنصات.",
   "storeOfficeOpen": "فتح «العمل»",
   "storeModelsHeading": "نماذج Harbor ({count})",
   "@storeModelsHeading": {
@@ -664,7 +664,7 @@
       }
     }
   },
-  "storeUninstallBody": "يزيل {bytes} عبر {files} ملفات. يبقى التراجع متاحاً لمدة 72 ساعة.",
+  "storeUninstallBody": "يزيل {bytes} عبر {files, plural, one{ملف واحد} other{{files} ملفات}}. يبقى التراجع متاحاً لمدة 72 ساعة.",
   "@storeUninstallBody": {
     "placeholders": {
       "bytes": {

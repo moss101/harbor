@@ -248,10 +248,18 @@ class _HarborAppState extends State<HarborApp> with WidgetsBindingObserver {
         deviceRootHex: deviceRootHex,
       );
       await opened.refresh();
-      // First run: import the bundled signed catalog so Models →
-      // Recommended works offline. Verification and epoch monotonicity
-      // are the core's; a failure is recorded, never fatal.
-      if (!opened.catalogImported) {
+      // Import the bundled signed catalog on first run AND whenever the
+      // bundle is newer than the accepted one — otherwise an existing
+      // install keeps a stale first-party catalog forever (found live on
+      // the simulator: an epoch-1 data root never saw the epoch-4
+      // entries). Epoch monotonicity is the core's rule (older/equal is
+      // rejected), so this can never roll trust back; a refusal is
+      // recorded, never fatal.
+      final bundled = jsonDecode(
+              await rootBundle.loadString('assets/catalog/signed_catalog.json'))
+          as Map<String, dynamic>;
+      final bundledEpoch = (bundled['epoch'] as num?)?.toInt() ?? 0;
+      if (!opened.catalogImported || opened.catalogEpoch < bundledEpoch) {
         await importBundledCatalog(opened);
       }
     } catch (e, stack) {

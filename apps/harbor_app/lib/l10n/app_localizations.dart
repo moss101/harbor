@@ -2339,7 +2339,7 @@ abstract class AppLocalizations {
   /// No description provided for @storeOfficeStatus.
   ///
   /// In en, this message translates to:
-  /// **'Read-only preview in Work today; spreadsheet editing and formula qualification land as their gates pass.'**
+  /// **'Spreadsheet editing, charts and highlights are live in Work; formula targets qualify as their platform gates pass.'**
   String get storeOfficeStatus;
 
   /// No description provided for @storeOfficeOpen.
@@ -2381,7 +2381,7 @@ abstract class AppLocalizations {
   /// No description provided for @storeUninstallBody.
   ///
   /// In en, this message translates to:
-  /// **'Removes {bytes} across {files} files. Undo stays available for 72 hours.'**
+  /// **'Removes {bytes} across {files, plural, one{1 file} other{{files} files}}. Undo stays available for 72 hours.'**
   String storeUninstallBody(String bytes, int files);
 
   /// No description provided for @storeUninstallInUse.

@@ -49,6 +49,7 @@ class HarborService extends ChangeNotifier {
   List<Map<String, dynamic>> _installedModels = [];
   List<Map<String, dynamic>> _catalog = [];
   bool _catalogImported = false;
+  int _catalogEpoch = 0;
   List<Map<String, dynamic>> _runs = [];
   List<SkillSummary> _skills = [];
   Map<String, dynamic>? _preview;
@@ -73,6 +74,9 @@ class HarborService extends ChangeNotifier {
   /// [importCatalog] ran once on this data root).
   List<Map<String, dynamic>> get catalog => _catalog;
   bool get catalogImported => _catalogImported;
+
+  /// Accepted catalog epoch (0 = none); bundled-catalog freshness check.
+  int get catalogEpoch => _catalogEpoch;
 
   /// First run has no model installed: everything downstream is gated on
   /// this (production plan C2).
@@ -162,6 +166,7 @@ class HarborService extends ChangeNotifier {
     try {
       final result = await _call('catalog.list');
       _catalogImported = result['imported'] == true;
+      _catalogEpoch = (result['epoch'] as num?)?.toInt() ?? 0;
       _catalog = _mapList(result['packages']);
     } on ffi.HarborCoreException {
       _catalogImported = false;

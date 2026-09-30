@@ -1420,7 +1420,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storeOfficeStatus =>
-      'Read-only preview in Work today; spreadsheet editing and formula qualification land as their gates pass.';
+      'Spreadsheet editing, charts and highlights are live in Work; formula targets qualify as their platform gates pass.';
 
   @override
   String get storeOfficeOpen => 'Open Work';
@@ -1447,7 +1447,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String storeUninstallBody(String bytes, int files) {
-    return 'Removes $bytes across $files files. Undo stays available for 72 hours.';
+    String _temp0 = intl.Intl.pluralLogic(
+      files,
+      locale: localeName,
+      other: '$files files',
+      one: '1 file',
+    );
+    return 'Removes $bytes across $_temp0. Undo stays available for 72 hours.';
   }
 
   @override
