@@ -1,0 +1,884 @@
+{
+  "@@locale": "en",
+  "surfaceHome": "Home",
+  "surfaceAsk": "Ask",
+  "surfaceWork": "Work",
+  "surfaceAgents": "Agents",
+  "surfaceModels": "Models",
+  "surfaceSkills": "Skills",
+  "surfaceKnowledge": "Knowledge",
+  "surfaceActivity": "Activity",
+  "surfaceSettings": "Settings",
+  "homeHeadline": "What do you want to get done?",
+  "homeComposerHint": "Describe the work, attach files, and go.",
+  "quickSummarize": "Summarize document",
+  "quickAnalyze": "Analyze spreadsheet",
+  "quickPresent": "Create presentation",
+  "quickCompare": "Compare files",
+  "quickOrganize": "Organize project",
+  "quickResearch": "Research this folder",
+  "quickTranslate": "Translate content",
+  "workEmptyTitle": "No artifact open",
+  "workEmptyBody": "Open a document, workbook, deck or PDF to see it here with version, verification and conflict state.",
+  "modelsInstalled": "Installed",
+  "modelsRecommended": "Recommended",
+  "modelsLibrary": "Harbor Library",
+  "modelsHuggingFace": "Hugging Face",
+  "modelsImport": "Import",
+  "modelsBenchmark": "Benchmark",
+  "fitScore": "Fit Score",
+  "trustPolicy": "Policy: LOCAL ONLY",
+  "trustExecutionOnDevice": "Execution: ON DEVICE",
+  "runTrailEmpty": "No activity yet.",
+  "approvalApprove": "Approve",
+  "approvalDeny": "Deny",
+  "settingsLanguage": "Language",
+  "settingsEnglish": "English",
+  "settingsArabic": "العربية",
+  "settingsTheme": "Theme",
+  "settingsThemeLight": "Light",
+  "settingsThemeDark": "Dark",
+  "settingsPrivacy": "Workspace privacy",
+  "agentsEmptyTitle": "No agents configured",
+  "agentsEmptyBody": "Agents combine a model, tools, skills, knowledge and policy. Create one to delegate multi-step work with durable, inspectable runs.",
+  "skillsEmptyTitle": "Built-in skills loaded",
+  "skillsEmptyBody": "Skill definitions for documents, spreadsheets, research, translation and more. Runnable ones carry an executable graph.",
+  "knowledgeEmptyTitle": "Knowledge is empty",
+  "knowledgeEmptyBody": "Add folders or documents to build a local, citation-backed index. Sources never leave the device under Local Only.",
+  "activityEmptyTitle": "No runs yet",
+  "activityEmptyBody": "Durable agent runs appear here with their full Run Trail — including pause, approval and recovery states.",
+  "askEmptyTitle": "Ask works on your files",
+  "askEmptyBody": "Answers ground in your workspace with citations and abstain when evidence is insufficient.",
+  "lensButton": "Lens",
+  "@lensButton": {},
+  "workCanvasRuleActive": "canvas ≥ {min}px rule active",
+  "@workCanvasRuleActive": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "canvasViewportEditing": "viewport-sized editing",
+  "@canvasViewportEditing": {},
+  "openFile": "Open file",
+  "@openFile": {},
+  "sheetLabel": "Sheet: {name}",
+  "@sheetLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "attachFilesTooltip": "Attach files",
+  "@attachFilesTooltip": {},
+  "modelDockEmpty": "No model installed — open Models to install one",
+  "@modelDockEmpty": {},
+  "modelDockCoreUnavailable": "Core unavailable — native runtime not loaded",
+  "@modelDockCoreUnavailable": {},
+  "modelsLibraryEmpty": "Curated Harbor library packages appear here.",
+  "@modelsLibraryEmpty": {},
+  "modelsHfEmpty": "Search public repositories. Model packages are data — no repository code ever executes.",
+  "@modelsHfEmpty": {},
+  "coreNotLoadedModels": "Native core not loaded; installed models are unavailable. Build core/harbor_ffi to enable this view.",
+  "@coreNotLoadedModels": {},
+  "modelsInstalledEmpty": "Install a model from Recommended or the Library. Fit Score shows what your device can run well.",
+  "@modelsInstalledEmpty": {},
+  "modelsBenchmarkEmpty": "Controlled device-local benchmark workloads with model/runtime/device identity.",
+  "@modelsBenchmarkEmpty": {},
+  "modelsRecommendedEmpty": "Recommendations appear once the catalog is synced. A model is recommended only when your device can run it well.",
+  "@modelsRecommendedEmpty": {},
+  "coreNotLoadedSkills": "Native core not loaded; skills are declared in the core and cannot be listed.",
+  "@coreNotLoadedSkills": {},
+  "coreNotLoadedActivity": "Native core not loaded; durable runs live in the core store and cannot be listed.",
+  "@coreNotLoadedActivity": {},
+  "newAgent": "New agent",
+  "@newAgent": {},
+  "addSources": "Add sources",
+  "@addSources": {},
+  "toolsCount": "{count, plural, one{1 tool} other{{count} tools}}",
+  "@toolsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "filesSizeRuntime": "{files} files · {mb} MB · runtime {runtime}",
+  "@filesSizeRuntime": {
+    "placeholders": {
+      "files": {
+        "type": "int"
+      },
+      "mb": {
+        "type": "int"
+      },
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "runStateLine": "state: {state} · {ms} ms executor time",
+  "@runStateLine": {
+    "placeholders": {
+      "state": {
+        "type": "String"
+      },
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "scoreLine": "score {pct}% · {state}",
+  "@scoreLine": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "askNoEvidenceTitle": "No supporting evidence",
+  "@askNoEvidenceTitle": {},
+  "askNoEvidenceBody": "Nothing in the local index supports this question, so I am abstaining rather than guessing.",
+  "@askNoEvidenceBody": {},
+  "askKnowledgeNotOpen": "Knowledge is not open yet. Install an embedding model (Models → Installed) to ground answers locally.",
+  "@askKnowledgeNotOpen": {},
+  "askAbstentionHeading": "I could not find support for this in your Knowledge.",
+  "@askAbstentionHeading": {},
+  "sendAction": "Send",
+  "lensOpenTooltip": "Open the Harbor Lens inspector",
+  "askSearchTooltip": "Search Knowledge",
+  "statusInstalled": "INSTALLED",
+  "cancelAction": "Cancel",
+  "askGenerateTooltip": "Generate answer",
+  "askAnswerHeading": "Answer",
+  "askCitationsHeading": "Cited sources",
+  "askExecutedOnLine": "Executed on {model} · {tokens} tokens on-device",
+  "@askExecutedOnLine": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      },
+      "tokens": {
+        "type": "int"
+      }
+    }
+  },
+  "askGenerating": "Generating on-device…",
+  "askGenerationProgress": "{tokens} tokens generated",
+  "@askGenerationProgress": {
+    "placeholders": {
+      "tokens": {
+        "type": "int"
+      }
+    }
+  },
+  "askInsufficientNote": "The model reports the evidence is insufficient — this answer is not grounded in your sources.",
+  "askNoChatModel": "No chat model installed. Answers need a chat model (Models → Hugging Face); with Knowledge open, retrieval-only citations still work.",
+  "askSearchOnly": "Search Knowledge",
+  "knowledgeSourcesHeading": "Indexed sources",
+  "knowledgeChunksCount": "{count, plural, one{1 chunk} other{{count} chunks}}",
+  "@knowledgeChunksCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "knowledgeRemoveAction": "Remove",
+  "knowledgeIngesting": "Indexing chunks {done}/{total}",
+  "@knowledgeIngesting": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "knowledgeOpenNeedsModel": "Install the embedding model bge-small-en-v1.5 (Models tab) to build the local index.",
+  "knowledgeAddFilesTooltip": "Add files to the local index",
+  "knowledgeAddTextAction": "Paste text",
+  "knowledgeAddTextTitle": "Index pasted text",
+  "knowledgeAddTextTitleHint": "Title",
+  "knowledgeAddTextBodyHint": "Paste the text to index",
+  "knowledgeAddTextConfirm": "Index",
+  "knowledgeSourceAdded": "Indexed {title}",
+  "@knowledgeSourceAdded": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "knowledgeAttachUnsupported": "{kind} files cannot be indexed in this build",
+  "@knowledgeAttachUnsupported": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "knowledgeNoSources": "No sources indexed yet.",
+  "knowledgeRemoved": "Removed {title}",
+  "@knowledgeRemoved": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "agentsUnavailableBody": "Agent orchestration is not enabled in this release. The built-in skill families (Skills tab) are available today.",
+  "modelInstallAction": "Install",
+  "modelInstalling": "Installing…",
+  "modelInstallFailed": "Install failed",
+  "modelInstallCancelled": "Install cancelled",
+  "modelsHfSearchFailed": "Search failed — the network refused the query. Try again shortly.",
+  "importModelTooltip": "Install a local GGUF file",
+  "importModelInstalled": "Installed {package}",
+  "@importModelInstalled": {
+    "placeholders": {
+      "package": {
+        "type": "String"
+      }
+    }
+  },
+  "importModelFailed": "Local install failed",
+  "settingsIdentity": "Device identity",
+  "settingsWorkspaceId": "Workspace",
+  "opResolving": "Resolving package…",
+  "opDownloading": "{done} of {total}",
+  "@opDownloading": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "opVerifying": "Verifying hashes…",
+  "opInstalling": "Installing…",
+  "opLoadingModel": "Loading model…",
+  "opGenerating": "Generating…",
+  "opIngesting": "Indexing…",
+  "opBytesMib": "{done} of {total} MiB",
+  "@opBytesMib": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "appStarting": "Starting the local core…",
+  "coreStartFailed": "The native core could not be loaded. Harbor runs degraded without it.",
+  "knowledgeIngestFailed": "Indexing failed",
+  "fileGroupDocuments": "Documents",
+  "navMore": "More",
+  "navMoreTitle": "All surfaces",
+  "lensTitle": "Harbor Lens",
+  "lensSubtitle": "Context, runs and knowledge",
+  "lensToggleTooltip": "Show or hide the Harbor Lens",
+  "closeAction": "Close",
+  "lensSectionTrust": "Trust Pulse",
+  "lensSectionOps": "Background work",
+  "lensSectionRuns": "Recent runs",
+  "lensSectionModel": "Active model",
+  "lensSectionKnowledge": "Knowledge index",
+  "viewAllAction": "View all",
+  "trustPolicyHeading": "Workspace policy",
+  "trustExecutionHeading": "Current execution",
+  "trustPolicyVersion": "Policy version {version}",
+  "@trustPolicyVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "trustLocalOnlyBody": "Requests and files never leave this device. Model acquisition is the only explicit online session, and it runs through the egress broker.",
+  "trustChipLabel": "LOCAL",
+  "trustChipTooltip": "Local Only policy · executing on device. Open the Trust Pulse.",
+  "commandPaletteTooltip": "Search commands",
+  "commandPaletteHint": "Go to a surface or run an action…",
+  "commandPaletteEmpty": "No matching commands",
+  "commandGoTo": "Go to {surface}",
+  "@commandGoTo": {
+    "placeholders": {
+      "surface": {
+        "type": "String"
+      }
+    }
+  },
+  "commandSectionSurfaces": "Surfaces",
+  "commandSectionActions": "Actions",
+  "commandToggleLens": "Toggle Harbor Lens",
+  "commandToggleTheme": "Switch light/dark theme",
+  "commandSwitchLanguage": "Switch language",
+  "coreDegradedTitle": "Native core unavailable",
+  "appTagline": "Your AI. Your models. Your device. Your work.",
+  "surfaceTitleHome": "Home",
+  "homeGreetingMorning": "Good morning",
+  "homeGreetingAfternoon": "Good afternoon",
+  "homeGreetingEvening": "Good evening",
+  "homeModelHeading": "Active model",
+  "homeSectionActive": "In progress",
+  "homeSectionRecent": "Recent runs",
+  "homeRecentEmpty": "Runs you start appear here with their state.",
+  "knowledgeSourcesCount": "{count, plural, one{1 source} other{{count} sources}}",
+  "@knowledgeSourcesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeKnowledgeNotOpen": "Index not open",
+  "homeOpenActivity": "Open Activity",
+  "homeRequestQueued": "Request recorded as a durable run",
+  "homeRequestFailed": "The request could not be recorded",
+  "quickActionsHeading": "Quick actions",
+  "askSubtitle": "Grounded answers with citations from your Knowledge",
+  "askYou": "You",
+  "askEvidenceHeading": "Evidence",
+  "askRetrievalOnlyNote": "Retrieval only — no chat model was used.",
+  "askCancelledTitle": "Generation cancelled",
+  "askCancelledBody": "Nothing was recorded for this question.",
+  "askModelPicker": "Chat model",
+  "askClearConversation": "Clear conversation",
+  "askComposerHint": "Ask about your files…",
+  "askErrorTitle": "Generation failed",
+  "askGroundedBadge": "GROUNDED",
+  "askUngroundedBadge": "NOT GROUNDED",
+  "workSubtitleEmpty": "Documents, workbooks, decks and PDFs",
+  "workPreviewOnly": "Read-only preview",
+  "workPreviewOnlyBody": "Structured edits, diff and safe save are not enabled in this build; the preview comes from the core's qualified extraction.",
+  "workCloseFile": "Close file",
+  "workOpening": "Opening file…",
+  "workOpenFailedTitle": "The file could not be previewed",
+  "workOpenFailedBody": "Only DOCX, XLSX, PPTX and PDF files are supported, and the file must be readable.",
+  "workCompatibilityTitle": "Compatibility notice",
+  "workCompatibilityBody": "{count, plural, one{1 part is preserved without rendering. Nothing is executed.} other{{count} parts are preserved without rendering. Nothing is executed.}}",
+  "@workCompatibilityBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workCompatibilityShow": "Show parts",
+  "workCompatibilityHide": "Hide parts",
+  "workOutline": "Outline",
+  "workOutlineEmpty": "No headings",
+  "workParagraphs": "{count, plural, one{1 paragraph} other{{count} paragraphs}}",
+  "@workParagraphs": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workPages": "{count, plural, one{1 page} other{{count} pages}}",
+  "@workPages": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workSlides": "{count, plural, one{1 slide} other{{count} slides}}",
+  "@workSlides": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workCells": "{count, plural, one{1 cell} other{{count} cells}}",
+  "@workCells": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workCharts": "{count, plural, one{1 chart} other{{count} charts}}",
+  "@workCharts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workFormulaBar": "Formula",
+  "workValue": "Value",
+  "workCellUnverified": "Cached value — not verified by recalculation",
+  "workSheetNotPreviewed": "Only the first sheet is previewed in this build",
+  "workPage": "Page {index}",
+  "@workPage": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "workSlide": "Slide {index}",
+  "@workSlide": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "workKindDocument": "Document",
+  "workKindWorkbook": "Workbook",
+  "workKindDeck": "Presentation",
+  "workKindPdf": "PDF",
+  "workSupportedTypes": "Supported types",
+  "workEmptyTextPage": "No text extracted on this page",
+  "workShowFormulas": "Show formulas",
+  "workNoSelection": "Select a cell",
+  "modelsSubtitle": "Install, inspect and choose what runs on this device",
+  "modelsImportBody": "Install a local GGUF file. Packages are data only — no repository code ever executes.",
+  "modelsUseForAsk": "Use for Ask",
+  "modelsInUse": "In use",
+  "modelsRuntime": "Runtime",
+  "modelsFiles": "Files",
+  "modelsSize": "Size",
+  "modelsRecommendedBody": "Recommendations are ranked by Fit Score once the signed catalog is synced. Until then, search Hugging Face or import a local package.",
+  "modelsHfSearchHint": "Search public repositories",
+  "modelsDownloads": "{count, plural, one{1 download} other{{count} downloads}}",
+  "@modelsDownloads": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modelsLikes": "{count, plural, one{1 like} other{{count} likes}}",
+  "@modelsLikes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modelsAcquireTitle": "Acquiring model",
+  "modelsInstalledCount": "{count, plural, one{1 installed} other{{count} installed}}",
+  "@modelsInstalledCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modelsGoHuggingFace": "Search Hugging Face",
+  "modelsImportGguf": "Import GGUF",
+  "modelsFitComputing": "Computing Fit Score…",
+  "fitLabelExcellent": "Excellent",
+  "fitLabelGood": "Good",
+  "fitLabelLimited": "Limited",
+  "fitLabelTooLarge": "Too large",
+  "fitLabelUnsupported": "Unsupported",
+  "fileGroupModels": "Model packages",
+  "agentsSubtitle": "Profiles that combine a model, tools, skills, knowledge and policy",
+  "agentsUnavailableTitle": "Not enabled in this release",
+  "agentsWhatTitle": "What an agent profile will contain",
+  "agentsPartModel": "Model",
+  "agentsPartModelBody": "A qualified installed model with an explicit, sticky lock per workspace.",
+  "agentsPartTools": "Tools",
+  "agentsPartToolsBody": "An allowlist drawn from the built-in skill families.",
+  "agentsPartKnowledge": "Knowledge",
+  "agentsPartKnowledgeBody": "Collections the agent may cite, never sources it was not granted.",
+  "agentsPartPolicy": "Policy & approvals",
+  "agentsPartPolicyBody": "Protected effects pause for a Harbor Sheet review before anything is written.",
+  "agentsGoSkills": "Browse skills",
+  "agentsGoActivity": "View runs",
+  "skillsSubtitle": "Built-in skill definitions. Graph skills run through the durable executor; prose skills are declarations until decomposed.",
+  "skillsSearchHint": "Filter skills",
+  "skillsCount": "{count, plural, one{1 skill} other{{count} skills}}",
+  "@skillsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "skillsToolsHeading": "Tools",
+  "skillsNoMatch": "No skills match the filter",
+  "skillsFamily": "Family",
+  "skillsBuiltIn": "Built-in",
+  "knowledgeSubtitle": "A local, citation-backed index. Sources never leave the device.",
+  "knowledgeIndexHeading": "Index",
+  "knowledgeIdentity": "Identity",
+  "knowledgeDimension": "Dimensions",
+  "knowledgeEmbedding": "Embedding model",
+  "knowledgeRemoveConfirmTitle": "Remove {title}?",
+  "@knowledgeRemoveConfirmTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "knowledgeRemoveConfirmBody": "Its chunks leave the index. Past citations will show the source as removed.",
+  "knowledgeOpening": "Opening the index…",
+  "knowledgeGoModels": "Open Models",
+  "knowledgeSourceKb": "{kb} KB",
+  "@knowledgeSourceKb": {
+    "placeholders": {
+      "kb": {
+        "type": "int"
+      }
+    }
+  },
+  "activitySubtitle": "Durable runs and background operations",
+  "activityTabRuns": "Runs",
+  "activityTabOps": "Operations",
+  "activityOpsEmptyTitle": "No background operations",
+  "activityOpsEmptyBody": "Downloads, indexing and generation appear here while they run and after they finish.",
+  "activityRunDetail": "Run detail",
+  "activityFinalState": "Final state",
+  "activityVerifiedEvents": "Verified events",
+  "activityTrailHeading": "Run Trail",
+  "activityRunsCount": "{count, plural, =0{No runs} one{1 run} other{{count} runs}}",
+  "@activityRunsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activityReplayFailed": "The run could not be replayed",
+  "activityOpKindAcquire": "Model acquisition",
+  "activityOpKindIngest": "Knowledge indexing",
+  "activityOpKindGenerate": "Grounded generation",
+  "settingsSubtitle": "Appearance, language, privacy and identity",
+  "settingsThemeSystem": "System",
+  "settingsLanguageBody": "Arabic mirrors navigation and alignment; file names, formulas and identifiers keep their own direction.",
+  "settingsPrivacyBody": "Local Only is the default and the only policy in this release.",
+  "settingsAbout": "About",
+  "settingsVersion": "Version",
+  "settingsCoreStatus": "Native core",
+  "settingsCoreLoaded": "Loaded",
+  "settingsCoreDegraded": "Not loaded — degraded",
+  "settingsShortcuts": "Keyboard shortcuts",
+  "settingsShortcutSurfaces": "Switch surfaces",
+  "settingsShortcutPalette": "Command palette",
+  "settingsLensDocked": "Dock the Lens on wide windows",
+  "settingsMotionNote": "Motion follows your system's reduce-motion setting.",
+  "copyAction": "Copy",
+  "copiedMessage": "Copied",
+  "activityExecutorTime": "Executor time",
+  "activityStepsLabel": "Steps",
+  "skillsRunnable": "Runnable graph",
+  "skillsDeclaration": "Declaration only",
+  "skillsDeclarationBody": "This skill is a prose declaration: it has no executable graph yet, so nothing runs it. Its instructions and allowlist are the spec for a future graph.",
+  "skillsGraphHeading": "Graph",
+  "skillsGraphNodes": "{count, plural, one{1 node} other{{count} nodes}}",
+  "@skillsGraphNodes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "skillsGraphModelNodes": "{count, plural, =0{No model calls — fully deterministic} one{1 model node, schema-constrained} other{{count} model nodes, schema-constrained}}",
+  "@skillsGraphModelNodes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "skillsGraphBudgets": "Budget: {steps} steps, {tools} tool calls",
+  "@skillsGraphBudgets": {
+    "placeholders": {
+      "steps": {
+        "type": "int"
+      },
+      "tools": {
+        "type": "int"
+      }
+    }
+  },
+  "skillsRun": "Run",
+  "skillsRunTitle": "Run {title}",
+  "@skillsRunTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "skillsAttachFile": "Attach file",
+  "skillsAttached": "Attached: {name}",
+  "@skillsAttached": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "skillsValuesHint": "One value per line: key = value",
+  "skillsNeedsModel": "This skill has model nodes. Install a chat model in Models to run it; the model only fills typed slots.",
+  "skillsModelLabel": "Model",
+  "skillsRunning": "Running on device…",
+  "skillsRunFailed": "Run failed",
+  "skillsOutcome": "Outcome",
+  "skillsOutcomeCompleted": "Completed",
+  "skillsOutcomeNeedsInput": "Needs input — nothing was invented",
+  "skillsOutcomeAbstained": "Abstained",
+  "skillsRunState": "Run state",
+  "skillsTrailHeading": "Node trail",
+  "skillsApprovalTitle": "Approval required",
+  "skillsApprovalBody": "The run proposed a {effect} affecting {count, plural, one{1 operation} other{{count} operations}}. Nothing has been written. The proposal is bound to the base content hash and the hash of the output it would produce.",
+  "@skillsApprovalBody": {
+    "placeholders": {
+      "effect": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "skillsApprove": "Approve",
+  "skillsReject": "Reject",
+  "skillsBaseHash": "Base content hash",
+  "skillsProposedHash": "Proposed output hash",
+  "skillsOutputsHeading": "Outputs",
+  "skillsRequiredField": "Required",
+  "skillsCancelRun": "Cancel run",
+  "skillsInputsHeading": "Inputs",
+  "skillsExecutedOn": "Executed on {model}",
+  "@skillsExecutedOn": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "skillsStructuredMode": "Structured output: {mode}",
+  "@skillsStructuredMode": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "skillsCommitBody": "The run proposed a {effect} affecting {count, plural, one{1 operation} other{{count} operations}}. Nothing has been written yet. Save new copy writes the approved output as a new file; the original is never modified. The proposal is bound to the base content hash and the hash of the output it produces.",
+  "@skillsCommitBody": {
+    "placeholders": {
+      "effect": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "skillsSaveNewCopy": "Save new copy",
+  "skillsOverwrite": "Overwrite original…",
+  "skillsOverwriteConfirmTitle": "Overwrite the original?",
+  "skillsOverwriteConfirmBody": "Harbor will replace {name} in place. This only happens if the file still matches the approved base; otherwise nothing is written and the run stops with the reason.",
+  "@skillsOverwriteConfirmBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "skillsSavedNewCopy": "Saved as a new copy",
+  "skillsOverwritten": "Original replaced",
+  "skillsCommittedTo": "{path} · version {version}",
+  "@skillsCommittedTo": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      },
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "skillsDiffBase": "base",
+  "skillsDiffProposed": "proposed",
+  "settingsDiagnostics": "Diagnostics",
+  "settingsDiagnosticsBody": "Harbor keeps an encrypted crash and error log on this device and never uploads it. Export it to share with support by hand.",
+  "settingsDiagnosticsContains": "The export contains redacted error records, the app and core versions, the runtime, the device class and installed model ids. It never contains document content, knowledge chunks or prompts.",
+  "settingsDiagnosticsRecords": "{count, plural, =0{No records yet} one{1 record} other{{count} records}}",
+  "@settingsDiagnosticsRecords": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsDiagnosticsExport": "Export diagnostics",
+  "settingsDiagnosticsExported": "Diagnostics exported",
+  "settingsDiagnosticsExportedBody": "{path} · {count, plural, one{1 record} other{{count} records}}",
+  "@settingsDiagnosticsExportedBody": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsDiagnosticsExportFailed": "Export failed",
+  "homeFirstRunTitle": "Install a model to get started",
+  "homeFirstRunBody": "Harbor runs entirely on this device — nothing you open leaves it. Every answer, skill and index needs a local model, so the first step is choosing one that fits your device.",
+  "homeFirstRunAction": "Choose a model",
+  "modelsFirstRunTitle": "Local only",
+  "modelsFirstRunBody": "These packages come from Harbor's signed catalog. Check size & fit reads the file list from Hugging Face through the broker; Install downloads once and verifies the pinned hash. Nothing else leaves the device.",
+  "modelsCatalogHeading": "{count, plural, one{1 catalog package} other{{count} catalog packages}}",
+  "@modelsCatalogHeading": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modelsCatalogFooter": "Fit Score is computed by the core from this device's memory and accelerator; it is never guessed. Sizes come from the repository listing, not the catalog.",
+  "modelsCatalogCheckFit": "Check size & fit",
+  "modelsCatalogInstall": "Install",
+  "modelsCatalogSizeUnavailable": "Size unavailable (the repository listing could not be read).",
+  "modelsInstalledBadge": "Installed",
+  "modelsContextTokens": "{count} tokens context",
+  "@modelsContextTokens": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "opAcquireRunning": "Installing…",
+  "modelsCatalogDoesNotFit": "Does not fit this device",
+  "skillsCreateBody": "The run proposed a new file, {name}, built from {count, plural, one{1 operation} other{{count} operations}}. Nothing has been written yet. Save new file writes it where you choose; nothing else on this device changes. The proposal is bound to the hash of the file it produces.",
+  "@skillsCreateBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "skillsSaveNewFile": "Save new file",
+  "skillsSavedNewFile": "Saved as a new file",
+  "skillsCopy": "Copy",
+  "skillsCopied": "Copied to the clipboard",
+  "surfaceStore": "Store",
+  "storeTagline": "Included products and first-party models",
+  "storeOfficeTitle": "Harbor Office Suite",
+  "storeOfficeIncluded": "Included with this app",
+  "storeOfficeStatus": "Spreadsheet editing, charts and highlights are live in Work; formula targets qualify as their platform gates pass.",
+  "storeOfficeOpen": "Open in Work",
+  "storeModelsHeading": "Harbor models ({count})",
+  "@storeModelsHeading": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "storeModelsBody": "Signed, first-party catalog entries. Downloads are quoted and confirmed before transfer.",
+  "storeInstalledHeading": "Installed on this device",
+  "storeUninstall": "Uninstall",
+  "storeUninstallTitle": "Uninstall {id}?",
+  "@storeUninstallTitle": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "storeUninstallBody": "Removes {bytes} across {files, plural, one{1 file} other{{files} files}}. Undo stays available for 72 hours.",
+  "@storeUninstallBody": {
+    "placeholders": {
+      "bytes": {
+        "type": "String"
+      },
+      "files": {
+        "type": "int"
+      }
+    }
+  },
+  "storeUninstallInUse": "In use: {reasons}",
+  "@storeUninstallInUse": {
+    "placeholders": {
+      "reasons": {
+        "type": "String"
+      }
+    }
+  },
+  "storeUninstallDone": "Uninstalled {id}",
+  "@storeUninstallDone": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "storeUndo": "Undo",
+  "storeUndoFailed": "Restore failed",
+  "storeAcquireTitle": "Confirm download",
+  "storeAcquireBody": "{quoted} to download; {available} free on this device.",
+  "@storeAcquireBody": {
+    "placeholders": {
+      "quoted": {
+        "type": "String"
+      },
+      "available": {
+        "type": "String"
+      }
+    }
+  },
+  "storeAcquireNoFit": "Not enough free space for this download.",
+  "storeAcquireConfirm": "Download",
+  "storeUninstallFailed": "Uninstall failed",
+  "storePreviewFailed": "Could not read the package",
+  "storeEmpty": "The accepted signed catalog is empty on this device.",
+  "storeManageHint": "Uninstall frees every owned file; a preview shows the exact scope before anything moves.",
+  "workEditHint": "Enter a value or =formula",
+  "workEditCommit": "Commit cell",
+  "workBoldRow": "Bold row",
+  "workAddChart": "Insert chart from column",
+  "workConvertMarkdown": "Convert Markdown / PDF…",
+  "workConvertedSaved": "Saved {path}",
+  "@workConvertedSaved": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "workConvertFailed": "Conversion failed",
+  "modelsAdvancedDetails": "Advanced details",
+  "modelsBackendLabel": "Backend",
+  "workAddHighlight": "Highlight above selected",
+  "storeOfficeInstalled": "Installed",
+  "storeOfficeShips": "Part of the app you already have — nothing to download.",
+  "storeOfficeInside": "What's inside",
+  "storeSuiteSheets": "Spreadsheets — editing, charts, highlights",
+  "storeSuiteConvert": "Conversions — Markdown / PDF to Word",
+  "storeSuiteFormulas": "Formulas — 99 targets across 3 qualified tiers",
+  "storeSuiteDocs": "Documents — preview and preservation",
+  "storeSuiteSlides": "Presentations — preview",
+  "storeSuitePdf": "PDF — preview and extraction",
+  "suiteStatusLive": "Live",
+  "suiteStatusPreview": "Preview"
+}
