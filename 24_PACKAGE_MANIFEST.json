@@ -4,8 +4,8 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "3ea87a0aacea20f1a8b6b280075f0f446a8bd6a8ace4ea69ea2f1f1cf81ee1e8",
-  "file_count_excluding_manifest": 1153,
+  "input_manifest_sha256": "c5d4c9ae02caa7b81fa43ea7195cc3056b3a6d83973f3c7c396fe1777959c805",
+  "file_count_excluding_manifest": 1155,
   "files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -124,13 +124,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 218806,
-      "sha256": "809146f0b13571ac8cdd2dc9c088481fefd6ea2e8fb6f8ae9b9bca53b8238959"
+      "bytes": 219170,
+      "sha256": "4cacc3b4c88f4fd26c383b12a26eeb3f038b9661208b0b87003511adeef39e8e"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "68e4ada05eaa388668d3f740f1815d4e7e5b2583db7979630c089ccc75c262c9"
+      "sha256": "d4260b203b628e9d8aabef53630bd66d527c3b0178993723c786790d88587385"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -1453,6 +1453,11 @@
       "sha256": "cd3486d37b421e230fefac5ca13fcc5c8bae017df35f91b9bd74694244d395c7"
     },
     {
+      "path": "apps/harbor_office/lib/services/open_intake.dart",
+      "bytes": 7623,
+      "sha256": "f600dba07be686f9d1f08b95fa3edbb0ef568e3c8e423940738f26f19ed4ac8e"
+    },
+    {
       "path": "apps/harbor_office/lib/services/preferences.dart",
       "bytes": 5830,
       "sha256": "6c3f1b16147d2b0c0fa174e7805c2f8d99fe4c75a4f1c0a0198896f77fda73a6"
@@ -1506,6 +1511,11 @@
       "path": "apps/harbor_office/pubspec.yaml",
       "bytes": 927,
       "sha256": "52b1d7a2b7a6d8899f97cc31bf5a0a584b057d79a9bcc185034df0088c348186"
+    },
+    {
+      "path": "apps/harbor_office/test/open_intake_test.dart",
+      "bytes": 12829,
+      "sha256": "57e441645f6c506f2e4e15f14262f840e68e104bec3ed98c0368ab671fd7b21b"
     },
     {
       "path": "apps/harbor_office/test/smoke_test.dart",
