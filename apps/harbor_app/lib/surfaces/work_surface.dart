@@ -71,22 +71,24 @@ class _WorkSurfaceState extends State<WorkSurface> {
     final XFile? file;
     try {
       file = await openFile(
-          acceptedTypeGroups: [documentTypeGroup('Markdown')]);
+          acceptedTypeGroups: [documentTypeGroup('Markdown or PDF')]);
     } catch (_) {
       return; // picker dismissed
     }
     if (file == null || !mounted) return;
-    if (!file.name.toLowerCase().endsWith('.md')) return;
+    final lower = file.name.toLowerCase();
+    if (!lower.endsWith('.md') && !lower.endsWith('.pdf')) return;
     final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
+    final baseName = file.name.replaceFirst(RegExp(r'\.(md|pdf)\$'), '');
     try {
-      final text = await file.readAsString();
-      final bytes = await service.convertMarkdownToDocx(text,
-          title: file.name.replaceFirst(RegExp(r'\.md\$'), ''));
-      await service.loadPreviewFromBytes(bytes,
-          name: file.name.replaceFirst(RegExp(r'\.md\$'), '.docx'));
-      final dest = await _saveConvertedCopy(
-          file.name.replaceFirst(RegExp(r'\.md\$'), '.docx'), bytes);
+      final bytes = lower.endsWith('.pdf')
+          ? await service.convertPdfToDocx(await file.readAsBytes(),
+              title: baseName)
+          : await service.convertMarkdownToDocx(await file.readAsString(),
+              title: baseName);
+      await service.loadPreviewFromBytes(bytes, name: '$baseName.docx');
+      final dest = await _saveConvertedCopy('$baseName.docx', bytes);
       if (mounted && dest != null) {
         messenger.showSnackBar(
             SnackBar(content: Text(l10n.workConvertedSaved(dest))));

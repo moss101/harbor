@@ -715,7 +715,7 @@
   "workEditCommit": "تثبيت الخلية",
   "workBoldRow": "تغميق الصف",
   "workAddChart": "إدراج مخطط من العمود",
-  "workConvertMarkdown": "تحويل Markdown…",
+  "workConvertMarkdown": "تحويل Markdown / PDF…",
   "workConvertedSaved": "حُفظ في {path}",
   "@workConvertedSaved": {
     "placeholders": {
@@ -726,5 +726,6 @@
   },
   "workConvertFailed": "فشل التحويل",
   "modelsAdvancedDetails": "تفاصيل متقدمة",
-  "modelsBackendLabel": "المحرّك"
+  "modelsBackendLabel": "المحرّك",
+  "workAddHighlight": "تظليل ما فوق المحدد"
 }

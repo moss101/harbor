@@ -704,6 +704,17 @@ class HarborService extends ChangeNotifier {
     }
   }
 
+  /// Convert a PDF to a .docx at text-extraction level (per-page
+  /// headings + paragraphs; layout/tables/images are explicitly NOT
+  /// converted — the core reports extraction_level).
+  Future<List<int>> convertPdfToDocx(List<int> bytes, {String? title}) async {
+    final result = await _call('convert.pdf_to_docx', {
+      'data_b64': base64Encode(bytes),
+      if (title != null) 'title': title,
+    });
+    return base64Decode(result['data_b64'] as String);
+  }
+
   /// Convert Markdown text to a real .docx package through the core's
   /// qualified block model. Inline emphasis is stripped (reported by the
   /// core, not guessed here). Throws [ffi.HarborCoreException] on failure.

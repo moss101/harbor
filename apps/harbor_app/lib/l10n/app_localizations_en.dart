@@ -1507,7 +1507,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workAddChart => 'Insert chart from column';
 
   @override
-  String get workConvertMarkdown => 'Convert Markdown…';
+  String get workConvertMarkdown => 'Convert Markdown / PDF…';
 
   @override
   String workConvertedSaved(String path) {
@@ -1522,4 +1522,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get modelsBackendLabel => 'Backend';
+
+  @override
+  String get workAddHighlight => 'Highlight above selected';
 }

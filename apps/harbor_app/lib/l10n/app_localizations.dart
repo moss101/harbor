@@ -2483,7 +2483,7 @@ abstract class AppLocalizations {
   /// No description provided for @workConvertMarkdown.
   ///
   /// In en, this message translates to:
-  /// **'Convert Markdown…'**
+  /// **'Convert Markdown / PDF…'**
   String get workConvertMarkdown;
 
   /// No description provided for @workConvertedSaved.
@@ -2509,6 +2509,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Backend'**
   String get modelsBackendLabel;
+
+  /// No description provided for @workAddHighlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlight above selected'**
+  String get workAddHighlight;
 }
 
 class _AppLocalizationsDelegate

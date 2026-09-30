@@ -857,7 +857,7 @@
   "workEditCommit": "Commit cell",
   "workBoldRow": "Bold row",
   "workAddChart": "Insert chart from column",
-  "workConvertMarkdown": "Convert Markdown…",
+  "workConvertMarkdown": "Convert Markdown / PDF…",
   "workConvertedSaved": "Saved {path}",
   "@workConvertedSaved": {
     "placeholders": {
@@ -868,5 +868,6 @@
   },
   "workConvertFailed": "Conversion failed",
   "modelsAdvancedDetails": "Advanced details",
-  "modelsBackendLabel": "Backend"
+  "modelsBackendLabel": "Backend",
+  "workAddHighlight": "Highlight above selected"
 }

@@ -1563,7 +1563,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get workAddChart => 'إدراج مخطط من العمود';
 
   @override
-  String get workConvertMarkdown => 'تحويل Markdown…';
+  String get workConvertMarkdown => 'تحويل Markdown / PDF…';
 
   @override
   String workConvertedSaved(String path) {
@@ -1578,4 +1578,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get modelsBackendLabel => 'المحرّك';
+
+  @override
+  String get workAddHighlight => 'تظليل ما فوق المحدد';
 }

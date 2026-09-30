@@ -143,6 +143,40 @@ class _WorkbookViewState extends State<WorkbookView> {
     }
   }
 
+  /// Author a conditional highlight through the typed ops path: cells in
+  /// the selected column (rows 2..21) above the selected cell's numeric
+  /// value get the classic light-red highlight fill.
+  Future<void> _addHighlight() async {
+    if (_selected == null || _savingEdit) return;
+    final sp = HarborServiceProvider.of(context);
+    final service = sp.notifier;
+    if (service == null || sp.failed) return;
+    final value = _cells[_selected!]?.value;
+    final threshold = double.tryParse(value ?? '');
+    if (threshold == null) {
+      setState(() => _editError =
+          'select a numeric cell to set the highlight threshold');
+      return;
+    }
+    setState(() => _savingEdit = true);
+    try {
+      await service.editWorkbook(ops: [
+        {
+          'op': 'conditional_format',
+          'sheet': widget.preview['sheet'] as String? ?? '',
+          'range': 'B2:B21',
+          'cf_operator': 'greater_than',
+          'threshold': threshold,
+          'fill': 'FFC7CE',
+        },
+      ]);
+    } on ffi.HarborCoreException catch (e) {
+      if (mounted) setState(() => _editError = e.message);
+    } finally {
+      if (mounted) setState(() => _savingEdit = false);
+    }
+  }
+
   /// Insert a bar chart over the selected column (rows 2..21) through the
   /// typed ops path; the refreshed preview reports the new chart count.
   Future<void> _addChart() async {
@@ -341,6 +375,7 @@ class _WorkbookViewState extends State<WorkbookView> {
             l10n: l10n,
             onBoldRow: _boldRow,
             onAddChart: _addChart,
+            onHighlight: _addHighlight,
           ),
         ],
       ),
@@ -644,6 +679,7 @@ class _SheetTabs extends StatelessWidget {
     required this.l10n,
     this.onBoldRow,
     this.onAddChart,
+    this.onHighlight,
   });
   final List<String> sheets;
   final String active;
@@ -652,6 +688,7 @@ class _SheetTabs extends StatelessWidget {
   final AppLocalizations l10n;
   final VoidCallback? onBoldRow;
   final VoidCallback? onAddChart;
+  final VoidCallback? onHighlight;
 
   @override
   Widget build(BuildContext context) {
@@ -699,6 +736,13 @@ class _SheetTabs extends StatelessWidget {
               tooltip: l10n.workAddChart,
               onPressed: onAddChart,
               icon: const Icon(Icons.insert_chart_outlined),
+              visualDensity: VisualDensity.compact,
+            ),
+          if (onHighlight != null)
+            IconButton(
+              tooltip: l10n.workAddHighlight,
+              onPressed: onHighlight,
+              icon: const Icon(Icons.highlight_alt),
               visualDensity: VisualDensity.compact,
             ),
           HarborPill(l10n.workCells(cellCount), icon: Icons.grid_on_outlined),
