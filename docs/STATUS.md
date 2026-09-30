@@ -7,6 +7,42 @@ ran at.
 
 ---
 
+## Session 50 (2026-09-30): the standalone downloadable Harbor Office Suite exists — `apps/harbor_office`
+
+The user called for the separate downloadable app (reversing the earlier
+"included-card only" recommendation — their product, their call). Built
+as a sibling Flutter app sharing the monorepo's Rust core and packages:
+
+- **Scope**: office-only — Work (open/edit: workbook editing, charts,
+  highlights; DOCX/PPTX/PDF preview; Convert Markdown / PDF → Word) +
+  Settings (theme, EN/AR, privacy, diagnostics). No models, ask,
+  agents, skills, knowledge, store: the suite IS the product.
+- **Identity**: iOS bundle id `dev.harbor.office`, Android
+  applicationId/namespace `dev.harbor.office`, display name "Harbor
+  Office Suite", version 1.0.0+1. Data roots are its own
+  (`harbor-office-data`), so it never touches the main app's models or
+  keys.
+- **Core**: the same `core/harbor_ffi` — iOS simulator embeds the dylib
+  via the copied build phase; Android ships a FRESHLY built arm64 .so
+  (35 MB, NDK 28.2 API-35; the cc-rates crates need
+  `CC/CXX/AR_aarch64_linux_android` AND `ANDROID_NDK` for
+  llama-cpp-sys's cmake — the Sep-14 drop-in was stale, so the recipe is
+  now recorded here).
+- **Verified running on BOTH platforms**: iPhone 17 Pro simulator
+  (iOS 26.5) and the Android emulator (arm64) — Work empty state,
+  convert entry, supported types, two-tab shell, Settings (theme,
+  language, privacy, diagnostics) all render with the core loaded; no
+  degraded banners.
+- **Smoke test**: `test/smoke_test.dart` (real-dylib pattern; degrades
+  honestly without the dylib). `flutter analyze` clean, suite 1/1.
+
+Known follow-ups: leaner office-only core (drop llama.cpp from the
+suite's dylib — the 35 MB .so carries inference the suite doesn't use),
+launcher icons, app-store assets, and the store-listing decision
+(separate listing vs deep-link from Harbor).
+
+---
+
 ## Session 49 (2026-09-30): the Store office card becomes a real product listing
 
 User feedback: the Store card read like a redirect ("Open Work" was the
