@@ -7,6 +7,43 @@ ran at.
 
 ---
 
+## Session 51 (2026-09-30): Harbor Office Suite features — DOCX editing, creation, recents
+
+The suite gained its core office features, all through typed core ops:
+
+- **DOCX paragraph editing**: FFI `docx.edit` maps to
+  `DocxDocument::apply`'s typed TextReplace/TableCellSet ops — every op
+  carries the core's content-hash precondition, so a stale edit is
+  refused, never merged blindly. The document view gained long-press-to-
+  edit with an edit dialog; edits refresh the preview from the new
+  package bytes. FFI tests: round-trip edit, unknown-kind refusal,
+  empty-ops refusal (9/9 in the workbook_edit suite).
+- **Creation**: `workbook.create_empty` and `docx.create` (title block)
+  power "New spreadsheet" / "New document" — create, preview, save to
+  the platform destination (desktop save picker; mobile Documents dir).
+  Verified live on the simulator: New spreadsheet → "Untitled workbook"
+  opens in the editable grid (formula bar, ops toolbar) and the save
+  snackbar fires.
+- **Recents**: successfully opened/created files persist (name, path,
+  kind, date, max 8) in the suite's preferences; the Work empty state
+  lists them and reopens honestly (a path the system no longer grants
+  surfaces an error, never a silent failure).
+- **Fixes found on-device**: the office shell painted under the status
+  bar (SafeArea added — the subtitle sat behind the clock); the
+  snackbar showed a raw container path (now the file name); suite
+  privacy copy no longer mentions model acquisition.
+- **Launcher icons** generated for both platforms from a Harbor-brand
+  document+anchor mark (flutter_launcher_icons; adaptive icon on
+  Android).
+
+Simulator-driver lessons (for the next session): the simulator's
+screenshot pixel size changed (1206×2622) — click coordinates must be
+computed from the CURRENT screenshot as fractions of the window content
+(window 456×972 @ 636,45; content top +28); macOS delivers the first
+click after focus loss as a window-activation only, so activate
+Simulator before every click batch; a double click toggles expanders
+twice.
+
 ## Session 50 (2026-09-30): the standalone downloadable Harbor Office Suite exists — `apps/harbor_office`
 
 The user called for the separate downloadable app (reversing the earlier

@@ -4,8 +4,8 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "5336bd0b5b0406627f970f90aa48bfc95d312e63a2cd272a437d1733711e08d7",
-  "file_count_excluding_manifest": 1139,
+  "input_manifest_sha256": "4199c198b88dedd32960f78c618cfcd297e02c90382bad8eaabcb535a0f91ad4",
+  "file_count_excluding_manifest": 1153,
   "files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -124,13 +124,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 215812,
-      "sha256": "a2005a28622d4d19f687312425d0617752b45ccc2c634b24860cd7c999463a63"
+      "bytes": 218805,
+      "sha256": "cb307c4ab0bafde991a48f97af85f3611ae65b4e7c31edda125ba7ec1035ec63"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "de54997906e247f6080554d62c058c0dfcd62422e30ac25db95f143670ff9d3d"
+      "sha256": "62a724ae235601660a5397b573c3070fb3d1a91a01afc5a60c33c0d20b6acf10"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -1058,9 +1058,39 @@
       "sha256": "94433756fe10005ddd6fc55cc5c0b1e9f3c10b66a08ceac795ece6713d34e28a"
     },
     {
+      "path": "apps/harbor_office/android/app/src/main/res/drawable-hdpi/ic_launcher_foreground.png",
+      "bytes": 2724,
+      "sha256": "49edaa987aa23f5c32ce448957bb39aa4850e5cfa3893b07aa130cd9f18fa4d8"
+    },
+    {
+      "path": "apps/harbor_office/android/app/src/main/res/drawable-mdpi/ic_launcher_foreground.png",
+      "bytes": 1561,
+      "sha256": "17797f090a10281fc4b162dc34b9f94938bf49b20682bd6fa281c6d04d4104de"
+    },
+    {
       "path": "apps/harbor_office/android/app/src/main/res/drawable-v21/launch_background.xml",
       "bytes": 438,
       "sha256": "7ca6d5cec2169c5a98661a119db23a6f3399c8fef2256ff04f3a642831282478"
+    },
+    {
+      "path": "apps/harbor_office/android/app/src/main/res/drawable-xhdpi/ic_launcher_foreground.png",
+      "bytes": 2584,
+      "sha256": "224ef9dedeaee6ef0f992ce048afe745b637de38f01ddb43d0e0fcbde0b63222"
+    },
+    {
+      "path": "apps/harbor_office/android/app/src/main/res/drawable-xxhdpi/ic_launcher_foreground.png",
+      "bytes": 3463,
+      "sha256": "1e225a5cc15c91ccec1aadfa04918927fcd5285789ec9b5eb25437d1b1b9613a"
+    },
+    {
+      "path": "apps/harbor_office/android/app/src/main/res/drawable-xxxhdpi/ic_launcher_foreground.png",
+      "bytes": 4317,
+      "sha256": "53ffbd304fd98082e42a719dea58ebba3f1a39b03925b91fe1881e30ded4e17e"
+    },
+    {
+      "path": "apps/harbor_office/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+      "bytes": 335,
+      "sha256": "fe16ab84762f42e1166a008c9c77227fa3ba8399088bf9667e83d04bc4322af1"
     },
     {
       "path": "apps/harbor_office/android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
@@ -1086,6 +1116,11 @@
       "path": "apps/harbor_office/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
       "bytes": 2502,
       "sha256": "3c0ba6dac33e00c60ebafd6aece59e963237807455d08d8a2a18bd3d2b64b966"
+    },
+    {
+      "path": "apps/harbor_office/android/app/src/main/res/values/colors.xml",
+      "bytes": 120,
+      "sha256": "2820ff14d5f1bb37a35a8157b88ac40ce8c19264c4ca854897a22742ae93c00a"
     },
     {
       "path": "apps/harbor_office/android/app/src/main/res/values/styles.xml",
@@ -1121,6 +1156,11 @@
       "path": "apps/harbor_office/android/settings.gradle.kts",
       "bytes": 770,
       "sha256": "016759283e88ade6eba92910583feeef88b962839b957aa414296afd2952d122"
+    },
+    {
+      "path": "apps/harbor_office/icon.png",
+      "bytes": 8348,
+      "sha256": "238fde552802fa9280c9a069a803f911f078ca0c59fa58f9fe1902771981b2c9"
     },
     {
       "path": "apps/harbor_office/ios/.gitignore",
@@ -1203,6 +1243,26 @@
       "sha256": "ab3cc0ace2349d43476cccbc7d7b2e57d1993b6da11498c551fb897760894d38"
     },
     {
+      "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-50x50@1x.png",
+      "bytes": 784,
+      "sha256": "d2cf3feb0f368372ecf93bfb0b8736808ff6466db85d6794e4ba8d265d9a26ce"
+    },
+    {
+      "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-50x50@2x.png",
+      "bytes": 1442,
+      "sha256": "933a9f6f9038652a225b30f26a7be6da5e9d416bcb2da5ef1b500dc0d0ce7197"
+    },
+    {
+      "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-57x57@1x.png",
+      "bytes": 853,
+      "sha256": "a77c9f52e8c113104a1ce447e00b9b8bfc3fe3e7178e540fc7bbd47704142b92"
+    },
+    {
+      "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-57x57@2x.png",
+      "bytes": 1565,
+      "sha256": "208e93164e86c76bc773244b14fa8f2f7f248f1a6893791255ee7dd4a37e8d36"
+    },
+    {
       "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@2x.png",
       "bytes": 1626,
       "sha256": "ab3cc0ace2349d43476cccbc7d7b2e57d1993b6da11498c551fb897760894d38"
@@ -1211,6 +1271,16 @@
       "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@3x.png",
       "bytes": 2307,
       "sha256": "92dc55a93c608851de26f5ac56414cc239e26d0e62fd65a60dbac3747ece8686"
+    },
+    {
+      "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-72x72@1x.png",
+      "bytes": 1183,
+      "sha256": "0dff926c64ad3d552db6759138fa6f16e8f28d978d73aa226b212df7bb1f7fc7"
+    },
+    {
+      "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-72x72@2x.png",
+      "bytes": 2141,
+      "sha256": "3e9060fa26a677a88729c642fa6a080ec757af6a03a50376d8752a0bad01dc01"
     },
     {
       "path": "apps/harbor_office/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@1x.png",
@@ -2679,8 +2749,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 128505,
-      "sha256": "2c79142469f3d4b5115725f9c8b37fd874268beb5d7396bd866470f8da4f9931"
+      "bytes": 130585,
+      "sha256": "d26f9d34c1dc7aa878ddb4cf732030cd2ec041fcde72b757f85cf7ad9de3ee16"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
