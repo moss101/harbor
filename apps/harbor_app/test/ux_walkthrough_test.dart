@@ -32,7 +32,7 @@ Future<void> pumpApp(WidgetTester tester, HarborService? service) async {
     theme: harborThemeData(dark: false, arabic: false),
     builder: (_, child) => HarborTheme(
       colors: HarborColors.light,
-      text: HarborType(arabic: false),
+      text: const HarborType(arabic: false),
       child: child!,
     ),
     home: HarborApp(service: service, preferences: MemoryPreferencesStore()),

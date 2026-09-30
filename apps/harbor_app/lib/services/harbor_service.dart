@@ -2,7 +2,6 @@ import 'dart:convert' show base64Decode, base64Encode;
 import 'dart:io' show Platform;
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:harbor_domain/harbor_domain.dart';
