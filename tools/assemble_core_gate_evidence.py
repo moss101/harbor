@@ -53,6 +53,8 @@ SUITES = [
     ("harbor_app", [str(Path.home() / "harbor-tools" / "flutter" / "bin" / "flutter"), "test"],
      str(ROOT / "apps" / "harbor_app")),
     ("optional_disabled", [sys.executable, str(ROOT / "tools" / "check_optional_disabled.py")]),
+    ("harbor_ui", [str(Path.home() / "harbor-tools" / "flutter" / "bin" / "flutter"), "test"],
+     str(ROOT / "packages" / "harbor_ui")),
     ("harbor_native_ffi",
      [str(Path.home() / "harbor-tools" / "flutter" / "bin" / "dart"), "test"],
      str(ROOT / "packages" / "harbor_native")),
@@ -140,6 +142,11 @@ MACHINE_GATES = {
     # breakpoint flows (compact/medium/expanded) and EN/AR RTL mirroring.
     "ACC-017": (["harbor_app"], "shell/accessibility suite exercises compact, medium and expanded breakpoints"),
     "ACC-019": (["harbor_app"], "l10n coverage + AR shell tests mirror layout and keep controls unclipped"),
+    # UX walkthrough gates (session 48): executable walkthrough tests
+    # drive the real flows against the real dylib.
+    "ACC-033": (["harbor_app"], "ux_walkthrough: novice card hides quantization jargon until Advanced"),
+    "ACC-034": (["harbor_app"], "ux_walkthrough: expert inspects repo/revision/quant/context/backend/license/files pre-install"),
+    "ACC-035": (["harbor_app", "harbor_ui"], "ux_walkthrough lists the durable run; trail contract test proves expandable technical detail"),
 }
 
 
