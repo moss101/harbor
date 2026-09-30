@@ -866,5 +866,7 @@
       }
     }
   },
-  "workConvertFailed": "Conversion failed"
+  "workConvertFailed": "Conversion failed",
+  "modelsAdvancedDetails": "Advanced details",
+  "modelsBackendLabel": "Backend"
 }

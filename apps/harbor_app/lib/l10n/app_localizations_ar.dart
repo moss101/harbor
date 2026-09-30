@@ -1572,4 +1572,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get workConvertFailed => 'فشل التحويل';
+
+  @override
+  String get modelsAdvancedDetails => 'تفاصيل متقدمة';
+
+  @override
+  String get modelsBackendLabel => 'المحرّك';
 }

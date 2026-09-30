@@ -2,6 +2,7 @@ import 'dart:convert' show base64Decode, base64Encode;
 import 'dart:io' show Platform;
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:harbor_domain/harbor_domain.dart';
@@ -104,6 +105,13 @@ class HarborService extends ChangeNotifier {
   /// Latest progress snapshot per op kind ('acquire' | 'generate' |
   /// 'ingest') for UI that tracks work by kind rather than op id.
   final Map<String, Map<String, dynamic>> kindProgress = {};
+
+  /// Raw dispatch for tests (walkthrough evidence drives the same FFI
+  /// surface the UI does).
+  @visibleForTesting
+  Future<Map<String, dynamic>> callForTest(String method,
+          Map<String, dynamic> args) =>
+      _call(method, args);
 
   Future<Map<String, dynamic>> _call(String method,
       [Map<String, dynamic>? args]) async {

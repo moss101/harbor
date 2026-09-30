@@ -2497,6 +2497,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Conversion failed'**
   String get workConvertFailed;
+
+  /// No description provided for @modelsAdvancedDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced details'**
+  String get modelsAdvancedDetails;
+
+  /// No description provided for @modelsBackendLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend'**
+  String get modelsBackendLabel;
 }
 
 class _AppLocalizationsDelegate

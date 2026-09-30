@@ -29,7 +29,9 @@ class RunTrailEntry {
       marker ?? (failed ? RunTrailMarker.failed : RunTrailMarker.done);
 }
 
-/// Run Trail: user-readable durable agent timeline (goal §24).
+/// Run Trail: user-readable durable agent timeline (goal §24). Each step
+/// shows its readable summary; the technical line (UX-016/ACC-035) is
+/// expandable per step, collapsed by default.
 class RunTrail extends StatelessWidget {
   const RunTrail({
     super.key,
@@ -58,13 +60,22 @@ class RunTrail extends StatelessWidget {
   }
 }
 
-class _TrailRow extends StatelessWidget {
+class _TrailRow extends StatefulWidget {
   const _TrailRow({required this.entry, required this.last});
   final RunTrailEntry entry;
   final bool last;
 
   @override
+  State<_TrailRow> createState() => _TrailRowState();
+}
+
+class _TrailRowState extends State<_TrailRow> {
+  bool _technicalExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final entry = widget.entry;
+    final last = widget.last;
     final t = HarborTheme.of(context);
     final c = t.colors;
     final (Color color, IconData icon) = switch (entry.effectiveMarker) {
@@ -108,12 +119,35 @@ class _TrailRow extends StatelessWidget {
                               : c.ink)),
                   if (entry.detail != null)
                     Text(entry.detail!, style: t.text.captionOf(c.inkMuted)),
-                  if (entry.technical != null)
-                    Directionality(
-                      textDirection: TextDirection.ltr,
-                      child: Text(entry.technical!,
-                          style: t.text.monoOf(c.inkMuted, size: 11)),
+                  if (entry.technical != null) ...[
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () => setState(
+                            () => _technicalExpanded = !_technicalExpanded),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4, vertical: 2),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(
+                                _technicalExpanded
+                                    ? Icons.expand_less
+                                    : Icons.expand_more,
+                                size: 14,
+                                color: c.inkMuted),
+                            const SizedBox(width: 2),
+                          ]),
+                        ),
+                      ),
                     ),
+                    if (_technicalExpanded)
+                      Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: Text(entry.technical!,
+                            style: t.text.monoOf(c.inkMuted, size: 11)),
+                      ),
+                  ],
                 ],
               ),
             ),

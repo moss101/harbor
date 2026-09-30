@@ -223,6 +223,7 @@ class _CatalogCardState extends State<_CatalogCard> {
   Map<String, dynamic>? _fit;
   bool _checking = false;
   bool _installing = false;
+  bool _advanced = false;
   String? _error;
 
   Map<String, dynamic> get p => widget.package;
@@ -348,17 +349,60 @@ class _CatalogCardState extends State<_CatalogCard> {
             ],
           ),
           const SizedBox(height: HarborSpace.s2),
+          // Novice line (UX-003/ACC-033): license and size only —
+          // quantization/context jargon stays hidden until Advanced.
           Text(
             [
-              p['repo_id'] as String,
-              if (p['quantization'] != null) p['quantization'] as String,
-              if (p['context_tokens'] != null)
-                l10n.modelsContextTokens((p['context_tokens'] as num).toInt()),
               if (p['license'] != null) p['license'] as String,
               if (_weightsBytes != null) _gb(_weightsBytes!),
             ].join(' · '),
             style: t.text.smallOf(t.colors.inkMuted),
           ),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              key: ValueKey('catalog-advanced-${p['id']}'),
+              onPressed: () => setState(() => _advanced = !_advanced),
+              icon: Icon(
+                  _advanced ? Icons.expand_less : Icons.expand_more, size: 18),
+              label: Text(l10n.modelsAdvancedDetails),
+            ),
+          ),
+          if (_advanced)
+            // Expert block (UX-020/ACC-034): every install-relevant
+            // technical fact, inspectable BEFORE install.
+            Padding(
+              padding: const EdgeInsetsDirectional.only(bottom: HarborSpace.s2),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(
+                  [
+                    p['repo_id'] as String,
+                    'revision ${p['revision'] ?? 'main'}',
+                    if (p['quantization'] != null) p['quantization'] as String,
+                    if (p['context_tokens'] != null)
+                      l10n.modelsContextTokens(
+                          (p['context_tokens'] as num).toInt()),
+                  ].join(' · '),
+                  style: t.text.smallOf(t.colors.ink),
+                ),
+                const SizedBox(height: HarborSpace.s1),
+                Text(
+                  '${l10n.modelsBackendLabel}: gguf/llama.cpp'
+                  '${p['license'] != null ? ' · ${p['license']}' : ''}',
+                  style: t.text.smallOf(t.colors.ink),
+                ),
+                for (final f in _files)
+                  Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: Text(
+                      '${f['path']}  ${(f['sha256'] as String?)?.substring(0, 12)}…',
+                      style: t.text.monoOf(t.colors.inkMuted, size: 11),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ]),
+            ),
           if (fit != null) ...[
             const SizedBox(height: HarborSpace.s2),
             FitScoreBadge(

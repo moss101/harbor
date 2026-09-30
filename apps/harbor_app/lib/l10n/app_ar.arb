@@ -724,5 +724,7 @@
       }
     }
   },
-  "workConvertFailed": "فشل التحويل"
+  "workConvertFailed": "فشل التحويل",
+  "modelsAdvancedDetails": "تفاصيل متقدمة",
+  "modelsBackendLabel": "المحرّك"
 }

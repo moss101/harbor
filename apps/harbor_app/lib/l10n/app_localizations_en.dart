@@ -1516,4 +1516,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get workConvertFailed => 'Conversion failed';
+
+  @override
+  String get modelsAdvancedDetails => 'Advanced details';
+
+  @override
+  String get modelsBackendLabel => 'Backend';
 }
