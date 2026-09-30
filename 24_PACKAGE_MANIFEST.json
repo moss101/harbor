@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "9babdad8548ce9d3b26148f938dd3e5b7357fd3952858eff09d8f97f78eb63f7",
+  "input_manifest_sha256": "a7939cdadd07b15df6a241125470bd34cb43db6f7ec2763088173362564ffcd0",
   "file_count_excluding_manifest": 1050,
   "files": [
     {
@@ -125,12 +125,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 198316,
-      "sha256": "c179793dff144f5ce3a848e5a7432db8f9f7f2158be2bc3d4ec208ce204e5031"
+      "sha256": "cf1a9385bc25f616fb4b7fc33aa5a9275db7ab9a811de093daa08817aec0c640"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "6b4e6ea044c6692dacc9668f7659e95568545b83db6a4d300debe8717f5ebb4c"
+      "sha256": "7ee16b473d9f33f1cd28985106a13aa71bd21b27e1e72bd1f3159a88746f30fa"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -2234,8 +2234,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 122136,
-      "sha256": "58caf8d33f96ad8421f434ae4f73a2f8b7fa6a91fa19b97d73cef010d07c16fe"
+      "bytes": 124245,
+      "sha256": "a4ce7bba6f9bfe0056464c0bc7bed56254d85d4a681e98d7f956f834b1818efb"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",

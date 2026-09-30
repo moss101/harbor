@@ -7,6 +7,46 @@ ran at.
 
 ---
 
+## Session 48 (2026-09-30): the last three gates — UX walkthroughs made executable
+
+Session 47 refused ACC-033/034/035 as "needs walkthrough evidence". The
+walkthroughs are now executable, and they found real UI gaps first:
+
+- **ACC-033 was VIOLATED by the old card** — quantization/context jargon
+  sat on every catalog card. Cards now show license + size only, with an
+  "Advanced details" expander.
+- **ACC-034's inspection did not exist** — Advanced now reveals repo,
+  revision, quantization, context tokens, backend (gguf/llama.cpp),
+  license and each pinned file with its sha prefix, all BEFORE install.
+- **ACC-035's trail always showed technical lines** — RunTrail's
+  monospace detail is now collapsed behind a per-step expander
+  (UX-016), with the mechanism contract-tested in harbor_ui.
+
+Evidence: `apps/harbor_app/test/ux_walkthrough_test.dart` drives the
+real dylib (signed catalog imported from fixtures; run created and
+logged through the FFI in setUpAll — real IO futures must never run
+inside a fake-async widget test, which is why the first ACC-035 attempt
+hung for ten minutes) plus `packages/harbor_ui/test/trail_test.dart` for
+the expandable contract. A `callForTest` surface exposes raw dispatch
+to tests.
+
+Product completeness: the Work surface's converter now accepts PDFs too
+("Convert Markdown / PDF…" routes .pdf through convert.pdf_to_docx) and
+the workbook tab row gained a Highlight-above-selected action through
+the conditional_format op (threshold = the selected cell's numeric
+value; honest error when non-numeric).
+
+Gate math after the sweep re-ran at 944237b: **36 of 42 M3_GA_CORE
+gates assembled and validated, zero errors naming them.** The remaining
+six are outside any build machine: ACC-018/024/040/054 (physical
+devices, signing/notarization, min-spec) and ACC-025/060 (N/A_PLATFORM
+on macOS / feature-gated off). Everything machine-workable in the core
+gate set now has bound, validated evidence.
+
+Gates: Flutter 57/57 (3 new walkthroughs + 1 trail contract), analyze
+clean, contracts 124/0, optional-disabled clean, supply chain PASS,
+dossier PASS.
+
 ## Session 47 (2026-09-29): the "genuinely still open" list — closed as far as machines allow
 
 Session 46's honest-open list, executed (93ad692..HEAD).
