@@ -7,6 +7,43 @@ ran at.
 
 ---
 
+## Session 53 (2026-10-01): the editing backbone + the lean core
+
+**Undo/redo + autosave.** The suite's service now keeps a bounded edit
+history (25 snapshots) across workbook and document edits; Undo/Redo
+land as icon actions in the Work header (only when applicable), and
+every edit auto-saves the working copy to an autosave draft that
+`attachDraftStore` restores on the next launch (verified by a real-dylib
+test that opens a SECOND service over the same root and finds the edited
+value, then proves markSaved clears the draft). "Save a copy" writes the
+edited working copy to a user-chosen destination and records the recent.
+
+**Multi-sheet focus.** `WorkbookPreview::from_xlsx_on_sheet` (unknown
+sheets = typed SheetNotFound) + an optional `sheet` arg on
+`artifact.preview`; the sheet tabs are now tappable and re-preview the
+WORKING copy for that sheet; edits preserve the focused sheet (the
+active name lives at preview.preview.sheet — found by test, fixed).
+
+**Recents clear** in the Work empty state; **lean core shipped**:
+harbor_ffi's gguf runtime is now a cargo feature (default ON, so the
+main app and every existing gate are unchanged); the office suite
+builds `--no-default-features` on both platforms — llama.cpp is fully
+excluded (0 symbols; 34.9→29.7 MB unstripped, 22.9 stripped — the
+remaining bulk is genuinely the office stack: Arrow/sqlite/ring).
+Knowledge/chat/generation dispatch arms refuse with "model features
+are not included in this build" in lean builds. Verified LEAN on the
+Android emulator (VIEW-intent workbook open renders fully) and the iOS
+simulator (create + relaunch-restore path clean). Main app: Store
+office card now cross-links the standalone suite; Trust Pulse was
+already surfaced (Settings + Lens) — recorded.
+
+Gates: workspace 65 suites 0 failed, harbor_ffi builds BOTH feature
+configs, office tests 17/17 (3 new history/autosave/sheet tests),
+main app 57/57, contracts 124/0, supply chain PASS (SBOM re-synced:
+417 components), dossier PASS.
+
+---
+
 ## Session 52 (2026-10-01): "Open in Harbor Office Suite" made real on both platforms
 
 Found at session start: one uncommitted enhancement — an Android VIEW
