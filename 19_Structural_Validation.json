@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "b93b6e16dc51ebf9cf51cc6c4d2147e8c738b7c15789d2cbe5753a8d5798f0f9",
+  "input_manifest_sha256": "2b6ea35a719527ce1f9251083668a4499fa0de3551a5b67a4422bb22a16ea91e",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -1026,8 +1026,8 @@
     },
     {
       "path": "apps/harbor_office/android/app/src/main/jniLibs/arm64-v8a/libharbor_ffi.so",
-      "bytes": 29749184,
-      "sha256": "f44aaacebff067940a2602bfbfa818bca800b9eb28ef73077f3bddb5053388e9"
+      "bytes": 29827560,
+      "sha256": "a967dbdef11d9de4e39866769146477de8139cb27401dd743840805b13bb31d6"
     },
     {
       "path": "apps/harbor_office/android/app/src/main/kotlin/dev/harbor/office/MainActivity.kt",
@@ -2590,6 +2590,11 @@
       "sha256": "5f2b0b1238153fb07bc8de409226088777bc90e8842e0a6c67832aeb0037929c"
     },
     {
+      "path": "core/harbor_render/src/pdf_out.rs",
+      "bytes": 7788,
+      "sha256": "7d82447040dbf5298776881bba33eff3761fa47f590bcd37481e50cdf4d6484e"
+    },
+    {
       "path": "core/harbor_render/src/preview.rs",
       "bytes": 6484,
       "sha256": "168a9ac27e32024bb2f932632fc1fc74a6be1aeb6cf4699e6d3d95cbfcafb957"
@@ -2746,8 +2751,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 135166,
-      "sha256": "1111a1345fea7c1004a9659cd71a74a17f60cf34c10db008b8d6f72b84ccb0e7"
+      "bytes": 137390,
+      "sha256": "8166cf8a575f14ccaec9d2e2aa6034f1c666634392f3d775457fd9583ab0a1ed"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",

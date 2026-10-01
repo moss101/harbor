@@ -4,8 +4,8 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "b93b6e16dc51ebf9cf51cc6c4d2147e8c738b7c15789d2cbe5753a8d5798f0f9",
-  "file_count_excluding_manifest": 1156,
+  "input_manifest_sha256": "2b6ea35a719527ce1f9251083668a4499fa0de3551a5b67a4422bb22a16ea91e",
+  "file_count_excluding_manifest": 1157,
   "files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -124,13 +124,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 219352,
-      "sha256": "2230a2f1318e5fc405cf61f70900a98209ba69278e40721aade9b4a80914475c"
+      "bytes": 219520,
+      "sha256": "e81d7132a2de45289b3181cce60ec8d49cda4eec491e7518a433fe153bce5bef"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "3349759166bf182dbeb87f542e0af89bf6d1a6b1f1a5577856d831d80a351ec1"
+      "sha256": "d9711e036eecbf3d0b68a823cef3877c37d6ed81f1a0953f9e739eea6330acc0"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -1044,8 +1044,8 @@
     },
     {
       "path": "apps/harbor_office/android/app/src/main/jniLibs/arm64-v8a/libharbor_ffi.so",
-      "bytes": 29749184,
-      "sha256": "f44aaacebff067940a2602bfbfa818bca800b9eb28ef73077f3bddb5053388e9"
+      "bytes": 29827560,
+      "sha256": "a967dbdef11d9de4e39866769146477de8139cb27401dd743840805b13bb31d6"
     },
     {
       "path": "apps/harbor_office/android/app/src/main/kotlin/dev/harbor/office/MainActivity.kt",
@@ -2608,6 +2608,11 @@
       "sha256": "5f2b0b1238153fb07bc8de409226088777bc90e8842e0a6c67832aeb0037929c"
     },
     {
+      "path": "core/harbor_render/src/pdf_out.rs",
+      "bytes": 7788,
+      "sha256": "7d82447040dbf5298776881bba33eff3761fa47f590bcd37481e50cdf4d6484e"
+    },
+    {
       "path": "core/harbor_render/src/preview.rs",
       "bytes": 6484,
       "sha256": "168a9ac27e32024bb2f932632fc1fc74a6be1aeb6cf4699e6d3d95cbfcafb957"
@@ -2764,8 +2769,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 135166,
-      "sha256": "1111a1345fea7c1004a9659cd71a74a17f60cf34c10db008b8d6f72b84ccb0e7"
+      "bytes": 137390,
+      "sha256": "8166cf8a575f14ccaec9d2e2aa6034f1c666634392f3d775457fd9583ab0a1ed"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",

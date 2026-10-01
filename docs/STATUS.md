@@ -7,6 +7,45 @@ ran at.
 
 ---
 
+## Session 54 (2026-10-01): office completion — structure edits, styles, PDF export
+
+- **XLSX row/column insert + delete**: `WorkbookDoc::{insert_rows,
+  delete_rows, insert_columns, delete_columns}` over umya's coordinate
+  adjustment — cells, styles AND formula references shift (same- and
+  cross-sheet); tests prove SUM(B2:B4)→SUM(B3:B5) recomputes 60 after
+  the shift and that delete/insert round-trips survive. Exposed as a
+  "Rows & columns" menu in the workbook toolbar (count-guarded at the
+  FFI; 0 or >1000 is a typed refusal); structure ops are undoable.
+- **DOCX paragraph styles**: `DocxOp::StyleSet` (content-hash
+  precondition, styles validated against BlockStyle) with a raw-XML
+  pStyle rewriter (replaces the existing pStyle or inserts a pPr).
+  Found live by the first test run: the scanner never advanced past a
+  non-w:p tag at the cursor (`position()` finds the '<' AT i) — infinite
+  hang; fixed by searching from i+1. The document edit dialog gained a
+  style dropdown (heading 1-3, bullet, numbered, normal) applied in the
+  SAME edit round trip (one history step).
+- **PDF export**: an in-tree minimal PDF writer
+  (`harbor_render::pdf_out.rs` — base-14 Helvetica, A4, word wrap,
+  deterministic bytes; NO new dependency) + `convert.docx_to_pdf`
+  mapping paragraph styles to sizes/weights, honestly labeled
+  `extraction_level: text-only`. Verified by round-tripping through the
+  qualified pdf extractor (escapes included) and end-to-end FFI
+  (create → style → export → extract finds the text). "Export PDF"
+  icon action in the Work header for documents.
+- **Footgun recorded**: harbor_ffi default and --no-default-features
+  builds share `target/debug/libharbor_ffi.dylib` — after a lean build,
+  Dart tests that need knowledge/generation silently run against the
+  lean dylib and fail with "knowledge must open"; rebuild the default
+  dylib before main-app Flutter suites.
+
+Gates: workspace 65 suites 0 failed, BOTH feature configs build, FFI
+11/11, artifacts 36/36, render 7/7, office 18/18, main app 57/57,
+contracts 124/0, supply chain + dossier PASS. Lean core re-verified on
+the Android emulator (VIEW-intent DCF open renders fully with the new
+ops included).
+
+---
+
 ## Session 53 (2026-10-01): the editing backbone + the lean core
 
 **Undo/redo + autosave.** The suite's service now keeps a bounded edit
