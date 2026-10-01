@@ -7,6 +7,31 @@ ran at.
 
 ---
 
+## Session 55 (2026-10-01): conversions completed — XLSX→PDF and Markdown→PPTX
+
+- **XLSX → PDF**: `convert.xlsx_to_pdf` renders the focused sheet as an
+  aligned monospace grid (pdf_out gained base-14 Courier/Courier-Bold;
+  fixed 14-char cells, row numbers, values only). The extractor
+  round-trip found a real bug: pages referenced F3/F4 objects the
+  writer never emitted (my font-push patch silently didn't apply) —
+  fixed and now covered by both render and FFI tests.
+  extraction_level: "text-only (values only; no layout, charts or
+  formulas)". "Export PDF" now appears for workbooks too, using the
+  focused sheet.
+- **Markdown → PPTX**: `markdown_to_deck` (first `#` = deck title, each
+  following heading = a slide, bullets/paragraphs = slide bullets, text
+  before the first slide heading = an opening slide) through the
+  qualified PPTX generator; round-trip tested via PptxDeck::
+  from_pptx_bytes. The Work surface's Markdown flow now ASKS: Word
+  document or PowerPoint deck.
+- Gates: workspace 65 suites 0 failed, BOTH harbor_ffi feature configs
+  build (default dylib rebuilt last for the main-app suites — the
+  shared-target footgun), render 8/8, FFI 12/12, artifacts 40/40
+  (38 lib + 2 new), office 18/18, main 57/57, contracts/supply/dossier
+  PASS.
+
+---
+
 ## Session 54 (2026-10-01): office completion — structure edits, styles, PDF export
 
 - **XLSX row/column insert + delete**: `WorkbookDoc::{insert_rows,
