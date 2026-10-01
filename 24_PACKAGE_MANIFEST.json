@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "2b6ea35a719527ce1f9251083668a4499fa0de3551a5b67a4422bb22a16ea91e",
+  "input_manifest_sha256": "934a54633aad0a45f3e7087f5c92a3b4de6185ff6f8b4dd10884397550fe096e",
   "file_count_excluding_manifest": 1157,
   "files": [
     {
@@ -124,13 +124,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 219520,
-      "sha256": "e81d7132a2de45289b3181cce60ec8d49cda4eec491e7518a433fe153bce5bef"
+      "bytes": 219521,
+      "sha256": "db5a0a45f35e6afdaec2f0d92b1a1e67552de58da77082ad97cfb286958c4417"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "d9711e036eecbf3d0b68a823cef3877c37d6ed81f1a0953f9e739eea6330acc0"
+      "sha256": "60dcf51e296ca423f2e79edc8519af82ccc5a38476d46b2148df43133f2d956a"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -1409,28 +1409,28 @@
     },
     {
       "path": "apps/harbor_office/lib/l10n/app_ar.arb",
-      "bytes": 40583,
-      "sha256": "daf7ebbb8a91b0f6942ebc04cd65174fb9ceffdbac1a5ca28a41c1a136249758"
+      "bytes": 40824,
+      "sha256": "b9104060601b100b4480b0fad90b7916fb43e55314a1fb3b07d55ca6984ee982"
     },
     {
       "path": "apps/harbor_office/lib/l10n/app_en.arb",
-      "bytes": 33465,
-      "sha256": "d257c4684d9d3fd67977a166d6334ac5ab5ecda80443e3522221e52b07fbf1b2"
+      "bytes": 33669,
+      "sha256": "82317620f39da57e4cd656e5c54602c18a4f5c4ab76a61443bf48bb3aa195e2e"
     },
     {
       "path": "apps/harbor_office/lib/l10n/app_localizations.dart",
-      "bytes": 83556,
-      "sha256": "61d1b6253aaa27dbd3f42038336e227aa4d53dd344e0ad823ff8c8e7a84b5649"
+      "bytes": 84235,
+      "sha256": "c7cb1daf0712d660d882f4118ea6184762a7059b474fcc1dffc4f0d7e66d1ff1"
     },
     {
       "path": "apps/harbor_office/lib/l10n/app_localizations_ar.dart",
-      "bytes": 50436,
-      "sha256": "584b5db7304be523e5571a769784f931d5f925af942a09aa669443358cc2d7d1"
+      "bytes": 50779,
+      "sha256": "11e837ca4c5a252364d1b7ec2ed56f1f2c9fb3c8b9f47be7912ffbce6ae8c772"
     },
     {
       "path": "apps/harbor_office/lib/l10n/app_localizations_en.dart",
-      "bytes": 40404,
-      "sha256": "5beb7ad5eea55cc626a1e57fd1d425ef609230fa557f832eaa9e7a0dcd212f65"
+      "bytes": 40710,
+      "sha256": "c36925688d1af6bdbab89a0f67c9acf9ec9e47c5d1139d6efe024aa28d280143"
     },
     {
       "path": "apps/harbor_office/lib/main.dart",
@@ -1449,8 +1449,8 @@
     },
     {
       "path": "apps/harbor_office/lib/services/harbor_service.dart",
-      "bytes": 36286,
-      "sha256": "9938d7f36f48454f9404d0df05ed94f3606115b1d4a5f88c2262f93726554ab9"
+      "bytes": 37362,
+      "sha256": "e3ec6fa83148d2e3bffa6e0606dffb546df90836376f791ef19612621591cf9d"
     },
     {
       "path": "apps/harbor_office/lib/services/open_intake.dart",
@@ -1499,8 +1499,8 @@
     },
     {
       "path": "apps/harbor_office/lib/surfaces/work_surface.dart",
-      "bytes": 25514,
-      "sha256": "251bd9c28b857ce92991b95c6619ef05756e2d2a58f293aa1dbee50cebda2386"
+      "bytes": 27693,
+      "sha256": "2ac3132f6cb704d2b28b6803ac0141d9af6a22227b089106fed14dd61b0c86b1"
     },
     {
       "path": "apps/harbor_office/pubspec.lock",
@@ -1969,8 +1969,8 @@
     },
     {
       "path": "core/harbor_artifacts/src/convert.rs",
-      "bytes": 6239,
-      "sha256": "1fc2a5235d0637a76db5e575b906c9f79e6a233aca801b396102b3a0f478d812"
+      "bytes": 10012,
+      "sha256": "d65b4c286de6c19d8fab9ed4042a9f429b1f5fc653769ebfc5230cf5036b3831"
     },
     {
       "path": "core/harbor_artifacts/src/diff.rs",
@@ -1984,8 +1984,8 @@
     },
     {
       "path": "core/harbor_artifacts/src/lib.rs",
-      "bytes": 3045,
-      "sha256": "2e7b1fad0efbef69dfad1115ee04ce0cf0b6747db83b768d3603a7f81c0d92e9"
+      "bytes": 3081,
+      "sha256": "b6cb498c6bff28f166dca6c927a085ad942f64d8e0fdbb84bdfa0c6ac8417dff"
     },
     {
       "path": "core/harbor_artifacts/src/office_matrix.rs",
@@ -2269,8 +2269,8 @@
     },
     {
       "path": "core/harbor_ffi/src/lib.rs",
-      "bytes": 169621,
-      "sha256": "5c7d8329d9470ea66483389a2654f6dc270f04cc656f0d620bf9c017de6dec31"
+      "bytes": 173840,
+      "sha256": "96bbebb7fd0949e8f40bababe87d84b1e6a40710f0b4fbd4514b99b9346d771d"
     },
     {
       "path": "core/harbor_ffi/tests/catalog_first_run.rs",
@@ -2299,8 +2299,8 @@
     },
     {
       "path": "core/harbor_ffi/tests/workbook_edit.rs",
-      "bytes": 17516,
-      "sha256": "4db8b74bac7a802f863c2ad3842d67e15ebf16cc80c7fcf1d3c1b0cca2813ccb"
+      "bytes": 19341,
+      "sha256": "a195da260cbe33ffb732a7f34ffca0924a824cffc90d32b48c34c09fc11f8b41"
     },
     {
       "path": "core/harbor_formula/Cargo.toml",
@@ -2609,8 +2609,8 @@
     },
     {
       "path": "core/harbor_render/src/pdf_out.rs",
-      "bytes": 7788,
-      "sha256": "7d82447040dbf5298776881bba33eff3761fa47f590bcd37481e50cdf4d6484e"
+      "bytes": 9466,
+      "sha256": "8b0164e7bb62a01cd0eb202f4c2eb34dafddc48534af664fcffbf77521e1b354"
     },
     {
       "path": "core/harbor_render/src/preview.rs",

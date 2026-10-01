@@ -817,5 +817,9 @@
   "workStyleH3": "عنوان 3",
   "workStyleBullet": "قائمة نقطية",
   "workStyleNumbered": "قائمة مرقمة",
-  "workStyleNormal": "نص عادي"
+  "workStyleNormal": "نص عادي",
+  "workConvertTo": "تحويل Markdown إلى…",
+  "workMdFormatBody": "مستند Word (النص كاملاً) أم عرض PowerPoint (شريحة لكل عنوان)؟",
+  "workMdFormatWord": "Word",
+  "workMdFormatSlides": "شرائح"
 }

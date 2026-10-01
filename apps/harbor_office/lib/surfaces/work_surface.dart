@@ -130,14 +130,43 @@ class _WorkSurfaceState extends State<WorkSurface> {
     final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
     final baseName = file.name.replaceFirst(RegExp(r'\.(md|pdf)\$'), '');
+    String? asDeckExt;
     try {
-      final bytes = lower.endsWith('.pdf')
-          ? await service.convertPdfToDocx(await file.readAsBytes(),
-              title: baseName)
-          : await service.convertMarkdownToDocx(await file.readAsString(),
-              title: baseName);
-      await service.loadPreviewFromBytes(bytes, name: '$baseName.docx');
-      final dest = await _saveConvertedCopy('$baseName.docx', bytes);
+      final List<int> bytes;
+      if (lower.endsWith('.pdf')) {
+        bytes = await service.convertPdfToDocx(await file.readAsBytes(),
+            title: baseName);
+      } else {
+        // Markdown: Word document or PowerPoint deck — the user chooses.
+        final asDeck = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(l10n.workConvertTo),
+            content: Text(l10n.workMdFormatBody),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(l10n.workMdFormatWord),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(l10n.workMdFormatSlides),
+              ),
+            ],
+          ),
+        );
+        if (!mounted || asDeck == null) return;
+        asDeckExt = asDeck ? 'pptx' : 'docx';
+        bytes = asDeck
+            ? await service.markdownToPptx(await file.readAsString())
+            : await service.convertMarkdownToDocx(
+                await file.readAsString(),
+                title: baseName);
+      }
+      final targetExt =
+          lower.endsWith('.pdf') ? 'docx' : (asDeckExt ?? 'docx');
+      await service.loadPreviewFromBytes(bytes, name: '$baseName.$targetExt');
+      final dest = await _saveConvertedCopy('$baseName.$targetExt', bytes);
       if (mounted && dest != null) {
         messenger.showSnackBar(
             SnackBar(content: Text(l10n.workConvertedSaved(dest))));
@@ -219,12 +248,39 @@ class _WorkSurfaceState extends State<WorkSurface> {
     }
   }
 
+  /// Export the open workbook to PDF (text-extraction level grid).
+  Future<void> _exportWorkbookPdf() async {
+    final service = HarborServiceProvider.of(context).notifier;
+    if (service == null) return;
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final bytes = await service.exportWorkbookToPdf(
+          title: service.previewName ?? 'workbook');
+      if (!mounted) return;
+      final base = (service.previewName ?? 'workbook')
+          .replaceFirst(RegExp(r'\.xlsx\$'), '');
+      final dest = await _saveConvertedCopy('$base.pdf', bytes);
+      if (mounted && dest != null) {
+        messenger.showSnackBar(SnackBar(
+            content:
+                Text(l10n.workExportedPdf(dest.split(Platform.pathSeparator).last))));
+      }
+    } on ffi.HarborCoreException catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+            SnackBar(content: Text('${l10n.workConvertFailed}: ${e.message}')));
+      }
+    }
+  }
+
   /// Export the open document to PDF (text-extraction level) and save a
   /// copy where the user chooses. The extraction level is the core's
   /// honest label; the app never claims layout fidelity.
   Future<void> _exportPdf() async {
     final service = HarborServiceProvider.of(context).notifier;
     if (service == null) return;
+    if (service.preview?['kind'] == 'workbook') return _exportWorkbookPdf();
     final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
     try {
@@ -386,7 +442,7 @@ class _WorkSurfaceState extends State<WorkSurface> {
                 onPressed: service.previewLoading ? null : _saveOpenCopy,
                 icon: const Icon(Icons.save_outlined, size: 18),
               ),
-              if (kind == 'docx')
+              if (kind == 'docx' || kind == 'workbook')
                 IconButton(
                   tooltip: l10n.workExportPdf,
                   onPressed: service.previewLoading ? null : _exportPdf,

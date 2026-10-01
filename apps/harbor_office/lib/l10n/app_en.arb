@@ -959,5 +959,9 @@
   "workStyleH3": "Heading 3",
   "workStyleBullet": "Bullet list",
   "workStyleNumbered": "Numbered list",
-  "workStyleNormal": "Normal text"
+  "workStyleNormal": "Normal text",
+  "workConvertTo": "Convert Markdown to…",
+  "workMdFormatBody": "Word document (full text) or PowerPoint deck (one slide per heading)?",
+  "workMdFormatWord": "Word",
+  "workMdFormatSlides": "Slides"
 }

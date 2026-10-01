@@ -1670,4 +1670,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get workStyleNormal => 'Normal text';
+
+  @override
+  String get workConvertTo => 'Convert Markdown to…';
+
+  @override
+  String get workMdFormatBody =>
+      'Word document (full text) or PowerPoint deck (one slide per heading)?';
+
+  @override
+  String get workMdFormatWord => 'Word';
+
+  @override
+  String get workMdFormatSlides => 'Slides';
 }

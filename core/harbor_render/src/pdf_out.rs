@@ -13,6 +13,8 @@ pub struct TextBlock {
     pub size: f64,
     pub bold: bool,
     pub text: String,
+    /// Monospace (Courier) — for grid/table text where alignment matters.
+    pub mono: bool,
 }
 
 const PAGE_W: f64 = 595.0; // A4, points
@@ -71,13 +73,15 @@ fn wrap(text: &str, size: f64) -> Vec<String> {
 /// automatic). Deterministic: same input → byte-identical output.
 pub fn write_text_pdf(title: &str, blocks: &[TextBlock]) -> Vec<u8> {
     // Lay out lines with page breaks.
-    let mut pages: Vec<Vec<(f64, bool, String)>> = Vec::new();
-    let mut current: Vec<(f64, bool, String)> = Vec::new();
+    let mut pages: Vec<Vec<(f64, bool, bool, String)>> = Vec::new();
+    let mut current: Vec<(f64, bool, bool, String)> = Vec::new();
     let mut y = PAGE_H - MARGIN;
-    let mut push_line = |line: (f64, bool, String),
-                         y: &mut f64,
-                         current: &mut Vec<(f64, bool, String)>,
-                         pages: &mut Vec<Vec<(f64, bool, String)>>| {
+    fn push_line(
+        line: (f64, bool, bool, String),
+        y: &mut f64,
+        current: &mut Vec<(f64, bool, bool, String)>,
+        pages: &mut Vec<Vec<(f64, bool, bool, String)>>,
+    ) {
         let advance = line.0 + LINE_GAP;
         if *y - advance < MARGIN {
             pages.push(std::mem::take(current));
@@ -85,10 +89,15 @@ pub fn write_text_pdf(title: &str, blocks: &[TextBlock]) -> Vec<u8> {
         }
         current.push(line);
         *y -= advance;
-    };
+    }
     for b in blocks {
         for line in wrap(&b.text, b.size) {
-            push_line((b.size, b.bold, line), &mut y, &mut current, &mut pages);
+            push_line(
+                (b.size, b.bold, b.mono, line),
+                &mut y,
+                &mut current,
+                &mut pages,
+            );
         }
         // Paragraph spacing.
         y -= b.size * 0.45;
@@ -106,8 +115,13 @@ pub fn write_text_pdf(title: &str, blocks: &[TextBlock]) -> Vec<u8> {
         .map(|lines| {
             let mut s = String::new();
             let mut yy = PAGE_H - MARGIN;
-            for (size, bold, line) in lines {
-                let font = if *bold { "/F2" } else { "/F1" };
+            for (size, bold, mono, line) in lines {
+                let font = match (*bold, *mono) {
+                    (true, true) => "/F4",
+                    (false, true) => "/F3",
+                    (true, false) => "/F2",
+                    (false, false) => "/F1",
+                };
                 let _ = std::fmt::Write::write_fmt(
                     &mut s,
                     format_args!(
@@ -143,8 +157,11 @@ pub fn write_text_pdf(title: &str, blocks: &[TextBlock]) -> Vec<u8> {
         let page_obj = 4 + 2 * i;
         let content_obj = page_obj + 1;
         objects.push(format!(
-            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {PAGE_W} {PAGE_H}] /Resources << /Font << /F1 {} 0 R /F2 {} 0 R >> >> /Contents {content_obj} 0 R >>",
-            4 + 2 * page_count, 5 + 2 * page_count
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {PAGE_W} {PAGE_H}] /Resources << /Font << /F1 {} 0 R /F2 {} 0 R /F3 {} 0 R /F4 {} 0 R >> >> /Contents {content_obj} 0 R >>",
+            4 + 2 * page_count,
+            5 + 2 * page_count,
+            6 + 2 * page_count,
+            7 + 2 * page_count
         )
         .into_bytes());
         objects.push(
@@ -163,6 +180,16 @@ pub fn write_text_pdf(title: &str, blocks: &[TextBlock]) -> Vec<u8> {
     );
     objects.push(
         "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>"
+            .as_bytes()
+            .to_vec(),
+    );
+    objects.push(
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>"
+            .as_bytes()
+            .to_vec(),
+    );
+    objects.push(
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold /Encoding /WinAnsiEncoding >>"
             .as_bytes()
             .to_vec(),
     );
@@ -197,8 +224,8 @@ mod tests {
     #[test]
     fn writes_a_pdf_the_extractor_reads_back() {
         let blocks = vec![
-            TextBlock { size: 20.0, bold: true, text: "Harbor Office Suite".into() },
-            TextBlock { size: 11.0, bold: false, text: "A paragraph with (parens), back\\slash and enough words to force at least one wrap across the line for the layout engine to exercise.".into() },
+            TextBlock { size: 20.0, bold: true, text: "Harbor Office Suite".into(), mono: false },
+            TextBlock { size: 11.0, bold: false, text: "A paragraph with (parens), back\\slash and enough words to force at least one wrap across the line for the layout engine to exercise.".into(), mono: false },
         ];
         let pdf = write_text_pdf("Round trip", &blocks);
         assert!(pdf.starts_with(b"%PDF-1.4"));
@@ -212,11 +239,40 @@ mod tests {
     }
 
     #[test]
+    fn mono_blocks_round_trip() {
+        let blocks = vec![
+            TextBlock {
+                size: 14.0,
+                bold: true,
+                text: "Sheet1".into(),
+                mono: false,
+            },
+            TextBlock {
+                size: 9.0,
+                bold: false,
+                text: "1  A             B".into(),
+                mono: true,
+            },
+            TextBlock {
+                size: 9.0,
+                bold: false,
+                text: "2  10             20".into(),
+                mono: true,
+            },
+        ];
+        let pdf = write_text_pdf("grid", &blocks);
+        let preview = crate::pdf::extract_pages(&pdf).unwrap();
+        let all: String = preview.pages.iter().map(|p| p.text.clone()).collect();
+        assert!(all.contains("Sheet1"));
+    }
+
+    #[test]
     fn deterministic_bytes() {
         let blocks = vec![TextBlock {
             size: 12.0,
             bold: false,
             text: "same".into(),
+            mono: false,
         }];
         let a = write_text_pdf("t", &blocks);
         let b = write_text_pdf("t", &blocks);

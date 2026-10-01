@@ -159,11 +159,114 @@ mod tests {
     }
 
     #[test]
+    fn markdown_to_deck_slides_and_pptx_round_trip() {
+        let md = "# Q3 Review\n\nintro line before any slide\n\n## Results\n\n- revenue up\n- churn down\n\n### Details\n\n1. first\n\n2. second\n";
+        let deck = markdown_to_deck(md);
+        assert_eq!(deck.title, "Q3 Review");
+        assert_eq!(deck.slides.len(), 3, "opening + Results + Details");
+        assert_eq!(deck.slides[0].title, "Q3 Review");
+        assert!(deck.slides[0]
+            .bullets
+            .contains(&"intro line before any slide".to_string()));
+        assert_eq!(deck.slides[1].title, "Results");
+        assert!(deck.slides[1].bullets.contains(&"revenue up".to_string()));
+        assert_eq!(deck.slides[2].title, "Details");
+
+        let bytes = markdown_to_pptx(md, None).unwrap();
+        let re = crate::pptx::PptxDeck::from_pptx_bytes(&bytes).unwrap();
+        assert_eq!(re.slides.len(), deck.slides.len());
+        assert!(re.slides.iter().any(|s| s.title.contains("Results")));
+    }
+
+    #[test]
     fn produces_a_loadable_docx() {
         let md = "# T\n\nbody\n\n- x\n";
         let bytes = markdown_to_docx(md, "T").unwrap();
         let doc = crate::docx::DocxDocument::load(&bytes).unwrap();
         assert!(!doc.paragraphs.is_empty());
         assert!(doc.preserved_parts.is_empty());
+    }
+}
+
+/// Convert Markdown to a PPTX deck: the first `# ` heading is the deck
+/// title; every following `## `/`# ` heading starts a slide; bullets and
+/// paragraphs under a heading become that slide's bullets. Content
+/// before the first slide heading becomes an opening slide.
+pub fn markdown_to_deck(markdown: &str) -> crate::pptx::PptxDeck {
+    use crate::pptx::{PptxDeck, SlideContent};
+    let mut deck = PptxDeck::default();
+    let mut open_slide: Option<SlideContent> = None;
+    let mut title_used = false;
+
+    fn flush(slide: &mut Option<SlideContent>, deck: &mut PptxDeck) {
+        if let Some(s) = slide.take() {
+            if !s.bullets.is_empty() || !s.title.is_empty() {
+                deck.slides.push(s);
+            }
+        }
+    }
+
+    for raw in markdown.lines() {
+        let line = raw.trim_end();
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if let Some(rest) = trimmed.strip_prefix('#') {
+            let level = 1 + rest.chars().take_while(|c| *c == '#').count();
+            let text = rest[level.saturating_sub(1)..].trim().to_string();
+            if text.is_empty() {
+                continue;
+            }
+            if level == 1 && !title_used {
+                title_used = true;
+                deck.title = text;
+                continue;
+            }
+            flush(&mut open_slide, &mut deck);
+            open_slide = Some(SlideContent {
+                title: text,
+                bullets: Vec::new(),
+                notes: None,
+                chart: None,
+                image: None,
+            });
+            continue;
+        }
+        let bullet = trimmed
+            .strip_prefix("- ")
+            .or_else(|| trimmed.strip_prefix("* "))
+            .or_else(|| trimmed.strip_prefix("+ "))
+            .map(str::to_string)
+            .unwrap_or_else(|| trimmed.to_string());
+        let slide = open_slide.get_or_insert_with(|| SlideContent {
+            title: deck.title.clone(),
+            bullets: Vec::new(),
+            notes: None,
+            chart: None,
+            image: None,
+        });
+        slide.bullets.push(bullet);
+    }
+    flush(&mut open_slide, &mut deck);
+    if deck.title.is_empty() && !deck.slides.is_empty() {
+        deck.title = deck
+            .slides
+            .first()
+            .map(|s| s.title.clone())
+            .unwrap_or_default();
+    }
+    deck
+}
+
+/// Full conversion: Markdown text to a real .pptx package.
+pub fn markdown_to_pptx(
+    markdown: &str,
+    style: Option<crate::pptx::DeckStyle>,
+) -> Result<Vec<u8>, crate::pptx::PptxError> {
+    let deck = markdown_to_deck(markdown);
+    match style {
+        Some(s) => deck.to_pptx_bytes_with(s),
+        None => deck.to_pptx_bytes(),
     }
 }

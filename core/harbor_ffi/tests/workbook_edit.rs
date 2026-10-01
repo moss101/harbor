@@ -468,3 +468,51 @@ fn docx_style_change_and_pdf_export_round_trip() {
         "exported text must survive the trip"
     );
 }
+
+#[test]
+fn xlsx_to_pdf_and_markdown_to_pptx_round_trip() {
+    let dir = tempfile::tempdir().unwrap();
+    let h = Handle::open(dir.path());
+    use base64::Engine as _;
+
+    // Workbook → PDF: the extractor reads our grid back.
+    let xlsx = std::fs::read(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../fixtures/office/dcf_model.xlsx"),
+    )
+    .unwrap();
+    let pdf = h.call(
+        "convert.xlsx_to_pdf",
+        serde_json::json!({
+            "data_b64": base64::engine::general_purpose::STANDARD.encode(&xlsx),
+            "title": "DCF",
+        }),
+    );
+    assert!(pdf["rows"].as_u64().unwrap() >= 1);
+    assert!(pdf["pages"].as_u64().unwrap() >= 1);
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(pdf["data_b64"].as_str().unwrap())
+        .unwrap();
+    let preview = harbor_render::pdf::extract_pages(&bytes).unwrap();
+    let text: String = preview.pages.iter().map(|p| p.text.clone()).collect();
+    assert!(!text.trim().is_empty(), "grid values must survive export");
+    assert_eq!(
+        pdf["extraction_level"].as_str().unwrap(),
+        "text-only (values only; no layout, charts or formulas)"
+    );
+
+    // Markdown → PPTX: the deck generator round-trips.
+    let deck = h.call(
+        "convert.markdown_to_pptx",
+        serde_json::json!({
+            "markdown": "# Deck Title\n\n## Slide One\n\n- alpha\n- beta\n\n## Slide Two\n\n- gamma\n",
+        }),
+    );
+    assert_eq!(deck["slides"], 2);
+    assert_eq!(deck["title"], "Deck Title");
+    let pptx = base64::engine::general_purpose::STANDARD
+        .decode(deck["data_b64"].as_str().unwrap())
+        .unwrap();
+    let re = harbor_artifacts::pptx::PptxDeck::from_pptx_bytes(&pptx).unwrap();
+    assert!(re.slides.iter().any(|s| s.title.contains("Slide One")));
+}

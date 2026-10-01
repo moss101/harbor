@@ -2761,6 +2761,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Normal text'**
   String get workStyleNormal;
+
+  /// No description provided for @workConvertTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert Markdown to…'**
+  String get workConvertTo;
+
+  /// No description provided for @workMdFormatBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Word document (full text) or PowerPoint deck (one slide per heading)?'**
+  String get workMdFormatBody;
+
+  /// No description provided for @workMdFormatWord.
+  ///
+  /// In en, this message translates to:
+  /// **'Word'**
+  String get workMdFormatWord;
+
+  /// No description provided for @workMdFormatSlides.
+  ///
+  /// In en, this message translates to:
+  /// **'Slides'**
+  String get workMdFormatSlides;
 }
 
 class _AppLocalizationsDelegate

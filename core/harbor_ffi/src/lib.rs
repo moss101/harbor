@@ -1785,6 +1785,7 @@ fn dispatch(
                         size,
                         bold,
                         text: p.text.clone(),
+                        mono: false,
                     }
                 })
                 .collect();
@@ -1797,6 +1798,96 @@ fn dispatch(
                 "blocks": blocks.len(),
                 "bytes": out.len(),
                 "extraction_level": "text-only (no layout, tables or images)",
+            }))
+        }
+        // XLSX → PDF at TEXT-EXTRACTION level: the focused sheet's grid
+        // rendered as aligned monospace rows (Courier). Formulas export
+        // their VALUES; layout/charts are NOT converted — the report
+        // says so, never guesses.
+        "convert.xlsx_to_pdf" => {
+            let data_b64 = args
+                .get("data_b64")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing data_b64".into()))?;
+            use base64::Engine as _;
+            let bytes = base64::engine::general_purpose::STANDARD
+                .decode(data_b64)
+                .map_err(|e| HarborError::Other(format!("b64: {e}")))?;
+            let title = args
+                .get("title")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Converted from XLSX");
+            let sheet = args.get("sheet").and_then(|v| v.as_str());
+            let preview = harbor_render::WorkbookPreview::from_xlsx_on_sheet(&bytes, sheet)
+                .map_err(|e| HarborError::Other(format!("xlsx: {e}")))?;
+            use harbor_render::TextBlock;
+            use std::collections::BTreeMap;
+            // Column-letter order with a fixed 14-char cell width keeps
+            // rows visually aligned in the monospace font.
+            let mut rows: BTreeMap<u32, BTreeMap<u32, String>> = BTreeMap::new();
+            for c in &preview.cells {
+                let value = c.value.clone().unwrap_or_else(|| {
+                    c.formula
+                        .clone()
+                        .map(|f| format!("={f}"))
+                        .unwrap_or_default()
+                });
+                if value.is_empty() {
+                    continue;
+                }
+                rows.entry(c.row).or_default().insert(c.col, value);
+            }
+            let mut blocks = vec![TextBlock {
+                size: 14.0,
+                bold: true,
+                text: format!("{} — {}", title, preview.sheet),
+                mono: false,
+            }];
+            for (row, cells) in &rows {
+                let mut line = String::new();
+                let mut last_col = 0u32;
+                for (col, value) in cells {
+                    while last_col > 0 && *col > last_col + 1 {
+                        line.push_str(&" ".repeat(14));
+                        last_col += 1;
+                    }
+                    let v: String = value.chars().take(13).collect();
+                    line.push_str(&format!("{:<14}", v));
+                    last_col = *col;
+                }
+                blocks.push(TextBlock {
+                    size: 9.0,
+                    bold: false,
+                    text: format!("{row}  {line}"),
+                    mono: true,
+                });
+            }
+            let out = harbor_render::write_text_pdf(title, &blocks);
+            let pages = out.windows(11).filter(|w| w == b"/Type /Page").count();
+            Ok(serde_json::json!({
+                "data_b64": base64::engine::general_purpose::STANDARD.encode(&out),
+                "pages": pages,
+                "rows": rows.len(),
+                "bytes": out.len(),
+                "extraction_level": "text-only (values only; no layout, charts or formulas)",
+            }))
+        }
+        // Markdown → PPTX: headings become slides, bullets become slide
+        // bullets (the qualified PPTX generator owns the XML).
+        "convert.markdown_to_pptx" => {
+            use base64::Engine as _;
+            let markdown = args
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing markdown".into()))?;
+            let deck = harbor_artifacts::convert::markdown_to_deck(markdown);
+            let bytes = harbor_artifacts::convert::markdown_to_pptx(markdown, None)
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            Ok(serde_json::json!({
+                "data_b64": base64::engine::general_purpose::STANDARD.encode(&bytes),
+                "title": deck.title,
+                "slides": deck.slides.len(),
+                "bytes": bytes.len(),
             }))
         }
         // New blank workbook for the suite's New flow.

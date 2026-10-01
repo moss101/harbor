@@ -1725,4 +1725,17 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get workStyleNormal => 'نص عادي';
+
+  @override
+  String get workConvertTo => 'تحويل Markdown إلى…';
+
+  @override
+  String get workMdFormatBody =>
+      'مستند Word (النص كاملاً) أم عرض PowerPoint (شريحة لكل عنوان)؟';
+
+  @override
+  String get workMdFormatWord => 'Word';
+
+  @override
+  String get workMdFormatSlides => 'شرائح';
 }

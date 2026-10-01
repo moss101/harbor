@@ -25,7 +25,7 @@ pub mod workbook;
 
 pub use batch::{ArtifactBatch, OpKind, Operation, Precondition, EMPTY_CONTENT_HASH};
 pub use commit::{CommitJournal, CommitMode, CommitOutcome, SafeCommitError, SafeCommitter};
-pub use convert::{markdown_to_blocks, markdown_to_docx};
+pub use convert::{markdown_to_blocks, markdown_to_deck, markdown_to_docx, markdown_to_pptx};
 pub use diff::{ArtifactDiff, DiffEntry};
 pub use docx::{create_docx, BlockStyle, DocxBlock, DocxDocument, DocxError, DocxOp};
 pub use office_matrix::{
