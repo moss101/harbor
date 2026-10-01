@@ -937,5 +937,27 @@
         "type": "String"
       }
     }
-  }
+  },
+  "workExportPdf": "Export PDF",
+  "workInsertRow": "Insert row above",
+  "workDeleteRow": "Delete row",
+  "workInsertCol": "Insert column left",
+  "workDeleteCol": "Delete column",
+  "workStyle": "Style",
+  "workExportedPdf": "Exported {name}",
+  "@workExportedPdf": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "workStructure": "Rows & columns",
+  "workStyleKeep": "Keep current",
+  "workStyleH1": "Heading 1",
+  "workStyleH2": "Heading 2",
+  "workStyleH3": "Heading 3",
+  "workStyleBullet": "Bullet list",
+  "workStyleNumbered": "Numbered list",
+  "workStyleNormal": "Normal text"
 }

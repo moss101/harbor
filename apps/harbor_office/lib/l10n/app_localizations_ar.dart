@@ -1678,4 +1678,51 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get workClearRecents => 'مسح';
+
+  @override
+  String get workExportPdf => 'تصدير PDF';
+
+  @override
+  String get workInsertRow => 'إدراج صف أعلى';
+
+  @override
+  String get workDeleteRow => 'حذف الصف';
+
+  @override
+  String get workInsertCol => 'إدراج عمود يساراً';
+
+  @override
+  String get workDeleteCol => 'حذف العمود';
+
+  @override
+  String get workStyle => 'النمط';
+
+  @override
+  String workExportedPdf(String name) {
+    return 'صُدّر $name';
+  }
+
+  @override
+  String get workStructure => 'الصفوف والأعمدة';
+
+  @override
+  String get workStyleKeep => 'إبقاء الحالي';
+
+  @override
+  String get workStyleH1 => 'عنوان 1';
+
+  @override
+  String get workStyleH2 => 'عنوان 2';
+
+  @override
+  String get workStyleH3 => 'عنوان 3';
+
+  @override
+  String get workStyleBullet => 'قائمة نقطية';
+
+  @override
+  String get workStyleNumbered => 'قائمة مرقمة';
+
+  @override
+  String get workStyleNormal => 'نص عادي';
 }

@@ -751,6 +751,24 @@ class HarborService extends ChangeNotifier {
     return base64Decode(result['data_b64'] as String);
   }
 
+  /// Export the open DOCX to PDF at text-extraction level (the core
+  /// reports extraction_level; layout is explicitly not claimed).
+  Future<List<int>> exportDocxToPdf({String? title}) async {
+    final source = _sourceBytes;
+    final current = _preview;
+    if (source == null || current == null) {
+      throw ffi.HarborCoreException('no document open');
+    }
+    if (current['kind'] != 'docx') {
+      throw ffi.HarborCoreException('only documents export to PDF');
+    }
+    final result = await _call('convert.docx_to_pdf', {
+      'data_b64': base64Encode(source),
+      if (title != null) 'title': title,
+    });
+    return base64Decode(result['data_b64'] as String);
+  }
+
   /// Apply typed DOCX ops (paragraph text replace by 1-based index,
   /// table-cell set) through the core. Every op carries an implicit
   /// content-hash precondition inside the core; on success the working

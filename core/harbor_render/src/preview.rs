@@ -91,16 +91,16 @@ impl WorkbookPreview {
 
     /// Grid preview with an explicit focused sheet (None = first).
     /// Unknown sheet names are a typed error, never a silent fallback.
-    pub fn from_xlsx_on_sheet(
-        bytes: &[u8],
-        sheet: Option<&str>,
-    ) -> Result<Self, PreviewError> {
+    pub fn from_xlsx_on_sheet(bytes: &[u8], sheet: Option<&str>) -> Result<Self, PreviewError> {
         let doc = WorkbookDoc::load(bytes)?;
         let sheets = doc.sheet_names();
         let focused = match sheet {
             Some(name) => {
                 if !sheets.iter().any(|s| s == name) {
-                    return Err(harbor_artifacts::workbook::WorkbookError::SheetNotFound(name.to_string()).into());
+                    return Err(harbor_artifacts::workbook::WorkbookError::SheetNotFound(
+                        name.to_string(),
+                    )
+                    .into());
                 }
                 name.to_string()
             }

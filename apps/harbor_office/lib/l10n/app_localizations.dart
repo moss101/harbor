@@ -2671,6 +2671,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear'**
   String get workClearRecents;
+
+  /// No description provided for @workExportPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Export PDF'**
+  String get workExportPdf;
+
+  /// No description provided for @workInsertRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert row above'**
+  String get workInsertRow;
+
+  /// No description provided for @workDeleteRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete row'**
+  String get workDeleteRow;
+
+  /// No description provided for @workInsertCol.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert column left'**
+  String get workInsertCol;
+
+  /// No description provided for @workDeleteCol.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete column'**
+  String get workDeleteCol;
+
+  /// No description provided for @workStyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Style'**
+  String get workStyle;
+
+  /// No description provided for @workExportedPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Exported {name}'**
+  String workExportedPdf(String name);
+
+  /// No description provided for @workStructure.
+  ///
+  /// In en, this message translates to:
+  /// **'Rows & columns'**
+  String get workStructure;
+
+  /// No description provided for @workStyleKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep current'**
+  String get workStyleKeep;
+
+  /// No description provided for @workStyleH1.
+  ///
+  /// In en, this message translates to:
+  /// **'Heading 1'**
+  String get workStyleH1;
+
+  /// No description provided for @workStyleH2.
+  ///
+  /// In en, this message translates to:
+  /// **'Heading 2'**
+  String get workStyleH2;
+
+  /// No description provided for @workStyleH3.
+  ///
+  /// In en, this message translates to:
+  /// **'Heading 3'**
+  String get workStyleH3;
+
+  /// No description provided for @workStyleBullet.
+  ///
+  /// In en, this message translates to:
+  /// **'Bullet list'**
+  String get workStyleBullet;
+
+  /// No description provided for @workStyleNumbered.
+  ///
+  /// In en, this message translates to:
+  /// **'Numbered list'**
+  String get workStyleNumbered;
+
+  /// No description provided for @workStyleNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal text'**
+  String get workStyleNormal;
 }
 
 class _AppLocalizationsDelegate

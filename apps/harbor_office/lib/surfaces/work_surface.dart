@@ -219,6 +219,34 @@ class _WorkSurfaceState extends State<WorkSurface> {
     }
   }
 
+  /// Export the open document to PDF (text-extraction level) and save a
+  /// copy where the user chooses. The extraction level is the core's
+  /// honest label; the app never claims layout fidelity.
+  Future<void> _exportPdf() async {
+    final service = HarborServiceProvider.of(context).notifier;
+    if (service == null) return;
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final bytes = await service.exportDocxToPdf(
+          title: service.previewName ?? 'document');
+      if (!mounted) return;
+      final base = (service.previewName ?? 'document')
+          .replaceFirst(RegExp(r'\.docx\$'), '');
+      final dest = await _saveConvertedCopy('$base.pdf', bytes);
+      if (mounted && dest != null) {
+        messenger.showSnackBar(SnackBar(
+            content:
+                Text(l10n.workExportedPdf(dest.split(Platform.pathSeparator).last))));
+      }
+    } on ffi.HarborCoreException catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+            SnackBar(content: Text('${l10n.workConvertFailed}: ${e.message}')));
+      }
+    }
+  }
+
   /// Save the current working copy (edits included) as a new file.
   Future<void> _saveOpenCopy() async {
     final service = HarborServiceProvider.of(context).notifier;
@@ -358,6 +386,12 @@ class _WorkSurfaceState extends State<WorkSurface> {
                 onPressed: service.previewLoading ? null : _saveOpenCopy,
                 icon: const Icon(Icons.save_outlined, size: 18),
               ),
+              if (kind == 'docx')
+                IconButton(
+                  tooltip: l10n.workExportPdf,
+                  onPressed: service.previewLoading ? null : _exportPdf,
+                  icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                ),
             ],
             // The empty state carries the primary "Open file" call to
             // action; the header offers it once a file is open.

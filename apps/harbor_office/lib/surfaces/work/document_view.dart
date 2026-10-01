@@ -33,37 +33,65 @@ class _DocumentViewState extends State<DocumentView> {
     final index = (paragraph['index'] as num).toInt();
     final current = paragraph['text'] as String? ?? '';
     final controller = TextEditingController(text: current);
+    // Null = keep the paragraph's current style; a choice restyles it in
+    // the SAME edit (one round trip, one history step).
+    String? styleChoice;
     final saved = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.workEditParagraphTitle(index)),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLines: 6,
-          minLines: 1,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialog) => AlertDialog(
+          title: Text(l10n.workEditParagraphTitle(index)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: controller,
+                autofocus: true,
+                maxLines: 6,
+                minLines: 1,
+              ),
+              const SizedBox(height: HarborSpace.s3),
+              DropdownButtonFormField<String>(
+                initialValue: styleChoice,
+                decoration: InputDecoration(
+                    labelText: l10n.workStyle, isDense: true),
+                items: [
+                  DropdownMenuItem(value: null, child: Text(l10n.workStyleKeep)),
+                  DropdownMenuItem(value: 'heading1', child: Text(l10n.workStyleH1)),
+                  DropdownMenuItem(value: 'heading2', child: Text(l10n.workStyleH2)),
+                  DropdownMenuItem(value: 'heading3', child: Text(l10n.workStyleH3)),
+                  DropdownMenuItem(value: 'bullet', child: Text(l10n.workStyleBullet)),
+                  DropdownMenuItem(value: 'numbered', child: Text(l10n.workStyleNumbered)),
+                  DropdownMenuItem(value: 'paragraph', child: Text(l10n.workStyleNormal)),
+                ],
+                onChanged: (v) => setDialog(() => styleChoice = v),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(MaterialLocalizations.of(context).okButtonLabel),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(MaterialLocalizations.of(context).okButtonLabel),
-          ),
-        ],
       ),
     );
     final newText = controller.text;
     controller.dispose();
     if (saved != true || !mounted) return;
-    if (newText == current) return;
+    if (newText == current && styleChoice == null) return;
     setState(() => _savingEdit = true);
     try {
-      await service.editDocumentOps([
+      final ops = <Map<String, dynamic>>[
         {'kind': 'paragraph', 'index': index, 'text': newText},
-      ]);
+        if (styleChoice != null) {'kind': 'style', 'index': index, 'style': styleChoice},
+      ];
+      await service.editDocumentOps(ops);
     } on ffi.HarborCoreException catch (e) {
       if (mounted) setState(() => _editError = e.message);
     } finally {

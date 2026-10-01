@@ -304,7 +304,10 @@ fn docx_paragraph_edit_round_trips_with_precondition() {
         .decode(result["data_b64"].as_str().unwrap())
         .unwrap();
     let re = harbor_artifacts::docx::DocxDocument::load(&out).unwrap();
-    assert_eq!(re.paragraphs[target.index as usize - 1].text, "Edited by Harbor Office Suite");
+    assert_eq!(
+        re.paragraphs[target.index as usize - 1].text,
+        "Edited by Harbor Office Suite"
+    );
 
     // A stale edit (paragraph changed underneath) is refused, not applied.
     let mut changed = docx.clone();
@@ -336,7 +339,10 @@ fn create_empty_workbook_and_document() {
     let doc = harbor_artifacts::workbook::WorkbookDoc::load(&wb_bytes).unwrap();
     assert_eq!(doc.sheet_names(), vec!["Sheet1".to_string()]);
 
-    let d = h.call("docx.create", serde_json::json!({ "title": "Meeting notes" }));
+    let d = h.call(
+        "docx.create",
+        serde_json::json!({ "title": "Meeting notes" }),
+    );
     let d_bytes = base64::engine::general_purpose::STANDARD
         .decode(d["data_b64"].as_str().unwrap())
         .unwrap();
@@ -368,5 +374,97 @@ fn unknown_docx_op_kind_fails_honestly() {
     unsafe { harbor_core_string_free(raw) };
     let v: serde_json::Value = serde_json::from_str(&text).unwrap();
     assert_eq!(v["ok"], false);
-    assert!(v["error"].as_str().unwrap().contains("unknown docx op kind"));
+    assert!(v["error"]
+        .as_str()
+        .unwrap()
+        .contains("unknown docx op kind"));
+}
+
+#[test]
+fn row_col_insert_delete_ops_round_trip() {
+    let dir = tempfile::tempdir().unwrap();
+    let h = Handle::open(dir.path());
+    use base64::Engine as _;
+    let original = fixture_xlsx();
+    let sheet = first_sheet(&original);
+
+    // Insert a row at 2, delete column A: cells and formula refs shift.
+    let result = h.call(
+        "workbook.edit",
+        serde_json::json!({
+            "data_b64": base64::engine::general_purpose::STANDARD.encode(&original),
+            "edits": [],
+            "ops": [
+                {"op": "insert_row", "sheet": sheet, "index": 2, "count": 1},
+                {"op": "delete_col", "sheet": sheet, "index": 1, "count": 1},
+            ],
+        }),
+    );
+    assert_eq!(result["ops_applied"], 2);
+    let out = base64::engine::general_purpose::STANDARD
+        .decode(result["data_b64"].as_str().unwrap())
+        .unwrap();
+    assert_ne!(out, original);
+    assert!(harbor_artifacts::workbook::WorkbookDoc::load(&out).is_ok());
+
+    // Out-of-range count is a typed refusal.
+    let req = CString::new(
+        serde_json::json!({
+            "method": "workbook.edit",
+            "args": {"data_b64": base64::engine::general_purpose::STANDARD.encode(&original),
+                     "edits": [], "ops": [{"op": "insert_row", "sheet": sheet, "index": 2, "count": 0}]},
+        })
+        .to_string(),
+    )
+    .unwrap();
+    let raw = unsafe { harbor_core_call(h.0, req.as_ptr()) };
+    let text = unsafe { CStr::from_ptr(raw) }.to_string_lossy().to_string();
+    unsafe { harbor_core_string_free(raw) };
+    let v: serde_json::Value = serde_json::from_str(&text).unwrap();
+    assert_eq!(v["ok"], false);
+    assert!(v["error"].as_str().unwrap().contains("count out of range"));
+}
+
+#[test]
+fn docx_style_change_and_pdf_export_round_trip() {
+    let dir = tempfile::tempdir().unwrap();
+    let h = Handle::open(dir.path());
+    use base64::Engine as _;
+
+    // New document, restyle its title paragraph to heading2.
+    let doc = h.call("docx.create", serde_json::json!({ "title": "Export test" }));
+    let docx = base64::engine::general_purpose::STANDARD
+        .decode(doc["data_b64"].as_str().unwrap())
+        .unwrap();
+    let styled = h.call(
+        "docx.edit",
+        serde_json::json!({
+            "data_b64": base64::engine::general_purpose::STANDARD.encode(&docx),
+            "ops": [{"kind": "style", "index": 1, "style": "heading2"}],
+        }),
+    );
+    assert_eq!(styled["applied"], 1);
+
+    // Export to PDF; the extractor reads our own PDF back.
+    let pdf = h.call(
+        "convert.docx_to_pdf",
+        serde_json::json!({
+            "data_b64": styled["data_b64"],
+            "title": "Export test",
+        }),
+    );
+    assert!(pdf["pages"].as_u64().unwrap() >= 1);
+    assert_eq!(
+        pdf["extraction_level"].as_str().unwrap(),
+        "text-only (no layout, tables or images)"
+    );
+    let pdf_bytes = base64::engine::general_purpose::STANDARD
+        .decode(pdf["data_b64"].as_str().unwrap())
+        .unwrap();
+    let preview = harbor_render::pdf::extract_pages(&pdf_bytes).unwrap();
+    let text: String = preview.pages.iter().map(|p| p.text.clone()).collect();
+    assert!(
+        text.contains("Export test"),
+        "exported text must survive the trip"
+    );
 }

@@ -147,6 +147,33 @@ class _WorkbookViewState extends State<WorkbookView> {
     }
   }
 
+  /// Row/column structure ops for the selected cell: umya shifts cells
+  /// AND formula references; the engine recalculates after.
+  Future<void> _structureOp(String op) async {
+    if (_selected == null || _savingEdit) return;
+    final sp = HarborServiceProvider.of(context);
+    final service = sp.notifier;
+    if (service == null || sp.failed) return;
+    final row = _selected!.$1;
+    final col = _selected!.$2;
+    final index = op.endsWith('row') ? row : col;
+    setState(() => _savingEdit = true);
+    try {
+      await service.editWorkbook(ops: [
+        {
+          'op': op,
+          'sheet': widget.preview['sheet'] as String? ?? '',
+          'index': index,
+          'count': 1,
+        },
+      ]);
+    } on ffi.HarborCoreException catch (e) {
+      if (mounted) setState(() => _editError = e.message);
+    } finally {
+      if (mounted) setState(() => _savingEdit = false);
+    }
+  }
+
   /// Author a conditional highlight through the typed ops path: cells in
   /// the selected column (rows 2..21) above the selected cell's numeric
   /// value get the classic light-red highlight fill.
@@ -381,6 +408,7 @@ class _WorkbookViewState extends State<WorkbookView> {
             onAddChart: _addChart,
             onHighlight: _addHighlight,
             onSheetSelected: widget.onSheetSelected,
+            onStructureOp: _structureOp,
           ),
         ],
       ),
@@ -686,6 +714,7 @@ class _SheetTabs extends StatelessWidget {
     this.onAddChart,
     this.onHighlight,
     this.onSheetSelected,
+    this.onStructureOp,
   });
   final List<String> sheets;
   final String active;
@@ -696,6 +725,7 @@ class _SheetTabs extends StatelessWidget {
   final VoidCallback? onAddChart;
   final VoidCallback? onHighlight;
   final ValueChanged<String>? onSheetSelected;
+  final ValueChanged<String>? onStructureOp;
 
   @override
   Widget build(BuildContext context) {
@@ -733,6 +763,18 @@ class _SheetTabs extends StatelessWidget {
         ),
         const SizedBox(width: HarborSpace.s3),
         Wrap(spacing: HarborSpace.s2, children: [
+          if (onStructureOp != null)
+            PopupMenuButton<String>(
+              tooltip: l10n.workStructure,
+              icon: const Icon(Icons.table_rows_outlined, size: 18),
+              itemBuilder: (context) => [
+                PopupMenuItem(value: 'insert_row', child: Text(l10n.workInsertRow)),
+                PopupMenuItem(value: 'delete_row', child: Text(l10n.workDeleteRow)),
+                PopupMenuItem(value: 'insert_col', child: Text(l10n.workInsertCol)),
+                PopupMenuItem(value: 'delete_col', child: Text(l10n.workDeleteCol)),
+              ],
+              onSelected: onStructureOp,
+            ),
           if (onBoldRow != null)
             IconButton(
               tooltip: l10n.workBoldRow,

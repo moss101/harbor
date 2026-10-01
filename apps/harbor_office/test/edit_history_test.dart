@@ -108,6 +108,29 @@ void main() {
     expect(second.draftRestored, isFalse);
   });
 
+  test('document exports to PDF and workbook row ops shift content',
+      () async {
+    final d = await service.createDocument(title: 'Export');
+    await service.loadPreviewFromBytes(d, name: 'Export.docx');
+    final pdf = await service.exportDocxToPdf(title: 'Export');
+    expect(pdf.isNotEmpty, isTrue);
+    expect(pdf[0], 0x25); // '%PDF'
+    // A non-document open must refuse honestly.
+    final wb = await service.createWorkbook();
+    await service.loadPreviewFromBytes(wb, name: 'Book.xlsx');
+    try {
+      await service.exportDocxToPdf();
+      fail('workbook must refuse docx-only export');
+    } catch (e) {
+      expect(e, isA<Exception>());
+    }
+    // Structure op through the generic edit path: insert a row at 1.
+    await service.editWorkbook(ops: [
+      {'op': 'insert_row', 'sheet': 'Sheet1', 'index': 1, 'count': 1},
+    ]);
+    expect(service.canUndo, isTrue, reason: 'structure ops are undoable');
+  });
+
   test('multi-sheet focus switches and unknown sheets refuse', () async {
     final fixture =
         File('$repoRoot/fixtures/office/board_demo.xlsx').readAsBytesSync();

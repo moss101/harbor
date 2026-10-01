@@ -795,5 +795,27 @@
         "type": "String"
       }
     }
-  }
+  },
+  "workExportPdf": "تصدير PDF",
+  "workInsertRow": "إدراج صف أعلى",
+  "workDeleteRow": "حذف الصف",
+  "workInsertCol": "إدراج عمود يساراً",
+  "workDeleteCol": "حذف العمود",
+  "workStyle": "النمط",
+  "workExportedPdf": "صُدّر {name}",
+  "@workExportedPdf": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "workStructure": "الصفوف والأعمدة",
+  "workStyleKeep": "إبقاء الحالي",
+  "workStyleH1": "عنوان 1",
+  "workStyleH2": "عنوان 2",
+  "workStyleH3": "عنوان 3",
+  "workStyleBullet": "قائمة نقطية",
+  "workStyleNumbered": "قائمة مرقمة",
+  "workStyleNormal": "نص عادي"
 }

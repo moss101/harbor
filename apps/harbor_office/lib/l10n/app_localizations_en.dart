@@ -1623,4 +1623,51 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get workClearRecents => 'Clear';
+
+  @override
+  String get workExportPdf => 'Export PDF';
+
+  @override
+  String get workInsertRow => 'Insert row above';
+
+  @override
+  String get workDeleteRow => 'Delete row';
+
+  @override
+  String get workInsertCol => 'Insert column left';
+
+  @override
+  String get workDeleteCol => 'Delete column';
+
+  @override
+  String get workStyle => 'Style';
+
+  @override
+  String workExportedPdf(String name) {
+    return 'Exported $name';
+  }
+
+  @override
+  String get workStructure => 'Rows & columns';
+
+  @override
+  String get workStyleKeep => 'Keep current';
+
+  @override
+  String get workStyleH1 => 'Heading 1';
+
+  @override
+  String get workStyleH2 => 'Heading 2';
+
+  @override
+  String get workStyleH3 => 'Heading 3';
+
+  @override
+  String get workStyleBullet => 'Bullet list';
+
+  @override
+  String get workStyleNumbered => 'Numbered list';
+
+  @override
+  String get workStyleNormal => 'Normal text';
 }

@@ -6,6 +6,8 @@
 //! the FFI seam to Flutter unchanged.
 
 pub mod pdf;
+pub mod pdf_out;
+pub use pdf_out::{write_text_pdf, TextBlock};
 pub mod preview;
 
 pub use pdf::{PdfError, PdfPage, PdfPreview};

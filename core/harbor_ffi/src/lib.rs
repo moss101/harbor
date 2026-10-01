@@ -1583,6 +1583,23 @@ fn dispatch(
                         wb.add_conditional_format(sheet, range, operator, threshold, fill)
                             .map_err(|e| HarborError::Other(format!("conditional_format: {e}")))?;
                     }
+                    "insert_row" | "delete_row" | "insert_col" | "delete_col" => {
+                        let index =
+                            op.get("index").and_then(|v| v.as_u64()).ok_or_else(|| {
+                                HarborError::Other(format!("{name} op missing index"))
+                            })? as u32;
+                        let count = op.get("count").and_then(|v| v.as_u64()).unwrap_or(1) as u32;
+                        if count == 0 || count > 1000 {
+                            return Err(HarborError::Other(format!("{name} count out of range")));
+                        }
+                        let r = match name {
+                            "insert_row" => wb.insert_rows(sheet, index, count),
+                            "delete_row" => wb.delete_rows(sheet, index, count),
+                            "insert_col" => wb.insert_columns(sheet, index, count),
+                            _ => wb.delete_columns(sheet, index, count),
+                        };
+                        r.map_err(|e| HarborError::Other(format!("{name}: {e}")))?;
+                    }
                     other => {
                         return Err(HarborError::Other(format!("unknown op {other}")));
                     }
@@ -1675,21 +1692,38 @@ fn dispatch(
                 .and_then(|v| v.as_array())
                 .ok_or_else(|| HarborError::Other("missing ops".into()))?;
             use harbor_artifacts::docx::{DocxDocument, DocxOp};
-            let doc = DocxDocument::load(&bytes)
-                .map_err(|e| HarborError::Other(format!("load: {e}")))?;
+            let doc =
+                DocxDocument::load(&bytes).map_err(|e| HarborError::Other(format!("load: {e}")))?;
             let mut ops = Vec::new();
             for op in ops_json {
                 let kind = op
                     .get("kind")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| HarborError::Other("op missing kind".into()))?;
+                if kind == "style" {
+                    let style = op
+                        .get("style")
+                        .and_then(|v| v.as_str())
+                        .ok_or_else(|| HarborError::Other("style op missing style".into()))?;
+                    ops.push(DocxOp::StyleSet {
+                        index: op
+                            .get("index")
+                            .and_then(|v| v.as_u64())
+                            .ok_or_else(|| HarborError::Other("style op missing index".into()))?
+                            as u32,
+                        style: style.to_string(),
+                    });
+                    continue;
+                }
                 let text = op
                     .get("text")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| HarborError::Other("op missing text".into()))?;
                 match kind {
                     "paragraph" => ops.push(DocxOp::TextReplace {
-                        index: op.get("index").and_then(|v| v.as_u64()).ok_or_else(|| HarborError::Other("paragraph op missing index".into()))? as u32,
+                        index: op.get("index").and_then(|v| v.as_u64()).ok_or_else(|| {
+                            HarborError::Other("paragraph op missing index".into())
+                        })? as u32,
                         new_text: text.to_string(),
                     }),
                     "table_cell" => ops.push(DocxOp::TableCellSet {
@@ -1712,6 +1746,57 @@ fn dispatch(
             Ok(serde_json::json!({
                 "data_b64": base64::engine::general_purpose::STANDARD.encode(&out),
                 "applied": ops.len(),
+            }))
+        }
+        // DOCX → PDF at TEXT-EXTRACTION level: paragraphs laid out as
+        // sized/bold text blocks through Harbor's in-tree PDF writer
+        // (no third-party writer dependency). Layout/images/tables are
+        // NOT converted — extraction_level says so, never guessed.
+        "convert.docx_to_pdf" => {
+            let data_b64 = args
+                .get("data_b64")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing data_b64".into()))?;
+            use base64::Engine as _;
+            let bytes = base64::engine::general_purpose::STANDARD
+                .decode(data_b64)
+                .map_err(|e| HarborError::Other(format!("b64: {e}")))?;
+            let title = args
+                .get("title")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Converted from DOCX");
+            let preview = harbor_render::DocxPreview::from_docx(&bytes)
+                .map_err(|e| HarborError::Other(format!("docx: {e}")))?;
+            use harbor_render::TextBlock;
+            let blocks: Vec<TextBlock> = preview
+                .paragraphs
+                .iter()
+                .filter(|p| !p.text.trim().is_empty())
+                .map(|p| {
+                    let style = p.style.as_deref().unwrap_or("");
+                    let (size, bold) = match style.to_lowercase().replace(' ', "").as_str() {
+                        "title" => (22.0, true),
+                        "heading1" => (18.0, true),
+                        "heading2" => (15.0, true),
+                        "heading3" => (13.0, true),
+                        _ => (11.0, false),
+                    };
+                    TextBlock {
+                        size,
+                        bold,
+                        text: p.text.clone(),
+                    }
+                })
+                .collect();
+            let out = harbor_render::write_text_pdf(title, &blocks);
+            // Page objects: two per page in the object table.
+            let pages = out.windows(11).filter(|w| w == b"/Type /Page").count();
+            Ok(serde_json::json!({
+                "data_b64": base64::engine::general_purpose::STANDARD.encode(&out),
+                "pages": pages,
+                "blocks": blocks.len(),
+                "bytes": out.len(),
+                "extraction_level": "text-only (no layout, tables or images)",
             }))
         }
         // New blank workbook for the suite's New flow.
@@ -1744,8 +1829,7 @@ fn dispatch(
                 style: BlockStyle::Title,
                 text: title.to_string(),
             }];
-            let out = create_docx(title, &blocks)
-                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let out = create_docx(title, &blocks).map_err(|e| HarborError::Other(e.to_string()))?;
             use base64::Engine as _;
             Ok(serde_json::json!({
                 "data_b64": base64::engine::general_purpose::STANDARD.encode(&out),
@@ -1989,11 +2073,15 @@ fn dispatch(
                 #[cfg(not(feature = "gguf"))]
                 let provider: Option<&dyn harbor_inference::ModelProvider> = None;
                 #[cfg(feature = "gguf")]
-                let knowledge_ref: Option<&dyn harbor_core::tools::KnowledgeSearch> = knowledge
+                let knowledge_ref: Option<
+                    &dyn harbor_core::tools::KnowledgeSearch,
+                > = knowledge
                     .as_ref()
                     .map(|k| k.as_ref() as &dyn harbor_core::tools::KnowledgeSearch);
                 #[cfg(not(feature = "gguf"))]
-                let knowledge_ref: Option<&dyn harbor_core::tools::KnowledgeSearch> = None;
+                let knowledge_ref: Option<
+                    &dyn harbor_core::tools::KnowledgeSearch,
+                > = None;
                 // Each node the run reaches becomes the op's phase, so
                 // `op.status` (and the surface above it) names the step
                 // in flight rather than a flat "running".
@@ -2843,8 +2931,8 @@ fn dispatch(
                     "model features are not included in this build".into(),
                 ));
             }
-    #[cfg(feature = "gguf")]
-    {
+            #[cfg(feature = "gguf")]
+            {
                 let package_id = args
                     .get("package_id")
                     .and_then(|v| v.as_str())
@@ -2859,8 +2947,8 @@ fn dispatch(
                 let dimension = svc.embedding_dimension();
                 ws.knowledge = Some(Arc::new(svc));
                 Ok(serde_json::json!({ "identity": identity, "dimension": dimension }))
-        
-    }}
+            }
+        }
         "knowledge.ingest" => {
             // Lean builds (no gguf runtime): this arm needs the
             // model/inference stack and refuses with a typed error.
@@ -2870,8 +2958,8 @@ fn dispatch(
                     "model features are not included in this build".into(),
                 ));
             }
-    #[cfg(feature = "gguf")]
-    {
+            #[cfg(feature = "gguf")]
+            {
                 let sources = parse_sources(args)?;
                 let ks = ws
                     .knowledge
@@ -2879,8 +2967,8 @@ fn dispatch(
                     .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
                 ks.ingest(&sources)
                     .map_err(|e| HarborError::Other(e.to_string()))
-        
-    }}
+            }
+        }
         "knowledge.remove_source" => {
             // Lean builds (no gguf runtime): this arm needs the
             // model/inference stack and refuses with a typed error.
@@ -2890,8 +2978,8 @@ fn dispatch(
                     "model features are not included in this build".into(),
                 ));
             }
-    #[cfg(feature = "gguf")]
-    {
+            #[cfg(feature = "gguf")]
+            {
                 let source_id = args
                     .get("source_id")
                     .and_then(|v| v.as_str())
@@ -2902,8 +2990,8 @@ fn dispatch(
                     .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
                 ks.remove_source(source_id)
                     .map_err(|e| HarborError::Other(e.to_string()))
-        
-    }}
+            }
+        }
         "knowledge.sources" => {
             // Lean builds (no gguf runtime): this arm needs the
             // model/inference stack and refuses with a typed error.
@@ -2913,15 +3001,15 @@ fn dispatch(
                     "model features are not included in this build".into(),
                 ));
             }
-    #[cfg(feature = "gguf")]
-    {
+            #[cfg(feature = "gguf")]
+            {
                 let ks = ws
                     .knowledge
                     .as_ref()
                     .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
                 ks.sources().map_err(|e| HarborError::Other(e.to_string()))
-        
-    }}
+            }
+        }
         "knowledge.search" => {
             // Lean builds (no gguf runtime): this arm needs the
             // model/inference stack and refuses with a typed error.
@@ -2931,8 +3019,8 @@ fn dispatch(
                     "model features are not included in this build".into(),
                 ));
             }
-    #[cfg(feature = "gguf")]
-    {
+            #[cfg(feature = "gguf")]
+            {
                 let ks = ws
                     .knowledge
                     .as_ref()
@@ -2944,8 +3032,8 @@ fn dispatch(
                 let top_k = args.get("top_k").and_then(|v| v.as_u64()).unwrap_or(5) as usize;
                 ks.search(question, top_k)
                     .map_err(|e| HarborError::Other(e.to_string()))
-        
-    }}
+            }
+        }
         // --- ask: retrieve -> augment -> generate (synchronous form) -----
         "ask.generate" => {
             // Lean builds (no gguf runtime): this arm needs the
@@ -2956,8 +3044,8 @@ fn dispatch(
                     "model features are not included in this build".into(),
                 ));
             }
-    #[cfg(feature = "gguf")]
-    {
+            #[cfg(feature = "gguf")]
+            {
                 let question = args
                     .get("question")
                     .and_then(|v| v.as_str())
@@ -3007,8 +3095,8 @@ fn dispatch(
                         "completion_tokens": answer.completion_tokens,
                     },
                 }))
-        
-    }}
+            }
+        }
         // --- background ops ----------------------------------------------
         "op.start_acquire" => {
             let package_id = args
@@ -3064,8 +3152,8 @@ fn dispatch(
                     "model features are not included in this build".into(),
                 ));
             }
-    #[cfg(feature = "gguf")]
-    {
+            #[cfg(feature = "gguf")]
+            {
                 let question = args
                     .get("question")
                     .and_then(|v| v.as_str())
@@ -3182,7 +3270,8 @@ fn dispatch(
                             );
                         }
                         Err(e) => {
-                            let cancelled = e == "cancelled" || e.to_lowercase().contains("cancelled");
+                            let cancelled =
+                                e == "cancelled" || e.to_lowercase().contains("cancelled");
                             if cancelled {
                                 if let Some(run) = &run_id {
                                     // Durable trace of the user-driven stop.
@@ -3205,8 +3294,8 @@ fn dispatch(
                     }
                 });
                 Ok(serde_json::json!({ "op_id": op_id }))
-        
-    }}
+            }
+        }
         "op.start_ingest" => {
             // Lean builds (no gguf runtime): this arm needs the
             // model/inference stack and refuses with a typed error.
@@ -3216,8 +3305,8 @@ fn dispatch(
                     "model features are not included in this build".into(),
                 ));
             }
-    #[cfg(feature = "gguf")]
-    {
+            #[cfg(feature = "gguf")]
+            {
                 let sources = parse_sources(args)?;
                 let (op_id, entry) = register_op("ingest", "");
                 let knowledge = ws
@@ -3235,8 +3324,8 @@ fn dispatch(
                     complete_op(&entry_clone, result, cancelled);
                 });
                 Ok(serde_json::json!({ "op_id": op_id }))
-        
-    }}
+            }
+        }
         "op.status" => {
             let op_id = args
                 .get("op_id")

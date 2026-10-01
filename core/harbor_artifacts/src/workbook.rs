@@ -575,6 +575,46 @@ impl WorkbookDoc {
         Ok((bytes, report))
     }
 
+    /// Insert `count` rows before 1-based `row`. umya shifts cells,
+    /// styles and FORMULA REFERENCES (same- and cross-sheet) — the
+    /// pinned engine then recalculates against the shifted refs.
+    pub fn insert_rows(&mut self, sheet: &str, row: u32, count: u32) -> Result<(), WorkbookError> {
+        let ws = self.worksheet_mut(sheet)?;
+        ws.insert_new_row(row, count);
+        Ok(())
+    }
+
+    /// Delete `count` rows starting at 1-based `row` (references shift).
+    pub fn delete_rows(&mut self, sheet: &str, row: u32, count: u32) -> Result<(), WorkbookError> {
+        let ws = self.worksheet_mut(sheet)?;
+        ws.remove_row(row, count);
+        Ok(())
+    }
+
+    /// Insert `count` columns before 1-based `col` (references shift).
+    pub fn insert_columns(
+        &mut self,
+        sheet: &str,
+        col: u32,
+        count: u32,
+    ) -> Result<(), WorkbookError> {
+        let ws = self.worksheet_mut(sheet)?;
+        ws.insert_new_column_by_index(col, count);
+        Ok(())
+    }
+
+    /// Delete `count` columns starting at 1-based `col`.
+    pub fn delete_columns(
+        &mut self,
+        sheet: &str,
+        col: u32,
+        count: u32,
+    ) -> Result<(), WorkbookError> {
+        let ws = self.worksheet_mut(sheet)?;
+        ws.remove_column_by_index(col, count);
+        Ok(())
+    }
+
     /// Author a conditional highlight (cellIs comparison against one
     /// numeric operand with a solid fill). Harbor's serializer emits the
     /// cfRule + differential format at schema-valid positions; existing
@@ -1621,6 +1661,73 @@ mod tests {
             .first()
             .and_then(|v| v.pane())
             .is_some());
+    }
+
+    #[test]
+    fn row_insert_shifts_formulas_and_values() {
+        let mut wb = harbor_formula::engine::HarborWorkbook::new();
+        for i in 1..=3 {
+            wb.set_value(
+                "Sheet1",
+                i as u32 + 1,
+                2,
+                CellValue::Number(i as f64 * 10.0),
+            );
+        }
+        // B5 = SUM(B2:B4) → 60
+        wb.set_formula("Sheet1", 5, 1, "SUM(B2:B4)");
+        let bytes = wb.to_xlsx_bytes();
+        let mut doc = WorkbookDoc::load(&bytes).unwrap();
+
+        doc.insert_rows("Sheet1", 2, 1).unwrap();
+        let out = doc.to_bytes().unwrap();
+
+        // Formula now covers the SHIFTED range; the engine recomputes 60.
+        let re = WorkbookDoc::load(&out).unwrap();
+        let data = re.sheet("Sheet1").unwrap();
+        let formula_cell = data.cells.values().find(|c| c.formula.is_some()).unwrap();
+        assert!(
+            formula_cell.formula.as_deref().unwrap().contains("B3:B5"),
+            "formula refs must shift on insert, got {:?}",
+            formula_cell.formula
+        );
+        let mut re2 = WorkbookDoc::load(&out).unwrap();
+        let recalced = re2.recalculate_all().unwrap();
+
+        let total = recalced
+            .values()
+            .find(|v| matches!(v, CellValue::Number(n) if *n == 60.0));
+        assert!(
+            total.is_some(),
+            "shifted SUM must still compute 60, got {:?}",
+            recalced
+        );
+    }
+
+    #[test]
+    fn row_delete_and_column_ops_round_trip() {
+        let mut wb = harbor_formula::engine::HarborWorkbook::new();
+        wb.set_value("Sheet1", 1, 1, CellValue::Number(1.0));
+        wb.set_value("Sheet1", 2, 1, CellValue::Number(2.0));
+        let bytes = wb.to_xlsx_bytes();
+        let mut doc = WorkbookDoc::load(&bytes).unwrap();
+
+        doc.delete_rows("Sheet1", 1, 1).unwrap();
+        doc.insert_columns("Sheet1", 1, 1).unwrap();
+        let out = doc.to_bytes().unwrap();
+        let re = WorkbookDoc::load(&out).unwrap();
+        let data = re.sheet("Sheet1").unwrap();
+        // Row 1 deleted; the surviving value shifted right one column (B).
+        assert!(data.cells.contains_key(&(2, 1)), "survivor moved to B1");
+        assert!(!data.cells.contains_key(&(1, 1)), "A1 row was deleted");
+        doc.delete_columns("Sheet1", 1, 1).unwrap();
+        let out2 = doc.to_bytes().unwrap();
+        let re2 = WorkbookDoc::load(&out2).unwrap();
+        let data2 = re2.sheet("Sheet1").unwrap();
+        assert!(
+            data2.cells.contains_key(&(1, 1)),
+            "value back at A1 after col delete"
+        );
     }
 
     #[test]
