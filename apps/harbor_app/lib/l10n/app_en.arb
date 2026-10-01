@@ -880,5 +880,6 @@
   "storeSuiteSlides": "Presentations — preview",
   "storeSuitePdf": "PDF — preview and extraction",
   "suiteStatusLive": "Live",
-  "suiteStatusPreview": "Preview"
+  "suiteStatusPreview": "Preview",
+  "storeOfficeAlsoAvailable": "Also available as the standalone Harbor Office Suite app — same office engine, nothing else."
 }

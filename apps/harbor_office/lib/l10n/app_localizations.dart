@@ -2635,6 +2635,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not read {name} — the app that shared it did not grant access.'**
   String workOpenUnreadable(String name);
+
+  /// No description provided for @workUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get workUndo;
+
+  /// No description provided for @workRedo.
+  ///
+  /// In en, this message translates to:
+  /// **'Redo'**
+  String get workRedo;
+
+  /// No description provided for @workSaveCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Save a copy'**
+  String get workSaveCopy;
+
+  /// No description provided for @workDraftRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Restored your unsaved edits to {name}'**
+  String workDraftRestored(String name);
+
+  /// No description provided for @workSavedCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved {name}'**
+  String workSavedCopy(String name);
+
+  /// No description provided for @workClearRecents.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get workClearRecents;
 }
 
 class _AppLocalizationsDelegate

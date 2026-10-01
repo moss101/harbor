@@ -124,6 +124,10 @@ class _OfficeCardState extends State<_OfficeCard> {
                   ),
               ]),
             ),
+          const SizedBox(height: HarborSpace.s2),
+          Text(l10n.storeOfficeAlsoAvailable,
+              style: t.text.captionOf(t.colors.inkMuted)),
+          const SizedBox(height: HarborSpace.s3),
           OutlinedButton.icon(
             onPressed: widget.onOpenWork,
             icon: const Icon(Icons.work_outline),

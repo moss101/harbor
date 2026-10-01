@@ -1656,4 +1656,26 @@ class AppLocalizationsAr extends AppLocalizations {
   String workOpenUnreadable(String name) {
     return 'تعذّرت قراءة $name — لم يمنح التطبيق الذي شاركه حق الوصول.';
   }
+
+  @override
+  String get workUndo => 'تراجع';
+
+  @override
+  String get workRedo => 'إعادة';
+
+  @override
+  String get workSaveCopy => 'حفظ نسخة';
+
+  @override
+  String workDraftRestored(String name) {
+    return 'استُعيدت تعديلاتك غير المحفوظة على $name';
+  }
+
+  @override
+  String workSavedCopy(String name) {
+    return 'حُفظ $name';
+  }
+
+  @override
+  String get workClearRecents => 'مسح';
 }

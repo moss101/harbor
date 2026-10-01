@@ -1621,4 +1621,8 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get suiteStatusPreview => 'معاينة';
+
+  @override
+  String get storeOfficeAlsoAvailable =>
+      'متاح أيضاً كتطبيق «حزمة Harbor Office» المستقل — محرّك المكتب نفسه، ولا شيء آخر.';
 }

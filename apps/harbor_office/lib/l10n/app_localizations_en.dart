@@ -1601,4 +1601,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String workOpenUnreadable(String name) {
     return 'Could not read $name — the app that shared it did not grant access.';
   }
+
+  @override
+  String get workUndo => 'Undo';
+
+  @override
+  String get workRedo => 'Redo';
+
+  @override
+  String get workSaveCopy => 'Save a copy';
+
+  @override
+  String workDraftRestored(String name) {
+    return 'Restored your unsaved edits to $name';
+  }
+
+  @override
+  String workSavedCopy(String name) {
+    return 'Saved $name';
+  }
+
+  @override
+  String get workClearRecents => 'Clear';
 }

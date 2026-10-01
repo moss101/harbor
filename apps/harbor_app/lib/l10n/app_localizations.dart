@@ -2581,6 +2581,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Preview'**
   String get suiteStatusPreview;
+
+  /// No description provided for @storeOfficeAlsoAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Also available as the standalone Harbor Office Suite app — same office engine, nothing else.'**
+  String get storeOfficeAlsoAvailable;
 }
 
 class _AppLocalizationsDelegate

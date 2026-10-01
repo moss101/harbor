@@ -36,8 +36,12 @@ class GridCell {
 /// formula bar bound to the selected cell, sheet tabs and a cached-value
 /// disclaimer (values are never presented as verified by themselves).
 class WorkbookView extends StatefulWidget {
-  const WorkbookView({super.key, required this.preview});
+  const WorkbookView({super.key, required this.preview, this.onSheetSelected});
   final Map preview;
+
+  /// Requests focusing a different sheet (the service re-previews the
+  /// working copy for that sheet). Null leaves tabs display-only.
+  final ValueChanged<String>? onSheetSelected;
 
   @override
   State<WorkbookView> createState() => _WorkbookViewState();
@@ -376,6 +380,7 @@ class _WorkbookViewState extends State<WorkbookView> {
             onBoldRow: _boldRow,
             onAddChart: _addChart,
             onHighlight: _addHighlight,
+            onSheetSelected: widget.onSheetSelected,
           ),
         ],
       ),
@@ -680,6 +685,7 @@ class _SheetTabs extends StatelessWidget {
     this.onBoldRow,
     this.onAddChart,
     this.onHighlight,
+    this.onSheetSelected,
   });
   final List<String> sheets;
   final String active;
@@ -689,6 +695,7 @@ class _SheetTabs extends StatelessWidget {
   final VoidCallback? onBoldRow;
   final VoidCallback? onAddChart;
   final VoidCallback? onHighlight;
+  final ValueChanged<String>? onSheetSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -710,13 +717,15 @@ class _SheetTabs extends StatelessWidget {
                 Padding(
                   padding:
                       const EdgeInsetsDirectional.only(end: HarborSpace.s2),
-                  child: Tooltip(
-                    message: s == active ? '' : l10n.workSheetNotPreviewed,
-                    child: ChoiceChip(
-                      label: Text(s),
-                      selected: s == active,
-                      onSelected: s == active ? (_) {} : null,
-                    ),
+                  child: ChoiceChip(
+                    label: Text(s),
+                    selected: s == active,
+                    // Multi-sheet focus: selecting a tab re-previews the
+                    // working copy for that sheet; without a callback the
+                    // tabs stay display-only (single-sheet preview).
+                    onSelected: (v) {
+                      if (v && s != active) onSheetSelected?.call(s);
+                    },
                   ),
                 ),
             ]),

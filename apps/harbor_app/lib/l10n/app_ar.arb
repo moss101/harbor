@@ -738,5 +738,6 @@
   "storeSuiteSlides": "العروض التقديمية — معاينة",
   "storeSuitePdf": "PDF — معاينة واستخراج",
   "suiteStatusLive": "متاح",
-  "suiteStatusPreview": "معاينة"
+  "suiteStatusPreview": "معاينة",
+  "storeOfficeAlsoAvailable": "متاح أيضاً كتطبيق «حزمة Harbor Office» المستقل — محرّك المكتب نفسه، ولا شيء آخر."
 }

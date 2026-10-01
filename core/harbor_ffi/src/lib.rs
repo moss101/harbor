@@ -13,6 +13,7 @@
 //! The workspace event log and egress broker are shared across threads
 //! (`Arc`), so activity logged by a background op is durable and audited.
 
+#[cfg(feature = "gguf")]
 pub mod knowledge;
 
 use std::collections::BTreeMap;
@@ -35,8 +36,10 @@ pub struct WorkspaceHandle {
     /// Durable device/workspace identity (survives restarts).
     device_id: String,
     /// Created on demand when an embedding model is available.
+    #[cfg(feature = "gguf")]
     knowledge: Option<Arc<crate::knowledge::KnowledgeService>>,
     /// Chat provider over installed GGUF models (created on demand).
+    #[cfg(feature = "gguf")]
     chat: Option<Arc<crate::knowledge::ChatHandle>>,
     /// Shared HTTPS transport for brokered acquisition.
     transport: Arc<harbor_net::transport::UreqTransport>,
@@ -599,7 +602,9 @@ pub extern "C" fn harbor_core_open_ex(
             inner: ws,
             data_root,
             device_id: opts.device_id,
+            #[cfg(feature = "gguf")]
             knowledge: None,
+            #[cfg(feature = "gguf")]
             chat: None,
             transport: Arc::new(harbor_net::transport::UreqTransport::new()),
             keystore,
@@ -1838,7 +1843,11 @@ fn dispatch(
                     "compatibility": compatibility,
                 }))
             } else {
-                let p = harbor_render::WorkbookPreview::from_xlsx(&bytes)
+                // Optional sheet focus for multi-sheet workbooks; None
+                // (or absent) focuses the first sheet. Unknown names are
+                // a typed error, never a silent fallback.
+                let focus = args.get("sheet").and_then(|v| v.as_str());
+                let p = harbor_render::WorkbookPreview::from_xlsx_on_sheet(&bytes, focus)
                     .map_err(|e| HarborError::Other(e.to_string()))?;
                 Ok(serde_json::json!({
                     "kind": "workbook",
@@ -1945,7 +1954,9 @@ fn dispatch(
                 ));
             }
             let (op_id, entry) = register_op("skill_run", "");
+            #[cfg(feature = "gguf")]
             let knowledge = ws.knowledge.clone();
+            #[cfg(feature = "gguf")]
             let chat = if chat_package.is_some() {
                 Some(
                     ws.chat
@@ -1971,12 +1982,18 @@ fn dispatch(
                 let store =
                     harbor_core::executor::BlobStateStore::new(blobs, &workspace_id, &data_root);
                 let registry = harbor_core::tools::ToolRegistry::builtin();
+                #[cfg(feature = "gguf")]
                 let provider: Option<&dyn harbor_inference::ModelProvider> = chat
                     .as_ref()
                     .map(|c| c.provider() as &dyn harbor_inference::ModelProvider);
+                #[cfg(not(feature = "gguf"))]
+                let provider: Option<&dyn harbor_inference::ModelProvider> = None;
+                #[cfg(feature = "gguf")]
                 let knowledge_ref: Option<&dyn harbor_core::tools::KnowledgeSearch> = knowledge
                     .as_ref()
                     .map(|k| k.as_ref() as &dyn harbor_core::tools::KnowledgeSearch);
+                #[cfg(not(feature = "gguf"))]
+                let knowledge_ref: Option<&dyn harbor_core::tools::KnowledgeSearch> = None;
                 // Each node the run reaches becomes the op's phase, so
                 // `op.status` (and the surface above it) names the step
                 // in flight rather than a flat "running".
@@ -2039,10 +2056,14 @@ fn dispatch(
             let registry = harbor_core::tools::ToolRegistry::builtin();
             let artifacts = harbor_core::tools::MemoryArtifacts::new();
             let never = AtomicBool::new(false);
+            #[cfg(feature = "gguf")]
             let chat = ws.chat.clone();
+            #[cfg(feature = "gguf")]
             let provider: Option<&dyn harbor_inference::ModelProvider> = chat
                 .as_ref()
                 .map(|c| c.provider() as &dyn harbor_inference::ModelProvider);
+            #[cfg(not(feature = "gguf"))]
+            let provider: Option<&dyn harbor_inference::ModelProvider> = None;
             let exec = harbor_core::executor::Executor::new(harbor_core::executor::Host {
                 log: ws.inner.agent_log.clone(),
                 lease_db: harbor_core::executor::lease_db_path(&ws.data_root),
@@ -2098,14 +2119,22 @@ fn dispatch(
             );
             let registry = harbor_core::tools::ToolRegistry::builtin();
             let never = AtomicBool::new(false);
+            #[cfg(feature = "gguf")]
             let chat = ws.chat.clone();
+            #[cfg(feature = "gguf")]
             let provider: Option<&dyn harbor_inference::ModelProvider> = chat
                 .as_ref()
                 .map(|c| c.provider() as &dyn harbor_inference::ModelProvider);
+            #[cfg(not(feature = "gguf"))]
+            let provider: Option<&dyn harbor_inference::ModelProvider> = None;
+            #[cfg(feature = "gguf")]
             let knowledge = ws.knowledge.clone();
+            #[cfg(feature = "gguf")]
             let knowledge_ref: Option<&dyn harbor_core::tools::KnowledgeSearch> = knowledge
                 .as_ref()
                 .map(|k| k.as_ref() as &dyn harbor_core::tools::KnowledgeSearch);
+            #[cfg(not(feature = "gguf"))]
+            let knowledge_ref: Option<&dyn harbor_core::tools::KnowledgeSearch> = None;
             let exec = harbor_core::executor::Executor::new(harbor_core::executor::Host {
                 log: ws.inner.agent_log.clone(),
                 lease_db: harbor_core::executor::lease_db_path(&ws.data_root),
@@ -2719,6 +2748,7 @@ fn dispatch(
             let preview = installer
                 .deletion_preview(package_id)
                 .map_err(|e| HarborError::Other(e.to_string()))?;
+            #[cfg(feature = "gguf")]
             let blockers = uninstall_blockers(
                 &running_acquire_subjects(),
                 &ws.chat
@@ -2728,6 +2758,8 @@ fn dispatch(
                 ws.knowledge.as_ref().map(|k| k.embedding_package()),
                 package_id,
             );
+            #[cfg(not(feature = "gguf"))]
+            let blockers = uninstall_blockers(&running_acquire_subjects(), &[], None, package_id);
             Ok(serde_json::json!({
                 "package_id": preview.package_id,
                 "scope_digest": preview.scope_digest,
@@ -2756,6 +2788,7 @@ fn dispatch(
             // The in-use guard is re-checked at commit time: a preview
             // taken before the model was loaded must not authorize a
             // deletion under it.
+            #[cfg(feature = "gguf")]
             let blockers = uninstall_blockers(
                 &running_acquire_subjects(),
                 &ws.chat
@@ -2765,6 +2798,8 @@ fn dispatch(
                 ws.knowledge.as_ref().map(|k| k.embedding_package()),
                 package_id,
             );
+            #[cfg(not(feature = "gguf"))]
+            let blockers = uninstall_blockers(&running_acquire_subjects(), &[], None, package_id);
             if !blockers.is_empty() {
                 return Err(HarborError::Other(format!(
                     "package {package_id} is in use: {}",
@@ -2800,114 +2835,180 @@ fn dispatch(
         }
         // --- knowledge ---------------------------------------------------
         "knowledge.open" => {
-            let package_id = args
-                .get("package_id")
-                .and_then(|v| v.as_str())
-                .unwrap_or("bge-small-en-v1.5");
-            // Chunks are private workspace content: seal them under the
-            // workspace-derived knowledge key.
-            let chunk_key = ws.inner.knowledge_chunk_key()?;
-            let svc =
-                crate::knowledge::KnowledgeService::open(&ws.data_root, package_id, chunk_key)
-                    .map_err(|e| HarborError::Other(e.to_string()))?;
-            let identity = svc.identity_hash();
-            let dimension = svc.embedding_dimension();
-            ws.knowledge = Some(Arc::new(svc));
-            Ok(serde_json::json!({ "identity": identity, "dimension": dimension }))
-        }
+            // Lean builds (no gguf runtime): this arm needs the
+            // model/inference stack and refuses with a typed error.
+            #[cfg(not(feature = "gguf"))]
+            {
+                return Err(HarborError::Other(
+                    "model features are not included in this build".into(),
+                ));
+            }
+    #[cfg(feature = "gguf")]
+    {
+                let package_id = args
+                    .get("package_id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("bge-small-en-v1.5");
+                // Chunks are private workspace content: seal them under the
+                // workspace-derived knowledge key.
+                let chunk_key = ws.inner.knowledge_chunk_key()?;
+                let svc =
+                    crate::knowledge::KnowledgeService::open(&ws.data_root, package_id, chunk_key)
+                        .map_err(|e| HarborError::Other(e.to_string()))?;
+                let identity = svc.identity_hash();
+                let dimension = svc.embedding_dimension();
+                ws.knowledge = Some(Arc::new(svc));
+                Ok(serde_json::json!({ "identity": identity, "dimension": dimension }))
+        
+    }}
         "knowledge.ingest" => {
-            let sources = parse_sources(args)?;
-            let ks = ws
-                .knowledge
-                .as_ref()
-                .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
-            ks.ingest(&sources)
-                .map_err(|e| HarborError::Other(e.to_string()))
-        }
+            // Lean builds (no gguf runtime): this arm needs the
+            // model/inference stack and refuses with a typed error.
+            #[cfg(not(feature = "gguf"))]
+            {
+                return Err(HarborError::Other(
+                    "model features are not included in this build".into(),
+                ));
+            }
+    #[cfg(feature = "gguf")]
+    {
+                let sources = parse_sources(args)?;
+                let ks = ws
+                    .knowledge
+                    .as_ref()
+                    .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
+                ks.ingest(&sources)
+                    .map_err(|e| HarborError::Other(e.to_string()))
+        
+    }}
         "knowledge.remove_source" => {
-            let source_id = args
-                .get("source_id")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| HarborError::Other("missing source_id".into()))?;
-            let ks = ws
-                .knowledge
-                .as_ref()
-                .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
-            ks.remove_source(source_id)
-                .map_err(|e| HarborError::Other(e.to_string()))
-        }
+            // Lean builds (no gguf runtime): this arm needs the
+            // model/inference stack and refuses with a typed error.
+            #[cfg(not(feature = "gguf"))]
+            {
+                return Err(HarborError::Other(
+                    "model features are not included in this build".into(),
+                ));
+            }
+    #[cfg(feature = "gguf")]
+    {
+                let source_id = args
+                    .get("source_id")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| HarborError::Other("missing source_id".into()))?;
+                let ks = ws
+                    .knowledge
+                    .as_ref()
+                    .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
+                ks.remove_source(source_id)
+                    .map_err(|e| HarborError::Other(e.to_string()))
+        
+    }}
         "knowledge.sources" => {
-            let ks = ws
-                .knowledge
-                .as_ref()
-                .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
-            ks.sources().map_err(|e| HarborError::Other(e.to_string()))
-        }
+            // Lean builds (no gguf runtime): this arm needs the
+            // model/inference stack and refuses with a typed error.
+            #[cfg(not(feature = "gguf"))]
+            {
+                return Err(HarborError::Other(
+                    "model features are not included in this build".into(),
+                ));
+            }
+    #[cfg(feature = "gguf")]
+    {
+                let ks = ws
+                    .knowledge
+                    .as_ref()
+                    .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
+                ks.sources().map_err(|e| HarborError::Other(e.to_string()))
+        
+    }}
         "knowledge.search" => {
-            let ks = ws
-                .knowledge
-                .as_ref()
-                .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
-            let question = args
-                .get("question")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| HarborError::Other("missing question".into()))?;
-            let top_k = args.get("top_k").and_then(|v| v.as_u64()).unwrap_or(5) as usize;
-            ks.search(question, top_k)
-                .map_err(|e| HarborError::Other(e.to_string()))
-        }
+            // Lean builds (no gguf runtime): this arm needs the
+            // model/inference stack and refuses with a typed error.
+            #[cfg(not(feature = "gguf"))]
+            {
+                return Err(HarborError::Other(
+                    "model features are not included in this build".into(),
+                ));
+            }
+    #[cfg(feature = "gguf")]
+    {
+                let ks = ws
+                    .knowledge
+                    .as_ref()
+                    .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
+                let question = args
+                    .get("question")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| HarborError::Other("missing question".into()))?;
+                let top_k = args.get("top_k").and_then(|v| v.as_u64()).unwrap_or(5) as usize;
+                ks.search(question, top_k)
+                    .map_err(|e| HarborError::Other(e.to_string()))
+        
+    }}
         // --- ask: retrieve -> augment -> generate (synchronous form) -----
         "ask.generate" => {
-            let question = args
-                .get("question")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| HarborError::Other("missing question".into()))?;
-            let chat_package = args
-                .get("chat_package")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| HarborError::Other("missing chat_package".into()))?
-                .to_string();
-            let max_tokens = args
-                .get("max_tokens")
-                .and_then(|v| v.as_u64())
-                .unwrap_or(64) as u32;
-            // 1. Retrieve grounding (may be absent: generation still runs
-            //    but the answer carries no citations, so the UI cannot pass
-            //    generated text off as evidence-backed).
-            let citations = ws
-                .knowledge
-                .as_ref()
-                .and_then(|ks| ks.search(question, 3).ok())
-                .map(|v| v.get("citations").cloned().unwrap_or(serde_json::json!([])))
-                .unwrap_or_else(|| serde_json::json!([]));
-            // 2. Generate on-device with the model-native template.
-            let chat = ws.chat.get_or_insert_with(|| {
-                Arc::new(crate::knowledge::ChatHandle::new(
-                    &ws.data_root.join("models"),
-                ))
-            });
-            let never = AtomicBool::new(false);
-            let answer = chat
-                .generate_rag_cancellable(
-                    &chat_package,
-                    question,
-                    citations.as_array().cloned().unwrap_or_default(),
-                    max_tokens,
-                    &never,
-                    None,
-                )
-                .map_err(|e| HarborError::Other(e.to_string()))?;
-            Ok(serde_json::json!({
-                "answer": answer.answer,
-                "used_citations": answer.used_citations,
-                "executed_on": answer.executed_on,
-                "execution": "ON_DEVICE",
-                "usage": {
-                    "prompt_tokens": answer.prompt_tokens,
-                    "completion_tokens": answer.completion_tokens,
-                },
-            }))
-        }
+            // Lean builds (no gguf runtime): this arm needs the
+            // model/inference stack and refuses with a typed error.
+            #[cfg(not(feature = "gguf"))]
+            {
+                return Err(HarborError::Other(
+                    "model features are not included in this build".into(),
+                ));
+            }
+    #[cfg(feature = "gguf")]
+    {
+                let question = args
+                    .get("question")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| HarborError::Other("missing question".into()))?;
+                let chat_package = args
+                    .get("chat_package")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| HarborError::Other("missing chat_package".into()))?
+                    .to_string();
+                let max_tokens = args
+                    .get("max_tokens")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(64) as u32;
+                // 1. Retrieve grounding (may be absent: generation still runs
+                //    but the answer carries no citations, so the UI cannot pass
+                //    generated text off as evidence-backed).
+                let citations = ws
+                    .knowledge
+                    .as_ref()
+                    .and_then(|ks| ks.search(question, 3).ok())
+                    .map(|v| v.get("citations").cloned().unwrap_or(serde_json::json!([])))
+                    .unwrap_or_else(|| serde_json::json!([]));
+                // 2. Generate on-device with the model-native template.
+                let chat = ws.chat.get_or_insert_with(|| {
+                    Arc::new(crate::knowledge::ChatHandle::new(
+                        &ws.data_root.join("models"),
+                    ))
+                });
+                let never = AtomicBool::new(false);
+                let answer = chat
+                    .generate_rag_cancellable(
+                        &chat_package,
+                        question,
+                        citations.as_array().cloned().unwrap_or_default(),
+                        max_tokens,
+                        &never,
+                        None,
+                    )
+                    .map_err(|e| HarborError::Other(e.to_string()))?;
+                Ok(serde_json::json!({
+                    "answer": answer.answer,
+                    "used_citations": answer.used_citations,
+                    "executed_on": answer.executed_on,
+                    "execution": "ON_DEVICE",
+                    "usage": {
+                        "prompt_tokens": answer.prompt_tokens,
+                        "completion_tokens": answer.completion_tokens,
+                    },
+                }))
+        
+    }}
         // --- background ops ----------------------------------------------
         "op.start_acquire" => {
             let package_id = args
@@ -2955,165 +3056,187 @@ fn dispatch(
             Ok(serde_json::json!({ "op_id": op_id }))
         }
         "op.start_generate" => {
-            let question = args
-                .get("question")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| HarborError::Other("missing question".into()))?
-                .to_string();
-            let chat_package = args
-                .get("chat_package")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| HarborError::Other("missing chat_package".into()))?
-                .to_string();
-            let max_tokens = args
-                .get("max_tokens")
-                .and_then(|v| v.as_u64())
-                .unwrap_or(256) as u32;
-            let run_id = args
-                .get("run_id")
-                .and_then(|v| v.as_str())
-                .map(str::to_string);
-            let (op_id, entry) = register_op("generate", &chat_package);
-            let knowledge = ws.knowledge.clone();
-            let chat = ws
-                .chat
-                .get_or_insert_with(|| {
-                    Arc::new(crate::knowledge::ChatHandle::new(
-                        &ws.data_root.join("models"),
-                    ))
-                })
-                .clone();
-            let agent_log = ws.inner.agent_log.clone();
-            let data_root = ws.data_root.clone();
-            let progress = entry.progress.clone();
-            let entry_clone = entry.clone();
-            spawn_op(entry.clone(), ws.diagnostics.clone(), move || {
-                // 1. Retrieve grounding (may be absent).
-                let citations = knowledge
-                    .as_ref()
-                    .and_then(|ks| ks.search(&question, 3).ok())
-                    .and_then(|v| v.get("citations").cloned())
-                    .unwrap_or_else(|| serde_json::json!([]));
-                // 2. Durable activity: the question is the run's step.
-                if let Some(run) = &run_id {
-                    let step_seq = agent_log
-                        .load_stream(run)
-                        .ok()
-                        .and_then(|s| s.last().map(|h| h.counters.step_count_total))
-                        .unwrap_or(0);
-                    let _ = append_run_event(
-                        &agent_log,
-                        &data_root,
-                        run,
-                        EventType::RunStepStarted,
-                        EventPayload::StepStarted {
-                            step_id: format!("step-{}", step_seq + 1),
-                            description: question.clone(),
-                            node_id: None,
-                            input_hash: None,
-                        },
-                        true,
-                    );
-                }
-                // 3. Generate on-device (cooperatively cancellable).
-                let never = AtomicBool::new(false);
-                let result = chat.generate_rag_cancellable(
-                    &chat_package,
-                    &question,
-                    citations.as_array().cloned().unwrap_or_default(),
-                    max_tokens,
-                    &never,
-                    Some(&progress),
-                );
-                match result {
-                    Ok(answer) => {
-                        if let Some(run) = &run_id {
-                            let step_seq = agent_log
-                                .load_stream(run)
-                                .ok()
-                                .and_then(|s| s.last().map(|h| h.counters.step_count_total))
-                                .unwrap_or(1);
-                            let summary = format!(
-                                "{} ({} tokens, citations: {})",
-                                truncate_for_trail(&answer.answer, 200),
-                                answer.completion_tokens,
-                                answer.used_citations,
-                            );
-                            let _ = append_run_event(
-                                &agent_log,
-                                &data_root,
-                                run,
-                                EventType::RunStepCompleted,
-                                EventPayload::StepCompleted {
-                                    step_id: format!("step-{step_seq}"),
-                                    summary,
-                                    node_id: None,
-                                    output_hash: None,
-                                    tool: None,
-                                },
-                                false,
-                            );
-                        }
-                        complete_op(
-                            &entry_clone,
-                            Ok(serde_json::json!({
-                                "answer": answer.answer,
-                                "used_citations": answer.used_citations,
-                                "executed_on": answer.executed_on,
-                                "execution": "ON_DEVICE",
-                                "citations": citations,
-                                "usage": {
-                                    "prompt_tokens": answer.prompt_tokens,
-                                    "completion_tokens": answer.completion_tokens,
-                                },
-                            })),
-                            false,
+            // Lean builds (no gguf runtime): this arm needs the
+            // model/inference stack and refuses with a typed error.
+            #[cfg(not(feature = "gguf"))]
+            {
+                return Err(HarborError::Other(
+                    "model features are not included in this build".into(),
+                ));
+            }
+    #[cfg(feature = "gguf")]
+    {
+                let question = args
+                    .get("question")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| HarborError::Other("missing question".into()))?
+                    .to_string();
+                let chat_package = args
+                    .get("chat_package")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| HarborError::Other("missing chat_package".into()))?
+                    .to_string();
+                let max_tokens = args
+                    .get("max_tokens")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(256) as u32;
+                let run_id = args
+                    .get("run_id")
+                    .and_then(|v| v.as_str())
+                    .map(str::to_string);
+                let (op_id, entry) = register_op("generate", &chat_package);
+                let knowledge = ws.knowledge.clone();
+                let chat = ws
+                    .chat
+                    .get_or_insert_with(|| {
+                        Arc::new(crate::knowledge::ChatHandle::new(
+                            &ws.data_root.join("models"),
+                        ))
+                    })
+                    .clone();
+                let agent_log = ws.inner.agent_log.clone();
+                let data_root = ws.data_root.clone();
+                let progress = entry.progress.clone();
+                let entry_clone = entry.clone();
+                spawn_op(entry.clone(), ws.diagnostics.clone(), move || {
+                    // 1. Retrieve grounding (may be absent).
+                    let citations = knowledge
+                        .as_ref()
+                        .and_then(|ks| ks.search(&question, 3).ok())
+                        .and_then(|v| v.get("citations").cloned())
+                        .unwrap_or_else(|| serde_json::json!([]));
+                    // 2. Durable activity: the question is the run's step.
+                    if let Some(run) = &run_id {
+                        let step_seq = agent_log
+                            .load_stream(run)
+                            .ok()
+                            .and_then(|s| s.last().map(|h| h.counters.step_count_total))
+                            .unwrap_or(0);
+                        let _ = append_run_event(
+                            &agent_log,
+                            &data_root,
+                            run,
+                            EventType::RunStepStarted,
+                            EventPayload::StepStarted {
+                                step_id: format!("step-{}", step_seq + 1),
+                                description: question.clone(),
+                                node_id: None,
+                                input_hash: None,
+                            },
+                            true,
                         );
                     }
-                    Err(e) => {
-                        let cancelled = e == "cancelled" || e.to_lowercase().contains("cancelled");
-                        if cancelled {
+                    // 3. Generate on-device (cooperatively cancellable).
+                    let never = AtomicBool::new(false);
+                    let result = chat.generate_rag_cancellable(
+                        &chat_package,
+                        &question,
+                        citations.as_array().cloned().unwrap_or_default(),
+                        max_tokens,
+                        &never,
+                        Some(&progress),
+                    );
+                    match result {
+                        Ok(answer) => {
                             if let Some(run) = &run_id {
-                                // Durable trace of the user-driven stop.
+                                let step_seq = agent_log
+                                    .load_stream(run)
+                                    .ok()
+                                    .and_then(|s| s.last().map(|h| h.counters.step_count_total))
+                                    .unwrap_or(1);
+                                let summary = format!(
+                                    "{} ({} tokens, citations: {})",
+                                    truncate_for_trail(&answer.answer, 200),
+                                    answer.completion_tokens,
+                                    answer.used_citations,
+                                );
                                 let _ = append_run_event(
                                     &agent_log,
                                     &data_root,
                                     run,
-                                    EventType::RunTransition,
-                                    EventPayload::Transition {
-                                        from_state: RunState::Running,
-                                        to_state: RunState::Paused,
-                                        reason: Some(PauseReason::parse("user").unwrap()),
+                                    EventType::RunStepCompleted,
+                                    EventPayload::StepCompleted {
+                                        step_id: format!("step-{step_seq}"),
+                                        summary,
+                                        node_id: None,
+                                        output_hash: None,
+                                        tool: None,
                                     },
                                     false,
                                 );
                             }
+                            complete_op(
+                                &entry_clone,
+                                Ok(serde_json::json!({
+                                    "answer": answer.answer,
+                                    "used_citations": answer.used_citations,
+                                    "executed_on": answer.executed_on,
+                                    "execution": "ON_DEVICE",
+                                    "citations": citations,
+                                    "usage": {
+                                        "prompt_tokens": answer.prompt_tokens,
+                                        "completion_tokens": answer.completion_tokens,
+                                    },
+                                })),
+                                false,
+                            );
                         }
-                        complete_op(&entry_clone, Err(e), cancelled);
+                        Err(e) => {
+                            let cancelled = e == "cancelled" || e.to_lowercase().contains("cancelled");
+                            if cancelled {
+                                if let Some(run) = &run_id {
+                                    // Durable trace of the user-driven stop.
+                                    let _ = append_run_event(
+                                        &agent_log,
+                                        &data_root,
+                                        run,
+                                        EventType::RunTransition,
+                                        EventPayload::Transition {
+                                            from_state: RunState::Running,
+                                            to_state: RunState::Paused,
+                                            reason: Some(PauseReason::parse("user").unwrap()),
+                                        },
+                                        false,
+                                    );
+                                }
+                            }
+                            complete_op(&entry_clone, Err(e), cancelled);
+                        }
                     }
-                }
-            });
-            Ok(serde_json::json!({ "op_id": op_id }))
-        }
+                });
+                Ok(serde_json::json!({ "op_id": op_id }))
+        
+    }}
         "op.start_ingest" => {
-            let sources = parse_sources(args)?;
-            let (op_id, entry) = register_op("ingest", "");
-            let knowledge = ws
-                .knowledge
-                .clone()
-                .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
-            let progress = entry.progress.clone();
-            let entry_clone = entry.clone();
-            spawn_op(entry.clone(), ws.diagnostics.clone(), move || {
-                let never = AtomicBool::new(false);
-                let result = knowledge
-                    .ingest_with_progress(&sources, &never, Some(&progress))
-                    .map_err(|e| e.to_string());
-                let cancelled = matches!(&result, Err(e) if e.contains("cancelled"));
-                complete_op(&entry_clone, result, cancelled);
-            });
-            Ok(serde_json::json!({ "op_id": op_id }))
-        }
+            // Lean builds (no gguf runtime): this arm needs the
+            // model/inference stack and refuses with a typed error.
+            #[cfg(not(feature = "gguf"))]
+            {
+                return Err(HarborError::Other(
+                    "model features are not included in this build".into(),
+                ));
+            }
+    #[cfg(feature = "gguf")]
+    {
+                let sources = parse_sources(args)?;
+                let (op_id, entry) = register_op("ingest", "");
+                let knowledge = ws
+                    .knowledge
+                    .clone()
+                    .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
+                let progress = entry.progress.clone();
+                let entry_clone = entry.clone();
+                spawn_op(entry.clone(), ws.diagnostics.clone(), move || {
+                    let never = AtomicBool::new(false);
+                    let result = knowledge
+                        .ingest_with_progress(&sources, &never, Some(&progress))
+                        .map_err(|e| e.to_string());
+                    let cancelled = matches!(&result, Err(e) if e.contains("cancelled"));
+                    complete_op(&entry_clone, result, cancelled);
+                });
+                Ok(serde_json::json!({ "op_id": op_id }))
+        
+    }}
         "op.status" => {
             let op_id = args
                 .get("op_id")
@@ -3219,6 +3342,7 @@ fn truncate_for_trail(s: &str, max: usize) -> String {
     }
 }
 
+#[cfg(feature = "gguf")]
 fn parse_sources(
     args: &serde_json::Value,
 ) -> Result<Vec<crate::knowledge::SourceInput>, HarborError> {

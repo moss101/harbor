@@ -763,13 +763,37 @@
   "workOpenUnsupported": "تعذّر فتح {name} — تفتح الحزمة ملفات Word وExcel وPowerPoint وPDF.",
   "@workOpenUnsupported": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "workOpenUnreadable": "تعذّرت قراءة {name} — لم يمنح التطبيق الذي شاركه حق الوصول.",
   "@workOpenUnreadable": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "workUndo": "تراجع",
+  "workRedo": "إعادة",
+  "workSaveCopy": "حفظ نسخة",
+  "workDraftRestored": "استُعيدت تعديلاتك غير المحفوظة على {name}",
+  "workSavedCopy": "حُفظ {name}",
+  "workClearRecents": "مسح",
+  "@workDraftRestored": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@workSavedCopy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
     }
   }
 }

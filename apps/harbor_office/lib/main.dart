@@ -82,6 +82,9 @@ class AppState extends ChangeNotifier {
 
   void addRecentFile(RecentFile f) => _update(_prefs.withRecentFile(f));
 
+  void clearRecentFiles() =>
+      _update(_prefs.copyWith(recentFiles: const []));
+
   void selectSurface(int i) {
     if (i == surfaceIndex) return;
     surfaceIndex = i;
@@ -273,6 +276,13 @@ class _HarborOfficeAppState extends State<HarborOfficeApp>
         deviceRootHex: deviceRootHex,
       );
       await opened.refresh();
+      // Crash-recovery: restore unsaved edits from the autosave draft
+      // BEFORE any handed document (an explicit hand-off wins).
+      await opened.attachDraftStore(
+          '${support.path}${Platform.pathSeparator}autosave');
+      if (opened.draftRestored) {
+        _state.selectSurface(OfficeSurface.work.index);
+      }
       await _openHandedDocument(opened);
     } catch (e, stack) {
       DiagnosticsSink.instance.record(

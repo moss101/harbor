@@ -1566,4 +1566,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get suiteStatusPreview => 'Preview';
+
+  @override
+  String get storeOfficeAlsoAvailable =>
+      'Also available as the standalone Harbor Office Suite app — same office engine, nothing else.';
 }

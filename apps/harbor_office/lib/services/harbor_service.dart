@@ -1,5 +1,5 @@
 import 'dart:convert' show base64Decode, base64Encode;
-import 'dart:io' show Platform;
+import 'dart:io' show File, Directory, Platform;
 import 'dart:math';
 
 import 'package:flutter/widgets.dart';
@@ -54,6 +54,17 @@ class HarborService extends ChangeNotifier {
   List<SkillSummary> _skills = [];
   Map<String, dynamic>? _preview;
   List<int>? _sourceBytes;
+
+  // ---- edit history (undo/redo) + autosave draft ----
+  /// Working-copy snapshots BEFORE each applied edit (bounded).
+  final List<List<int>> _undoStack = [];
+  final List<List<int>> _redoStack = [];
+  static const int _maxHistory = 25;
+  /// Where the current working copy auto-saves after every edit so a
+  /// crash or restart never loses work-in-progress.
+  String? _draftPath;
+  String? _draftName;
+  bool _draftRestored = false;
   String? _previewName;
   String? _previewError;
   bool _previewLoading = false;
@@ -643,6 +654,9 @@ class HarborService extends ChangeNotifier {
           await _call('artifact.preview', {'data_b64': base64Encode(bytes)});
       _previewName = name;
       _sourceBytes = bytes;
+      _undoStack.clear();
+      _redoStack.clear();
+      _draftRestored = false;
     } on ffi.HarborCoreException catch (e) {
       _preview = null;
       _previewName = name;
@@ -683,9 +697,16 @@ class HarborService extends ChangeNotifier {
     });
     final newBytes =
         base64Decode(result['data_b64'] as String).toList(growable: false);
+    _pushHistory();
     _sourceBytes = newBytes;
-    _preview = await _call('artifact.preview',
-        {'data_b64': base64Encode(newBytes)});
+    // Keep the focused sheet across edits: the active sheet name lives
+    // inside the preview payload (preview.preview.sheet).
+    final focusedSheet = (current['preview'] as Map?)?['sheet'];
+    _preview = await _call('artifact.preview', {
+      'data_b64': base64Encode(newBytes),
+      if (focusedSheet is String) 'sheet': focusedSheet,
+    });
+    await _autosave();
     notifyListeners();
     return result;
   }
@@ -696,6 +717,16 @@ class HarborService extends ChangeNotifier {
     _previewName = null;
     _previewError = null;
     _sourceBytes = null;
+    _undoStack.clear();
+    _redoStack.clear();
+    _draftRestored = false;
+    notifyListeners();
+  }
+
+  /// The user saved their work: the draft no longer needs restoring.
+  Future<void> markSaved() async {
+    _draftRestored = false;
+    await _discardDraft();
     notifyListeners();
   }
 
@@ -740,9 +771,11 @@ class HarborService extends ChangeNotifier {
     });
     final newBytes =
         base64Decode(result['data_b64'] as String).toList(growable: false);
+    _pushHistory();
     _sourceBytes = newBytes;
     _preview =
         await _call('artifact.preview', {'data_b64': base64Encode(newBytes)});
+    await _autosave();
     notifyListeners();
     return result;
   }
@@ -758,6 +791,123 @@ class HarborService extends ChangeNotifier {
   Future<List<int>> createDocument({required String title}) async {
     final result = await _call('docx.create', {'title': title});
     return base64Decode(result['data_b64'] as String);
+  }
+
+  /// The current working copy (edits included), for Save-a-copy.
+  List<int>? currentWorkingBytes() => _sourceBytes;
+
+  bool get canUndo => _undoStack.isNotEmpty;
+  bool get canRedo => _redoStack.isNotEmpty;
+  bool get draftRestored => _draftRestored;
+  String? get draftName => _draftName;
+
+  /// Point the autosave draft at a slot (called by the shell with the
+  /// app-support directory) and restore any unsaved work found there.
+  Future<void> attachDraftStore(String directory) async {
+    try {
+      final dir = Directory(directory);
+      await dir.create(recursive: true);
+      _draftPath = '$directory${Platform.pathSeparator}current-edit.draft';
+      final nameFile = File('$directory${Platform.pathSeparator}current-edit.name');
+      if (await File(_draftPath!).exists()) {
+        final bytes = await File(_draftPath!).readAsBytes();
+        if (bytes.isNotEmpty) {
+          _draftName = await nameFile.exists()
+              ? (await nameFile.readAsString()).trim()
+              : null;
+          _draftName = (_draftName == null || _draftName!.isEmpty)
+              ? 'recovered document'
+              : _draftName;
+          try {
+            _preview = await _call('artifact.preview',
+                {'data_b64': base64Encode(bytes)});
+            _sourceBytes = bytes;
+            _draftRestored = true;
+            notifyListeners();
+          } on ffi.HarborCoreException {
+            // An unloadable draft is discarded, never fatal.
+            await _discardDraft();
+          }
+        }
+      }
+    } catch (_) {
+      // Best-effort recovery; the normal empty state stands.
+    }
+  }
+
+  Future<void> _discardDraft() async {
+    _draftRestored = false;
+    if (_draftPath == null) return;
+    final f = File(_draftPath!);
+    if (await f.exists()) await f.delete();
+    final nameFile = File(
+        '${_draftPath!.substring(0, _draftPath!.lastIndexOf('.'))}.name');
+    if (await nameFile.exists()) await nameFile.delete();
+  }
+
+  Future<void> _autosave() async {
+    if (_draftPath == null || _sourceBytes == null) return;
+    try {
+      await File(_draftPath!).writeAsBytes(_sourceBytes!, flush: true);
+      if (_previewName != null) {
+        await File(
+            '${_draftPath!.substring(0, _draftPath!.lastIndexOf('.'))}.name')
+            .writeAsString(_previewName ?? '', flush: true);
+      }
+    } catch (_) {
+      // Autosave is best-effort; editing continues.
+    }
+  }
+
+  void _pushHistory() {
+    final source = _sourceBytes;
+    if (source == null) return;
+    _undoStack.add(source);
+    if (_undoStack.length > _maxHistory) _undoStack.removeAt(0);
+    _redoStack.clear();
+  }
+
+  /// Undo the last edit: restore the previous working copy and preview.
+  /// Returns false when there is nothing to undo.
+  Future<bool> undo() async {
+    if (!canUndo) return false;
+    final current = _sourceBytes;
+    final previous = _undoStack.removeLast();
+    if (current != null) _redoStack.add(current);
+    _sourceBytes = previous;
+    await _repreview();
+    await _autosave();
+    return true;
+  }
+
+  /// Redo the last undone edit.
+  Future<bool> redo() async {
+    if (!canRedo) return false;
+    final current = _sourceBytes;
+    final next = _redoStack.removeLast();
+    if (current != null) _undoStack.add(current);
+    _sourceBytes = next;
+    await _repreview();
+    await _autosave();
+    return true;
+  }
+
+  Future<void> _repreview({String? sheet}) async {
+    final source = _sourceBytes;
+    if (source == null) return;
+    _preview = await _call('artifact.preview', {
+      'data_b64': base64Encode(source),
+      if (sheet != null) 'sheet': sheet,
+    });
+    notifyListeners();
+  }
+
+  /// Focus a different sheet of the open workbook (typed error when the
+  /// name is unknown; edits keep applying to the file, not the view).
+  Future<void> switchSheet(String sheet) async {
+    final current = _preview;
+    if (current == null || current['kind'] != 'workbook') return;
+    await _repreview(sheet: sheet);
   }
 
   /// Convert Markdown text to a real .docx package through the core's

@@ -20,7 +20,7 @@ harbor_formula = { workspace = true }
 harbor_modelhub = { workspace = true }
 harbor_render = { workspace = true }
 harbor_knowledge = { workspace = true }
-harbor_inference = { workspace = true, features = ["gguf-backend"] }
+harbor_inference = { workspace = true }
 harbor_net = { workspace = true }
 harbor_security = { workspace = true }
 harbor_store = { workspace = true }
@@ -36,3 +36,11 @@ encoding_rs = "0.8"
 [dev-dependencies]
 tempfile = "3"
 serde_json = { workspace = true }
+
+# The GGUF runtime (llama.cpp) is the heavy dependency: office-only
+# builds of this library (the Harbor Office Suite) compile WITHOUT it —
+# knowledge/chat/generation dispatch arms then refuse with typed errors
+# instead of linking ~27 MB of unused inference runtime.
+[features]
+default = ["gguf"]
+gguf = ["harbor_inference/gguf-backend"]

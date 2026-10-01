@@ -86,10 +86,27 @@ pub struct DeckPreview {
 impl WorkbookPreview {
     /// Build the grid preview from workbook bytes (first sheet focused).
     pub fn from_xlsx(bytes: &[u8]) -> Result<Self, PreviewError> {
+        Self::from_xlsx_on_sheet(bytes, None)
+    }
+
+    /// Grid preview with an explicit focused sheet (None = first).
+    /// Unknown sheet names are a typed error, never a silent fallback.
+    pub fn from_xlsx_on_sheet(
+        bytes: &[u8],
+        sheet: Option<&str>,
+    ) -> Result<Self, PreviewError> {
         let doc = WorkbookDoc::load(bytes)?;
         let sheets = doc.sheet_names();
-        let first = sheets.first().cloned().unwrap_or_default();
-        let data = doc.sheet(&first)?;
+        let focused = match sheet {
+            Some(name) => {
+                if !sheets.iter().any(|s| s == name) {
+                    return Err(harbor_artifacts::workbook::WorkbookError::SheetNotFound(name.to_string()).into());
+                }
+                name.to_string()
+            }
+            None => sheets.first().cloned().unwrap_or_default(),
+        };
+        let data = doc.sheet(&focused)?;
         let mut cells = Vec::new();
         for ((col, row), cell) in data.cells.iter() {
             cells.push(PreviewCell {
@@ -103,7 +120,7 @@ impl WorkbookPreview {
         let chart_count = WorkbookDoc::count_charts_in_bytes(bytes)?;
         Ok(WorkbookPreview {
             kind: "workbook".into(),
-            sheet: first,
+            sheet: focused,
             sheets,
             cells,
             chart_count,

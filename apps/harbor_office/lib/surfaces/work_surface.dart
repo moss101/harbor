@@ -219,6 +219,32 @@ class _WorkSurfaceState extends State<WorkSurface> {
     }
   }
 
+  /// Save the current working copy (edits included) as a new file.
+  Future<void> _saveOpenCopy() async {
+    final service = HarborServiceProvider.of(context).notifier;
+    if (service == null) return;
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final name = service.previewName;
+    final bytes = service.currentWorkingBytes();
+    if (name == null || bytes == null) return;
+    try {
+      final dest = await _saveConvertedCopy(name, bytes);
+      if (!mounted) return;
+      if (dest != null) {
+        _recordRecent(name, dest);
+        await service.markSaved();
+        messenger.showSnackBar(
+            SnackBar(content: Text(l10n.workSavedCopy(dest.split(Platform.pathSeparator).last))));
+      }
+    } on ffi.HarborCoreException catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+            SnackBar(content: Text('${l10n.workConvertFailed}: ${e.message}')));
+      }
+    }
+  }
+
   /// Record a successfully opened/created file for the Work recents list.
   void _recordRecent(String name, String path) {
     final kind = name.toLowerCase().endsWith('.xlsx')
@@ -312,6 +338,27 @@ class _WorkSurfaceState extends State<WorkSurface> {
                 label: l10n.workPreviewOnly,
                 tooltip: l10n.workPreviewOnlyBody,
               ),
+            if (service != null && !sp.failed && preview != null) ...[
+              // Compact icon actions: the header row must never overflow
+              // at compact widths (labels live in the tooltips).
+              if (service.canUndo)
+                IconButton(
+                  tooltip: l10n.workUndo,
+                  onPressed: () => service.undo(),
+                  icon: const Icon(Icons.undo, size: 18),
+                ),
+              if (service.canRedo)
+                IconButton(
+                  tooltip: l10n.workRedo,
+                  onPressed: () => service.redo(),
+                  icon: const Icon(Icons.redo, size: 18),
+                ),
+              IconButton(
+                tooltip: l10n.workSaveCopy,
+                onPressed: service.previewLoading ? null : _saveOpenCopy,
+                icon: const Icon(Icons.save_outlined, size: 18),
+              ),
+            ],
             // The empty state carries the primary "Open file" call to
             // action; the header offers it once a file is open.
             if (service != null && !sp.failed && preview != null)
@@ -417,8 +464,16 @@ class _WorkSurfaceState extends State<WorkSurface> {
                   ),
                   if (AppStateScope.of(context).recentFiles.isNotEmpty) ...[
                     const SizedBox(height: HarborSpace.s4),
-                    Text(l10n.workRecents,
-                        style: t.text.bodyStrongOf(t.colors.ink)),
+                    Row(children: [
+                      Expanded(
+                          child: Text(l10n.workRecents,
+                              style: t.text.bodyStrongOf(t.colors.ink))),
+                      TextButton(
+                        onPressed: () =>
+                            AppStateScope.of(context).clearRecentFiles(),
+                        child: Text(l10n.workClearRecents),
+                      ),
+                    ]),
                     const SizedBox(height: HarborSpace.s2),
                     for (final r
                         in AppStateScope.of(context).recentFiles.take(4))
@@ -463,12 +518,24 @@ class _WorkSurfaceState extends State<WorkSurface> {
               );
             }
             final map = data is Map ? data : const <String, dynamic>{};
-            return switch (kind) {
-              'workbook' => WorkbookView(preview: map),
+            final body = switch (kind) {
+              'workbook' => WorkbookView(
+                  preview: map, onSheetSelected: service.switchSheet),
               'docx' => DocumentView(preview: map),
               'pdf' => PdfView(preview: map),
               _ => DeckView(preview: map),
             };
+            if (service.draftRestored) {
+              return Column(children: [
+                HarborBanner(
+                  tone: HarborBannerTone.info,
+                  icon: Icons.history,
+                  title: l10n.workDraftRestored(service.draftName ?? ''),
+                ),
+                Expanded(child: body),
+              ]);
+            }
+            return body;
           }),
         ),
       ],
