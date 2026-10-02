@@ -7,6 +7,30 @@ ran at.
 
 ---
 
+## Session 57 (2026-10-02): release-path hardening — the builds that ship
+
+The debug-only habit had hidden two real facts; both now fixed/proven:
+
+- **Android RELEASE apk** (42.5 MB, R8-minified, debug-signed) builds
+  and RUNS: installed on the emulator, the VIEW intent opens the DCF
+  workbook in the minified build — and rendered it in French, the first
+  live proof of the fr locale on Android. The release compile caught a
+  Kotlin bug the debug path had never compiled: Android has no
+  `CONTENT_TYPE_PDF` constant — the print adapter now uses
+  `CONTENT_TYPE_DOCUMENT`. (Release installs are not `run-as`-able;
+  hand-off staging for testing goes via `/sdcard/Download` + explicit
+  MIME type on the intent.)
+- **iOS device static archive** (the TestFlight link path) builds clean
+  in lean mode: 41 MB `aarch64-apple-ios` `.a`. Both Xcode device-phase
+  requirements (archive present before the scanner runs) are provable
+  on this machine; only signing remains operator-bound.
+
+Gates: office 18/18, main 57/57, dossier PASS. Store-distributable
+artifacts still need operator signing keys (Apple identity, Play
+upload key) — everything up to that boundary is now verified.
+
+---
+
 ## Session 56 (2026-10-02): the last four — PPTX editing, print, store collateral, locales
 
 - **PPTX slide editing** (the last big engine lift): a
