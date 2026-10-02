@@ -6,7 +6,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_ar.dart';
+import 'app_localizations_de.dart';
 import 'app_localizations_en.dart';
+import 'app_localizations_es.dart';
+import 'app_localizations_fr.dart';
+import 'app_localizations_hi.dart';
 
 // ignore_for_file: type=lint
 
@@ -95,7 +99,11 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('ar'),
-    Locale('en')
+    Locale('de'),
+    Locale('en'),
+    Locale('es'),
+    Locale('fr'),
+    Locale('hi')
   ];
 
   /// No description provided for @surfaceHome.
@@ -2785,6 +2793,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Slides'**
   String get workMdFormatSlides;
+
+  /// No description provided for @workEditSlideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit slide {index} title'**
+  String workEditSlideTitle(int index);
+
+  /// No description provided for @workEditSlideBullets.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit slide {index} bullets (one per line)'**
+  String workEditSlideBullets(int index);
+
+  /// No description provided for @workPrint.
+  ///
+  /// In en, this message translates to:
+  /// **'Print'**
+  String get workPrint;
+
+  /// No description provided for @workPrintUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Printing is not available here — use Export PDF instead.'**
+  String get workPrintUnavailable;
 }
 
 class _AppLocalizationsDelegate
@@ -2797,8 +2829,14 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['ar', 'en'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>[
+        'ar',
+        'de',
+        'en',
+        'es',
+        'fr',
+        'hi'
+      ].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -2809,8 +2847,16 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   switch (locale.languageCode) {
     case 'ar':
       return AppLocalizationsAr();
+    case 'de':
+      return AppLocalizationsDe();
     case 'en':
       return AppLocalizationsEn();
+    case 'es':
+      return AppLocalizationsEs();
+    case 'fr':
+      return AppLocalizationsFr();
+    case 'hi':
+      return AppLocalizationsHi();
   }
 
   throw FlutterError(

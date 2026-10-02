@@ -72,7 +72,73 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+        // System print dialog over a rendered PDF (office Print action):
+        // PrintManager + an adapter that copies the finished PDF bytes
+        // to the framework's destination. Nothing leaves the device
+        // except the user's own print job.
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger, "dev.harbor.office/print"
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "printPdf" -> {
+                    val data = call.argument<ByteArray>("data")
+                    val name = call.argument<String>("name") ?: "document"
+                    if (data == null) {
+                        result.error("print", "missing data", null)
+                        return@setMethodCallHandler
+                    }
+                    try {
+                        printPdf(data, name)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("print", e.message, null)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
         pruneIntakeCache()
+    }
+
+    /** Print ready PDF bytes through the system print framework. */
+    private fun printPdf(bytes: ByteArray, jobName: String) {
+        val manager = getSystemService(PRINT_SERVICE) as android.print.PrintManager
+        val adapter = object : android.print.PrintDocumentAdapter() {
+            override fun onLayout(
+                oldAttributes: android.print.PrintAttributes?,
+                newAttributes: android.print.PrintAttributes,
+                cancellationSignal: android.os.CancellationSignal?,
+                callback: LayoutResultCallback,
+                extras: android.os.Bundle?
+            ) {
+                if (cancellationSignal?.isCanceled == true) {
+                    callback.onLayoutCancelled()
+                    return
+                }
+                val info = android.print.PrintDocumentInfo.Builder("print.pdf")
+                    .setContentType(android.print.PrintDocumentInfo.CONTENT_TYPE_PDF)
+                    .setPageCount(android.print.PrintDocumentInfo.PAGE_COUNT_UNKNOWN)
+                    .build()
+                callback.onLayoutFinished(info, true)
+            }
+
+            override fun onWrite(
+                pages: Array<out android.print.PageRange>?,
+                destination: android.os.ParcelFileDescriptor,
+                cancellationSignal: android.os.CancellationSignal?,
+                callback: WriteResultCallback
+            ) {
+                try {
+                    java.io.FileOutputStream(destination.fileDescriptor).use { out ->
+                        out.write(bytes)
+                    }
+                    callback.onWriteFinished(arrayOf(android.print.PageRange.ALL_PAGES))
+                } catch (e: Exception) {
+                    callback.onWriteFailed(e.message)
+                }
+            }
+        }
+        manager.print(jobName, adapter, android.print.PrintAttributes.Builder().build())
     }
 
     override fun onNewIntent(intent: Intent) {

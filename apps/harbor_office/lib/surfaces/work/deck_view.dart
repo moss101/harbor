@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:harbor_native/harbor_ffi.dart' as ffi;
 import 'package:harbor_ui/harbor_ui.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../services/harbor_service.dart';
 
 /// Presentation workspace (UX-010): slide navigator (filmstrip) plus a
 /// 16:9 canvas showing the selected slide's title and bullets.
@@ -15,6 +17,62 @@ class DeckView extends StatefulWidget {
 
 class _DeckViewState extends State<DeckView> {
   int _selected = 0;
+  bool _saving = false;
+  String? _error;
+
+  /// Long-press edit of the selected slide's title or bullets through
+  /// the package-preserving core op.
+  Future<void> _editSlide(bool isTitle) async {
+    if (_saving) return;
+    final sp = HarborServiceProvider.of(context);
+    final service = sp.notifier;
+    if (service == null || sp.failed) return;
+    final l10n = AppLocalizations.of(context)!;
+    final slides = (widget.preview['slides'] as List? ?? const []).cast<Map>();
+    final index = _selected.clamp(0, slides.length - 1);
+    final slide = slides[index];
+    final slideNo = (slide['index'] as num).toInt();
+    final current = isTitle
+        ? (slide['title'] as String? ?? '')
+        : (slide['bullets'] as List? ?? const []).cast<String>().join('\n');
+    final controller = TextEditingController(text: current);
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(isTitle
+            ? l10n.workEditSlideTitle(slideNo)
+            : l10n.workEditSlideBullets(slideNo)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: isTitle ? 1 : 8,
+          minLines: 1,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(MaterialLocalizations.of(context).okButtonLabel),
+          ),
+        ],
+      ),
+    );
+    final newText = controller.text;
+    controller.dispose();
+    if (saved != true || !mounted || newText == current) return;
+    setState(() => _saving = true);
+    try {
+      await service.editDeckSlide(
+          slide: slideNo, isTitle: isTitle, text: newText);
+    } on ffi.HarborCoreException catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +142,12 @@ class _DeckViewState extends State<DeckView> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: HarborSpace.s3),
+                  child: Text(_error!,
+                      style: t.text.captionOf(t.colors.statusDangerText)),
+                ),
               AspectRatio(
                 aspectRatio: 16 / 9,
                 child: Container(
@@ -109,37 +173,49 @@ class _DeckViewState extends State<DeckView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SelectableText(slide['title'] as String? ?? '',
-                            style: t.text.titleOf(t.colors.ink)),
+                        GestureDetector(
+                          onLongPress: _saving ? null : () => _editSlide(true),
+                          child: SelectableText(slide['title'] as String? ?? '',
+                              style: t.text.titleOf(t.colors.ink)),
+                        ),
                         const SizedBox(height: HarborSpace.s4),
-                        for (final b in (slide['bullets'] as List? ?? const [])
-                            .cast<String>())
-                          Padding(
-                            padding:
-                                const EdgeInsets.only(bottom: HarborSpace.s2),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
+                        GestureDetector(
+                          onLongPress: _saving ? null : () => _editSlide(false),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (final b in (slide['bullets'] as List? ?? const [])
+                                  .cast<String>())
                                 Padding(
-                                  padding: const EdgeInsetsDirectional.only(
-                                      end: HarborSpace.s3, top: 9),
-                                  child: Container(
-                                    width: 6,
-                                    height: 6,
-                                    decoration: BoxDecoration(
-                                        color: t.colors.brand,
-                                        shape: BoxShape.circle),
+                                  padding: const EdgeInsets.only(
+                                      bottom: HarborSpace.s2),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsetsDirectional.only(
+                                            end: HarborSpace.s3, top: 9),
+                                        child: Container(
+                                          width: 6,
+                                          height: 6,
+                                          decoration: BoxDecoration(
+                                              color: t.colors.brand,
+                                              shape: BoxShape.circle),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: SelectableText(b,
+                                            style: t.text
+                                                .bodyOf(t.colors.ink)
+                                                .copyWith(fontSize: 15)),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                Expanded(
-                                  child: SelectableText(b,
-                                      style: t.text
-                                          .bodyOf(t.colors.ink)
-                                          .copyWith(fontSize: 15)),
-                                ),
-                              ],
-                            ),
+                            ],
                           ),
+                        ),
                       ],
                     ),
                   ),

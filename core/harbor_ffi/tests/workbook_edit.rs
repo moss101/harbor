@@ -516,3 +516,51 @@ fn xlsx_to_pdf_and_markdown_to_pptx_round_trip() {
     let re = harbor_artifacts::pptx::PptxDeck::from_pptx_bytes(&pptx).unwrap();
     assert!(re.slides.iter().any(|s| s.title.contains("Slide One")));
 }
+
+#[test]
+fn pptx_edit_round_trips_through_the_boundary() {
+    let dir = tempfile::tempdir().unwrap();
+    let h = Handle::open(dir.path());
+    use base64::Engine as _;
+    let md = "# Deck\n\n## Slide One\n\n- old bullet\n";
+    let deck = h.call(
+        "convert.markdown_to_pptx",
+        serde_json::json!({ "markdown": md }),
+    );
+    let pptx = base64::engine::general_purpose::STANDARD
+        .decode(deck["data_b64"].as_str().unwrap())
+        .unwrap();
+
+    // Retitle slide 1.
+    let out = h.call(
+        "pptx.edit",
+        serde_json::json!({
+            "data_b64": base64::engine::general_purpose::STANDARD.encode(&pptx),
+            "slide": 1,
+            "placeholder": "title",
+            "text": "Renamed slide",
+        }),
+    );
+    let edited = base64::engine::general_purpose::STANDARD
+        .decode(out["data_b64"].as_str().unwrap())
+        .unwrap();
+    let re = harbor_artifacts::pptx::PptxDeck::from_pptx_bytes(&edited).unwrap();
+    assert!(re.slides[0].title.contains("Renamed slide"));
+
+    // Unknown placeholder is a typed refusal.
+    let req = CString::new(
+        serde_json::json!({
+            "method": "pptx.edit",
+            "args": {"data_b64": base64::engine::general_purpose::STANDARD.encode(&pptx),
+                     "slide": 1, "placeholder": "notes", "text": "x"},
+        })
+        .to_string(),
+    )
+    .unwrap();
+    let raw = unsafe { harbor_core_call(h.0, req.as_ptr()) };
+    let text = unsafe { CStr::from_ptr(raw) }.to_string_lossy().to_string();
+    unsafe { harbor_core_string_free(raw) };
+    let v: serde_json::Value = serde_json::from_str(&text).unwrap();
+    assert_eq!(v["ok"], false);
+    assert!(v["error"].as_str().unwrap().contains("unknown placeholder"));
+}

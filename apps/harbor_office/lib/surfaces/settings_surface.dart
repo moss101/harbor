@@ -83,17 +83,26 @@ class SettingsSurface extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SegmentedButton<String>(
-                      segments: [
-                        ButtonSegment(
-                            value: 'en', label: Text(l10n.settingsEnglish)),
-                        ButtonSegment(
-                            value: 'ar', label: Text(l10n.settingsArabic)),
+                    Wrap(
+                      spacing: HarborSpace.s2,
+                      runSpacing: HarborSpace.s2,
+                      children: [
+                        for (final entry in const [
+                          ('en', 'English'),
+                          ('ar', 'العربية'),
+                          ('fr', 'Français'),
+                          ('de', 'Deutsch'),
+                          ('es', 'Español'),
+                          ('hi', 'हिन्दी'),
+                        ])
+                          ChoiceChip(
+                            label: Text(entry.$2),
+                            selected:
+                                state.locale.languageCode == entry.$1,
+                            onSelected: (_) =>
+                                state.setLocale(Locale(entry.$1)),
+                          ),
                       ],
-                      selected: {state.locale.languageCode},
-                      onSelectionChanged: (s) =>
-                          state.setLocale(Locale(s.first)),
-                      showSelectedIcon: false,
                     ),
                     const SizedBox(height: HarborSpace.s3),
                     Text(l10n.settingsLanguageBody,

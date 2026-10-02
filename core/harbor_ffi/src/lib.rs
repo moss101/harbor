@@ -1890,6 +1890,43 @@ fn dispatch(
                 "bytes": bytes.len(),
             }))
         }
+        // PPTX slide text editing (package-preserving): title or body
+        // of one slide; every other part stays byte-identical.
+        "pptx.edit" => {
+            let data_b64 = args
+                .get("data_b64")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing data_b64".into()))?;
+            use base64::Engine as _;
+            let bytes = base64::engine::general_purpose::STANDARD
+                .decode(data_b64)
+                .map_err(|e| HarborError::Other(format!("b64: {e}")))?;
+            let slide = args
+                .get("slide")
+                .and_then(|v| v.as_u64())
+                .ok_or_else(|| HarborError::Other("missing slide (1-based)".into()))?
+                as usize;
+            let placeholder = match args.get("placeholder").and_then(|v| v.as_str()) {
+                Some("title") => harbor_artifacts::pptx::Placeholder::Title,
+                Some("body") => harbor_artifacts::pptx::Placeholder::Body,
+                other => {
+                    return Err(HarborError::Other(format!(
+                        "unknown placeholder {other:?} (title|body)"
+                    )));
+                }
+            };
+            let text = args
+                .get("text")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing text".into()))?;
+            let out =
+                harbor_artifacts::pptx::apply_slide_text_edit(&bytes, slide, placeholder, text)
+                    .map_err(|e| HarborError::Other(e.to_string()))?;
+            Ok(serde_json::json!({
+                "data_b64": base64::engine::general_purpose::STANDARD.encode(&out),
+                "slide": slide,
+            }))
+        }
         // New blank workbook for the suite's New flow.
         "workbook.create_empty" => {
             let sheet = args

@@ -248,6 +248,37 @@ class _WorkSurfaceState extends State<WorkSurface> {
     }
   }
 
+  /// Print: render to PDF (documents and workbooks; PDFs print as-is)
+  /// and hand it to the SYSTEM print dialog — the platform owns the
+  /// rest; nothing leaves the device but the user's own print job.
+  Future<void> _print() async {
+    final service = HarborServiceProvider.of(context).notifier;
+    if (service == null) return;
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final kind = service.preview?['kind'] as String?;
+    final name = service.previewName ?? 'document';
+    try {
+      final bytes = kind == 'pdf'
+          ? service.currentWorkingBytes()
+          : kind == 'workbook'
+              ? await service.exportWorkbookToPdf(title: name)
+              : await service.exportDocxToPdf(title: name);
+      if (bytes == null) return;
+      final sent = await service.printPdf(bytes, name);
+      if (!mounted) return;
+      if (!sent) {
+        messenger.showSnackBar(
+            SnackBar(content: Text(l10n.workPrintUnavailable)));
+      }
+    } on ffi.HarborCoreException {
+      if (mounted) {
+        messenger.showSnackBar(
+            const SnackBar(content: Text('\${l10n.workConvertFailed}: \${e.message}')));
+      }
+    }
+  }
+
   /// Export the open workbook to PDF (text-extraction level grid).
   Future<void> _exportWorkbookPdf() async {
     final service = HarborServiceProvider.of(context).notifier;
@@ -447,6 +478,12 @@ class _WorkSurfaceState extends State<WorkSurface> {
                   tooltip: l10n.workExportPdf,
                   onPressed: service.previewLoading ? null : _exportPdf,
                   icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                ),
+              if (kind == 'docx' || kind == 'workbook' || kind == 'pdf')
+                IconButton(
+                  tooltip: l10n.workPrint,
+                  onPressed: service.previewLoading ? null : _print,
+                  icon: const Icon(Icons.print_outlined, size: 18),
                 ),
             ],
             // The empty state carries the primary "Open file" call to

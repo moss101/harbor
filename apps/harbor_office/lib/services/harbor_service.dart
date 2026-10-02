@@ -2,6 +2,7 @@ import 'dart:convert' show base64Decode, base64Encode;
 import 'dart:io' show File, Directory, Platform;
 import 'dart:math';
 
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:harbor_domain/harbor_domain.dart';
@@ -749,6 +750,53 @@ class HarborService extends ChangeNotifier {
       if (title != null) 'title': title,
     });
     return base64Decode(result['data_b64'] as String);
+  }
+
+  /// Hand finished PDF bytes to the system print dialog (platform
+  /// channel dev.harbor.office/print; desktop falls back to saving).
+  Future<bool> printPdf(List<int> bytes, String jobName) async {
+    const channel = MethodChannel('dev.harbor.office/print');
+    try {
+      final ok = await channel
+          .invokeMethod<bool>('printPdf', {'data': bytes, 'name': jobName});
+      return ok == true;
+    } on PlatformException {
+      return false;
+    } on MissingPluginException {
+      return false; // tests / unsupported platform
+    }
+  }
+
+  /// Edit one slide's title or bullets in the open deck
+  /// (package-preserving; refetches the preview from the new bytes).
+  Future<Map<String, dynamic>> editDeckSlide({
+    required int slide,
+    required bool isTitle,
+    required String text,
+  }) async {
+    final source = _sourceBytes;
+    final current = _preview;
+    if (source == null || current == null) {
+      throw ffi.HarborCoreException('no deck open');
+    }
+    if (current['kind'] != 'pptx') {
+      throw ffi.HarborCoreException('the open artifact is not a deck');
+    }
+    final result = await _call('pptx.edit', {
+      'data_b64': base64Encode(source),
+      'slide': slide,
+      'placeholder': isTitle ? 'title' : 'body',
+      'text': text,
+    });
+    final newBytes =
+        base64Decode(result['data_b64'] as String).toList(growable: false);
+    _pushHistory();
+    _sourceBytes = newBytes;
+    _preview = await _call('artifact.preview',
+        {'data_b64': base64Encode(newBytes)});
+    await _autosave();
+    notifyListeners();
+    return result;
   }
 
   /// Export the open DOCX to PDF at text-extraction level (the core

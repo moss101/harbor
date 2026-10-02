@@ -1,14 +1,14 @@
 {
-  "@@locale": "en",
+  "@@locale": "fr",
   "surfaceHome": "Home",
   "surfaceAsk": "Ask",
-  "surfaceWork": "Work",
+  "surfaceWork": "Travail",
   "surfaceAgents": "Agents",
   "surfaceModels": "Models",
   "surfaceSkills": "Skills",
   "surfaceKnowledge": "Knowledge",
   "surfaceActivity": "Activity",
-  "surfaceSettings": "Settings",
+  "surfaceSettings": "Réglages",
   "homeHeadline": "What do you want to get done?",
   "homeComposerHint": "Describe the work, attach files, and go.",
   "quickSummarize": "Summarize document",
@@ -18,8 +18,8 @@
   "quickOrganize": "Organize project",
   "quickResearch": "Research this folder",
   "quickTranslate": "Translate content",
-  "workEmptyTitle": "No artifact open",
-  "workEmptyBody": "Open a document, workbook, deck or PDF to see it here with version, verification and conflict state.",
+  "workEmptyTitle": "Votre espace de travail est vide",
+  "workEmptyBody": "Ouvrez un fichier ou créez-en un — tout reste sur cet appareil.",
   "modelsInstalled": "Installed",
   "modelsRecommended": "Recommended",
   "modelsLibrary": "Harbor Library",
@@ -32,13 +32,13 @@
   "runTrailEmpty": "No activity yet.",
   "approvalApprove": "Approve",
   "approvalDeny": "Deny",
-  "settingsLanguage": "Language",
-  "settingsEnglish": "English",
-  "settingsArabic": "العربية",
-  "settingsTheme": "Theme",
-  "settingsThemeLight": "Light",
-  "settingsThemeDark": "Dark",
-  "settingsPrivacy": "Workspace privacy",
+  "settingsLanguage": "Langue",
+  "settingsEnglish": "Anglais",
+  "settingsArabic": "Arabe",
+  "settingsTheme": "Thème",
+  "settingsThemeLight": "Clair",
+  "settingsThemeDark": "Sombre",
+  "settingsPrivacy": "Confidentialité",
   "agentsEmptyTitle": "No agents configured",
   "agentsEmptyBody": "Agents combine a model, tools, skills, knowledge and policy. Create one to delegate multi-step work with durable, inspectable runs.",
   "skillsEmptyTitle": "Built-in skills loaded",
@@ -50,8 +50,7 @@
   "askEmptyTitle": "Ask works on your files",
   "askEmptyBody": "Answers ground in your workspace with citations and abstain when evidence is insufficient.",
   "lensButton": "Lens",
-  "@lensButton": {},
-  "workCanvasRuleActive": "canvas ≥ {min}px rule active",
+  "workCanvasRuleActive": "L’édition complète nécessite une largeur de {min} px.",
   "@workCanvasRuleActive": {
     "placeholders": {
       "min": {
@@ -59,11 +58,9 @@
       }
     }
   },
-  "canvasViewportEditing": "viewport-sized editing",
-  "@canvasViewportEditing": {},
-  "openFile": "Open file",
-  "@openFile": {},
-  "sheetLabel": "Sheet: {name}",
+  "canvasViewportEditing": "Édition adaptée à l’écran",
+  "openFile": "Ouvrir un fichier",
+  "sheetLabel": "Feuille",
   "@sheetLabel": {
     "placeholders": {
       "name": {
@@ -72,31 +69,18 @@
     }
   },
   "attachFilesTooltip": "Attach files",
-  "@attachFilesTooltip": {},
   "modelDockEmpty": "No model installed — open Models to install one",
-  "@modelDockEmpty": {},
   "modelDockCoreUnavailable": "Core unavailable — native runtime not loaded",
-  "@modelDockCoreUnavailable": {},
   "modelsLibraryEmpty": "Curated Harbor library packages appear here.",
-  "@modelsLibraryEmpty": {},
   "modelsHfEmpty": "Search public repositories. Model packages are data — no repository code ever executes.",
-  "@modelsHfEmpty": {},
   "coreNotLoadedModels": "Native core not loaded; installed models are unavailable. Build core/harbor_ffi to enable this view.",
-  "@coreNotLoadedModels": {},
   "modelsInstalledEmpty": "Install a model from Recommended or the Library. Fit Score shows what your device can run well.",
-  "@modelsInstalledEmpty": {},
   "modelsBenchmarkEmpty": "Controlled device-local benchmark workloads with model/runtime/device identity.",
-  "@modelsBenchmarkEmpty": {},
   "modelsRecommendedEmpty": "Recommendations appear once the catalog is synced. A model is recommended only when your device can run it well.",
-  "@modelsRecommendedEmpty": {},
   "coreNotLoadedSkills": "Native core not loaded; skills are declared in the core and cannot be listed.",
-  "@coreNotLoadedSkills": {},
   "coreNotLoadedActivity": "Native core not loaded; durable runs live in the core store and cannot be listed.",
-  "@coreNotLoadedActivity": {},
   "newAgent": "New agent",
-  "@newAgent": {},
   "addSources": "Add sources",
-  "@addSources": {},
   "toolsCount": "{count, plural, one{1 tool} other{{count} tools}}",
   "@toolsCount": {
     "placeholders": {
@@ -142,15 +126,11 @@
     }
   },
   "askNoEvidenceTitle": "No supporting evidence",
-  "@askNoEvidenceTitle": {},
   "askNoEvidenceBody": "Nothing in the local index supports this question, so I am abstaining rather than guessing.",
-  "@askNoEvidenceBody": {},
   "askKnowledgeNotOpen": "Knowledge is not open yet. Install an embedding model (Models → Installed) to ground answers locally.",
-  "@askKnowledgeNotOpen": {},
   "askAbstentionHeading": "I could not find support for this in your Knowledge.",
-  "@askAbstentionHeading": {},
   "sendAction": "Send",
-  "lensOpenTooltip": "Open the Harbor Lens inspector",
+  "lensOpenTooltip": "Ouvrir le volet",
   "askSearchTooltip": "Search Knowledge",
   "statusInstalled": "INSTALLED",
   "cancelAction": "Cancel",
@@ -249,8 +229,8 @@
     }
   },
   "importModelFailed": "Local install failed",
-  "settingsIdentity": "Device identity",
-  "settingsWorkspaceId": "Workspace",
+  "settingsIdentity": "Identité de l’espace de travail",
+  "settingsWorkspaceId": "Identifiant",
   "opResolving": "Resolving package…",
   "opDownloading": "{done} of {total}",
   "@opDownloading": {
@@ -279,8 +259,8 @@
       }
     }
   },
-  "appStarting": "Starting the local core…",
-  "coreStartFailed": "The native core could not be loaded. Harbor runs degraded without it.",
+  "appStarting": "Démarre…",
+  "coreStartFailed": "Le moteur n’a pas pu démarrer sur cet appareil.",
   "knowledgeIngestFailed": "Indexing failed",
   "fileGroupDocuments": "Documents",
   "navMore": "More",
@@ -305,7 +285,7 @@
       }
     }
   },
-  "trustLocalOnlyBody": "Files and data never leave this device. The suite performs no online sessions.",
+  "trustLocalOnlyBody": "Les fichiers ne quittent jamais cet appareil. La suite n’établit aucune connexion en ligne.",
   "trustChipLabel": "LOCAL",
   "trustChipTooltip": "Local Only policy · executing on device. Open the Trust Pulse.",
   "commandPaletteTooltip": "Search commands",
@@ -324,7 +304,7 @@
   "commandToggleLens": "Toggle Harbor Lens",
   "commandToggleTheme": "Switch light/dark theme",
   "commandSwitchLanguage": "Switch language",
-  "coreDegradedTitle": "Native core unavailable",
+  "coreDegradedTitle": "Moteur local indisponible",
   "appTagline": "Your AI. Your models. Your device. Your work.",
   "surfaceTitleHome": "Home",
   "homeGreetingMorning": "Good morning",
@@ -359,15 +339,15 @@
   "askErrorTitle": "Generation failed",
   "askGroundedBadge": "GROUNDED",
   "askUngroundedBadge": "NOT GROUNDED",
-  "workSubtitleEmpty": "Documents, workbooks, decks and PDFs",
-  "workPreviewOnly": "Read-only preview",
-  "workPreviewOnlyBody": "Structured edits, diff and safe save are not enabled in this build; the preview comes from the core's qualified extraction.",
-  "workCloseFile": "Close file",
-  "workOpening": "Opening file…",
-  "workOpenFailedTitle": "The file could not be previewed",
-  "workOpenFailedBody": "Only DOCX, XLSX, PPTX and PDF files are supported, and the file must be readable.",
-  "workCompatibilityTitle": "Compatibility notice",
-  "workCompatibilityBody": "{count, plural, one{1 part is preserved without rendering. Nothing is executed.} other{{count} parts are preserved without rendering. Nothing is executed.}}",
+  "workSubtitleEmpty": "Ouvrez un document pour commencer.",
+  "workPreviewOnly": "Aperçu",
+  "workPreviewOnlyBody": "Lecture seule pour ce type ; les modifications ne sont prises en charge que pour les classeurs et documents.",
+  "workCloseFile": "Fermer le fichier",
+  "workOpening": "Ouverture…",
+  "workOpenFailedTitle": "Échec de l’ouverture",
+  "workOpenFailedBody": "Le fichier n’a pas pu être ouvert.",
+  "workCompatibilityTitle": "Rapport de compatibilité",
+  "workCompatibilityBody": "{count, plural, one{1 partie conservée sans affichage. Rien n’est exécuté.} other{{count} parties conservées sans affichage. Rien n’est exécuté.}}",
   "@workCompatibilityBody": {
     "placeholders": {
       "count": {
@@ -375,11 +355,11 @@
       }
     }
   },
-  "workCompatibilityShow": "Show parts",
-  "workCompatibilityHide": "Hide parts",
-  "workOutline": "Outline",
+  "workCompatibilityShow": "Détails de compatibilité",
+  "workCompatibilityHide": "Masquer les détails",
+  "workOutline": "Plan",
   "workOutlineEmpty": "No headings",
-  "workParagraphs": "{count, plural, one{1 paragraph} other{{count} paragraphs}}",
+  "workParagraphs": "{count, plural, one{1 paragraphe} other{{count} paragraphes}}",
   "@workParagraphs": {
     "placeholders": {
       "count": {
@@ -395,7 +375,7 @@
       }
     }
   },
-  "workSlides": "{count, plural, one{1 slide} other{{count} slides}}",
+  "workSlides": "{count, plural, one{1 diapositive} other{{count} diapositives}}",
   "@workSlides": {
     "placeholders": {
       "count": {
@@ -403,7 +383,7 @@
       }
     }
   },
-  "workCells": "{count, plural, one{1 cell} other{{count} cells}}",
+  "workCells": "{count, plural, one{1 cellule} other{{count} cellules}}",
   "@workCells": {
     "placeholders": {
       "count": {
@@ -411,7 +391,7 @@
       }
     }
   },
-  "workCharts": "{count, plural, one{1 chart} other{{count} charts}}",
+  "workCharts": "{count, plural, one{1 graphique} other{{count} graphiques}}",
   "@workCharts": {
     "placeholders": {
       "count": {
@@ -420,8 +400,8 @@
     }
   },
   "workFormulaBar": "Formula",
-  "workValue": "Value",
-  "workCellUnverified": "Cached value — not verified by recalculation",
+  "workValue": "Valeur",
+  "workCellUnverified": "valeur en cache — non vérifiée",
   "workSheetNotPreviewed": "Only the first sheet is previewed in this build",
   "workPage": "Page {index}",
   "@workPage": {
@@ -431,7 +411,7 @@
       }
     }
   },
-  "workSlide": "Slide {index}",
+  "workSlide": "Diapositive {index}",
   "@workSlide": {
     "placeholders": {
       "index": {
@@ -440,12 +420,12 @@
     }
   },
   "workKindDocument": "Document",
-  "workKindWorkbook": "Workbook",
-  "workKindDeck": "Presentation",
+  "workKindWorkbook": "Classeur",
+  "workKindDeck": "Présentation",
   "workKindPdf": "PDF",
-  "workSupportedTypes": "Supported types",
-  "workEmptyTextPage": "No text extracted on this page",
-  "workShowFormulas": "Show formulas",
+  "workSupportedTypes": "Types pris en charge",
+  "workEmptyTextPage": "Aucun texte extrait sur cette page",
+  "workShowFormulas": "Afficher les formules",
   "workNoSelection": "Select a cell",
   "modelsSubtitle": "Install, inspect and choose what runs on this device",
   "modelsImportBody": "Install a local GGUF file. Packages are data only — no repository code ever executes.",
@@ -562,10 +542,10 @@
   "activityOpKindAcquire": "Model acquisition",
   "activityOpKindIngest": "Knowledge indexing",
   "activityOpKindGenerate": "Grounded generation",
-  "settingsSubtitle": "Appearance, language, privacy and identity",
-  "settingsThemeSystem": "System",
-  "settingsLanguageBody": "Arabic mirrors navigation and alignment; file names, formulas and identifiers keep their own direction.",
-  "settingsPrivacyBody": "Local Only is the default and the only policy in this release.",
+  "settingsSubtitle": "Langue, thème et confidentialité",
+  "settingsThemeSystem": "Système",
+  "settingsLanguageBody": "L’interface suit la langue choisie ; l’arabe est affichée de droite à gauche.",
+  "settingsPrivacyBody": "Local uniquement est la politique par défaut et la seule de cette version.",
   "settingsAbout": "About",
   "settingsVersion": "Version",
   "settingsCoreStatus": "Native core",
@@ -575,9 +555,9 @@
   "settingsShortcutSurfaces": "Switch surfaces",
   "settingsShortcutPalette": "Command palette",
   "settingsLensDocked": "Dock the Lens on wide windows",
-  "settingsMotionNote": "Motion follows your system's reduce-motion setting.",
-  "copyAction": "Copy",
-  "copiedMessage": "Copied",
+  "settingsMotionNote": "Le thème suit vos réglages système.",
+  "copyAction": "Copier",
+  "copiedMessage": "Copié",
   "activityExecutorTime": "Executor time",
   "activityStepsLabel": "Steps",
   "skillsRunnable": "Runnable graph",
@@ -713,10 +693,10 @@
   },
   "skillsDiffBase": "base",
   "skillsDiffProposed": "proposed",
-  "settingsDiagnostics": "Diagnostics",
-  "settingsDiagnosticsBody": "Harbor keeps an encrypted crash and error log on this device and never uploads it. Export it to share with support by hand.",
-  "settingsDiagnosticsContains": "The export contains redacted error records, the app and core versions, the runtime, the device class and installed model ids. It never contains document content, knowledge chunks or prompts.",
-  "settingsDiagnosticsRecords": "{count, plural, =0{No records yet} one{1 record} other{{count} records}}",
+  "settingsDiagnostics": "Diagnostic",
+  "settingsDiagnosticsBody": "Journal chiffré des erreurs ; export manuel uniquement.",
+  "settingsDiagnosticsContains": "Contient",
+  "settingsDiagnosticsRecords": "entrées",
   "@settingsDiagnosticsRecords": {
     "placeholders": {
       "count": {
@@ -724,9 +704,9 @@
       }
     }
   },
-  "settingsDiagnosticsExport": "Export diagnostics",
-  "settingsDiagnosticsExported": "Diagnostics exported",
-  "settingsDiagnosticsExportedBody": "{path} · {count, plural, one{1 record} other{{count} records}}",
+  "settingsDiagnosticsExport": "Exporter le journal",
+  "settingsDiagnosticsExported": "Journal exporté",
+  "settingsDiagnosticsExportedBody": "Le journal chiffré a été enregistré où vous l’avez choisi.",
   "@settingsDiagnosticsExportedBody": {
     "placeholders": {
       "path": {
@@ -737,7 +717,7 @@
       }
     }
   },
-  "settingsDiagnosticsExportFailed": "Export failed",
+  "settingsDiagnosticsExportFailed": "Échec de l’export",
   "homeFirstRunTitle": "Install a model to get started",
   "homeFirstRunBody": "Harbor runs entirely on this device — nothing you open leaves it. Every answer, skill and index needs a local model, so the first step is choosing one that fits your device.",
   "homeFirstRunAction": "Choose a model",
@@ -853,12 +833,12 @@
   "storePreviewFailed": "Could not read the package",
   "storeEmpty": "The accepted signed catalog is empty on this device.",
   "storeManageHint": "Uninstall frees every owned file; a preview shows the exact scope before anything moves.",
-  "workEditHint": "Enter a value or =formula",
-  "workEditCommit": "Commit cell",
-  "workBoldRow": "Bold row",
-  "workAddChart": "Insert chart from column",
-  "workConvertMarkdown": "Convert Markdown / PDF…",
-  "workConvertedSaved": "Saved {path}",
+  "workEditHint": "Saisissez une valeur ou =formule",
+  "workEditCommit": "Valider la cellule",
+  "workBoldRow": "Mettre la ligne en gras",
+  "workAddChart": "Insérer un graphique depuis la colonne",
+  "workConvertMarkdown": "Convertir Markdown / PDF…",
+  "workConvertedSaved": "Enregistré : {path}",
   "@workConvertedSaved": {
     "placeholders": {
       "path": {
@@ -866,10 +846,10 @@
       }
     }
   },
-  "workConvertFailed": "Conversion failed",
+  "workConvertFailed": "Échec de la conversion",
   "modelsAdvancedDetails": "Advanced details",
   "modelsBackendLabel": "Backend",
-  "workAddHighlight": "Highlight above selected",
+  "workAddHighlight": "Surligner au-dessus de la sélection",
   "storeOfficeInstalled": "Installed",
   "storeOfficeShips": "Part of the app you already have — nothing to download.",
   "storeOfficeInside": "What's inside",
@@ -881,12 +861,12 @@
   "storeSuitePdf": "PDF — preview and extraction",
   "suiteStatusLive": "Live",
   "suiteStatusPreview": "Preview",
-  "workNewSpreadsheet": "New spreadsheet",
-  "workNewDocument": "New document",
-  "workRecents": "Recent",
-  "workUntitledSheet": "Untitled workbook",
-  "workUntitledDoc": "Untitled document",
-  "workRecentFailed": "Could not reopen {name} — the system no longer grants access to this location.",
+  "workNewSpreadsheet": "Nouvelle feuille",
+  "workNewDocument": "Nouveau document",
+  "workRecents": "Récents",
+  "workUntitledSheet": "Classeur sans titre",
+  "workUntitledDoc": "Document sans titre",
+  "workRecentFailed": "Impossible de rouvrir {name} — l’accès à cet emplacement n’est plus accordé.",
   "@workRecentFailed": {
     "placeholders": {
       "name": {
@@ -894,7 +874,7 @@
       }
     }
   },
-  "workEditParagraphTitle": "Edit paragraph {index}",
+  "workEditParagraphTitle": "Modifier le paragraphe {index}",
   "@workEditParagraphTitle": {
     "placeholders": {
       "index": {
@@ -902,7 +882,7 @@
       }
     }
   },
-  "workOpenUnsupported": "Can't open {name} — the suite opens Word, Excel, PowerPoint and PDF files.",
+  "workOpenUnsupported": "Type de fichier non pris en charge.",
   "@workOpenUnsupported": {
     "placeholders": {
       "name": {
@@ -910,7 +890,7 @@
       }
     }
   },
-  "workOpenUnreadable": "Could not read {name} — the app that shared it did not grant access.",
+  "workOpenUnreadable": "Ce fichier ne peut pas être lu.",
   "@workOpenUnreadable": {
     "placeholders": {
       "name": {
@@ -918,12 +898,10 @@
       }
     }
   },
-  "workUndo": "Undo",
-  "workRedo": "Redo",
-  "workSaveCopy": "Save a copy",
-  "workDraftRestored": "Restored your unsaved edits to {name}",
-  "workSavedCopy": "Saved {name}",
-  "workClearRecents": "Clear",
+  "workUndo": "Annuler",
+  "workRedo": "Rétablir",
+  "workSaveCopy": "Enregistrer une copie",
+  "workDraftRestored": "Modifications non enregistrées restaurées : {name}",
   "@workDraftRestored": {
     "placeholders": {
       "name": {
@@ -931,6 +909,7 @@
       }
     }
   },
+  "workSavedCopy": "Enregistré : {name}",
   "@workSavedCopy": {
     "placeholders": {
       "name": {
@@ -938,13 +917,14 @@
       }
     }
   },
-  "workExportPdf": "Export PDF",
-  "workInsertRow": "Insert row above",
-  "workDeleteRow": "Delete row",
-  "workInsertCol": "Insert column left",
-  "workDeleteCol": "Delete column",
+  "workClearRecents": "Effacer",
+  "workExportPdf": "Exporter en PDF",
+  "workInsertRow": "Insérer une ligne au-dessus",
+  "workDeleteRow": "Supprimer la ligne",
+  "workInsertCol": "Insérer une colonne à gauche",
+  "workDeleteCol": "Supprimer la colonne",
   "workStyle": "Style",
-  "workExportedPdf": "Exported {name}",
+  "workExportedPdf": "Exporté : {name}",
   "@workExportedPdf": {
     "placeholders": {
       "name": {
@@ -952,20 +932,19 @@
       }
     }
   },
-  "workStructure": "Rows & columns",
-  "workStyleKeep": "Keep current",
-  "workStyleH1": "Heading 1",
-  "workStyleH2": "Heading 2",
-  "workStyleH3": "Heading 3",
-  "workStyleBullet": "Bullet list",
-  "workStyleNumbered": "Numbered list",
-  "workStyleNormal": "Normal text",
-  "workConvertTo": "Convert Markdown to…",
-  "workMdFormatBody": "Word document (full text) or PowerPoint deck (one slide per heading)?",
+  "workStructure": "Lignes et colonnes",
+  "workStyleKeep": "Conserver",
+  "workStyleH1": "Titre 1",
+  "workStyleH2": "Titre 2",
+  "workStyleH3": "Titre 3",
+  "workStyleBullet": "Liste à puces",
+  "workStyleNumbered": "Liste numérotée",
+  "workStyleNormal": "Texte normal",
+  "workConvertTo": "Convertir Markdown en…",
+  "workMdFormatBody": "Document Word (texte intégral) ou présentation PowerPoint (une diapositive par titre) ?",
   "workMdFormatWord": "Word",
-  "workMdFormatSlides": "Slides",
-  "workEditSlideTitle": "Edit slide {index} title",
-  "workEditSlideBullets": "Edit slide {index} bullets (one per line)",
+  "workMdFormatSlides": "Diapositives",
+  "workEditSlideTitle": "Modifier le titre de la diapositive {index}",
   "@workEditSlideTitle": {
     "placeholders": {
       "index": {
@@ -973,6 +952,7 @@
       }
     }
   },
+  "workEditSlideBullets": "Modifier les puces de la diapositive {index} (une par ligne)",
   "@workEditSlideBullets": {
     "placeholders": {
       "index": {
@@ -980,6 +960,6 @@
       }
     }
   },
-  "workPrint": "Print",
-  "workPrintUnavailable": "Printing is not available here — use Export PDF instead."
+  "workPrint": "Imprimer",
+  "workPrintUnavailable": "Impression indisponible ici — utilisez Exporter en PDF."
 }

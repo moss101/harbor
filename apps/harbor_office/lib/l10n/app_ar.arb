@@ -211,7 +211,7 @@
   "workOpenFailedTitle": "تعذر معاينة الملف",
   "workOpenFailedBody": "يدعم هذا الإصدار ملفات DOCX وXLSX وPPTX وPDF فقط، ويجب أن يكون الملف قابلاً للقراءة.",
   "workCompatibilityTitle": "تنبيه التوافق",
-  "workCompatibilityBody": "{count, plural, one{يُحتفظ بجزء واحد دون عرضه. لا يُنفَّذ أي شيء.} two{يُحتفظ بجزأين دون عرضهما. لا يُنفَّذ أي شيء.} few{يُحتفظ بـ {count} أجزاء دون عرضها. لا يُنفَّذ أي شيء.} many{يُحتفظ بـ {count} جزءاً دون عرضها. لا يُنفَّذ أي شيء.} other{يُحتفظ بـ {count} جزء دون عرضها. لا يُنفَّذ أي شيء.}}",
+  "workCompatibilityBody": "{count, plural, one{يُحفظ جزء واحد دون عرض. لا يُنفَّذ أي شيء.} other{يُحفظ {count} أجزاء دون عرض. لا يُنفَّذ أي شيء.}}",
   "@workCompatibilityBody": {
     "placeholders": {
       "count": {
@@ -288,7 +288,7 @@
   "workKindDeck": "عرض تقديمي",
   "workKindPdf": "PDF",
   "workSupportedTypes": "الأنواع المدعومة",
-  "workEmptyTextPage": "لم يُستخرج نص من هذه الصفحة",
+  "workEmptyTextPage": "لم يُستخرج أي نص في هذه الصفحة",
   "workShowFormulas": "عرض الصيغ",
   "workNoSelection": "اختر خلية",
   "modelsSubtitle": "ثبّت وافحص واختر ما يعمل على هذا الجهاز",
@@ -821,5 +821,23 @@
   "workConvertTo": "تحويل Markdown إلى…",
   "workMdFormatBody": "مستند Word (النص كاملاً) أم عرض PowerPoint (شريحة لكل عنوان)؟",
   "workMdFormatWord": "Word",
-  "workMdFormatSlides": "شرائح"
+  "workMdFormatSlides": "شرائح",
+  "workEditSlideTitle": "تحرير عنوان الشريحة {index}",
+  "workEditSlideBullets": "تحرير نقاط الشريحة {index} (واحدة لكل سطر)",
+  "@workEditSlideTitle": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "@workEditSlideBullets": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "workPrint": "طباعة",
+  "workPrintUnavailable": "الطباعة غير متاحة هنا — استخدم «تصدير PDF» بدلاً منها."
 }

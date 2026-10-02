@@ -677,11 +677,8 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'يُحتفظ بـ $count جزء دون عرضها. لا يُنفَّذ أي شيء.',
-      many: 'يُحتفظ بـ $count جزءاً دون عرضها. لا يُنفَّذ أي شيء.',
-      few: 'يُحتفظ بـ $count أجزاء دون عرضها. لا يُنفَّذ أي شيء.',
-      two: 'يُحتفظ بجزأين دون عرضهما. لا يُنفَّذ أي شيء.',
-      one: 'يُحتفظ بجزء واحد دون عرضه. لا يُنفَّذ أي شيء.',
+      other: 'يُحفظ $count أجزاء دون عرض. لا يُنفَّذ أي شيء.',
+      one: 'يُحفظ جزء واحد دون عرض. لا يُنفَّذ أي شيء.',
     );
     return '$_temp0';
   }
@@ -812,7 +809,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get workSupportedTypes => 'الأنواع المدعومة';
 
   @override
-  String get workEmptyTextPage => 'لم يُستخرج نص من هذه الصفحة';
+  String get workEmptyTextPage => 'لم يُستخرج أي نص في هذه الصفحة';
 
   @override
   String get workShowFormulas => 'عرض الصيغ';
@@ -1738,4 +1735,21 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get workMdFormatSlides => 'شرائح';
+
+  @override
+  String workEditSlideTitle(int index) {
+    return 'تحرير عنوان الشريحة $index';
+  }
+
+  @override
+  String workEditSlideBullets(int index) {
+    return 'تحرير نقاط الشريحة $index (واحدة لكل سطر)';
+  }
+
+  @override
+  String get workPrint => 'طباعة';
+
+  @override
+  String get workPrintUnavailable =>
+      'الطباعة غير متاحة هنا — استخدم «تصدير PDF» بدلاً منها.';
 }

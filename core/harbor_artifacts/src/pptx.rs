@@ -86,6 +86,169 @@ pub enum Placeholder {
 
 impl Placeholder {}
 
+/// Edit slide text in an EXISTING pptx package, preserving every other
+/// part byte-for-byte (the docx-apply pattern, for slide XML).
+/// - Title: the slide's title-placeholder text is replaced wholesale.
+/// - Body: bullet lines replace the body placeholder's existing
+///   paragraphs 1:1 (more lines than paragraphs is a typed refusal —
+///   no silent truncation, no invented paragraphs).
+pub fn apply_slide_text_edit(
+    bytes: &[u8],
+    slide: usize,
+    placeholder: Placeholder,
+    text: &str,
+) -> Result<Vec<u8>, PptxError> {
+    if slide == 0 {
+        return Err(PptxError::Malformed("slide index is 1-based".into()));
+    }
+    let part = format!("ppt/slides/slide{slide}.xml");
+    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(bytes.to_vec()))?;
+    let mut xml = String::new();
+    {
+        use std::io::Read as _;
+        let mut f = archive
+            .by_name(&part)
+            .map_err(|_| PptxError::Malformed(format!("missing {part}")))?;
+        f.read_to_string(&mut xml)?;
+    }
+    let edited = edit_slide_xml(&xml, placeholder, text)?;
+    let mut out = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+    let opts: zip::write::SimpleFileOptions = zip::write::FileOptions::default();
+    for i in 0..archive.len() {
+        let mut f = archive.by_index(i)?;
+        let name = f.name().to_string();
+        out.start_file(name.clone(), opts)?;
+        if name == part {
+            out.write_all(edited.as_bytes())?;
+        } else {
+            std::io::copy(&mut f, &mut out)?;
+        }
+    }
+    Ok(out.finish()?.into_inner())
+}
+
+/// Find the title/body placeholder shape in slide XML and rewrite its
+/// run texts. Everything outside that shape is byte-identical.
+fn edit_slide_xml(xml: &str, placeholder: Placeholder, text: &str) -> Result<String, PptxError> {
+    // Split into shape blocks on <p:sp> boundaries (raw scan; slide XML
+    // from any generator keeps p:sp un-nested).
+    let want_title = matches!(placeholder, Placeholder::Title);
+    let mut out = String::with_capacity(xml.len() + text.len());
+    let mut i = 0usize;
+    let bytes = xml.as_bytes();
+    while i < bytes.len() {
+        let sp_at = xml[i..].find("<p:sp>").map(|p| i + p);
+        let Some(sp_start) = sp_at else {
+            out.push_str(&xml[i..]);
+            break;
+        };
+        let body_open_end = sp_start + "<p:sp>".len();
+        let sp_end_rel = xml[body_open_end..]
+            .find("</p:sp>")
+            .ok_or_else(|| PptxError::Malformed("unbalanced p:sp".into()))?;
+        let sp_end = body_open_end + sp_end_rel + "</p:sp>".len();
+        let shape = &xml[sp_start..sp_end];
+        let is_target = if want_title {
+            shape.contains(r#"type="title""#) || shape.contains(r#"type="ctrTitle""#)
+        } else {
+            // Body placeholder: explicit body type, or a ph with no type.
+            if shape.contains("<p:ph") {
+                shape.contains(r#"type="body""#) || !shape.contains(r#"type=""#)
+            } else {
+                false
+            }
+        };
+        if !is_target {
+            out.push_str(&xml[i..sp_end]);
+            i = sp_end;
+            continue;
+        }
+        // The rebuilt block already contains its own <p:sp> open tag.
+        out.push_str(&xml[i..sp_start]);
+        match placeholder {
+            Placeholder::Title => {
+                out.push_str(&replace_first_run_text(shape, text, "<p:sp>"));
+            }
+            Placeholder::Body => {
+                let lines: Vec<&str> = if text.trim().is_empty() {
+                    vec![""]
+                } else {
+                    text.split('\n').collect()
+                };
+                out.push_str(&replace_paragraph_texts(shape, &lines, "<p:sp>")?);
+            }
+        }
+        i = sp_end;
+    }
+    Ok(out)
+}
+
+/// Replace run texts: the FIRST <a:t> gets `text`, every other <a:t> in
+/// the block is emptied (the docx run pattern).
+fn replace_first_run_text(block: &str, text: &str, open: &str) -> String {
+    let _ = open;
+    let mut out = String::with_capacity(block.len() + text.len());
+    let mut first_done = false;
+    let mut rest = block;
+    while let Some(at) = rest.find("<a:t>") {
+        let content_start = at + "<a:t>".len();
+        let content_end = rest[content_start..]
+            .find("</a:t>")
+            .map(|p| content_start + p)
+            .unwrap_or(rest.len());
+        out.push_str(&rest[..content_start]);
+        out.push_str(&xml_escape(text_check(first_done, text)));
+        first_done = true;
+        out.push_str("</a:t>");
+        rest = &rest[content_end + "</a:t>".len()..];
+    }
+    out.push_str(rest);
+    out
+}
+
+fn text_check<'a>(first_done: bool, text: &'a str) -> &'a str {
+    if first_done {
+        ""
+    } else {
+        text
+    }
+}
+
+/// Replace the text of each <a:p> paragraph's first run with lines[i];
+/// extra paragraphs are emptied. More lines than paragraphs refuses.
+fn replace_paragraph_texts(block: &str, lines: &[&str], open: &str) -> Result<String, PptxError> {
+    let _ = open;
+    let paragraph_count = block.matches("<a:p>").count();
+    if lines.len() > paragraph_count {
+        return Err(PptxError::Malformed(format!(
+            "slide has {} bullet paragraphs; refusing {} lines",
+            paragraph_count,
+            lines.len()
+        )));
+    }
+    let mut out = String::with_capacity(block.len());
+    let mut line_idx = 0usize;
+    let mut rest = block;
+    while let Some(p_at) = rest.find("<a:p>") {
+        let p_end_rel = rest[p_at..]
+            .find("</a:p>")
+            .ok_or_else(|| PptxError::Malformed("unbalanced a:p".into()))?;
+        let p_end = p_at + p_end_rel + "</a:p>".len();
+        let paragraph = &rest[p_at..p_end];
+        let line = if line_idx < lines.len() {
+            lines[line_idx]
+        } else {
+            ""
+        };
+        out.push_str(&rest[..p_at]);
+        out.push_str(&replace_first_run_text(paragraph, line, "<a:p>"));
+        line_idx += 1;
+        rest = &rest[p_end..];
+    }
+    out.push_str(rest);
+    Ok(out)
+}
+
 fn xml_escape(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     for c in s.chars() {
@@ -963,6 +1126,61 @@ pub fn minimal_embedded_xlsx(series: &[(String, Vec<f64>)]) -> Vec<u8> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn slide_text_edit_preserves_package_and_applies() {
+        let deck = PptxDeck {
+            title: "Deck".into(),
+            slides: vec![SlideContent {
+                title: "Old title".into(),
+                bullets: vec!["one".into(), "two".into()],
+                notes: None,
+                chart: None,
+                image: None,
+            }],
+        };
+        let bytes = deck.to_pptx_bytes().unwrap();
+
+        // Title edit.
+        let out =
+            crate::pptx::apply_slide_text_edit(&bytes, 1, Placeholder::Title, "New title").unwrap();
+        let re = PptxDeck::from_pptx_bytes(&out).unwrap();
+        assert!(re.slides[0].title.contains("New title"));
+        assert!(
+            re.slides[0].bullets.contains(&"one".to_string()),
+            "bullets untouched by a title edit"
+        );
+
+        // Body edit (2 paragraphs, 2 lines).
+        let out2 =
+            crate::pptx::apply_slide_text_edit(&out, 1, Placeholder::Body, "alpha\nbeta").unwrap();
+        let re2 = PptxDeck::from_pptx_bytes(&out2).unwrap();
+        assert!(re2.slides[0].bullets.contains(&"alpha".to_string()));
+        assert!(re2.slides[0].bullets.contains(&"beta".to_string()));
+
+        // More lines than paragraphs is a typed refusal.
+        assert!(
+            crate::pptx::apply_slide_text_edit(&out2, 1, Placeholder::Body, "a\nb\nc").is_err()
+        );
+
+        // Byte preservation: every other zip entry is identical.
+        let mut before = zip::ZipArchive::new(std::io::Cursor::new(&bytes)).unwrap();
+        let mut after = zip::ZipArchive::new(std::io::Cursor::new(&out2)).unwrap();
+        use std::io::Read as _;
+        for i in 0..before.len() {
+            let (mut a, mut b) = (Vec::new(), Vec::new());
+            let mut fa = before.by_index(i).unwrap();
+            let name = fa.name().to_string();
+            fa.read_to_end(&mut a).unwrap();
+            let mut fb = after.by_name(&name).unwrap();
+            fb.read_to_end(&mut b).unwrap();
+            if name == "ppt/slides/slide1.xml" {
+                assert_ne!(a, b, "the edited slide must differ");
+            } else {
+                assert_eq!(a, b, "{name} must be byte-preserved");
+            }
+        }
+    }
+
     use super::*;
 
     #[test]

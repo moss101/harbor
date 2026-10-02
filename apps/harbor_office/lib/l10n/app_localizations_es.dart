@@ -4,9 +4,9 @@ import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
 
-/// The translations for English (`en`).
-class AppLocalizationsEn extends AppLocalizations {
-  AppLocalizationsEn([String locale = 'en']) : super(locale);
+/// The translations for Spanish Castilian (`es`).
+class AppLocalizationsEs extends AppLocalizations {
+  AppLocalizationsEs([String locale = 'es']) : super(locale);
 
   @override
   String get surfaceHome => 'Home';
@@ -15,7 +15,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get surfaceAsk => 'Ask';
 
   @override
-  String get surfaceWork => 'Work';
+  String get surfaceWork => 'Trabajo';
 
   @override
   String get surfaceAgents => 'Agents';
@@ -33,7 +33,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get surfaceActivity => 'Activity';
 
   @override
-  String get surfaceSettings => 'Settings';
+  String get surfaceSettings => 'Ajustes';
 
   @override
   String get homeHeadline => 'What do you want to get done?';
@@ -63,11 +63,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quickTranslate => 'Translate content';
 
   @override
-  String get workEmptyTitle => 'No artifact open';
+  String get workEmptyTitle => 'Tu espacio de trabajo está vacío';
 
   @override
   String get workEmptyBody =>
-      'Open a document, workbook, deck or PDF to see it here with version, verification and conflict state.';
+      'Abre un archivo o crea uno nuevo — todo permanece en este dispositivo.';
 
   @override
   String get modelsInstalled => 'Installed';
@@ -106,25 +106,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get approvalDeny => 'Deny';
 
   @override
-  String get settingsLanguage => 'Language';
+  String get settingsLanguage => 'Idioma';
 
   @override
-  String get settingsEnglish => 'English';
+  String get settingsEnglish => 'Inglés';
 
   @override
-  String get settingsArabic => 'العربية';
+  String get settingsArabic => 'Árabe';
 
   @override
-  String get settingsTheme => 'Theme';
+  String get settingsTheme => 'Tema';
 
   @override
-  String get settingsThemeLight => 'Light';
+  String get settingsThemeLight => 'Claro';
 
   @override
-  String get settingsThemeDark => 'Dark';
+  String get settingsThemeDark => 'Oscuro';
 
   @override
-  String get settingsPrivacy => 'Workspace privacy';
+  String get settingsPrivacy => 'Privacidad';
 
   @override
   String get agentsEmptyTitle => 'No agents configured';
@@ -166,18 +166,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String workCanvasRuleActive(int min) {
-    return 'canvas ≥ ${min}px rule active';
+    return 'La edición completa requiere $min px de ancho.';
   }
 
   @override
-  String get canvasViewportEditing => 'viewport-sized editing';
+  String get canvasViewportEditing => 'Edición adaptada a la pantalla';
 
   @override
-  String get openFile => 'Open file';
+  String get openFile => 'Abrir archivo';
 
   @override
   String sheetLabel(String name) {
-    return 'Sheet: $name';
+    return 'Hoja';
   }
 
   @override
@@ -274,7 +274,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sendAction => 'Send';
 
   @override
-  String get lensOpenTooltip => 'Open the Harbor Lens inspector';
+  String get lensOpenTooltip => 'Abrir panel';
 
   @override
   String get askSearchTooltip => 'Search Knowledge';
@@ -412,10 +412,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importModelFailed => 'Local install failed';
 
   @override
-  String get settingsIdentity => 'Device identity';
+  String get settingsIdentity => 'Identidad del espacio';
 
   @override
-  String get settingsWorkspaceId => 'Workspace';
+  String get settingsWorkspaceId => 'Identificador';
 
   @override
   String get opResolving => 'Resolving package…';
@@ -446,17 +446,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get appStarting => 'Starting the local core…';
+  String get appStarting => 'Iniciando…';
 
   @override
   String get coreStartFailed =>
-      'The native core could not be loaded. Harbor runs degraded without it.';
+      'El motor no pudo iniciarse en este dispositivo.';
 
   @override
   String get knowledgeIngestFailed => 'Indexing failed';
 
   @override
-  String get fileGroupDocuments => 'Documents';
+  String get fileGroupDocuments => 'Documentos';
 
   @override
   String get navMore => 'More';
@@ -507,7 +507,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get trustLocalOnlyBody =>
-      'Files and data never leave this device. The suite performs no online sessions.';
+      'Los archivos nunca salen de este dispositivo. La suite no realiza conexiones en línea.';
 
   @override
   String get trustChipLabel => 'LOCAL';
@@ -546,7 +546,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commandSwitchLanguage => 'Switch language';
 
   @override
-  String get coreDegradedTitle => 'Native core unavailable';
+  String get coreDegradedTitle => 'Motor local no disponible';
 
   @override
   String get appTagline => 'Your AI. Your models. Your device. Your work.';
@@ -639,51 +639,49 @@ class AppLocalizationsEn extends AppLocalizations {
   String get askUngroundedBadge => 'NOT GROUNDED';
 
   @override
-  String get workSubtitleEmpty => 'Documents, workbooks, decks and PDFs';
+  String get workSubtitleEmpty => 'Abre un documento para empezar.';
 
   @override
-  String get workPreviewOnly => 'Read-only preview';
+  String get workPreviewOnly => 'Vista previa';
 
   @override
   String get workPreviewOnlyBody =>
-      'Structured edits, diff and safe save are not enabled in this build; the preview comes from the core\'s qualified extraction.';
+      'Solo lectura para este tipo; la edición admite hojas de cálculo y documentos.';
 
   @override
-  String get workCloseFile => 'Close file';
+  String get workCloseFile => 'Cerrar archivo';
 
   @override
-  String get workOpening => 'Opening file…';
+  String get workOpening => 'Abriendo…';
 
   @override
-  String get workOpenFailedTitle => 'The file could not be previewed';
+  String get workOpenFailedTitle => 'Error al abrir';
 
   @override
-  String get workOpenFailedBody =>
-      'Only DOCX, XLSX, PPTX and PDF files are supported, and the file must be readable.';
+  String get workOpenFailedBody => 'No se pudo abrir el archivo.';
 
   @override
-  String get workCompatibilityTitle => 'Compatibility notice';
+  String get workCompatibilityTitle => 'Informe de compatibilidad';
 
   @override
   String workCompatibilityBody(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other:
-          '$count parts are preserved without rendering. Nothing is executed.',
-      one: '1 part is preserved without rendering. Nothing is executed.',
+      other: '$count partes se conservan sin mostrarse. No se ejecuta nada.',
+      one: '1 parte se conserva sin mostrarse. No se ejecuta nada.',
     );
     return '$_temp0';
   }
 
   @override
-  String get workCompatibilityShow => 'Show parts';
+  String get workCompatibilityShow => 'Detalles de compatibilidad';
 
   @override
-  String get workCompatibilityHide => 'Hide parts';
+  String get workCompatibilityHide => 'Ocultar detalles';
 
   @override
-  String get workOutline => 'Outline';
+  String get workOutline => 'Esquema';
 
   @override
   String get workOutlineEmpty => 'No headings';
@@ -693,8 +691,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count paragraphs',
-      one: '1 paragraph',
+      other: '$count párrafos',
+      one: '1 párrafo',
     );
     return '$_temp0';
   }
@@ -704,8 +702,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count pages',
-      one: '1 page',
+      other: '$count páginas',
+      one: '1 página',
     );
     return '$_temp0';
   }
@@ -715,8 +713,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count slides',
-      one: '1 slide',
+      other: '$count diapositivas',
+      one: '1 diapositiva',
     );
     return '$_temp0';
   }
@@ -726,8 +724,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count cells',
-      one: '1 cell',
+      other: '$count celdas',
+      one: '1 celda',
     );
     return '$_temp0';
   }
@@ -737,8 +735,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count charts',
-      one: '1 chart',
+      other: '$count gráficos',
+      one: '1 gráfico',
     );
     return '$_temp0';
   }
@@ -747,11 +745,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workFormulaBar => 'Formula';
 
   @override
-  String get workValue => 'Value';
+  String get workValue => 'Valor';
 
   @override
-  String get workCellUnverified =>
-      'Cached value — not verified by recalculation';
+  String get workCellUnverified => 'valor en caché — sin verificar';
 
   @override
   String get workSheetNotPreviewed =>
@@ -759,34 +756,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String workPage(int index) {
-    return 'Page $index';
+    return 'Página $index';
   }
 
   @override
   String workSlide(int index) {
-    return 'Slide $index';
+    return 'Diapositiva $index';
   }
 
   @override
-  String get workKindDocument => 'Document';
+  String get workKindDocument => 'Documento';
 
   @override
-  String get workKindWorkbook => 'Workbook';
+  String get workKindWorkbook => 'Hoja de cálculo';
 
   @override
-  String get workKindDeck => 'Presentation';
+  String get workKindDeck => 'Presentación';
 
   @override
   String get workKindPdf => 'PDF';
 
   @override
-  String get workSupportedTypes => 'Supported types';
+  String get workSupportedTypes => 'Tipos compatibles';
 
   @override
-  String get workEmptyTextPage => 'No text extracted on this page';
+  String get workEmptyTextPage => 'No se extrajo texto en esta página';
 
   @override
-  String get workShowFormulas => 'Show formulas';
+  String get workShowFormulas => 'Mostrar fórmulas';
 
   @override
   String get workNoSelection => 'Select a cell';
@@ -1047,18 +1044,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityOpKindGenerate => 'Grounded generation';
 
   @override
-  String get settingsSubtitle => 'Appearance, language, privacy and identity';
+  String get settingsSubtitle => 'Idioma, tema y privacidad';
 
   @override
-  String get settingsThemeSystem => 'System';
+  String get settingsThemeSystem => 'Sistema';
 
   @override
   String get settingsLanguageBody =>
-      'Arabic mirrors navigation and alignment; file names, formulas and identifiers keep their own direction.';
+      'La interfaz sigue el idioma elegido; el árabe se muestra de derecha a izquierda.';
 
   @override
   String get settingsPrivacyBody =>
-      'Local Only is the default and the only policy in this release.';
+      'Solo local es la política predeterminada y única de esta versión.';
 
   @override
   String get settingsAbout => 'About';
@@ -1088,14 +1085,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLensDocked => 'Dock the Lens on wide windows';
 
   @override
-  String get settingsMotionNote =>
-      'Motion follows your system\'s reduce-motion setting.';
+  String get settingsMotionNote => 'El tema sigue los ajustes del sistema.';
 
   @override
-  String get copyAction => 'Copy';
+  String get copyAction => 'Copiar';
 
   @override
-  String get copiedMessage => 'Copied';
+  String get copiedMessage => 'Copiado';
 
   @override
   String get activityExecutorTime => 'Executor time';
@@ -1285,47 +1281,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get skillsDiffProposed => 'proposed';
 
   @override
-  String get settingsDiagnostics => 'Diagnostics';
+  String get settingsDiagnostics => 'Diagnóstico';
 
   @override
   String get settingsDiagnosticsBody =>
-      'Harbor keeps an encrypted crash and error log on this device and never uploads it. Export it to share with support by hand.';
+      'Registro cifrado de errores; solo exportación manual.';
 
   @override
-  String get settingsDiagnosticsContains =>
-      'The export contains redacted error records, the app and core versions, the runtime, the device class and installed model ids. It never contains document content, knowledge chunks or prompts.';
+  String get settingsDiagnosticsContains => 'Contiene';
 
   @override
   String settingsDiagnosticsRecords(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count records',
-      one: '1 record',
-      zero: 'No records yet',
-    );
-    return '$_temp0';
+    return 'entradas';
   }
 
   @override
-  String get settingsDiagnosticsExport => 'Export diagnostics';
+  String get settingsDiagnosticsExport => 'Exportar registro';
 
   @override
-  String get settingsDiagnosticsExported => 'Diagnostics exported';
+  String get settingsDiagnosticsExported => 'Registro exportado';
 
   @override
   String settingsDiagnosticsExportedBody(String path, int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count records',
-      one: '1 record',
-    );
-    return '$path · $_temp0';
+    return 'El registro cifrado se guardó donde elegiste.';
   }
 
   @override
-  String get settingsDiagnosticsExportFailed => 'Export failed';
+  String get settingsDiagnosticsExportFailed => 'Error al exportar';
 
   @override
   String get homeFirstRunTitle => 'Install a model to get started';
@@ -1501,27 +1483,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'Uninstall frees every owned file; a preview shows the exact scope before anything moves.';
 
   @override
-  String get workEditHint => 'Enter a value or =formula';
+  String get workEditHint => 'Escribe un valor o =fórmula';
 
   @override
-  String get workEditCommit => 'Commit cell';
+  String get workEditCommit => 'Confirmar celda';
 
   @override
-  String get workBoldRow => 'Bold row';
+  String get workBoldRow => 'Poner fila en negrita';
 
   @override
-  String get workAddChart => 'Insert chart from column';
+  String get workAddChart => 'Insertar gráfico desde la columna';
 
   @override
-  String get workConvertMarkdown => 'Convert Markdown / PDF…';
+  String get workConvertMarkdown => 'Convertir Markdown / PDF…';
 
   @override
   String workConvertedSaved(String path) {
-    return 'Saved $path';
+    return 'Guardado: $path';
   }
 
   @override
-  String get workConvertFailed => 'Conversion failed';
+  String get workConvertFailed => 'Error al convertir';
 
   @override
   String get modelsAdvancedDetails => 'Advanced details';
@@ -1530,7 +1512,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get modelsBackendLabel => 'Backend';
 
   @override
-  String get workAddHighlight => 'Highlight above selected';
+  String get workAddHighlight => 'Resaltar por encima de la selección';
 
   @override
   String get storeOfficeInstalled => 'Installed';
@@ -1568,136 +1550,136 @@ class AppLocalizationsEn extends AppLocalizations {
   String get suiteStatusPreview => 'Preview';
 
   @override
-  String get workNewSpreadsheet => 'New spreadsheet';
+  String get workNewSpreadsheet => 'Hoja nueva';
 
   @override
-  String get workNewDocument => 'New document';
+  String get workNewDocument => 'Documento nuevo';
 
   @override
-  String get workRecents => 'Recent';
+  String get workRecents => 'Recientes';
 
   @override
-  String get workUntitledSheet => 'Untitled workbook';
+  String get workUntitledSheet => 'Hoja sin título';
 
   @override
-  String get workUntitledDoc => 'Untitled document';
+  String get workUntitledDoc => 'Documento sin título';
 
   @override
   String workRecentFailed(String name) {
-    return 'Could not reopen $name — the system no longer grants access to this location.';
+    return 'No se pudo reabrir $name — el sistema ya no concede acceso a esa ubicación.';
   }
 
   @override
   String workEditParagraphTitle(int index) {
-    return 'Edit paragraph $index';
+    return 'Editar párrafo $index';
   }
 
   @override
   String workOpenUnsupported(String name) {
-    return 'Can\'t open $name — the suite opens Word, Excel, PowerPoint and PDF files.';
+    return 'Tipo de archivo no compatible.';
   }
 
   @override
   String workOpenUnreadable(String name) {
-    return 'Could not read $name — the app that shared it did not grant access.';
+    return 'Este archivo no se puede leer.';
   }
 
   @override
-  String get workUndo => 'Undo';
+  String get workUndo => 'Deshacer';
 
   @override
-  String get workRedo => 'Redo';
+  String get workRedo => 'Rehacer';
 
   @override
-  String get workSaveCopy => 'Save a copy';
+  String get workSaveCopy => 'Guardar copia';
 
   @override
   String workDraftRestored(String name) {
-    return 'Restored your unsaved edits to $name';
+    return 'Se restauraron tus cambios sin guardar: $name';
   }
 
   @override
   String workSavedCopy(String name) {
-    return 'Saved $name';
+    return 'Guardado: $name';
   }
 
   @override
-  String get workClearRecents => 'Clear';
+  String get workClearRecents => 'Borrar';
 
   @override
-  String get workExportPdf => 'Export PDF';
+  String get workExportPdf => 'Exportar a PDF';
 
   @override
-  String get workInsertRow => 'Insert row above';
+  String get workInsertRow => 'Insertar fila arriba';
 
   @override
-  String get workDeleteRow => 'Delete row';
+  String get workDeleteRow => 'Eliminar fila';
 
   @override
-  String get workInsertCol => 'Insert column left';
+  String get workInsertCol => 'Insertar columna a la izquierda';
 
   @override
-  String get workDeleteCol => 'Delete column';
+  String get workDeleteCol => 'Eliminar columna';
 
   @override
-  String get workStyle => 'Style';
+  String get workStyle => 'Estilo';
 
   @override
   String workExportedPdf(String name) {
-    return 'Exported $name';
+    return 'Exportado: $name';
   }
 
   @override
-  String get workStructure => 'Rows & columns';
+  String get workStructure => 'Filas y columnas';
 
   @override
-  String get workStyleKeep => 'Keep current';
+  String get workStyleKeep => 'Mantener';
 
   @override
-  String get workStyleH1 => 'Heading 1';
+  String get workStyleH1 => 'Encabezado 1';
 
   @override
-  String get workStyleH2 => 'Heading 2';
+  String get workStyleH2 => 'Encabezado 2';
 
   @override
-  String get workStyleH3 => 'Heading 3';
+  String get workStyleH3 => 'Encabezado 3';
 
   @override
-  String get workStyleBullet => 'Bullet list';
+  String get workStyleBullet => 'Lista con viñetas';
 
   @override
-  String get workStyleNumbered => 'Numbered list';
+  String get workStyleNumbered => 'Lista numerada';
 
   @override
-  String get workStyleNormal => 'Normal text';
+  String get workStyleNormal => 'Texto normal';
 
   @override
-  String get workConvertTo => 'Convert Markdown to…';
+  String get workConvertTo => 'Convertir Markdown a…';
 
   @override
   String get workMdFormatBody =>
-      'Word document (full text) or PowerPoint deck (one slide per heading)?';
+      '¿Documento Word (texto completo) o presentación PowerPoint (una diapositiva por título)?';
 
   @override
   String get workMdFormatWord => 'Word';
 
   @override
-  String get workMdFormatSlides => 'Slides';
+  String get workMdFormatSlides => 'Diapositivas';
 
   @override
   String workEditSlideTitle(int index) {
-    return 'Edit slide $index title';
+    return 'Editar título de la diapositiva $index';
   }
 
   @override
   String workEditSlideBullets(int index) {
-    return 'Edit slide $index bullets (one per line)';
+    return 'Editar viñetas de la diapositiva $index (una por línea)';
   }
 
   @override
-  String get workPrint => 'Print';
+  String get workPrint => 'Imprimir';
 
   @override
   String get workPrintUnavailable =>
-      'Printing is not available here — use Export PDF instead.';
+      'Aquí no hay impresión — usa Exportar a PDF.';
 }

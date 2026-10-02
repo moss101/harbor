@@ -13,6 +13,48 @@ import UIKit
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     OfficeOpenIntake.register(with: engineBridge.pluginRegistry)
+    OfficePrint.register(with: engineBridge.pluginRegistry)
+  }
+}
+
+/// System print dialog over a rendered PDF (the office Print action).
+/// The PDF bytes are handed to UIPrintInteractionController; nothing is
+/// sent anywhere except the user's chosen printer.
+final class OfficePrint: NSObject {
+  static func register(with registry: FlutterPluginRegistry) {
+    let channel = FlutterMethodChannel(
+      name: "dev.harbor.office/print",
+      binaryMessenger: registry.registrar(forPlugin: "HarborOfficePrint")!.messenger())
+    channel.setMethodCallHandler { call, result in
+      OfficePrint.handle(call: call, result: result)
+    }
+  }
+
+  fileprivate static func handle(call: FlutterMethodCall, result: @escaping FlutterResult) {
+    switch call.method {
+    case "printPdf":
+      guard let args = call.arguments as? [String: Any],
+            let data = args["data"] as? FlutterStandardTypedData,
+            let jobName = args["name"] as? String else {
+        result(FlutterError(code: "print", message: "missing data/name", details: nil))
+        return
+      }
+      let controller = UIPrintInteractionController.shared
+      let info = UIPrintInfo(dictionary: nil)
+      info.outputType = .general
+      info.jobName = jobName
+      controller.printInfo = info
+      controller.printingItem = data.data
+      controller.present(animated: true) { (_, completed, error) in
+        if let error = error {
+          result(FlutterError(code: "print", message: error.localizedDescription, details: nil))
+        } else {
+          result(completed)
+        }
+      }
+    default:
+      result(FlutterMethodNotImplemented)
+    }
   }
 }
 

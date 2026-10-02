@@ -34,7 +34,8 @@ pub use office_matrix::{
 };
 pub use package::package_integrity;
 pub use pptx::{
-    ChartKind, ChartSpec, DeckStyle, PptxDeck, PptxError, PptxOp, SlideContent, SlideImage,
+    apply_slide_text_edit, ChartKind, ChartSpec, DeckStyle, PptxDeck, PptxError, PptxOp,
+    SlideContent, SlideImage,
 };
 pub use workbook::{
     CfOperator, PreservationReport, SheetData, WorkbookDoc, WorkbookOp, XlsxChartKind,
