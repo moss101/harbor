@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "5eba294e506ed668beacba5a99e31051165f439fb5e34e9da070f9ec8faa8b0b",
+  "input_manifest_sha256": "55c106a1569e74aa3f430e883e161979096150b3eeec83b809cbcb2d2c137d01",
   "file_count_excluding_manifest": 1173,
   "files": [
     {
@@ -125,12 +125,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 222455,
-      "sha256": "c49e84015292a8191c1c4f27d8aeb8f85ce4a0156617d525f4f7c7d508a26af7"
+      "sha256": "3c650935154b65520d62971d1935230c8e503d3edad28633c90199f286b1e80e"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "9059a08270ae4a2f567d95ff9299301a5ab9c645a52c35b44bcba637c78d822b"
+      "sha256": "61fb5dd056f1379e99dabaa39ca8547a31146fc4c7a161fd8a009d58fb56d16f"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -1044,13 +1044,13 @@
     },
     {
       "path": "apps/harbor_office/android/app/src/main/jniLibs/arm64-v8a/libharbor_ffi.so",
-      "bytes": 29827560,
-      "sha256": "a967dbdef11d9de4e39866769146477de8139cb27401dd743840805b13bb31d6"
+      "bytes": 29863520,
+      "sha256": "b9d327d3b13102278206c33f09f3cfe5bd7e310f6bf8196fe2e9656416131578"
     },
     {
       "path": "apps/harbor_office/android/app/src/main/kotlin/dev/harbor/office/MainActivity.kt",
-      "bytes": 12773,
-      "sha256": "8633438b8337502361e97120d34b07e8efe27d6495ca39d26da3ccb10ae8b763"
+      "bytes": 12778,
+      "sha256": "f135ef5bf6708b3f29e130aec5972cfd5a4fa7e272b326bbc9e237a1aa9f1bd1"
     },
     {
       "path": "apps/harbor_office/android/app/src/main/res/drawable/launch_background.xml",

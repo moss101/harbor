@@ -116,7 +116,7 @@ class MainActivity : FlutterActivity() {
                     return
                 }
                 val info = android.print.PrintDocumentInfo.Builder("print.pdf")
-                    .setContentType(android.print.PrintDocumentInfo.CONTENT_TYPE_PDF)
+                    .setContentType(android.print.PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
                     .setPageCount(android.print.PrintDocumentInfo.PAGE_COUNT_UNKNOWN)
                     .build()
                 callback.onLayoutFinished(info, true)

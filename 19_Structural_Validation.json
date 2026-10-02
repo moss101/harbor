@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "5eba294e506ed668beacba5a99e31051165f439fb5e34e9da070f9ec8faa8b0b",
+  "input_manifest_sha256": "55c106a1569e74aa3f430e883e161979096150b3eeec83b809cbcb2d2c137d01",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -1026,13 +1026,13 @@
     },
     {
       "path": "apps/harbor_office/android/app/src/main/jniLibs/arm64-v8a/libharbor_ffi.so",
-      "bytes": 29827560,
-      "sha256": "a967dbdef11d9de4e39866769146477de8139cb27401dd743840805b13bb31d6"
+      "bytes": 29863520,
+      "sha256": "b9d327d3b13102278206c33f09f3cfe5bd7e310f6bf8196fe2e9656416131578"
     },
     {
       "path": "apps/harbor_office/android/app/src/main/kotlin/dev/harbor/office/MainActivity.kt",
-      "bytes": 12773,
-      "sha256": "8633438b8337502361e97120d34b07e8efe27d6495ca39d26da3ccb10ae8b763"
+      "bytes": 12778,
+      "sha256": "f135ef5bf6708b3f29e130aec5972cfd5a4fa7e272b326bbc9e237a1aa9f1bd1"
     },
     {
       "path": "apps/harbor_office/android/app/src/main/res/drawable/launch_background.xml",
