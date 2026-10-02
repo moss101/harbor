@@ -375,7 +375,10 @@ impl HfAcquirer<'_> {
         // brokered connection before the weight transfer. This cross-checks
         // declared sizes against HF's own metadata and warms the pooled
         // connection (edge nodes reset some fresh handshakes).
-        let tree_url = format!("https://huggingface.co/api/models/{repo_id}/tree/{revision}");
+        // `recursive=true`: weights in subfolders must be quoted too, or
+        // the SEC-029 preflight below would count them as zero bytes.
+        let tree_url =
+            format!("https://huggingface.co/api/models/{repo_id}/tree/{revision}?recursive=true");
         let tree = self.fetch(&tree_url, None)?;
         let expected_sizes: std::collections::BTreeMap<String, u64> =
             serde_json::from_slice::<serde_json::Value>(&tree)
@@ -410,10 +413,18 @@ impl HfAcquirer<'_> {
         // now offers, and (2) the install root can absorb the transfer
         // plus the reserve. Both refusals discard the staging directory
         // via `acquire`, so a refused download leaves nothing behind.
-        let quoted: u64 = files
-            .iter()
-            .filter_map(|(path, _, _)| expected_sizes.get(path).copied())
-            .sum();
+        // Fail closed: a requested file the metadata does not quote (tree
+        // unparsable, file absent) cannot be sized, so it cannot be
+        // covered by the user's confirmation.
+        let mut quoted: u64 = 0;
+        for (path, _, _) in files.iter() {
+            check_listing_path(path)?;
+            let size = expected_sizes
+                .get(path)
+                .copied()
+                .ok_or_else(|| AcquireError::SizeUnquoted(path.clone()))?;
+            quoted = quoted.saturating_add(size);
+        }
         if quoted > self.limits.confirmed_total_bytes {
             return Err(AcquireError::SizeNotConfirmed {
                 quoted,
@@ -440,16 +451,7 @@ impl HfAcquirer<'_> {
             }
             // File paths come from a catalog or a repository listing: they
             // may only name files inside the staging directory.
-            let unsafe_path = path.is_empty()
-                || std::path::Path::new(path).is_absolute()
-                || path
-                    .split(['/', '\\'])
-                    .any(|c| c == ".." || c.is_empty() || c == ".");
-            if unsafe_path {
-                return Err(AcquireError::Install(format!(
-                    "refusing unsafe file path {path:?} in the package listing"
-                )));
-            }
+            check_listing_path(path)?;
             let url = format!("https://huggingface.co/{repo_id}/resolve/{revision}/{path}");
             let out = staged.staging_dir.join(path);
             if let Some(parent) = out.parent() {
@@ -1014,6 +1016,10 @@ pub enum AcquireError {
     )]
     SizeNotConfirmed { quoted: u64, confirmed: u64 },
     #[error(
+        "download size not quoted (SEC-029): repository metadata gives no size for {0}, so it cannot be covered by a confirmed total"
+    )]
+    SizeUnquoted(String),
+    #[error(
         "insufficient disk space (SEC-029): {needed} bytes required at {path}, {available} available"
     )]
     InsufficientDisk {
@@ -1021,6 +1027,22 @@ pub enum AcquireError {
         available: u64,
         path: String,
     },
+}
+
+/// File paths come from a catalog or a repository listing: they may only
+/// name files inside the staging directory.
+fn check_listing_path(path: &str) -> Result<(), AcquireError> {
+    let unsafe_path = path.is_empty()
+        || std::path::Path::new(path).is_absolute()
+        || path
+            .split(['/', '\\'])
+            .any(|c| c == ".." || c.is_empty() || c == ".");
+    if unsafe_path {
+        return Err(AcquireError::Install(format!(
+            "refusing unsafe file path {path:?} in the package listing"
+        )));
+    }
+    Ok(())
 }
 
 /// Free space at `path`'s filesystem, probed natively per platform
@@ -1077,6 +1099,7 @@ pub fn acquire_signed(
     broker: &EgressBroker,
     transport: &dyn Transport,
     sessions: &BTreeMap<String, harbor_net::broker::EgressSession>,
+    limits: AcquireLimits,
     now: DateTime<Utc>,
 ) -> Result<serde_json::Value, AcquireError> {
     verifier
@@ -1094,10 +1117,7 @@ pub fn acquire_signed(
         sessions: sessions.clone(),
         auth_token: None,
         progress: None,
-        limits: AcquireLimits {
-            confirmed_total_bytes: u64::MAX,
-            ..Default::default()
-        },
+        limits,
     };
     acquirer.acquire(
         &package.id,
@@ -1178,6 +1198,10 @@ mod signed_tests {
             &broker,
             &transport,
             &sessions,
+            AcquireLimits {
+                confirmed_total_bytes: u64::MAX,
+                ..Default::default()
+            },
             Utc::now(),
         )
         .unwrap();
@@ -1217,6 +1241,10 @@ mod signed_tests {
             &broker,
             &transport,
             &sessions,
+            AcquireLimits {
+                confirmed_total_bytes: u64::MAX,
+                ..Default::default()
+            },
             Utc::now(),
         );
         assert!(matches!(result, Err(AcquireError::HashMismatch(_))));
@@ -1706,6 +1734,68 @@ mod sec029_tests {
         assert_eq!(transport.chunks_seen.load(Ordering::Relaxed), 0);
         assert!(!models.join(".staging-m").exists());
         assert!(installer.installed_packages().unwrap().is_empty());
+    }
+
+    /// Tree metadata that does not quote the requested file (unparsable
+    /// or missing entry) must not read as zero bytes.
+    struct UnquotedTransport {
+        weight_requests: AtomicUsize,
+    }
+
+    impl Transport for UnquotedTransport {
+        fn execute(
+            &self,
+            req: &TransportRequest,
+            _t: std::time::Duration,
+        ) -> std::io::Result<TransportResponse> {
+            if req.url.contains("/api/models/") {
+                return Ok(TransportResponse {
+                    status: 200,
+                    headers: Vec::new(),
+                    body: b"not json".to_vec(),
+                    final_url: String::new(),
+                });
+            }
+            self.weight_requests.fetch_add(1, Ordering::Relaxed);
+            Ok(TransportResponse {
+                status: 200,
+                headers: Vec::new(),
+                body: b"data".to_vec(),
+                final_url: String::new(),
+            })
+        }
+    }
+
+    #[test]
+    fn unquoted_file_refused_even_when_confirmed_total_is_huge() {
+        let dir = TempDir::new().unwrap();
+        let models = dir.path().join("models");
+        let installer = PackageInstaller::new(&models);
+        let (broker, sessions) = broker_with_sessions();
+        let transport = UnquotedTransport {
+            weight_requests: AtomicUsize::new(0),
+        };
+        let acquirer = HfAcquirer {
+            broker: &broker,
+            transport: &transport,
+            installer: &installer,
+            sessions,
+            auth_token: None,
+            progress: None,
+            limits: AcquireLimits {
+                confirmed_total_bytes: u64::MAX,
+                ..Default::default()
+            },
+        };
+        let err = acquirer
+            .acquire("m", "org/repo", "main", &files(), Utc::now())
+            .unwrap_err();
+        assert!(
+            matches!(&err, AcquireError::SizeUnquoted(p) if p == "w.gguf"),
+            "got: {err}"
+        );
+        assert_eq!(transport.weight_requests.load(Ordering::Relaxed), 0);
+        assert!(!models.join(".staging-m").exists());
     }
 
     #[test]

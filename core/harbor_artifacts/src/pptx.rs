@@ -86,12 +86,69 @@ pub enum Placeholder {
 
 impl Placeholder {}
 
+/// Slide part names in PRESENTATION order (`p:sldIdLst` resolved through
+/// `ppt/_rels/presentation.xml.rels`). Part names carry no order: after a
+/// delete or reorder, `slide3.xml` may be the 2nd slide, or the 2nd slide
+/// may be `slide7.xml`. Falls back to numeric part-name order only when
+/// the presentation part is absent or lists no resolvable slide.
+fn ordered_slide_parts<R: Read + std::io::Seek>(archive: &mut zip::ZipArchive<R>) -> Vec<String> {
+    const REL_NS: &str = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+    let mut read_part = |name: &str| -> Option<String> {
+        let mut f = archive.by_name(name).ok()?;
+        let mut s = String::new();
+        f.read_to_string(&mut s).ok()?;
+        Some(s)
+    };
+    let from_presentation = (|| {
+        let pres = read_part("ppt/presentation.xml")?;
+        let rels = read_part("ppt/_rels/presentation.xml.rels")?;
+        let pres = roxmltree::Document::parse(&pres).ok()?;
+        let rels = roxmltree::Document::parse(&rels).ok()?;
+        let targets: std::collections::HashMap<&str, &str> = rels
+            .descendants()
+            .filter(|n| n.has_tag_name("Relationship"))
+            .filter_map(|n| Some((n.attribute("Id")?, n.attribute("Target")?)))
+            .collect();
+        let parts: Vec<String> = pres
+            .descendants()
+            .filter(|n| n.has_tag_name("sldId"))
+            .filter_map(|n| n.attribute((REL_NS, "id")))
+            .filter_map(|rid| targets.get(rid))
+            .map(|t| match t.strip_prefix('/') {
+                Some(abs) => abs.to_string(),
+                None => normalize_rel_path("ppt", t),
+            })
+            .collect();
+        Some(parts)
+    })()
+    .unwrap_or_default();
+    let present = |p: &String| archive.file_names().any(|n| n == p);
+    if !from_presentation.is_empty() && from_presentation.iter().all(present) {
+        return from_presentation;
+    }
+    let mut names: Vec<String> = archive
+        .file_names()
+        .filter(|n| n.starts_with("ppt/slides/slide") && n.ends_with(".xml"))
+        .map(|n| n.to_string())
+        .collect();
+    names.sort_by_key(|n| {
+        n.trim_start_matches("ppt/slides/slide")
+            .trim_end_matches(".xml")
+            .parse::<usize>()
+            .unwrap_or(0)
+    });
+    names
+}
+
 /// Edit slide text in an EXISTING pptx package, preserving every other
 /// part byte-for-byte (the docx-apply pattern, for slide XML).
+/// - `slide` is the 1-based position in presentation order.
 /// - Title: the slide's title-placeholder text is replaced wholesale.
 /// - Body: bullet lines replace the body placeholder's existing
 ///   paragraphs 1:1 (more lines than paragraphs is a typed refusal —
 ///   no silent truncation, no invented paragraphs).
+/// Text that cannot be placed is a typed refusal too; an edit never
+/// reports success while dropping the new text.
 pub fn apply_slide_text_edit(
     bytes: &[u8],
     slide: usize,
@@ -101,18 +158,18 @@ pub fn apply_slide_text_edit(
     if slide == 0 {
         return Err(PptxError::Malformed("slide index is 1-based".into()));
     }
-    let part = format!("ppt/slides/slide{slide}.xml");
-    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(bytes.to_vec()))?;
+    let mut archive = zip::ZipArchive::new(Cursor::new(bytes))?;
+    let part = ordered_slide_parts(&mut archive)
+        .into_iter()
+        .nth(slide - 1)
+        .ok_or_else(|| PptxError::Malformed(format!("deck has no slide {slide}")))?;
     let mut xml = String::new();
-    {
-        use std::io::Read as _;
-        let mut f = archive
-            .by_name(&part)
-            .map_err(|_| PptxError::Malformed(format!("missing {part}")))?;
-        f.read_to_string(&mut xml)?;
-    }
+    archive
+        .by_name(&part)
+        .map_err(|_| PptxError::Malformed(format!("missing {part}")))?
+        .read_to_string(&mut xml)?;
     let edited = edit_slide_xml(&xml, placeholder, text)?;
-    let mut out = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+    let mut out = zip::ZipWriter::new(Cursor::new(Vec::new()));
     let opts: zip::write::SimpleFileOptions = zip::write::FileOptions::default();
     for i in 0..archive.len() {
         let mut f = archive.by_index(i)?;
@@ -128,20 +185,15 @@ pub fn apply_slide_text_edit(
 }
 
 /// Find the title/body placeholder shape in slide XML and rewrite its
-/// run texts. Everything outside that shape is byte-identical.
+/// run texts. Everything outside that shape is byte-identical. Only the
+/// FIRST matching shape is edited.
 fn edit_slide_xml(xml: &str, placeholder: Placeholder, text: &str) -> Result<String, PptxError> {
     // Split into shape blocks on <p:sp> boundaries (raw scan; slide XML
     // from any generator keeps p:sp un-nested).
     let want_title = matches!(placeholder, Placeholder::Title);
     let mut out = String::with_capacity(xml.len() + text.len());
     let mut i = 0usize;
-    let bytes = xml.as_bytes();
-    while i < bytes.len() {
-        let sp_at = xml[i..].find("<p:sp>").map(|p| i + p);
-        let Some(sp_start) = sp_at else {
-            out.push_str(&xml[i..]);
-            break;
-        };
+    while let Some(sp_start) = xml[i..].find("<p:sp>").map(|p| i + p) {
         let body_open_end = sp_start + "<p:sp>".len();
         let sp_end_rel = xml[body_open_end..]
             .find("</p:sp>")
@@ -152,100 +204,159 @@ fn edit_slide_xml(xml: &str, placeholder: Placeholder, text: &str) -> Result<Str
             shape.contains(r#"type="title""#) || shape.contains(r#"type="ctrTitle""#)
         } else {
             // Body placeholder: explicit body type, or a ph with no type.
-            if shape.contains("<p:ph") {
-                shape.contains(r#"type="body""#) || !shape.contains(r#"type=""#)
-            } else {
-                false
-            }
+            shape.contains("<p:ph")
+                && (shape.contains(r#"type="body""#) || !shape.contains(r#"type=""#))
         };
         if !is_target {
             out.push_str(&xml[i..sp_end]);
             i = sp_end;
             continue;
         }
-        // The rebuilt block already contains its own <p:sp> open tag.
         out.push_str(&xml[i..sp_start]);
         match placeholder {
-            Placeholder::Title => {
-                out.push_str(&replace_first_run_text(shape, text, "<p:sp>"));
-            }
+            Placeholder::Title => out.push_str(&replace_first_run_text(shape, text)?),
             Placeholder::Body => {
                 let lines: Vec<&str> = if text.trim().is_empty() {
                     vec![""]
                 } else {
                     text.split('\n').collect()
                 };
-                out.push_str(&replace_paragraph_texts(shape, &lines, "<p:sp>")?);
+                out.push_str(&replace_paragraph_texts(shape, &lines)?);
             }
         }
-        i = sp_end;
+        out.push_str(&xml[sp_end..]);
+        return Ok(out);
     }
-    Ok(out)
+    // No shape matched: the edit cannot land, so it must not report Ok.
+    Err(PptxError::Malformed(format!(
+        "slide has no {} placeholder",
+        if want_title { "title" } else { "body" }
+    )))
 }
 
-/// Replace run texts: the FIRST <a:t> gets `text`, every other <a:t> in
-/// the block is emptied (the docx run pattern).
-fn replace_first_run_text(block: &str, text: &str, open: &str) -> String {
-    let _ = open;
-    let mut out = String::with_capacity(block.len() + text.len());
+/// Locate the next opening `<tag>` / `<tag attr…>` / `<tag/>` at or after
+/// `from` (never a longer name such as `<a:pPr`). Returns the start of the
+/// tag, the index just past its `>`, and whether it is self-closing.
+fn find_open_tag(s: &str, from: usize, tag: &str) -> Option<(usize, usize, bool)> {
+    let needle = format!("<{tag}");
+    let mut at = from;
+    while let Some(rel) = s[at..].find(&needle) {
+        let start = at + rel;
+        let after = start + needle.len();
+        match s.as_bytes().get(after) {
+            Some(b'>' | b' ' | b'/') => {
+                let close = after + s[after..].find('>')?;
+                return Some((start, close + 1, s.as_bytes()[close - 1] == b'/'));
+            }
+            _ => at = after,
+        }
+    }
+    None
+}
+
+/// Replace run texts: the FIRST `<a:t>` gets `text`, every other `<a:t>`
+/// in the block is emptied (the docx run pattern). A block with no `<a:t>`
+/// at all (an empty paragraph) gets a new run in its first paragraph.
+fn replace_first_run_text(block: &str, text: &str) -> Result<String, PptxError> {
+    let escaped = xml_escape(text);
+    let mut out = String::with_capacity(block.len() + escaped.len());
     let mut first_done = false;
-    let mut rest = block;
-    while let Some(at) = rest.find("<a:t>") {
-        let content_start = at + "<a:t>".len();
-        let content_end = rest[content_start..]
-            .find("</a:t>")
-            .map(|p| content_start + p)
-            .unwrap_or(rest.len());
-        out.push_str(&rest[..content_start]);
-        out.push_str(&xml_escape(text_check(first_done, text)));
+    let mut at = 0usize;
+    while let Some((start, open_end, self_closing)) = find_open_tag(block, at, "a:t") {
+        out.push_str(&block[at..start]);
+        let content = if first_done { "" } else { escaped.as_str() };
         first_done = true;
+        let attrs_open = if self_closing {
+            // `<a:t/>` or `<a:t xml:space="preserve"/>`: reopen it.
+            block[start..open_end - 2].trim_end().to_string() + ">"
+        } else {
+            block[start..open_end].to_string()
+        };
+        out.push_str(&attrs_open);
+        out.push_str(content);
         out.push_str("</a:t>");
-        rest = &rest[content_end + "</a:t>".len()..];
+        at = if self_closing {
+            open_end
+        } else {
+            match block[open_end..].find("</a:t>") {
+                Some(p) => open_end + p + "</a:t>".len(),
+                None => return Err(PptxError::Malformed("unbalanced a:t".into())),
+            }
+        };
     }
-    out.push_str(rest);
-    out
+    out.push_str(&block[at..]);
+    if first_done || text.is_empty() {
+        return Ok(out);
+    }
+    insert_run(&out, &escaped)
 }
 
-fn text_check<'a>(first_done: bool, text: &'a str) -> &'a str {
-    if first_done {
-        ""
-    } else {
-        text
+/// Add `<a:r><a:t>text</a:t></a:r>` to the first paragraph of `block`:
+/// before its `<a:endParaRPr>` if it has one, else before `</a:p>`, else
+/// by expanding a self-closing `<a:p/>`.
+fn insert_run(block: &str, escaped: &str) -> Result<String, PptxError> {
+    let run = format!("<a:r><a:t>{escaped}</a:t></a:r>");
+    let Some((p_start, p_open_end, p_self_closing)) = find_open_tag(block, 0, "a:p") else {
+        return Err(PptxError::Malformed(
+            "placeholder has no paragraph to hold the text".into(),
+        ));
+    };
+    if p_self_closing {
+        let open = block[p_start..p_open_end - 2].trim_end();
+        return Ok(format!(
+            "{}{open}>{run}</a:p>{}",
+            &block[..p_start],
+            &block[p_open_end..]
+        ));
     }
+    let p_end = block[p_open_end..]
+        .find("</a:p>")
+        .map(|p| p_open_end + p)
+        .ok_or_else(|| PptxError::Malformed("unbalanced a:p".into()))?;
+    let insert_at = find_open_tag(&block[..p_end], p_open_end, "a:endParaRPr")
+        .map(|(s, _, _)| s)
+        .unwrap_or(p_end);
+    Ok(format!(
+        "{}{run}{}",
+        &block[..insert_at],
+        &block[insert_at..]
+    ))
 }
 
-/// Replace the text of each <a:p> paragraph's first run with lines[i];
+/// Replace the text of each `<a:p>` paragraph's first run with lines[i];
 /// extra paragraphs are emptied. More lines than paragraphs refuses.
-fn replace_paragraph_texts(block: &str, lines: &[&str], open: &str) -> Result<String, PptxError> {
-    let _ = open;
-    let paragraph_count = block.matches("<a:p>").count();
-    if lines.len() > paragraph_count {
+fn replace_paragraph_texts(block: &str, lines: &[&str]) -> Result<String, PptxError> {
+    let mut out = String::with_capacity(block.len());
+    let mut line_idx = 0usize;
+    let mut at = 0usize;
+    while let Some((p_start, p_open_end, self_closing)) = find_open_tag(block, at, "a:p") {
+        let line = lines.get(line_idx).copied().unwrap_or("");
+        line_idx += 1;
+        out.push_str(&block[at..p_start]);
+        if self_closing {
+            let paragraph = &block[p_start..p_open_end];
+            if line.is_empty() {
+                out.push_str(paragraph);
+            } else {
+                out.push_str(&insert_run(paragraph, &xml_escape(line))?);
+            }
+            at = p_open_end;
+            continue;
+        }
+        let p_end = block[p_open_end..]
+            .find("</a:p>")
+            .map(|p| p_open_end + p + "</a:p>".len())
+            .ok_or_else(|| PptxError::Malformed("unbalanced a:p".into()))?;
+        out.push_str(&replace_first_run_text(&block[p_start..p_end], line)?);
+        at = p_end;
+    }
+    if lines.len() > line_idx {
         return Err(PptxError::Malformed(format!(
-            "slide has {} bullet paragraphs; refusing {} lines",
-            paragraph_count,
+            "slide has {line_idx} bullet paragraphs; refusing {} lines",
             lines.len()
         )));
     }
-    let mut out = String::with_capacity(block.len());
-    let mut line_idx = 0usize;
-    let mut rest = block;
-    while let Some(p_at) = rest.find("<a:p>") {
-        let p_end_rel = rest[p_at..]
-            .find("</a:p>")
-            .ok_or_else(|| PptxError::Malformed("unbalanced a:p".into()))?;
-        let p_end = p_at + p_end_rel + "</a:p>".len();
-        let paragraph = &rest[p_at..p_end];
-        let line = if line_idx < lines.len() {
-            lines[line_idx]
-        } else {
-            ""
-        };
-        out.push_str(&rest[..p_at]);
-        out.push_str(&replace_first_run_text(paragraph, line, "<a:p>"));
-        line_idx += 1;
-        rest = &rest[p_end..];
-    }
-    out.push_str(rest);
+    out.push_str(&block[at..]);
     Ok(out)
 }
 
@@ -853,17 +964,7 @@ impl PptxDeck {
         let mut archive = zip::ZipArchive::new(Cursor::new(bytes))?;
         crate::inflate_probe(&mut archive).map_err(PptxError::Malformed)?;
         // Minimal read-back: slide count + titles/bullets text extraction.
-        let mut names: Vec<String> = archive
-            .file_names()
-            .filter(|n| n.starts_with("ppt/slides/slide") && n.ends_with(".xml"))
-            .map(|n| n.to_string())
-            .collect();
-        names.sort_by_key(|n| {
-            n.trim_start_matches("ppt/slides/slide")
-                .trim_end_matches(".xml")
-                .parse::<usize>()
-                .unwrap_or(0)
-        });
+        let names = ordered_slide_parts(&mut archive);
         let mut slides = Vec::new();
         for name in &names {
             let xml = {
@@ -1126,6 +1227,106 @@ pub fn minimal_embedded_xlsx(series: &[(String, Vec<f64>)]) -> Vec<u8> {
 
 #[cfg(test)]
 mod tests {
+    /// Rewrite one part of a pptx package (test helper).
+    fn rewrite_part(bytes: &[u8], part: &str, f: impl Fn(&str) -> String) -> Vec<u8> {
+        let mut ar = zip::ZipArchive::new(std::io::Cursor::new(bytes)).unwrap();
+        let mut out = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+        let opts: zip::write::SimpleFileOptions = zip::write::FileOptions::default();
+        for i in 0..ar.len() {
+            let mut file = ar.by_index(i).unwrap();
+            let name = file.name().to_string();
+            out.start_file(name.clone(), opts).unwrap();
+            if name == part {
+                let mut xml = String::new();
+                std::io::Read::read_to_string(&mut file, &mut xml).unwrap();
+                std::io::Write::write_all(&mut out, f(&xml).as_bytes()).unwrap();
+            } else {
+                std::io::copy(&mut file, &mut out).unwrap();
+            }
+        }
+        out.finish().unwrap().into_inner()
+    }
+
+    fn three_slide_deck() -> Vec<u8> {
+        let slide = |t: &str| SlideContent {
+            title: t.into(),
+            bullets: vec!["b".into()],
+            notes: None,
+            chart: None,
+            image: None,
+        };
+        PptxDeck {
+            title: "Deck".into(),
+            slides: vec![slide("First"), slide("Second"), slide("Third")],
+        }
+        .to_pptx_bytes()
+        .unwrap()
+    }
+
+    #[test]
+    fn slide_index_follows_presentation_order_not_part_names() {
+        // Reorder: the deck now presents slide3, slide2, slide1.
+        let reordered = rewrite_part(&three_slide_deck(), "ppt/presentation.xml", |xml| {
+            let start = xml.find("<p:sldIdLst>").unwrap();
+            let end = xml.find("</p:sldIdLst>").unwrap();
+            let ids: Vec<&str> = xml[start + "<p:sldIdLst>".len()..end]
+                .split("/>")
+                .filter(|s| !s.is_empty())
+                .collect();
+            let reversed: String = ids.iter().rev().map(|s| format!("{s}/>")).collect();
+            format!("{}<p:sldIdLst>{reversed}{}", &xml[..start], &xml[end..])
+        });
+        let deck = PptxDeck::from_pptx_bytes(&reordered).unwrap();
+        assert_eq!(deck.slides[0].title, "Third", "reader follows sldIdLst");
+
+        // Editing displayed slide 1 edits what the reader shows as slide 1.
+        let edited =
+            crate::pptx::apply_slide_text_edit(&reordered, 1, Placeholder::Title, "Edited")
+                .unwrap();
+        let after = PptxDeck::from_pptx_bytes(&edited).unwrap();
+        assert_eq!(after.slides[0].title, "Edited");
+        assert_eq!(after.slides[1].title, "Second");
+        assert_eq!(after.slides[2].title, "First");
+
+        // Past the end is a typed refusal, not a missing-part guess.
+        assert!(
+            crate::pptx::apply_slide_text_edit(&reordered, 4, Placeholder::Title, "x").is_err()
+        );
+    }
+
+    #[test]
+    fn edits_into_empty_runs_are_placed_or_refused_never_dropped() {
+        // Blank bullet (no <a:t>), attributed <a:t>, and a self-closing <a:p/>.
+        let bytes = rewrite_part(&three_slide_deck(), "ppt/slides/slide1.xml", |xml| {
+            let body_start = xml.find("Content Placeholder").unwrap();
+            let (head, body) = xml.split_at(body_start);
+            let p_start = body.find("<a:p>").unwrap();
+            let p_end = body.find("</a:p>").unwrap() + "</a:p>".len();
+            let paras = "<a:p><a:endParaRPr lang=\"en-US\"/></a:p>\
+                         <a:p><a:r><a:t xml:space=\"preserve\">old</a:t></a:r></a:p>\
+                         <a:p/>";
+            format!("{head}{}{paras}{}", &body[..p_start], &body[p_end..])
+        });
+        let out = crate::pptx::apply_slide_text_edit(
+            &bytes,
+            1,
+            Placeholder::Body,
+            "first\nsecond & more\nthird",
+        )
+        .unwrap();
+        let deck = PptxDeck::from_pptx_bytes(&out).unwrap();
+        assert_eq!(
+            deck.slides[0].bullets,
+            vec!["first", "second & more", "third"]
+        );
+        // Another slide is untouched.
+        assert_eq!(deck.slides[1].title, "Second");
+        // A fourth line has no paragraph to land in: refused.
+        assert!(
+            crate::pptx::apply_slide_text_edit(&bytes, 1, Placeholder::Body, "a\nb\nc\nd").is_err()
+        );
+    }
+
     #[test]
     fn slide_text_edit_preserves_package_and_applies() {
         let deck = PptxDeck {

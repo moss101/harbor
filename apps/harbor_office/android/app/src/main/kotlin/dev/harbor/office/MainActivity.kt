@@ -128,10 +128,16 @@ class MainActivity : FlutterActivity() {
                 cancellationSignal: android.os.CancellationSignal?,
                 callback: WriteResultCallback
             ) {
+                if (cancellationSignal?.isCanceled == true) {
+                    callback.onWriteCancelled()
+                    return
+                }
                 try {
-                    java.io.FileOutputStream(destination.fileDescriptor).use { out ->
-                        out.write(bytes)
-                    }
+                    // The descriptor belongs to the print framework: write
+                    // and flush, but do not close it from here.
+                    val out = java.io.FileOutputStream(destination.fileDescriptor)
+                    out.write(bytes)
+                    out.flush()
                     callback.onWriteFinished(arrayOf(android.print.PageRange.ALL_PAGES))
                 } catch (e: Exception) {
                     callback.onWriteFailed(e.message)

@@ -271,10 +271,10 @@ class _WorkSurfaceState extends State<WorkSurface> {
         messenger.showSnackBar(
             SnackBar(content: Text(l10n.workPrintUnavailable)));
       }
-    } on ffi.HarborCoreException {
+    } on ffi.HarborCoreException catch (e) {
       if (mounted) {
         messenger.showSnackBar(
-            const SnackBar(content: Text('\${l10n.workConvertFailed}: \${e.message}')));
+            SnackBar(content: Text('${l10n.workConvertFailed}: ${e.message}')));
       }
     }
   }
