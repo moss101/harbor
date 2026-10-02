@@ -22,9 +22,10 @@ import UIKit
 /// sent anywhere except the user's chosen printer.
 final class OfficePrint: NSObject {
   static func register(with registry: FlutterPluginRegistry) {
+    guard let registrar = registry.registrar(forPlugin: "HarborOfficePrint") else { return }
     let channel = FlutterMethodChannel(
       name: "dev.harbor.office/print",
-      binaryMessenger: registry.registrar(forPlugin: "HarborOfficePrint")!.messenger())
+      binaryMessenger: registrar.messenger())
     channel.setMethodCallHandler { call, result in
       OfficePrint.handle(call: call, result: result)
     }
@@ -45,12 +46,23 @@ final class OfficePrint: NSObject {
       info.jobName = jobName
       controller.printInfo = info
       controller.printingItem = data.data
-      controller.present(animated: true) { (_, completed, error) in
+      let completion: UIPrintInteractionController.CompletionHandler = { (_, completed, error) in
         if let error = error {
           result(FlutterError(code: "print", message: error.localizedDescription, details: nil))
         } else {
           result(completed)
         }
+      }
+      // iPad presents the print UI as a popover and needs an anchor;
+      // iPhone uses the full-width sheet.
+      if UIDevice.current.userInterfaceIdiom == .pad,
+         let view = UIApplication.shared.connectedScenes
+           .compactMap({ ($0 as? UIWindowScene)?.keyWindow?.rootViewController?.view })
+           .first {
+        let anchor = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
+        controller.present(from: anchor, in: view, animated: true, completionHandler: completion)
+      } else {
+        controller.present(animated: true, completionHandler: completion)
       }
     default:
       result(FlutterMethodNotImplemented)

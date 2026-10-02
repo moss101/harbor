@@ -29,41 +29,30 @@ class _DeckViewState extends State<DeckView> {
     if (service == null || sp.failed) return;
     final l10n = AppLocalizations.of(context)!;
     final slides = (widget.preview['slides'] as List? ?? const []).cast<Map>();
+    if (slides.isEmpty) return;
     final index = _selected.clamp(0, slides.length - 1);
     final slide = slides[index];
     final slideNo = (slide['index'] as num).toInt();
     final current = isTitle
         ? (slide['title'] as String? ?? '')
         : (slide['bullets'] as List? ?? const []).cast<String>().join('\n');
-    final controller = TextEditingController(text: current);
-    final saved = await showDialog<bool>(
+    // The dialog owns (and disposes) its controller, so it is never torn
+    // down while the route's exit animation still paints the TextField.
+    final newText = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isTitle
+      builder: (context) => _SlideTextDialog(
+        title: isTitle
             ? l10n.workEditSlideTitle(slideNo)
-            : l10n.workEditSlideBullets(slideNo)),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLines: isTitle ? 1 : 8,
-          minLines: 1,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(MaterialLocalizations.of(context).okButtonLabel),
-          ),
-        ],
+            : l10n.workEditSlideBullets(slideNo),
+        initial: current,
+        singleLine: isTitle,
       ),
     );
-    final newText = controller.text;
-    controller.dispose();
-    if (saved != true || !mounted || newText == current) return;
-    setState(() => _saving = true);
+    if (newText == null || !mounted || newText == current) return;
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
     try {
       await service.editDeckSlide(
           slide: slideNo, isTitle: isTitle, text: newText);
@@ -291,5 +280,56 @@ class _DeckViewState extends State<DeckView> {
         ),
       ]);
     });
+  }
+}
+
+/// Text-entry dialog for one slide's title or bullets; pops the entered
+/// text, or null on cancel.
+class _SlideTextDialog extends StatefulWidget {
+  const _SlideTextDialog({
+    required this.title,
+    required this.initial,
+    required this.singleLine,
+  });
+  final String title;
+  final String initial;
+  final bool singleLine;
+
+  @override
+  State<_SlideTextDialog> createState() => _SlideTextDialogState();
+}
+
+class _SlideTextDialogState extends State<_SlideTextDialog> {
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final material = MaterialLocalizations.of(context);
+    return AlertDialog(
+      title: Text(widget.title),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        maxLines: widget.singleLine ? 1 : 8,
+        minLines: 1,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(material.cancelButtonLabel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_controller.text),
+          child: Text(material.okButtonLabel),
+        ),
+      ],
+    );
   }
 }

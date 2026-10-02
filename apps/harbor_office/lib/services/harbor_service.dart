@@ -753,15 +753,17 @@ class HarborService extends ChangeNotifier {
   }
 
   /// Hand finished PDF bytes to the system print dialog (platform
-  /// channel dev.harbor.office/print; desktop falls back to saving).
+  /// channel dev.harbor.office/print). Returns false when the platform has
+  /// no print channel; a failure inside the platform print path throws
+  /// [ffi.HarborCoreException] with the platform's message.
   Future<bool> printPdf(List<int> bytes, String jobName) async {
     const channel = MethodChannel('dev.harbor.office/print');
     try {
       final ok = await channel
           .invokeMethod<bool>('printPdf', {'data': bytes, 'name': jobName});
       return ok == true;
-    } on PlatformException {
-      return false;
+    } on PlatformException catch (e) {
+      throw ffi.HarborCoreException(e.message ?? e.code);
     } on MissingPluginException {
       return false; // tests / unsupported platform
     }
@@ -790,10 +792,13 @@ class HarborService extends ChangeNotifier {
     });
     final newBytes =
         base64Decode(result['data_b64'] as String).toList(growable: false);
+    // Preview first: if it fails, the working copy, history and preview
+    // all still describe the same (unedited) deck.
+    final newPreview =
+        await _call('artifact.preview', {'data_b64': base64Encode(newBytes)});
     _pushHistory();
     _sourceBytes = newBytes;
-    _preview = await _call('artifact.preview',
-        {'data_b64': base64Encode(newBytes)});
+    _preview = newPreview;
     await _autosave();
     notifyListeners();
     return result;

@@ -265,7 +265,18 @@ class _WorkSurfaceState extends State<WorkSurface> {
               ? await service.exportWorkbookToPdf(title: name)
               : await service.exportDocxToPdf(title: name);
       if (bytes == null) return;
-      final sent = await service.printPdf(bytes, name);
+      final bool sent;
+      try {
+        sent = await service.printPdf(bytes, name);
+      } on ffi.HarborCoreException catch (e) {
+        // The platform print path failed (not "no print support"): keep
+        // its reason instead of reporting the printer as unavailable.
+        if (mounted) {
+          messenger.showSnackBar(SnackBar(
+              content: Text('${l10n.workPrintUnavailable} (${e.message})')));
+        }
+        return;
+      }
       if (!mounted) return;
       if (!sent) {
         messenger.showSnackBar(
