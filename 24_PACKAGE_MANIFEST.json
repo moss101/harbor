@@ -4,8 +4,8 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "4c13601d2a80c33e7e63a2db7e6545036b21fb76a81b7cab632c67eaa4c23d62",
-  "file_count_excluding_manifest": 1157,
+  "input_manifest_sha256": "5eba294e506ed668beacba5a99e31051165f439fb5e34e9da070f9ec8faa8b0b",
+  "file_count_excluding_manifest": 1173,
   "files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -124,13 +124,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 219523,
-      "sha256": "db33ddda1e208c68277b81536c0e09e9fba11f64ee5138317c9d21aec2ddaf37"
+      "bytes": 222455,
+      "sha256": "c49e84015292a8191c1c4f27d8aeb8f85ce4a0156617d525f4f7c7d508a26af7"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "54c27758552cfb4632f4488d807ea7da8ef0b0544ec989e9d7aee08a49a74e79"
+      "sha256": "9059a08270ae4a2f567d95ff9299301a5ab9c645a52c35b44bcba637c78d822b"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -1413,9 +1413,29 @@
       "sha256": "e4939b33064777853dc828920626d4c7b29d5da5d668f86a0b4f058a659fd409"
     },
     {
+      "path": "apps/harbor_office/lib/l10n/app_de.arb",
+      "bytes": 33354,
+      "sha256": "a49d0ca6a1f313c643fa1758a85bc60c1ba86879dc4c0693766fd124294eb43a"
+    },
+    {
       "path": "apps/harbor_office/lib/l10n/app_en.arb",
       "bytes": 34120,
       "sha256": "eb3736208b031ea5e5f15f9b63d581bef21d2eb10f6c1ae5f1586e6a85c60f2b"
+    },
+    {
+      "path": "apps/harbor_office/lib/l10n/app_es.arb",
+      "bytes": 33178,
+      "sha256": "9e7dd89c81f2d3c446503b61550ee0d42bd8fd77d1be180a7a80a1d768dcea4f"
+    },
+    {
+      "path": "apps/harbor_office/lib/l10n/app_fr.arb",
+      "bytes": 33406,
+      "sha256": "09220e4b350ec97e4f9a62a7ee6c73c8ed12be767ac941da55a41dd4c9e575d7"
+    },
+    {
+      "path": "apps/harbor_office/lib/l10n/app_hi.arb",
+      "bytes": 36425,
+      "sha256": "e8ddbaee9851dc4a5f8d331497e23434ad4d391f1ee7a648520aa4ebd9a58ab4"
     },
     {
       "path": "apps/harbor_office/lib/l10n/app_localizations.dart",
@@ -1428,9 +1448,29 @@
       "sha256": "2d5fbd06a2df6457de8f855166510def7e15029303f9e7e49a54d3781eba2c87"
     },
     {
+      "path": "apps/harbor_office/lib/l10n/app_localizations_de.dart",
+      "bytes": 40677,
+      "sha256": "0a48a6171aa6643d5e30d564edefa652ff80e0782fe61d631b42b809b4d9c5bf"
+    },
+    {
       "path": "apps/harbor_office/lib/l10n/app_localizations_en.dart",
       "bytes": 41087,
       "sha256": "c47c6c4c0ec7107b778e50ada36cd4ed91f1836dbed12ebaef2aab3e4f4e2ef0"
+    },
+    {
+      "path": "apps/harbor_office/lib/l10n/app_localizations_es.dart",
+      "bytes": 40474,
+      "sha256": "10cd55f24abd7c49bb6dec7bebc091f26a1db510e230ea47964005895688a7a8"
+    },
+    {
+      "path": "apps/harbor_office/lib/l10n/app_localizations_fr.dart",
+      "bytes": 40691,
+      "sha256": "c83afd1489a2e2acb8b19a4711191752d8afd6799493de23e455b302cab90917"
+    },
+    {
+      "path": "apps/harbor_office/lib/l10n/app_localizations_hi.dart",
+      "bytes": 43703,
+      "sha256": "279ff231b79c721a7357b809110dee37ec121f548fc3d7a22b4824dd759d24df"
     },
     {
       "path": "apps/harbor_office/lib/main.dart",
@@ -2769,8 +2809,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 138685,
-      "sha256": "c83512bff266c512c7b1741e00c5d2555169f5b036a18a13f13a0eeabb8788a4"
+      "bytes": 140816,
+      "sha256": "7c0794bdb860b4cce6ce9b759cd22ae11b8f71a8098553d68d721d7d16b8e072"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -2881,6 +2921,46 @@
       "path": "docs/release/store/model_licenses.md",
       "bytes": 1307,
       "sha256": "748ef7f315ebdb4214e44d16ef0b8cb2f107ad6dac8142da8d08d71750089e30"
+    },
+    {
+      "path": "docs/release/store/office/faq.md",
+      "bytes": 1344,
+      "sha256": "a6570ed1353da2c7a43a0d32b301ee7791ecd13415fb771eb3cda7eff3c41abb"
+    },
+    {
+      "path": "docs/release/store/office/privacy_statement.md",
+      "bytes": 901,
+      "sha256": "8c70137d00053c6125b4dbedc7154cc07e318c0cf8b20a6f706fa0d600bef9d9"
+    },
+    {
+      "path": "docs/release/store/office/product_description.md",
+      "bytes": 1812,
+      "sha256": "87a9911b98db42e341ef2d49e04ec7188f7aa36d39f2edcc325e376cba193dcf"
+    },
+    {
+      "path": "docs/release/store/office/screenshots/01-work-home.png",
+      "bytes": 249147,
+      "sha256": "eb8c716b3bf1a815f8b619b8762c1afd7cdaf962032395a6ec1864b86c376774"
+    },
+    {
+      "path": "docs/release/store/office/screenshots/02-spreadsheet.png",
+      "bytes": 242723,
+      "sha256": "cf9c8025e744d067e204fc82385795a391def2313fbc78b6da88574ba49634ca"
+    },
+    {
+      "path": "docs/release/store/office/screenshots/03-document.png",
+      "bytes": 176986,
+      "sha256": "db98002f35f3fabc9c53ae9a01b27cb1a38ab8462aadbf844636dd2e88bfb85c"
+    },
+    {
+      "path": "docs/release/store/office/screenshots/04-deck.png",
+      "bytes": 204340,
+      "sha256": "e96b2fdf25ded54b7c2c05382787a7b0fec70835766dc5f2a49fc9b137a98e3a"
+    },
+    {
+      "path": "docs/release/store/office/screenshots/05-settings.png",
+      "bytes": 317639,
+      "sha256": "96488f4075cc664b52656b5d4c14097a2a0dc45d4c0b3e5867869bf3631b573d"
     },
     {
       "path": "docs/release/store/privacy_statement.md",

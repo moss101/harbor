@@ -7,6 +7,42 @@ ran at.
 
 ---
 
+## Session 56 (2026-10-02): the last four — PPTX editing, print, store collateral, locales
+
+- **PPTX slide editing** (the last big engine lift): a
+  package-preserving editor (`apply_slide_text_edit`) rewrites one
+  slide's title or body placeholder run texts in place; every other
+  zip entry stays byte-identical (asserted by test). More body lines
+  than bullet paragraphs is a typed refusal — no silent truncation.
+  Exposed as FFI `pptx.edit` (13/13 in the workbook_edit suite) and
+  the deck view's long-press dialogs (title / bullets). Found live by
+  the round-trip test: the rebuilt shape pushed its own `<p:sp>` open
+  tag on top of the already-pushed prefix (`<p:sp><p:sp>`) — the
+  loader rejected the malformed slide; fixed by pushing only the
+  rebuilt block.
+- **System print**: Print icon renders the open docx/xlsx (or the PDF
+  as-is) and hands finished PDF bytes to the SYSTEM dialog — iOS
+  `UIPrintInteractionController` (Swift plugin; the new FlutterPlugin
+  conformance requirement dropped in favor of a plain registrar, matching
+  the intake plugin's pattern) and Android `PrintManager` with a
+  copy-through `PrintDocumentAdapter`. Verified live: the iOS print
+  sheet presents with the rendered grid PDF in the preview.
+- **Store collateral**: `docs/release/store/office/` — product
+  description (short/long/keywords), privacy statement (no network, no
+  account, drafts in-app-only, print hands off to the system), FAQ; and
+  FIVE real screenshots captured on the iPhone 17 Pro simulator (Work
+  home, DCF spreadsheet grid with formula bar, DOCX outline view, PPTX
+  filmstrip, Settings).
+- **Four more locales**: fr/de/es/hi. The suite inherited the main
+  app's 452-key ARB; every key the suite actually USES (112, by grep)
+  is fully translated (plurals included — signature drift vs EN was
+  caught by analyze and aligned); unused keys carry English. Settings
+  gained language chips (6 languages); French verified live on-device
+  (entire Work surface in French).
+
+Gates: workspace 65 suites 0 failed, FFI 13/13, office 18/18, main
+57/57, contracts 124/0, supply chain + dossier PASS.
+
 ## Session 55 (2026-10-01): conversions completed — XLSX→PDF and Markdown→PPTX
 
 - **XLSX → PDF**: `convert.xlsx_to_pdf` renders the focused sheet as an
