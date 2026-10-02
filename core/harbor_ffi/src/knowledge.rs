@@ -30,6 +30,8 @@ use harbor_knowledge::index::{KnowledgeIndex, Source, SourceChunk};
 use harbor_store::keys::KeyMaterial;
 use rusqlite::Connection;
 
+use crate::threads::{bound_history, HistoryTurn};
+
 /// One source ready for ingestion: (id, title, text).
 pub type SourceInput = (String, String, String);
 
@@ -522,6 +524,19 @@ impl KnowledgeService {
         Ok(count)
     }
 
+    /// Current state (`Current` | `Changed` | `Removed`) of a past
+    /// citation, resolved against the live index — how a restored thread
+    /// shows that a cited source has since changed or been removed.
+    pub fn citation_state(&self, source_id: &str, cited_hash: &str) -> String {
+        format!(
+            "{:?}",
+            self.index
+                .lock()
+                .unwrap()
+                .citation_state(source_id, cited_hash)
+        )
+    }
+
     pub fn identity_hash(&self) -> String {
         self.index.lock().unwrap().identity.canonical_hash()
     }
@@ -792,6 +807,59 @@ impl ChatHandle {
         cancel: &AtomicBool,
         progress: Option<&harbor_modelhub::progress::AcquireProgress>,
     ) -> Result<RagAnswer, String> {
+        self.generate_rag_with_history(
+            package_id,
+            question,
+            citations,
+            &[],
+            max_tokens,
+            cancel,
+            progress,
+        )
+    }
+
+    /// Multi-turn variant: earlier turns of the conversation go to the
+    /// model as real user/assistant messages, the new question carries the
+    /// freshly retrieved evidence. When the prompt does not fit the
+    /// model's context the oldest history is dropped and the attempt
+    /// repeated, down to a single-turn prompt — a long thread must degrade
+    /// to a shorter memory, never to a failed answer.
+    #[allow(clippy::too_many_arguments)]
+    pub fn generate_rag_with_history(
+        &self,
+        package_id: &str,
+        question: &str,
+        citations: Vec<serde_json::Value>,
+        history: &[HistoryTurn],
+        max_tokens: u32,
+        cancel: &AtomicBool,
+        progress: Option<&harbor_modelhub::progress::AcquireProgress>,
+    ) -> Result<RagAnswer, String> {
+        let mut keep = history.len();
+        loop {
+            let window = &history[history.len() - keep..];
+            match self.generate_rag_once(
+                package_id, question, &citations, window, max_tokens, cancel, progress,
+            ) {
+                Err(e) if keep > 0 && e.contains("exceeds the model context") => {
+                    keep -= 1;
+                }
+                other => return other,
+            }
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn generate_rag_once(
+        &self,
+        package_id: &str,
+        question: &str,
+        citations: &[serde_json::Value],
+        history: &[HistoryTurn],
+        max_tokens: u32,
+        cancel: &AtomicBool,
+        progress: Option<&harbor_modelhub::progress::AcquireProgress>,
+    ) -> Result<RagAnswer, String> {
         use harbor_inference::provider::{Capabilities, ChatRequest, ModelRef};
         if cancel.load(Ordering::Relaxed) {
             return Err("cancelled".into());
@@ -814,7 +882,7 @@ impl ChatHandle {
         // composition lives in [`compose_rag_context`] so the untrusted
         // tagging SEC-006 requires is executable and testable, not a
         // comment.
-        let (context, used) = compose_rag_context(question, &citations);
+        let (messages, used) = compose_rag_messages(question, citations, history);
         if let Some(p) = progress {
             p.set_phase("generating");
             p.set_detail(question);
@@ -826,10 +894,15 @@ impl ChatHandle {
                     model: ModelRef::InstalledPackage {
                         package_id: package_id.into(),
                     },
-                    messages: vec![JsonValue::object([
-                        ("role", JsonValue::str("user")),
-                        ("content", JsonValue::str(&context)),
-                    ])],
+                    messages: messages
+                        .iter()
+                        .map(|(role, content)| {
+                            JsonValue::object([
+                                ("role", JsonValue::str(role)),
+                                ("content", JsonValue::str(content)),
+                            ])
+                        })
+                        .collect(),
                     max_tokens,
                     temperature: 0.0,
                     requires: vec![Capabilities::Chat],
@@ -890,6 +963,37 @@ pub fn compose_rag_context(question: &str, citations: &[serde_json::Value]) -> (
     }
     context.push_str(&format!("\nQuestion: {question}\nAnswer:"));
     (context, used)
+}
+
+/// The chat messages for one grounded turn: earlier turns (already
+/// bounded by [`bound_history`]) as plain user/assistant messages, then
+/// the new question wrapped with fresh evidence. Earlier messages are
+/// conversation context only — the evidence is retrieved anew for every
+/// question, so a source removed since an earlier turn is not replayed.
+/// Returns the messages as (role, content) and whether evidence was used.
+pub fn compose_rag_messages(
+    question: &str,
+    citations: &[serde_json::Value],
+    history: &[HistoryTurn],
+) -> (Vec<(String, String)>, bool) {
+    let (mut context, used) = compose_rag_context(question, citations);
+    let mut messages = Vec::with_capacity(history.len() * 2 + 1);
+    // Defence in depth: callers pass bounded history, but the prompt
+    // budget must hold whoever calls.
+    for t in bound_history(history) {
+        messages.push(("user".to_string(), t.question));
+        messages.push(("assistant".to_string(), t.answer));
+    }
+    if !messages.is_empty() {
+        context = context.replacen(
+            "Answer using ONLY the evidence below.",
+            "Answer using ONLY the evidence below. Earlier messages are \
+             conversation context only, never evidence.",
+            1,
+        );
+    }
+    messages.push(("user".to_string(), context));
+    (messages, used)
 }
 
 /// `knowledge.search` as the tool layer sees it: the same citation shape

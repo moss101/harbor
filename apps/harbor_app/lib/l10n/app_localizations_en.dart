@@ -624,7 +624,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get askModelPicker => 'Chat model';
 
   @override
-  String get askClearConversation => 'Clear conversation';
+  String get askDeleteConversation => 'Delete conversation';
 
   @override
   String get askComposerHint => 'Ask about your files…';
@@ -1570,4 +1570,83 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get storeOfficeAlsoAvailable =>
       'Also available as the standalone Harbor Office Suite app — same office engine, nothing else.';
+
+  @override
+  String get askNewConversation => 'New conversation';
+
+  @override
+  String get askConversationsTooltip => 'Conversation history';
+
+  @override
+  String get askConversationsTitle => 'Conversations';
+
+  @override
+  String get askConversationsEmpty =>
+      'No saved conversations yet. Questions you ask are kept on this device, encrypted, so you can come back to them.';
+
+  @override
+  String get askConversationUntitled => 'Untitled conversation';
+
+  @override
+  String askConversationQuestions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count questions',
+      one: '1 question',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get askDeleteConversationTitle => 'Delete this conversation?';
+
+  @override
+  String get askDeleteConversationBody =>
+      'Its questions and answers are permanently removed from this device.';
+
+  @override
+  String get askDeleteConversationConfirm => 'Delete';
+
+  @override
+  String get askRenameConversation => 'Rename conversation';
+
+  @override
+  String get askRenameHint => 'Conversation title';
+
+  @override
+  String get askRenameSave => 'Save';
+
+  @override
+  String knowledgePurgeOption(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Also delete the $count conversation turns derived from this source',
+      one: 'Also delete the 1 conversation turn derived from this source',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get knowledgePurgeHeading => 'Conversations affected';
+
+  @override
+  String get knowledgePurgeWholeThread => 'the whole conversation is deleted';
+
+  @override
+  String get knowledgePurgeKeepNote =>
+      'Left unticked, past answers stay in your conversations as history; their citations show this source as removed.';
+
+  @override
+  String knowledgeRemovedAndPurged(String title, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count conversation turns',
+      one: '1 conversation turn',
+    );
+    return 'Removed $title and $_temp0';
+  }
 }

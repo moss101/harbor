@@ -15,6 +15,9 @@ const DOC_SENTINEL: &str = "HARBOR-PLAINTEXT-PROBE-DOC-92b8d3";
 const TEMP_SENTINEL: &str = "HARBOR-PLAINTEXT-PROBE-TEMP-55aa01";
 const KNOWLEDGE_SENTINEL: &str = "HARBOR-PLAINTEXT-PROBE-KNOW-4d11ef";
 const DIAG_SENTINEL: &str = "HARBOR-PLAINTEXT-PROBE-DIAG-8e3c77";
+const THREAD_Q_SENTINEL: &str = "HARBOR-PLAINTEXT-PROBE-THREADQ-3b90d2";
+const THREAD_A_SENTINEL: &str = "HARBOR-PLAINTEXT-PROBE-THREADA-c47e18";
+const THREAD_TITLE_SENTINEL: &str = "HARBOR-PLAINTEXT-PROBE-THREADT-6a25f9";
 
 fn scan_dir_for(root: &std::path::Path, needle: &str) -> Vec<std::path::PathBuf> {
     let mut hits = Vec::new();
@@ -203,11 +206,30 @@ fn plaintext_at_rest_full_inspection() {
     };
     harbor_core::diagnostics::export(&diag, &facts, &diag_export).unwrap();
 
+    // 8. Ask conversation threads: titles, questions, answers and citation
+    // metadata are private workspace content, sealed under the
+    // workspace-derived conversation key (REAL persistence path).
+    let threads_db = data_root.join("db").join("threads.db");
+    let thread_store =
+        harbor_ffi::threads::ThreadStore::open(&threads_db, ws.ask_thread_key().unwrap()).unwrap();
+    thread_store
+        .create_thread("thr-inspect", THREAD_TITLE_SENTINEL)
+        .unwrap();
+    thread_store
+        .append_turn(
+            "thr-inspect",
+            THREAD_Q_SENTINEL,
+            "answer",
+            THREAD_A_SENTINEL,
+            &serde_json::json!({"citations": [{"source_id": "s", "title": "t", "_text": KNOWLEDGE_SENTINEL}]}),
+        )
+        .unwrap();
+
     // Force WAL content into every possible resting place (the inspection
     // must see the checkpointed main DB too, not just the live WAL).
     let agent_db = data_root.join("db").join("agent.db");
     let store_db = data_root.join("db").join("store.db");
-    for db in [&agent_db, &store_db, &knowledge_db] {
+    for db in [&agent_db, &store_db, &knowledge_db, &threads_db] {
         let conn = rusqlite::Connection::open(db).unwrap();
         conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);")
             .unwrap();
@@ -222,6 +244,9 @@ fn plaintext_at_rest_full_inspection() {
         TEMP_SENTINEL,
         KNOWLEDGE_SENTINEL,
         DIAG_SENTINEL,
+        THREAD_Q_SENTINEL,
+        THREAD_A_SENTINEL,
+        THREAD_TITLE_SENTINEL,
     ] {
         let hits = scan_dir_for(&data_root, needle);
         assert!(
@@ -278,6 +303,18 @@ fn plaintext_at_rest_full_inspection() {
         .get("ws-inspect", &blob_ref.id, &Default::default())
         .unwrap();
     assert_eq!(doc, DOC_SENTINEL.as_bytes());
+    // Ask thread: recoverable through the sealed-store API only, and the
+    // citation's chunk text was never kept at all.
+    let thread_store2 =
+        harbor_ffi::threads::ThreadStore::open(&threads_db, ws2.ask_thread_key().unwrap()).unwrap();
+    assert_eq!(
+        thread_store2.get_thread("thr-inspect").unwrap().title,
+        THREAD_TITLE_SENTINEL
+    );
+    let tm = thread_store2.messages("thr-inspect").unwrap();
+    assert_eq!(tm[0].text, THREAD_Q_SENTINEL);
+    assert_eq!(tm[1].text, THREAD_A_SENTINEL);
+    assert!(tm[1].meta["citations"][0].get("_text").is_none());
     // Knowledge chunk: recoverable through the sealed-store API only.
     let chunk_key2 = ws2.knowledge_chunk_key().unwrap();
     let store2 = harbor_ffi::knowledge::KnowledgeStore::open(&knowledge_db, chunk_key2).unwrap();
@@ -327,6 +364,7 @@ fn plaintext_at_rest_full_inspection() {
             "commit_journal_recovery": "journal stores hashes/paths; recovery classify verified",
             "extracted_content_previews_index": "in-memory only in this build; no on-disk surface exists to inspect",
             "exported_copy": "designated plaintext outside data root (user-visible output)",
+            "ask_threads_db": "no plaintext sentinel (titles, questions, answers, citation metadata sealed AEAD under a workspace-derived key; source chunk text is never stored in a thread)",
             "diagnostics_log": "AEAD frames under a workspace-derived key; no plaintext sentinel",
             "diagnostics_export": "designated plaintext outside data root; redacted records + build facts only, no document/run/knowledge sentinel"
         },

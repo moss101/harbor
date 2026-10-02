@@ -632,7 +632,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get askModelPicker => 'نموذج المحادثة';
 
   @override
-  String get askClearConversation => 'مسح المحادثة';
+  String get askDeleteConversation => 'حذف المحادثة';
 
   @override
   String get askComposerHint => 'اسأل عن ملفاتك…';
@@ -1625,4 +1625,94 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get storeOfficeAlsoAvailable =>
       'متاح أيضاً كتطبيق «حزمة Harbor Office» المستقل — محرّك المكتب نفسه، ولا شيء آخر.';
+
+  @override
+  String get askNewConversation => 'محادثة جديدة';
+
+  @override
+  String get askConversationsTooltip => 'سجل المحادثات';
+
+  @override
+  String get askConversationsTitle => 'المحادثات';
+
+  @override
+  String get askConversationsEmpty =>
+      'لا توجد محادثات محفوظة بعد. تُحفظ الأسئلة التي تطرحها على هذا الجهاز مشفّرةً لتعود إليها.';
+
+  @override
+  String get askConversationUntitled => 'محادثة بلا عنوان';
+
+  @override
+  String askConversationQuestions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count سؤال',
+      many: '$count سؤالاً',
+      few: '$count أسئلة',
+      two: 'سؤالان',
+      one: 'سؤال واحد',
+      zero: 'لا أسئلة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get askDeleteConversationTitle => 'حذف هذه المحادثة؟';
+
+  @override
+  String get askDeleteConversationBody =>
+      'ستُحذف أسئلتها وأجوبتها نهائيًا من هذا الجهاز.';
+
+  @override
+  String get askDeleteConversationConfirm => 'حذف';
+
+  @override
+  String get askRenameConversation => 'إعادة تسمية المحادثة';
+
+  @override
+  String get askRenameHint => 'عنوان المحادثة';
+
+  @override
+  String get askRenameSave => 'حفظ';
+
+  @override
+  String knowledgePurgeOption(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'احذف أيضًا $count دورة محادثة مشتقة من هذا المصدر',
+      many: 'احذف أيضًا $count دورة محادثة مشتقة من هذا المصدر',
+      few: 'احذف أيضًا $count دورات محادثة مشتقة من هذا المصدر',
+      two: 'احذف أيضًا دورتَي المحادثة المشتقتين من هذا المصدر',
+      one: 'احذف أيضًا دورة المحادثة الواحدة المشتقة من هذا المصدر',
+      zero: '',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get knowledgePurgeHeading => 'المحادثات المتأثرة';
+
+  @override
+  String get knowledgePurgeWholeThread => 'تُحذف المحادثة بأكملها';
+
+  @override
+  String get knowledgePurgeKeepNote =>
+      'إن تركته دون تحديد، تبقى الإجابات السابقة في محادثاتك كسجل، وتُظهر اقتباساتها أن هذا المصدر أُزيل.';
+
+  @override
+  String knowledgeRemovedAndPurged(String title, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count دورة محادثة',
+      many: '$count دورة محادثة',
+      few: '$count دورات محادثة',
+      two: 'دورتا محادثة',
+      one: 'دورة محادثة واحدة',
+      zero: 'لا دورات محادثة',
+    );
+    return 'أُزيل $title و$_temp0';
+  }
 }

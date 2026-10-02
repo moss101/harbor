@@ -15,6 +15,7 @@
 
 #[cfg(feature = "gguf")]
 pub mod knowledge;
+pub mod threads;
 
 use std::collections::BTreeMap;
 use std::ffi::{c_char, CStr, CString};
@@ -41,6 +42,8 @@ pub struct WorkspaceHandle {
     /// Chat provider over installed GGUF models (created on demand).
     #[cfg(feature = "gguf")]
     chat: Option<Arc<crate::knowledge::ChatHandle>>,
+    /// Durable Ask conversation threads (opened on first use).
+    threads: Option<Arc<crate::threads::ThreadStore>>,
     /// Shared HTTPS transport for brokered acquisition.
     transport: Arc<harbor_net::transport::UreqTransport>,
     /// The device root key source this workspace was opened with (also
@@ -606,6 +609,7 @@ pub extern "C" fn harbor_core_open_ex(
             knowledge: None,
             #[cfg(feature = "gguf")]
             chat: None,
+            threads: None,
             transport: Arc::new(harbor_net::transport::UreqTransport::new()),
             keystore,
             catalog: load_catalog_state(&opts.data_root),
@@ -667,6 +671,71 @@ fn err_json(msg: String) -> *mut c_char {
         Ok(s) => s.into_raw(),
         Err(_) => ptr::null_mut(),
     }
+}
+
+/// The Ask thread store, opened on first use under the workspace-derived
+/// conversation key.
+fn thread_store(ws: &mut WorkspaceHandle) -> Result<Arc<crate::threads::ThreadStore>, HarborError> {
+    if let Some(t) = &ws.threads {
+        return Ok(t.clone());
+    }
+    let key = ws.inner.ask_thread_key()?;
+    let store = crate::threads::ThreadStore::open(&ws.data_root.join("db").join("threads.db"), key)
+        .map_err(|e| HarborError::Other(e.to_string()))?;
+    let store = Arc::new(store);
+    ws.threads = Some(store.clone());
+    Ok(store)
+}
+
+fn thread_json(t: &crate::threads::ThreadSummary) -> serde_json::Value {
+    serde_json::json!({
+        "thread_id": t.id,
+        "title": t.title,
+        "created_at": t.created_at,
+        "updated_at": t.updated_at,
+        "turns": t.turns,
+    })
+}
+
+fn message_json(m: &crate::threads::StoredMessage) -> serde_json::Value {
+    serde_json::json!({
+        "seq": m.seq,
+        "role": m.role,
+        "kind": m.kind,
+        "text": m.text,
+        "meta": m.meta,
+        "created_at": m.created_at,
+    })
+}
+
+fn thread_err(e: crate::threads::ThreadError) -> HarborError {
+    HarborError::Other(e.to_string())
+}
+
+/// Record one completed generated turn. Persistence trouble never costs
+/// the user their answer: the caller reports it next to the answer.
+#[cfg(feature = "gguf")]
+fn persist_generated_turn(
+    store: &crate::threads::ThreadStore,
+    thread_id: &str,
+    question: &str,
+    answer: &crate::knowledge::RagAnswer,
+    citations: &serde_json::Value,
+    chat_package: &str,
+    run_id: Option<&str>,
+) -> Result<u64, crate::threads::ThreadError> {
+    let meta = serde_json::json!({
+        "citations": citations,
+        "used_citations": answer.used_citations,
+        "executed_on": answer.executed_on,
+        "chat_package": chat_package,
+        "run_id": run_id,
+        "usage": {
+            "prompt_tokens": answer.prompt_tokens,
+            "completion_tokens": answer.completion_tokens,
+        },
+    });
+    store.append_turn(thread_id, question, "answer", &answer.answer, &meta)
 }
 
 /// Append a run event with a fresh lease, hash-chained onto the current
@@ -3190,10 +3259,25 @@ fn dispatch(
                 // 1. Retrieve grounding (may be absent: generation still runs
                 //    but the answer carries no citations, so the UI cannot pass
                 //    generated text off as evidence-backed).
+                // Multi-turn: a thread contributes its earlier turns as
+                // conversation memory and receives this turn afterwards.
+                let thread_id = args
+                    .get("thread_id")
+                    .and_then(|v| v.as_str())
+                    .map(str::to_string);
+                let store = match &thread_id {
+                    Some(_) => Some(thread_store(ws)?),
+                    None => None,
+                };
+                let history = match (&store, &thread_id) {
+                    (Some(st), Some(t)) => st.history(t).map_err(thread_err)?,
+                    _ => Vec::new(),
+                };
+                let query = crate::threads::retrieval_query(question, &history);
                 let citations = ws
                     .knowledge
                     .as_ref()
-                    .and_then(|ks| ks.search(question, 3).ok())
+                    .and_then(|ks| ks.search(&query, 3).ok())
                     .map(|v| v.get("citations").cloned().unwrap_or(serde_json::json!([])))
                     .unwrap_or_else(|| serde_json::json!([]));
                 // 2. Generate on-device with the model-native template.
@@ -3204,15 +3288,30 @@ fn dispatch(
                 });
                 let never = AtomicBool::new(false);
                 let answer = chat
-                    .generate_rag_cancellable(
+                    .generate_rag_with_history(
                         &chat_package,
                         question,
                         citations.as_array().cloned().unwrap_or_default(),
+                        &history,
                         max_tokens,
                         &never,
                         None,
                     )
                     .map_err(|e| HarborError::Other(e.to_string()))?;
+                let thread_error = match (&store, &thread_id) {
+                    (Some(st), Some(t)) => persist_generated_turn(
+                        st,
+                        t,
+                        question,
+                        &answer,
+                        &citations,
+                        &chat_package,
+                        None,
+                    )
+                    .err()
+                    .map(|e| e.to_string()),
+                    _ => None,
+                };
                 Ok(serde_json::json!({
                     "answer": answer.answer,
                     "used_citations": answer.used_citations,
@@ -3222,8 +3321,149 @@ fn dispatch(
                         "prompt_tokens": answer.prompt_tokens,
                         "completion_tokens": answer.completion_tokens,
                     },
+                    "thread_id": thread_id,
+                    "thread_error": thread_error,
                 }))
             }
+        }
+        // --- Ask threads (durable, sealed at rest) -----------------------
+        "thread.create" => {
+            let store = thread_store(ws)?;
+            let title = args.get("title").and_then(|v| v.as_str()).unwrap_or("");
+            let id = harbor_security::HarborId::generate("thr").to_string();
+            let t = store.create_thread(&id, title).map_err(thread_err)?;
+            Ok(serde_json::json!({ "thread": thread_json(&t) }))
+        }
+        "thread.list" => {
+            let store = thread_store(ws)?;
+            let threads = store.list_threads().map_err(thread_err)?;
+            Ok(serde_json::json!({
+                "threads": threads.iter().map(thread_json).collect::<Vec<_>>(),
+            }))
+        }
+        "thread.get" => {
+            let id = args
+                .get("thread_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing thread_id".into()))?;
+            let store = thread_store(ws)?;
+            let t = store.get_thread(id).map_err(thread_err)?;
+            #[cfg_attr(not(feature = "gguf"), allow(unused_mut))]
+            let mut messages: Vec<serde_json::Value> = store
+                .messages(id)
+                .map_err(thread_err)?
+                .iter()
+                .map(message_json)
+                .collect();
+            // Past citations resolve against the CURRENT index: a source
+            // removed or changed since the answer shows as such, and the
+            // answer text stays as the historical record.
+            #[cfg(feature = "gguf")]
+            if let Some(ks) = ws.knowledge.as_ref() {
+                for m in &mut messages {
+                    let Some(cites) = m
+                        .get_mut("meta")
+                        .and_then(|x| x.get_mut("citations"))
+                        .and_then(|c| c.as_array_mut())
+                    else {
+                        continue;
+                    };
+                    for c in cites {
+                        let (Some(sid), Some(hash)) = (
+                            c.get("source_id")
+                                .and_then(|v| v.as_str())
+                                .map(str::to_string),
+                            c.get("content_hash")
+                                .and_then(|v| v.as_str())
+                                .map(str::to_string),
+                        ) else {
+                            continue;
+                        };
+                        c["state"] = serde_json::Value::String(ks.citation_state(&sid, &hash));
+                    }
+                }
+            }
+            Ok(serde_json::json!({ "thread": thread_json(&t), "messages": messages }))
+        }
+        "thread.rename" => {
+            let id = args
+                .get("thread_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing thread_id".into()))?;
+            let title = args
+                .get("title")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing title".into()))?;
+            let store = thread_store(ws)?;
+            store.rename_thread(id, title).map_err(thread_err)?;
+            Ok(
+                serde_json::json!({ "thread": thread_json(&store.get_thread(id).map_err(thread_err)?) }),
+            )
+        }
+        "thread.delete" => {
+            let id = args
+                .get("thread_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing thread_id".into()))?;
+            let deleted = thread_store(ws)?.delete_thread(id).map_err(thread_err)?;
+            Ok(serde_json::json!({ "deleted": deleted }))
+        }
+        "thread.delete_all" => {
+            let n = thread_store(ws)?.delete_all().map_err(thread_err)?;
+            Ok(serde_json::json!({ "deleted": n }))
+        }
+        // Preview of the purge-derived-content cascade over chat copies:
+        // which conversations hold turns derived from a source.
+        "thread.derived_from_source" => {
+            let source_id = args
+                .get("source_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing source_id".into()))?;
+            let derived = thread_store(ws)?
+                .derived_from_source(source_id)
+                .map_err(thread_err)?;
+            Ok(serde_json::json!({
+                "turns": derived.iter().map(|d| d.turns).sum::<u64>(),
+                "threads": derived.iter().map(|d| serde_json::json!({
+                    "thread_id": d.id,
+                    "title": d.title,
+                    "turns": d.turns,
+                    "becomes_empty": d.becomes_empty,
+                })).collect::<Vec<_>>(),
+            }))
+        }
+        "thread.purge_source" => {
+            let source_id = args
+                .get("source_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing source_id".into()))?;
+            let r = thread_store(ws)?
+                .purge_source(source_id)
+                .map_err(thread_err)?;
+            Ok(serde_json::json!({
+                "turns_removed": r.turns_removed,
+                "threads_deleted": r.threads_deleted,
+            }))
+        }
+        // A retrieval-only turn (no model answer) shown in the thread.
+        "thread.append_search" => {
+            let id = args
+                .get("thread_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing thread_id".into()))?;
+            let question = args
+                .get("question")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing question".into()))?;
+            let citations = args
+                .get("citations")
+                .cloned()
+                .unwrap_or_else(|| serde_json::json!([]));
+            let meta = serde_json::json!({ "citations": citations });
+            let seq = thread_store(ws)?
+                .append_turn(id, question, "search", "", &meta)
+                .map_err(thread_err)?;
+            Ok(serde_json::json!({ "seq": seq }))
         }
         // --- background ops ----------------------------------------------
         "op.start_acquire" => {
@@ -3300,6 +3540,20 @@ fn dispatch(
                     .get("run_id")
                     .and_then(|v| v.as_str())
                     .map(str::to_string);
+                let thread_id = args
+                    .get("thread_id")
+                    .and_then(|v| v.as_str())
+                    .map(str::to_string);
+                let store = match &thread_id {
+                    Some(t) => {
+                        let st = thread_store(ws)?;
+                        if !st.exists(t).map_err(thread_err)? {
+                            return Err(HarborError::Other(format!("thread not found: {t}")));
+                        }
+                        Some(st)
+                    }
+                    None => None,
+                };
                 let (op_id, entry) = register_op("generate", &chat_package);
                 let knowledge = ws.knowledge.clone();
                 let chat = ws
@@ -3315,10 +3569,22 @@ fn dispatch(
                 let progress = entry.progress.clone();
                 let entry_clone = entry.clone();
                 spawn_op(entry.clone(), ws.diagnostics.clone(), move || {
-                    // 1. Retrieve grounding (may be absent).
+                    // 0. Conversation memory: the thread's earlier turns. A
+                    // store problem costs the memory, never the answer.
+                    let mut thread_error: Option<String> = None;
+                    let history = match (&store, &thread_id) {
+                        (Some(st), Some(t)) => st.history(t).unwrap_or_else(|e| {
+                            thread_error = Some(e.to_string());
+                            Vec::new()
+                        }),
+                        _ => Vec::new(),
+                    };
+                    // 1. Retrieve grounding (may be absent). A short
+                    // follow-up retrieves on the previous question too.
+                    let query = crate::threads::retrieval_query(&question, &history);
                     let citations = knowledge
                         .as_ref()
-                        .and_then(|ks| ks.search(&question, 3).ok())
+                        .and_then(|ks| ks.search(&query, 3).ok())
                         .and_then(|v| v.get("citations").cloned())
                         .unwrap_or_else(|| serde_json::json!([]));
                     // 2. Durable activity: the question is the run's step.
@@ -3344,16 +3610,32 @@ fn dispatch(
                     }
                     // 3. Generate on-device (cooperatively cancellable).
                     let never = AtomicBool::new(false);
-                    let result = chat.generate_rag_cancellable(
+                    let result = chat.generate_rag_with_history(
                         &chat_package,
                         &question,
                         citations.as_array().cloned().unwrap_or_default(),
+                        &history,
                         max_tokens,
                         &never,
                         Some(&progress),
                     );
                     match result {
                         Ok(answer) => {
+                            // Durable thread: the completed turn is recorded
+                            // (cancelled/failed turns never are).
+                            if let (Some(st), Some(t)) = (&store, &thread_id) {
+                                if let Err(e) = persist_generated_turn(
+                                    st,
+                                    t,
+                                    &question,
+                                    &answer,
+                                    &citations,
+                                    &chat_package,
+                                    run_id.as_deref(),
+                                ) {
+                                    thread_error = Some(e.to_string());
+                                }
+                            }
                             if let Some(run) = &run_id {
                                 let step_seq = agent_log
                                     .load_stream(run)
@@ -3393,6 +3675,9 @@ fn dispatch(
                                         "prompt_tokens": answer.prompt_tokens,
                                         "completion_tokens": answer.completion_tokens,
                                     },
+                                    "thread_id": thread_id,
+                                    "thread_error": thread_error,
+                                    "history_turns": history.len(),
                                 })),
                                 false,
                             );

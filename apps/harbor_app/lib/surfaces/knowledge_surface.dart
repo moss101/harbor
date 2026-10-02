@@ -116,32 +116,93 @@ class _KnowledgeSurfaceState extends State<KnowledgeSurface> {
       HarborService service, Map<String, dynamic> source) async {
     final l10n = AppLocalizations.of(context)!;
     final title = source['title'] as String;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.knowledgeRemoveConfirmTitle(title)),
-        content: Text(l10n.knowledgeRemoveConfirmBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(l10n.cancelAction),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: HarborTheme.of(context).colors.danger,
-              foregroundColor: HarborTheme.of(context).colors.onBrand,
-            ),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(l10n.knowledgeRemoveAction),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-    await service.removeKnowledgeSource(source['source_id'] as String);
+    final sourceId = source['source_id'] as String;
+    // Preview first: which conversations hold turns derived from this
+    // source. Purging them is a separate, explicit choice.
+    final preview = await service.threadsDerivedFrom(sourceId);
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(l10n.knowledgeRemoved(title))));
+    final derivedTurns = (preview?['turns'] as num?)?.toInt() ?? 0;
+    final affected = ((preview?['threads'] as List?) ?? const []).cast<Map>();
+    final choice = await showDialog<({bool remove, bool purge})>(
+      context: context,
+      builder: (context) {
+        var purge = false;
+        return StatefulBuilder(
+          builder: (context, setLocal) => AlertDialog(
+            title: Text(l10n.knowledgeRemoveConfirmTitle(title)),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l10n.knowledgeRemoveConfirmBody),
+                  if (derivedTurns > 0) ...[
+                    const SizedBox(height: HarborSpace.s3),
+                    Text(l10n.knowledgePurgeHeading,
+                        style: HarborTheme.of(context)
+                            .text
+                            .bodyStrongOf(HarborTheme.of(context).colors.ink)),
+                    const SizedBox(height: HarborSpace.s1),
+                    for (final th in affected.take(5))
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          [
+                            (th['title'] as String).isEmpty
+                                ? l10n.askConversationUntitled
+                                : th['title'] as String,
+                            l10n.askConversationQuestions(
+                                (th['turns'] as num).toInt()),
+                            if (th['becomes_empty'] == true)
+                              l10n.knowledgePurgeWholeThread,
+                          ].join(' · '),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      value: purge,
+                      onChanged: (v) => setLocal(() => purge = v ?? false),
+                      title: Text(l10n.knowledgePurgeOption(derivedTurns)),
+                    ),
+                    Text(l10n.knowledgePurgeKeepNote,
+                        style: HarborTheme.of(context).text.captionOf(
+                            HarborTheme.of(context).colors.inkMuted)),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () =>
+                    Navigator.of(context).pop((remove: false, purge: false)),
+                child: Text(l10n.cancelAction),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: HarborTheme.of(context).colors.danger,
+                  foregroundColor: HarborTheme.of(context).colors.onBrand,
+                ),
+                onPressed: () =>
+                    Navigator.of(context).pop((remove: true, purge: purge)),
+                child: Text(l10n.knowledgeRemoveAction),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (choice == null || !choice.remove || !mounted) return;
+    await service.removeKnowledgeSource(sourceId);
+    int? purged;
+    if (choice.purge) purged = await service.purgeSourceFromThreads(sourceId);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(purged != null && purged > 0
+            ? l10n.knowledgeRemovedAndPurged(title, purged)
+            : l10n.knowledgeRemoved(title))));
   }
 
   @override

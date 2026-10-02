@@ -112,8 +112,8 @@ class HarborService extends ChangeNotifier {
   /// Raw dispatch for tests (walkthrough evidence drives the same FFI
   /// surface the UI does).
   @visibleForTesting
-  Future<Map<String, dynamic>> callForTest(String method,
-          Map<String, dynamic> args) =>
+  Future<Map<String, dynamic>> callForTest(
+          String method, Map<String, dynamic> args) =>
       _call(method, args);
 
   Future<Map<String, dynamic>> _call(String method,
@@ -450,16 +450,115 @@ class HarborService extends ChangeNotifier {
   /// Grounded generation as a cancellable background op. When [runId] is
   /// given the question and answer become durable run events (Activity).
   /// Throws [ffi.HarborCoreException] on failure or cancellation.
+  ///
+  /// With [threadId] the core supplies the thread's earlier turns to the
+  /// model as conversation memory and records this turn in the thread once
+  /// it completes (a cancelled or failed turn is never recorded).
   Future<Map<String, dynamic>> generateAnswer(String question,
-      {required String chatPackage, int maxTokens = 256, String? runId}) async {
+      {required String chatPackage,
+      int maxTokens = 256,
+      String? runId,
+      String? threadId}) async {
     final answer = await _runOp('op.start_generate', {
       'question': question,
       'chat_package': chatPackage,
       'max_tokens': maxTokens,
       if (runId != null) 'run_id': runId,
+      if (threadId != null) 'thread_id': threadId,
     });
     if (runId != null) await refresh();
     return answer;
+  }
+
+  // --- Ask conversation threads (sealed at rest in the core) -------------
+
+  /// Newest-first conversation summaries; empty when the store is
+  /// unreachable (the Ask surface then simply starts a fresh thread).
+  Future<List<Map<String, dynamic>>> listThreads() async {
+    try {
+      return _mapList((await _call('thread.list'))['threads']);
+    } on ffi.HarborCoreException {
+      return const [];
+    }
+  }
+
+  /// Create an empty thread (its title comes from the first question).
+  /// Null when the core refused.
+  Future<Map<String, dynamic>?> createThread() async {
+    try {
+      return ((await _call('thread.create'))['thread'] as Map)
+          .cast<String, dynamic>();
+    } on ffi.HarborCoreException {
+      return null;
+    }
+  }
+
+  /// A thread with its messages in order; citations carry their CURRENT
+  /// state (a removed or changed source shows as such). Null when the
+  /// thread is gone.
+  Future<Map<String, dynamic>?> getThread(String threadId) async {
+    try {
+      return await _call('thread.get', {'thread_id': threadId});
+    } on ffi.HarborCoreException {
+      return null;
+    }
+  }
+
+  Future<bool> renameThread(String threadId, String title) async {
+    try {
+      await _call('thread.rename', {'thread_id': threadId, 'title': title});
+      return true;
+    } on ffi.HarborCoreException {
+      return false;
+    }
+  }
+
+  Future<bool> deleteThread(String threadId) async {
+    try {
+      await _call('thread.delete', {'thread_id': threadId});
+      return true;
+    } on ffi.HarborCoreException {
+      return false;
+    }
+  }
+
+  /// Preview of the purge-derived-content cascade: the conversations that
+  /// hold turns derived from [sourceId] (`turns`, `threads[]`). Null when
+  /// the core refused. Reads only.
+  Future<Map<String, dynamic>?> threadsDerivedFrom(String sourceId) async {
+    try {
+      return await _call('thread.derived_from_source', {'source_id': sourceId});
+    } on ffi.HarborCoreException {
+      return null;
+    }
+  }
+
+  /// Delete every conversation turn derived from [sourceId] (a
+  /// conversation left empty goes too). Explicit by design: removing a
+  /// source never calls this. Returns the turns removed, or null on
+  /// failure.
+  Future<int?> purgeSourceFromThreads(String sourceId) async {
+    try {
+      final r = await _call('thread.purge_source', {'source_id': sourceId});
+      return (r['turns_removed'] as num).toInt();
+    } on ffi.HarborCoreException {
+      return null;
+    }
+  }
+
+  /// Record a retrieval-only turn (citations without generation).
+  Future<bool> appendSearchTurn(
+      String threadId, String question, List<dynamic> citations) async {
+    try {
+      await _call('thread.append_search', {
+        'thread_id': threadId,
+        'question': question,
+        'citations': citations,
+      });
+      return true;
+    } on ffi.HarborCoreException {
+      return false;
+    }
   }
 
   /// Run a graph skill as a cancellable background op (decision 0006).
@@ -684,8 +783,8 @@ class HarborService extends ChangeNotifier {
     final newBytes =
         base64Decode(result['data_b64'] as String).toList(growable: false);
     _sourceBytes = newBytes;
-    _preview = await _call('artifact.preview',
-        {'data_b64': base64Encode(newBytes)});
+    _preview =
+        await _call('artifact.preview', {'data_b64': base64Encode(newBytes)});
     notifyListeners();
     return result;
   }

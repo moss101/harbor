@@ -198,7 +198,7 @@
   "askCancelledTitle": "تم إلغاء التوليد",
   "askCancelledBody": "لم يُسجَّل شيء لهذا السؤال.",
   "askModelPicker": "نموذج المحادثة",
-  "askClearConversation": "مسح المحادثة",
+  "askDeleteConversation": "حذف المحادثة",
   "askComposerHint": "اسأل عن ملفاتك…",
   "askErrorTitle": "فشل التوليد",
   "askGroundedBadge": "مستند إلى أدلة",
@@ -739,5 +739,46 @@
   "storeSuitePdf": "PDF — معاينة واستخراج",
   "suiteStatusLive": "متاح",
   "suiteStatusPreview": "معاينة",
-  "storeOfficeAlsoAvailable": "متاح أيضاً كتطبيق «حزمة Harbor Office» المستقل — محرّك المكتب نفسه، ولا شيء آخر."
+  "storeOfficeAlsoAvailable": "متاح أيضاً كتطبيق «حزمة Harbor Office» المستقل — محرّك المكتب نفسه، ولا شيء آخر.",
+  "askNewConversation": "محادثة جديدة",
+  "askConversationsTooltip": "سجل المحادثات",
+  "askConversationsTitle": "المحادثات",
+  "askConversationsEmpty": "لا توجد محادثات محفوظة بعد. تُحفظ الأسئلة التي تطرحها على هذا الجهاز مشفّرةً لتعود إليها.",
+  "askConversationUntitled": "محادثة بلا عنوان",
+  "askConversationQuestions": "{count, plural, zero{لا أسئلة} one{سؤال واحد} two{سؤالان} few{{count} أسئلة} many{{count} سؤالاً} other{{count} سؤال}}",
+  "@askConversationQuestions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "askDeleteConversationTitle": "حذف هذه المحادثة؟",
+  "askDeleteConversationBody": "ستُحذف أسئلتها وأجوبتها نهائيًا من هذا الجهاز.",
+  "askDeleteConversationConfirm": "حذف",
+  "askRenameConversation": "إعادة تسمية المحادثة",
+  "askRenameHint": "عنوان المحادثة",
+  "askRenameSave": "حفظ",
+  "knowledgePurgeOption": "{count, plural, zero{} one{احذف أيضًا دورة المحادثة الواحدة المشتقة من هذا المصدر} two{احذف أيضًا دورتَي المحادثة المشتقتين من هذا المصدر} few{احذف أيضًا {count} دورات محادثة مشتقة من هذا المصدر} many{احذف أيضًا {count} دورة محادثة مشتقة من هذا المصدر} other{احذف أيضًا {count} دورة محادثة مشتقة من هذا المصدر}}",
+  "@knowledgePurgeOption": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "knowledgePurgeHeading": "المحادثات المتأثرة",
+  "knowledgePurgeWholeThread": "تُحذف المحادثة بأكملها",
+  "knowledgePurgeKeepNote": "إن تركته دون تحديد، تبقى الإجابات السابقة في محادثاتك كسجل، وتُظهر اقتباساتها أن هذا المصدر أُزيل.",
+  "knowledgeRemovedAndPurged": "أُزيل {title} و{count, plural, zero{لا دورات محادثة} one{دورة محادثة واحدة} two{دورتا محادثة} few{{count} دورات محادثة} many{{count} دورة محادثة} other{{count} دورة محادثة}}",
+  "@knowledgeRemovedAndPurged": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

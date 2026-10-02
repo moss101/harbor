@@ -13,8 +13,12 @@ import '../widgets/trust.dart';
 /// progress. Without a chat model the surface falls back honestly to
 /// retrieval-only citations; without evidence it abstains (goal §12).
 ///
-/// Turns are kept for the session (the surface stack preserves them);
-/// the durable truth stays in Activity.
+/// Conversations persist as threads in the core (sealed at rest): the
+/// most recent one is restored on entry, follow-up questions are answered
+/// with the thread's earlier turns as conversation memory, and the history
+/// dialog switches or deletes threads. Only completed turns are recorded —
+/// a cancelled or failed question leaves nothing behind. The durable run
+/// per turn stays in Activity.
 class AskSurface extends StatefulWidget {
   const AskSurface({super.key});
 
@@ -41,6 +45,12 @@ class _AskSurfaceState extends State<AskSurface> {
   bool _busy = false;
   String? _chatPackage;
 
+  /// The persisted thread the visible turns belong to (null until the
+  /// first completed question creates one).
+  String? _threadId;
+  List<Map<String, dynamic>> _threads = const [];
+  bool _restoreTried = false;
+
   @override
   void initState() {
     super.initState();
@@ -49,6 +59,17 @@ class _AskSurfaceState extends State<AskSurface> {
       _ensureKnowledgeOpen();
       _pickDefaultChatModel();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // The core may open after this surface first builds: restore the
+    // latest conversation once it is reachable.
+    if (!_restoreTried && HarborServiceProvider.of(context).notifier != null) {
+      _restoreTried = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _restoreLatest());
+    }
   }
 
   @override
@@ -117,6 +138,35 @@ class _AskSurfaceState extends State<AskSurface> {
       _busy = false;
     });
     _scrollToEnd();
+    if (result != null) {
+      await _recordSearchTurn(
+          service, question, (result['citations'] as List?) ?? const []);
+    }
+  }
+
+  /// A retrieval-only turn belongs to the thread too, so a restored
+  /// conversation shows what the user saw.
+  Future<void> _recordSearchTurn(
+      HarborService service, String question, List<dynamic> citations) async {
+    var threadId = _threadId;
+    String? created;
+    if (threadId == null) {
+      created =
+          threadId = (await service.createThread())?['thread_id'] as String?;
+      if (threadId == null) return;
+      if (mounted) _threadId = threadId;
+    }
+    // Source chunk text is evidence, not conversation: never sent on.
+    final slim = [
+      for (final c in citations.cast<Map>())
+        {...c.cast<String, dynamic>()}..remove('_text'),
+    ];
+    final ok = await service.appendSearchTurn(threadId, question, slim);
+    if (!ok && created != null) {
+      await service.deleteThread(created);
+      if (mounted && _threadId == created) _threadId = null;
+    }
+    if (mounted) await _refreshThreads();
   }
 
   /// The complete grounded journey: create a durable run, generate
@@ -136,12 +186,22 @@ class _AskSurfaceState extends State<AskSurface> {
       _controller.clear();
     });
     _scrollToEnd();
+    String? created;
     try {
+      var threadId = _threadId;
+      if (threadId == null) {
+        // A thread the core cannot create costs persistence, not the
+        // answer: the turn still runs, unrecorded.
+        created =
+            threadId = (await service.createThread())?['thread_id'] as String?;
+        if (mounted) _threadId = threadId;
+      }
       await service.createRun(runId);
       final answer = await service.generateAnswer(
         question,
         chatPackage: chatPackage,
         runId: runId,
+        threadId: threadId,
       );
       if (!mounted) return;
       setState(() {
@@ -149,7 +209,14 @@ class _AskSurfaceState extends State<AskSurface> {
         turn.busy = false;
         _busy = false;
       });
+      _refreshThreads();
     } on ffi.HarborCoreException catch (e) {
+      // The core records only completed turns: a thread created for this
+      // attempt is still empty, so it is dropped rather than left behind.
+      if (created != null) {
+        await service.deleteThread(created);
+        if (mounted && _threadId == created) _threadId = null;
+      }
       if (!mounted) return;
       setState(() {
         turn.cancelled = e.message.toLowerCase().contains('cancel');
@@ -161,13 +228,116 @@ class _AskSurfaceState extends State<AskSurface> {
     _scrollToEnd();
   }
 
+  Future<void> _refreshThreads() async {
+    final service = HarborServiceProvider.of(context).notifier;
+    if (service == null) return;
+    final all = await service.listThreads();
+    if (!mounted) return;
+    setState(() {
+      // A thread with no completed turn is not a conversation yet.
+      _threads = [
+        for (final t in all)
+          if (((t['turns'] as num?) ?? 0) > 0) t
+      ];
+    });
+  }
+
+  Future<void> _restoreLatest() async {
+    await _refreshThreads();
+    if (!mounted || _threads.isEmpty) return;
+    await _openThread(_threads.first['thread_id'] as String, onlyIfEmpty: true);
+  }
+
+  /// Load a persisted thread into the view. [onlyIfEmpty] keeps an
+  /// automatic restore from clobbering a question the user already began.
+  Future<void> _openThread(String id, {bool onlyIfEmpty = false}) async {
+    final service = HarborServiceProvider.of(context).notifier;
+    if (service == null) return;
+    final got = await service.getThread(id);
+    if (!mounted) return;
+    if (onlyIfEmpty && (_turns.isNotEmpty || _threadId != null)) return;
+    if (got == null) {
+      await _refreshThreads();
+      return;
+    }
+    setState(() {
+      _threadId = id;
+      _turns
+        ..clear()
+        ..addAll(_turnsFrom((got['messages'] as List).cast<Map>()));
+    });
+    _scrollToEnd();
+  }
+
+  /// Rebuild the visible turns from persisted messages: each question is
+  /// followed by its answer (or its retrieval-only evidence).
+  List<_Turn> _turnsFrom(List<Map> messages) {
+    final turns = <_Turn>[];
+    for (var i = 0; i < messages.length; i++) {
+      final m = messages[i];
+      if (m['role'] != 'user') continue;
+      final reply = i + 1 < messages.length ? messages[i + 1] : null;
+      final meta =
+          ((reply?['meta'] as Map?) ?? const {}).cast<String, dynamic>();
+      final turn = _Turn(m['text'] as String, runId: meta['run_id'] as String?)
+        ..busy = false;
+      final citations = (meta['citations'] as List?) ?? const [];
+      if (reply?['kind'] == 'answer') {
+        turn.answer = {
+          'answer': reply!['text'],
+          'used_citations': meta['used_citations'] == true,
+          'executed_on': meta['executed_on'] ?? '',
+          'execution': 'ON_DEVICE',
+          'usage': meta['usage'] ?? const {},
+          'citations': citations,
+        };
+      } else if (reply?['kind'] == 'search') {
+        turn.evidence = {'citations': citations};
+      }
+      turns.add(turn);
+    }
+    return turns;
+  }
+
+  Future<void> _showThreads() async {
+    final service = HarborServiceProvider.of(context).notifier;
+    if (service == null) return;
+    await _refreshThreads();
+    if (!mounted) return;
+    final picked = await showDialog<String>(
+      context: context,
+      builder: (_) => _ThreadsDialog(
+        service: service,
+        threads: _threads,
+        currentId: _threadId,
+        onDeleted: (id) {
+          if (id == _threadId) {
+            setState(() {
+              _turns.clear();
+              _threadId = null;
+            });
+          }
+          _refreshThreads();
+        },
+        onRenamed: (_) => _refreshThreads(),
+      ),
+    );
+    if (picked != null && picked != _threadId && mounted) {
+      await _openThread(picked);
+    }
+  }
+
   void _cancel() {
     final service = HarborServiceProvider.of(context).notifier;
     final opId = service?.kindProgress['generate']?['op_id'] as String?;
     if (opId != null) service?.cancelOp(opId);
   }
 
-  void _clear() => setState(_turns.clear);
+  /// Start a fresh conversation; the current one stays in the history.
+  void _newConversation() => setState(() {
+        _turns.clear();
+        _threadId = null;
+      });
 
   @override
   Widget build(BuildContext context) {
@@ -197,11 +367,17 @@ class _AskSurfaceState extends State<AskSurface> {
                 state?.setChatModel(id);
               },
             ),
+          if (service != null)
+            IconButton(
+              tooltip: l10n.askConversationsTooltip,
+              onPressed: _busy ? null : _showThreads,
+              icon: const Icon(Icons.history),
+            ),
           if (_turns.isNotEmpty)
             IconButton(
-              tooltip: l10n.askClearConversation,
-              onPressed: _busy ? null : _clear,
-              icon: const Icon(Icons.delete_sweep_outlined),
+              tooltip: l10n.askNewConversation,
+              onPressed: _busy ? null : _newConversation,
+              icon: const Icon(Icons.add_comment_outlined),
             ),
         ],
       ),
@@ -362,6 +538,189 @@ class _AskSurfaceState extends State<AskSurface> {
         ),
       ),
     ]);
+  }
+}
+
+/// The conversation history: switch to a saved thread, or delete one
+/// (after confirmation — deletion is permanent).
+class _ThreadsDialog extends StatefulWidget {
+  const _ThreadsDialog({
+    required this.service,
+    required this.threads,
+    required this.currentId,
+    required this.onDeleted,
+    required this.onRenamed,
+  });
+  final HarborService service;
+  final List<Map<String, dynamic>> threads;
+  final String? currentId;
+  final ValueChanged<String> onDeleted;
+  final ValueChanged<String> onRenamed;
+
+  @override
+  State<_ThreadsDialog> createState() => _ThreadsDialogState();
+}
+
+class _ThreadsDialogState extends State<_ThreadsDialog> {
+  late final List<Map<String, dynamic>> _threads = [...widget.threads];
+
+  Future<void> _rename(Map<String, dynamic> thread) async {
+    final id = thread['thread_id'] as String;
+    final title = await showDialog<String>(
+      context: context,
+      builder: (_) =>
+          _RenameDialog(initial: (thread['title'] as String?) ?? ''),
+    );
+    // Blank titles are refused by the core; keep the old one.
+    if (title == null || title.trim().isEmpty || !mounted) return;
+    if (!await widget.service.renameThread(id, title)) return;
+    if (!mounted) return;
+    setState(() {
+      final i = _threads.indexWhere((t) => t['thread_id'] == id);
+      if (i >= 0) _threads[i] = {..._threads[i], 'title': title.trim()};
+    });
+    widget.onRenamed(id);
+  }
+
+  Future<void> _delete(Map<String, dynamic> thread) async {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = HarborTheme.of(context).colors;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.askDeleteConversationTitle),
+        content: Text(l10n.askDeleteConversationBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancelAction),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: colors.danger,
+              foregroundColor: colors.onBrand,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.askDeleteConversationConfirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final id = thread['thread_id'] as String;
+    if (!await widget.service.deleteThread(id)) return;
+    widget.onDeleted(id);
+    if (!mounted) return;
+    setState(() => _threads.removeWhere((t) => t['thread_id'] == id));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final t = HarborTheme.of(context);
+    final material = MaterialLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l10n.askConversationsTitle),
+      content: SizedBox(
+        width: 440,
+        child: _threads.isEmpty
+            ? Text(l10n.askConversationsEmpty,
+                style: t.text.bodyOf(t.colors.inkMuted))
+            : ListView.builder(
+                shrinkWrap: true,
+                itemCount: _threads.length,
+                itemBuilder: (context, i) {
+                  final th = _threads[i];
+                  final title = (th['title'] as String?) ?? '';
+                  final when =
+                      DateTime.tryParse((th['updated_at'] as String?) ?? '')
+                          ?.toLocal();
+                  return ListTile(
+                    selected: th['thread_id'] == widget.currentId,
+                    title: Text(
+                        title.isEmpty ? l10n.askConversationUntitled : title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis),
+                    subtitle: Text([
+                      l10n.askConversationQuestions(
+                          ((th['turns'] as num?) ?? 0).toInt()),
+                      if (when != null) material.formatMediumDate(when),
+                    ].join(' · ')),
+                    onTap: () =>
+                        Navigator.of(context).pop(th['thread_id'] as String),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: l10n.askRenameConversation,
+                          onPressed: () => _rename(th),
+                          icon: const Icon(Icons.edit_outlined),
+                        ),
+                        IconButton(
+                          tooltip: l10n.askDeleteConversation,
+                          onPressed: () => _delete(th),
+                          icon: const Icon(Icons.delete_outline),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.closeAction),
+        ),
+      ],
+    );
+  }
+}
+
+/// Owns its text controller, so the field is disposed only after the
+/// route has finished animating away (disposing it right after `pop`
+/// would rebuild the exiting TextField with a dead controller).
+class _RenameDialog extends StatefulWidget {
+  const _RenameDialog({required this.initial});
+  final String initial;
+
+  @override
+  State<_RenameDialog> createState() => _RenameDialogState();
+}
+
+class _RenameDialogState extends State<_RenameDialog> {
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AlertDialog(
+      title: Text(l10n.askRenameConversation),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        maxLength: 80,
+        decoration: InputDecoration(hintText: l10n.askRenameHint),
+        onSubmitted: (v) => Navigator.of(context).pop(v),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.cancelAction),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_controller.text),
+          child: Text(l10n.askRenameSave),
+        ),
+      ],
+    );
   }
 }
 

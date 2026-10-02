@@ -1160,11 +1160,11 @@ abstract class AppLocalizations {
   /// **'Chat model'**
   String get askModelPicker;
 
-  /// No description provided for @askClearConversation.
+  /// No description provided for @askDeleteConversation.
   ///
   /// In en, this message translates to:
-  /// **'Clear conversation'**
-  String get askClearConversation;
+  /// **'Delete conversation'**
+  String get askDeleteConversation;
 
   /// No description provided for @askComposerHint.
   ///
@@ -2587,6 +2587,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Also available as the standalone Harbor Office Suite app — same office engine, nothing else.'**
   String get storeOfficeAlsoAvailable;
+
+  /// No description provided for @askNewConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'New conversation'**
+  String get askNewConversation;
+
+  /// No description provided for @askConversationsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation history'**
+  String get askConversationsTooltip;
+
+  /// No description provided for @askConversationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations'**
+  String get askConversationsTitle;
+
+  /// No description provided for @askConversationsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved conversations yet. Questions you ask are kept on this device, encrypted, so you can come back to them.'**
+  String get askConversationsEmpty;
+
+  /// No description provided for @askConversationUntitled.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled conversation'**
+  String get askConversationUntitled;
+
+  /// No description provided for @askConversationQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 question} other{{count} questions}}'**
+  String askConversationQuestions(int count);
+
+  /// No description provided for @askDeleteConversationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this conversation?'**
+  String get askDeleteConversationTitle;
+
+  /// No description provided for @askDeleteConversationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Its questions and answers are permanently removed from this device.'**
+  String get askDeleteConversationBody;
+
+  /// No description provided for @askDeleteConversationConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get askDeleteConversationConfirm;
+
+  /// No description provided for @askRenameConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename conversation'**
+  String get askRenameConversation;
+
+  /// No description provided for @askRenameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation title'**
+  String get askRenameHint;
+
+  /// No description provided for @askRenameSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get askRenameSave;
+
+  /// No description provided for @knowledgePurgeOption.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Also delete the 1 conversation turn derived from this source} other{Also delete the {count} conversation turns derived from this source}}'**
+  String knowledgePurgeOption(int count);
+
+  /// No description provided for @knowledgePurgeHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations affected'**
+  String get knowledgePurgeHeading;
+
+  /// No description provided for @knowledgePurgeWholeThread.
+  ///
+  /// In en, this message translates to:
+  /// **'the whole conversation is deleted'**
+  String get knowledgePurgeWholeThread;
+
+  /// No description provided for @knowledgePurgeKeepNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Left unticked, past answers stay in your conversations as history; their citations show this source as removed.'**
+  String get knowledgePurgeKeepNote;
+
+  /// No description provided for @knowledgeRemovedAndPurged.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed {title} and {count, plural, one{1 conversation turn} other{{count} conversation turns}}'**
+  String knowledgeRemovedAndPurged(String title, int count);
 }
 
 class _AppLocalizationsDelegate
