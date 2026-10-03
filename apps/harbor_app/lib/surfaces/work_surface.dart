@@ -7,12 +7,14 @@ import 'package:harbor_ui/harbor_ui.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../services/file_types.dart';
+import '../services/preferences.dart' show DeckDesignPrefs;
 
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/harbor_service.dart';
 import 'work/deck_view.dart';
 import 'work/document_view.dart';
+import 'work/new_presentation_sheet.dart';
 import 'work/pdf_view.dart';
 import 'skill_run.dart' show firstFreePath;
 import 'work/workbook_view.dart';
@@ -115,6 +117,41 @@ class _WorkSurfaceState extends State<WorkSurface> {
     if (dest == null) return null;
     await File(dest).writeAsBytes(bytes, flush: true);
     return dest;
+  }
+
+  /// New presentation: the designer sheet (purpose, design, palette,
+  /// motion, language) builds a starter deck through the core; the deck is
+  /// previewed and a save location is offered, exactly like a converted
+  /// file (this app has no other create path).
+  Future<void> _newPresentation() async {
+    final service = HarborServiceProvider.of(context).notifier;
+    if (service == null) return;
+    final state = AppStateScope.maybeOf(context);
+    final result = await NewPresentationSheet.show(
+      context,
+      designer: service,
+      initial: state?.deckDesign ?? const DeckDesignPrefs(),
+      onRemember: state?.setDeckDesign,
+    );
+    if (result == null || !mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await service.loadPreviewFromBytes(result.bytes, name: result.fileName);
+      if (!mounted) return;
+      setState(() => _showParts = false);
+      final dest = await _saveConvertedCopy(result.fileName, result.bytes);
+      if (mounted && dest != null) {
+        messenger.showSnackBar(SnackBar(
+            content: Text(l10n
+                .workConvertedSaved(dest.split(Platform.pathSeparator).last))));
+      }
+    } on ffi.HarborCoreException catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+            SnackBar(content: Text('${l10n.workConvertFailed}: ${e.message}')));
+      }
+    }
   }
 
   Future<void> _openFile() async {
@@ -277,6 +314,15 @@ class _WorkSurfaceState extends State<WorkSurface> {
                 secondaryActionLabel: l10n.workConvertMarkdown,
                 onSecondaryAction: _convertMarkdown,
                 footer: Column(children: [
+                  OutlinedButton.icon(
+                    key: const ValueKey('work-new-presentation'),
+                    onPressed: _newPresentation,
+                    style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, HarborLayout.touchTarget)),
+                    icon: const Icon(Icons.slideshow_outlined, size: 18),
+                    label: Text(l10n.workNewPresentation),
+                  ),
+                  const SizedBox(height: HarborSpace.s4),
                   Text(l10n.workSupportedTypes,
                       style: t.text.captionOf(t.colors.inkMuted)),
                   const SizedBox(height: HarborSpace.s2),

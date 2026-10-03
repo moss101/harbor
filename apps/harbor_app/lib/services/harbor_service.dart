@@ -7,6 +7,14 @@ import 'package:flutter/widgets.dart';
 import 'package:harbor_domain/harbor_domain.dart';
 import 'package:harbor_native/harbor_ffi.dart' as ffi;
 import 'package:harbor_native/harbor_worker.dart';
+import 'package:harbor_ui/deck_designer.dart'
+    show
+        DeckCatalog,
+        DeckDesignerApi,
+        DeckRestyleResult,
+        DeckStarterResult,
+        DeckStyleChoice;
+import 'package:harbor_ui/slides.dart' show DeckScene;
 
 /// Bridge between the Flutter layer and Harbor Core. Policy and runtime
 /// truth stay in Rust; this only surfaces facts and typed errors.
@@ -16,7 +24,7 @@ import 'package:harbor_native/harbor_worker.dart';
 /// work (model acquisition, knowledge ingestion, grounded generation)
 /// executes on native threads in the core and is surfaced here through
 /// [opProgress] snapshots the UI can render and cancel.
-class HarborService extends ChangeNotifier {
+class HarborService extends ChangeNotifier implements DeckDesignerApi {
   HarborService._(this._worker);
 
   final HarborCoreWorker _worker;
@@ -788,6 +796,130 @@ class HarborService extends ChangeNotifier {
     notifyListeners();
     return result;
   }
+
+  /// The core reports decks as kind `deck` (older fixtures said `pptx`).
+  static bool _isDeck(Map<String, dynamic> preview) =>
+      preview['kind'] == 'deck' || preview['kind'] == 'pptx';
+
+  // ---- designed decks: catalogue, samples, starters, restyle ----
+
+  Future<DeckCatalog>? _deckCatalog;
+
+  /// Designs, palettes, purposes and motions from the core. Cached for the
+  /// life of the service; a failed load is not cached (retry works).
+  @override
+  Future<DeckCatalog> deckCatalog() {
+    return _deckCatalog ??= () async {
+      try {
+        return DeckCatalog.fromJson(await _call('deck.catalog'));
+      } catch (_) {
+        _deckCatalog = null;
+        rethrow;
+      }
+    }();
+  }
+
+  DeckScene _sceneOf(Object? raw, String what) {
+    if (raw is Map) {
+      final scene =
+          DeckScene.fromJson(raw.map((k, v) => MapEntry(k.toString(), v)));
+      if (scene.slides.isNotEmpty) return scene;
+    }
+    throw ffi.HarborCoreException('$what carried no slides to draw');
+  }
+
+  /// A small showcase deck in [style] as a scene (slide 1 is the cover).
+  /// An empty palette means the design's own colours.
+  @override
+  Future<DeckScene> deckSample(DeckStyleChoice style) async {
+    final r = await _call('deck.sample', {
+      'theme': style.design,
+      if (style.palette != null && style.palette!.isNotEmpty)
+        'palette': style.palette,
+      'motion': style.motion,
+      'rtl': style.rtl,
+    });
+    return _sceneOf(r['scene'], 'the sample deck');
+  }
+
+  /// A full starter deck for [purpose]. [style] null = the purpose's own
+  /// design, palette and motion.
+  @override
+  Future<DeckStarterResult> deckStarter({
+    required String purpose,
+    DeckStyleChoice? style,
+    String? title,
+  }) async {
+    final r = await _call('deck.starter', {
+      'purpose': purpose,
+      if (style != null) ...{
+        'theme': style.design,
+        if (style.palette != null && style.palette!.isNotEmpty)
+          'palette': style.palette,
+        'motion': style.motion,
+        'rtl': style.rtl,
+      },
+      if (title != null && title.trim().isNotEmpty) 'title': title.trim(),
+    });
+    final scene = r['scene'];
+    return DeckStarterResult(
+      bytes: base64Decode(r['data_b64'] as String).toList(growable: false),
+      fileName: r['file_name'] as String? ?? 'Presentation.pptx',
+      title: r['title'] as String? ?? '',
+      slides: (r['slides'] as num?)?.toInt() ?? 0,
+      theme: r['theme'] as String? ?? '',
+      motion: r['motion'] as String? ?? '',
+      scene: scene is Map ? _sceneOf(scene, 'the starter deck') : null,
+    );
+  }
+
+  /// Re-style [bytes] (a deck carrying Harbor's design source). Pure: the
+  /// open working copy is untouched. An empty palette returns to the
+  /// design's own colours.
+  Future<DeckRestyleResult> deckRestyle({
+    required List<int> bytes,
+    required DeckStyleChoice style,
+  }) async {
+    final r = await _call('deck.restyle', {
+      'data_b64': base64Encode(bytes),
+      'theme': style.design,
+      'palette': style.palette ?? '',
+      'motion': style.motion,
+      'rtl': style.rtl,
+    });
+    final scene = r['scene'];
+    return DeckRestyleResult(
+      bytes: base64Decode(r['data_b64'] as String).toList(growable: false),
+      scene: scene is Map ? _sceneOf(scene, 'the restyled deck') : null,
+    );
+  }
+
+  /// Re-style the open deck and adopt the result as the new, UNSAVED
+  /// working copy. The source file is never written. Throws
+  /// [ffi.HarborCoreException] when nothing restylable is open.
+  @override
+  Future<DeckRestyleResult> restyleOpenDeck(DeckStyleChoice style) async {
+    final source = _sourceBytes;
+    final current = _preview;
+    if (source == null || current == null) {
+      throw ffi.HarborCoreException('no deck open');
+    }
+    if (!_isDeck(current)) {
+      throw ffi.HarborCoreException('the open artifact is not a deck');
+    }
+    final result = await deckRestyle(bytes: source, style: style);
+    // Preview first: if it fails, the working copy and preview still
+    // describe the same (unchanged) deck.
+    final newPreview = await _call(
+        'artifact.preview', {'data_b64': base64Encode(result.bytes)});
+    _sourceBytes = result.bytes;
+    _preview = newPreview;
+    notifyListeners();
+    return result;
+  }
+
+  /// The current working copy (edits included), for Save-a-copy.
+  List<int>? currentWorkingBytes() => _sourceBytes;
 
   /// Close the open artifact (presentation state only).
   void clearPreview() {

@@ -1,0 +1,1377 @@
+{
+ "width": 12192000,
+ "height": 6858000,
+ "slides": [
+  {
+   "index": 1,
+   "background": {
+    "k": "linear",
+    "angle": 90,
+    "stops": [
+     {
+      "p": 0,
+      "c": "#0B1220",
+      "a": 1
+     },
+     {
+      "p": 1,
+      "c": "#1E3A8A",
+      "a": 1
+     }
+    ]
+   },
+   "items": [
+    {
+     "id": 1,
+     "name": "Title",
+     "alt": null,
+     "x": 914400,
+     "y": 2000000,
+     "w": 10363200,
+     "h": 1400000,
+     "rot": 0,
+     "flip_h": false,
+     "flip_v": false,
+     "t": "shape",
+     "geom": {
+      "k": "preset",
+      "name": "rect",
+      "adj": []
+     },
+     "fill": {
+      "k": "none"
+     },
+     "line": null,
+     "shadow": null,
+     "text": {
+      "ins": [
+       91440,
+       45720,
+       91440,
+       45720
+      ],
+      "anchor": "ctr",
+      "wrap": true,
+      "autofit": "none",
+      "font_scale": 1,
+      "line_reduction": 0,
+      "paras": [
+       {
+        "algn": "ctr",
+        "rtl": false,
+        "mar_l": 0,
+        "indent": 0,
+        "bullet": null,
+        "spc_bef": 0,
+        "spc_aft": 0,
+        "ln_pct": null,
+        "ln_pts": null,
+        "runs": [
+         {
+          "t": "Harbor quarterly review",
+          "sz": 44,
+          "b": true,
+          "i": false,
+          "u": false,
+          "strike": false,
+          "c": "#FFFFFF",
+          "a": 1,
+          "font": "Calibri",
+          "cs": null,
+          "baseline": 0,
+          "caps": false,
+          "spc": 0
+         }
+        ],
+        "end_sz": 18
+       }
+      ]
+     }
+    },
+    {
+     "id": 2,
+     "name": "Subtitle",
+     "alt": null,
+     "x": 914400,
+     "y": 3600000,
+     "w": 10363200,
+     "h": 700000,
+     "rot": 0,
+     "flip_h": false,
+     "flip_v": false,
+     "t": "shape",
+     "geom": {
+      "k": "preset",
+      "name": "rect",
+      "adj": []
+     },
+     "fill": {
+      "k": "none"
+     },
+     "line": null,
+     "shadow": null,
+     "text": {
+      "ins": [
+       91440,
+       45720,
+       91440,
+       45720
+      ],
+      "anchor": "t",
+      "wrap": true,
+      "autofit": "none",
+      "font_scale": 1,
+      "line_reduction": 0,
+      "paras": [
+       {
+        "algn": "ctr",
+        "rtl": false,
+        "mar_l": 0,
+        "indent": 0,
+        "bullet": null,
+        "spc_bef": 0,
+        "spc_aft": 0,
+        "ln_pct": null,
+        "ln_pts": null,
+        "runs": [
+         {
+          "t": "Q3 2026",
+          "sz": 24,
+          "b": false,
+          "i": false,
+          "u": false,
+          "strike": false,
+          "c": "#CBD5E1",
+          "a": 1,
+          "font": "Calibri",
+          "cs": null,
+          "baseline": 0,
+          "caps": false,
+          "spc": 0
+         }
+        ],
+        "end_sz": 18
+       }
+      ]
+     }
+    },
+    {
+     "id": 3,
+     "name": "Pill",
+     "alt": null,
+     "x": 5000000,
+     "y": 4700000,
+     "w": 2192000,
+     "h": 600000,
+     "rot": 0,
+     "flip_h": false,
+     "flip_v": false,
+     "t": "shape",
+     "geom": {
+      "k": "preset",
+      "name": "roundRect",
+      "adj": [
+       50000
+      ]
+     },
+     "fill": {
+      "k": "solid",
+      "c": "#F59E0B",
+      "a": 1
+     },
+     "line": {
+      "w": 19050,
+      "paint": {
+       "k": "solid",
+       "c": "#FFFFFF",
+       "a": 1
+      },
+      "dash": "dash",
+      "cap": "round",
+      "head": null,
+      "tail": "triangle"
+     },
+     "shadow": {
+      "dx": 38100,
+      "dy": 38100,
+      "blur": 50800,
+      "c": "#000000",
+      "a": 0.4
+     },
+     "text": null
+    },
+    {
+     "id": 4,
+     "name": "Glow",
+     "alt": null,
+     "x": 100000,
+     "y": 100000,
+     "w": 900000,
+     "h": 900000,
+     "rot": 15.0,
+     "flip_h": true,
+     "flip_v": false,
+     "t": "shape",
+     "geom": {
+      "k": "preset",
+      "name": "ellipse",
+      "adj": []
+     },
+     "fill": {
+      "k": "radial",
+      "cx": 0.5,
+      "cy": 0.5,
+      "stops": [
+       {
+        "p": 0,
+        "c": "#FFFFFF",
+        "a": 0.8
+       },
+       {
+        "p": 1,
+        "c": "#FFFFFF",
+        "a": 0
+       }
+      ]
+     },
+     "line": null,
+     "shadow": null,
+     "text": null
+    }
+   ],
+   "transition": {
+    "kind": "fade",
+    "dir": null,
+    "dur_ms": 700,
+    "on_click": true,
+    "after_ms": null
+   },
+   "animations": [
+    {
+     "shape_id": 1,
+     "para": null,
+     "effect": "fade",
+     "phase": "entrance",
+     "dir": null,
+     "trigger": "after_prev",
+     "delay_ms": 0,
+     "dur_ms": 500
+    },
+    {
+     "shape_id": 2,
+     "para": [
+      0,
+      0
+     ],
+     "effect": "fly",
+     "phase": "entrance",
+     "dir": "l",
+     "trigger": "click",
+     "delay_ms": 100,
+     "dur_ms": 400
+    }
+   ],
+   "notes": "Welcome everyone.",
+   "unsupported": [
+    "SmartArt (Content diagram)"
+   ]
+  },
+  {
+   "index": 2,
+   "background": {
+    "k": "solid",
+    "c": "#FFFFFF",
+    "a": 1
+   },
+   "items": [
+    {
+     "id": 1,
+     "name": "Heading",
+     "alt": null,
+     "x": 609600,
+     "y": 400000,
+     "w": 10972800,
+     "h": 900000,
+     "rot": 0,
+     "flip_h": false,
+     "flip_v": false,
+     "t": "shape",
+     "geom": {
+      "k": "preset",
+      "name": "rect",
+      "adj": []
+     },
+     "fill": {
+      "k": "none"
+     },
+     "line": null,
+     "shadow": null,
+     "text": {
+      "ins": [
+       91440,
+       45720,
+       91440,
+       45720
+      ],
+      "anchor": "ctr",
+      "wrap": true,
+      "autofit": "none",
+      "font_scale": 1,
+      "line_reduction": 0,
+      "paras": [
+       {
+        "algn": "l",
+        "rtl": false,
+        "mar_l": 0,
+        "indent": 0,
+        "bullet": null,
+        "spc_bef": 0,
+        "spc_aft": 0,
+        "ln_pct": null,
+        "ln_pts": null,
+        "runs": [
+         {
+          "t": "Key points",
+          "sz": 36,
+          "b": true,
+          "i": false,
+          "u": false,
+          "strike": false,
+          "c": "#111827",
+          "a": 1,
+          "font": "Calibri",
+          "cs": null,
+          "baseline": 0,
+          "caps": false,
+          "spc": 0
+         }
+        ],
+        "end_sz": 18
+       }
+      ]
+     }
+    },
+    {
+     "id": 2,
+     "name": "Body",
+     "alt": null,
+     "x": 609600,
+     "y": 1500000,
+     "w": 10972800,
+     "h": 2400000,
+     "rot": 0,
+     "flip_h": false,
+     "flip_v": false,
+     "t": "shape",
+     "geom": {
+      "k": "preset",
+      "name": "rect",
+      "adj": []
+     },
+     "fill": {
+      "k": "none"
+     },
+     "line": null,
+     "shadow": null,
+     "text": {
+      "ins": [
+       91440,
+       45720,
+       91440,
+       45720
+      ],
+      "anchor": "t",
+      "wrap": true,
+      "autofit": "shrink",
+      "font_scale": 0.925,
+      "line_reduction": 0.1,
+      "paras": [
+       {
+        "algn": "l",
+        "rtl": false,
+        "mar_l": 342900,
+        "indent": -342900,
+        "bullet": {
+         "kind": "char",
+         "ch": "•",
+         "num_type": "",
+         "start": 1,
+         "c": "#F59E0B",
+         "sz_pct": 1,
+         "font": null
+        },
+        "spc_bef": 6,
+        "spc_aft": 0,
+        "ln_pct": 1.1,
+        "ln_pts": null,
+        "runs": [
+         {
+          "t": "First point is long enough to wrap around the available width, probably",
+          "sz": 22,
+          "b": false,
+          "i": false,
+          "u": false,
+          "strike": false,
+          "c": "#111827",
+          "a": 1,
+          "font": "Calibri",
+          "cs": null,
+          "baseline": 0,
+          "caps": false,
+          "spc": 0
+         },
+         {
+          "t": " with bold",
+          "sz": 22,
+          "b": true,
+          "i": false,
+          "u": true,
+          "strike": false,
+          "c": "#B91C1C",
+          "a": 1,
+          "font": "Calibri",
+          "cs": null,
+          "baseline": 0,
+          "caps": false,
+          "spc": 0
+         }
+        ],
+        "end_sz": 18
+       },
+       {
+        "algn": "l",
+        "rtl": false,
+        "mar_l": 342900,
+        "indent": -342900,
+        "bullet": {
+         "kind": "num",
+         "ch": "",
+         "num_type": "arabicPeriod",
+         "start": 1,
+         "c": null,
+         "sz_pct": 1,
+         "font": null
+        },
+        "spc_bef": 0,
+        "spc_aft": 0,
+        "ln_pct": null,
+        "ln_pts": null,
+        "runs": [
+         {
+          "t": "Second",
+          "sz": 22,
+          "b": false,
+          "i": false,
+          "u": false,
+          "strike": false,
+          "c": "#111827",
+          "a": 1,
+          "font": "Calibri",
+          "cs": null,
+          "baseline": 0,
+          "caps": false,
+          "spc": 0
+         },
+         {
+          "t": "\n",
+          "sz": 18,
+          "b": false,
+          "i": false,
+          "u": false,
+          "strike": false,
+          "c": "#FFFFFF",
+          "a": 1,
+          "font": "Calibri",
+          "cs": null,
+          "baseline": 0,
+          "caps": false,
+          "spc": 0
+         },
+         {
+          "t": "after break",
+          "sz": 22,
+          "b": false,
+          "i": false,
+          "u": false,
+          "strike": false,
+          "c": "#111827",
+          "a": 1,
+          "font": "Calibri",
+          "cs": null,
+          "baseline": 30,
+          "caps": false,
+          "spc": 0
+         }
+        ],
+        "end_sz": 18
+       }
+      ]
+     }
+    },
+    {
+     "id": 3,
+     "name": "Arabic",
+     "alt": null,
+     "x": 609600,
+     "y": 4000000,
+     "w": 10972800,
+     "h": 1600000,
+     "rot": 0,
+     "flip_h": false,
+     "flip_v": false,
+     "t": "shape",
+     "geom": {
+      "k": "preset",
+      "name": "rect",
+      "adj": []
+     },
+     "fill": {
+      "k": "none"
+     },
+     "line": null,
+     "shadow": null,
+     "text": {
+      "ins": [
+       91440,
+       45720,
+       91440,
+       45720
+      ],
+      "anchor": "t",
+      "wrap": true,
+      "autofit": "none",
+      "font_scale": 1,
+      "line_reduction": 0,
+      "paras": [
+       {
+        "algn": "r",
+        "rtl": true,
+        "mar_l": 342900,
+        "indent": -342900,
+        "bullet": {
+         "kind": "char",
+         "ch": "•",
+         "num_type": "",
+         "start": 1,
+         "c": "#F59E0B",
+         "sz_pct": 1,
+         "font": null
+        },
+        "spc_bef": 0,
+        "spc_aft": 0,
+        "ln_pct": null,
+        "ln_pts": null,
+        "runs": [
+         {
+          "t": "مرحبا بكم في مراجعة هاربر",
+          "sz": 28,
+          "b": false,
+          "i": false,
+          "u": false,
+          "strike": false,
+          "c": "#111827",
+          "a": 1,
+          "font": "Calibri",
+          "cs": "Arial",
+          "baseline": 0,
+          "caps": false,
+          "spc": 0
+         }
+        ],
+        "end_sz": 18
+       },
+       {
+        "algn": "r",
+        "rtl": true,
+        "mar_l": 342900,
+        "indent": -342900,
+        "bullet": {
+         "kind": "num",
+         "ch": "",
+         "num_type": "arabicPeriod",
+         "start": 1,
+         "c": null,
+         "sz_pct": 1,
+         "font": null
+        },
+        "spc_bef": 0,
+        "spc_aft": 0,
+        "ln_pct": null,
+        "ln_pts": null,
+        "runs": [
+         {
+          "t": "النقطة الثانية",
+          "sz": 28,
+          "b": false,
+          "i": false,
+          "u": false,
+          "strike": false,
+          "c": "#111827",
+          "a": 1,
+          "font": "Calibri",
+          "cs": "Arial",
+          "baseline": 0,
+          "caps": false,
+          "spc": 0
+         }
+        ],
+        "end_sz": 18
+       }
+      ]
+     }
+    }
+   ],
+   "transition": null,
+   "animations": [],
+   "notes": null,
+   "unsupported": []
+  },
+  {
+   "index": 3,
+   "background": {
+    "k": "solid",
+    "c": "#F8FAFC",
+    "a": 1
+   },
+   "items": [
+    {
+     "t": "chart",
+     "id": 1,
+     "name": "Revenue",
+     "alt": null,
+     "x": 609600,
+     "y": 609600,
+     "w": 6000000,
+     "h": 4000000,
+     "rot": 0,
+     "flip_h": false,
+     "flip_v": false,
+     "chart": {
+      "kind": "column",
+      "title": "Revenue by quarter",
+      "categories": [
+       "Q1",
+       "Q2",
+       "Q3",
+       "Q4"
+      ],
+      "series": [
+       {
+        "name": "2025",
+        "values": [
+         10,
+         20,
+         30,
+         40
+        ],
+        "x": null,
+        "color": "#2563EB",
+        "point_colors": []
+       },
+       {
+        "name": "2026",
+        "values": [
+         15,
+         25,
+         35,
+         45
+        ],
+        "x": null,
+        "color": "#F59E0B",
+        "point_colors": []
+       }
+      ],
+      "stacked": false,
+      "percent_stacked": false,
+      "legend": "b",
+      "data_labels": true,
+      "axis_min": null,
+      "axis_max": null,
+      "show_gridlines": true,
+      "text_color": "#334155",
+      "gap_width": 0.5,
+      "smooth": false,
+      "hole": 0.5
+     }
+    },
+    {
+     "t": "chart",
+     "id": 2,
+     "name": "Share",
+     "alt": null,
+     "x": 6900000,
+     "y": 609600,
+     "w": 4600000,
+     "h": 4000000,
+     "rot": 0,
+     "flip_h": false,
+     "flip_v": false,
+     "chart": {
+      "kind": "doughnut",
+      "title": null,
+      "categories": [
+       "A",
+       "B",
+       "C"
+      ],
+      "series": [
+       {
+        "name": "Share",
+        "values": [
+         50,
+         30,
+         20
+        ],
+        "x": null,
+        "color": "#2563EB",
+        "point_colors": [
+         "#2563EB",
+         "#F59E0B",
+         "#10B981"
+        ]
+       }
+      ],
+      "stacked": false,
+      "percent_stacked": false,
+      "legend": "r",
+      "data_labels": false,
+      "axis_min": null,
+      "axis_max": null,
+      "show_gridlines": false,
+      "text_color": "#334155",
+      "gap_width": 0.5,
+      "smooth": false,
+      "hole": 0.6
+     }
+    }
+   ],
+   "transition": {
+    "kind": "push",
+    "dir": "l",
+    "dur_ms": 500,
+    "on_click": true,
+    "after_ms": 3000
+   },
+   "animations": [],
+   "notes": null,
+   "unsupported": []
+  },
+  {
+   "index": 4,
+   "background": {
+    "k": "solid",
+    "c": "#111111",
+    "a": 1
+   },
+   "items": [
+    {
+     "t": "picture",
+     "id": 1,
+     "name": "Photo",
+     "alt": "A 2x2 test image",
+     "x": 1000000,
+     "y": 1000000,
+     "w": 4000000,
+     "h": 4000000,
+     "rot": 0,
+     "flip_h": false,
+     "flip_v": false,
+     "mime": "image/png",
+     "data_b64": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFElEQVR4nGP4z8DAAMIM////ZwAAHu8E/KPItPcAAAAASUVORK5CYII=",
+     "crop": [
+      0.5,
+      0,
+      0,
+      0
+     ],
+     "geom": {
+      "k": "preset",
+      "name": "roundRect",
+      "adj": [
+       16667
+      ]
+     },
+     "line": null,
+     "shadow": null
+    },
+    {
+     "t": "picture",
+     "id": 2,
+     "name": "Missing",
+     "alt": null,
+     "x": 6000000,
+     "y": 1000000,
+     "w": 3000000,
+     "h": 3000000,
+     "rot": 0,
+     "flip_h": false,
+     "flip_v": false,
+     "mime": "image/png",
+     "data_b64": "",
+     "crop": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "geom": {
+      "k": "preset",
+      "name": "rect",
+      "adj": []
+     },
+     "line": null,
+     "shadow": null
+    },
+    {
+     "id": 3,
+     "name": "Custom",
+     "alt": null,
+     "x": 9500000,
+     "y": 1000000,
+     "w": 2000000,
+     "h": 2000000,
+     "rot": 0,
+     "flip_h": false,
+     "flip_v": false,
+     "t": "shape",
+     "geom": {
+      "k": "path",
+      "w": 100,
+      "h": 100,
+      "cmds": [
+       {
+        "c": "M",
+        "x": 0,
+        "y": 0
+       },
+       {
+        "c": "L",
+        "x": 100,
+        "y": 0
+       },
+       {
+        "c": "C",
+        "x1": 100,
+        "y1": 50,
+        "x2": 50,
+        "y2": 100,
+        "x": 0,
+        "y": 100
+       },
+       {
+        "c": "Q",
+        "x1": 0,
+        "y1": 50,
+        "x": 0,
+        "y": 0
+       },
+       {
+        "c": "Z"
+       }
+      ]
+     },
+     "fill": {
+      "k": "solid",
+      "c": "#10B981",
+      "a": 1
+     },
+     "line": null,
+     "shadow": null,
+     "text": null
+    },
+    {
+     "id": 4,
+     "name": "Weird",
+     "alt": null,
+     "x": 9500000,
+     "y": 3500000,
+     "w": 2000000,
+     "h": 1000000,
+     "rot": 0,
+     "flip_h": false,
+     "flip_v": false,
+     "t": "shape",
+     "geom": {
+      "k": "preset",
+      "name": "someFutureShape",
+      "adj": []
+     },
+     "fill": {
+      "k": "solid",
+      "c": "#EF4444",
+      "a": 1
+     },
+     "line": null,
+     "shadow": null,
+     "text": null
+    }
+   ],
+   "transition": null,
+   "animations": [],
+   "notes": null,
+   "unsupported": []
+  },
+  {
+   "index": 5,
+   "background": {
+    "k": "solid",
+    "c": "#FFFFFF",
+    "a": 1
+   },
+   "items": [
+    {
+     "t": "table",
+     "id": 1,
+     "name": "Table",
+     "alt": null,
+     "x": 609600,
+     "y": 609600,
+     "w": 9000000,
+     "h": 1800000,
+     "rot": 0,
+     "flip_h": false,
+     "flip_v": false,
+     "cols": [
+      3000000,
+      3000000,
+      3000000
+     ],
+     "rows": [
+      {
+       "h": 600000,
+       "cells": [
+        {
+         "text": {
+          "ins": [
+           91440,
+           45720,
+           91440,
+           45720
+          ],
+          "anchor": "t",
+          "wrap": true,
+          "autofit": "none",
+          "font_scale": 1,
+          "line_reduction": 0,
+          "paras": [
+           {
+            "algn": "l",
+            "rtl": false,
+            "mar_l": 0,
+            "indent": 0,
+            "bullet": null,
+            "spc_bef": 0,
+            "spc_aft": 0,
+            "ln_pct": null,
+            "ln_pts": null,
+            "runs": [
+             {
+              "t": "Metric",
+              "sz": 16,
+              "b": false,
+              "i": false,
+              "u": false,
+              "strike": false,
+              "c": "#111827",
+              "a": 1,
+              "font": "Calibri",
+              "cs": null,
+              "baseline": 0,
+              "caps": false,
+              "spc": 0
+             }
+            ],
+            "end_sz": 18
+           }
+          ]
+         },
+         "fill": {
+          "k": "solid",
+          "c": "#E2E8F0",
+          "a": 1
+         },
+         "borders": [
+          null,
+          null,
+          null,
+          {
+           "w": 12700,
+           "paint": {
+            "k": "solid",
+            "c": "#94A3B8",
+            "a": 1
+           },
+           "dash": "solid",
+           "cap": "flat",
+           "head": null,
+           "tail": null
+          }
+         ],
+         "grid_span": 2,
+         "row_span": 1,
+         "merged_away": false
+        },
+        {
+         "text": {
+          "ins": [
+           91440,
+           45720,
+           91440,
+           45720
+          ],
+          "anchor": "t",
+          "wrap": true,
+          "autofit": "none",
+          "font_scale": 1,
+          "line_reduction": 0,
+          "paras": [
+           {
+            "algn": "l",
+            "rtl": false,
+            "mar_l": 0,
+            "indent": 0,
+            "bullet": null,
+            "spc_bef": 0,
+            "spc_aft": 0,
+            "ln_pct": null,
+            "ln_pts": null,
+            "runs": [
+             {
+              "t": "",
+              "sz": 16,
+              "b": false,
+              "i": false,
+              "u": false,
+              "strike": false,
+              "c": "#111827",
+              "a": 1,
+              "font": "Calibri",
+              "cs": null,
+              "baseline": 0,
+              "caps": false,
+              "spc": 0
+             }
+            ],
+            "end_sz": 18
+           }
+          ]
+         },
+         "fill": {
+          "k": "none"
+         },
+         "borders": [
+          null,
+          null,
+          null,
+          {
+           "w": 12700,
+           "paint": {
+            "k": "solid",
+            "c": "#94A3B8",
+            "a": 1
+           },
+           "dash": "solid",
+           "cap": "flat",
+           "head": null,
+           "tail": null
+          }
+         ],
+         "grid_span": 1,
+         "row_span": 1,
+         "merged_away": true
+        },
+        {
+         "text": {
+          "ins": [
+           91440,
+           45720,
+           91440,
+           45720
+          ],
+          "anchor": "t",
+          "wrap": true,
+          "autofit": "none",
+          "font_scale": 1,
+          "line_reduction": 0,
+          "paras": [
+           {
+            "algn": "l",
+            "rtl": false,
+            "mar_l": 0,
+            "indent": 0,
+            "bullet": null,
+            "spc_bef": 0,
+            "spc_aft": 0,
+            "ln_pct": null,
+            "ln_pts": null,
+            "runs": [
+             {
+              "t": "Delta",
+              "sz": 16,
+              "b": false,
+              "i": false,
+              "u": false,
+              "strike": false,
+              "c": "#111827",
+              "a": 1,
+              "font": "Calibri",
+              "cs": null,
+              "baseline": 0,
+              "caps": false,
+              "spc": 0
+             }
+            ],
+            "end_sz": 18
+           }
+          ]
+         },
+         "fill": {
+          "k": "solid",
+          "c": "#E2E8F0",
+          "a": 1
+         },
+         "borders": [
+          null,
+          null,
+          null,
+          {
+           "w": 12700,
+           "paint": {
+            "k": "solid",
+            "c": "#94A3B8",
+            "a": 1
+           },
+           "dash": "solid",
+           "cap": "flat",
+           "head": null,
+           "tail": null
+          }
+         ],
+         "grid_span": 1,
+         "row_span": 1,
+         "merged_away": false
+        }
+       ]
+      },
+      {
+       "h": 600000,
+       "cells": [
+        {
+         "text": {
+          "ins": [
+           91440,
+           45720,
+           91440,
+           45720
+          ],
+          "anchor": "t",
+          "wrap": true,
+          "autofit": "none",
+          "font_scale": 1,
+          "line_reduction": 0,
+          "paras": [
+           {
+            "algn": "l",
+            "rtl": false,
+            "mar_l": 0,
+            "indent": 0,
+            "bullet": null,
+            "spc_bef": 0,
+            "spc_aft": 0,
+            "ln_pct": null,
+            "ln_pts": null,
+            "runs": [
+             {
+              "t": "Revenue",
+              "sz": 16,
+              "b": false,
+              "i": false,
+              "u": false,
+              "strike": false,
+              "c": "#111827",
+              "a": 1,
+              "font": "Calibri",
+              "cs": null,
+              "baseline": 0,
+              "caps": false,
+              "spc": 0
+             }
+            ],
+            "end_sz": 18
+           }
+          ]
+         },
+         "fill": {
+          "k": "none"
+         },
+         "borders": [
+          null,
+          null,
+          null,
+          {
+           "w": 12700,
+           "paint": {
+            "k": "solid",
+            "c": "#94A3B8",
+            "a": 1
+           },
+           "dash": "solid",
+           "cap": "flat",
+           "head": null,
+           "tail": null
+          }
+         ],
+         "grid_span": 1,
+         "row_span": 1,
+         "merged_away": false
+        },
+        {
+         "text": {
+          "ins": [
+           91440,
+           45720,
+           91440,
+           45720
+          ],
+          "anchor": "t",
+          "wrap": true,
+          "autofit": "none",
+          "font_scale": 1,
+          "line_reduction": 0,
+          "paras": [
+           {
+            "algn": "l",
+            "rtl": false,
+            "mar_l": 0,
+            "indent": 0,
+            "bullet": null,
+            "spc_bef": 0,
+            "spc_aft": 0,
+            "ln_pct": null,
+            "ln_pts": null,
+            "runs": [
+             {
+              "t": "42",
+              "sz": 16,
+              "b": false,
+              "i": false,
+              "u": false,
+              "strike": false,
+              "c": "#111827",
+              "a": 1,
+              "font": "Calibri",
+              "cs": null,
+              "baseline": 0,
+              "caps": false,
+              "spc": 0
+             }
+            ],
+            "end_sz": 18
+           }
+          ]
+         },
+         "fill": {
+          "k": "none"
+         },
+         "borders": [
+          null,
+          null,
+          null,
+          {
+           "w": 12700,
+           "paint": {
+            "k": "solid",
+            "c": "#94A3B8",
+            "a": 1
+           },
+           "dash": "solid",
+           "cap": "flat",
+           "head": null,
+           "tail": null
+          }
+         ],
+         "grid_span": 1,
+         "row_span": 1,
+         "merged_away": false
+        },
+        {
+         "text": {
+          "ins": [
+           91440,
+           45720,
+           91440,
+           45720
+          ],
+          "anchor": "t",
+          "wrap": true,
+          "autofit": "none",
+          "font_scale": 1,
+          "line_reduction": 0,
+          "paras": [
+           {
+            "algn": "l",
+            "rtl": false,
+            "mar_l": 0,
+            "indent": 0,
+            "bullet": null,
+            "spc_bef": 0,
+            "spc_aft": 0,
+            "ln_pct": null,
+            "ln_pts": null,
+            "runs": [
+             {
+              "t": "+8%",
+              "sz": 16,
+              "b": false,
+              "i": false,
+              "u": false,
+              "strike": false,
+              "c": "#111827",
+              "a": 1,
+              "font": "Calibri",
+              "cs": null,
+              "baseline": 0,
+              "caps": false,
+              "spc": 0
+             }
+            ],
+            "end_sz": 18
+           }
+          ]
+         },
+         "fill": {
+          "k": "none"
+         },
+         "borders": [
+          null,
+          null,
+          null,
+          {
+           "w": 12700,
+           "paint": {
+            "k": "solid",
+            "c": "#94A3B8",
+            "a": 1
+           },
+           "dash": "solid",
+           "cap": "flat",
+           "head": null,
+           "tail": null
+          }
+         ],
+         "grid_span": 1,
+         "row_span": 1,
+         "merged_away": false
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "transition": null,
+   "animations": [],
+   "notes": null,
+   "unsupported": []
+  }
+ ]
+}

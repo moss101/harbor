@@ -35,11 +35,61 @@ class RecentFile {
     final at = json['at'];
     if (name is! String || path is! String || kind is! String) return null;
     return RecentFile(
-        name: name,
-        path: path,
-        kind: kind,
-        at: at is String ? at : '');
+        name: name, path: path, kind: kind, at: at is String ? at : '');
   }
+}
+
+/// The last choices made in the New presentation sheet, so the next one
+/// starts where the user left off. Ids are the core's catalogue ids; an id
+/// the catalogue no longer knows is ignored by the sheet.
+@immutable
+class DeckDesignPrefs {
+  const DeckDesignPrefs({
+    this.purpose,
+    this.design,
+    this.palette,
+    this.motion,
+    this.rtl = false,
+  });
+
+  final String? purpose;
+  final String? design;
+
+  /// Null = the design's own colours.
+  final String? palette;
+  final String? motion;
+  final bool rtl;
+
+  Map<String, dynamic> toJson() => {
+        if (purpose != null) 'purpose': purpose,
+        if (design != null) 'design': design,
+        if (palette != null) 'palette': palette,
+        if (motion != null) 'motion': motion,
+        'rtl': rtl,
+      };
+
+  static DeckDesignPrefs fromJson(Map<String, dynamic> json) {
+    String? str(String k) => json[k] is String ? json[k] as String : null;
+    return DeckDesignPrefs(
+      purpose: str('purpose'),
+      design: str('design'),
+      palette: str('palette'),
+      motion: str('motion'),
+      rtl: json['rtl'] == true,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is DeckDesignPrefs &&
+      other.purpose == purpose &&
+      other.design == design &&
+      other.palette == palette &&
+      other.motion == motion &&
+      other.rtl == rtl;
+
+  @override
+  int get hashCode => Object.hash(purpose, design, palette, motion, rtl);
 }
 
 /// Presentation preferences the shell owns (never policy): locale, theme,
@@ -56,6 +106,7 @@ class HarborPreferences {
     this.lensDocked = true,
     this.chatModel,
     this.recentFiles = const [],
+    this.deckDesign,
   });
 
   final Locale locale;
@@ -63,6 +114,9 @@ class HarborPreferences {
   final bool lensDocked;
   final String? chatModel;
   final List<RecentFile> recentFiles;
+
+  /// Last New presentation choices (null until the sheet was used).
+  final DeckDesignPrefs? deckDesign;
 
   /// [file] moved to the front (deduped by path), capped at 8.
   HarborPreferences withRecentFile(RecentFile file) {
@@ -77,6 +131,7 @@ class HarborPreferences {
     String? chatModel,
     bool clearChatModel = false,
     List<RecentFile>? recentFiles,
+    DeckDesignPrefs? deckDesign,
   }) {
     return HarborPreferences(
       locale: locale ?? this.locale,
@@ -84,6 +139,7 @@ class HarborPreferences {
       lensDocked: lensDocked ?? this.lensDocked,
       chatModel: clearChatModel ? null : (chatModel ?? this.chatModel),
       recentFiles: recentFiles ?? this.recentFiles,
+      deckDesign: deckDesign ?? this.deckDesign,
     );
   }
 
@@ -93,6 +149,7 @@ class HarborPreferences {
         'lens_docked': lensDocked,
         if (chatModel != null) 'chat_model': chatModel,
         'recent_files': [for (final r in recentFiles) r.toJson()],
+        if (deckDesign != null) 'deck_design': deckDesign!.toJson(),
       };
 
   static HarborPreferences fromJson(Map<String, dynamic> json) {
@@ -112,11 +169,16 @@ class HarborPreferences {
           json['chat_model'] is String ? json['chat_model'] as String : null,
       recentFiles: json['recent_files'] is List
           ? (json['recent_files'] as List)
-              .map((e) =>
-                  e is Map ? RecentFile.fromJson(e.cast<String, dynamic>()) : null)
+              .map((e) => e is Map
+                  ? RecentFile.fromJson(e.cast<String, dynamic>())
+                  : null)
               .whereType<RecentFile>()
               .toList()
           : const [],
+      deckDesign: json['deck_design'] is Map
+          ? DeckDesignPrefs.fromJson(
+              (json['deck_design'] as Map).cast<String, dynamic>())
+          : null,
     );
   }
 
@@ -127,11 +189,17 @@ class HarborPreferences {
       other.themeMode == themeMode &&
       other.lensDocked == lensDocked &&
       other.chatModel == chatModel &&
+      other.deckDesign == deckDesign &&
       const ListEquality().equals(other.recentFiles, recentFiles);
 
   @override
-  int get hashCode =>
-      Object.hash(locale, themeMode, lensDocked, chatModel, Object.hashAll(
+  int get hashCode => Object.hash(
+      locale,
+      themeMode,
+      lensDocked,
+      chatModel,
+      deckDesign,
+      Object.hashAll(
           recentFiles.map((r) => Object.hash(r.name, r.path, r.kind))));
 }
 

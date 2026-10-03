@@ -41,10 +41,10 @@
     "graph_ref": "presentation-builder",
     "description": "Turn notes into a new slide deck: one message per slide, short bullets and speaker notes, every figure checked against the notes, and the file proposed for you to save. Reviewing and fixing an existing deck is Deck Review & QA.",
     "instructions": "Build decks only from the material the user supplies. Prefer few words per slide and one message per slide, and carry the detail into the speaker notes. Every numeric claim comes from the notes; never add a figure, name, date or source the material does not contain. The layout, the cover slide and the file itself are made by Harbor, not written by the model.",
-    "tools": ["deck.build", "deck.verify_outline"],
+    "tools": ["deck.brief", "deck.build", "deck.verify_outline"],
     "requires": ["artifact.engine"],
     "model_policy": {"execution": "local_first", "tier": "Balanced"},
-    "budgets": {"max_steps": 12, "max_tool_calls": 4},
+    "budgets": {"max_steps": 13, "max_tool_calls": 5},
     "expected_outputs": ["new_deck_proposal", "slide_outline"],
     "eval_cases": [
       {"id": "notes-to-deck", "input": "Make a short deck from my launch notes", "expect": "a cover plus three to eight content slides, every figure from the notes, proposed as a new file"},

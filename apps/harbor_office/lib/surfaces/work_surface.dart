@@ -12,9 +12,10 @@ import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/harbor_service.dart';
 import '../services/open_intake.dart';
-import '../services/preferences.dart' show RecentFile;
+import '../services/preferences.dart' show DeckDesignPrefs, RecentFile;
 import 'work/deck_view.dart';
 import 'work/document_view.dart';
+import 'work/new_presentation_sheet.dart';
 import 'work/pdf_view.dart';
 import 'save_destination.dart';
 import 'work/workbook_view.dart';
@@ -66,8 +67,7 @@ class _WorkSurfaceState extends State<WorkSurface> {
     // A document delivered by the platform waits until the core is up
     // (a cold "Open in…" arrives before bootstrap finishes).
     final request = state.pendingOpen;
-    if (request != null &&
-        HarborServiceProvider.of(context).notifier != null) {
+    if (request != null && HarborServiceProvider.of(context).notifier != null) {
       state.pendingOpen = null;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _openDelivered(request);
@@ -103,7 +103,8 @@ class _WorkSurfaceState extends State<WorkSurface> {
     try {
       bytes = await File(path).readAsBytes();
     } catch (_) {
-      messenger.showSnackBar(SnackBar(content: Text(l10n.workRecentFailed(name))));
+      messenger
+          .showSnackBar(SnackBar(content: Text(l10n.workRecentFailed(name))));
       return;
     }
     setState(() => _showParts = false);
@@ -159,12 +160,10 @@ class _WorkSurfaceState extends State<WorkSurface> {
         asDeckExt = asDeck ? 'pptx' : 'docx';
         bytes = asDeck
             ? await service.markdownToPptx(await file.readAsString())
-            : await service.convertMarkdownToDocx(
-                await file.readAsString(),
+            : await service.convertMarkdownToDocx(await file.readAsString(),
                 title: baseName);
       }
-      final targetExt =
-          lower.endsWith('.pdf') ? 'docx' : (asDeckExt ?? 'docx');
+      final targetExt = lower.endsWith('.pdf') ? 'docx' : (asDeckExt ?? 'docx');
       await service.loadPreviewFromBytes(bytes, name: '$baseName.$targetExt');
       final dest = await _saveConvertedCopy('$baseName.$targetExt', bytes);
       if (mounted && dest != null) {
@@ -199,9 +198,7 @@ class _WorkSurfaceState extends State<WorkSurface> {
   Future<void> _newWorkbook() async {
     final l10n = AppLocalizations.of(context)!;
     await _createAndOffer(
-      bytes: await HarborServiceProvider.of(context)
-          .notifier!
-          .createWorkbook(),
+      bytes: await HarborServiceProvider.of(context).notifier!.createWorkbook(),
       name: '${l10n.workUntitledSheet}.xlsx',
       previewName: l10n.workUntitledSheet,
     );
@@ -217,6 +214,27 @@ class _WorkSurfaceState extends State<WorkSurface> {
           .createDocument(title: name),
       name: '$name.docx',
       previewName: name,
+    );
+  }
+
+  /// New presentation: the designer sheet (purpose, design, palette,
+  /// motion, language) builds a starter deck through the core; the deck is
+  /// previewed and a save location is offered like any new file.
+  Future<void> _newPresentation() async {
+    final service = HarborServiceProvider.of(context).notifier;
+    if (service == null) return;
+    final state = AppStateScope.maybeOf(context);
+    final result = await NewPresentationSheet.show(
+      context,
+      designer: service,
+      initial: state?.deckDesign ?? const DeckDesignPrefs(),
+      onRemember: state?.setDeckDesign,
+    );
+    if (result == null || !mounted) return;
+    await _createAndOffer(
+      bytes: result.bytes,
+      name: result.fileName,
+      previewName: result.fileName,
     );
   }
 
@@ -279,8 +297,8 @@ class _WorkSurfaceState extends State<WorkSurface> {
       }
       if (!mounted) return;
       if (!sent) {
-        messenger.showSnackBar(
-            SnackBar(content: Text(l10n.workPrintUnavailable)));
+        messenger
+            .showSnackBar(SnackBar(content: Text(l10n.workPrintUnavailable)));
       }
     } on ffi.HarborCoreException catch (e) {
       if (mounted) {
@@ -305,8 +323,8 @@ class _WorkSurfaceState extends State<WorkSurface> {
       final dest = await _saveConvertedCopy('$base.pdf', bytes);
       if (mounted && dest != null) {
         messenger.showSnackBar(SnackBar(
-            content:
-                Text(l10n.workExportedPdf(dest.split(Platform.pathSeparator).last))));
+            content: Text(l10n
+                .workExportedPdf(dest.split(Platform.pathSeparator).last))));
       }
     } on ffi.HarborCoreException catch (e) {
       if (mounted) {
@@ -334,8 +352,8 @@ class _WorkSurfaceState extends State<WorkSurface> {
       final dest = await _saveConvertedCopy('$base.pdf', bytes);
       if (mounted && dest != null) {
         messenger.showSnackBar(SnackBar(
-            content:
-                Text(l10n.workExportedPdf(dest.split(Platform.pathSeparator).last))));
+            content: Text(l10n
+                .workExportedPdf(dest.split(Platform.pathSeparator).last))));
       }
     } on ffi.HarborCoreException catch (e) {
       if (mounted) {
@@ -360,8 +378,9 @@ class _WorkSurfaceState extends State<WorkSurface> {
       if (dest != null) {
         _recordRecent(name, dest);
         await service.markSaved();
-        messenger.showSnackBar(
-            SnackBar(content: Text(l10n.workSavedCopy(dest.split(Platform.pathSeparator).last))));
+        messenger.showSnackBar(SnackBar(
+            content: Text(
+                l10n.workSavedCopy(dest.split(Platform.pathSeparator).last))));
       }
     } on ffi.HarborCoreException catch (e) {
       if (mounted) {
@@ -377,12 +396,14 @@ class _WorkSurfaceState extends State<WorkSurface> {
         ? 'workbook'
         : name.toLowerCase().endsWith('.pdf')
             ? 'pdf'
-            : 'docx';
+            : name.toLowerCase().endsWith('.pptx')
+                ? 'deck'
+                : 'docx';
     final now = DateTime.now();
     final at =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-    AppStateScope.of(context).addRecentFile(
-        RecentFile(name: name, path: path, kind: kind, at: at));
+    AppStateScope.of(context)
+        .addRecentFile(RecentFile(name: name, path: path, kind: kind, at: at));
   }
 
   /// Reopen a recent file: bytes are read honestly (a path the system no
@@ -598,6 +619,12 @@ class _WorkSurfaceState extends State<WorkSurface> {
                         icon: const Icon(Icons.description_outlined, size: 18),
                         label: Text(l10n.workNewDocument),
                       ),
+                      OutlinedButton.icon(
+                        key: const ValueKey('work-new-presentation'),
+                        onPressed: _newPresentation,
+                        icon: const Icon(Icons.slideshow_outlined, size: 18),
+                        label: Text(l10n.workNewPresentation),
+                      ),
                     ],
                   ),
                   if (AppStateScope.of(context).recentFiles.isNotEmpty) ...[
@@ -624,7 +651,9 @@ class _WorkSurfaceState extends State<WorkSurface> {
                                 ? Icons.table_chart_outlined
                                 : r.kind == 'pdf'
                                     ? Icons.picture_as_pdf_outlined
-                                    : Icons.description_outlined,
+                                    : r.kind == 'deck'
+                                        ? Icons.slideshow_outlined
+                                        : Icons.description_outlined,
                             size: 20),
                         onTap: () => _openRecent(r),
                       ),

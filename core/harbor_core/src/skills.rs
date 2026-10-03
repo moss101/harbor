@@ -143,6 +143,7 @@ impl Default for CapabilityCatalog {
                 "docx.build",
                 "workbook.verify_spec",
                 "deck.verify_outline",
+                "deck.brief",
                 "document.verify_draft",
                 "email.verify_draft",
                 "email.render",

@@ -3,6 +3,59 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+/// The last choices made in the New presentation sheet, so the next one
+/// starts where the user left off. Ids are the core's catalogue ids; an id
+/// the catalogue no longer knows is ignored by the sheet.
+@immutable
+class DeckDesignPrefs {
+  const DeckDesignPrefs({
+    this.purpose,
+    this.design,
+    this.palette,
+    this.motion,
+    this.rtl = false,
+  });
+
+  final String? purpose;
+  final String? design;
+
+  /// Null = the design's own colours.
+  final String? palette;
+  final String? motion;
+  final bool rtl;
+
+  Map<String, dynamic> toJson() => {
+        if (purpose != null) 'purpose': purpose,
+        if (design != null) 'design': design,
+        if (palette != null) 'palette': palette,
+        if (motion != null) 'motion': motion,
+        'rtl': rtl,
+      };
+
+  static DeckDesignPrefs fromJson(Map<String, dynamic> json) {
+    String? str(String k) => json[k] is String ? json[k] as String : null;
+    return DeckDesignPrefs(
+      purpose: str('purpose'),
+      design: str('design'),
+      palette: str('palette'),
+      motion: str('motion'),
+      rtl: json['rtl'] == true,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is DeckDesignPrefs &&
+      other.purpose == purpose &&
+      other.design == design &&
+      other.palette == palette &&
+      other.motion == motion &&
+      other.rtl == rtl;
+
+  @override
+  int get hashCode => Object.hash(purpose, design, palette, motion, rtl);
+}
+
 /// Presentation preferences the shell owns (never policy): locale, theme,
 /// whether the Lens is docked on wide windows, the preferred chat model.
 ///
@@ -16,6 +69,7 @@ class HarborPreferences {
     this.themeMode = ThemeMode.system,
     this.lensDocked = true,
     this.chatModel,
+    this.deckDesign,
   });
 
   final Locale locale;
@@ -23,18 +77,23 @@ class HarborPreferences {
   final bool lensDocked;
   final String? chatModel;
 
+  /// Last New presentation choices (null until the sheet was used).
+  final DeckDesignPrefs? deckDesign;
+
   HarborPreferences copyWith({
     Locale? locale,
     ThemeMode? themeMode,
     bool? lensDocked,
     String? chatModel,
     bool clearChatModel = false,
+    DeckDesignPrefs? deckDesign,
   }) {
     return HarborPreferences(
       locale: locale ?? this.locale,
       themeMode: themeMode ?? this.themeMode,
       lensDocked: lensDocked ?? this.lensDocked,
       chatModel: clearChatModel ? null : (chatModel ?? this.chatModel),
+      deckDesign: deckDesign ?? this.deckDesign,
     );
   }
 
@@ -43,6 +102,7 @@ class HarborPreferences {
         'theme': themeMode.name,
         'lens_docked': lensDocked,
         if (chatModel != null) 'chat_model': chatModel,
+        if (deckDesign != null) 'deck_design': deckDesign!.toJson(),
       };
 
   static HarborPreferences fromJson(Map<String, dynamic> json) {
@@ -60,6 +120,10 @@ class HarborPreferences {
           json['lens_docked'] is bool ? json['lens_docked'] as bool : true,
       chatModel:
           json['chat_model'] is String ? json['chat_model'] as String : null,
+      deckDesign: json['deck_design'] is Map
+          ? DeckDesignPrefs.fromJson(
+              (json['deck_design'] as Map).cast<String, dynamic>())
+          : null,
     );
   }
 
@@ -69,10 +133,12 @@ class HarborPreferences {
       other.locale == locale &&
       other.themeMode == themeMode &&
       other.lensDocked == lensDocked &&
-      other.chatModel == chatModel;
+      other.chatModel == chatModel &&
+      other.deckDesign == deckDesign;
 
   @override
-  int get hashCode => Object.hash(locale, themeMode, lensDocked, chatModel);
+  int get hashCode =>
+      Object.hash(locale, themeMode, lensDocked, chatModel, deckDesign);
 }
 
 /// Storage for [HarborPreferences]. The file store is used by the real

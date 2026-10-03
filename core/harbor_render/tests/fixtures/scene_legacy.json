@@ -1,0 +1,474 @@
+{
+  "width": 12192000.0,
+  "height": 6858000.0,
+  "slides": [
+    {
+      "index": 1,
+      "background": {
+        "k": "solid",
+        "c": "#FFFFFF",
+        "a": 1.0
+      },
+      "items": [
+        {
+          "t": "shape",
+          "id": 2,
+          "name": "Title 1",
+          "alt": null,
+          "x": 1524000.0,
+          "y": 1122363.0,
+          "w": 9144000.0,
+          "h": 2387600.0,
+          "rot": 0.0,
+          "flip_h": false,
+          "flip_v": false,
+          "geom": {
+            "k": "preset",
+            "name": "rect",
+            "adj": []
+          },
+          "fill": {
+            "k": "none"
+          },
+          "line": null,
+          "shadow": null,
+          "text": {
+            "ins": [
+              91440.0,
+              45720.0,
+              91440.0,
+              45720.0
+            ],
+            "anchor": "b",
+            "wrap": true,
+            "autofit": "shrink",
+            "font_scale": 1.0,
+            "line_reduction": 0.0,
+            "paras": [
+              {
+                "algn": "ctr",
+                "rtl": false,
+                "mar_l": 0.0,
+                "indent": 0.0,
+                "bullet": null,
+                "spc_bef": 0.0,
+                "spc_aft": 0.0,
+                "ln_pct": 0.9,
+                "ln_pts": null,
+                "runs": [
+                  {
+                    "t": "Harbor Q3 review",
+                    "sz": 44.0,
+                    "b": false,
+                    "i": false,
+                    "u": false,
+                    "strike": false,
+                    "c": "#07111D",
+                    "a": 1.0,
+                    "font": "Calibri",
+                    "cs": null,
+                    "baseline": 0.0,
+                    "caps": false,
+                    "spc": 0.0
+                  }
+                ],
+                "end_sz": 44.0
+              }
+            ]
+          }
+        },
+        {
+          "t": "shape",
+          "id": 3,
+          "name": "Subtitle 2",
+          "alt": null,
+          "x": 1524000.0,
+          "y": 3602038.0,
+          "w": 9144000.0,
+          "h": 1655762.0,
+          "rot": 0.0,
+          "flip_h": false,
+          "flip_v": false,
+          "geom": {
+            "k": "preset",
+            "name": "rect",
+            "adj": []
+          },
+          "fill": {
+            "k": "none"
+          },
+          "line": null,
+          "shadow": null,
+          "text": {
+            "ins": [
+              91440.0,
+              45720.0,
+              91440.0,
+              45720.0
+            ],
+            "anchor": "t",
+            "wrap": true,
+            "autofit": "shrink",
+            "font_scale": 1.0,
+            "line_reduction": 0.0,
+            "paras": [
+              {
+                "algn": "ctr",
+                "rtl": false,
+                "mar_l": 0.0,
+                "indent": 0.0,
+                "bullet": null,
+                "spc_bef": 10.0,
+                "spc_aft": 0.0,
+                "ln_pct": 0.9,
+                "ln_pts": null,
+                "runs": [
+                  {
+                    "t": "Prepared for the board",
+                    "sz": 24.0,
+                    "b": false,
+                    "i": false,
+                    "u": false,
+                    "strike": false,
+                    "c": "#07111D",
+                    "a": 1.0,
+                    "font": "Calibri",
+                    "cs": null,
+                    "baseline": 0.0,
+                    "caps": false,
+                    "spc": 0.0
+                  }
+                ],
+                "end_sz": 24.0
+              }
+            ]
+          }
+        }
+      ],
+      "transition": null,
+      "animations": [],
+      "notes": null,
+      "unsupported": []
+    },
+    {
+      "index": 2,
+      "background": {
+        "k": "solid",
+        "c": "#FFFFFF",
+        "a": 1.0
+      },
+      "items": [
+        {
+          "t": "shape",
+          "id": 2,
+          "name": "Title 1",
+          "alt": null,
+          "x": 838200.0,
+          "y": 365125.0,
+          "w": 10515600.0,
+          "h": 1325563.0,
+          "rot": 0.0,
+          "flip_h": false,
+          "flip_v": false,
+          "geom": {
+            "k": "preset",
+            "name": "rect",
+            "adj": []
+          },
+          "fill": {
+            "k": "none"
+          },
+          "line": null,
+          "shadow": null,
+          "text": {
+            "ins": [
+              91440.0,
+              45720.0,
+              91440.0,
+              45720.0
+            ],
+            "anchor": "ctr",
+            "wrap": true,
+            "autofit": "shrink",
+            "font_scale": 1.0,
+            "line_reduction": 0.0,
+            "paras": [
+              {
+                "algn": "l",
+                "rtl": false,
+                "mar_l": 0.0,
+                "indent": 0.0,
+                "bullet": null,
+                "spc_bef": 0.0,
+                "spc_aft": 0.0,
+                "ln_pct": 0.9,
+                "ln_pts": null,
+                "runs": [
+                  {
+                    "t": "Revenue grew 24%",
+                    "sz": 36.0,
+                    "b": false,
+                    "i": false,
+                    "u": false,
+                    "strike": false,
+                    "c": "#07111D",
+                    "a": 1.0,
+                    "font": "Calibri",
+                    "cs": null,
+                    "baseline": 0.0,
+                    "caps": false,
+                    "spc": 0.0
+                  }
+                ],
+                "end_sz": 36.0
+              }
+            ]
+          }
+        },
+        {
+          "t": "shape",
+          "id": 3,
+          "name": "Content Placeholder 2",
+          "alt": null,
+          "x": 838200.0,
+          "y": 1825625.0,
+          "w": 10515600.0,
+          "h": 4351338.0,
+          "rot": 0.0,
+          "flip_h": false,
+          "flip_v": false,
+          "geom": {
+            "k": "preset",
+            "name": "rect",
+            "adj": []
+          },
+          "fill": {
+            "k": "none"
+          },
+          "line": null,
+          "shadow": null,
+          "text": {
+            "ins": [
+              91440.0,
+              45720.0,
+              91440.0,
+              45720.0
+            ],
+            "anchor": "t",
+            "wrap": true,
+            "autofit": "shrink",
+            "font_scale": 1.0,
+            "line_reduction": 0.0,
+            "paras": [
+              {
+                "algn": "l",
+                "rtl": false,
+                "mar_l": 228600.0,
+                "indent": -228600.0,
+                "bullet": {
+                  "kind": "char",
+                  "ch": "•",
+                  "num_type": "",
+                  "start": 1,
+                  "c": null,
+                  "sz_pct": 1.0,
+                  "font": "Arial"
+                },
+                "spc_bef": 10.0,
+                "spc_aft": 0.0,
+                "ln_pct": 0.9,
+                "ln_pts": null,
+                "runs": [
+                  {
+                    "t": "EMEA led growth",
+                    "sz": 24.0,
+                    "b": false,
+                    "i": false,
+                    "u": false,
+                    "strike": false,
+                    "c": "#07111D",
+                    "a": 1.0,
+                    "font": "Calibri",
+                    "cs": null,
+                    "baseline": 0.0,
+                    "caps": false,
+                    "spc": 0.0
+                  }
+                ],
+                "end_sz": 24.0
+              },
+              {
+                "algn": "l",
+                "rtl": false,
+                "mar_l": 228600.0,
+                "indent": -228600.0,
+                "bullet": {
+                  "kind": "char",
+                  "ch": "•",
+                  "num_type": "",
+                  "start": 1,
+                  "c": null,
+                  "sz_pct": 1.0,
+                  "font": "Arial"
+                },
+                "spc_bef": 10.0,
+                "spc_aft": 0.0,
+                "ln_pct": 0.9,
+                "ln_pts": null,
+                "runs": [
+                  {
+                    "t": "Churn fell to 2.1%",
+                    "sz": 24.0,
+                    "b": false,
+                    "i": false,
+                    "u": false,
+                    "strike": false,
+                    "c": "#07111D",
+                    "a": 1.0,
+                    "font": "Calibri",
+                    "cs": null,
+                    "baseline": 0.0,
+                    "caps": false,
+                    "spc": 0.0
+                  }
+                ],
+                "end_sz": 24.0
+              }
+            ]
+          }
+        }
+      ],
+      "transition": null,
+      "animations": [],
+      "notes": "Say it slowly.",
+      "unsupported": []
+    },
+    {
+      "index": 3,
+      "background": {
+        "k": "solid",
+        "c": "#FFFFFF",
+        "a": 1.0
+      },
+      "items": [
+        {
+          "t": "shape",
+          "id": 2,
+          "name": "Title 1",
+          "alt": null,
+          "x": 838200.0,
+          "y": 365125.0,
+          "w": 10515600.0,
+          "h": 1325563.0,
+          "rot": 0.0,
+          "flip_h": false,
+          "flip_v": false,
+          "geom": {
+            "k": "preset",
+            "name": "rect",
+            "adj": []
+          },
+          "fill": {
+            "k": "none"
+          },
+          "line": null,
+          "shadow": null,
+          "text": {
+            "ins": [
+              91440.0,
+              45720.0,
+              91440.0,
+              45720.0
+            ],
+            "anchor": "ctr",
+            "wrap": true,
+            "autofit": "shrink",
+            "font_scale": 1.0,
+            "line_reduction": 0.0,
+            "paras": [
+              {
+                "algn": "l",
+                "rtl": false,
+                "mar_l": 0.0,
+                "indent": 0.0,
+                "bullet": null,
+                "spc_bef": 0.0,
+                "spc_aft": 0.0,
+                "ln_pct": 0.9,
+                "ln_pts": null,
+                "runs": [
+                  {
+                    "t": "Quarterly revenue",
+                    "sz": 36.0,
+                    "b": false,
+                    "i": false,
+                    "u": false,
+                    "strike": false,
+                    "c": "#07111D",
+                    "a": 1.0,
+                    "font": "Calibri",
+                    "cs": null,
+                    "baseline": 0.0,
+                    "caps": false,
+                    "spc": 0.0
+                  }
+                ],
+                "end_sz": 36.0
+              }
+            ]
+          }
+        },
+        {
+          "t": "chart",
+          "id": 4,
+          "name": "Chart 3",
+          "alt": null,
+          "x": 838200.0,
+          "y": 3600000.0,
+          "w": 7200000.0,
+          "h": 3000000.0,
+          "rot": 0.0,
+          "flip_h": false,
+          "flip_v": false,
+          "chart": {
+            "kind": "column",
+            "title": "Revenue",
+            "categories": [
+              "Q1",
+              "Q2",
+              "Q3"
+            ],
+            "series": [
+              {
+                "name": "2026",
+                "values": [
+                  10.0,
+                  14.0,
+                  18.0
+                ],
+                "x": null,
+                "color": "#1F5FCC",
+                "point_colors": []
+              }
+            ],
+            "stacked": false,
+            "percent_stacked": false,
+            "legend": "b",
+            "data_labels": false,
+            "axis_min": null,
+            "axis_max": null,
+            "show_gridlines": true,
+            "text_color": "#275FA3",
+            "gap_width": 0.8,
+            "smooth": false,
+            "hole": 0.0
+          }
+        }
+      ],
+      "transition": null,
+      "animations": [],
+      "notes": null,
+      "unsupported": []
+    }
+  ]
+}

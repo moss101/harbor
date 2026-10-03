@@ -82,8 +82,13 @@ class AppState extends ChangeNotifier {
 
   void addRecentFile(RecentFile f) => _update(_prefs.withRecentFile(f));
 
-  void clearRecentFiles() =>
-      _update(_prefs.copyWith(recentFiles: const []));
+  void clearRecentFiles() => _update(_prefs.copyWith(recentFiles: const []));
+
+  /// The last New presentation choices (null until the sheet was used).
+  DeckDesignPrefs? get deckDesign => _prefs.deckDesign;
+
+  void setDeckDesign(DeckDesignPrefs d) =>
+      _update(_prefs.copyWith(deckDesign: d));
 
   void selectSurface(int i) {
     if (i == surfaceIndex) return;
@@ -165,7 +170,8 @@ class _HarborOfficeAppState extends State<HarborOfficeApp>
     }
     // The real app listens for documents the platform hands it; an
     // injected service (tests) only does so when an intake is injected.
-    _intake = widget.openIntake ?? (widget.service == null ? OpenIntake() : null);
+    _intake =
+        widget.openIntake ?? (widget.service == null ? OpenIntake() : null);
     final intake = _intake;
     if (intake != null) {
       _intakeSub = intake.requests.listen(_state.requestOpen);
@@ -236,8 +242,7 @@ class _HarborOfficeAppState extends State<HarborOfficeApp>
         name: name,
         path: dest,
         kind: kind,
-        at:
-            '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}',
+        at: '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}',
       ));
     } catch (e) {
       DiagnosticsSink.instance.record(
@@ -262,8 +267,8 @@ class _HarborOfficeAppState extends State<HarborOfficeApp>
         _state.replaceStore(FilePreferencesStore(prefsPath));
         await _state.load();
       }
-      final dataRoot =
-          Directory('${support.path}${Platform.pathSeparator}harbor-office-data');
+      final dataRoot = Directory(
+          '${support.path}${Platform.pathSeparator}harbor-office-data');
       await dataRoot.create(recursive: true);
       String? deviceRootHex;
       if (Platform.isAndroid) {
@@ -278,8 +283,8 @@ class _HarborOfficeAppState extends State<HarborOfficeApp>
       await opened.refresh();
       // Crash-recovery: restore unsaved edits from the autosave draft
       // BEFORE any handed document (an explicit hand-off wins).
-      await opened.attachDraftStore(
-          '${support.path}${Platform.pathSeparator}autosave');
+      await opened
+          .attachDraftStore('${support.path}${Platform.pathSeparator}autosave');
       if (opened.draftRestored) {
         _state.selectSurface(OfficeSurface.work.index);
       }
@@ -389,9 +394,8 @@ class _HarborOfficeAppState extends State<HarborOfficeApp>
               ),
             );
           },
-          home: _initializing
-              ? const _BootingView()
-              : OfficeShell(state: _state),
+          home:
+              _initializing ? const _BootingView() : OfficeShell(state: _state),
         );
       },
     );

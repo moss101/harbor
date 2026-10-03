@@ -19,6 +19,92 @@
         "type": "string",
         "maxLength": 300,
         "description": "Optional: what the summary should emphasise."
+      },
+      "purpose": {
+        "type": "string",
+        "enum": [
+          "pitch_deck",
+          "investor_update",
+          "annual_report",
+          "board",
+          "project_report",
+          "status_update",
+          "product_launch",
+          "quarterly_review",
+          "client_proposal",
+          "strategy",
+          "marketing_plan",
+          "training",
+          "workshop",
+          "case_study",
+          "all_hands",
+          "keynote",
+          "technical_review",
+          "impact_report",
+          "research",
+          "general"
+        ],
+        "description": "What the deck is for; sets the storyline, theme and motion."
+      },
+      "theme": {
+        "type": "string",
+        "enum": [
+          "harbor",
+          "aurora",
+          "ivory",
+          "slate",
+          "sunrise",
+          "obsidian",
+          "ocean",
+          "forest",
+          "midnight_gold",
+          "playground",
+          "mono",
+          "terracotta",
+          "royal",
+          "blueprint"
+        ],
+        "description": "Design: layout, shapes and typography (colour is the palette). The purpose picks one when omitted."
+      },
+      "motion": {
+        "type": "string",
+        "enum": [
+          "none",
+          "subtle",
+          "dynamic",
+          "cinematic"
+        ],
+        "description": "Slide transitions and animations; the purpose picks one when omitted."
+      },
+      "rtl": {
+        "type": "boolean",
+        "description": "Right-to-left deck (Arabic, Hebrew): mirrored layouts."
+      },
+      "palette": {
+        "type": "string",
+        "enum": [
+          "harbor",
+          "aurora",
+          "ivory",
+          "slate",
+          "sunrise",
+          "obsidian",
+          "ocean",
+          "forest",
+          "midnight",
+          "playground",
+          "mono",
+          "terracotta",
+          "royal",
+          "blueprint",
+          "graphite",
+          "rose",
+          "mint",
+          "sand",
+          "indigo",
+          "ember"
+        ],
+        "description": "Colour palette; any palette suits any theme. The theme's own colours are used when omitted."
       }
     },
     "required": [
@@ -215,6 +301,23 @@
         },
         "sentences": {
           "$state": "/sentences"
+        },
+        "design": {
+          "purpose": {
+            "$state": "/input/purpose"
+          },
+          "theme": {
+            "$state": "/input/theme"
+          },
+          "motion": {
+            "$state": "/input/motion"
+          },
+          "rtl": {
+            "$state": "/input/rtl"
+          },
+          "palette": {
+            "$state": "/input/palette"
+          }
         }
       },
       "out": "/proposal",

@@ -656,6 +656,93 @@ fn decimal_display(x: f64) -> String {
 }
 
 // ---------------------------------------------------------------------------
+// deck.brief
+
+/// The storyline a deck of a given purpose should follow, for the model
+/// that writes the outline. Deterministic: the same purpose always yields
+/// the same brief, and nothing here invents facts for the deck.
+pub struct DeckBrief {
+    spec: ToolSpec,
+}
+
+impl DeckBrief {
+    pub fn new() -> Self {
+        DeckBrief {
+            spec: ToolSpec {
+                id: "deck.brief".into(),
+                description: "The slide-by-slide storyline an audience expects for a kind of deck (pitch deck, investor update, project report, product launch, ...), with the theme and motion that suit it. Briefs the outline writer; a missing purpose gives the general brief.".into(),
+                args_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "purpose": {"type": ["string", "null"], "maxLength": 64}
+                    },
+                    "additionalProperties": false
+                }),
+                risk: RiskClass::Read,
+                requires: vec![],
+                timeout_ms: 2_000,
+                max_output_bytes: MB,
+            },
+        }
+    }
+}
+
+impl Default for DeckBrief {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Tool for DeckBrief {
+    fn spec(&self) -> &ToolSpec {
+        &self.spec
+    }
+
+    fn call(&self, _ctx: &ToolContext<'_>, args: &Value) -> Result<Value, ToolError> {
+        use harbor_artifacts::deck::purpose::{purpose, PURPOSES};
+        let id = args
+            .get("purpose")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|p| !p.is_empty())
+            .unwrap_or("general");
+        let p = purpose(id).ok_or_else(|| {
+            let ids: Vec<_> = PURPOSES.iter().map(|p| p.id).collect();
+            ToolError::failed(
+                "deck.brief",
+                format!("unknown deck purpose {id:?}; use one of {}", ids.join(", ")),
+            )
+        })?;
+        // The cover and the close are added by Harbor; the model writes the
+        // slides in between, so the brief lists only those beats.
+        let inner: Vec<_> = p
+            .beats
+            .iter()
+            .skip(1)
+            .take(p.beats.len().saturating_sub(2))
+            .collect();
+        let storyline = inner
+            .iter()
+            .enumerate()
+            .map(|(i, b)| {
+                let label = if b.kicker.is_empty() { "Slide" } else { b.kicker };
+                format!("{}. {label} \u{2014} {}", i + 1, b.says)
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        Ok(json!({
+            "purpose": p.id,
+            "name": p.name,
+            "summary": p.summary,
+            "storyline": storyline,
+            "beats": inner.len(),
+            "theme": p.theme,
+            "motion": p.motion.id(),
+        }))
+    }
+}
+
+// ---------------------------------------------------------------------------
 // deck.verify_outline
 
 pub struct DeckVerifyOutline {

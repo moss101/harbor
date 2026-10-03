@@ -19,7 +19,9 @@ XLSX,Security,VBA/macros/ActiveX,PRESERVE_NO_EXECUTE,no,malicious fixture suite,
 PPTX,Read/render,"text boxes, shapes, images, themes",SUPPORTED_GA,yes,visual + round-trip fixtures,render normally,office-core-v1
 PPTX,Read/render,speaker notes,SUPPORTED_GA,yes,round-trip fixtures,render in notes panel,office-core-v1
 PPTX,Charts,qualified chart types from Harbor IR,REQUIRED_UNQUALIFIED,yes after PASS,visual + data-binding fixture,until PASS: preserve original,compatibility-report-v1
-PPTX,Preserve,animations / transitions,PRESERVE_ONLY,no,relationship/package preservation,not previewed; preserve on save,compatibility-report-v1
+PPTX,Preserve,animations / transitions in files Harbor did not author,PRESERVE_ONLY,no,relationship/package preservation,previewed in the slide player; preserved byte-for-byte on save; never rewritten,compatibility-report-v1
 PPTX,Security,macros/OLE/embedded executable content,PRESERVE_NO_EXECUTE,no,malicious fixture suite,never execute; warn before export,compatibility-report-v1
 ALL,Commit,typed artifact operation batch,SUPPORTED_GA,yes,base-hash/precondition/conflict corpus,atomic replace or versioned-copy fallback,office-core-v1
 ALL,Unknown,feature absent from this matrix,REJECT_OR_PRESERVE_ONLY,no,explicit compatibility classifier required,must not silently claim support,compatibility-report-v1
+PPTX,Author,"themed masters, designed layouts, and the embedded Harbor design source (decks made by Harbor)",REQUIRED_UNQUALIFIED,yes (Harbor-authored decks only),"deterministic bytes + schema-order lint + PowerPoint open check per theme + scene round-trip fixtures + contrast gates",plain two-layout deck when no design is requested; design source ignored by other apps,compatibility-report-v1
+PPTX,Author,"slide transitions and entrance animations from Harbor motion presets (fade/push/wipe/zoom/float; ripple/vortex/reveal/morph carry a fade fallback)",REQUIRED_UNQUALIFIED,yes (Harbor-authored decks only),"timing-tree well-formedness + PowerPoint parse check + bounded motion budget + reduce-motion honoured in preview",motion preset none; older viewers play the fade fallback,compatibility-report-v1

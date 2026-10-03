@@ -2137,6 +2137,158 @@ fn dispatch(
                 }))
             }
         }
+        // --- designed decks: catalogue, samples, starters, restyle ----------
+        "deck.catalog" => {
+            use harbor_artifacts::deck::{self, purpose::PURPOSES};
+            let themes: Vec<serde_json::Value> = deck::theme_catalog()
+                .into_iter()
+                .map(|t| {
+                    serde_json::json!({
+                        "id": t.id, "name": t.name, "tagline": t.tagline, "dark": t.dark,
+                        "swatches": t.swatches, "suits": t.suits,
+                        "major_font": t.major_font, "minor_font": t.minor_font,
+                    })
+                })
+                .collect();
+            let purposes: Vec<serde_json::Value> = PURPOSES
+                .iter()
+                .map(|p| {
+                    serde_json::json!({
+                        "id": p.id, "name": p.name, "summary": p.summary,
+                        "theme": p.theme, "alt_themes": p.alt_themes,
+                        "motion": p.motion.id(), "progressive": p.progressive,
+                        "beats": p.beats.iter().map(|b| serde_json::json!({
+                            "kicker": b.kicker, "layout": b.layout.id(), "says": b.says,
+                        })).collect::<Vec<_>>(),
+                    })
+                })
+                .collect();
+            let motions = [
+                ("none", "No motion"),
+                ("subtle", "Gentle fades"),
+                ("dynamic", "Pushes, floats and zooms"),
+                ("cinematic", "Ripple, vortex and staged builds"),
+            ];
+            let palettes: Vec<serde_json::Value> = deck::palette_catalog()
+                .into_iter()
+                .map(|p| {
+                    serde_json::json!({
+                        "id": p.id, "name": p.name, "mood": p.mood, "dark": p.dark, "swatches": p.swatches,
+                    })
+                })
+                .collect();
+            Ok(serde_json::json!({
+                "themes": themes,
+                "palettes": palettes,
+                "purposes": purposes,
+                "motions": motions.iter().map(|(id, d)| serde_json::json!({"id": id, "description": d})).collect::<Vec<_>>(),
+                "layouts": harbor_artifacts::LayoutKind::ALL.iter().map(|k| k.id()).collect::<Vec<_>>(),
+            }))
+        }
+        "deck.sample" => {
+            use harbor_artifacts::deck::{starter::sample_deck, theme_by_id};
+            let theme = args.get("theme").and_then(|v| v.as_str()).unwrap_or("harbor");
+            if theme_by_id(theme).is_none() {
+                return Err(HarborError::Other(format!("unknown theme {theme}")));
+            }
+            let motion = args
+                .get("motion")
+                .and_then(|v| v.as_str())
+                .and_then(harbor_artifacts::MotionPreset::parse)
+                .unwrap_or(harbor_artifacts::MotionPreset::Subtle);
+            let rtl = args.get("rtl").and_then(|v| v.as_bool()).unwrap_or(false);
+            let mut sample = sample_deck(theme, motion, rtl);
+            if let Some(p) = args.get("palette").and_then(|v| v.as_str()).filter(|p| !p.is_empty()) {
+                if harbor_artifacts::deck::palette::palette(p).is_none() {
+                    return Err(HarborError::Other(format!("unknown palette {p}")));
+                }
+                sample.design.palette = Some(p.to_string());
+            }
+            let bytes = sample
+                .to_pptx_bytes()
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let scene = harbor_render::deck_scene(&bytes).map_err(|e| HarborError::Other(e.to_string()))?;
+            Ok(serde_json::json!({ "scene": scene }))
+        }
+        "deck.starter" => {
+            use harbor_artifacts::deck::starter::starter_deck;
+            let purpose = args.get("purpose").and_then(|v| v.as_str()).unwrap_or("general");
+            let theme = args.get("theme").and_then(|v| v.as_str()).filter(|t| !t.is_empty());
+            if let Some(t) = theme {
+                if harbor_artifacts::deck::theme_by_id(t).is_none() {
+                    return Err(HarborError::Other(format!("unknown theme {t}")));
+                }
+            }
+            let motion = match args.get("motion").and_then(|v| v.as_str()).filter(|m| !m.is_empty()) {
+                Some(m) => Some(
+                    harbor_artifacts::MotionPreset::parse(m)
+                        .ok_or_else(|| HarborError::Other(format!("unknown motion {m}")))?,
+                ),
+                None => None,
+            };
+            let rtl = args.get("rtl").and_then(|v| v.as_bool()).unwrap_or(false);
+            let title = args
+                .get("title")
+                .and_then(|v| v.as_str())
+                .map(str::trim)
+                .filter(|t| !t.is_empty() && t.chars().count() <= 120);
+            let mut deck = starter_deck(purpose, theme, motion, rtl, title)
+                .ok_or_else(|| HarborError::Other(format!("unknown deck purpose {purpose}")))?;
+            if let Some(p) = args.get("palette").and_then(|v| v.as_str()).filter(|p| !p.is_empty()) {
+                if harbor_artifacts::deck::palette::palette(p).is_none() {
+                    return Err(HarborError::Other(format!("unknown palette {p}")));
+                }
+                deck.design.palette = Some(p.to_string());
+            }
+            let bytes = deck.to_pptx_bytes().map_err(|e| HarborError::Other(e.to_string()))?;
+            let scene = harbor_render::deck_scene(&bytes).map_err(|e| HarborError::Other(e.to_string()))?;
+            use base64::Engine as _;
+            let stem: String = deck
+                .title
+                .chars()
+                .map(|c| if c.is_alphanumeric() || c == ' ' || c == '-' || c == '_' { c } else { ' ' })
+                .collect::<String>()
+                .split_whitespace()
+                .collect::<Vec<_>>()
+                .join(" ");
+            Ok(serde_json::json!({
+                "data_b64": base64::engine::general_purpose::STANDARD.encode(&bytes),
+                "file_name": format!("{}.pptx", if stem.is_empty() { "Presentation" } else { &stem }),
+                "title": deck.title,
+                "slides": deck.slides.len(),
+                "theme": deck.design.theme,
+                "motion": deck.design.motion.id(),
+                "scene": scene,
+            }))
+        }
+        "deck.restyle" => {
+            let data_b64 = args
+                .get("data_b64")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing data_b64".into()))?;
+            use base64::Engine as _;
+            let bytes = base64::engine::general_purpose::STANDARD
+                .decode(data_b64)
+                .map_err(|e| HarborError::Other(format!("b64: {e}")))?;
+            let theme = args.get("theme").and_then(|v| v.as_str()).filter(|t| !t.is_empty());
+            let motion = match args.get("motion").and_then(|v| v.as_str()).filter(|m| !m.is_empty()) {
+                Some(m) => Some(
+                    harbor_artifacts::MotionPreset::parse(m)
+                        .ok_or_else(|| HarborError::Other(format!("unknown motion {m}")))?,
+                ),
+                None => None,
+            };
+            let rtl = args.get("rtl").and_then(|v| v.as_bool());
+            // `palette: ""` returns to the theme's own colours.
+            let palette = args.get("palette").and_then(|v| v.as_str());
+            let out = harbor_artifacts::deck::source::restyle(&bytes, theme, palette, motion, rtl)
+                .map_err(HarborError::Other)?;
+            let scene = harbor_render::deck_scene(&out).map_err(|e| HarborError::Other(e.to_string()))?;
+            Ok(serde_json::json!({
+                "data_b64": base64::engine::general_purpose::STANDARD.encode(&out),
+                "scene": scene,
+            }))
+        }
         // --- skills -----------------------------------------------------
         "skills.list" => {
             let skills = harbor_core::skills::builtin_skills()

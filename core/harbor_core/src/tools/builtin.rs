@@ -47,6 +47,7 @@ pub fn all() -> Vec<Arc<dyn Tool>> {
         Arc::new(super::create::DocxBuild::new()),
         Arc::new(super::authoring::WorkbookVerifySpec::new()),
         Arc::new(super::authoring::DeckVerifyOutline::new()),
+        Arc::new(super::authoring::DeckBrief::new()),
         Arc::new(super::authoring::DocumentVerifyDraft::new()),
         Arc::new(super::authoring::EmailVerifyDraft::new()),
         Arc::new(super::authoring::EmailRender::new()),

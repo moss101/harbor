@@ -7,6 +7,44 @@ ran at.
 
 ---
 
+## Session 58 (2026-10-03): designed decks — real designs, authored motion, real preview
+
+- **Preview is a real slide render**, not text: `harbor_render` reads any
+  PPTX into a size-bounded slide scene (theme/master/layout inheritance,
+  colour maps, placeholders, groups, geometry, text style chain, pictures,
+  tables, charts, transitions, animations; unsupported features listed per
+  slide) and `harbor_ui` paints it (`SlideView`), with present mode and motion
+  preview in both apps. Contract: `docs/operations/slide-scene-contract.md`.
+- **Designs are layout languages, palettes are colour.** 14 designs differ in
+  header, cover, section, card chrome, stats, cards, timeline, comparison,
+  agenda and team compositions (`docs/operations/deck-design-languages.md`);
+  20 palettes recolour any of them. Tests enforce it: no two designs share
+  a look; text contrast gates over every design x palette; a generic gate
+  that no variant overflows its text boxes or the page, under every header.
+- **Authored motion**: none/subtle/dynamic/cinematic presets, bounded
+  per-slide budget, p14/p159 transitions with a fade fallback. 20 purposes
+  (pitch deck, investor update, project report, product launch, ...) each
+  with a storyline; `deck.brief`, `deck.catalog/sample/starter/restyle`.
+  Decision record: `docs/decisions/0011-designed-decks-and-authored-motion.md`.
+- **Real PowerPoint**: all 14 designs at cinematic motion open without a
+  repair prompt (12 slides, 12 transitions, 83-112 animation effects each).
+  A chart-writer bug (every chart invalid) found on the way and fixed.
+- **UI**: "New presentation" (purpose -> design gallery with live
+  thumbnails -> palette -> motion/language) and "Change design" ship in both
+  apps on shared `harbor_ui` widgets (`deck_designer.dart`); Arabic and (office)
+  de/es/fr/hi strings included. Tests: office 67, app 112, harbor_ui 178,
+  artifacts 143, all green; real-core round trip (14 designs, 20 palettes,
+  20 purposes, starter + restyle) runs in both apps.
+- **Not done / honest limits**: no visual run of the Flutter screens (widget
+  tests only); embedded design source is lost when another app re-saves a deck
+  (restyle is then disabled); harbor_app is preview-only for decks, so a
+  restyle there is not savable; the new-presentation sheet is duplicated in
+  both apps (~980 lines, should move to harbor_ui); new Arabic/de/es/fr/hi
+  strings have no native review; design/palette/purpose names come from the
+  core in English. Nothing here is committed yet.
+
+---
+
 ## Session 57 (2026-10-02): release-path hardening — the builds that ship
 
 The debug-only habit had hidden two real facts; both now fixed/proven:

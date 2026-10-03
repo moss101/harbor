@@ -505,7 +505,7 @@ fn paragraphs_xml(text: &str) -> String {
     out
 }
 
-fn notes_xml(slide: &SlideContent) -> String {
+pub(crate) fn notes_xml(slide: &SlideContent) -> String {
     let text = slide.notes.clone().unwrap_or_default();
     format!(
         r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -611,7 +611,7 @@ fn content_layout_xml() -> String {
     )
 }
 
-fn notes_master_xml() -> String {
+pub(crate) fn notes_master_xml() -> String {
     format!(
         r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:notesMaster {NS}>
@@ -639,13 +639,13 @@ const THEME_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"
 <a:objectDefaults/><a:extraClrSchemeLst/>
 </a:theme>"#;
 
-const PRES_PROPS_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+pub(crate) const PRES_PROPS_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:presentationPr xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"/>"#;
 
-const VIEW_PROPS_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+pub(crate) const VIEW_PROPS_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:viewPr xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:gridSpacing cx="76200" cy="76200"/></p:viewPr>"#;
 
-const TABLE_STYLES_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+pub(crate) const TABLE_STYLES_XML: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <a:tblStyleLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" def="{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"/>"#;
 
 /// Package-level choices the slides do not carry.
@@ -914,7 +914,7 @@ impl PptxDeck {
                     )
                     .as_bytes(),
                 )?;
-                let xlsx = minimal_embedded_xlsx(&spec.series);
+                let xlsx = chart_workbook_xlsx(&spec.categories, &spec.series);
                 zip.start_file(format!("ppt/embeddings/chartdata{n}.xlsx"), opts)?;
                 zip.write_all(&xlsx)?;
             }
@@ -1089,6 +1089,13 @@ fn parse_slide_texts(xml: &str) -> Result<SlideContent, PptxError> {
     let mut title = String::new();
     let mut bullets = Vec::new();
     for sp in doc.descendants().filter(|n| n.has_tag_name("sp")) {
+        // Footer, slide-number and date placeholders are page furniture,
+        // not slide content: they must not read back as bullets.
+        if sp.descendants().any(|n| {
+            n.has_tag_name("ph") && matches!(n.attribute("type"), Some("ftr" | "sldNum" | "dt"))
+        }) {
+            continue;
+        }
         let is_title = sp.descendants().any(|n| {
             n.has_tag_name("ph") && matches!(n.attribute("type"), Some("title" | "ctrTitle"))
         });
@@ -1123,87 +1130,74 @@ pub fn chart_space_xml(
     categories: &[String],
     series: &[(String, Vec<f64>)],
 ) -> String {
-    let chart_el = match kind {
-        ChartKind::Bar => "barChart",
-        ChartKind::Line => "lineChart",
-        ChartKind::Pie => "pieChart",
-        ChartKind::Scatter => "scatterChart",
-    };
-    let mut sers = String::new();
-    for (i, (name, values)) in series.iter().enumerate() {
-        let mut cats = String::new();
-        let mut vals = String::new();
-        for (j, c) in categories.iter().enumerate() {
-            cats.push_str(&format!(
-                "<c:pt idx=\"{j}\"><c:v>{}</c:v></c:pt>",
-                xml_escape(c)
-            ));
-        }
-        for (j, v) in values.iter().enumerate() {
-            vals.push_str(&format!("<c:pt idx=\"{j}\"><c:v>{v}</c:v></c:pt>"));
-        }
-        let series_name = format!(
-            r#"<c:tx><c:strRef><c:f>Sheet1!$A$1</c:f><c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>{}</c:v></c:pt></c:strCache></c:strRef></c:tx>"#,
-            xml_escape(name)
-        );
-        let ser = match kind {
-            // Category charts: c:cat (strings) + c:val (numbers).
-            ChartKind::Bar | ChartKind::Line | ChartKind::Pie => format!(
-                r#"<c:ser><c:idx val="{i}"/><c:order val="{i}"/>{series_name}<c:cat><c:strRef><c:f>Sheet1!$B$1:$B${n}</c:f><c:strCache><c:ptCount val="{n}"/>{cats}</c:strCache></c:strRef></c:cat><c:val><c:numRef><c:f>Sheet1!$C$1:$C${n}</c:f><c:numCache><c:formatCode>General</c:formatCode><c:ptCount val="{n}"/>{vals}</c:numCache></c:numRef></c:val></c:ser>"#,
-                n = categories.len(),
-            ),
-            // Scatter: numeric c:xVal (categories parsed as numbers) +
-            // c:yVal; requires numeric categories by definition.
-            ChartKind::Scatter => {
-                let mut xvals = String::new();
-                for (j, c) in categories.iter().enumerate() {
-                    let x: f64 = c.trim().parse().unwrap_or(0.0);
-                    xvals.push_str(&format!("<c:pt idx=\"{j}\"><c:v>{x}</c:v></c:pt>"));
-                }
-                format!(
-                    r#"<c:ser><c:idx val="{i}"/><c:order val="{i}"/>{series_name}<c:spPr><a:ln w="28575"><a:solidFill><a:srgbClr val="1F5FCC"/></a:solidFill></a:ln></c:spPr><c:marker><c:symbol val="circle"/></c:marker><c:xVal><c:numRef><c:f>Sheet1!$B$1:$B${n}</c:f><c:numCache><c:formatCode>General</c:formatCode><c:ptCount val="{n}"/>{xvals}</c:numCache></c:numRef></c:xVal><c:yVal><c:numRef><c:f>Sheet1!$C$1:$C${n}</c:f><c:numCache><c:formatCode>General</c:formatCode><c:ptCount val="{n}"/>{vals}</c:numCache></c:numRef></c:yVal></c:ser>"#,
-                    n = categories.len(),
-                )
-            }
-        };
-        sers.push_str(&ser);
-    }
-    let axes = match kind {
-        ChartKind::Bar | ChartKind::Line | ChartKind::Scatter => {
-            r#"<c:axId val="111111111"/><c:axId val="222222222"/>"#.to_string()
-        }
-        ChartKind::Pie => String::new(),
-    };
-    let axes_xml = match kind {
-        ChartKind::Bar | ChartKind::Line => String::from(
-            r#"<c:catAx><c:axId val="111111111"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:crossAx val="222222222"/></c:catAx><c:valAx><c:axId val="222222222"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:crossAx val="111111111"/></c:valAx>"#,
-        ),
-        // Scatter uses two value axes.
-        ChartKind::Scatter => String::from(
-            r#"<c:valAx><c:axId val="111111111"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:crossAx val="222222222"/></c:valAx><c:valAx><c:axId val="222222222"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:crossAx val="111111111"/></c:valAx>"#,
-        ),
-        ChartKind::Pie => String::new(),
-    };
-    let grouping = match kind {
-        ChartKind::Bar => "<c:grouping val=\"clustered\"/>",
-        ChartKind::Line | ChartKind::Scatter => "<c:grouping val=\"standard\"/>",
-        ChartKind::Pie => "",
-    };
-    format!(
-        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-<c:chart><c:title><c:tx><c:rich><a:bodyPr/><a:p><a:r><a:t>{title}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title><c:autoTitleDeleted val="0"/>
-<c:plotArea><c:layout/>{chart_el}{grouping}{sers}{axes}{axes_xml}</c:plotArea>
-<c:plotVisOnly val="1"/><c:dispBlanksAs val="gap"/>
-</c:chart>
-</c:chartSpace>"#,
-        title = xml_escape(title),
-        chart_el = chart_el,
-        grouping = grouping,
-        sers = sers,
-        axes = axes,
-        axes_xml = axes_xml,
+    // The house chart writer: schema-linted element order, theme-referenced
+    // colours, escaped text. (This function used to splice the plot
+    // element's NAME in as bare text — `...<c:layout/>barChart<c:grouping/>`
+    // — so every chart it wrote was schema-invalid.)
+    crate::chart_xml::styled_chart_space_xml(
+        kind,
+        title,
+        categories,
+        series,
+        &crate::chart_xml::ChartStyle::default(),
     )
+}
+
+/// The chart's data as a real embedded workbook, laid out exactly as the
+/// chart's cached references expect: series names in row 1 (`B1`, `C1`,
+/// ...), categories (or scatter X values) in `A2:A(n+1)`, series `k` in
+/// column `B + k`. "Edit Data" in PowerPoint opens this sheet.
+pub fn chart_workbook_xlsx(categories: &[String], series: &[(String, Vec<f64>)]) -> Vec<u8> {
+    fn col(i: usize) -> String {
+        let mut n = i + 1;
+        let mut s = String::new();
+        while n > 0 {
+            n -= 1;
+            s.insert(0, (b'A' + (n % 26) as u8) as char);
+            n /= 26;
+        }
+        s
+    }
+    let text = |r: usize, c: usize, t: &str| {
+        format!(
+            "<c r=\"{}{}\" t=\"inlineStr\"><is><t>{}</t></is></c>",
+            col(c),
+            r,
+            xml_escape(t)
+        )
+    };
+    let mut rows = String::new();
+    // Row 1: blank corner + series names.
+    let mut cells = String::new();
+    for (k, (name, _)) in series.iter().enumerate() {
+        cells.push_str(&text(1, k + 1, name));
+    }
+    rows.push_str(&format!("<row r=\"1\">{cells}</row>"));
+    for (i, cat) in categories.iter().enumerate() {
+        let r = i + 2;
+        let mut cells = text(r, 0, cat);
+        for (k, (_, values)) in series.iter().enumerate() {
+            if let Some(v) = values.get(i).filter(|v| v.is_finite()) {
+                cells.push_str(&format!("<c r=\"{}{}\"><v>{}</v></c>", col(k + 1), r, v));
+            }
+        }
+        rows.push_str(&format!("<row r=\"{r}\">{cells}</row>"));
+    }
+    let sheet = format!(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheetData>{rows}</sheetData></worksheet>"
+    );
+    let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    let opts = zip::write::SimpleFileOptions::default();
+    let mut put = |name: &str, body: &str| {
+        zip.start_file(name, opts).unwrap();
+        zip.write_all(body.as_bytes()).unwrap();
+    };
+    put("[Content_Types].xml", r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>"#);
+    put("_rels/.rels", r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>"#);
+    put("xl/workbook.xml", r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets></workbook>"#);
+    put("xl/_rels/workbook.xml.rels", r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>"#);
+    put("xl/worksheets/sheet1.xml", &sheet);
+    zip.finish().unwrap().into_inner()
 }
 
 /// Minimal embedded workbook bytes for a chart (PowerPoint tolerates an
