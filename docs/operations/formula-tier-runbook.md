@@ -4,12 +4,15 @@ The formula engine qualification (`22_Formula_Coverage.json`) requires
 five platforms before any target may flip to PASS. Three tiers are
 machine-bound (macOS, iOS Simulator, Android emulator). They were first
 recorded 139/139 cases · 99/99 targets on engine `0.9.3+harbor-textfix`,
-corpus bundle `e1fc88a3…`. On 2026-10-04 the engine gained the Excel-fidelity
-patch set (decision 0001 addendum 2, engine `0.9.3+harbor-excel-fidelity`) and
-the corpus grew to cover 398 targets, so those three records are **superseded
-and must be re-run** on the current engine and bundle (the commands below are
-the same). The remaining tiers need hardware this repository's machines do not
-have. Exact commands, verified on this host:
+bundle `e1fc88a3…`; those records are kept but marked superseded. On
+2026-10-04 the engine gained the Excel-fidelity patch set (decision 0001
+addendum 2, `0.9.3+harbor-excel-fidelity`) and the corpus grew to 398 targets,
+so the three tiers were re-run on commit `9e32a51` (bundle `1c5a832e…`):
+macOS 1220/1220 · 398/398, iOS Simulator 1220/1220 · 398/398, Android emulator
+1218/1220 · 396/398 (IMCOSH and IMSECH differ in the last digit of their text
+result because the platform libm rounds that transcendental differently; listed
+under `known_deviations`). The remaining tiers need hardware this repository's
+machines do not have. Exact commands, verified on this host:
 
 ## Physical iOS/iPadOS arm64 device
 

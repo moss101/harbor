@@ -58,9 +58,11 @@ ran at.
   engine's own tests and narrowed. 9 functions stay deferred (Excel quirks,
   locale, dynamic-array edges; listed in 22_Formula_Coverage.json). The
   content gate now blocks HYPERLINK/INDIRECT/CELL/INFO for model-written
-  formulas even though they are qualified. **The macOS / iOS-Simulator /
-  Android-emulator tier records are superseded and not yet re-run** (they need
-  a commit to bind to); nothing is PASS before the five-platform rule is met.
+  formulas even though they are qualified. **Tiers re-run on commit 9e32a51:** macOS 1220/1220 · 398/398, iOS
+  Simulator 1220/1220 · 398/398, Android emulator 1218/1220 · 396/398 (IMCOSH,
+  IMSECH: last digit of the text result differs with the platform libm; recorded
+  as known deviations). Nothing is PASS before the five-platform rule is met
+  (physical iOS/Android and Windows tiers are operator-bound).
 - **Not done / honest limits**: no visual run of the Flutter screens (widget
   tests only); embedded design source is lost when another app re-saves a deck
   (restyle is then disabled); harbor_app is preview-only for decks, so a

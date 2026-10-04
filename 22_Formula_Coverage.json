@@ -1963,6 +1963,77 @@
       "evidence_sha256": "5d446e51d93a5823d2c9c932d1703308de492eb8b34a2d86f3dc9e16302e873c",
       "binding_note": "commit bound by the clean host tree that cross-built the binary (NDK 28.2 clang, API 35).",
       "superseded": "Historical record. Bound to engine 0.9.3+harbor-textfix and fixture bundle e1fc88a3\u2026; the engine was patched and the corpus grew on 2026-10-04 (decision 0001 addendum 2), so this tier must be re-run before it counts for the current engine and bundle."
+    },
+    {
+      "result_type": "platform_tier",
+      "tier_note": "macOS arm64 tier of the qualified platform set on engine 0.9.3+harbor-excel-fidelity and the 398-target corpus; NOT target PASS (five-platform rule).",
+      "engine_source_revision": "crates.io/formualizer@0.9.3 + third_party/formualizer-eval (TEXT percent patch + Excel-fidelity patch set, decision 0001 addenda)",
+      "engine_sha256": "7e47672f757f2827b26c081de3586d179e409772b35e66d7652f1d8b31e21388",
+      "adapter_revision": "harbor_formula/1",
+      "fixture_bundle_sha256": "1c5a832e2be36c6e7aace7bb775300d2ead3ab7c8e2fd63011bf83d8113f100b",
+      "platform_architecture_set": [
+        "macos/aarch64"
+      ],
+      "commit": "9e32a51",
+      "cases_passed": 1220,
+      "cases_failed": 0,
+      "targets_all_pass": 398,
+      "targets_total": 398,
+      "known_deviations": [],
+      "evidence_path": "evidence/formula_evals/macos-arm64-9e32a51.json",
+      "evidence_sha256": "e304e0b60f1abfbf5df427d9c6e369f10dde784488df2f6045aa008c1ef2d02a",
+      "binding_note": "commit recorded by the run itself (clean tree)."
+    },
+    {
+      "result_type": "platform_tier",
+      "tier_note": "iOS SIMULATOR arm64 (iPhone 17, iOS 26.5) on engine 0.9.3+harbor-excel-fidelity and the 398-target corpus; the physical iOS/iPadOS arm64 entry still requires a device (operator-bound).",
+      "engine_source_revision": "crates.io/formualizer@0.9.3 + third_party/formualizer-eval (TEXT percent patch + Excel-fidelity patch set, decision 0001 addenda)",
+      "engine_sha256": "7e47672f757f2827b26c081de3586d179e409772b35e66d7652f1d8b31e21388",
+      "adapter_revision": "harbor_formula/1",
+      "fixture_bundle_sha256": "1c5a832e2be36c6e7aace7bb775300d2ead3ab7c8e2fd63011bf83d8113f100b",
+      "platform_architecture_set": [
+        "ios-simulator/aarch64"
+      ],
+      "commit": "9e32a51",
+      "cases_passed": 1220,
+      "cases_failed": 0,
+      "targets_all_pass": 398,
+      "targets_total": 398,
+      "known_deviations": [],
+      "evidence_path": "evidence/formula_evals/ios-sim-arm64-9e32a51.json",
+      "evidence_sha256": "528790b8b0143592451515131758d4d96eb137b225cd2bcd55ff21b02997a136",
+      "binding_note": "commit bound by the clean host tree that cross-built the binary (device runs carry no git)."
+    },
+    {
+      "result_type": "platform_tier",
+      "tier_note": "Android EMULATOR arm64-v8a (AVD cvbase_test) on engine 0.9.3+harbor-excel-fidelity and the 398-target corpus (NDK 27.1 clang, API 24 linker); 396/398 targets pass here \u2014 IMCOSH and IMSECH differ in the last digit of their text result because of the platform libm. The physical Android arm64-v8a entry still requires a device; Windows tiers require a Windows host (operator-bound).",
+      "engine_source_revision": "crates.io/formualizer@0.9.3 + third_party/formualizer-eval (TEXT percent patch + Excel-fidelity patch set, decision 0001 addenda)",
+      "engine_sha256": "7e47672f757f2827b26c081de3586d179e409772b35e66d7652f1d8b31e21388",
+      "adapter_revision": "harbor_formula/1",
+      "fixture_bundle_sha256": "1c5a832e2be36c6e7aace7bb775300d2ead3ab7c8e2fd63011bf83d8113f100b",
+      "platform_architecture_set": [
+        "android-emulator/aarch64"
+      ],
+      "commit": "9e32a51",
+      "cases_passed": 1218,
+      "cases_failed": 2,
+      "targets_all_pass": 396,
+      "targets_total": 398,
+      "known_deviations": [
+        {
+          "case_id": "b09-imcosh-1",
+          "target": "IMCOSH",
+          "detail": "Platform math-library difference in the last (15th) significant digit of the complex-number text result; macOS and iOS Simulator produce Excel's digit, Android's libm rounds this transcendental result differently. expected \"-6.58066304055116-7.58155274274655i\", got -6.58066304055116-7.58155274274654i"
+        },
+        {
+          "case_id": "b09-imsech-1",
+          "target": "IMSECH",
+          "detail": "Platform math-library difference in the last (15th) significant digit of the complex-number text result; macOS and iOS Simulator produce Excel's digit, Android's libm rounds this transcendental result differently. expected \"-0.065294027857947+0.0752249603027732i\", got -0.0652940278579471+0.0752249603027732i"
+        }
+      ],
+      "evidence_path": "evidence/formula_evals/android-emulator-arm64-9e32a51.json",
+      "evidence_sha256": "02d076e67e5b84f213058c86d51808632c8e5a9b6c7bb3370315f87c93c188f1",
+      "binding_note": "commit bound by the clean host tree that cross-built the binary (device runs carry no git)."
     }
   ]
 }

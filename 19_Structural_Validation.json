@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "ced098858de96dc201da4f851dac0eb4eb2e04458f56ea1caee84ea6a78a625e",
+  "input_manifest_sha256": "1cd9bf25c2ed6fba5580fc45c06475617f88d02de5cc2e8fe0ea6bb9d9679050",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -121,8 +121,8 @@
     },
     {
       "path": "22_Formula_Coverage.json",
-      "bytes": 53711,
-      "sha256": "618059a0882f292d51c3eb4381e143434228ef7146fb2630de24c852f13572da"
+      "bytes": 58249,
+      "sha256": "77c725a795e6bfd77c192f6c17693250fa9f69273e6b1b69df9a15a06c5ad56b"
     },
     {
       "path": "23_Review_Reconciliation_Matrix.md",
@@ -2550,6 +2550,11 @@
       "sha256": "bc8118b42aa5798de5a4627467f72184311f42750f92339f3e852476813f703f"
     },
     {
+      "path": "core/harbor_formula/examples/probe_cases.rs",
+      "bytes": 2868,
+      "sha256": "6bd5de95a4b91f7579d6920527821739cc24f3b13efcd48d215c2bc656e97137"
+    },
+    {
       "path": "core/harbor_formula/examples/qualify_dump.rs",
       "bytes": 1615,
       "sha256": "55081f3d06e42e25012c29955f0e79e003b3c3280b0e57afc27e246b5f4a2a79"
@@ -3071,8 +3076,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 146480,
-      "sha256": "eafdbf860205893be3756fd327a50acf5632fb9bad9d74e24dba0a2543a747fc"
+      "bytes": 146663,
+      "sha256": "1f0503e394f6e990d2853e25632cfeb56cdfd804b046ff04be0fa4a7951aacd9"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -3135,9 +3140,14 @@
       "sha256": "bcc7fc4146e05b0faa2a76f6b43d336a0acc4846d8c909eea6623404d7e72aeb"
     },
     {
+      "path": "docs/operations/formula-expansion.md",
+      "bytes": 3272,
+      "sha256": "db3ababc753fe33d9e619984e175931a857a1782205f7f459ed99c86e1bea2d3"
+    },
+    {
       "path": "docs/operations/formula-tier-runbook.md",
-      "bytes": 2900,
-      "sha256": "67f42882dba661391715ea8b13bcd5a3750b8c3bde1dcd30037b1b5ae1483f8e"
+      "bytes": 3139,
+      "sha256": "51ebbee142c209322a685823dc073d99e1fd476c8d6c128b37a02665a3c34d75"
     },
     {
       "path": "docs/operations/slide-scene-contract.md",
@@ -5020,6 +5030,11 @@
       "sha256": "32f8fb1c13de17f0808776fae350590540f5b968e58a1fd7660298570ac4987e"
     },
     {
+      "path": "third_party/formualizer-eval/src/engine/tests/criteria_excel_type_rules.rs",
+      "bytes": 5765,
+      "sha256": "e3822409a6300353e696364f8cfec617735a8ba5e61b8c92cb34f1d170a61350"
+    },
+    {
       "path": "third_party/formualizer-eval/src/engine/tests/criteria_ingest_blank.rs",
       "bytes": 2883,
       "sha256": "07f70574468a0ad358e8bec1e135ad8e9ab8d29dfbca465101a6078c3a7cd80a"
@@ -6273,6 +6288,101 @@
       "path": "tools/expand_eval_corpus.py",
       "bytes": 32631,
       "sha256": "e8d47db0a9cd7baa8d8f0498f0daf58bff5dfd1e661a50197962296a97de9f3f"
+    },
+    {
+      "path": "tools/formula_batch.py",
+      "bytes": 20731,
+      "sha256": "cf1b7507b240136f1b099802c80748f1dcee4bbd58e1649d7e65661389c9d34a"
+    },
+    {
+      "path": "tools/formula_batches/batch01.py",
+      "bytes": 2581,
+      "sha256": "63004416debf951f683f7da7f6e4b5285130989f2aba8bcd18953a9144656616"
+    },
+    {
+      "path": "tools/formula_batches/batch02.py",
+      "bytes": 3877,
+      "sha256": "8ad519c5cdd6e4faad2d6563d57914474f6ab64912149aeaee74caabec0b853b"
+    },
+    {
+      "path": "tools/formula_batches/batch03.py",
+      "bytes": 3525,
+      "sha256": "ba2f8d56e97071e88234977a0906b8564051ea70d677849dd306145038451339"
+    },
+    {
+      "path": "tools/formula_batches/batch04.py",
+      "bytes": 4098,
+      "sha256": "89651eb5aeaacc0711bc2fa8d51c7f0a927db131fb192eb115e792b23c36404f"
+    },
+    {
+      "path": "tools/formula_batches/batch05.py",
+      "bytes": 3274,
+      "sha256": "6674fe359eba6f18923768f48b1cad1ac77c16e4111dd9844dc3a5ae3642a6e5"
+    },
+    {
+      "path": "tools/formula_batches/batch06.py",
+      "bytes": 4556,
+      "sha256": "7e5ee7cfdc3062f49fc8778988c4d2159a14c61637d8d09485f4e3b5fbc5d42e"
+    },
+    {
+      "path": "tools/formula_batches/batch07.py",
+      "bytes": 4972,
+      "sha256": "051e8361a4f07abb0a7dbdc1baed1f3da1360425e3568b2222055704cbcd4f47"
+    },
+    {
+      "path": "tools/formula_batches/batch08.py",
+      "bytes": 3295,
+      "sha256": "3ab7edfd5983561bb2602d63008c3b8723a8ec93f000821749b883776ab65d1a"
+    },
+    {
+      "path": "tools/formula_batches/batch09.py",
+      "bytes": 1495,
+      "sha256": "395a2cc7941daa41deace26b4c9c4c0d56893a818ae03ac5e56f313656ff4c95"
+    },
+    {
+      "path": "tools/formula_batches/batch10.py",
+      "bytes": 3831,
+      "sha256": "664c3c49a395ac6c03706dc1f6f266e470cefe2ebc13edcbc531cbe6f21bc01f"
+    },
+    {
+      "path": "tools/formula_batches/batch11.py",
+      "bytes": 4639,
+      "sha256": "db0c3e2654285a7bafd7595ac24f637ebaca2e28e8812c6e00b6635cb867ccfa"
+    },
+    {
+      "path": "tools/formula_batches/batch12.py",
+      "bytes": 2806,
+      "sha256": "5b9545753632235407718d348c228890a8775f9fa7dcb3b0cafb81c12dabe678"
+    },
+    {
+      "path": "tools/formula_batches/batch13.py",
+      "bytes": 3709,
+      "sha256": "6236ceebaf6eb8385aa338c301e0b2bd63b0e95fe988cb06a4521a811494bb25"
+    },
+    {
+      "path": "tools/formula_batches/batch14.py",
+      "bytes": 990,
+      "sha256": "0401e542e8ea4cd0839bf1c17ab7650042b00f3694d2ac4a0cf24ae4290744a6"
+    },
+    {
+      "path": "tools/formula_batches/batch15.py",
+      "bytes": 2957,
+      "sha256": "f4e0094f54fb1856e17ad5e54db74ef1949eb3bb6f24b8b22cd7138deabc2a5b"
+    },
+    {
+      "path": "tools/formula_batches/batch16.py",
+      "bytes": 1886,
+      "sha256": "a9cca861025fc2b51edd413bcea22626db57e420fe1fb772d608410c2abe1533"
+    },
+    {
+      "path": "tools/formula_batches/batch17.py",
+      "bytes": 1585,
+      "sha256": "142a2f6a9da4346130e8fb0d0b38fc92b25bd8d4eae5bae0278f6f30096bf94c"
+    },
+    {
+      "path": "tools/formula_batches/dsl.py",
+      "bytes": 1278,
+      "sha256": "7d55ca2cc8c8d2799c106845b4554edb9d4c3e2d4fa91f8f2594759f09f0e94f"
     },
     {
       "path": "tools/fuzz.sh",
