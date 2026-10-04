@@ -1,0 +1,23 @@
+// !$*UTF8*$!
+{ archiveVersion = 1; classes = {}; objectVersion = 56; objects = {
+ A1 = {isa = PBXBuildFile; fileRef = F1; };
+ F1 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/main.swift; sourceTree = "<group>"; };
+ F2 = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = App/bridge.h; sourceTree = "<group>"; };
+ F3 = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = App/Info.plist; sourceTree = "<group>"; };
+ P1 = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = QualifyIOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+ G0 = {isa = PBXGroup; children = (F1, F2, F3, GP); sourceTree = "<group>"; };
+ GP = {isa = PBXGroup; children = (P1); name = Products; sourceTree = "<group>"; };
+ PH = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A1); runOnlyForDeploymentPostprocessing = 0; };
+ T1 = {isa = PBXNativeTarget; buildConfigurationList = CL2; buildPhases = (PH); buildRules = (); dependencies = (); name = QualifyIOS; productName = QualifyIOS; productReference = P1; productType = "com.apple.product-type.application"; };
+ PR = {isa = PBXProject; buildConfigurationList = CL1; compatibilityVersion = "Xcode 14.0"; mainGroup = G0; productRefGroup = GP; projectDirPath = ""; projectRoot = ""; targets = (T1); };
+ CL1 = {isa = XCConfigurationList; buildConfigurations = (C1); defaultConfigurationName = Release; };
+ CL2 = {isa = XCConfigurationList; buildConfigurations = (C2); defaultConfigurationName = Release; };
+ C1 = {isa = XCBuildConfiguration; name = Release; buildSettings = { SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 16.0; }; };
+ C2 = {isa = XCBuildConfiguration; name = Release; buildSettings = {
+   PRODUCT_NAME = QualifyIOS; PRODUCT_BUNDLE_IDENTIFIER = dev.harbor.qualify.mohsin; INFOPLIST_FILE = App/Info.plist;
+   SWIFT_VERSION = 5.0; SWIFT_OBJC_BRIDGING_HEADER = App/bridge.h; CODE_SIGN_STYLE = Automatic; DEVELOPMENT_TEAM = 4UJAPZ2U5D;
+   TARGETED_DEVICE_FAMILY = "1,2"; GENERATE_INFOPLIST_FILE = NO;
+   LIBRARY_SEARCH_PATHS = "$(SRCROOT)/rust/target/aarch64-apple-ios/release";
+   OTHER_LDFLAGS = "-lqualify_ios -lc++";
+ }; };
+}; rootObject = PR; }

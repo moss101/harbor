@@ -2056,6 +2056,26 @@
       "evidence_path": "evidence/formula_evals/android-emulator-arm64-59a9269.json",
       "evidence_sha256": "e340aa12eb6c15bfb6ef87aeb738230adfcabb1ec80b0a386bc4be332173bff1",
       "binding_note": "commit bound by the clean host tree that cross-built the binary (device runs carry no git)."
+    },
+    {
+      "result_type": "platform_tier",
+      "tier_note": "PHYSICAL iOS arm64 device (iPhone 17 Pro Max, iOS 27.0) on engine 0.9.3+harbor-excel-fidelity and the 407-target corpus, run by the signed qualification app in tools/qualify_ios. NOT target PASS until the five-platform rule is met (Android device, Windows x64 and arm64 are operator-bound).",
+      "engine_source_revision": "crates.io/formualizer@0.9.3 + third_party/formualizer-eval (TEXT percent patch + Excel-fidelity patch set, decision 0001 addenda)",
+      "engine_sha256": "d7daffb7ed52e4ccbe663674dadc17c60c5732d5ce50b8283667dc9e02c5d333",
+      "adapter_revision": "harbor_formula/1",
+      "fixture_bundle_sha256": "31d30c111d10c1ae9717cd57dd27b567ac83f23f9957f7c0cf8bb42f4ab1aa94",
+      "platform_architecture_set": [
+        "ios/aarch64"
+      ],
+      "commit": "59a9269",
+      "cases_passed": 1261,
+      "cases_failed": 0,
+      "targets_all_pass": 407,
+      "targets_total": 407,
+      "known_deviations": [],
+      "evidence_path": "evidence/formula_evals/ios-device-arm64-59a9269.json",
+      "evidence_sha256": "c135a97e166aa442c58ac43fd2df6d1952a766dd50b50f74d64afb58bdf4464b",
+      "binding_note": "commit bound by the clean host tree the static library was built from (the app carries no git); a first run linked the unpatched upstream engine by mistake and was discarded, see tools/qualify_ios/README.md."
     }
   ]
 }

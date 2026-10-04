@@ -14,18 +14,12 @@ IMSECH, on the last printed digit of a complex-number text result; those cases n
 compare the real and imaginary parts numerically.) The remaining tiers need hardware this repository's
 machines do not have. Exact commands, verified on this host:
 
-## Physical iOS/iPadOS arm64 device
+## Physical iOS/iPadOS arm64 device — DONE (2026-10-04)
 
-```
-rustup run 1.97.1-aarch64-apple-darwin cargo build --release \
-  -p harbor_formula --target aarch64-apple-ios --example qualify_dump
-# Sign for development, push to an attached device (Xcode Devices,
-# devicectl, or an app container) and run:
-./qualify_dump out.json   # copy out.json back to the host
-```
-Then save as `evidence/formula_evals/ios-device-arm64-<commit>.json`
-(bind the commit the binary was built from — the in-device git probe is
-empty by design) and append the tier to `qualification_results`.
+Run on an iPhone 17 Pro Max (iOS 27.0) from commit `59a9269`: 1261/1261 cases ·
+407/407 targets (`evidence/formula_evals/ios-device-arm64-59a9269.json`). The runner
+is `tools/qualify_ios` (see its README for the exact commands, the signing/trust
+steps and the one trap: the `[patch.crates-io]` entry). iPadOS is not separately run.
 
 ## Physical Android arm64-v8a device
 

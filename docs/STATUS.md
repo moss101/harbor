@@ -57,7 +57,7 @@ ran at.
   introduced and then found breaking whole-column SUMIFS was caught by the
   engine's own tests and narrowed. The nine first-deferred functions were closed (engine rules for T.INV.2T, DROP/TAKE/SEQUENCE and immediate LAMBDA calls; oracle-design changes for locale, array-formula and last-digit cases; decision 0001 addendum 3): **407 targets, 1,261 cases, none deferred**. The
   content gate now blocks HYPERLINK/INDIRECT/CELL/INFO for model-written
-  formulas even though they are qualified. **Tiers re-run on commit 59a9269:** macOS, iOS Simulator and Android emulator each 1261/1261 cases · 407/407 targets, no deviations. Nothing is PASS before the five-platform rule is met (physical iOS/Android and Windows tiers are operator-bound).
+  formulas even though they are qualified. **Tiers re-run on commit 59a9269:** macOS, iOS Simulator and Android emulator each 1261/1261 cases · 407/407 targets, no deviations. The **physical iPhone tier** is also done (1261/1261 · 407/407, `tools/qualify_ios`). Nothing is PASS before the five-platform rule is met (physical Android and Windows x64/arm64 remain operator-bound).
 - **Not done / honest limits**: no visual run of the Flutter screens (widget
   tests only); embedded design source is lost when another app re-saves a deck
   (restyle is then disabled); harbor_app is preview-only for decks, so a
