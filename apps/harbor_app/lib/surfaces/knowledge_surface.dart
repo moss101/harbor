@@ -88,8 +88,13 @@ class _KnowledgeSurfaceState extends State<KnowledgeSurface> {
     );
     final text = bodyController.text;
     final explicitTitle = titleController.text.trim();
-    titleController.dispose();
-    bodyController.dispose();
+    // Not yet: the dialog is still animating out and its TextField keeps
+    // listening to the controller until the route is gone (disposing here
+    // threw "used after being disposed" on Android).
+    Future<void>.delayed(const Duration(milliseconds: 500), () {
+      titleController.dispose();
+      bodyController.dispose();
+    });
     if (accepted != true || text.trim().isEmpty || !mounted) return;
     // The pasted source gets a durable, unique id; the user's title wins,
     // otherwise the first line stands in as the title.

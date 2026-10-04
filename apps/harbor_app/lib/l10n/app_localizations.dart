@@ -2498,6 +2498,24 @@ abstract class AppLocalizations {
   /// **'Conversion failed'**
   String get workConvertFailed;
 
+  /// No description provided for @workSaveCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Save a copy'**
+  String get workSaveCopy;
+
+  /// No description provided for @workSavedCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved {name}'**
+  String workSavedCopy(String name);
+
+  /// No description provided for @workSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save the copy'**
+  String get workSaveFailed;
+
   /// No description provided for @modelsAdvancedDetails.
   ///
   /// In en, this message translates to:
@@ -3083,7 +3101,7 @@ abstract class AppLocalizations {
   /// No description provided for @deckDesignApplied.
   ///
   /// In en, this message translates to:
-  /// **'Design changed in this preview only. The original file is untouched.'**
+  /// **'Design changed. Save a copy to keep it.'**
   String get deckDesignApplied;
 
   /// No description provided for @deckDesignFailed.

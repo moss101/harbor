@@ -1580,6 +1580,17 @@ class AppLocalizationsAr extends AppLocalizations {
   String get workConvertFailed => 'فشل التحويل';
 
   @override
+  String get workSaveCopy => 'حفظ نسخة';
+
+  @override
+  String workSavedCopy(String name) {
+    return 'حُفظ $name';
+  }
+
+  @override
+  String get workSaveFailed => 'تعذّر حفظ النسخة';
+
+  @override
   String get modelsAdvancedDetails => 'تفاصيل متقدمة';
 
   @override
@@ -1925,8 +1936,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deckApplyDesign => 'تطبيق التصميم';
 
   @override
-  String get deckDesignApplied =>
-      'تم تغيير التصميم في المعاينة فقط؛ الملف الأصلي لم يتغيّر.';
+  String get deckDesignApplied => 'تم تغيير التصميم. احفظ نسخة للاحتفاظ به.';
 
   @override
   String get deckDesignFailed => 'تعذّر تغيير التصميم';

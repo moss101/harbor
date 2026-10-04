@@ -178,30 +178,17 @@ class HarborSurfaceHeader extends StatelessWidget {
     if (titleEmpty && actionRowOrNull(actions) == null) {
       return const SizedBox(height: HarborSpace.s2);
     }
-    // Compact: one horizontally scrolling row (never stacks); wider:
-    // a wrapping row with room to spare.
+    // Always a wrapping row: a horizontally scrolling row hid the trailing
+    // actions (the close button!) off the edge of a phone. Compact packs
+    // them tighter and lets a long row flow onto a second line.
     final actionRow = actions.isEmpty
         ? null
-        : compact
-            ? SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                clipBehavior: Clip.none,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final (i, a) in actions.indexed) ...[
-                      if (i > 0) const SizedBox(width: HarborSpace.s2),
-                      a,
-                    ],
-                  ],
-                ),
-              )
-            : Wrap(
-                spacing: HarborSpace.s2,
-                runSpacing: HarborSpace.s2,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: actions,
-              );
+        : Wrap(
+            spacing: compact ? HarborSpace.s1 : HarborSpace.s2,
+            runSpacing: compact ? HarborSpace.s1 : HarborSpace.s2,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: actions,
+          );
     return Padding(
       padding: EdgeInsets.fromLTRB(
         HarborBreakpoints.gutter(wc),
@@ -459,6 +446,9 @@ class HarborBanner extends StatelessWidget {
     this.action,
     this.icon,
     this.dense = false,
+    this.oneLine = false,
+    this.actionLabel,
+    this.onAction,
   });
 
   final HarborBannerTone tone;
@@ -467,6 +457,13 @@ class HarborBanner extends StatelessWidget {
   final Widget? action;
   final IconData? icon;
   final bool dense;
+
+  /// A single ellipsised line (the body, else the title) with a text
+  /// button, for narrow screens where a stacked banner would push the
+  /// document off the screen. Tapping the line also runs [onAction].
+  final bool oneLine;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -500,6 +497,55 @@ class HarborBanner extends StatelessWidget {
         ),
     };
     final bodyColor = tone == HarborBannerTone.info ? c.inkMuted : text;
+    if (oneLine) {
+      return Semantics(
+        container: true,
+        liveRegion: tone != HarborBannerTone.info,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onAction,
+            borderRadius: BorderRadius.circular(HarborRadius.md),
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 44),
+              padding: const EdgeInsetsDirectional.only(
+                  start: HarborSpace.s3, end: HarborSpace.s1),
+              decoration: ShapeDecoration(
+                color: fill,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(HarborRadius.md),
+                  side: BorderSide(color: border),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(icon ?? defaultIcon, size: 18, color: text),
+                  const SizedBox(width: HarborSpace.s2),
+                  Expanded(
+                    child: Text(
+                      body ?? title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: t.text.smallOf(text),
+                    ),
+                  ),
+                  if (actionLabel != null)
+                    TextButton(
+                      onPressed: onAction,
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size(44, 44),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: HarborSpace.s2),
+                      ),
+                      child: Text(actionLabel!),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     return Semantics(
       container: true,
       liveRegion: tone != HarborBannerTone.info,

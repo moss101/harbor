@@ -293,6 +293,23 @@ void main() {
     await unmount(tester);
   });
 
+  testWidgets(
+      'with the controls hidden, a tap on the top strip only reveals them',
+      (tester) async {
+    await host(tester, deck3(), start: 1, reduce: true);
+    await tester.pump(const Duration(seconds: 4)); // controls fade out
+    expect(shown(tester), 2);
+    // Where the Close button sits: must not count as "previous slide".
+    await tester.tapAt(const Offset(30, 30));
+    await tester.pump();
+    expect(shown(tester), 2);
+    // Controls are back; a tap in the middle still navigates.
+    await tester.tapAt(const Offset(100, 200));
+    await tester.pump();
+    expect(shown(tester), 1);
+    await unmount(tester);
+  });
+
   testWidgets('swiping towards the start goes forward', (tester) async {
     await host(tester, deck3(), reduce: true);
     await tester.fling(find.byType(PresentView), const Offset(-300, 0), 1500);

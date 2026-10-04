@@ -89,6 +89,35 @@ void main() {
     expect(service.currentWorkingBytes(), res.bytes);
   });
 
+  guarded('a restyle leaves something to save; saving a copy clears it',
+      () async {
+    final r = await service.deckStarter(purpose: 'pitch_deck');
+    await service.loadPreviewFromBytes(r.bytes, name: r.fileName);
+    expect(service.hasUnsavedChanges, isFalse);
+    service.markSaved(); // harmless when nothing is pending
+    expect(service.hasUnsavedChanges, isFalse);
+
+    final res = await service.restyleOpenDeck(const DeckStyleChoice(
+        design: 'ivory', palette: null, motion: 'subtle', rtl: false));
+    expect(service.hasUnsavedChanges, isTrue);
+    expect(service.currentWorkingBytes(), res.bytes);
+
+    service.markSaved();
+    expect(service.hasUnsavedChanges, isFalse);
+    expect(service.currentWorkingBytes(), res.bytes,
+        reason: 'saving a copy keeps the working copy');
+
+    await service.restyleOpenDeck(const DeckStyleChoice(
+        design: 'slate', palette: null, motion: 'subtle', rtl: false));
+    expect(service.hasUnsavedChanges, isTrue);
+
+    // Reopening a file starts clean; closing it leaves nothing pending.
+    await service.loadPreviewFromBytes(r.bytes, name: r.fileName);
+    expect(service.hasUnsavedChanges, isFalse);
+    service.clearPreview();
+    expect(service.hasUnsavedChanges, isFalse);
+  });
+
   guarded('restyle refuses when the open artifact is not a deck', () async {
     final docx = await service.convertMarkdownToDocx('# Title\n\nBody\n');
     await service.loadPreviewFromBytes(docx, name: 'Doc.docx');

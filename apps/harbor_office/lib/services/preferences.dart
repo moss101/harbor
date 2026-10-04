@@ -3,6 +3,10 @@ import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:harbor_ui/deck_designer.dart' show DeckDesignPrefs;
+
+// The remembered New presentation choices live with the shared sheet.
+export 'package:harbor_ui/deck_designer.dart' show DeckDesignPrefs;
 
 /// A recently opened or created file: identity for the Work surface's
 /// recents list (the path is what the picker granted; reopening verifies
@@ -37,59 +41,6 @@ class RecentFile {
     return RecentFile(
         name: name, path: path, kind: kind, at: at is String ? at : '');
   }
-}
-
-/// The last choices made in the New presentation sheet, so the next one
-/// starts where the user left off. Ids are the core's catalogue ids; an id
-/// the catalogue no longer knows is ignored by the sheet.
-@immutable
-class DeckDesignPrefs {
-  const DeckDesignPrefs({
-    this.purpose,
-    this.design,
-    this.palette,
-    this.motion,
-    this.rtl = false,
-  });
-
-  final String? purpose;
-  final String? design;
-
-  /// Null = the design's own colours.
-  final String? palette;
-  final String? motion;
-  final bool rtl;
-
-  Map<String, dynamic> toJson() => {
-        if (purpose != null) 'purpose': purpose,
-        if (design != null) 'design': design,
-        if (palette != null) 'palette': palette,
-        if (motion != null) 'motion': motion,
-        'rtl': rtl,
-      };
-
-  static DeckDesignPrefs fromJson(Map<String, dynamic> json) {
-    String? str(String k) => json[k] is String ? json[k] as String : null;
-    return DeckDesignPrefs(
-      purpose: str('purpose'),
-      design: str('design'),
-      palette: str('palette'),
-      motion: str('motion'),
-      rtl: json['rtl'] == true,
-    );
-  }
-
-  @override
-  bool operator ==(Object other) =>
-      other is DeckDesignPrefs &&
-      other.purpose == purpose &&
-      other.design == design &&
-      other.palette == palette &&
-      other.motion == motion &&
-      other.rtl == rtl;
-
-  @override
-  int get hashCode => Object.hash(purpose, design, palette, motion, rtl);
 }
 
 /// Presentation preferences the shell owns (never policy): locale, theme,

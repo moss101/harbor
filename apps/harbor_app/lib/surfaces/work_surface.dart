@@ -3,21 +3,30 @@ import 'dart:io';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:harbor_native/harbor_ffi.dart' as ffi;
+import 'package:harbor_ui/deck_designer.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../services/file_types.dart';
-import '../services/preferences.dart' show DeckDesignPrefs;
 
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/harbor_service.dart';
 import 'work/deck_view.dart';
 import 'work/document_view.dart';
-import 'work/new_presentation_sheet.dart';
+import 'work/deck_designer_labels.dart';
 import 'work/pdf_view.dart';
 import 'skill_run.dart' show firstFreePath;
 import 'work/workbook_view.dart';
+
+/// "Deck.pptx" -> "Deck copy.pptx": the suggested name of a saved copy never
+/// equals the opened file's.
+String copyFileName(String name) {
+  final dot = name.lastIndexOf('.');
+  return dot <= 0
+      ? '$name copy'
+      : '${name.substring(0, dot)} copy${name.substring(dot)}';
+}
 
 /// Work Canvas (goal §22): the artifact workspace. The user must always be
 /// able to determine which file, which kind, that it is a read-only
@@ -119,6 +128,33 @@ class _WorkSurfaceState extends State<WorkSurface> {
     return dest;
   }
 
+  /// Save the working copy (a restyled deck, edited cells) as a NEW file.
+  /// The file that was opened is never written: the suggested name differs
+  /// from it and a mobile save picks the first free name.
+  Future<void> _saveOpenCopy() async {
+    final service = HarborServiceProvider.of(context).notifier;
+    if (service == null) return;
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final name = service.previewName;
+    final bytes = service.currentWorkingBytes();
+    if (name == null || bytes == null) return;
+    try {
+      final dest = await _saveConvertedCopy(copyFileName(name), bytes);
+      if (!mounted || dest == null) return;
+      service.markSaved();
+      messenger.showSnackBar(SnackBar(
+          content: Text(
+              l10n.workSavedCopy(dest.split(Platform.pathSeparator).last))));
+    } on FileSystemException catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(SnackBar(
+            content: Text(
+                '${l10n.workSaveFailed}: ${e.osError?.message ?? e.message}')));
+      }
+    }
+  }
+
   /// New presentation: the designer sheet (purpose, design, palette,
   /// motion, language) builds a starter deck through the core; the deck is
   /// previewed and a save location is offered, exactly like a converted
@@ -130,6 +166,7 @@ class _WorkSurfaceState extends State<WorkSurface> {
     final result = await NewPresentationSheet.show(
       context,
       designer: service,
+      labels: deckDesignerLabels(AppLocalizations.of(context)!),
       initial: state?.deckDesign ?? const DeckDesignPrefs(),
       onRemember: state?.setDeckDesign,
     );
@@ -231,10 +268,25 @@ class _WorkSurfaceState extends State<WorkSurface> {
             // The empty state carries the primary "Open file" call to
             // action; the header offers it once a file is open.
             if (service != null && !sp.failed && preview != null)
-              OutlinedButton.icon(
-                onPressed: service.previewLoading ? null : _openFile,
-                icon: const Icon(Icons.folder_open_outlined, size: 16),
-                label: Text(l10n.openFile),
+              compact
+                  // A labelled button does not fit beside the other header
+                  // actions on a phone and pushes the close button off screen.
+                  ? IconButton(
+                      tooltip: l10n.openFile,
+                      onPressed: service.previewLoading ? null : _openFile,
+                      icon: const Icon(Icons.folder_open_outlined, size: 18),
+                    )
+                  : OutlinedButton.icon(
+                      onPressed: service.previewLoading ? null : _openFile,
+                      icon: const Icon(Icons.folder_open_outlined, size: 16),
+                      label: Text(l10n.openFile),
+                    ),
+            if (service != null && !sp.failed && service.hasUnsavedChanges)
+              IconButton(
+                key: const ValueKey('work-save-copy'),
+                tooltip: l10n.workSaveCopy,
+                onPressed: service.previewLoading ? null : _saveOpenCopy,
+                icon: const Icon(Icons.save_outlined, size: 18),
               ),
             if (preview != null)
               IconButton(
@@ -253,36 +305,48 @@ class _WorkSurfaceState extends State<WorkSurface> {
         if (preview != null && preserved.isNotEmpty)
           Padding(
             padding: EdgeInsets.fromLTRB(gutter, 0, gutter, HarborSpace.s3),
-            child: HarborBanner(
-              tone: HarborBannerTone.warning,
-              dense: true,
-              title: l10n.workCompatibilityTitle,
-              body: l10n.workCompatibilityBody(preserved.length),
-              action: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextButton(
-                    onPressed: () => setState(() => _showParts = !_showParts),
-                    child: Text(_showParts
-                        ? l10n.workCompatibilityHide
-                        : l10n.workCompatibilityShow),
-                  ),
-                  if (_showParts)
-                    Wrap(
-                      spacing: HarborSpace.s2,
-                      runSpacing: HarborSpace.s1,
+            // On a phone the stacked notice would push the document below
+            // the fold: one line until opened.
+            child: (compact && !_showParts)
+                ? HarborBanner(
+                    tone: HarborBannerTone.warning,
+                    oneLine: true,
+                    title: l10n.workCompatibilityTitle,
+                    body: l10n.workCompatibilityBody(preserved.length),
+                    actionLabel: l10n.workCompatibilityShow,
+                    onAction: () => setState(() => _showParts = true),
+                  )
+                : HarborBanner(
+                    tone: HarborBannerTone.warning,
+                    dense: true,
+                    title: l10n.workCompatibilityTitle,
+                    body: l10n.workCompatibilityBody(preserved.length),
+                    action: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        for (final p in preserved)
-                          Tooltip(
-                            message: p.$2,
-                            child: HarborPill(p.$1,
-                                icon: Icons.inventory_2_outlined),
+                        TextButton(
+                          onPressed: () =>
+                              setState(() => _showParts = !_showParts),
+                          child: Text(_showParts
+                              ? l10n.workCompatibilityHide
+                              : l10n.workCompatibilityShow),
+                        ),
+                        if (_showParts)
+                          Wrap(
+                            spacing: HarborSpace.s2,
+                            runSpacing: HarborSpace.s1,
+                            children: [
+                              for (final p in preserved)
+                                Tooltip(
+                                  message: p.$2,
+                                  child: HarborPill(p.$1,
+                                      icon: Icons.inventory_2_outlined),
+                                ),
+                            ],
                           ),
                       ],
                     ),
-                ],
-              ),
-            ),
+                  ),
           ),
         Expanded(
           child: Builder(builder: (context) {

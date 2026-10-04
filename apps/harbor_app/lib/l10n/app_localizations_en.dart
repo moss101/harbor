@@ -1524,6 +1524,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workConvertFailed => 'Conversion failed';
 
   @override
+  String get workSaveCopy => 'Save a copy';
+
+  @override
+  String workSavedCopy(String name) {
+    return 'Saved $name';
+  }
+
+  @override
+  String get workSaveFailed => 'Couldn\'t save the copy';
+
+  @override
   String get modelsAdvancedDetails => 'Advanced details';
 
   @override
@@ -1860,8 +1871,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deckApplyDesign => 'Apply design';
 
   @override
-  String get deckDesignApplied =>
-      'Design changed in this preview only. The original file is untouched.';
+  String get deckDesignApplied => 'Design changed. Save a copy to keep it.';
 
   @override
   String get deckDesignFailed => 'Couldn\'t change the design';

@@ -725,6 +725,16 @@
     }
   },
   "workConvertFailed": "فشل التحويل",
+  "workSaveCopy": "حفظ نسخة",
+  "workSavedCopy": "حُفظ {name}",
+  "@workSavedCopy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "workSaveFailed": "تعذّر حفظ النسخة",
   "modelsAdvancedDetails": "تفاصيل متقدمة",
   "modelsBackendLabel": "المحرّك",
   "workAddHighlight": "تظليل ما فوق المحدد",
@@ -870,7 +880,7 @@
     }
   },
   "deckApplyDesign": "تطبيق التصميم",
-  "deckDesignApplied": "تم تغيير التصميم في المعاينة فقط؛ الملف الأصلي لم يتغيّر.",
+  "deckDesignApplied": "تم تغيير التصميم. احفظ نسخة للاحتفاظ به.",
   "deckDesignFailed": "تعذّر تغيير التصميم",
   "deckRestyling": "جارٍ تطبيق التصميم…"
 }

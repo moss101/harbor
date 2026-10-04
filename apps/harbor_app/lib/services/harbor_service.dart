@@ -62,6 +62,12 @@ class HarborService extends ChangeNotifier implements DeckDesignerApi {
   List<SkillSummary> _skills = [];
   Map<String, dynamic>? _preview;
   List<int>? _sourceBytes;
+
+  /// The bytes the open file had when it was opened or last saved as a
+  /// copy. The working copy ([_sourceBytes]) differs from it exactly when
+  /// there is something to save (compared by identity: every edit adopts
+  /// fresh bytes from the core).
+  List<int>? _savedBytes;
   String? _previewName;
   String? _previewError;
   bool _previewLoading = false;
@@ -750,11 +756,13 @@ class HarborService extends ChangeNotifier implements DeckDesignerApi {
           await _call('artifact.preview', {'data_b64': base64Encode(bytes)});
       _previewName = name;
       _sourceBytes = bytes;
+      _savedBytes = bytes;
     } on ffi.HarborCoreException catch (e) {
       _preview = null;
       _previewName = name;
       _previewError = e.message;
       _sourceBytes = null;
+      _savedBytes = null;
     }
     _previewLoading = false;
     notifyListeners();
@@ -921,12 +929,26 @@ class HarborService extends ChangeNotifier implements DeckDesignerApi {
   /// The current working copy (edits included), for Save-a-copy.
   List<int>? currentWorkingBytes() => _sourceBytes;
 
+  /// True when the working copy was changed (a new design, a workbook edit)
+  /// since the file was opened or last saved as a copy: there is something
+  /// to keep. The opened file itself is never written.
+  bool get hasUnsavedChanges =>
+      _sourceBytes != null && !identical(_sourceBytes, _savedBytes);
+
+  /// The working copy was saved as a copy: nothing is pending any more.
+  void markSaved() {
+    if (_savedBytes == _sourceBytes) return;
+    _savedBytes = _sourceBytes;
+    notifyListeners();
+  }
+
   /// Close the open artifact (presentation state only).
   void clearPreview() {
     _preview = null;
     _previewName = null;
     _previewError = null;
     _sourceBytes = null;
+    _savedBytes = null;
     notifyListeners();
   }
 

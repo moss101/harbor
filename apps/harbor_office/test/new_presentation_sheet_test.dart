@@ -4,12 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:harbor_office/l10n/app_localizations.dart';
 import 'package:harbor_office/services/harbor_service.dart';
 import 'package:harbor_office/services/preferences.dart';
-import 'package:harbor_office/surfaces/work/new_presentation_sheet.dart';
+import 'package:harbor_office/surfaces/work/deck_designer_labels.dart';
+import 'package:harbor_native/harbor_ffi.dart' as ffi;
 import 'package:harbor_ui/deck_designer.dart';
+import 'package:harbor_ui/deck_designer_testing.dart';
 import 'package:harbor_ui/harbor_ui.dart';
-import 'package:harbor_ui/slides.dart';
-
-import 'support/fake_deck_designer.dart';
 
 Widget host(
   Widget home, {
@@ -81,6 +80,7 @@ class LauncherState extends State<Launcher> {
               final r = await NewPresentationSheet.show(
                 context,
                 designer: widget.designer,
+                labels: deckDesignerLabels(AppLocalizations.of(context)!),
                 initial: widget.initial ?? const DeckDesignPrefs(),
                 onRemember: widget.onRemember,
               );
@@ -99,13 +99,17 @@ void main() {
   late FakeDeckDesigner designer;
   setUp(() => designer = FakeDeckDesigner());
 
+  // The sheet's behaviour is covered in packages/harbor_ui; these prove the
+  // app hands it its own localisations, preferences and error text.
   Widget sheet({DeckDesignPrefs? initial, ValueChanged<DeckDesignPrefs>? on}) =>
-      NewPresentationSheet(
-          designer: designer,
-          initial: initial ?? const DeckDesignPrefs(),
-          onRemember: on);
+      Builder(
+          builder: (context) => NewPresentationSheet(
+              designer: designer,
+              labels: deckDesignerLabels(AppLocalizations.of(context)!),
+              initial: initial ?? const DeckDesignPrefs(),
+              onRemember: on));
 
-  testWidgets('opens on the purpose step with the catalogue purposes',
+  testWidgets('opens on the purpose step with the app\'s English strings',
       (tester) async {
     size(tester, 1200, 800);
     await tester.pumpWidget(host(sheet()));
@@ -113,104 +117,16 @@ void main() {
     await settle(tester);
     expect(find.text('New presentation'), findsWidgets);
     expect(find.text('What is this presentation for?'), findsOneWidget);
+    expect(find.text('Each purpose comes with a ready-made storyline.'),
+        findsOneWidget);
     expect(find.text('Pitch deck'), findsOneWidget);
-    expect(find.text('Raise a round.'), findsOneWidget);
-    expect(find.text('Project report'), findsOneWidget);
-    expect(designer.catalogCalls, 1);
+    expect(find.text('Preview'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('a purpose preselects its suggested design and motion',
-      (tester) async {
-    size(tester, 1200, 800);
-    await tester.pumpWidget(host(sheet()));
-    await settle(tester);
-    // First purpose is selected by default: aurora + cinematic.
-    await tester.tap(find.byKey(const ValueKey('deck-purpose-project_report')));
-    await settle(tester);
-    await next(tester);
-    // Slate is selected (check icon on its card) and flagged Suggested.
-    final slate = find.byKey(const ValueKey('deck-design-slate'));
-    expect(
-        find.descendant(of: slate, matching: find.byIcon(Icons.check_circle)),
-        findsOneWidget);
-    expect(find.descendant(of: slate, matching: find.text('Suggested')),
-        findsOneWidget);
-    expect(find.text('Suggested'), findsOneWidget);
-  });
-
-  testWidgets('design step: live thumbnails per design, lazily cached',
-      (tester) async {
-    size(tester, 1200, 800);
-    await tester.pumpWidget(host(sheet()));
-    await settle(tester);
-    // Before the design step only the preview pane asks for a sample.
-    expect(designer.samples.map((s) => s.design).toSet(), {'aurora'});
-    await next(tester);
-    await settle(tester);
-    // One request per design (+ the preview of the selected one, cached).
-    final byDesign = designer.samples.map((s) => s.design).toSet();
-    expect(byDesign, {'aurora', 'ivory', 'slate', 'ocean'});
-    expect(designer.samples.where((s) => s.design == 'aurora').length, 1,
-        reason: 'thumbnail and preview share one cached sample');
-    expect(find.byType(SlideView), findsWidgets);
-    expect(find.text('Glowing gradients'), findsOneWidget);
-    // Semantics of thumbnails.
-    final handle = tester.ensureSemantics();
-    expect(find.bySemanticsLabel('Ivory: Quiet editorial'), findsOneWidget);
-    handle.dispose();
-  });
-
-  testWidgets('selecting a design changes the sample the preview asks for',
-      (tester) async {
-    size(tester, 1200, 800);
-    await tester.pumpWidget(host(sheet()));
-    await settle(tester);
-    await next(tester);
-    await settle(tester);
-    designer.samples.clear();
-    await tester.tap(find.byKey(const ValueKey('deck-design-ocean')));
-    await settle(tester);
-    // The preview pane (wide layout) shows the ocean tagline.
-    expect(find.text('Ocean · Deep blues'), findsOneWidget);
-    // Ocean was already requested for its thumbnail: served from the cache.
-    expect(designer.samples, isEmpty);
-    expect(find.bySemanticsLabel('Preview of Ocean'), findsOneWidget);
-  });
-
-  testWidgets('palette change recolours the same layouts', (tester) async {
-    size(tester, 1200, 800);
-    await tester.pumpWidget(host(sheet()));
-    await settle(tester);
-    await next(tester);
-    await settle(tester);
-
-    String? backgroundOf(String design) {
-      final card = find.byKey(ValueKey('deck-design-$design'));
-      final v = tester.widget<SlideView>(
-          find.descendant(of: card, matching: find.byType(SlideView)));
-      return v.scene.background.c;
-    }
-
-    expect(backgroundOf('ivory'), fakeBackground(null));
-    designer.samples.clear();
-    await tester.tap(find.byKey(const ValueKey('deck-palette-terracotta')));
-    await settle(tester);
-    await settle(tester);
-    expect(backgroundOf('ivory'), fakeBackground('terracotta'));
-    expect(backgroundOf('aurora'), fakeBackground('terracotta'));
-    // Every design was asked again, with the palette.
-    expect(designer.samples.every((s) => s.palette == 'terracotta'), isTrue);
-    expect(designer.samples.map((s) => s.design).toSet().length, 4);
-    // Back to the design's own colours.
-    await tester.tap(find.byKey(const ValueKey('deck-palette-own')));
-    await settle(tester);
-    await settle(tester);
-    expect(backgroundOf('ivory'), fakeBackground(null));
-  });
-
-  testWidgets('create builds the starter with the choices and returns it',
-      (tester) async {
+  testWidgets(
+      'create returns the starter and remembers the choices in '
+      'the app\'s DeckDesignPrefs', (tester) async {
     size(tester, 1200, 800);
     DeckDesignPrefs? remembered;
     await tester.pumpWidget(
@@ -230,13 +146,7 @@ void main() {
     await settle(tester);
     await tester.tap(find.text('Create presentation'));
     await tester.pumpAndSettle(const Duration(milliseconds: 100));
-    expect(designer.starters, hasLength(1));
-    final call = designer.starters.single;
-    expect(call.purpose, 'project_report');
-    expect(
-        call.style,
-        const DeckStyleChoice(
-            design: 'ocean', palette: 'mint', motion: 'dynamic', rtl: true));
+    expect(designer.starters.single.purpose, 'project_report');
     expect(find.text('closed:Starter.pptx'), findsOneWidget);
     expect(
         remembered,
@@ -248,79 +158,8 @@ void main() {
             rtl: true));
   });
 
-  testWidgets('a core error is shown with the reason and a retry',
+  testWidgets('remembered preferences from the app restore the choices',
       (tester) async {
-    size(tester, 1200, 800);
-    designer.failStarter = 1;
-    await tester.pumpWidget(host(Launcher(designer)));
-    await tester.tap(find.text('open'));
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
-    await next(tester);
-    await next(tester);
-    await tester.tap(find.text('Create presentation'));
-    await settle(tester);
-    expect(find.text("Couldn't create the presentation"), findsOneWidget);
-    expect(find.textContaining('the core said no'), findsOneWidget);
-    expect(find.text('closed:Starter.pptx'), findsNothing);
-    await tester.tap(find.text('Try again'));
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
-    expect(designer.starters, hasLength(2));
-    expect(find.text('closed:Starter.pptx'), findsOneWidget);
-  });
-
-  testWidgets('a catalogue error offers a retry', (tester) async {
-    size(tester, 1200, 800);
-    designer.failCatalog = 1;
-    await tester.pumpWidget(host(sheet()));
-    await settle(tester);
-    expect(find.text("Couldn't load the designs"), findsWidgets);
-    expect(find.textContaining('catalogue offline'), findsOneWidget);
-    await tester.tap(find.text('Try again'));
-    await settle(tester);
-    expect(find.text('Pitch deck'), findsOneWidget);
-    expect(designer.catalogCalls, 2);
-  });
-
-  testWidgets('a failing sample says so in the preview and can retry',
-      (tester) async {
-    size(tester, 1200, 800);
-    designer.failSample = 100;
-    await tester.pumpWidget(host(sheet()));
-    await settle(tester);
-    await next(tester);
-    await settle(tester);
-    expect(find.text('Preview unavailable'), findsOneWidget);
-    expect(find.text('No preview'), findsWidgets);
-    designer.failSample = 0;
-    await tester.tap(find.text('Try again'));
-    await settle(tester);
-    expect(find.text('Preview unavailable'), findsNothing);
-  });
-
-  testWidgets('remembered choices are restored (unknown ids are ignored)',
-      (tester) async {
-    size(tester, 1200, 800);
-    await tester.pumpWidget(host(sheet(
-        initial: const DeckDesignPrefs(
-            purpose: 'project_report',
-            design: 'ocean',
-            palette: 'mint',
-            motion: 'none',
-            rtl: true))));
-    await settle(tester);
-    await tester.tap(find.byKey(const ValueKey('deck-purpose-project_report')));
-    // Re-picking the same purpose resets to ITS defaults, so go on without.
-    await settle(tester);
-    await next(tester);
-    await settle(tester);
-    expect(
-        find.descendant(
-            of: find.byKey(const ValueKey('deck-design-slate')),
-            matching: find.byIcon(Icons.check_circle)),
-        findsOneWidget);
-  });
-
-  testWidgets('restored prefs drive the first starter request', (tester) async {
     size(tester, 1200, 800);
     await tester.pumpWidget(host(sheet(
         initial: const DeckDesignPrefs(
@@ -341,107 +180,69 @@ void main() {
             design: 'ocean', palette: 'mint', motion: 'none', rtl: true));
   });
 
-  testWidgets('unknown remembered ids fall back to the purpose defaults',
+  testWidgets('a core error shows the core\'s message, not the wrapper',
       (tester) async {
     size(tester, 1200, 800);
-    final bogus = FakeDeckDesigner();
-    await tester.pumpWidget(host(NewPresentationSheet(
-        designer: bogus,
-        initial: const DeckDesignPrefs(
-            purpose: 'nope',
-            design: 'nope',
-            palette: 'nope',
-            motion: 'nope'))));
+    designer.failStarter = 1;
+    await tester.pumpWidget(host(sheet()));
     await settle(tester);
     await next(tester);
     await next(tester);
     await tester.tap(find.text('Create presentation'));
-    await tester.pump();
-    await tester.pump();
-    final s = bogus.starters.single;
-    expect(s.purpose, 'pitch_deck');
-    expect(s.style!.design, 'aurora');
-    expect(s.style!.palette, isNull);
-    expect(s.style!.motion, 'cinematic');
+    await settle(tester);
+    expect(find.text("Couldn't create the presentation"), findsOneWidget);
+    expect(find.textContaining('the core said no'), findsOneWidget);
   });
 
-  group('layout', () {
-    testWidgets('two panes from 840 px: preview beside the steps',
-        (tester) async {
-      size(tester, 900, 800);
-      await tester.pumpWidget(host(sheet()));
-      await settle(tester);
-      expect(find.text('Preview'), findsOneWidget);
-      expect(find.byKey(const ValueKey('deck-preview-slide')), findsOneWidget);
-      final preview = tester.getTopLeft(find.text('Preview'));
-      final steps =
-          tester.getTopLeft(find.text('What is this presentation for?'));
-      expect(preview.dx, greaterThan(steps.dx));
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('below 840 px it is a stepper with an inline preview',
-        (tester) async {
-      size(tester, 600, 800);
-      await tester.pumpWidget(host(sheet()));
-      await settle(tester);
-      expect(find.text('Preview'), findsNothing);
-      expect(find.byKey(const ValueKey('deck-preview-slide')), findsNothing);
-      await next(tester);
-      await settle(tester);
-      // The design step shows the live thumbnails themselves.
-      expect(find.byKey(const ValueKey('deck-preview-slide')), findsNothing);
-      expect(find.byType(SlideView), findsWidgets);
-      await next(tester);
-      await settle(tester);
-      expect(find.byKey(const ValueKey('deck-preview-slide')), findsOneWidget);
-      expect(find.text('Motion and language'), findsWidgets);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('phone width with large text does not overflow',
-        (tester) async {
-      size(tester, 360, 740);
-      await tester.pumpWidget(host(sheet(), textScale: 2));
-      await settle(tester);
-      for (var i = 0; i < 2; i++) {
-        expect(tester.takeException(), isNull, reason: 'step $i');
-        await tester.tap(find.widgetWithText(FilledButton, 'Next'));
-        await settle(tester);
-      }
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('Arabic (RTL) lays out on a phone and wide', (tester) async {
-      for (final w in [360.0, 1200.0]) {
-        size(tester, w, 740);
-        await tester.pumpWidget(KeyedSubtree(
-            key: UniqueKey(),
-            child: host(sheet(), locale: const Locale('ar'))));
-        await settle(tester);
-        expect(find.text('الغرض'), findsWidgets);
-        await tester.tap(find.byType(FilledButton).first);
-        await settle(tester);
-        await tester.tap(find.byType(FilledButton).first);
-        await settle(tester);
-        expect(tester.takeException(), isNull, reason: 'width $w');
-      }
-    });
+  test('deckErrorText unwraps the core\'s exception', () {
+    expect(deckErrorText(ffi.HarborCoreException('bad deck')), 'bad deck');
+    expect(deckErrorText(StateError('x')), contains('x'));
   });
 
-  testWidgets('semantics: steps are labelled selectable buttons',
+  testWidgets(
+      'layout: two panes wide, stepper on a phone, no overflow at '
+      'large text', (tester) async {
+    size(tester, 900, 800);
+    await tester.pumpWidget(host(sheet()));
+    await settle(tester);
+    expect(find.byKey(const ValueKey('deck-preview-slide')), findsOneWidget);
+    size(tester, 360, 740);
+    await tester.pumpWidget(
+        KeyedSubtree(key: UniqueKey(), child: host(sheet(), textScale: 2)));
+    await settle(tester);
+    expect(find.byKey(const ValueKey('deck-preview-slide')), findsNothing);
+    for (var i = 0; i < 2; i++) {
+      expect(tester.takeException(), isNull, reason: 'step $i');
+      await tester.tap(find.widgetWithText(FilledButton, 'Next'));
+      await settle(tester);
+    }
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Arabic (RTL) uses the Arabic strings on a phone and wide',
+      (tester) async {
+    for (final w in [360.0, 1200.0]) {
+      size(tester, w, 740);
+      await tester.pumpWidget(KeyedSubtree(
+          key: UniqueKey(), child: host(sheet(), locale: const Locale('ar'))));
+      await settle(tester);
+      expect(find.text('الغرض'), findsWidgets);
+      await tester.tap(find.byType(FilledButton).first);
+      await settle(tester);
+      await tester.tap(find.byType(FilledButton).first);
+      await settle(tester);
+      expect(tester.takeException(), isNull, reason: 'width $w');
+    }
+  });
+
+  testWidgets('semantics: steps are labelled with the app\'s strings',
       (tester) async {
     final handle = tester.ensureSemantics();
     size(tester, 1200, 800);
     await tester.pumpWidget(host(sheet()));
     await settle(tester);
     expect(find.bySemanticsLabel('Step 1 of 3: Purpose'), findsOneWidget);
-    expect(find.bySemanticsLabel('Step 2 of 3: Design'), findsOneWidget);
     expect(find.bySemanticsLabel('Pitch deck, Raise a round.'), findsOneWidget);
-    // Tapping a step chip jumps there.
-    await tester.tap(find.byKey(const ValueKey('deck-step-1')));
-    await settle(tester);
-    expect(find.text('Choose a design'), findsOneWidget);
     handle.dispose();
   });
 

@@ -5,7 +5,7 @@ import 'package:harbor_ui/slides.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../services/harbor_service.dart';
-import 'new_presentation_sheet.dart';
+import 'deck_designer_labels.dart';
 
 /// Presentation workspace (UX-010): slide navigator (filmstrip) plus a
 /// canvas. With a resolved scene (`preview['scene']`) the canvas and the
@@ -85,7 +85,7 @@ class _DeckViewState extends State<DeckView> {
 
   /// Pick a new design / palette / motion and apply it to the open deck.
   /// The result replaces the preview's working copy; the source file is
-  /// never written (this app has no save path for decks).
+  /// never written; the Work header offers Save a copy for the result.
   Future<void> _changeDesign() async {
     if (_restyling || !_restylable) return;
     final designer = _designerOf(context);
@@ -103,6 +103,7 @@ class _DeckViewState extends State<DeckView> {
     final chosen = await ChangeDesignDialog.show(
       context,
       designer: designer,
+      labels: deckDesignerLabels(l10n),
       current: current,
       currentName: d['theme_name'] as String? ?? current.design,
     );

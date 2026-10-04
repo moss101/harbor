@@ -9,7 +9,7 @@ import 'package:harbor_ui/deck_designer.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 import 'package:harbor_ui/slides.dart';
 
-import 'support/fake_deck_designer.dart';
+import 'package:harbor_ui/deck_designer_testing.dart';
 
 Map<String, dynamic> _scene(int slides) => {
       'width': 12192000,

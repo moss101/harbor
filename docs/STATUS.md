@@ -35,6 +35,16 @@ ran at.
   de/es/fr/hi strings included. Tests: office 67, app 112, harbor_ui 178,
   artifacts 143, all green; real-core round trip (14 designs, 20 palettes,
   20 purposes, starter + restyle) runs in both apps.
+- **Mobile pass** (iPhone 17 simulator + Android arm64 emulator, real core):
+  device runs found and fixed bugs no widget test caught — a new spreadsheet
+  could not be typed into (formula bar disabled on blank cells), the selection
+  jumped to the first formula after every edit, the header hid its close button
+  off-screen, document editing was long-press only (conflicts with text
+  selection on touch; phones get an edit button), a dialog controller disposed
+  mid fade-out crashed Android debug builds, Present did not rotate to
+  landscape. The new-presentation sheet now lives once in `harbor_ui`;
+  `harbor_app` can save a restyled deck. Android "Open with" via content://
+  was not exercised.
 - **Not done / honest limits**: no visual run of the Flutter screens (widget
   tests only); embedded design source is lost when another app re-saves a deck
   (restyle is then disabled); harbor_app is preview-only for decks, so a

@@ -9,7 +9,7 @@ import 'package:harbor_ui/deck_designer.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 import 'package:harbor_ui/slides.dart';
 
-import 'support/fake_deck_designer.dart';
+import 'package:harbor_ui/deck_designer_testing.dart';
 
 Map<String, dynamic> _scene(int slides) => {
       'width': 12192000,
@@ -163,9 +163,7 @@ void main() {
         const DeckStyleChoice(
             design: 'ocean', palette: 'mint', motion: 'subtle', rtl: false));
     expect(
-        find.text(
-            'Design changed in this preview only. The original file is untouched.'),
-        findsOneWidget);
+        find.text('Design changed. Save a copy to keep it.'), findsOneWidget);
 
     // The service swapped the preview underneath: the same slide is shown.
     set(() => current = preview(design: {

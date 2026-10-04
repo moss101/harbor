@@ -867,6 +867,16 @@
     }
   },
   "workConvertFailed": "Conversion failed",
+  "workSaveCopy": "Save a copy",
+  "workSavedCopy": "Saved {name}",
+  "@workSavedCopy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "workSaveFailed": "Couldn't save the copy",
   "modelsAdvancedDetails": "Advanced details",
   "modelsBackendLabel": "Backend",
   "workAddHighlight": "Highlight above selected",
@@ -1036,7 +1046,7 @@
     }
   },
   "deckApplyDesign": "Apply design",
-  "deckDesignApplied": "Design changed in this preview only. The original file is untouched.",
+  "deckDesignApplied": "Design changed. Save a copy to keep it.",
   "deckDesignFailed": "Couldn't change the design",
   "deckRestyling": "Applying the design…"
 }

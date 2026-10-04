@@ -1,5 +1,9 @@
-import 'package:harbor_ui/deck_designer.dart';
-import 'package:harbor_ui/slides.dart';
+import '../slides/slide_scene.dart';
+import 'api.dart';
+import 'models.dart';
+
+// A scriptable [DeckDesignerApi] for widget tests (this package's and the
+// apps'). Test support only: nothing in a shipping build imports it.
 
 const fakeDesigns = [
   DeckDesignInfo(

@@ -195,14 +195,36 @@ class _PresentViewState extends State<PresentView>
     super.didChangeDependencies();
     if (!_started) {
       _started = true;
+      _preferLandscapeOnPhones();
       if (_deck.slides.isNotEmpty) _enterSlide(_index, rebuild: false);
     } else if (_reduce && _motion != _Motion.none) {
       _finishMotion();
     }
   }
 
+  /// A widescreen deck on a phone held upright is a thin strip; ask for
+  /// landscape while presenting (tablets and desktops keep their own).
+  bool _rotated = false;
+  void _preferLandscapeOnPhones() {
+    final size = MediaQuery.sizeOf(context);
+    final wide = _deck.width > _deck.height;
+    if (_mobile && wide && size.shortestSide < 600) {
+      _rotated = true;
+      unawaited(SystemChrome.setPreferredOrientations(const [
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]).catchError((Object _) {}));
+    }
+  }
+
   @override
   void dispose() {
+    if (_rotated) {
+      // An empty list restores the app's declared orientations.
+      unawaited(
+          SystemChrome.setPreferredOrientations(const <DeviceOrientation>[])
+              .catchError((Object _) {}));
+    }
     _clock?.cancel();
     _auto?.cancel();
     _hide?.cancel();
@@ -438,8 +460,16 @@ class _PresentViewState extends State<PresentView>
     return KeyEventResult.handled;
   }
 
-  void _tap(TapUpDetails d, double width, bool rtl) {
+  void _tap(TapUpDetails d, double width, double height, bool rtl) {
+    final hidden = !_controls;
     _pokeControls();
+    // With the controls hidden, a tap on the strips that hold them only
+    // brings them back: a phone has no Esc key, and the Close button must
+    // not turn into "previous slide" just because it faded out.
+    if (hidden &&
+        (d.localPosition.dy < 112 || d.localPosition.dy > height - 112)) {
+      return;
+    }
     final endHalf =
         rtl ? d.localPosition.dx < width / 2 : d.localPosition.dx >= width / 2;
     if (endHalf) {
@@ -683,7 +713,7 @@ class _PresentViewState extends State<PresentView>
             onHover: (_) => _pokeControls(),
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTapUp: (d) => _tap(d, c.maxWidth, rtl),
+              onTapUp: (d) => _tap(d, c.maxWidth, c.maxHeight, rtl),
               onHorizontalDragEnd: (d) => _swipe(d, rtl),
               child: Stack(
                 fit: StackFit.expand,
