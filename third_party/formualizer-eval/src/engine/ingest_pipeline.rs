@@ -161,6 +161,65 @@ pub(crate) struct IngestPipeline<'a> {
     function_semantics_enabled: bool,
 }
 
+/// `LAMBDA(p1, …, pn, body)(a1, …, an)` — an immediately invoked lambda — means
+/// exactly `LET(p1, a1, …, pn, an, body)`. The compact arena AST has no node for
+/// an inline call, so the call is rewritten to the equivalent LET before the
+/// formula is stored. A lambda called with the wrong number of arguments is
+/// `#VALUE!`, as in Excel; a lambda with no parameters is just its body.
+fn inline_lambda_calls(node: &mut ASTNode) {
+    match &mut node.node_type {
+        ASTNodeType::UnaryOp { expr, .. } => inline_lambda_calls(expr),
+        ASTNodeType::BinaryOp { left, right, .. } => {
+            inline_lambda_calls(left);
+            inline_lambda_calls(right);
+        }
+        ASTNodeType::Function { args, .. } => args.iter_mut().for_each(inline_lambda_calls),
+        ASTNodeType::Array(rows) => rows
+            .iter_mut()
+            .for_each(|row| row.iter_mut().for_each(inline_lambda_calls)),
+        ASTNodeType::Call { callee, args } => {
+            inline_lambda_calls(callee);
+            args.iter_mut().for_each(inline_lambda_calls);
+        }
+        _ => {}
+    }
+    let replacement = match &mut node.node_type {
+        ASTNodeType::Call { callee, args } => match &mut callee.node_type {
+            ASTNodeType::Function {
+                name,
+                args: lambda_args,
+            } if name.eq_ignore_ascii_case("LAMBDA") && !lambda_args.is_empty() => {
+                let params = lambda_args.len() - 1;
+                if params != args.len() {
+                    Some(ASTNodeType::Literal(LiteralValue::Error(
+                        ExcelError::new(ExcelErrorKind::Value)
+                            .with_message("LAMBDA called with the wrong number of arguments"),
+                    )))
+                } else if params == 0 {
+                    Some(lambda_args.remove(0).node_type)
+                } else {
+                    let body = lambda_args.pop().expect("lambda has a body");
+                    let mut let_args = Vec::with_capacity(params * 2 + 1);
+                    for (param, value) in lambda_args.drain(..).zip(args.drain(..)) {
+                        let_args.push(param);
+                        let_args.push(value);
+                    }
+                    let_args.push(body);
+                    Some(ASTNodeType::Function {
+                        name: "LET".to_string(),
+                        args: let_args,
+                    })
+                }
+            }
+            _ => None,
+        },
+        _ => None,
+    };
+    if let Some(node_type) = replacement {
+        node.node_type = node_type;
+    }
+}
+
 impl<'a> IngestPipeline<'a> {
     pub(crate) fn new(
         data_store: &'a mut DataStore,
@@ -196,6 +255,7 @@ impl<'a> IngestPipeline<'a> {
     ) -> Result<IngestedFormula, ExcelError> {
         let (ast_id, ast_for_oracles) = match ast {
             FormulaAstInput::Tree(mut tree) => {
+                inline_lambda_calls(&mut tree);
                 self.rewrite_structured_references_for_cell(&mut tree, placement)?;
                 let ast_id = self.data_store.store_ast(&tree, self.sheet_registry);
                 (ast_id, tree)

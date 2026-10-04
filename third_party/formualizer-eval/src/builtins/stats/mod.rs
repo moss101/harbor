@@ -7952,8 +7952,9 @@ impl Function for TInv2TFn {
         let p = coerce_num(&scalar_like_value(&args[0])?)?;
         let df = coerce_num(&scalar_like_value(&args[1])?)?;
 
-        // probability must be in (0, 1], df >= 1
-        if p <= 0.0 || p > 1.0 || df < 1.0 {
+        // Excel evaluates T.INV(1 - p/2, df) for 0 < p < 2, so a "probability"
+        // above 1 gives a negative t (T.INV.2T(1.5,10) = -0.6998); p >= 2 is #NUM!.
+        if p <= 0.0 || p >= 2.0 || df < 1.0 {
             return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
                 ExcelError::new_num(),
             )));
@@ -11412,6 +11413,17 @@ mod tests_excel_fidelity {
             0.828609144426044, // Excel
             1e-12,
         );
+    }
+
+    #[test]
+    fn t_inv_2t_accepts_probabilities_up_to_two_like_excel() {
+        // Excel evaluates T.INV(1 - p/2, df) for 0 < p < 2 (oracle values).
+        close(call("T.INV.2T", Arc::new(TInv2TFn), &[num(1.0), num(10.0)]), 0.0, 1e-12);
+        close(call("T.INV.2T", Arc::new(TInv2TFn), &[num(1.5), num(10.0)]), -0.699812061312432, 1e-9);
+        close(call("T.INV.2T", Arc::new(TInv2TFn), &[num(1.99), num(10.0)]), -3.16927267261695, 1e-9);
+        for p in [0.0, 2.0, 2.5, -0.1] {
+            is_err(call("T.INV.2T", Arc::new(TInv2TFn), &[num(p), num(10.0)]), ExcelErrorKind::Num);
+        }
     }
 
     #[test]

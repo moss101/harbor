@@ -29,7 +29,7 @@ pub const ENGINE: EngineIdentity = EngineIdentity {
     version: "0.9.3+harbor-excel-fidelity",
     source_revision: "crates.io/formualizer@0.9.3 + third_party/formualizer-eval (TEXT percent patch + Excel-fidelity patch set, decision 0001 addenda)",
     // Recorded by tools/pin_engine.py (see docs/decisions/0001-formula-engine-pin.md).
-    integrity_sha256: "7e47672f757f2827b26c081de3586d179e409772b35e66d7652f1d8b31e21388",
+    integrity_sha256: "d7daffb7ed52e4ccbe663674dadc17c60c5732d5ce50b8283667dc9e02c5d333",
     adapter_revision: "harbor_formula/1",
 };
 

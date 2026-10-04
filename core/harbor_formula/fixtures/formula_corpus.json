@@ -12941,6 +12941,85 @@
    }
   },
   {
+   "id": "b06-tinv2t-1",
+   "group": "engine_expansion_b06",
+   "target": "T.INV.2T",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=T.INV.2T(0.546449,60)",
+   "expect": {
+    "n": 0.606533075825759
+   }
+  },
+  {
+   "id": "b06-tinv2t-2",
+   "group": "engine_expansion_b06",
+   "target": "T.INV.2T",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=T.INV.2T(0.05,10)",
+   "expect": {
+    "n": 2.22813885198627
+   }
+  },
+  {
+   "id": "b06-tinv2t-3",
+   "group": "engine_expansion_b06",
+   "target": "T.INV.2T",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=T.INV.2T(1,10)",
+   "expect": {
+    "n": 0.0
+   },
+   "notes": "p = 1 is the median"
+  },
+  {
+   "id": "b06-tinv2t-4",
+   "group": "engine_expansion_b06",
+   "target": "T.INV.2T",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=T.INV.2T(1.5,10)",
+   "expect": {
+    "n": -0.699812061312432
+   },
+   "notes": "Excel accepts p above 1 and returns T.INV(1 - p/2)"
+  },
+  {
+   "id": "b06-tinv2t-5",
+   "group": "engine_expansion_b06",
+   "target": "T.INV.2T",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=T.INV.2T(1.99,10)",
+   "expect": {
+    "n": -3.16927267261695
+   }
+  },
+  {
+   "id": "b06-tinv2t-6",
+   "group": "engine_expansion_b06",
+   "target": "T.INV.2T",
+   "dimension": "errors",
+   "cells": [],
+   "formula": "=T.INV.2T(2,10)",
+   "expect": {
+    "e": "#NUM!"
+   }
+  },
+  {
+   "id": "b06-tinv2t-7",
+   "group": "engine_expansion_b06",
+   "target": "T.INV.2T",
+   "dimension": "errors",
+   "cells": [],
+   "formula": "=T.INV.2T(0,10)",
+   "expect": {
+    "e": "#NUM!"
+   }
+  },
+  {
    "id": "b06-ttest-1",
    "group": "engine_expansion_b06",
    "target": "T.TEST",
@@ -18442,13 +18521,26 @@
    "target": "IMCOSH",
    "dimension": "values",
    "cells": [],
-   "formula": "=IMCOSH(\"3+4i\")",
+   "formula": "=IMREAL(IMCOSH(\"3+4i\"))",
    "expect": {
-    "t": "-6.58066304055116-7.58155274274655i"
-   }
+    "n": -6.58066304055116
+   },
+   "notes": "real part"
   },
   {
    "id": "b09-imcosh-2",
+   "group": "engine_expansion_b09",
+   "target": "IMCOSH",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=IMAGINARY(IMCOSH(\"3+4i\"))",
+   "expect": {
+    "n": -7.58155274274655
+   },
+   "notes": "imaginary part"
+  },
+  {
+   "id": "b09-imcosh-3",
    "group": "engine_expansion_b09",
    "target": "IMCOSH",
    "dimension": "values",
@@ -18459,7 +18551,7 @@
    }
   },
   {
-   "id": "b09-imcosh-3",
+   "id": "b09-imcosh-4",
    "group": "engine_expansion_b09",
    "target": "IMCOSH",
    "dimension": "errors",
@@ -18498,6 +18590,52 @@
    "dimension": "errors",
    "cells": [],
    "formula": "=IMCOT(\"abc\")",
+   "expect": {
+    "e": "#NUM!"
+   }
+  },
+  {
+   "id": "b09-imcsc-1",
+   "group": "engine_expansion_b09",
+   "target": "IMCSC",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=IMCSC(\"3+4i\")",
+   "expect": {
+    "t": "0.0051744731840194+0.036275889628626i"
+   }
+  },
+  {
+   "id": "b09-imcsc-2",
+   "group": "engine_expansion_b09",
+   "target": "IMCSC",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=IMREAL(IMCSC(\"1+i\"))",
+   "expect": {
+    "n": 0.621518017170428
+   },
+   "notes": "real part"
+  },
+  {
+   "id": "b09-imcsc-3",
+   "group": "engine_expansion_b09",
+   "target": "IMCSC",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=IMAGINARY(IMCSC(\"1+i\"))",
+   "expect": {
+    "n": -0.303931001628427
+   },
+   "notes": "imaginary part"
+  },
+  {
+   "id": "b09-imcsc-4",
+   "group": "engine_expansion_b09",
+   "target": "IMCSC",
+   "dimension": "errors",
+   "cells": [],
+   "formula": "=IMCSC(\"abc\")",
    "expect": {
     "e": "#NUM!"
    }
@@ -18701,6 +18839,51 @@
    }
   },
   {
+   "id": "b09-impower-1",
+   "group": "engine_expansion_b09",
+   "target": "IMPOWER",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=IMREAL(IMPOWER(\"2+3i\",3))",
+   "expect": {
+    "n": -46.0
+   },
+   "notes": "real part; Excel prints 9.00000000000001i from rounding noise, so parts are compared numerically"
+  },
+  {
+   "id": "b09-impower-2",
+   "group": "engine_expansion_b09",
+   "target": "IMPOWER",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=IMAGINARY(IMPOWER(\"2+3i\",3))",
+   "expect": {
+    "n": 9.00000000000001
+   }
+  },
+  {
+   "id": "b09-impower-3",
+   "group": "engine_expansion_b09",
+   "target": "IMPOWER",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=IMPOWER(\"1+i\",0.5)",
+   "expect": {
+    "t": "1.09868411346781+0.455089860562227i"
+   }
+  },
+  {
+   "id": "b09-impower-4",
+   "group": "engine_expansion_b09",
+   "target": "IMPOWER",
+   "dimension": "errors",
+   "cells": [],
+   "formula": "=IMPOWER(\"abc\",2)",
+   "expect": {
+    "e": "#NUM!"
+   }
+  },
+  {
    "id": "b09-improduct-1",
    "group": "engine_expansion_b09",
    "target": "IMPRODUCT",
@@ -18806,13 +18989,26 @@
    "target": "IMSECH",
    "dimension": "values",
    "cells": [],
-   "formula": "=IMSECH(\"3+4i\")",
+   "formula": "=IMREAL(IMSECH(\"3+4i\"))",
    "expect": {
-    "t": "-0.065294027857947+0.0752249603027732i"
-   }
+    "n": -0.065294027857947
+   },
+   "notes": "real part"
   },
   {
    "id": "b09-imsech-2",
+   "group": "engine_expansion_b09",
+   "target": "IMSECH",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=IMAGINARY(IMSECH(\"3+4i\"))",
+   "expect": {
+    "n": 0.0752249603027732
+   },
+   "notes": "imaginary part"
+  },
+  {
+   "id": "b09-imsech-3",
    "group": "engine_expansion_b09",
    "target": "IMSECH",
    "dimension": "values",
@@ -18823,7 +19019,7 @@
    }
   },
   {
-   "id": "b09-imsech-3",
+   "id": "b09-imsech-4",
    "group": "engine_expansion_b09",
    "target": "IMSECH",
    "dimension": "errors",
@@ -21108,6 +21304,53 @@
    }
   },
   {
+   "id": "b11-dollar-1",
+   "group": "engine_expansion_b11",
+   "target": "DOLLAR",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=SUBSTITUTE(SUBSTITUTE(DOLLAR(1234.567,2),\"SAR\",\"\"),\"$\",\"\")",
+   "expect": {
+    "t": "1,234.57"
+   },
+   "notes": "the currency symbol follows the machine's regional settings (Excel here: SAR, engine: $), so it is removed and the digits, grouping and rounding are compared"
+  },
+  {
+   "id": "b11-dollar-2",
+   "group": "engine_expansion_b11",
+   "target": "DOLLAR",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=SUBSTITUTE(SUBSTITUTE(DOLLAR(-1234.567,0),\"SAR\",\"\"),\"$\",\"\")",
+   "expect": {
+    "t": "(1,235)"
+   },
+   "notes": "negative amounts are shown in parentheses"
+  },
+  {
+   "id": "b11-dollar-3",
+   "group": "engine_expansion_b11",
+   "target": "DOLLAR",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=SUBSTITUTE(SUBSTITUTE(DOLLAR(0.5),\"SAR\",\"\"),\"$\",\"\")",
+   "expect": {
+    "t": "0.50"
+   },
+   "notes": "default two decimals"
+  },
+  {
+   "id": "b11-dollar-4",
+   "group": "engine_expansion_b11",
+   "target": "DOLLAR",
+   "dimension": "errors",
+   "cells": [],
+   "formula": "=DOLLAR(\"x\")",
+   "expect": {
+    "e": "#VALUE!"
+   }
+  },
+  {
    "id": "b11-fixed-1",
    "group": "engine_expansion_b11",
    "target": "FIXED",
@@ -21429,6 +21672,29 @@
     "t": "{1,2;3,4}"
    },
    "notes": "strict format uses array braces"
+  },
+  {
+   "id": "b11-asc-1",
+   "group": "engine_expansion_b11",
+   "target": "ASC",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=ASC(\"abc\")",
+   "expect": {
+    "t": "abc"
+   }
+  },
+  {
+   "id": "b11-asc-2",
+   "group": "engine_expansion_b11",
+   "target": "ASC",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=ASC(\"Hello 123\")",
+   "expect": {
+    "t": "Hello 123"
+   },
+   "notes": "half-width text is unchanged; converting full-width characters happens only on East-Asian (DBCS) locales, so it is not asserted"
   },
   {
    "id": "b11-aggregate-1",
@@ -31005,6 +31271,310 @@
    }
   },
   {
+   "id": "b13-drop-1",
+   "group": "engine_expansion_b13",
+   "target": "DROP",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 2
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     3,
+     {
+      "n": 3
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 4
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     2,
+     {
+      "n": 5
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     3,
+     {
+      "n": 6
+     }
+    ]
+   ],
+   "formula": "=INDEX(DROP(A1:C2,1),1,1)",
+   "expect": {
+    "n": 4.0
+   }
+  },
+  {
+   "id": "b13-drop-2",
+   "group": "engine_expansion_b13",
+   "target": "DROP",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 2
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     3,
+     {
+      "n": 3
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 4
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     2,
+     {
+      "n": 5
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     3,
+     {
+      "n": 6
+     }
+    ]
+   ],
+   "formula": "=INDEX(DROP(A1:C2,0,1),1,1)",
+   "expect": {
+    "n": 2.0
+   },
+   "notes": "drop the first column"
+  },
+  {
+   "id": "b13-drop-3",
+   "group": "engine_expansion_b13",
+   "target": "DROP",
+   "dimension": "errors",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 2
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     3,
+     {
+      "n": 3
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 4
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     2,
+     {
+      "n": 5
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     3,
+     {
+      "n": 6
+     }
+    ]
+   ],
+   "formula": "=DROP(A1:C2,2)",
+   "expect": {
+    "e": "#CALC!"
+   },
+   "notes": "nothing left"
+  },
+  {
+   "id": "b13-drop-4",
+   "group": "engine_expansion_b13",
+   "target": "DROP",
+   "dimension": "errors",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 2
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     3,
+     {
+      "n": 3
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 4
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     2,
+     {
+      "n": 5
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     3,
+     {
+      "n": 6
+     }
+    ]
+   ],
+   "formula": "=DROP(A1:C2,-2)",
+   "expect": {
+    "e": "#CALC!"
+   },
+   "notes": "nothing left from the bottom"
+  },
+  {
+   "id": "b13-drop-5",
+   "group": "engine_expansion_b13",
+   "target": "DROP",
+   "dimension": "errors",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 2
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     3,
+     {
+      "n": 3
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 4
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     2,
+     {
+      "n": 5
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     3,
+     {
+      "n": 6
+     }
+    ]
+   ],
+   "formula": "=DROP(A1:C2,0,3)",
+   "expect": {
+    "e": "#CALC!"
+   },
+   "notes": "every column dropped"
+  },
+  {
    "id": "b13-filter-1",
    "group": "engine_expansion_b13",
    "target": "FILTER",
@@ -31301,6 +31871,76 @@
    "expect": {
     "n": 3.0
    }
+  },
+  {
+   "id": "b13-sequence-1",
+   "group": "engine_expansion_b13",
+   "target": "SEQUENCE",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=INDEX(SEQUENCE(3,2),3,2)",
+   "expect": {
+    "n": 6.0
+   }
+  },
+  {
+   "id": "b13-sequence-2",
+   "group": "engine_expansion_b13",
+   "target": "SEQUENCE",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=SUM(SEQUENCE(4))",
+   "expect": {
+    "n": 10.0
+   }
+  },
+  {
+   "id": "b13-sequence-3",
+   "group": "engine_expansion_b13",
+   "target": "SEQUENCE",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=INDEX(SEQUENCE(2,2,5,2),2,1)",
+   "expect": {
+    "n": 9.0
+   },
+   "notes": "start 5, step 2"
+  },
+  {
+   "id": "b13-sequence-4",
+   "group": "engine_expansion_b13",
+   "target": "SEQUENCE",
+   "dimension": "errors",
+   "cells": [],
+   "formula": "=SEQUENCE(0)",
+   "expect": {
+    "e": "#CALC!"
+   },
+   "notes": "no rows is #CALC!"
+  },
+  {
+   "id": "b13-sequence-5",
+   "group": "engine_expansion_b13",
+   "target": "SEQUENCE",
+   "dimension": "errors",
+   "cells": [],
+   "formula": "=SEQUENCE(2,0)",
+   "expect": {
+    "e": "#CALC!"
+   },
+   "notes": "no columns is #CALC!"
+  },
+  {
+   "id": "b13-sequence-6",
+   "group": "engine_expansion_b13",
+   "target": "SEQUENCE",
+   "dimension": "errors",
+   "cells": [],
+   "formula": "=SEQUENCE(-1)",
+   "expect": {
+    "e": "#VALUE!"
+   },
+   "notes": "negative size is #VALUE!"
   },
   {
    "id": "b13-sort-1",
@@ -31802,6 +32442,59 @@
    }
   },
   {
+   "id": "b13-take-4",
+   "group": "engine_expansion_b13",
+   "target": "TAKE",
+   "dimension": "errors",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 5
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 3
+     }
+    ],
+    [
+     "Sheet1",
+     3,
+     1,
+     {
+      "n": 8
+     }
+    ],
+    [
+     "Sheet1",
+     4,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     5,
+     1,
+     {
+      "n": 3
+     }
+    ]
+   ],
+   "formula": "=TAKE(A1:A5,0)",
+   "expect": {
+    "e": "#CALC!"
+   },
+   "notes": "no rows is #CALC!"
+  },
+  {
    "id": "b13-tocol-1",
    "group": "engine_expansion_b13",
    "target": "TOCOL",
@@ -31976,6 +32669,186 @@
    "formula": "=INDEX(TOROW(A1:B2),1,4)",
    "expect": {
     "n": 4.0
+   }
+  },
+  {
+   "id": "b13-transpose-1",
+   "group": "engine_expansion_b13",
+   "target": "TRANSPOSE",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 2
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     3,
+     {
+      "n": 3
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 4
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     2,
+     {
+      "n": 5
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     3,
+     {
+      "n": 6
+     }
+    ]
+   ],
+   "formula": "=INDEX(TRANSPOSE(A1:C2),3,1)",
+   "expect": {
+    "n": 3.0
+   }
+  },
+  {
+   "id": "b13-transpose-2",
+   "group": "engine_expansion_b13",
+   "target": "TRANSPOSE",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 2
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     3,
+     {
+      "n": 3
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 4
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     2,
+     {
+      "n": 5
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     3,
+     {
+      "n": 6
+     }
+    ]
+   ],
+   "formula": "=ROWS(TRANSPOSE(A1:C2))",
+   "expect": {
+    "n": 3.0
+   }
+  },
+  {
+   "id": "b13-transpose-3",
+   "group": "engine_expansion_b13",
+   "target": "TRANSPOSE",
+   "dimension": "values",
+   "cells": [
+    [
+     "Sheet1",
+     1,
+     1,
+     {
+      "n": 1
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     2,
+     {
+      "n": 2
+     }
+    ],
+    [
+     "Sheet1",
+     1,
+     3,
+     {
+      "n": 3
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     1,
+     {
+      "n": 4
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     2,
+     {
+      "n": 5
+     }
+    ],
+    [
+     "Sheet1",
+     2,
+     3,
+     {
+      "n": 6
+     }
+    ]
+   ],
+   "formula": "=COLUMNS(TRANSPOSE(A1:C2))",
+   "expect": {
+    "n": 2.0
    }
   },
   {
@@ -32676,6 +33549,39 @@
    "dimension": "errors",
    "cells": [],
    "formula": "=LET(x,1/0,x)",
+   "expect": {
+    "e": "#DIV/0!"
+   }
+  },
+  {
+   "id": "b14-lambda-1",
+   "group": "engine_expansion_b14",
+   "target": "LAMBDA",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=LAMBDA(x,x+1)(3)",
+   "expect": {
+    "n": 4.0
+   }
+  },
+  {
+   "id": "b14-lambda-2",
+   "group": "engine_expansion_b14",
+   "target": "LAMBDA",
+   "dimension": "values",
+   "cells": [],
+   "formula": "=LAMBDA(a,b,a*b)(6,7)",
+   "expect": {
+    "n": 42.0
+   }
+  },
+  {
+   "id": "b14-lambda-3",
+   "group": "engine_expansion_b14",
+   "target": "LAMBDA",
+   "dimension": "errors",
+   "cells": [],
+   "formula": "=LAMBDA(x,x/0)(1)",
    "expect": {
     "e": "#DIV/0!"
    }

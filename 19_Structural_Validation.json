@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "1cd9bf25c2ed6fba5580fc45c06475617f88d02de5cc2e8fe0ea6bb9d9679050",
+  "input_manifest_sha256": "5bd70586a75a835f0cfc75d6a710d0bb4de18c597a8b461e6ee8bbd838e7027a",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -121,8 +121,8 @@
     },
     {
       "path": "22_Formula_Coverage.json",
-      "bytes": 58249,
-      "sha256": "77c725a795e6bfd77c192f6c17693250fa9f69273e6b1b69df9a15a06c5ad56b"
+      "bytes": 57647,
+      "sha256": "bd91640d8a88741b0f52ce652b0938c21d821ec8c89d532524287975c1aa8b93"
     },
     {
       "path": "23_Review_Reconciliation_Matrix.md",
@@ -211,8 +211,8 @@
     },
     {
       "path": "apps/harbor_app/android/app/src/main/jniLibs/arm64-v8a/libharbor_ffi.so",
-      "bytes": 29257448,
-      "sha256": "2e7b07a90c72616530877e4156fdf9e048790bb356daa4b196dd69b06a8ec191"
+      "bytes": 36959600,
+      "sha256": "d6a9ee4094dcafc6875868c7d247a9a268fadb855a03675a2a3a65098b27cd1c"
     },
     {
       "path": "apps/harbor_app/android/app/src/main/kotlin/dev/harbor/harbor_app/MainActivity.kt",
@@ -1066,8 +1066,8 @@
     },
     {
       "path": "apps/harbor_office/android/app/src/main/jniLibs/arm64-v8a/libharbor_ffi.so",
-      "bytes": 31050392,
-      "sha256": "f915a301422278b24acab58c63c8869d94eb22f2a69b74ab6aaa63c25fe0f082"
+      "bytes": 31722024,
+      "sha256": "7c3a9a713a4bd8b4f72dc79d9083d326184b5b4407a9e500ff4c20547205b716"
     },
     {
       "path": "apps/harbor_office/android/app/src/main/kotlin/dev/harbor/office/MainActivity.kt",
@@ -2412,7 +2412,7 @@
     {
       "path": "core/harbor_core/src/tools/builtin.rs",
       "bytes": 111046,
-      "sha256": "3dec90a75bde6e694857d6af94e2de2142094eb4ece5d78c0fddfa418622a0f9"
+      "sha256": "8e2b04ec09695300e9884cf7c6ec825b05557e4a4d2b9a298ed41718384feb38"
     },
     {
       "path": "core/harbor_core/src/tools/create.rs",
@@ -2561,8 +2561,8 @@
     },
     {
       "path": "core/harbor_formula/fixtures/formula_corpus.json",
-      "bytes": 623764,
-      "sha256": "1c5a832e2be36c6e7aace7bb775300d2ead3ab7c8e2fd63011bf83d8113f100b"
+      "bytes": 637519,
+      "sha256": "31d30c111d10c1ae9717cd57dd27b567ac83f23f9957f7c0cf8bb42f4ab1aa94"
     },
     {
       "path": "core/harbor_formula/src/corpus.rs",
@@ -2572,7 +2572,7 @@
     {
       "path": "core/harbor_formula/src/engine.rs",
       "bytes": 10497,
-      "sha256": "16e2486222eb44f8af6e53a56d20b8539b51d01e449b1210455a10dfa3be48b3"
+      "sha256": "a6a1de938f008d6aaad34fb96658f99c45dd73114e12e277d0c30cc576488fa9"
     },
     {
       "path": "core/harbor_formula/src/fixtures.rs",
@@ -3076,13 +3076,13 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 146663,
-      "sha256": "1f0503e394f6e990d2853e25632cfeb56cdfd804b046ff04be0fa4a7951aacd9"
+      "bytes": 146817,
+      "sha256": "f383f4c1a14fb50de7791c8993d74479385a3b92bd1d8908f77fa1fa371dc7f2"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
-      "bytes": 5331,
-      "sha256": "90c6d76e501964b339d705100f65adaef16efd9717569861a2b527ec9dfb9a8e"
+      "bytes": 6423,
+      "sha256": "fffd453be652e4dd7be825c13e8b47506f4e881453b9375673bf0878f095b79e"
     },
     {
       "path": "docs/decisions/0002-llama-cpp-runtime-pin.md",
@@ -3141,8 +3141,8 @@
     },
     {
       "path": "docs/operations/formula-expansion.md",
-      "bytes": 3272,
-      "sha256": "db3ababc753fe33d9e619984e175931a857a1782205f7f459ed99c86e1bea2d3"
+      "bytes": 3779,
+      "sha256": "9a72d9a2e42698f8ec77ad4136916cfe6579bb6755b8de529d0d50be62689bc7"
     },
     {
       "path": "docs/operations/formula-tier-runbook.md",
@@ -4361,8 +4361,8 @@
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/lookup/dynamic.rs",
-      "bytes": 188790,
-      "sha256": "3641b4cffcfc69d631fd2ce169dddae973ea466b1c73a8a64e8545bd0a1f7cfc"
+      "bytes": 190814,
+      "sha256": "79a5d43b615e0ee708340ba5502606cf51be782bd7bd596f979b3b7f33e66170"
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/lookup/legacy.rs",
@@ -4441,8 +4441,8 @@
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/stats/mod.rs",
-      "bytes": 388631,
-      "sha256": "39f89c5b1ec66ee5a026581bdb12fb6f80f1a336ec0f4d0f93a8689d00c6d4ed"
+      "bytes": 389353,
+      "sha256": "cf53e4c7b879dda6948f9546f8ccc739a7894ffd1515721a32295c6c7183deb8"
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/tests/mod.rs",
@@ -4751,8 +4751,8 @@
     },
     {
       "path": "third_party/formualizer-eval/src/engine/ingest_pipeline.rs",
-      "bytes": 93932,
-      "sha256": "8ac531dd9ce2f0bfd1c77eb257d29a73a748d32889f9f40a6ec32feb336647ef"
+      "bytes": 96593,
+      "sha256": "ab3011c732c3f5411737c7c1bec08a1681f2a3c5b9383ed4e8d2aeb871ca385a"
     },
     {
       "path": "third_party/formualizer-eval/src/engine/inspect.rs",
@@ -5546,8 +5546,8 @@
     },
     {
       "path": "third_party/formualizer-eval/src/engine/tests/mod.rs",
-      "bytes": 5574,
-      "sha256": "bb78f3d6cf9c45907c32b4f2c3dfb15a156c11edba8cb1b13d7f24edf764c41e"
+      "bytes": 5601,
+      "sha256": "62ce0b6426c0296836990ae72a36c429edf02bd1509460d8e779bb50a75d894e"
     },
     {
       "path": "third_party/formualizer-eval/src/engine/tests/named_ranges.rs",
@@ -6061,8 +6061,8 @@
     },
     {
       "path": "third_party/formualizer-eval/src/interpreter.rs",
-      "bytes": 69544,
-      "sha256": "6fb5cae04a9997e76aa163f82f4602930533406ae69228fe055c585e5904264f"
+      "bytes": 70450,
+      "sha256": "76882b515ce95965977e0e6a431f5563007d460c415031d93990ff3b13c9cb19"
     },
     {
       "path": "third_party/formualizer-eval/src/lib.rs",
@@ -6291,8 +6291,8 @@
     },
     {
       "path": "tools/formula_batch.py",
-      "bytes": 20731,
-      "sha256": "cf1b7507b240136f1b099802c80748f1dcee4bbd58e1649d7e65661389c9d34a"
+      "bytes": 21179,
+      "sha256": "d87fe2afb7dfa84f9eaa872d3f8160bcb700677c4f14dc73c7a2f15edce657da"
     },
     {
       "path": "tools/formula_batches/batch01.py",
@@ -6321,8 +6321,8 @@
     },
     {
       "path": "tools/formula_batches/batch06.py",
-      "bytes": 4556,
-      "sha256": "7e5ee7cfdc3062f49fc8778988c4d2159a14c61637d8d09485f4e3b5fbc5d42e"
+      "bytes": 4748,
+      "sha256": "f2ead82cbfcad6e380cf63e99dbae12562b35bfc2e7720eac84ad7dcc5bce9d4"
     },
     {
       "path": "tools/formula_batches/batch07.py",
@@ -6336,8 +6336,8 @@
     },
     {
       "path": "tools/formula_batches/batch09.py",
-      "bytes": 1495,
-      "sha256": "395a2cc7941daa41deace26b4c9c4c0d56893a818ae03ac5e56f313656ff4c95"
+      "bytes": 2409,
+      "sha256": "9745b27b58d2ccc7a683038e0d650886702a04b4a3669db790e093892b722827"
     },
     {
       "path": "tools/formula_batches/batch10.py",
@@ -6346,8 +6346,8 @@
     },
     {
       "path": "tools/formula_batches/batch11.py",
-      "bytes": 4639,
-      "sha256": "db0c3e2654285a7bafd7595ac24f637ebaca2e28e8812c6e00b6635cb867ccfa"
+      "bytes": 5175,
+      "sha256": "6d9fdac99ba78dcc34adecd2e42d7e23c65854bc637e5fb56503187c370db175"
     },
     {
       "path": "tools/formula_batches/batch12.py",
@@ -6356,8 +6356,8 @@
     },
     {
       "path": "tools/formula_batches/batch13.py",
-      "bytes": 3709,
-      "sha256": "6236ceebaf6eb8385aa338c301e0b2bd63b0e95fe988cb06a4521a811494bb25"
+      "bytes": 4158,
+      "sha256": "ba98e1c5abcb32759c1d41cd611e9e4ccc3108cded6c8768f240a7b4c55bf159"
     },
     {
       "path": "tools/formula_batches/batch14.py",
@@ -6381,8 +6381,8 @@
     },
     {
       "path": "tools/formula_batches/dsl.py",
-      "bytes": 1278,
-      "sha256": "7d55ca2cc8c8d2799c106845b4554edb9d4c3e2d4fa91f8f2594759f09f0e94f"
+      "bytes": 1539,
+      "sha256": "6e919b30524aa0319ea0590e3f052bb7fa6d0a1d4a5906ea4a3744537f71a12f"
     },
     {
       "path": "tools/fuzz.sh",
@@ -6588,7 +6588,7 @@
       "ratio": 6.113374089980067
     }
   ],
-  "formula_target_count": 398,
+  "formula_target_count": 407,
   "formula_qualified_pass_count": 0,
   "unbound_product_qualification_fields": [],
   "issues": [],

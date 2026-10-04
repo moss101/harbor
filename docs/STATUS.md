@@ -55,8 +55,7 @@ ran at.
   wildcards, whole columns). All fixed in the vendored engine (decision 0001
   addendum 2, engine `0.9.3+harbor-excel-fidelity`, re-pinned); a size guard I
   introduced and then found breaking whole-column SUMIFS was caught by the
-  engine's own tests and narrowed. 9 functions stay deferred (Excel quirks,
-  locale, dynamic-array edges; listed in 22_Formula_Coverage.json). The
+  engine's own tests and narrowed. The nine first-deferred functions were closed (engine rules for T.INV.2T, DROP/TAKE/SEQUENCE and immediate LAMBDA calls; oracle-design changes for locale, array-formula and last-digit cases; decision 0001 addendum 3): **407 targets, 1,261 cases, none deferred**. The
   content gate now blocks HYPERLINK/INDIRECT/CELL/INFO for model-written
   formulas even though they are qualified. **Tiers re-run on commit 9e32a51:** macOS 1220/1220 · 398/398, iOS
   Simulator 1220/1220 · 398/398, Android emulator 1218/1220 · 396/398 (IMCOSH,

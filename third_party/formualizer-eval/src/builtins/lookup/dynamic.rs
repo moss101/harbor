@@ -3033,9 +3033,15 @@ impl Function for SequenceFn {
         };
         let start = if args.len() >= 3 { num(&args[2])? } else { 1.0 };
         let step = if args.len() >= 4 { num(&args[3])? } else { 1.0 };
-        if rows <= 0 || cols <= 0 {
+        if rows < 0 || cols < 0 {
             return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
                 ExcelError::new(ExcelErrorKind::Value),
+            )));
+        }
+        if rows == 0 || cols == 0 {
+            // Excel: zero rows or columns is an empty array, reported as #CALC!.
+            return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
+                ExcelError::new(ExcelErrorKind::Calc).with_message("The result is an empty array"),
             )));
         }
         if let Some(e) = generated_array_too_large(rows, cols) {
@@ -3339,9 +3345,10 @@ impl Function for TakeFn {
         };
 
         if row_start >= row_end || col_start >= col_end {
-            return Ok(crate::traits::CalcValue::Range(
-                crate::engine::range_view::RangeView::from_owned_rows(vec![], _ctx.date_system()),
-            ));
+            // Excel: an array with no rows or columns left is #CALC!, never an empty range.
+            return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
+                ExcelError::new(ExcelErrorKind::Calc).with_message("The result is an empty array"),
+            )));
         }
 
         let mut out: Vec<Vec<LiteralValue>> = Vec::with_capacity(row_end - row_start);
@@ -3512,9 +3519,10 @@ impl Function for DropFn {
         };
 
         if row_start >= row_end || col_start >= col_end {
-            return Ok(crate::traits::CalcValue::Range(
-                crate::engine::range_view::RangeView::from_owned_rows(vec![], _ctx.date_system()),
-            ));
+            // Excel: an array with no rows or columns left is #CALC!, never an empty range.
+            return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
+                ExcelError::new(ExcelErrorKind::Calc).with_message("The result is an empty array"),
+            )));
         }
 
         let mut out: Vec<Vec<LiteralValue>> = Vec::with_capacity(row_end - row_start);
@@ -4284,11 +4292,17 @@ mod tests {
     }
 
     #[test]
-    fn sequence_negative_and_zero_dims_keep_value_error() {
+    fn sequence_zero_dims_are_calc_and_negative_dims_are_value() {
+        // Excel: an empty array is #CALC!, a negative size is #VALUE!.
         let wb = TestWorkbook::new().with_function(Arc::new(SequenceFn));
         let ctx = wb.interpreter();
         let f = ctx.context.get_function("", "SEQUENCE").unwrap();
-        for (r, c) in [(0i64, 5i64), (-3, 5), (5, 0), (5, -1)] {
+        for (r, c, expected) in [
+            (0i64, 5i64, formualizer_common::ExcelErrorKind::Calc),
+            (-3, 5, formualizer_common::ExcelErrorKind::Value),
+            (5, 0, formualizer_common::ExcelErrorKind::Calc),
+            (5, -1, formualizer_common::ExcelErrorKind::Value),
+        ] {
             let rows = lit(LiteralValue::Int(r));
             let cols = lit(LiteralValue::Int(c));
             let args = vec![
@@ -4300,14 +4314,8 @@ mod tests {
                 .unwrap()
                 .into_literal()
             {
-                LiteralValue::Error(e) => {
-                    assert_eq!(
-                        e.kind,
-                        formualizer_common::ExcelErrorKind::Value,
-                        "SEQUENCE({r},{c})"
-                    )
-                }
-                other => panic!("expected #VALUE! for SEQUENCE({r},{c}), got {other:?}"),
+                LiteralValue::Error(e) => assert_eq!(e.kind, expected, "SEQUENCE({r},{c})"),
+                other => panic!("expected an error for SEQUENCE({r},{c}), got {other:?}"),
             }
         }
     }
@@ -4437,6 +4445,39 @@ mod tests {
             .unwrap()
             .into_literal();
         assert_eq!(v, LiteralValue::Number(2.0));
+    }
+
+    #[test]
+    fn drop_and_take_with_nothing_left_are_calc() {
+        // Excel: an array with no rows or columns left is #CALC!, not an empty range.
+        let wb = TestWorkbook::new()
+            .with_function(Arc::new(DropFn))
+            .with_function(Arc::new(TakeFn));
+        let wb = wb
+            .with_cell_a1("Sheet1", "A1", LiteralValue::Int(1))
+            .with_cell_a1("Sheet1", "A2", LiteralValue::Int(2));
+        let ctx = wb.interpreter();
+        let arr = range("A1:A2", 1, 1, 2, 1);
+        for (name, n) in [("DROP", 2i64), ("DROP", -2), ("TAKE", 0)] {
+            let f = ctx.context.get_function("", name).unwrap();
+            let amount = lit(LiteralValue::Int(n));
+            let args = vec![
+                ArgumentHandle::new(&arr, &ctx),
+                ArgumentHandle::new(&amount, &ctx),
+            ];
+            match f
+                .dispatch(&args, &ctx.function_context(None))
+                .unwrap()
+                .into_literal()
+            {
+                LiteralValue::Error(e) => assert_eq!(
+                    e.kind,
+                    formualizer_common::ExcelErrorKind::Calc,
+                    "{name}(A1:A2,{n})"
+                ),
+                other => panic!("expected #CALC! for {name}(A1:A2,{n}), got {other:?}"),
+            }
+        }
     }
 
     #[test]

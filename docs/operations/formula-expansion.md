@@ -36,18 +36,25 @@ five-platform rule is met (`qualification_status` stays `REQUIRED_UNQUALIFIED`).
    zero failed cases; then `python3 tools/pin_engine.py --check` and
    `python3 tools/validate_dossier.py --write`.
 
-## Known limits of the oracle
+## What the oracle cannot say, and how cases are designed around it
 
-- Excel loads file formulas without dynamic-array semantics (`TRANSPOSE` in a
-  normal cell gives `#VALUE!`), so array-valued functions are tested through
-  `INDEX`/`ROWS`/`COLUMNS`/`SUM`; **spill behaviour is not claimed** (it stays
+- Excel loads plain file formulas without dynamic-array semantics (`TRANSPOSE` in
+  one cell gives `#VALUE!`). Cases for array-valued functions set `array=True`, which
+  writes the oracle formula as an array formula, and are read through
+  `INDEX`/`ROWS`/`COLUMNS`/`SUM`. **Spill behaviour is not claimed** (it stays
   preserve-only per `22_Formula_Coverage.json`).
-- Locale-dependent output (`DOLLAR`, `ASC`) follows the oracle machine's regional
-  settings (here Saudi Arabia: `SAR1,234.57`) and is deferred, not forced.
-- Context-dependent functions (`SHEET`, `SHEETS`) and volatile ones
-  (`RAND`, `RANDBETWEEN`, `RANDARRAY`) are out of scope of this corpus.
-- Excel's own floating-point noise is not a target (`IMPOWER("2+3i",3)` prints
-  `-46+9.00000000000001i`; the engine's `-46+9i` is the better answer).
+- Locale-dependent output (`DOLLAR`'s currency symbol, `ASC`'s East-Asian
+  conversion) follows the oracle machine's regional settings. Cases remove the
+  symbol (`SUBSTITUTE`) or assert only the half-width behaviour, and say so in `note`.
+- Context-dependent functions (`SHEET`, `SHEETS`) and volatile ones (`RAND`,
+  `RANDBETWEEN`, `RANDARRAY`) are out of scope of this corpus.
+- Excel's printed 15th digit of transcendental complex results is its own
+  floating-point noise and differs between platform math libraries (it failed on
+  the Android emulator). Those cases compare the real and imaginary parts
+  numerically (`numeric()` in `batch09.py`); the text format stays covered by
+  functions whose digits are stable.
+- `LET`/`LAMBDA` parameter names need `_xlpm.` in the file; a case supplies the
+  Excel-only text with `xl=`.
 
 ## After any corpus or engine change
 

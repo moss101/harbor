@@ -847,9 +847,32 @@ impl<'a> Interpreter<'a> {
                 .map(crate::traits::CalcValue::Scalar),
             ASTNodeType::BinaryOp { op, left, right } => self.eval_binary(op, left, right),
             ASTNodeType::Function { name, args } => self.eval_function_to_calc(name, args),
-            ASTNodeType::Call { .. } => Err(ExcelError::new(ExcelErrorKind::NImpl)
-                .with_message("Immediate-invocation calls are not yet supported")),
+            ASTNodeType::Call { callee, args } => self.eval_immediate_call(callee, args),
             ASTNodeType::Array(rows) => self.eval_array_literal_to_calc(rows),
+        }
+    }
+
+    /// `LAMBDA(x, x+1)(5)`: evaluate the callee to a callable, evaluate the
+    /// arguments, invoke. A callee that is not a callable is `#VALUE!` (Excel
+    /// treats `5(3)` as invalid), and a lambda called with the wrong number of
+    /// arguments reports `#VALUE!` from the closure itself.
+    fn eval_immediate_call(
+        &self,
+        callee: &ASTNode,
+        args: &[ASTNode],
+    ) -> Result<crate::traits::CalcValue<'a>, ExcelError> {
+        match self.evaluate_ast(callee)? {
+            crate::traits::CalcValue::Callable(callable) => {
+                let mut eval_args = Vec::with_capacity(args.len());
+                for arg in args {
+                    eval_args.push(self.evaluate_ast(arg)?.into_literal());
+                }
+                callable.invoke(self, &eval_args)
+            }
+            _ => Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
+                ExcelError::new(ExcelErrorKind::Value)
+                    .with_message("The expression before ( is not a function"),
+            ))),
         }
     }
 
@@ -910,8 +933,7 @@ impl<'a> Interpreter<'a> {
                 }
                 self.eval_function_to_calc(name, args)
             }
-            ASTNodeType::Call { .. } => Err(ExcelError::new(ExcelErrorKind::NImpl)
-                .with_message("Immediate-invocation calls are not yet supported")),
+            ASTNodeType::Call { callee, args } => self.eval_immediate_call(callee, args),
             ASTNodeType::Array(rows) => self.eval_array_literal_to_calc(rows),
         }
     }

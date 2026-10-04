@@ -31,7 +31,7 @@ BATCH = {
         ("T.DIST.2T", [C("=T.DIST.2T(1.959999998,60)"), C("=T.DIST.2T(0.5,10)"), C("=T.DIST.2T(-1,60)", dim="errors")]),
         ("T.DIST.RT", [C("=T.DIST.RT(1.959999998,60)"), C("=T.DIST.RT(-1,10)"), C("=T.DIST.RT(1,0)", dim="errors")]),
         ("T.INV", [C("=T.INV(0.75,2)"), C("=T.INV(0.05,10)"), C("=T.INV(1.5,10)", dim="errors")]),
-        ("T.INV.2T", [C("=T.INV.2T(0.546449,60)"), C("=T.INV.2T(0.05,10)"), C("=T.INV.2T(1.5,10)", dim="errors")]),
+        ("T.INV.2T", [C("=T.INV.2T(0.546449,60)"), C("=T.INV.2T(0.05,10)"), C("=T.INV.2T(1,10)", note="p = 1 is the median"), C("=T.INV.2T(1.5,10)", note="Excel accepts p above 1 and returns T.INV(1 - p/2)"), C("=T.INV.2T(1.99,10)"), C("=T.INV.2T(2,10)", dim="errors"), C("=T.INV.2T(0,10)", dim="errors")]),
         ("T.TEST", [C("=T.TEST(A1:A9,B1:B9,2,1)", PAIRS), C("=T.TEST(A1:A9,B1:B9,1,2)", PAIRS), C("=T.TEST(A1:A9,B1:B9,3,1)", PAIRS, dim="errors")]),
         ("Z.TEST", [C("=Z.TEST(A1:A10,4)", ZDATA), C("=Z.TEST(A1:A10,6,3)", ZDATA), C("=Z.TEST(A1:A3,4)", dim="errors", note="no data")]),
         ("CONFIDENCE.NORM", [C("=CONFIDENCE.NORM(0.05,2.5,50)"), C("=CONFIDENCE.NORM(0.1,1,100)"), C("=CONFIDENCE.NORM(1.5,2.5,50)", dim="errors")]),

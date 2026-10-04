@@ -2391,10 +2391,10 @@ mod tests {
             assert!(q.contains(f), "{f}");
         }
         assert!(!q.contains("ARITHMETIC_OPERATORS"));
-        // 398 authority targets - 5 operator/reference pseudo-targets
+        // 407 authority targets - 5 operator/reference pseudo-targets
         // (the tier-2 and batch expansions grew the set; see 22_Formula_Coverage
         // and docs/operations/formula-expansion.md).
-        assert_eq!(q.len(), 393);
+        assert_eq!(q.len(), 402);
         // Qualified for calculation, yet never writable by a model.
         for f in ["HYPERLINK", "INDIRECT", "CELL"] {
             assert!(q.contains(f), "{f} is qualified");

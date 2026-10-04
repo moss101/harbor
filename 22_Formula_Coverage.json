@@ -6,7 +6,7 @@
     "family": "Formualizer",
     "candidate_version": "0.9.3+harbor-excel-fidelity",
     "production_source_revision": "crates.io/formualizer@0.9.3 + third_party/formualizer-eval (TEXT percent patch + Excel-fidelity patch set, decision 0001 addenda)",
-    "production_integrity_hash": "7e47672f757f2827b26c081de3586d179e409772b35e66d7652f1d8b31e21388",
+    "production_integrity_hash": "d7daffb7ed52e4ccbe663674dadc17c60c5732d5ce50b8283667dc9e02c5d333",
     "license_review": "APPROVED: MIT OR Apache-2.0, docs/decisions/0001-formula-engine-pin.md (incl. patch addendum)"
   },
   "verification_rule": "Only entries with qualification_status=PASS for the exact engine source revision, Harbor adapter revision, fixture corpus version and platform set are verified. Presence in this file is not itself evidence.",
@@ -1083,6 +1083,10 @@
           "status": "REQUIRED_UNQUALIFIED"
         },
         {
+          "name": "T.INV.2T",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
           "name": "T.TEST",
           "status": "REQUIRED_UNQUALIFIED"
         },
@@ -1113,15 +1117,6 @@
         {
           "name": "QUARTILE.EXC",
           "status": "REQUIRED_UNQUALIFIED"
-        }
-      ],
-      "deferred_engine_deviations": [
-        {
-          "name": "T.INV.2T",
-          "case_formulas": [
-            "=T.INV.2T(1.5,10)"
-          ],
-          "detail": "round 0: excel {'n': -0.699812061312432} engine {'e': '#NUM!'}"
         }
       ]
     },
@@ -1361,6 +1356,10 @@
           "status": "REQUIRED_UNQUALIFIED"
         },
         {
+          "name": "IMCSC",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
           "name": "IMCSCH",
           "status": "REQUIRED_UNQUALIFIED"
         },
@@ -1382,6 +1381,10 @@
         },
         {
           "name": "IMLOG2",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMPOWER",
           "status": "REQUIRED_UNQUALIFIED"
         },
         {
@@ -1423,22 +1426,6 @@
         {
           "name": "IMTAN",
           "status": "REQUIRED_UNQUALIFIED"
-        }
-      ],
-      "deferred_engine_deviations": [
-        {
-          "name": "IMCSC",
-          "case_formulas": [
-            "=IMCSC(\"1+i\")"
-          ],
-          "detail": "round 0: excel {'t': '0.621518017170428-0.303931001628427i'} engine {'t': '0.621518017170429-0.303931001628426i'}"
-        },
-        {
-          "name": "IMPOWER",
-          "case_formulas": [
-            "=IMPOWER(\"2+3i\",3)"
-          ],
-          "detail": "round 0: excel {'t': '-46+9.00000000000001i'} engine {'t': '-46+9i'}"
         }
       ]
     },
@@ -1607,6 +1594,10 @@
           "status": "REQUIRED_UNQUALIFIED"
         },
         {
+          "name": "DOLLAR",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
           "name": "FIXED",
           "status": "REQUIRED_UNQUALIFIED"
         },
@@ -1639,25 +1630,12 @@
           "status": "REQUIRED_UNQUALIFIED"
         },
         {
-          "name": "AGGREGATE",
-          "status": "REQUIRED_UNQUALIFIED"
-        }
-      ],
-      "deferred_engine_deviations": [
-        {
           "name": "ASC",
-          "case_formulas": [
-            "=ASC(\"\uff21\uff22\uff23\")"
-          ],
-          "detail": "round 0: excel {'t': '\uff21\uff22\uff23'} engine {'t': 'ABC'}"
+          "status": "REQUIRED_UNQUALIFIED"
         },
         {
-          "name": "DOLLAR",
-          "case_formulas": [
-            "=DOLLAR(1234.567,2)",
-            "=DOLLAR(-1234.567,0)"
-          ],
-          "detail": "round 0: excel {'t': 'SAR1,234.57'} engine {'t': '$1,234.57'}"
+          "name": "AGGREGATE",
+          "status": "REQUIRED_UNQUALIFIED"
         }
       ]
     },
@@ -1742,11 +1720,19 @@
           "status": "REQUIRED_UNQUALIFIED"
         },
         {
+          "name": "DROP",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
           "name": "FILTER",
           "status": "REQUIRED_UNQUALIFIED"
         },
         {
           "name": "HSTACK",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SEQUENCE",
           "status": "REQUIRED_UNQUALIFIED"
         },
         {
@@ -1767,6 +1753,10 @@
         },
         {
           "name": "TOROW",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TRANSPOSE",
           "status": "REQUIRED_UNQUALIFIED"
         },
         {
@@ -1809,30 +1799,6 @@
           "name": "SEARCHB",
           "status": "REQUIRED_UNQUALIFIED"
         }
-      ],
-      "deferred_engine_deviations": [
-        {
-          "name": "DROP",
-          "case_formulas": [
-            "=DROP(A1:C2,2)"
-          ],
-          "detail": "round 0: excel {'e': '#CALC!'} engine {}"
-        },
-        {
-          "name": "SEQUENCE",
-          "case_formulas": [
-            "=SEQUENCE(0)"
-          ],
-          "detail": "round 0: excel {'e': '#CALC!'} engine {'e': '#VALUE!'}"
-        },
-        {
-          "name": "TRANSPOSE",
-          "case_formulas": [
-            "=INDEX(TRANSPOSE(A1:C2),3,1)",
-            "=ROWS(TRANSPOSE(A1:C2))"
-          ],
-          "detail": "round 0: excel {'e': '#VALUE!'} engine {'n': 3.0}"
-        }
       ]
     },
     {
@@ -1843,17 +1809,10 @@
         {
           "name": "LET",
           "status": "REQUIRED_UNQUALIFIED"
-        }
-      ],
-      "deferred_engine_deviations": [
+        },
         {
           "name": "LAMBDA",
-          "case_formulas": [
-            "=LAMBDA(x,x+1)(3)",
-            "=LAMBDA(a,b,a*b)(6,7)",
-            "=LAMBDA(x,x/0)(1)"
-          ],
-          "detail": "round 0: excel {'n': 4.0} engine {'e': '#VALUE!'}"
+          "status": "REQUIRED_UNQUALIFIED"
         }
       ]
     },
@@ -1982,7 +1941,8 @@
       "known_deviations": [],
       "evidence_path": "evidence/formula_evals/macos-arm64-9e32a51.json",
       "evidence_sha256": "e304e0b60f1abfbf5df427d9c6e369f10dde784488df2f6045aa008c1ef2d02a",
-      "binding_note": "commit recorded by the run itself (clean tree)."
+      "binding_note": "commit recorded by the run itself (clean tree).",
+      "superseded": "Historical record on commit 9e32a51. The engine gained further fixes (immediate LAMBDA calls, T.INV.2T, empty-array #CALC!) and the corpus grew to 407 targets / 1261 cases afterwards (decision 0001 addendum 3), so this tier was re-run on the next commit."
     },
     {
       "result_type": "platform_tier",
@@ -2002,7 +1962,8 @@
       "known_deviations": [],
       "evidence_path": "evidence/formula_evals/ios-sim-arm64-9e32a51.json",
       "evidence_sha256": "528790b8b0143592451515131758d4d96eb137b225cd2bcd55ff21b02997a136",
-      "binding_note": "commit bound by the clean host tree that cross-built the binary (device runs carry no git)."
+      "binding_note": "commit bound by the clean host tree that cross-built the binary (device runs carry no git).",
+      "superseded": "Historical record on commit 9e32a51. The engine gained further fixes (immediate LAMBDA calls, T.INV.2T, empty-array #CALC!) and the corpus grew to 407 targets / 1261 cases afterwards (decision 0001 addendum 3), so this tier was re-run on the next commit."
     },
     {
       "result_type": "platform_tier",
@@ -2033,7 +1994,8 @@
       ],
       "evidence_path": "evidence/formula_evals/android-emulator-arm64-9e32a51.json",
       "evidence_sha256": "02d076e67e5b84f213058c86d51808632c8e5a9b6c7bb3370315f87c93c188f1",
-      "binding_note": "commit bound by the clean host tree that cross-built the binary (device runs carry no git)."
+      "binding_note": "commit bound by the clean host tree that cross-built the binary (device runs carry no git).",
+      "superseded": "Historical record on commit 9e32a51. The engine gained further fixes (immediate LAMBDA calls, T.INV.2T, empty-array #CALC!) and the corpus grew to 407 targets / 1261 cases afterwards (decision 0001 addendum 3), so this tier was re-run on the next commit."
     }
   ]
 }

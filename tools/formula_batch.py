@@ -31,6 +31,7 @@ WORK = pathlib.Path(os.environ.get("FORMULA_WORK", "/tmp/formula_batch"))
 ERRORS = {"#DIV/0!", "#VALUE!", "#REF!", "#NAME?", "#NUM!", "#N/A", "#NULL!", "#SPILL!", "#CALC!"}
 # Functions Excel rejects (corrupt-workbook dialog) unless the file formula carries a prefix.
 PREFIX_HINT = {"FILTER": "_xlfn._xlws.", "SORT": "_xlfn._xlws."}
+ARRAY_MARK = "\x00ARRAY\x00"  # prefix on an oracle formula that must be written as an array formula
 FORMULA_CELL = (1000, 1000)  # where the engine's qualifier puts the formula
 FORMULA_REF = "ALL1000"  # the same cell in A1 notation (col 1000)
 
@@ -109,6 +110,7 @@ def expand(batch):
                 "tol": c["tol"],
                 "edit_cells": [cells_json(e) for e in c["edits"]],
                 "xl": c.get("xl"),
+                "array": c.get("array", False),
             }
             cases.append(case)
     return cases
@@ -143,7 +145,11 @@ def sheet_xml(cells, formula):
         cs = ""
         for c, v in sorted(rows[r], key=lambda x: x[0]):
             if "f" in v:
-                cs += f'<c r="{col_name(c)}{r}"><f>{xml_esc(v["f"])}</f></c>'
+                ftxt = v["f"]
+                if ftxt.startswith(ARRAY_MARK):
+                    cs += f'<c r="{col_name(c)}{r}"><f t="array" ref="{col_name(c)}{r}">{xml_esc(ftxt[len(ARRAY_MARK):])}</f></c>'
+                else:
+                    cs += f'<c r="{col_name(c)}{r}"><f>{xml_esc(ftxt)}</f></c>'
             else:
                 cs += cell_xml(r, c, v)
         body += f'<row r="{r}">{cs}</row>'
@@ -307,6 +313,8 @@ def workbook_sheets(cases, ids, prefixed):
             acc = acc + add
             names = round_sheet_map(i, j)
             f = to_excel_formula(c.get("xl") or c["formula"], i, c["target"], "" if c.get("xl") else prefixed.get(c["id"], ""))
+            if c.get("array"):
+                f = ARRAY_MARK + f
             for src, dst in sheet_names(i).items():
                 f = f.replace(f"{dst}!", f"{names[src]}!")
             by_sheet = {}

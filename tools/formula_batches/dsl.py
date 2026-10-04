@@ -17,7 +17,7 @@ whose every case agrees are added to the corpus.
 """
 
 
-def C(formula, cells=(), dim="values", note="", tol=None, edits=None, xl=None):
+def C(formula, cells=(), dim="values", note="", tol=None, edits=None, xl=None, array=False):
     """One case. `cells` is [(ref, value)] with ref "A1" or "Sheet2!B3";
     value is a number, str (text; "#N/A"-style strings are errors), bool,
     or None (left blank). `edits` is [([(ref, value)...])] applied after the
@@ -33,4 +33,8 @@ def C(formula, cells=(), dim="values", note="", tol=None, edits=None, xl=None):
         # Alternative formula text for the Excel oracle only (e.g. LET/LAMBDA
         # parameter names need an _xlpm. prefix inside the xlsx file).
         "xl": xl,
+        # Write the oracle formula as an array (CSE) formula so Excel evaluates it
+        # with array semantics: file-loaded plain formulas get legacy implicit
+        # intersection (TRANSPOSE in one cell gives #VALUE!).
+        "array": array,
     }

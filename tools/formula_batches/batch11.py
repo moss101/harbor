@@ -24,7 +24,11 @@ BATCH = {
         ("XNPV", [C("=XNPV(0.09,A1:A5,B1:B5)", IRR), C("=XNPV(0,A1:A5,B1:B5)", IRR, note="zero rate is the plain sum"), C("=XNPV(0.09,A1:A5,B1:B4)", IRR, dim="errors")]),
         ("CLEAN", [C('=CLEAN("a"&CHAR(7)&"b")'), C('=CLEAN("plain text")'), C("=CLEAN(A1)", dim="blanks")]),
         ("CODE", [C('=CODE("A")'), C('=CODE("abc")', note="only the first character"), C('=CODE("")', dim="errors")]),
-        ("DOLLAR", [C("=DOLLAR(1234.567,2)"), C("=DOLLAR(-1234.567,0)"), C('=DOLLAR("x")', dim="errors")]),
+        ("DOLLAR", [
+            C('=SUBSTITUTE(SUBSTITUTE(DOLLAR(1234.567,2),"SAR",""),"$","")', note="the currency symbol follows the machine's regional settings (Excel here: SAR, engine: $), so it is removed and the digits, grouping and rounding are compared"),
+            C('=SUBSTITUTE(SUBSTITUTE(DOLLAR(-1234.567,0),"SAR",""),"$","")', note="negative amounts are shown in parentheses"),
+            C('=SUBSTITUTE(SUBSTITUTE(DOLLAR(0.5),"SAR",""),"$","")', note="default two decimals"),
+            C('=DOLLAR("x")', dim="errors")]),
         ("FIXED", [C("=FIXED(1234.567,1)"), C("=FIXED(1234.567,-1,TRUE)", note="no thousands separator"), C('=FIXED("x")', dim="errors")]),
         ("NUMBERVALUE", [C('=NUMBERVALUE("2.500,27",",",".")'), C('=NUMBERVALUE("3.5%")'), C('=NUMBERVALUE("abc")', dim="errors")]),
         ("TEXTAFTER", [C('=TEXTAFTER("Red riding hood\'s","ing ")'), C('=TEXTAFTER("a-b-c-d","-",2)', note="second occurrence"), C('=TEXTAFTER("abc","x")', dim="errors")]),
@@ -33,7 +37,7 @@ BATCH = {
         ("UNICODE", [C('=UNICODE("A")'), C('=UNICODE("☃")'), C('=UNICODE("")', dim="errors")]),
         ("VALUETOTEXT", [C("=VALUETOTEXT(123)"), C('=VALUETOTEXT("hi")'), C('=VALUETOTEXT("hi",1)', note="strict format quotes text")]),
         ("ARRAYTOTEXT", [C("=ARRAYTOTEXT(A1:B2)", GRID), C("=ARRAYTOTEXT(A1:B2,1)", GRID, note="strict format uses array braces")]),
-        ("ASC", [C('=ASC("abc")'), C('=ASC("ＡＢＣ")', note="full-width to half-width")]),
+        ("ASC", [C('=ASC("abc")'), C('=ASC("Hello 123")', note="half-width text is unchanged; converting full-width characters happens only on East-Asian (DBCS) locales, so it is not asserted")]),
         ("AGGREGATE", [C("=AGGREGATE(9,6,A1:A5)", AGG, note="SUM, ignoring the error"), C("=AGGREGATE(4,6,A1:A5)", AGG, note="MAX, ignoring the error"), C("=AGGREGATE(14,6,A1:A5,2)", AGG, note="second largest"), C("=AGGREGATE(9,0,A1:A5)", AGG, dim="errors", note="errors are not ignored"), C("=AGGREGATE(99,6,A1:A5)", AGG, dim="errors")]),
     ],
 }
