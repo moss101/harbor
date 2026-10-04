@@ -2,11 +2,14 @@
 
 The formula engine qualification (`22_Formula_Coverage.json`) requires
 five platforms before any target may flip to PASS. Three tiers are
-machine-bound and already recorded (macOS, iOS Simulator, Android
-emulator — all 139/139 cases · 99/99 targets on engine
-`0.9.3+harbor-textfix`, corpus bundle `e1fc88a3…`). The remaining tiers
-need hardware this repository's machines do not have. Exact commands,
-verified on this host:
+machine-bound (macOS, iOS Simulator, Android emulator). They were first
+recorded 139/139 cases · 99/99 targets on engine `0.9.3+harbor-textfix`,
+corpus bundle `e1fc88a3…`. On 2026-10-04 the engine gained the Excel-fidelity
+patch set (decision 0001 addendum 2, engine `0.9.3+harbor-excel-fidelity`) and
+the corpus grew to cover 398 targets, so those three records are **superseded
+and must be re-run** on the current engine and bundle (the commands below are
+the same). The remaining tiers need hardware this repository's machines do not
+have. Exact commands, verified on this host:
 
 ## Physical iOS/iPadOS arm64 device
 
@@ -46,7 +49,7 @@ target\release\examples\qualify_dump.exe out.json
 
 ## After every tier
 
-1. Verify `engine_version` is `0.9.3+harbor-textfix`, the integrity hash
+1. Verify `engine_version` is `0.9.3+harbor-excel-fidelity`, the integrity hash
    matches `engine.rs`, and the bundle sha is `e1fc88a3…`.
 2. `python3 tools/pin_engine.py --check`.
 3. Add the tier record to `22_Formula_Coverage.json`

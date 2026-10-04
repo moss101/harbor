@@ -50,7 +50,9 @@ fn wildcard_masks_preserve_scalar_contract_for_base_and_overlay() {
                     .build_criteria_mask(&view, 0, &pred)
                     .unwrap()
                     .true_count(),
-                7,
+                // "*" matches text cells only (Excel), so the single number / boolean / blank
+                // cell among the 7 text cells is not counted: 6 true, still a cacheable mask.
+                6,
                 "mixed data must retain a cacheable scalar-equivalent mask"
             );
             for pattern in ["1*", "?", "TRUE*", "~*"] {

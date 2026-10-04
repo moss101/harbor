@@ -109,7 +109,7 @@ fn aggregate_options_apply_hidden_and_error_policies() {
 }
 
 #[test]
-fn aggregate_phase1_unsupported_paths_surface_expected_errors() {
+fn aggregate_options_4_and_median_are_supported_and_option_8_is_invalid() {
     let mut engine = Engine::new(TestWorkbook::new(), arrow_eval_config());
 
     engine
@@ -128,8 +128,10 @@ fn aggregate_phase1_unsupported_paths_surface_expected_errors() {
 
     engine.evaluate_all().unwrap();
 
-    assert_error_kind(engine.get_cell_value("Sheet1", 1, 1), ExcelErrorKind::NImpl);
-    assert_error_kind(engine.get_cell_value("Sheet1", 1, 2), ExcelErrorKind::NImpl);
+    // Option 4 (ignore nothing) and the array form MEDIAN (12) are implemented;
+    // option 8 does not exist.
+    assert_num(engine.get_cell_value("Sheet1", 1, 1), 10.0);
+    assert_num(engine.get_cell_value("Sheet1", 1, 2), 10.0);
     assert_error_kind(engine.get_cell_value("Sheet1", 1, 3), ExcelErrorKind::Value);
 }
 

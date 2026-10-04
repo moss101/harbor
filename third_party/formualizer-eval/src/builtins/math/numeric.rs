@@ -746,6 +746,15 @@ impl Function for CeilingFn {
     }
 }
 
+static ARG_NUM_LENIENT_THREE: std::sync::LazyLock<Vec<ArgSchema>> =
+    std::sync::LazyLock::new(|| {
+        vec![
+            ArgSchema::number_lenient_scalar(),
+            ArgSchema::number_lenient_scalar(),
+            ArgSchema::number_lenient_scalar(),
+        ]
+    });
+
 #[derive(Debug)]
 pub struct CeilingMathFn; // CEILING.MATH(number,[significance],[mode])
 /// Rounds a number up to the nearest integer or multiple using `CEILING.MATH` rules.
@@ -799,7 +808,9 @@ impl Function for CeilingMathFn {
         true
     }
     fn arg_schema(&self) -> &'static [ArgSchema] {
-        &ARG_NUM_LENIENT_TWO[..]
+        // Three numeric scalars: number, significance, mode. With only the two-slot
+        // schema, supplying `mode` was rejected as #VALUE!.
+        &ARG_NUM_LENIENT_THREE[..]
     } // allow up to 3 handled manually
     fn eval<'a, 'b, 'c>(
         &self,
@@ -1004,7 +1015,9 @@ impl Function for FloorMathFn {
         true
     }
     fn arg_schema(&self) -> &'static [ArgSchema] {
-        &ARG_NUM_LENIENT_TWO[..]
+        // Three numeric scalars: number, significance, mode. With only the two-slot
+        // schema, supplying `mode` was rejected as #VALUE!.
+        &ARG_NUM_LENIENT_THREE[..]
     }
     fn eval<'a, 'b, 'c>(
         &self,
@@ -4208,5 +4221,41 @@ mod tests_numeric {
             matches!(result, LiteralValue::Error(_)),
             "Expected an error, got {result:?}"
         );
+    }
+}
+
+#[cfg(test)]
+mod tests_ceiling_floor_math_mode {
+    use super::*;
+    use crate::test_workbook::TestWorkbook;
+    use crate::traits::ArgumentHandle;
+    use formualizer_parse::parser::{ASTNode, ASTNodeType};
+
+    fn run(name: &str, vals: &[f64]) -> LiteralValue {
+        let wb = TestWorkbook::new()
+            .with_function(std::sync::Arc::new(CeilingMathFn))
+            .with_function(std::sync::Arc::new(FloorMathFn));
+        let ctx = wb.interpreter();
+        let nodes: Vec<_> = vals
+            .iter()
+            .map(|v| ASTNode::new(ASTNodeType::Literal(LiteralValue::Number(*v)), None))
+            .collect();
+        let args: Vec<_> = nodes.iter().map(|n| ArgumentHandle::new(n, &ctx)).collect();
+        let f = ctx.context.get_function("", name).unwrap();
+        f.dispatch(&args, &ctx.function_context(None))
+            .unwrap()
+            .into_literal()
+    }
+
+    #[test]
+    fn mode_argument_is_accepted_and_applied() {
+        // Excel: CEILING.MATH(-4.3,1,1) = -5, FLOOR.MATH(-4.7,1,1) = -4.
+        assert_eq!(run("CEILING.MATH", &[-4.3, 1.0, 1.0]), LiteralValue::Number(-5.0));
+        assert_eq!(run("CEILING.MATH", &[-4.3, 1.0, 0.0]), LiteralValue::Number(-4.0));
+        assert_eq!(run("FLOOR.MATH", &[-4.7, 1.0, 1.0]), LiteralValue::Number(-4.0));
+        assert_eq!(run("FLOOR.MATH", &[-4.7, 1.0, 0.0]), LiteralValue::Number(-5.0));
+        // Mode is ignored for positive numbers.
+        assert_eq!(run("CEILING.MATH", &[4.3, 1.0, 1.0]), LiteralValue::Number(5.0));
+        assert_eq!(run("FLOOR.MATH", &[4.7, 1.0, 1.0]), LiteralValue::Number(4.0));
     }
 }

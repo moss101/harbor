@@ -45,6 +45,22 @@ ran at.
   landscape. The new-presentation sheet now lives once in `harbor_ui`;
   `harbor_app` can save a restyled deck. Android "Open with" via content://
   was not exercised.
+- **Formula expansion** (`docs/operations/formula-expansion.md`): the qualified
+  target set grew from 99 to **398** in 17 batches of about 25, 1,220 corpus
+  cases, every expected value taken from real Microsoft Excel (the engine is
+  the subject, never the source of truth). Excel found real engine defects:
+  GAMMA.INV, F.INV, CHISQ.TEST, Z.TEST, CUMIPMT/CUMPRINC, ACCRINT, AGGREGATE
+  options, CEILING/FLOOR.MATH mode, DAYS360, the complex-number text format and
+  — most important — the COUNTIF/SUMIF/*IFS family (text-numbers, `<>`, blanks,
+  wildcards, whole columns). All fixed in the vendored engine (decision 0001
+  addendum 2, engine `0.9.3+harbor-excel-fidelity`, re-pinned); a size guard I
+  introduced and then found breaking whole-column SUMIFS was caught by the
+  engine's own tests and narrowed. 9 functions stay deferred (Excel quirks,
+  locale, dynamic-array edges; listed in 22_Formula_Coverage.json). The
+  content gate now blocks HYPERLINK/INDIRECT/CELL/INFO for model-written
+  formulas even though they are qualified. **The macOS / iOS-Simulator /
+  Android-emulator tier records are superseded and not yet re-run** (they need
+  a commit to bind to); nothing is PASS before the five-platform rule is met.
 - **Not done / honest limits**: no visual run of the Flutter screens (widget
   tests only); embedded design source is lost when another app re-saves a deck
   (restyle is then disabled); harbor_app is preview-only for decks, so a

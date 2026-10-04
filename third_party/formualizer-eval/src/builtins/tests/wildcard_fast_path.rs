@@ -129,9 +129,13 @@ mod tests {
     fn test_numeric_coercion() {
         let pred = create_text_like("123*");
 
-        assert!(criteria_match(&pred, &LiteralValue::Number(123.0)));
-        assert!(criteria_match(&pred, &LiteralValue::Number(123.456)));
-        assert!(criteria_match(&pred, &LiteralValue::Int(123)));
+        // Excel: wildcard criteria match TEXT cells only. A number never satisfies "123*" even
+        // when its decimal rendering starts with 123 (checked against real Excel: COUNTIF(A1:A8,"*")
+        // does not count numbers); numeric text still does.
+        assert!(!criteria_match(&pred, &LiteralValue::Number(123.0)));
+        assert!(!criteria_match(&pred, &LiteralValue::Number(123.456)));
+        assert!(!criteria_match(&pred, &LiteralValue::Int(123)));
+        assert!(criteria_match(&pred, &LiteralValue::Text("123.456".into())));
 
         assert!(!criteria_match(&pred, &LiteralValue::Number(12.3)));
         assert!(!criteria_match(&pred, &LiteralValue::Int(12)));
@@ -142,7 +146,8 @@ mod tests {
         let pred_empty = create_text_like("*");
         let pred_something = create_text_like("some*");
 
-        assert!(criteria_match(&pred_empty, &LiteralValue::Empty));
+        // Excel: "*" matches any text cell (including empty text) but never a truly blank cell.
+        assert!(!criteria_match(&pred_empty, &LiteralValue::Empty));
         assert!(criteria_match(&pred_empty, &LiteralValue::Text("".into())));
 
         assert!(!criteria_match(&pred_something, &LiteralValue::Empty));

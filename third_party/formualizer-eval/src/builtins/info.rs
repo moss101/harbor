@@ -1030,7 +1030,7 @@ pub struct TypeFn;
 ///   - ISLOGICAL
 /// faq:
 ///   - q: "How are errors handled by TYPE?"
-///     a: "Errors are propagated unchanged instead of returning Excel's error type code 16."
+///     a: "An error value (including a direct error such as NA() or 1/0) returns Excel's error type code 16; it is not propagated."
 /// ```
 /// [formualizer-docgen:schema:start]
 /// Name: TYPE
@@ -1063,9 +1063,14 @@ impl Function for TypeFn {
                 ExcelError::new_value(),
             )));
         }
-        let v = args[0].value()?.into_literal(); // Propagate errors directly
-        if let LiteralValue::Error(e) = v {
-            return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(e)));
+        // Excel: TYPE of an error value is 16 -- errors are inspected, not
+        // propagated (TYPE(NA()) = 16, TYPE(1/0) = 16).
+        let v = match args[0].value() {
+            Ok(cv) => cv.into_literal(),
+            Err(_) => return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Int(16))),
+        };
+        if let LiteralValue::Error(_) = v {
+            return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Int(16)));
         }
         let code = match v {
             LiteralValue::Int(_)
@@ -2126,8 +2131,8 @@ mod tests {
             .unwrap()
             .into_literal()
         {
-            LiteralValue::Error(e) => assert_eq!(e, "#VALUE!"),
-            _ => panic!(),
+            LiteralValue::Int(16) => {}
+            other => panic!("TYPE of an error must be 16, got {other:?}"),
         }
         assert_eq!(
             f.dispatch(&a_arr, &ctx.function_context(None))

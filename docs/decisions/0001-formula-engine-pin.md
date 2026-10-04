@@ -52,3 +52,43 @@ Consequences:
 - Upstream remains MIT OR Apache-2.0; the vendored tree keeps both
   LICENSE files. If upstream ships the fix, prefer the registry release
   and drop the patch (re-pin + full re-run required either way).
+
+## Addendum 2 (2026-10-04, session 58): Excel-fidelity patch set and corpus growth
+
+Method. Formula coverage was expanded from 99 to 398 targets in batches of about
+25 (`docs/operations/formula-expansion.md`). Expected values come from real
+Microsoft Excel, not from the engine: each batch is run in Excel and on the pinned
+engine, and a function enters the corpus only if every case agrees. Where the
+engine disagreed, the disagreement was a finding, not a fixture.
+
+Patch set. `third_party/formualizer-eval` carries these changes (all verified
+against the Excel answers; the vendored crate's own unit tests, 3052, pass in a
+scratch crate because its dev-dependencies are not available offline):
+- Inverse distributions: GAMMA.INV, F.INV (and the chi-square/F inverses) use a
+  bracketed bisection instead of Newton steps that overshot into the tail.
+- CHISQ.TEST degrees of freedom, Z.TEST default sigma (sample deviation),
+  CONFIDENCE.T, AVEDEV, AGGREGATE options and array forms, CEILING.MATH and
+  FLOOR.MATH mode, TYPE of an error value.
+- Financial: CUMIPMT/CUMPRINC, IPMT/PPMT with payments at period start, ACCRINT
+  actual/actual, XNPV rate rules, #DIV/0! for zero periods/fractions.
+- Date/time and engineering: DAYS360 (US), HOUR/TIME negative arguments, bit shifts,
+  15-significant-digit complex-number text, i/j suffix rules.
+- Criteria matching (COUNTIF/SUMIF/AVERAGEIF and the *IFS and MAXIFS/MINIFS forms):
+  numeric comparisons match numeric cells only, `=3`/`3` match numbers and numeric
+  text, `<>` matches everything else, wildcards match text only, blank criteria
+  cells are 0, whole-column ranges behave like bounded ones, and bounded ranges of
+  different sizes return #VALUE!.
+
+Deferred, not forced (listed per group as `deferred_engine_deviations` in
+`22_Formula_Coverage.json`): T.INV.2T for p > 1 and IMPOWER (Excel's own
+floating-point noise), DOLLAR and ASC (locale of the oracle machine), TRANSPOSE
+(Excel loads file formulas without dynamic-array semantics), DROP/SEQUENCE edge
+errors, IMCSC (last digit), LAMBDA.
+
+Consequences.
+- The engine identity is now `0.9.3+harbor-excel-fidelity`; the integrity hash
+  covers the patched source tree (`tools/pin_engine.py`).
+- The fixture bundle changed, so the macOS, iOS Simulator and Android emulator
+  tier records made on `0.9.3+harbor-textfix` are marked superseded and must be
+  re-run (`docs/operations/formula-tier-runbook.md`). No target is PASS before the
+  five-platform rule is met.

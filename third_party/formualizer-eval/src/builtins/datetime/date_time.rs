@@ -126,7 +126,7 @@ impl Function for DateFn {
 
 /// Returns the fractional-day serial for a time built from hour, minute, and second.
 ///
-/// `TIME` normalizes overflowing and negative components by wrapping across day boundaries.
+/// `TIME` normalizes overflowing components by wrapping across day boundaries; a negative component is `#NUM!`.
 ///
 /// # Remarks
 /// - The result is always in the range `0.0..1.0` and represents only a time-of-day fraction.
@@ -207,6 +207,12 @@ impl Function for TimeFn {
         let hour = coerce_to_int(&args[0])?;
         let minute = coerce_to_int(&args[1])?;
         let second = coerce_to_int(&args[2])?;
+
+        // Excel rejects a negative hour, minute or second with #NUM! (TIME(-1,0,0));
+        // only over-large values wrap (TIME(25,0,0) = 1:00, TIME(0,90,0) = 1:30).
+        if hour < 0 || minute < 0 || second < 0 {
+            return Err(ExcelError::new_num());
+        }
 
         // Excel normalizes time values
         let total_seconds = hour * 3600 + minute * 60 + second;
@@ -425,6 +431,42 @@ mod tests {
                 assert!((n - 1.0 / 24.0).abs() < 1e-10);
             }
             _ => panic!("TIME should return a number"),
+        }
+    }
+
+    #[test]
+    fn test_time_rejects_negative_components() {
+        let wb = TestWorkbook::new().with_function(Arc::new(TimeFn));
+        let ctx = wb.interpreter();
+        let f = ctx.context.get_function("", "TIME").unwrap();
+        let run = |h: i64, m: i64, sec: i64| {
+            let (h, m, sec) = (
+                lit(LiteralValue::Int(h)),
+                lit(LiteralValue::Int(m)),
+                lit(LiteralValue::Int(sec)),
+            );
+            match f.dispatch(
+                &[
+                    ArgumentHandle::new(&h, &ctx),
+                    ArgumentHandle::new(&m, &ctx),
+                    ArgumentHandle::new(&sec, &ctx),
+                ],
+                &ctx.function_context(None),
+            ) {
+                Ok(v) => v.into_literal(),
+                Err(e) => LiteralValue::Error(e),
+            }
+        };
+        for (h, m, s) in [(-1, 0, 0), (0, -1, 0), (0, 0, -1)] {
+            assert!(
+                matches!(run(h, m, s), LiteralValue::Error(e) if e.kind == formualizer_common::ExcelErrorKind::Num),
+                "TIME({h},{m},{s}) should be #NUM!"
+            );
+        }
+        // Over-large components still wrap.
+        match run(0, 90, 0) {
+            LiteralValue::Number(n) => assert!((n - 1.5 / 24.0).abs() < 1e-10),
+            other => panic!("expected number, got {other:?}"),
         }
     }
 }

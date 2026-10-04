@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "4886e16360433165241c0604fa3929bc7d6663e8b8e3ca0c24c44582dbf3007e",
+  "input_manifest_sha256": "ced098858de96dc201da4f851dac0eb4eb2e04458f56ea1caee84ea6a78a625e",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -121,8 +121,8 @@
     },
     {
       "path": "22_Formula_Coverage.json",
-      "bytes": 16006,
-      "sha256": "8a05bfdde057360e89064f30ab3c3b7447e0cf612fb7b86b53d7f2d2cce5e9a5"
+      "bytes": 53711,
+      "sha256": "618059a0882f292d51c3eb4381e143434228ef7146fb2630de24c852f13572da"
     },
     {
       "path": "23_Review_Reconciliation_Matrix.md",
@@ -650,6 +650,11 @@
       "sha256": "50ec45a101956a6f278feff13b00ff8fcfeadb8748c5e9d74da920695fcd02b4"
     },
     {
+      "path": "apps/harbor_app/lib/surfaces/work/deck_designer_labels.dart",
+      "bytes": 2401,
+      "sha256": "c139346512b02b4221b3d262374e496ad345b6225859776a35562f110bec9ea6"
+    },
+    {
       "path": "apps/harbor_app/lib/surfaces/work/deck_view.dart",
       "bytes": 27058,
       "sha256": "1fe6df9d04e316a5b9496685a4ca8eae5106e8c17a5ec392aea2b847d6b28f37"
@@ -913,6 +918,16 @@
       "path": "apps/harbor_app/test/work_new_presentation_test.dart",
       "bytes": 5907,
       "sha256": "50858c66ba476fb366c1525d0b38bfc6642e2c993e7929328c60346ea49d8ab6"
+    },
+    {
+      "path": "apps/harbor_app/test/work_save_copy_test.dart",
+      "bytes": 9408,
+      "sha256": "d958263cb4347d07493fad8dfcc4db80d01285a8e765ffbebe0242cd9e297807"
+    },
+    {
+      "path": "apps/harbor_app/test/workbook_blank_cell_test.dart",
+      "bytes": 3222,
+      "sha256": "32ae177058bac1a4c5fe315a2c593e1be96da29748484624bacdde752546a6db"
     },
     {
       "path": "apps/harbor_app/windows/.gitignore",
@@ -1525,6 +1540,11 @@
       "sha256": "44916c524c4c857021a2ad205c3c94b9f7f98986fdc99ee79e0179afbf24d0ba"
     },
     {
+      "path": "apps/harbor_office/lib/surfaces/work/deck_designer_labels.dart",
+      "bytes": 2401,
+      "sha256": "c139346512b02b4221b3d262374e496ad345b6225859776a35562f110bec9ea6"
+    },
+    {
       "path": "apps/harbor_office/lib/surfaces/work/deck_view.dart",
       "bytes": 32226,
       "sha256": "28e1c8208f97386a3eddc27d31a37c2b1bb0f9c04bf1b41dd6da40388cc492c3"
@@ -1575,6 +1595,16 @@
       "sha256": "58e7aed8205dd3a79be31924516c090cb191449fd3b138c14f5e8aba8610e4a0"
     },
     {
+      "path": "apps/harbor_office/test/document_edit_affordance_test.dart",
+      "bytes": 2210,
+      "sha256": "371e3fe63b729bcf7430017bcba44a96b5df9b5d9611891c7303412a1d907281"
+    },
+    {
+      "path": "apps/harbor_office/test/document_edit_flow_test.dart",
+      "bytes": 3693,
+      "sha256": "7fad0fe7be41e42e8657f093b152530c91c9c90aec775844e11ba1b526ba634d"
+    },
+    {
       "path": "apps/harbor_office/test/edit_history_test.dart",
       "bytes": 5913,
       "sha256": "697bf4b8d993ecbb8b992541ba26e4a23a936f88a3c7db74e9e0ddaf2884e8ab"
@@ -1593,6 +1623,11 @@
       "path": "apps/harbor_office/test/smoke_test.dart",
       "bytes": 2683,
       "sha256": "07e4a95959cdce8ce7cc741bf24ca7fe8b85fbb139ce4c3db7abc2e25e08a9f2"
+    },
+    {
+      "path": "apps/harbor_office/test/workbook_blank_cell_test.dart",
+      "bytes": 3228,
+      "sha256": "10543f0d6428ea3069a8882be257633bc1a1df7dd4b1cfcfa784c1574fea4d4b"
     },
     {
       "path": "assets/Harbor_Concept_Board.png",
@@ -2376,8 +2411,8 @@
     },
     {
       "path": "core/harbor_core/src/tools/builtin.rs",
-      "bytes": 109834,
-      "sha256": "1c24c0057ce464b253f31f6b51d0159d1f7b3ab4d6483d5058d305d6ac93da26"
+      "bytes": 111046,
+      "sha256": "3dec90a75bde6e694857d6af94e2de2142094eb4ece5d78c0fddfa418622a0f9"
     },
     {
       "path": "core/harbor_core/src/tools/create.rs",
@@ -2521,8 +2556,8 @@
     },
     {
       "path": "core/harbor_formula/fixtures/formula_corpus.json",
-      "bytes": 42938,
-      "sha256": "e1fc88a383b2b2805a2030c05a13bff32e6f94287103c1a8cd9ab968b1fafded"
+      "bytes": 623764,
+      "sha256": "1c5a832e2be36c6e7aace7bb775300d2ead3ab7c8e2fd63011bf83d8113f100b"
     },
     {
       "path": "core/harbor_formula/src/corpus.rs",
@@ -2531,8 +2566,8 @@
     },
     {
       "path": "core/harbor_formula/src/engine.rs",
-      "bytes": 10464,
-      "sha256": "3c168c409a2e072405e4d58af2955440ada5465cc16f99d27f7e9ed96d8bb69e"
+      "bytes": 10497,
+      "sha256": "16e2486222eb44f8af6e53a56d20b8539b51d01e449b1210455a10dfa3be48b3"
     },
     {
       "path": "core/harbor_formula/src/fixtures.rs",
@@ -3036,13 +3071,13 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 145247,
-      "sha256": "74e1de1889aef18c250f6d72d7f133bb6f37fd170fdc02d516c6360e93e2ee18"
+      "bytes": 146480,
+      "sha256": "eafdbf860205893be3756fd327a50acf5632fb9bad9d74e24dba0a2543a747fc"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
-      "bytes": 2857,
-      "sha256": "e32eaf9e5b8586da8a8f6ce7aff394c7f952249dc7c4a373e5d6ccd453c6373e"
+      "bytes": 5331,
+      "sha256": "90c6d76e501964b339d705100f65adaef16efd9717569861a2b527ec9dfb9a8e"
     },
     {
       "path": "docs/decisions/0002-llama-cpp-runtime-pin.md",
@@ -3101,8 +3136,8 @@
     },
     {
       "path": "docs/operations/formula-tier-runbook.md",
-      "bytes": 2599,
-      "sha256": "d1eb2aa8237945b53a5c0dcc02f69927037d3ff47f19c1f0c4c64578152f1140"
+      "bytes": 2900,
+      "sha256": "67f42882dba661391715ea8b13bcd5a3750b8c3bde1dcd30037b1b5ae1483f8e"
     },
     {
       "path": "docs/operations/slide-scene-contract.md",
@@ -3765,6 +3800,11 @@
       "sha256": "3d385b54f867382dee0b0b988df433e7d624d4b03182adabb1df7c8cacf01f76"
     },
     {
+      "path": "packages/harbor_ui/lib/deck_designer_testing.dart",
+      "bytes": 232,
+      "sha256": "e286033cc718f22b1a99f36d396d25fb5550cce5b6d772c0255a47b6e031c72c"
+    },
+    {
       "path": "packages/harbor_ui/lib/harbor_ui.dart",
       "bytes": 666,
       "sha256": "307d87eb4ce881fcb3aebc55e0a64ba1f47756ef885cefba3f068507dfad2cda"
@@ -3785,9 +3825,19 @@
       "sha256": "e46657a6d59eadb3c4a1059d4201ba52a780be527e34822f3dad18e4d91ae86b"
     },
     {
+      "path": "packages/harbor_ui/lib/src/deck_designer/deck_designer_labels.dart",
+      "bytes": 3697,
+      "sha256": "1a9c0157f4386abc79f0d80a73b1c15975131b24a843fcead8d2a7bda15717f6"
+    },
+    {
       "path": "packages/harbor_ui/lib/src/deck_designer/design_gallery.dart",
       "bytes": 11469,
       "sha256": "fb20162b914e0dc483ea8d79f7a7b245ac227024ffffbaed557ff7764960028d"
+    },
+    {
+      "path": "packages/harbor_ui/lib/src/deck_designer/fake_deck_designer.dart",
+      "bytes": 3770,
+      "sha256": "6e66f539afa4d0d320ee5708bb89974ab4095bf86a7ad2c9c7ecd4e7aabf5d07"
     },
     {
       "path": "packages/harbor_ui/lib/src/deck_designer/models.dart",
@@ -3798,6 +3848,11 @@
       "path": "packages/harbor_ui/lib/src/deck_designer/motion_picker.dart",
       "bytes": 3539,
       "sha256": "74c881fc96f7d4a6c6728c887d672c1d64dd1b95aec12e7154d62c85d405b32f"
+    },
+    {
+      "path": "packages/harbor_ui/lib/src/deck_designer/new_presentation_sheet.dart",
+      "bytes": 33388,
+      "sha256": "64eece4cea245c5588f50754555d535279c3c1348654b986f3bc159a3722ab37"
     },
     {
       "path": "packages/harbor_ui/lib/src/deck_designer/palette_strip.dart",
@@ -3910,14 +3965,34 @@
       "sha256": "4e42e59c1723c0486618025b5f1eea46715c5aa07f1340213bbc65de298a8d29"
     },
     {
+      "path": "packages/harbor_ui/test/banner_test.dart",
+      "bytes": 7276,
+      "sha256": "9d25e9de18ed024132693cf99c5e6cb65afd868c7b10f23cc444a3d8a484bab4"
+    },
+    {
       "path": "packages/harbor_ui/test/components_test.dart",
       "bytes": 11536,
       "sha256": "6e2f3a9bfe8ddfe749b2ba29b992b78bba31cf7d62a7283907953671df04ebe1"
     },
     {
+      "path": "packages/harbor_ui/test/deck_designer/change_design_dialog_test.dart",
+      "bytes": 7851,
+      "sha256": "06ab31d4c53f88cac08f9e89f18d191abbf6f025f1834e361b58101c436d8a79"
+    },
+    {
+      "path": "packages/harbor_ui/test/deck_designer/deck_design_prefs_test.dart",
+      "bytes": 731,
+      "sha256": "ed489879c85aef2c2448c9848b7d227dd9f90262406f2b248d2f7e04f06ae8ee"
+    },
+    {
       "path": "packages/harbor_ui/test/deck_designer/deck_designer_test.dart",
       "bytes": 17551,
       "sha256": "559dc7da482d8dfb82ef623b851ba992fd96cca4be166408883e3e547037891d"
+    },
+    {
+      "path": "packages/harbor_ui/test/deck_designer/new_presentation_sheet_test.dart",
+      "bytes": 16688,
+      "sha256": "7b61f7533c66f8effae6b4236a7fffc2840b95c6ddba968dbec9b372c2d81ea3"
     },
     {
       "path": "packages/harbor_ui/test/slides/fixtures/scene_full.json",
@@ -3953,6 +4028,16 @@
       "path": "packages/harbor_ui/test/slides/transitions_test.dart",
       "bytes": 7600,
       "sha256": "255d1056a256e861c2b5af319a718dfa67f1c83758ec61659099b31c1cb3886e"
+    },
+    {
+      "path": "packages/harbor_ui/test/support/english_labels.dart",
+      "bytes": 2141,
+      "sha256": "1f2c1b26ca2a6359acbd7399d59335743cb8623bcb108ca0b4733362aeeb89e7"
+    },
+    {
+      "path": "packages/harbor_ui/test/surface_header_test.dart",
+      "bytes": 1447,
+      "sha256": "bfe3aa620dba8348229ea188f79c0e4d42b78ab8b2582a09dfb02d1ae789b77d"
     },
     {
       "path": "packages/harbor_ui/test/trail_test.dart",
@@ -4101,8 +4186,8 @@
     },
     {
       "path": "third_party/formualizer-eval/src/args.rs",
-      "bytes": 14391,
-      "sha256": "714545aa000e9d36171dd81d4b33076791e333ee1953a3dbabafe785ee8cfcfa"
+      "bytes": 16670,
+      "sha256": "b4df5b027c53b418b004804088172927b2325681b5517cff9ff7e59299de86ab"
     },
     {
       "path": "third_party/formualizer-eval/src/arrow_store/mod.rs",
@@ -4121,13 +4206,13 @@
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/datetime/date_parts.rs",
-      "bytes": 39343,
-      "sha256": "ae8204c7d7ac7350dc237649915ea58220363dc8421360fc317fe7dc3aac7bb9"
+      "bytes": 42801,
+      "sha256": "2e6d197a7028a164f91dd477c85620ce828c4633a7c5c825f1dfd1ab614457e0"
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/datetime/date_time.rs",
-      "bytes": 14632,
-      "sha256": "df373eb672b341a46bd1e2ecda76de7a53d678362cd9ade0d48014941cf90415"
+      "bytes": 16300,
+      "sha256": "a8810264b888e06f00adf958afd3e0bac8bf5e227e25ae09bd33c2d3c973599d"
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/datetime/date_value.rs",
@@ -4201,13 +4286,13 @@
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/engineering.rs",
-      "bytes": 176140,
-      "sha256": "beff9580df9db11ff0dc3651fc2c1f1d5f6dd25f65ed943821d4574862ab180e"
+      "bytes": 183584,
+      "sha256": "6c383b55fb10bc88766eceb4764eba782c013340aa838c99627b3100151b9ce8"
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/financial/bonds.rs",
-      "bytes": 49719,
-      "sha256": "82762c54e83694e8489242f0da4dc100dd82f8f188078523e66c2f8cc513b6d6"
+      "bytes": 52552,
+      "sha256": "ca2d24e1220b962cc7bcc2cb06f53113f655c6850d06db5d8f1b94bfd168cde8"
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/financial/depreciation.rs",
@@ -4221,13 +4306,13 @@
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/financial/tvm.rs",
-      "bytes": 99007,
-      "sha256": "91252dd5c4b251f49cd1e094322c243620874a7026e979d35f492f8f5ddae33d"
+      "bytes": 101835,
+      "sha256": "2e516cc346b08b34f852fd5bc11a1cc4304538a4e7b6d4543bc6309db83b0a77"
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/info.rs",
-      "bytes": 68330,
-      "sha256": "8156dae0e68ed9030ebb4e1fbf90612faadcb66fff91c72de9769a66b6306429"
+      "bytes": 68629,
+      "sha256": "090557d519ad61e1fb33cbede5f350a9051249301d9685e52dfbfe14a67be569"
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/lambda.rs",
@@ -4296,8 +4381,8 @@
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/math/aggregate.rs",
-      "bytes": 71195,
-      "sha256": "581247bad851e3dc79dac0546c979e64e0cb77e86303aaee4433842bd3dc19ad"
+      "bytes": 77585,
+      "sha256": "95f866bbb5d10373e18e4f5899452f6c2bd60e7b0d1e4fd824d2e99ef771d3c2"
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/math/combinatorics.rs",
@@ -4306,8 +4391,8 @@
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/math/criteria_aggregates.rs",
-      "bytes": 90053,
-      "sha256": "f485502b184e64a75ac3319212abc515b6a564aea41f0233c55ec9efcd3079e6"
+      "bytes": 91554,
+      "sha256": "bbca1c7139ebe823516ad1a9d6dfa8a910b94f2d86b8cbc354eb1c992905b161"
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/math/mod.rs",
@@ -4316,8 +4401,8 @@
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/math/numeric.rs",
-      "bytes": 133319,
-      "sha256": "6b04bf432ee4d65aa3144a23908f1bf8c67bf50d7d973df535b99ce87a147f50"
+      "bytes": 135496,
+      "sha256": "13aa1bd2458329820367edaa2d957ddc41ce24fbd973dd5fff38a4e8735c1973"
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/math/reduction.rs",
@@ -4346,8 +4431,8 @@
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/stats/mod.rs",
-      "bytes": 378848,
-      "sha256": "b0edcca89e5e1f65cc6f101d18e9903be47beecd1e0c77325984a13692c5aafc"
+      "bytes": 388631,
+      "sha256": "39f89c5b1ec66ee5a026581bdb12fb6f80f1a336ec0f4d0f93a8689d00c6d4ed"
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/tests/mod.rs",
@@ -4361,8 +4446,8 @@
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/tests/wildcard_fast_path.rs",
-      "bytes": 5594,
-      "sha256": "920882a7a98a02912ec9f42b42fa5f5e716de19af6ffd103bf978268279f3669"
+      "bytes": 6033,
+      "sha256": "28f12c1f38f3cd8896d34ab83b7075692e4a26909b51c181a3599c25aaff103e"
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/text/array_text.rs",
@@ -4406,8 +4491,8 @@
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/text/text_tests.rs",
-      "bytes": 23381,
-      "sha256": "e10361c80d82eb3551b7f24a0c77be8c929d381f02b271e28ef2e76b279fd3b0"
+      "bytes": 23514,
+      "sha256": "98f8663f4b1a0f2ab7f860d9419db215b07555feb07d0f4b587dc9148cb999bb"
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/text/trim_case_concat.rs",
@@ -4421,8 +4506,8 @@
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/utils.rs",
-      "bytes": 17916,
-      "sha256": "0e5723fc76d4518e9176da31cec002d198d7d2f54a8eb9e73a464c6a48b0056f"
+      "bytes": 24197,
+      "sha256": "9e0f0ec0b8239cda0b19ccb853505da653612ca314ee91e7339aa36d08a5be3d"
     },
     {
       "path": "third_party/formualizer-eval/src/builtins/window.rs",
@@ -4526,8 +4611,8 @@
     },
     {
       "path": "third_party/formualizer-eval/src/engine/eval.rs",
-      "bytes": 1299837,
-      "sha256": "f53bc0178149ad07f3616062f8740f15ca87797b4b2660a6ceb01c7ce64ddfcb"
+      "bytes": 1302544,
+      "sha256": "46227563b54ac70f1478a20cfbd6b04194ca7a199678731b6593b50b2bfb4767"
     },
     {
       "path": "third_party/formualizer-eval/src/engine/eval_delta.rs",
@@ -4776,8 +4861,8 @@
     },
     {
       "path": "third_party/formualizer-eval/src/engine/tests/aggregate_visibility_options.rs",
-      "bytes": 6191,
-      "sha256": "5986bb4d48528ad7c585a16f2cf6d82b1f40e262bb65211579bf130037c81bb3"
+      "bytes": 6266,
+      "sha256": "8023804f327d3098edd002e12838e1ac1bada83cbdb808e27334f85e2bfe5827"
     },
     {
       "path": "third_party/formualizer-eval/src/engine/tests/approximate_lookup_ignored_entries.rs",
@@ -4966,8 +5051,8 @@
     },
     {
       "path": "third_party/formualizer-eval/src/engine/tests/criteria_wildcard_ingest.rs",
-      "bytes": 2740,
-      "sha256": "d89f7f3ac391182990e4a4fe963716cd6e5dc57a43992c7e80c16f3f518a4741"
+      "bytes": 2930,
+      "sha256": "3f5c4c7eba0f538105bc6e8f617063b62385517667ccb030b4dc6ba8c9767d34"
     },
     {
       "path": "third_party/formualizer-eval/src/engine/tests/cross_sheet_named_range_first_cell.rs",
@@ -5446,8 +5531,8 @@
     },
     {
       "path": "third_party/formualizer-eval/src/engine/tests/mod.rs",
-      "bytes": 5543,
-      "sha256": "f21d0e95fa5616a73a51a7db47bd606c8ecd8be9d969290d40fd2e8bbd6fb401"
+      "bytes": 5574,
+      "sha256": "bb78f3d6cf9c45907c32b4f2c3dfb15a156c11edba8cb1b13d7f24edf764c41e"
     },
     {
       "path": "third_party/formualizer-eval/src/engine/tests/named_ranges.rs",
@@ -6393,7 +6478,7 @@
       "ratio": 6.113374089980067
     }
   ],
-  "formula_target_count": 99,
+  "formula_target_count": 398,
   "formula_qualified_pass_count": 0,
   "unbound_product_qualification_fields": [],
   "issues": [],

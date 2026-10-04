@@ -2686,6 +2686,63 @@ pub(crate) mod visibility_mask_test_hooks {
     }
 }
 
+/// A numeric-lane comparison is null wherever the cell is not a number (blank, text, boolean,
+/// error). Excel's answer for those cells is decided by `criteria_match`, not by the numeric
+/// kernel: `<`/`>` never match them, `<>n` matches all of them, and `=n` matches text that reads
+/// as `n` (the text "3" satisfies `=3`). Resolve every null from the cell's type tag, touching the
+/// cell value itself only where the tag alone cannot decide (text under `=n`, temporal lanes).
+/// Returns `None` (caller falls back to the scalar path) if the tag lanes do not line up.
+fn resolve_numeric_mask_nulls(
+    view: &RangeView<'_>,
+    col_in_view: usize,
+    pred: &crate::args::CriteriaPredicate,
+    mask: &arrow_array::BooleanArray,
+) -> Option<arrow_array::BooleanArray> {
+    use arrow_array::{Array as _, builder::BooleanBuilder};
+    use crate::arrow_store::TypeTag;
+    use crate::builtins::criteria_match;
+    use formualizer_common::{ExcelError, LiteralValue};
+
+    let on_empty = criteria_match(pred, &LiteralValue::Empty);
+    let on_bool = criteria_match(pred, &LiteralValue::Boolean(false));
+    let on_error = criteria_match(pred, &LiteralValue::Error(ExcelError::new_value()));
+    // Text only needs its content for `=n` (numeric text matches); every other numeric
+    // predicate decides text by type alone.
+    let text_needs_cell = matches!(pred, crate::args::CriteriaPredicate::Eq(_));
+    let on_text = criteria_match(pred, &LiteralValue::Text(String::new()));
+
+    let mut out = BooleanBuilder::with_capacity(mask.len());
+    for res in view.type_tags_slices() {
+        let (row_start, row_len, cols) = res.ok()?;
+        let tags = cols.get(col_in_view)?;
+        if tags.len() != row_len || row_start + row_len > mask.len() {
+            return None;
+        }
+        for i in 0..row_len {
+            let idx = row_start + i;
+            if mask.is_valid(idx) {
+                out.append_value(mask.value(idx));
+                continue;
+            }
+            let tag = tags.value(i);
+            let m = if tag == TypeTag::Empty as u8 {
+                on_empty
+            } else if tag == TypeTag::Boolean as u8 {
+                on_bool
+            } else if tag == TypeTag::Error as u8 {
+                on_error
+            } else if tag == TypeTag::Text as u8 && !text_needs_cell {
+                on_text
+            } else {
+                criteria_match(pred, &view.get_cell(idx, col_in_view))
+            };
+            out.append_value(m);
+        }
+    }
+    let out = out.finish();
+    (out.len() == mask.len()).then_some(out)
+}
+
 fn compute_criteria_mask(
     view: &RangeView<'_>,
     col_in_view: usize,
@@ -2764,10 +2821,10 @@ fn compute_criteria_mask(
             }
         }
 
-        if bool_parts.is_empty() {
+        let mask = if bool_parts.is_empty() {
             return None;
         } else if bool_parts.len() == 1 {
-            return Some(std::sync::Arc::new(bool_parts.remove(0)));
+            bool_parts.remove(0)
         } else {
             // Concatenate boolean masks (much cheaper than concatenating Float64 arrays)
             let anys: Vec<&dyn arrow_array::Array> = bool_parts
@@ -2775,9 +2832,13 @@ fn compute_criteria_mask(
                 .map(|a| a as &dyn arrow_array::Array)
                 .collect();
             let conc: ArrayRef = concat_arrays(&anys).ok()?;
-            let ba = conc.as_any().downcast_ref::<BooleanArray>()?.clone();
-            return Some(std::sync::Arc::new(ba));
+            conc.as_any().downcast_ref::<BooleanArray>()?.clone()
+        };
+        if mask.null_count() == 0 {
+            return Some(std::sync::Arc::new(mask));
         }
+        return resolve_numeric_mask_nulls(view, col_in_view, pred, &mask)
+            .map(std::sync::Arc::new);
     }
 
     // The scalar wildcard contract includes numeric/boolean string forms and
