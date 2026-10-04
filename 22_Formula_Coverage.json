@@ -1996,6 +1996,66 @@
       "evidence_sha256": "02d076e67e5b84f213058c86d51808632c8e5a9b6c7bb3370315f87c93c188f1",
       "binding_note": "commit bound by the clean host tree that cross-built the binary (device runs carry no git).",
       "superseded": "Historical record on commit 9e32a51. The engine gained further fixes (immediate LAMBDA calls, T.INV.2T, empty-array #CALC!) and the corpus grew to 407 targets / 1261 cases afterwards (decision 0001 addendum 3), so this tier was re-run on the next commit."
+    },
+    {
+      "result_type": "platform_tier",
+      "tier_note": "macOS arm64 tier on engine 0.9.3+harbor-excel-fidelity, 407-target corpus; NOT target PASS (five-platform rule).",
+      "engine_source_revision": "crates.io/formualizer@0.9.3 + third_party/formualizer-eval (TEXT percent patch + Excel-fidelity patch set, decision 0001 addenda)",
+      "engine_sha256": "d7daffb7ed52e4ccbe663674dadc17c60c5732d5ce50b8283667dc9e02c5d333",
+      "adapter_revision": "harbor_formula/1",
+      "fixture_bundle_sha256": "31d30c111d10c1ae9717cd57dd27b567ac83f23f9957f7c0cf8bb42f4ab1aa94",
+      "platform_architecture_set": [
+        "macos/aarch64"
+      ],
+      "commit": "59a9269",
+      "cases_passed": 1261,
+      "cases_failed": 0,
+      "targets_all_pass": 407,
+      "targets_total": 407,
+      "known_deviations": [],
+      "evidence_path": "evidence/formula_evals/macos-arm64-59a9269.json",
+      "evidence_sha256": "eb6b3bd0322fdc22c08aef2a681481a7f91accad693f875cb00c7201617ad151",
+      "binding_note": "commit recorded by the run itself (clean tree)."
+    },
+    {
+      "result_type": "platform_tier",
+      "tier_note": "iOS SIMULATOR arm64 (iPhone 17, iOS 26.5), same engine and corpus; the physical iOS/iPadOS arm64 entry still requires a device (operator-bound).",
+      "engine_source_revision": "crates.io/formualizer@0.9.3 + third_party/formualizer-eval (TEXT percent patch + Excel-fidelity patch set, decision 0001 addenda)",
+      "engine_sha256": "d7daffb7ed52e4ccbe663674dadc17c60c5732d5ce50b8283667dc9e02c5d333",
+      "adapter_revision": "harbor_formula/1",
+      "fixture_bundle_sha256": "31d30c111d10c1ae9717cd57dd27b567ac83f23f9957f7c0cf8bb42f4ab1aa94",
+      "platform_architecture_set": [
+        "ios-simulator/aarch64"
+      ],
+      "commit": "59a9269",
+      "cases_passed": 1261,
+      "cases_failed": 0,
+      "targets_all_pass": 407,
+      "targets_total": 407,
+      "known_deviations": [],
+      "evidence_path": "evidence/formula_evals/ios-sim-arm64-59a9269.json",
+      "evidence_sha256": "44d5028f59c533c0e1ef8c31527a3a63fbb4a95b646f446f065cc2466c96099c",
+      "binding_note": "commit bound by the clean host tree that cross-built the binary (device runs carry no git)."
+    },
+    {
+      "result_type": "platform_tier",
+      "tier_note": "Android EMULATOR arm64-v8a (AVD cvbase_test), same engine and corpus; the physical Android arm64-v8a entry still requires a device; Windows tiers require a Windows host (operator-bound).",
+      "engine_source_revision": "crates.io/formualizer@0.9.3 + third_party/formualizer-eval (TEXT percent patch + Excel-fidelity patch set, decision 0001 addenda)",
+      "engine_sha256": "d7daffb7ed52e4ccbe663674dadc17c60c5732d5ce50b8283667dc9e02c5d333",
+      "adapter_revision": "harbor_formula/1",
+      "fixture_bundle_sha256": "31d30c111d10c1ae9717cd57dd27b567ac83f23f9957f7c0cf8bb42f4ab1aa94",
+      "platform_architecture_set": [
+        "android-emulator/aarch64"
+      ],
+      "commit": "59a9269",
+      "cases_passed": 1261,
+      "cases_failed": 0,
+      "targets_all_pass": 407,
+      "targets_total": 407,
+      "known_deviations": [],
+      "evidence_path": "evidence/formula_evals/android-emulator-arm64-59a9269.json",
+      "evidence_sha256": "e340aa12eb6c15bfb6ef87aeb738230adfcabb1ec80b0a386bc4be332173bff1",
+      "binding_note": "commit bound by the clean host tree that cross-built the binary (device runs carry no git)."
     }
   ]
 }

@@ -7,11 +7,11 @@ recorded 139/139 cases · 99/99 targets on engine `0.9.3+harbor-textfix`,
 bundle `e1fc88a3…`; those records are kept but marked superseded. On
 2026-10-04 the engine gained the Excel-fidelity patch set (decision 0001
 addendum 2, `0.9.3+harbor-excel-fidelity`) and the corpus grew to 398 targets,
-so the three tiers were re-run on commit `9e32a51` (bundle `1c5a832e…`):
-macOS 1220/1220 · 398/398, iOS Simulator 1220/1220 · 398/398, Android emulator
-1218/1220 · 396/398 (IMCOSH and IMSECH differ in the last digit of their text
-result because the platform libm rounds that transcendental differently; listed
-under `known_deviations`). The remaining tiers need hardware this repository's
+so the three tiers were re-run on commit `59a9269` (bundle `31d30c11…`, 407
+targets, no deviations): macOS 1261/1261, iOS Simulator 1261/1261, Android emulator
+1261/1261. (An intermediate run on `9e32a51` failed two Android cases, IMCOSH and
+IMSECH, on the last printed digit of a complex-number text result; those cases now
+compare the real and imaginary parts numerically.) The remaining tiers need hardware this repository's
 machines do not have. Exact commands, verified on this host:
 
 ## Physical iOS/iPadOS arm64 device
