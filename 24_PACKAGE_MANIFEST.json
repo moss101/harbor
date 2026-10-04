@@ -4,8 +4,8 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "7ec30ef9f18dbd13233d2f1e8551aa2c9b008b9cd3c142056287935ce1a4f042",
-  "file_count_excluding_manifest": 1290,
+  "input_manifest_sha256": "808eeec517d39fb8845c7654041323f82733d673629c96e5eadaeba9eefd15f6",
+  "file_count_excluding_manifest": 1297,
   "files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -124,13 +124,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 243546,
-      "sha256": "af0c732d3ac345a6607d4372ed67ffc2f617cca817baf4c5bf4c34a2bef45b5d"
+      "bytes": 244720,
+      "sha256": "aec23a5b4d3ed661e910defc5002b0262bb5793c400ef4fc6d9f355bd456456d"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1375,
-      "sha256": "dabdf8b4769b9f29912ff17ca45fcf85e13290bafbe12f9e28bbf4649875656b"
+      "sha256": "3afa9430525cf9c85bdfe27fd813dc67373ceb0749516f52acafbde442624b3d"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -6441,6 +6441,41 @@
       "path": "tools/pin_engine.py",
       "bytes": 3498,
       "sha256": "bc587b5fff70b60dca0867e23ecb9d3f33aa7367b1098e290295161741ffb09c"
+    },
+    {
+      "path": "tools/qualify_ios/App/Info.plist",
+      "bytes": 645,
+      "sha256": "8fe05f4e9d3d3794cc5a54c6735ffea235881615cc966a95fe77be135aeadf06"
+    },
+    {
+      "path": "tools/qualify_ios/App/bridge.h",
+      "bytes": 67,
+      "sha256": "fa4c5aaa3cbb91e8f65517f0ba80b0384e83acff8d3bf6f061e516dafae0cd5c"
+    },
+    {
+      "path": "tools/qualify_ios/App/main.swift",
+      "bytes": 1202,
+      "sha256": "3072beb92d31b4ed271c1aeca43138225b704fde938b33f9951c9e7591e33add"
+    },
+    {
+      "path": "tools/qualify_ios/App.xcodeproj/project.pbxproj",
+      "bytes": 2201,
+      "sha256": "cbbdb936e9e84e0d47782904c31fe2d83b98f81e7eda1e42229493ccc6432073"
+    },
+    {
+      "path": "tools/qualify_ios/README.md",
+      "bytes": 1479,
+      "sha256": "91337492c8f81c9f189d6033f134b6c8b22113b5a316899875afa35f3b937fbb"
+    },
+    {
+      "path": "tools/qualify_ios/rust/Cargo.toml",
+      "bytes": 379,
+      "sha256": "f6557471b5ae9a86d22c3d52018ec47f13173a1bf57b293068ed8b166ed2137c"
+    },
+    {
+      "path": "tools/qualify_ios/rust/src/lib.rs",
+      "bytes": 820,
+      "sha256": "61a1e1bb7c228a70d0aa3fb1c0cb219c77367765f234463cd58cfc9db4de9e16"
     },
     {
       "path": "tools/run_performance_qualification.py",
