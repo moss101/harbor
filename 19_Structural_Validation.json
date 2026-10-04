@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "808eeec517d39fb8845c7654041323f82733d673629c96e5eadaeba9eefd15f6",
+  "input_manifest_sha256": "c9f114b2ff0c3bf96b2b581f166ef449dc7efa5f0a5f3469deded848ae2e12c3",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -121,8 +121,8 @@
     },
     {
       "path": "22_Formula_Coverage.json",
-      "bytes": 62474,
-      "sha256": "f6b36145e5bbb494ac8beefc4e18f107f5beb25ad9323672991bac25e2743fcf"
+      "bytes": 63803,
+      "sha256": "7d251e196c3d8858ebcdf0562d30b82b588b782e7e0b4729cba4233f53083dc4"
     },
     {
       "path": "23_Review_Reconciliation_Matrix.md",
@@ -3076,8 +3076,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 146785,
-      "sha256": "1c3ea6455c3e87b7e00ef20fb738aa98ec9178cee50ba71a90736295f85e370f"
+      "bytes": 146864,
+      "sha256": "276d46ae225fa5d1154b30e7ac4e9af8f400febf418681b8e3eff0729c787f24"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -3146,8 +3146,8 @@
     },
     {
       "path": "docs/operations/formula-tier-runbook.md",
-      "bytes": 3012,
-      "sha256": "f1ce01039f21bdf0853c0b5d555a5a86254f57af352fffcabad04ea3fdf5f827"
+      "bytes": 3623,
+      "sha256": "419a4ef72da15ea24696873bec0b3605553a2e5650d18a9d3d891661113ae978"
     },
     {
       "path": "docs/operations/slide-scene-contract.md",
