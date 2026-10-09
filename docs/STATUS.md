@@ -7,6 +7,64 @@ ran at.
 
 ---
 
+## Session 58 (2026-10-09): EmbeddingGemma 2 feasibility + instruction policies + skill routing + scheduled goals
+
+The nanoMuse/EmbeddingGemma 2 integration task (decision 0011, audit in
+`docs/nanomuse_embeddinggemma_audit.md`). Research findings first, because
+two of them redirected the work:
+
+- **EmbeddingGemma 2 is real** (740M multimodal, Apache-2.0, 768-dim,
+  Matryoshka truncation, task prefixes; card rev `914f7f89`) — and **blocked
+  on the runtime**: the official GGUF declares `general.architecture =
+  gemma-embedding2` (verified by range-request header parse), while the
+  pinned `llama-cpp-sys-2 0.1.156` AND the newest released `0.1.159`
+  (2026-10-07) know only v1's `gemma-embedding`. Not hacked in; the prefix
+  contract it needs ships instead, so a future pin is a catalog epoch + live
+  tier, no knowledge-layer changes. MediaPipe Decision Maker has no Rust
+  runtime; nanoMuse is GPL-3.0-or-later (16-day-old single-author project) —
+  ideas adopted clean-room only, zero code.
+- **A real production gap found by the audit**: the e5 `query:`/`passage:`
+  anchors existed ONLY in the live harness, whose comment claimed production
+  parity that did not exist — the FFI service embedded raw text.
+
+Shipped:
+
+- **Instruction policies** (`harbor_knowledge::instructions`): None/E5/
+  GemmaEmbedding, resolved by package id, applied at every production embed
+  site (ingest, identity rebuild, search) AND the live harness — one source
+  of truth. Policy is hashed into `IndexIdentity` (mismatch ⇒ the tested
+  rebuild path re-embeds; e5 indexes become prefix-correct on first open).
+- **Live tier found a second real bug**: the GGUF provider's `embed` was
+  inherent-only — the `ModelProvider` TRAIT default served
+  `UnsupportedCapability` to every `&dyn` consumer. Trait override added.
+- **Skill routing** (`harbor_core::router` + FFI `skills.suggest`):
+  Decision-Maker-shaped prewarm/evaluate with typed abstention, recommend-
+  only by construction. Measured live on bge-m3 over the 35 built-ins' own
+  labeled eval inputs (70 cases): top scores 0.70–0.90; shipped bars 0.75/
+  0.02 = 39% coverage at 70% precision-when-confident; full per-case data +
+  threshold sweep bound in `evidence/skill_routing/live-950f4a8e5e19.json`.
+- **Scheduled goals** (`harbor_agent::goals` + 8 `goals.*` FFI ops + the
+  Agents surface): durable, AEAD-sealed at rest (policy 13 — tested: no
+  plaintext on disk, plaintext-with-key refused), write-ahead slot claims
+  (at-most-once across restarts), max-runs auto-Done, and the claim's run id
+  is the run `op.start_skill_run` executes under (receipt and run trail are
+  one identity; proven with a real model-free skill run through the FFI).
+  Core hosts no timers — the app drives due goals with an explicit tap,
+  which is the only scheduling iOS keeps. UI copy and the ADR say so.
+- Clippy gate re-greened under the current toolchain: 3 pre-existing lint
+  clusters (docx parens, doc-list indent + items-after-test-module in
+  artifacts, pdf_out write!/format!) fixed; byte-identical pdf_out output.
+
+Gates: workspace 65 suites 0 failed, BOTH harbor_ffi feature configs build,
+fmt/clippy `-D warnings` clean, contracts 124/0, optional-disabled
+N/A_DISABLED 0 violations, supply chain PASS (674 components), dossier PASS,
+harbor_app 58/58 (new goals service test), office suite green, analyze
+clean. Honest limits: EmbeddingGemma 2 unrunnable until a binding ships the
+v2 arch; router UI exposure beyond `skills.suggest` is next; memory layer
+not started; goal creation dialog exposes prompt goals only.
+
+---
+
 ## Session 57 (2026-10-02): release-path hardening — the builds that ship
 
 The debug-only habit had hidden two real facts; both now fixed/proven:

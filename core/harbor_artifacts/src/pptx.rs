@@ -147,6 +147,7 @@ fn ordered_slide_parts<R: Read + std::io::Seek>(archive: &mut zip::ZipArchive<R>
 /// - Body: bullet lines replace the body placeholder's existing
 ///   paragraphs 1:1 (more lines than paragraphs is a typed refusal —
 ///   no silent truncation, no invented paragraphs).
+///
 /// Text that cannot be placed is a typed refusal too; an edit never
 /// reports success while dropping the new text.
 pub fn apply_slide_text_edit(

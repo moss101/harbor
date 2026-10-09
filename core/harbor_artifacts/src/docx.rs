@@ -147,7 +147,7 @@ impl DocxDocument {
             if let DocxOp::StyleSet { index, style } = op {
                 // Same precondition as text ops: the paragraph's current
                 // text must hash to the loaded state.
-                let Some(node) = para_nodes.get(((*index as usize).saturating_sub(1))) else {
+                let Some(node) = para_nodes.get((*index as usize).saturating_sub(1)) else {
                     return Err(DocxError::ParagraphChanged(*index));
                 };
                 let mut text = String::new();
@@ -166,7 +166,7 @@ impl DocxDocument {
                 if BlockStyle::parse(style).is_none() {
                     return Err(DocxError::Malformed(format!("unknown style {style}")));
                 }
-                style_set.insert(((*index as usize) - 1), style.clone());
+                style_set.insert((*index as usize) - 1, style.clone());
                 continue;
             }
             let (index, new_text): (u32, String) = match op {
@@ -678,6 +678,119 @@ pub fn create_docx(title: &str, blocks: &[DocxBlock]) -> Result<Vec<u8>, DocxErr
     Ok(zip.finish()?.into_inner())
 }
 
+/// Set the pStyle of the n-th (0-based) w:p. Replaces an existing
+/// w:pStyle val inside w:pPr; inserts a pPr/pStyle right after the w:p
+/// open tag when absent. Styles are validated against BlockStyle first.
+fn rewrite_paragraph_styles(
+    xml: &str,
+    styles: &BTreeMap<usize, String>,
+) -> Result<String, DocxError> {
+    let style_id = |name: &str| {
+        BlockStyle::parse(name)
+            .and_then(|s| s.style_id())
+            .unwrap_or("Normal")
+            .to_string()
+    };
+    let mut out = String::with_capacity(xml.len() + 64 * styles.len());
+    let mut paragraph_no = 0usize;
+    let mut i = 0usize;
+    let bytes = xml.as_bytes();
+    while i < bytes.len() {
+        // Detect a w:p start (attribute or bare) at this position.
+        let is_p = bytes[i..].starts_with(b"<w:p ")
+            || bytes[i..].starts_with(b"<w:p>")
+            || bytes[i..].starts_with(b"<w:p/>");
+        if !is_p {
+            // Copy through, fast-forwarding to the next '<'.
+            // Search from i+1: a '<' AT i that is not a w:p must be
+            // consumed, or the loop never advances (found live: the
+            // first test hung forever).
+            let next = bytes[i + 1..]
+                .iter()
+                .position(|b| *b == b'<')
+                .map(|p| i + 1 + p);
+            match next {
+                Some(n) => {
+                    out.push_str(&xml[i..n]);
+                    i = n;
+                }
+                None => {
+                    out.push_str(&xml[i..]);
+                    break;
+                }
+            }
+            continue;
+        }
+        let start = i;
+        let close = xml[i..].find('>').map(|p| i + p + 1).unwrap_or(bytes.len());
+        let self_closing = xml[..close].trim_end().ends_with("/>");
+        let target = styles.get(&paragraph_no);
+        paragraph_no += 1;
+        if let Some(style_name) = target {
+            let sid = style_id(style_name);
+            let open_tag = &xml[start..close];
+            if self_closing {
+                // <w:p/> → expand with a pPr.
+                out.push_str(&format!(
+                    "<w:p><w:pPr><w:pStyle w:val=\"{sid}\"/></w:pPr></w:p>"
+                ));
+                i = close;
+                continue;
+            }
+            let rest_start = close;
+            // Find this paragraph's end.
+            let end = find_paragraph_end(xml, rest_start)?;
+            let body = &xml[rest_start..end];
+            let new_body = if let Some(ppr_at) = body.find("<w:pPr>") {
+                // Replace existing pStyle val or insert one at pPr start.
+                let inner = &body[ppr_at..];
+                if let Some(val_at) = inner.find("<w:pStyle ") {
+                    let seg = &inner[val_at..];
+                    let tag_end = seg.find('/').map(|p| val_at + p + 1).unwrap_or(0);
+                    let replaced = format!("<w:pStyle w:val=\"{sid}\"/");
+                    format!(
+                        "{}{}{}",
+                        &body[..ppr_at + val_at],
+                        replaced,
+                        &body[ppr_at + tag_end..]
+                    )
+                } else {
+                    format!(
+                        "{}<w:pPr><w:pStyle w:val=\"{sid}\"/>{}",
+                        &body[..ppr_at],
+                        &body[ppr_at + "<w:pPr>".len()..]
+                    )
+                }
+            } else {
+                format!("<w:pPr><w:pStyle w:val=\"{sid}\"/></w:pPr>{body}")
+            };
+            out.push_str(open_tag);
+            out.push_str(&new_body);
+            i = end;
+            continue;
+        }
+        // Not a target: copy the whole element.
+        if self_closing {
+            out.push_str(&xml[start..close]);
+            i = close;
+        } else {
+            let end = find_paragraph_end(xml, close)?;
+            out.push_str(&xml[start..end]);
+            i = end;
+        }
+    }
+    Ok(out)
+}
+
+/// End index (exclusive) of the w:p whose content starts at `from`:
+/// the first </w:p> or a self-closing boundary.
+fn find_paragraph_end(xml: &str, from: usize) -> Result<usize, DocxError> {
+    xml[from..]
+        .find("</w:p>")
+        .map(|p| from + p + "</w:p>".len())
+        .ok_or_else(|| DocxError::Malformed("unbalanced w:p".into()))
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -865,117 +978,4 @@ mod tests {
         );
         assert!(matches!(err, Err(DocxError::ParagraphChanged(1))));
     }
-}
-
-/// Set the pStyle of the n-th (0-based) w:p. Replaces an existing
-/// w:pStyle val inside w:pPr; inserts a pPr/pStyle right after the w:p
-/// open tag when absent. Styles are validated against BlockStyle first.
-fn rewrite_paragraph_styles(
-    xml: &str,
-    styles: &BTreeMap<usize, String>,
-) -> Result<String, DocxError> {
-    let style_id = |name: &str| {
-        BlockStyle::parse(name)
-            .and_then(|s| s.style_id())
-            .unwrap_or("Normal")
-            .to_string()
-    };
-    let mut out = String::with_capacity(xml.len() + 64 * styles.len());
-    let mut paragraph_no = 0usize;
-    let mut i = 0usize;
-    let bytes = xml.as_bytes();
-    while i < bytes.len() {
-        // Detect a w:p start (attribute or bare) at this position.
-        let is_p = bytes[i..].starts_with(b"<w:p ")
-            || bytes[i..].starts_with(b"<w:p>")
-            || bytes[i..].starts_with(b"<w:p/>");
-        if !is_p {
-            // Copy through, fast-forwarding to the next '<'.
-            // Search from i+1: a '<' AT i that is not a w:p must be
-            // consumed, or the loop never advances (found live: the
-            // first test hung forever).
-            let next = bytes[i + 1..]
-                .iter()
-                .position(|b| *b == b'<')
-                .map(|p| i + 1 + p);
-            match next {
-                Some(n) => {
-                    out.push_str(&xml[i..n]);
-                    i = n;
-                }
-                None => {
-                    out.push_str(&xml[i..]);
-                    break;
-                }
-            }
-            continue;
-        }
-        let start = i;
-        let close = xml[i..].find('>').map(|p| i + p + 1).unwrap_or(bytes.len());
-        let self_closing = xml[..close].trim_end().ends_with("/>");
-        let target = styles.get(&paragraph_no);
-        paragraph_no += 1;
-        if let Some(style_name) = target {
-            let sid = style_id(style_name);
-            let open_tag = &xml[start..close];
-            if self_closing {
-                // <w:p/> → expand with a pPr.
-                out.push_str(&format!(
-                    "<w:p><w:pPr><w:pStyle w:val=\"{sid}\"/></w:pPr></w:p>"
-                ));
-                i = close;
-                continue;
-            }
-            let rest_start = close;
-            // Find this paragraph's end.
-            let end = find_paragraph_end(xml, rest_start)?;
-            let body = &xml[rest_start..end];
-            let new_body = if let Some(ppr_at) = body.find("<w:pPr>") {
-                // Replace existing pStyle val or insert one at pPr start.
-                let inner = &body[ppr_at..];
-                if let Some(val_at) = inner.find("<w:pStyle ") {
-                    let seg = &inner[val_at..];
-                    let tag_end = seg.find('/').map(|p| val_at + p + 1).unwrap_or(0);
-                    let replaced = format!("<w:pStyle w:val=\"{sid}\"/");
-                    format!(
-                        "{}{}{}",
-                        &body[..ppr_at + val_at],
-                        replaced,
-                        &body[ppr_at + tag_end..]
-                    )
-                } else {
-                    format!(
-                        "{}<w:pPr><w:pStyle w:val=\"{sid}\"/>{}",
-                        &body[..ppr_at],
-                        &body[ppr_at + "<w:pPr>".len()..]
-                    )
-                }
-            } else {
-                format!("<w:pPr><w:pStyle w:val=\"{sid}\"/></w:pPr>{body}")
-            };
-            out.push_str(open_tag);
-            out.push_str(&new_body);
-            i = end;
-            continue;
-        }
-        // Not a target: copy the whole element.
-        if self_closing {
-            out.push_str(&xml[start..close]);
-            i = close;
-        } else {
-            let end = find_paragraph_end(xml, close)?;
-            out.push_str(&xml[start..end]);
-            i = end;
-        }
-    }
-    Ok(out)
-}
-
-/// End index (exclusive) of the w:p whose content starts at `from`:
-/// the first </w:p> or a self-closing boundary.
-fn find_paragraph_end(xml: &str, from: usize) -> Result<usize, DocxError> {
-    xml[from..]
-        .find("</w:p>")
-        .map(|p| from + p + "</w:p>".len())
-        .ok_or_else(|| DocxError::Malformed("unbalanced w:p".into()))
 }

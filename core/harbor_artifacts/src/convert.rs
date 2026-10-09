@@ -111,83 +111,6 @@ pub fn markdown_to_docx(markdown: &str, title: &str) -> Result<Vec<u8>, crate::d
     crate::docx::create_docx(title, &blocks)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn headings_lists_paragraphs() {
-        let md = "# Quarterly Report\n\nIntro paragraph one.\n\n## Details\n\n- first\n- second\n\n1. step one\n2. step two\n\n### Notes\n\nclosing text\n";
-        let blocks = markdown_to_blocks(md);
-        let styles: Vec<&str> = blocks.iter().map(|b| b.style.as_str()).collect();
-        assert_eq!(
-            styles,
-            vec![
-                "title",
-                "paragraph",
-                "heading2",
-                "bullet",
-                "bullet",
-                "numbered",
-                "numbered",
-                "heading3",
-                "paragraph",
-            ]
-        );
-        assert_eq!(blocks[0].text, "Quarterly Report");
-        assert_eq!(blocks[3].text, "first");
-        assert_eq!(blocks[5].text, "step one");
-    }
-
-    #[test]
-    fn only_one_title_deep_levels_degrade_not_drop() {
-        let md = "# A\n# B\n#### deep\n";
-        let blocks = markdown_to_blocks(md);
-        let styles: Vec<&str> = blocks.iter().map(|b| b.style.as_str()).collect();
-        assert_eq!(styles, vec!["title", "heading1", "heading3"]);
-    }
-
-    #[test]
-    fn lone_hash_and_plain_lines_stay_paragraphs() {
-        // A lone "#" is not a heading; as a soft-wrapped line it joins the
-        // next line into one paragraph (documented behavior).
-        let md = "#\nplain line\n+ plus bullet\n7) paren ordered\n";
-        let blocks = markdown_to_blocks(md);
-        let styles: Vec<&str> = blocks.iter().map(|b| b.style.as_str()).collect();
-        assert_eq!(styles, vec!["paragraph", "bullet", "numbered"]);
-        assert!(blocks[0].text.contains("plain line"));
-    }
-
-    #[test]
-    fn markdown_to_deck_slides_and_pptx_round_trip() {
-        let md = "# Q3 Review\n\nintro line before any slide\n\n## Results\n\n- revenue up\n- churn down\n\n### Details\n\n1. first\n\n2. second\n";
-        let deck = markdown_to_deck(md);
-        assert_eq!(deck.title, "Q3 Review");
-        assert_eq!(deck.slides.len(), 3, "opening + Results + Details");
-        assert_eq!(deck.slides[0].title, "Q3 Review");
-        assert!(deck.slides[0]
-            .bullets
-            .contains(&"intro line before any slide".to_string()));
-        assert_eq!(deck.slides[1].title, "Results");
-        assert!(deck.slides[1].bullets.contains(&"revenue up".to_string()));
-        assert_eq!(deck.slides[2].title, "Details");
-
-        let bytes = markdown_to_pptx(md, None).unwrap();
-        let re = crate::pptx::PptxDeck::from_pptx_bytes(&bytes).unwrap();
-        assert_eq!(re.slides.len(), deck.slides.len());
-        assert!(re.slides.iter().any(|s| s.title.contains("Results")));
-    }
-
-    #[test]
-    fn produces_a_loadable_docx() {
-        let md = "# T\n\nbody\n\n- x\n";
-        let bytes = markdown_to_docx(md, "T").unwrap();
-        let doc = crate::docx::DocxDocument::load(&bytes).unwrap();
-        assert!(!doc.paragraphs.is_empty());
-        assert!(doc.preserved_parts.is_empty());
-    }
-}
-
 /// Convert Markdown to a PPTX deck: the first `# ` heading is the deck
 /// title; every following `## `/`# ` heading starts a slide; bullets and
 /// paragraphs under a heading become that slide's bullets. Content
@@ -268,5 +191,82 @@ pub fn markdown_to_pptx(
     match style {
         Some(s) => deck.to_pptx_bytes_with(s),
         None => deck.to_pptx_bytes(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn headings_lists_paragraphs() {
+        let md = "# Quarterly Report\n\nIntro paragraph one.\n\n## Details\n\n- first\n- second\n\n1. step one\n2. step two\n\n### Notes\n\nclosing text\n";
+        let blocks = markdown_to_blocks(md);
+        let styles: Vec<&str> = blocks.iter().map(|b| b.style.as_str()).collect();
+        assert_eq!(
+            styles,
+            vec![
+                "title",
+                "paragraph",
+                "heading2",
+                "bullet",
+                "bullet",
+                "numbered",
+                "numbered",
+                "heading3",
+                "paragraph",
+            ]
+        );
+        assert_eq!(blocks[0].text, "Quarterly Report");
+        assert_eq!(blocks[3].text, "first");
+        assert_eq!(blocks[5].text, "step one");
+    }
+
+    #[test]
+    fn only_one_title_deep_levels_degrade_not_drop() {
+        let md = "# A\n# B\n#### deep\n";
+        let blocks = markdown_to_blocks(md);
+        let styles: Vec<&str> = blocks.iter().map(|b| b.style.as_str()).collect();
+        assert_eq!(styles, vec!["title", "heading1", "heading3"]);
+    }
+
+    #[test]
+    fn lone_hash_and_plain_lines_stay_paragraphs() {
+        // A lone "#" is not a heading; as a soft-wrapped line it joins the
+        // next line into one paragraph (documented behavior).
+        let md = "#\nplain line\n+ plus bullet\n7) paren ordered\n";
+        let blocks = markdown_to_blocks(md);
+        let styles: Vec<&str> = blocks.iter().map(|b| b.style.as_str()).collect();
+        assert_eq!(styles, vec!["paragraph", "bullet", "numbered"]);
+        assert!(blocks[0].text.contains("plain line"));
+    }
+
+    #[test]
+    fn markdown_to_deck_slides_and_pptx_round_trip() {
+        let md = "# Q3 Review\n\nintro line before any slide\n\n## Results\n\n- revenue up\n- churn down\n\n### Details\n\n1. first\n\n2. second\n";
+        let deck = markdown_to_deck(md);
+        assert_eq!(deck.title, "Q3 Review");
+        assert_eq!(deck.slides.len(), 3, "opening + Results + Details");
+        assert_eq!(deck.slides[0].title, "Q3 Review");
+        assert!(deck.slides[0]
+            .bullets
+            .contains(&"intro line before any slide".to_string()));
+        assert_eq!(deck.slides[1].title, "Results");
+        assert!(deck.slides[1].bullets.contains(&"revenue up".to_string()));
+        assert_eq!(deck.slides[2].title, "Details");
+
+        let bytes = markdown_to_pptx(md, None).unwrap();
+        let re = crate::pptx::PptxDeck::from_pptx_bytes(&bytes).unwrap();
+        assert_eq!(re.slides.len(), deck.slides.len());
+        assert!(re.slides.iter().any(|s| s.title.contains("Results")));
+    }
+
+    #[test]
+    fn produces_a_loadable_docx() {
+        let md = "# T\n\nbody\n\n- x\n";
+        let bytes = markdown_to_docx(md, "T").unwrap();
+        let doc = crate::docx::DocxDocument::load(&bytes).unwrap();
+        assert!(!doc.paragraphs.is_empty());
+        assert!(doc.preserved_parts.is_empty());
     }
 }

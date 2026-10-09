@@ -146,7 +146,7 @@ pub fn write_text_pdf(title: &str, blocks: &[TextBlock]) -> Vec<u8> {
     for p in 0..page_count {
         kids.push_str(&format!("{} 0 R ", 4 + 2 * p));
     }
-    objects.push(format!("<< /Type /Catalog /Pages 2 0 R >>").into_bytes()); // 1
+    objects.push(b"<< /Type /Catalog /Pages 2 0 R >>".to_vec()); // 1
     objects.push(format!("<< /Type /Pages /Kids [{}] /Count {} >>", kids, page_count).into_bytes()); // 2
     objects.push(
         "<< /Title (escaped-later) >>"
@@ -206,7 +206,8 @@ pub fn write_text_pdf(title: &str, blocks: &[TextBlock]) -> Vec<u8> {
     let xref_at = out.len();
     let _ = write!(out, "xref\n0 {}\n0000000000 65535 f \n", objects.len() + 1);
     for off in &offsets {
-        let _ = write!(out, "{:010} 00000 n \n", off);
+        let _ = write!(out, "{:010} 00000 n ", off);
+        let _ = out.write_all(b"\n");
     }
     let _ = write!(
         out,
