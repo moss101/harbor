@@ -41,6 +41,10 @@ pub struct WorkspaceHandle {
     /// Chat provider over installed GGUF models (created on demand).
     #[cfg(feature = "gguf")]
     chat: Option<Arc<crate::knowledge::ChatHandle>>,
+    /// Prewarmed skill router, cached per embedding package (created on
+    /// demand; decision 0011). Recommend-only: it never dispatches.
+    #[cfg(feature = "gguf")]
+    router: Mutex<Option<Arc<(String, harbor_core::router::SkillRouter)>>>,
     /// Shared HTTPS transport for brokered acquisition.
     transport: Arc<harbor_net::transport::UreqTransport>,
     /// The device root key source this workspace was opened with (also
@@ -606,6 +610,8 @@ pub extern "C" fn harbor_core_open_ex(
             knowledge: None,
             #[cfg(feature = "gguf")]
             chat: None,
+            #[cfg(feature = "gguf")]
+            router: Mutex::new(None),
             transport: Arc::new(harbor_net::transport::UreqTransport::new()),
             keystore,
             catalog: load_catalog_state(&opts.data_root),
@@ -985,6 +991,84 @@ fn running_acquire_subjects() -> Vec<String> {
         .collect()
 }
 
+/// Parse a goal request from FFI args (decision 0011): a free prompt or
+/// a skill reference. The request is fixed at creation — a goal never
+/// widens its own authority.
+fn parse_goal_request(v: &serde_json::Value) -> Result<harbor_agent::GoalRequest, HarborError> {
+    let kind = v.get("kind").and_then(|k| k.as_str()).unwrap_or("");
+    match kind {
+        "prompt" => {
+            let text = v
+                .get("text")
+                .and_then(|t| t.as_str())
+                .unwrap_or("")
+                .to_string();
+            Ok(harbor_agent::GoalRequest::Prompt { text })
+        }
+        "skill" => {
+            let skill_id = v
+                .get("skill_id")
+                .and_then(|t| t.as_str())
+                .unwrap_or("")
+                .to_string();
+            let input = v
+                .get("input")
+                .and_then(|t| t.as_str())
+                .unwrap_or("")
+                .to_string();
+            Ok(harbor_agent::GoalRequest::Skill { skill_id, input })
+        }
+        other => Err(HarborError::Other(format!(
+            "goal request kind must be prompt|skill, got {other:?}"
+        ))),
+    }
+}
+
+/// Parse a goal schedule: `{"kind":"once","at":"<RFC3339>"}` or
+/// `{"kind":"every_minutes","minutes":N}`.
+fn parse_goal_schedule(v: &serde_json::Value) -> Result<harbor_agent::GoalSchedule, HarborError> {
+    let kind = v.get("kind").and_then(|k| k.as_str()).unwrap_or("");
+    match kind {
+        "once" => {
+            let at = v
+                .get("at")
+                .and_then(|t| t.as_str())
+                .ok_or_else(|| HarborError::Other("goal schedule once needs at".into()))?;
+            let at = chrono::DateTime::parse_from_rfc3339(at)
+                .map_err(|e| HarborError::Other(format!("bad at time: {e}")))?
+                .with_timezone(&chrono::Utc);
+            Ok(harbor_agent::GoalSchedule::Once { at })
+        }
+        "every_minutes" => {
+            let minutes = v.get("minutes").and_then(|m| m.as_u64()).ok_or_else(|| {
+                HarborError::Other("goal schedule every_minutes needs minutes".into())
+            })? as u32;
+            Ok(harbor_agent::GoalSchedule::EveryMinutes { minutes })
+        }
+        other => Err(HarborError::Other(format!(
+            "goal schedule kind must be once|every_minutes, got {other:?}"
+        ))),
+    }
+}
+
+fn goal_set_state(
+    ws: &mut WorkspaceHandle,
+    args: &serde_json::Value,
+    state: harbor_agent::GoalState,
+) -> Result<serde_json::Value, HarborError> {
+    let id = args
+        .get("goal_id")
+        .or_else(|| args.get("id"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let goal = ws
+        .inner
+        .goals
+        .set_state(id, state)
+        .map_err(|e| HarborError::Other(e.to_string()))?;
+    Ok(serde_json::to_value(&goal).unwrap_or(serde_json::json!({})))
+}
+
 fn dispatch(
     ws: &mut WorkspaceHandle,
     method: &str,
@@ -1076,6 +1160,117 @@ fn dispatch(
             };
             ws.inner.agent_log.append(event, lease.generation, None)?;
             Ok(serde_json::json!({ "state": "PAUSED", "reason": reason.as_str() }))
+        }
+        // --- scheduled goals (decision 0011) --------------------------------
+        // The core hosts no timers: the app polls goals.due and drives
+        // due goals in the foreground. claims are write-ahead, so a
+        // restart or a second driver can never double-run a slot.
+        "goals.create" => {
+            let title = args
+                .get("title")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let request =
+                parse_goal_request(args.get("request").unwrap_or(&serde_json::Value::Null))?;
+            let schedule =
+                parse_goal_schedule(args.get("schedule").unwrap_or(&serde_json::Value::Null))?;
+            let max_runs = args
+                .get("max_runs")
+                .and_then(|v| v.as_u64())
+                .map(|v| v as u32);
+            let id = match args.get("id").and_then(|v| v.as_str()) {
+                Some(r) if !r.is_empty() => r.to_string(),
+                _ => harbor_security::HarborId::generate("goal").to_string(),
+            };
+            let spec = harbor_agent::GoalSpec {
+                id,
+                title,
+                request,
+                schedule,
+                state: harbor_agent::GoalState::Active,
+                created_at: harbor_core::Workspace::now(),
+                max_runs,
+                run_count: 0,
+                executions: vec![],
+            };
+            let created = ws
+                .inner
+                .goals
+                .create(spec, harbor_core::Workspace::now())
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            Ok(serde_json::to_value(&created).unwrap_or(serde_json::json!({})))
+        }
+        "goals.list" => {
+            let goals = ws
+                .inner
+                .goals
+                .list()
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            Ok(serde_json::json!({ "goals": goals }))
+        }
+        "goals.get" => {
+            let id = args.get("id").and_then(|v| v.as_str()).unwrap_or("");
+            let goal = ws
+                .inner
+                .goals
+                .get(id)
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            Ok(serde_json::json!({ "goal": goal }))
+        }
+        "goals.pause" => goal_set_state(ws, args, harbor_agent::GoalState::Paused),
+        "goals.resume" => goal_set_state(ws, args, harbor_agent::GoalState::Active),
+        "goals.cancel" => goal_set_state(ws, args, harbor_agent::GoalState::Cancelled),
+        "goals.due" => {
+            let due = ws
+                .inner
+                .goals
+                .due(harbor_core::Workspace::now())
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let out: Vec<serde_json::Value> = due
+                .into_iter()
+                .map(|(goal, slot)| serde_json::json!({ "goal": goal, "slot": slot }))
+                .collect();
+            Ok(serde_json::json!({ "due": out }))
+        }
+        "goals.claim" => {
+            let id = args
+                .get("goal_id")
+                .or_else(|| args.get("id"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+            let slot = args.get("slot").and_then(|v| v.as_str()).unwrap_or("");
+            // The claim RESERVES the slot and mints the run id the
+            // driver must execute under (at-most-once; the durable run
+            // appears when the driver actually starts the work — pass
+            // `run_id` to `op.start_skill_run` / `op.start_generate`).
+            // A refused duplicate claim (restart, second driver) mints
+            // nothing.
+            let run_id = harbor_security::HarborId::generate("run").to_string();
+            let goal = ws
+                .inner
+                .goals
+                .claim(id, slot, &run_id, harbor_core::Workspace::now())
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            Ok(serde_json::json!({ "run_id": run_id, "goal": goal }))
+        }
+        "goals.record_outcome" => {
+            let id = args
+                .get("goal_id")
+                .or_else(|| args.get("id"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+            let run_id = args.get("run_id").and_then(|v| v.as_str()).unwrap_or("");
+            let outcome = args
+                .get("outcome")
+                .and_then(|v| v.as_str())
+                .unwrap_or("completed");
+            let goal = ws
+                .inner
+                .goals
+                .record_outcome(id, run_id, outcome, harbor_core::Workspace::now())
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            Ok(serde_json::json!({ "goal": goal }))
         }
         // --- blobs ------------------------------------------------------
         "blob.put" => {
@@ -2110,6 +2305,94 @@ fn dispatch(
             }
             Ok(serde_json::json!({ "skills": out }))
         }
+        // --- skill routing (decision 0011): recommend-only --------------
+        "skills.suggest" => {
+            // Lean builds (no gguf runtime): this arm needs the
+            // embedding model and refuses with a typed error.
+            #[cfg(not(feature = "gguf"))]
+            {
+                let _ = args;
+                return Err(HarborError::Other(
+                    "model features are not included in this build".into(),
+                ));
+            }
+            #[cfg(feature = "gguf")]
+            {
+                let text = args
+                    .get("text")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .trim()
+                    .to_string();
+                if text.is_empty() {
+                    return Err(HarborError::Other("text is required".into()));
+                }
+                let ks = ws
+                    .knowledge
+                    .as_ref()
+                    .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
+                let package = ks.embedding_package().to_string();
+                let model = harbor_inference::provider::ModelRef::InstalledPackage {
+                    package_id: package.clone(),
+                };
+                // Prewarm once per embedding package; the built-in skill
+                // set is static for the lifetime of a workspace.
+                let cached = {
+                    let cache = ws.router.lock().unwrap();
+                    match cache.as_ref() {
+                        Some(entry) if entry.0 == package => Some(Arc::clone(entry)),
+                        _ => None,
+                    }
+                };
+                let router = match cached {
+                    Some(r) => r,
+                    None => {
+                        let skills = harbor_core::skills::builtin_skills()
+                            .map_err(|e| HarborError::Other(e.to_string()))?;
+                        let r = std::sync::Arc::new((
+                            package.clone(),
+                            harbor_core::router::SkillRouter::prewarm(
+                                &skills,
+                                ks.provider(),
+                                &model,
+                            )
+                            .map_err(|e| HarborError::Other(e.to_string()))?,
+                        ));
+                        *ws.router.lock().unwrap() = Some(r.clone());
+                        r
+                    }
+                };
+                let thresholds = harbor_core::router::RouteThresholds::default();
+                let d = router
+                    .1
+                    .evaluate(ks.provider(), &model, &text, thresholds)
+                    .map_err(|e| HarborError::Other(e.to_string()))?;
+                let ranked: Vec<serde_json::Value> = d
+                    .ranked
+                    .iter()
+                    .map(|h| {
+                        serde_json::json!({
+                            "skill_id": h.skill_id,
+                            "title": h.title,
+                            "score": h.score,
+                        })
+                    })
+                    .collect();
+                Ok(serde_json::json!({
+                    // Recommend-only: the caller may dispatch a skill run
+                    // through the executor's own admission machinery; a
+                    // suggestion is never an authorization.
+                    "abstained": d.abstained,
+                    "reason": d.reason.map(|r| match r {
+                        harbor_core::router::AbstainReason::NoConfidentMatch => "no_confident_match",
+                        harbor_core::router::AbstainReason::Ambiguous => "ambiguous",
+                    }),
+                    "ranked": ranked,
+                    "candidates": router.1.candidate_count(),
+                    "embedding_package": package,
+                }))
+            }
+        }
         "tools.list" => {
             let registry = harbor_core::tools::ToolRegistry::builtin();
             let tools: Vec<serde_json::Value> = registry
@@ -2156,6 +2439,15 @@ fn dispatch(
                 .get("workspace_root")
                 .and_then(|v| v.as_str())
                 .map(std::path::PathBuf::from);
+            // A scheduled goal claims its slot and pins the run id the
+            // execution must use (decision 0011): the goal receipt and
+            // the durable run are then the same identity. Ordinary runs
+            // keep minting their own.
+            let pinned_run_id = args
+                .get("run_id")
+                .and_then(|v| v.as_str())
+                .filter(|s| !s.is_empty())
+                .map(str::to_string);
             // Attached artifacts arrive as bytes: the Flutter layer holds
             // the user-granted file handles and passes content, never paths.
             let artifacts = decode_artifacts(args)?;
@@ -2230,7 +2522,7 @@ fn dispatch(
                     step: Some(&step),
                 });
                 let result = exec.start(harbor_core::executor::RunRequest {
-                    run_id: None,
+                    run_id: pinned_run_id,
                     workspace_id,
                     graph,
                     skill_id: Some(skill.id.clone()),

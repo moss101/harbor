@@ -525,6 +525,70 @@ class HarborService extends ChangeNotifier {
     return result;
   }
 
+  // --- Scheduled goals (decision 0011) --------------------------------
+  // Durable, user-authorized proactive work. The core hosts no timers:
+  // the surface polls `dueGoals` in the foreground, claims a slot, and
+  // executes the claim under the returned run id (at-most-once).
+
+  /// All scheduled goals (any state), newest last. Empty when the core
+  /// refuses (never throws for a closed store).
+  Future<List<Map<String, dynamic>>> listGoals() async {
+    try {
+      final r = await _call('goals.list');
+      return _mapList(r['goals']);
+    } on ffi.HarborCoreException {
+      return const [];
+    }
+  }
+
+  /// Goals whose slot covers now, each as `{goal, slot}`.
+  Future<List<Map<String, dynamic>>> dueGoals() async {
+    try {
+      final r = await _call('goals.due');
+      return _mapList(r['due']);
+    } on ffi.HarborCoreException {
+      return const [];
+    }
+  }
+
+  /// Create a scheduled goal. [schedule] is `{'kind': 'every_minutes',
+  /// 'minutes': n}` or `{'kind': 'once', 'at': '<RFC3339>'}`; [request]
+  /// is `{'kind': 'prompt', 'text': t}` (UI v1) or a skill reference.
+  Future<Map<String, dynamic>> createGoal({
+    required String title,
+    required Map<String, dynamic> request,
+    required Map<String, dynamic> schedule,
+    int? maxRuns,
+  }) {
+    return _call('goals.create', {
+      'title': title,
+      'request': request,
+      'schedule': schedule,
+      if (maxRuns != null) 'max_runs': maxRuns,
+    });
+  }
+
+  Future<Map<String, dynamic>> pauseGoal(String goalId) =>
+      _call('goals.pause', {'goal_id': goalId});
+
+  Future<Map<String, dynamic>> resumeGoal(String goalId) =>
+      _call('goals.resume', {'goal_id': goalId});
+
+  Future<Map<String, dynamic>> cancelGoal(String goalId) =>
+      _call('goals.cancel', {'goal_id': goalId});
+
+  /// Reserve the goal's slot. Returns `{run_id, goal}`; the caller must
+  /// execute under `run_id` (a refused duplicate slot throws).
+  Future<Map<String, dynamic>> claimGoal(String goalId, String slot) =>
+      _call('goals.claim', {'goal_id': goalId, 'slot': slot});
+
+  /// Attach the outcome to a claimed execution (observability; the claim
+  /// already prevented duplicate runs).
+  Future<Map<String, dynamic>> recordGoalOutcome(
+          String goalId, String runId, String outcome) =>
+      _call('goals.record_outcome',
+          {'goal_id': goalId, 'run_id': runId, 'outcome': outcome});
+
   /// Append one record to the core's encrypted diagnostics log (see
   /// `DiagnosticsSink`). The core redacts paths and long quoted strings.
   Future<void> recordDiagnostic(Map<String, String> record) =>

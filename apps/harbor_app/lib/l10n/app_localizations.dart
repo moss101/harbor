@@ -2587,6 +2587,258 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Also available as the standalone Harbor Office Suite app — same office engine, nothing else.'**
   String get storeOfficeAlsoAvailable;
+
+  /// No description provided for @goalsBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled goals'**
+  String get goalsBannerTitle;
+
+  /// No description provided for @goalsBannerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A goal is a fixed request on a schedule you set. Harbor proposes nothing on its own: a goal runs only while Harbor is open, when you tap Run now, and each scheduled slot runs at most once — a restart never doubles it. Goals are encrypted at rest like everything else in the workspace.'**
+  String get goalsBannerBody;
+
+  /// No description provided for @goalsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your goals'**
+  String get goalsSectionTitle;
+
+  /// No description provided for @goalsSectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Due goals appear at the top with a Run now action.'**
+  String get goalsSectionSubtitle;
+
+  /// No description provided for @goalsNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New goal'**
+  String get goalsNew;
+
+  /// No description provided for @goalsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No scheduled goals yet.'**
+  String get goalsEmpty;
+
+  /// No description provided for @goalsRunNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Run now'**
+  String get goalsRunNow;
+
+  /// No description provided for @goalsRunCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal completed — see Activity for the run.'**
+  String get goalsRunCompleted;
+
+  /// No description provided for @goalsRunFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal run failed — the outcome is recorded on the goal.'**
+  String get goalsRunFailed;
+
+  /// No description provided for @goalsClaimRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'This slot already ran (the claim is kept even across restarts).'**
+  String get goalsClaimRefused;
+
+  /// No description provided for @goalsNoChatModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Install a chat model first — goals answer through Ask.'**
+  String get goalsNoChatModel;
+
+  /// No description provided for @goalsStateActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get goalsStateActive;
+
+  /// No description provided for @goalsStatePaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get goalsStatePaused;
+
+  /// No description provided for @goalsStateDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get goalsStateDone;
+
+  /// No description provided for @goalsStateCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get goalsStateCancelled;
+
+  /// No description provided for @goalsPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get goalsPause;
+
+  /// No description provided for @goalsResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get goalsResume;
+
+  /// No description provided for @goalsCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel goal'**
+  String get goalsCancel;
+
+  /// No description provided for @goalsCancelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this goal?'**
+  String get goalsCancelTitle;
+
+  /// No description provided for @goalsCancelBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The goal keeps its past runs in Activity and never fires again. This cannot be undone.'**
+  String get goalsCancelBody;
+
+  /// No description provided for @goalsCancelConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel goal'**
+  String get goalsCancelConfirm;
+
+  /// No description provided for @goalsOnceAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Once, {date}'**
+  String goalsOnceAt(Object date);
+
+  /// No description provided for @goalsEveryMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Every {minutes} min'**
+  String goalsEveryMinutes(Object minutes);
+
+  /// No description provided for @goalsRunCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {max} runs'**
+  String goalsRunCount(Object count, Object max);
+
+  /// No description provided for @goalsRunCountOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} runs'**
+  String goalsRunCountOpen(Object count);
+
+  /// No description provided for @goalsCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New scheduled goal'**
+  String get goalsCreateTitle;
+
+  /// No description provided for @goalsNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get goalsNameLabel;
+
+  /// No description provided for @goalsNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly contract digest'**
+  String get goalsNameHint;
+
+  /// No description provided for @goalsPromptLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'What should it do?'**
+  String get goalsPromptLabel;
+
+  /// No description provided for @goalsPromptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Summarize what changed in my indexed contracts this week.'**
+  String get goalsPromptHint;
+
+  /// No description provided for @goalsRepeatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat'**
+  String get goalsRepeatLabel;
+
+  /// No description provided for @goalsOnceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Once at a time'**
+  String get goalsOnceLabel;
+
+  /// No description provided for @goalsEveryMinutesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Interval in minutes (1–43200)'**
+  String get goalsEveryMinutesLabel;
+
+  /// No description provided for @goalsOncePick.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick date and time'**
+  String get goalsOncePick;
+
+  /// No description provided for @goalsOncePicked.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs at {time}'**
+  String goalsOncePicked(Object time);
+
+  /// No description provided for @goalsLimitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop after a number of runs'**
+  String get goalsLimitLabel;
+
+  /// No description provided for @goalsRunsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} runs'**
+  String goalsRunsCount(Object count);
+
+  /// No description provided for @goalsCreateConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Create goal'**
+  String get goalsCreateConfirm;
+
+  /// No description provided for @agentsNotAutonomyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not autonomous orchestration'**
+  String get agentsNotAutonomyTitle;
+
+  /// No description provided for @agentsNotAutonomyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Multi-step agent planning beyond skill graphs, and scheduled execution without a tap, are not in this release. Skills run exactly the graphs they declare, with approvals enforced.'**
+  String get agentsNotAutonomyBody;
+
+  /// No description provided for @agentsNotHandsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No computer use'**
+  String get agentsNotHandsTitle;
+
+  /// No description provided for @agentsNotHandsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Harbor never controls your screen or other apps. It works through typed tools, files you attach, and documents you approve.'**
+  String get agentsNotHandsBody;
 }
 
 class _AppLocalizationsDelegate

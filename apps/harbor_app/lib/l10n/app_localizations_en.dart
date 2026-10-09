@@ -1570,4 +1570,151 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get storeOfficeAlsoAvailable =>
       'Also available as the standalone Harbor Office Suite app — same office engine, nothing else.';
+
+  @override
+  String get goalsBannerTitle => 'Scheduled goals';
+
+  @override
+  String get goalsBannerBody =>
+      'A goal is a fixed request on a schedule you set. Harbor proposes nothing on its own: a goal runs only while Harbor is open, when you tap Run now, and each scheduled slot runs at most once — a restart never doubles it. Goals are encrypted at rest like everything else in the workspace.';
+
+  @override
+  String get goalsSectionTitle => 'Your goals';
+
+  @override
+  String get goalsSectionSubtitle =>
+      'Due goals appear at the top with a Run now action.';
+
+  @override
+  String get goalsNew => 'New goal';
+
+  @override
+  String get goalsEmpty => 'No scheduled goals yet.';
+
+  @override
+  String get goalsRunNow => 'Run now';
+
+  @override
+  String get goalsRunCompleted => 'Goal completed — see Activity for the run.';
+
+  @override
+  String get goalsRunFailed =>
+      'Goal run failed — the outcome is recorded on the goal.';
+
+  @override
+  String get goalsClaimRefused =>
+      'This slot already ran (the claim is kept even across restarts).';
+
+  @override
+  String get goalsNoChatModel =>
+      'Install a chat model first — goals answer through Ask.';
+
+  @override
+  String get goalsStateActive => 'Active';
+
+  @override
+  String get goalsStatePaused => 'Paused';
+
+  @override
+  String get goalsStateDone => 'Done';
+
+  @override
+  String get goalsStateCancelled => 'Cancelled';
+
+  @override
+  String get goalsPause => 'Pause';
+
+  @override
+  String get goalsResume => 'Resume';
+
+  @override
+  String get goalsCancel => 'Cancel goal';
+
+  @override
+  String get goalsCancelTitle => 'Cancel this goal?';
+
+  @override
+  String get goalsCancelBody =>
+      'The goal keeps its past runs in Activity and never fires again. This cannot be undone.';
+
+  @override
+  String get goalsCancelConfirm => 'Cancel goal';
+
+  @override
+  String goalsOnceAt(Object date) {
+    return 'Once, $date';
+  }
+
+  @override
+  String goalsEveryMinutes(Object minutes) {
+    return 'Every $minutes min';
+  }
+
+  @override
+  String goalsRunCount(Object count, Object max) {
+    return '$count of $max runs';
+  }
+
+  @override
+  String goalsRunCountOpen(Object count) {
+    return '$count runs';
+  }
+
+  @override
+  String get goalsCreateTitle => 'New scheduled goal';
+
+  @override
+  String get goalsNameLabel => 'Name';
+
+  @override
+  String get goalsNameHint => 'Weekly contract digest';
+
+  @override
+  String get goalsPromptLabel => 'What should it do?';
+
+  @override
+  String get goalsPromptHint =>
+      'Summarize what changed in my indexed contracts this week.';
+
+  @override
+  String get goalsRepeatLabel => 'Repeat';
+
+  @override
+  String get goalsOnceLabel => 'Once at a time';
+
+  @override
+  String get goalsEveryMinutesLabel => 'Interval in minutes (1–43200)';
+
+  @override
+  String get goalsOncePick => 'Pick date and time';
+
+  @override
+  String goalsOncePicked(Object time) {
+    return 'Runs at $time';
+  }
+
+  @override
+  String get goalsLimitLabel => 'Stop after a number of runs';
+
+  @override
+  String goalsRunsCount(Object count) {
+    return '$count runs';
+  }
+
+  @override
+  String get goalsCreateConfirm => 'Create goal';
+
+  @override
+  String get agentsNotAutonomyTitle => 'Not autonomous orchestration';
+
+  @override
+  String get agentsNotAutonomyBody =>
+      'Multi-step agent planning beyond skill graphs, and scheduled execution without a tap, are not in this release. Skills run exactly the graphs they declare, with approvals enforced.';
+
+  @override
+  String get agentsNotHandsTitle => 'No computer use';
+
+  @override
+  String get agentsNotHandsBody =>
+      'Harbor never controls your screen or other apps. It works through typed tools, files you attach, and documents you approve.';
 }

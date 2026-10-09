@@ -17,6 +17,7 @@
 pub mod budgets;
 pub mod cancellation;
 pub mod event;
+pub mod goals;
 pub mod lease;
 pub mod log;
 pub mod state;
@@ -24,6 +25,9 @@ pub mod state;
 pub use budgets::Budgets;
 pub use cancellation::{CancelPhase, CancelRequest, ACK_SLO, UNACK_TIMEOUT};
 pub use event::{Actor, Counters, EventPayload, EventType, ReplaySemantics, RunEvent};
+pub use goals::{
+    GoalError, GoalExecution, GoalRequest, GoalSchedule, GoalSpec, GoalState, GoalStore,
+};
 pub use lease::{ExecutorLease, LeaseError, LeaseManager};
 pub use log::{EventLog, LogError};
 pub use state::{PauseReason, RunState, StateError};

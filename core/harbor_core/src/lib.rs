@@ -12,6 +12,7 @@ pub mod graph;
 pub mod harness;
 pub mod jsonschema;
 pub mod pointer;
+pub mod router;
 pub mod skills;
 pub mod tools;
 pub mod workspace;

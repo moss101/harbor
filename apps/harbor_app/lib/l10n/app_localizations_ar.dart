@@ -1625,4 +1625,149 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get storeOfficeAlsoAvailable =>
       'متاح أيضاً كتطبيق «حزمة Harbor Office» المستقل — محرّك المكتب نفسه، ولا شيء آخر.';
+
+  @override
+  String get goalsBannerTitle => 'أهداف مجدولة';
+
+  @override
+  String get goalsBannerBody =>
+      'الهدف طلب ثابت على جدول تضبطه أنت. لا تقترح هاربر شيئًا من تلقاء نفسه: لا يعمل الهدف إلا أثناء فتح هاربر وعند ضغطك على «تشغيل الآن»، وكل موقدة مجدولة تعمل مرة واحدة على الأكثر — إعادة التشغيل لا تكررها. تُشفَّر الأهداف في وضع السكون ككل محتوى مساحة العمل.';
+
+  @override
+  String get goalsSectionTitle => 'أهدافك';
+
+  @override
+  String get goalsSectionSubtitle =>
+      'تظهر الأهداف المستحقة في الأعلى مع زر «تشغيل الآن».';
+
+  @override
+  String get goalsNew => 'هدف جديد';
+
+  @override
+  String get goalsEmpty => 'لا توجد أهداف مجدولة بعد.';
+
+  @override
+  String get goalsRunNow => 'تشغيل الآن';
+
+  @override
+  String get goalsRunCompleted => 'اكتمل الهدف — انظر «النشاط» للتنفيذ.';
+
+  @override
+  String get goalsRunFailed => 'فشل تنفيذ الهدف — سُجّلت النتيجة على الهدف.';
+
+  @override
+  String get goalsClaimRefused =>
+      'سبق تنفيذ هذه الموقدة (يُحفظ الحجز حتى بعد إعادة التشغيل).';
+
+  @override
+  String get goalsNoChatModel =>
+      'ثبّت نموذج محادثة أولًا — تجيب الأهداف عبر «اسأل».';
+
+  @override
+  String get goalsStateActive => 'نشط';
+
+  @override
+  String get goalsStatePaused => 'موقوف';
+
+  @override
+  String get goalsStateDone => 'منجز';
+
+  @override
+  String get goalsStateCancelled => 'ملغى';
+
+  @override
+  String get goalsPause => 'إيقاف مؤقت';
+
+  @override
+  String get goalsResume => 'استئناف';
+
+  @override
+  String get goalsCancel => 'إلغاء الهدف';
+
+  @override
+  String get goalsCancelTitle => 'إلغاء هذا الهدف؟';
+
+  @override
+  String get goalsCancelBody =>
+      'يبقى تنفيذ الهدف السابق في «النشاط» ولن يعمل مرة أخرى. لا يمكن التراجع عن هذا.';
+
+  @override
+  String get goalsCancelConfirm => 'إلغاء الهدف';
+
+  @override
+  String goalsOnceAt(Object date) {
+    return 'مرة واحدة، $date';
+  }
+
+  @override
+  String goalsEveryMinutes(Object minutes) {
+    return 'كل $minutes دقيقة';
+  }
+
+  @override
+  String goalsRunCount(Object count, Object max) {
+    return '$count من $max تنفيذات';
+  }
+
+  @override
+  String goalsRunCountOpen(Object count) {
+    return '$count تنفيذات';
+  }
+
+  @override
+  String get goalsCreateTitle => 'هدف مجدول جديد';
+
+  @override
+  String get goalsNameLabel => 'الاسم';
+
+  @override
+  String get goalsNameHint => 'ملخص العقود الأسبوعي';
+
+  @override
+  String get goalsPromptLabel => 'ماذا يجب أن يفعل؟';
+
+  @override
+  String get goalsPromptHint => 'لخّص ما تغيّر في عقودي المفهرسة هذا الأسبوع.';
+
+  @override
+  String get goalsRepeatLabel => 'تكرار';
+
+  @override
+  String get goalsOnceLabel => 'مرة في وقت محدد';
+
+  @override
+  String get goalsEveryMinutesLabel => 'الفاصل بالدقائق (1–43200)';
+
+  @override
+  String get goalsOncePick => 'اختر التاريخ والوقت';
+
+  @override
+  String goalsOncePicked(Object time) {
+    return 'يعمل في $time';
+  }
+
+  @override
+  String get goalsLimitLabel => 'التوقف بعد عدد من التنفيذات';
+
+  @override
+  String goalsRunsCount(Object count) {
+    return '$count تنفيذات';
+  }
+
+  @override
+  String get goalsCreateConfirm => 'إنشاء الهدف';
+
+  @override
+  String get agentsNotAutonomyTitle => 'ليست تنسيقًا ذاتيًا';
+
+  @override
+  String get agentsNotAutonomyBody =>
+      'تخطيط الوكيل متعدد الخطوات بما يتجاوز رسوم المهارات، والتنفيذ المجدول دون ضغطة، غير متضمنين في هذا الإصدار. تعمل المهارات وفق الرسوم التي تعلنها تمامًا، مع فرض الموافقات.';
+
+  @override
+  String get agentsNotHandsTitle => 'بلا استخدام للجهاز';
+
+  @override
+  String get agentsNotHandsBody =>
+      'لا يتحكم هاربر أبدًا في شاشتك أو في تطبيقات أخرى. يعمل عبر أدوات مكتوبة وملفات ترفقها ووثائق توافق عليها.';
 }

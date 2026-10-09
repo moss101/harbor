@@ -32,6 +32,9 @@ pub struct Workspace {
     store_db_path: PathBuf,
     key_source: Arc<dyn KeyStore>,
     workspace_key: WorkspaceKey,
+    /// Scheduled goals (decision 0011): sealed under a domain-separated
+    /// subkey of the workspace key, like the agent event log.
+    pub goals: harbor_agent::GoalStore,
 }
 
 impl Workspace {
@@ -121,6 +124,15 @@ impl Workspace {
             opts.data_root.join("db").join("agent.db"),
             payload_key,
         )?);
+        let goals_key = harbor_store::keys::KeyMaterial::derive_subkey(
+            key.kek_material(),
+            "harbor.agent.goals/v1",
+        );
+        let goals = harbor_agent::GoalStore::open_with_key(
+            opts.data_root.join("db").join("goals.json"),
+            goals_key,
+        )
+        .map_err(|e| HarborError::Security(format!("goal store: {e}")))?;
 
         Ok(Workspace {
             workspace_id: workspace_id.into(),
@@ -132,6 +144,7 @@ impl Workspace {
             store_db_path,
             key_source,
             workspace_key: key,
+            goals,
         })
     }
 
