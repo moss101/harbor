@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "58a6df5470da52e2fdb2c185c5ca5ecf7514d5eb98e78ca4386790650a359af8",
+  "input_manifest_sha256": "f23454250445870818f961b4798e21c8417138e526f29676bafe50b3dc6c43bc",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -556,8 +556,8 @@
     },
     {
       "path": "apps/harbor_app/lib/services/harbor_service.dart",
-      "bytes": 37106,
-      "sha256": "6602085da50d1d6d3afeccfc59bdf316ba157731986ecd04428bcc9cf7019d2c"
+      "bytes": 37383,
+      "sha256": "df0ffb0c4e23117be9f397b7eeb1de0bbedda998860b0b45899211afbceaaa07"
     },
     {
       "path": "apps/harbor_app/lib/services/preferences.dart",
@@ -2336,8 +2336,8 @@
     },
     {
       "path": "core/harbor_ffi/src/lib.rs",
-      "bytes": 205899,
-      "sha256": "a5901f6322b1dcaf6e5ce5286587c93523bb45c98944f5b1f8aeb01643a7d1a9"
+      "bytes": 207102,
+      "sha256": "c6b85650201d1256940144c6502fe5a78af69c5bf4d4c467c28ee47105445c07"
     },
     {
       "path": "core/harbor_ffi/tests/catalog_first_run.rs",
@@ -2363,6 +2363,11 @@
       "path": "core/harbor_ffi/tests/goals_flow.rs",
       "bytes": 7829,
       "sha256": "99c38527b5fec75aa05e33f768e6b56f7caa67fe7628cca390427615238185d8"
+    },
+    {
+      "path": "core/harbor_ffi/tests/install_extra_files.rs",
+      "bytes": 3309,
+      "sha256": "21c99a8ac804f833607beaaadc7b40428ba93899649a32433e7be4611bffd0c0"
     },
     {
       "path": "core/harbor_ffi/tests/knowledge_identity.rs",
@@ -2886,8 +2891,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 148756,
-      "sha256": "e4ac435686786b2a36a6c4b93d8b1060929466fe366c47a9aa8ccffe7a0be76b"
+      "bytes": 148998,
+      "sha256": "a331b28704bd01de99af6062e4c745d46a13fd1397d59c2aad18ca664ee3e2b9"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -2961,8 +2966,8 @@
     },
     {
       "path": "docs/decisions/0015-multimodal-retrieval-and-device-hardening.md",
-      "bytes": 10773,
-      "sha256": "0cb7da2c581713c32373bdfb8fbf96d5139ac7460782ebf44bde50f95e66ed60"
+      "bytes": 11928,
+      "sha256": "cf304bc400025d6c9562548dfe325bbc3fab5100bb9e88065be1c1b97a20a662"
     },
     {
       "path": "docs/nanomuse_embeddinggemma_audit.md",
@@ -11936,8 +11941,8 @@
     },
     {
       "path": "tools/device_qualification/qualify_main.dart",
-      "bytes": 4509,
-      "sha256": "b1166e390c9e126dafc115167e218f2eab7c1da3760865d290b061cac1fc6d31"
+      "bytes": 8930,
+      "sha256": "1ebbfa76ffcf945851599c5048b7afbc2157c53be8bee92d79548b15bf426f8b"
     },
     {
       "path": "tools/expand_eval_corpus.py",

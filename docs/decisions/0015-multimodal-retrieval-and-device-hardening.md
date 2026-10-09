@@ -146,9 +146,20 @@ true**, the numerics canary passed (`backend=gpu`, no CPU fallback), the
 French, queries took 23–44 ms, and the top score was 0.8340969 — identical to
 the Mac's Metal result (0.834097). The simulator's silent-degradation failure
 does not occur on real hardware, which has the float formats the model
-needs. Text path only: the multimodal projector was not run on the iPhone
-(`models.install_from_path` installs single-file packages, and the 555 MB
-mmproj was not pushed).
+needs. Multimodal then ran on the same phone, on the GPU
+(weights + `mmproj` installed as one package through `models.install_from_path`
+with `extra_files`; real images, speech clips and videos-as-frames indexed on
+the device): **7 of 8 top-1 checks**. Image queries found the invoice, the
+landscape and the bar chart; the two speech clips were found by spoken-topic
+text queries; the "bars growing taller" query found the chart video; an image
+query for the invoice picture found itself (score 1.0). The one miss: "a video
+of a bright sun crossing the sky over green grass" returned the still
+`landscape.jpg` (0.738) ahead of the `landscape_sun.mp4` video — a
+near-identical scene as a still image legitimately outranks the clip, and the
+pass criterion (top-1 must be the video) was not relaxed after the fact. On
+the A19 Pro GPU: ~270 ms per image (first one 1.3 s while the kernels warm),
+~270–520 ms per speech clip, ~780 ms per 4-frame video, 23–49 ms per text
+query, ~250 ms for an image query.
 
 Reaching the phone took Developer Mode, an unlocked screen, trusting the
 development certificate on the device, and a release build launched with
@@ -167,9 +178,13 @@ Both are fixed in the vendored `build.rs`. The procedure and entry point are in
 
 ## Not done
 
-- **Multimodal on the iPhone.** The text path passed on the real GPU; images,
-  audio and video were not run there (they pass on the Mac, an Android phone,
-  an Android emulator and the iOS simulator).
+- **Device-build trap (Xcode).** The iOS device build force-loads
+  `libharbor_ffi.a` from `core/target/aarch64-apple-ios/release/`, and Xcode does
+  not track that archive as an input: after the Rust core changes, a rebuild can
+  re-sign the app WITHOUT relinking, shipping a stale core (found when the
+  device ignored `extra_files` that the freshly built archive supported). Clear
+  the project's DerivedData (and `build/ios`) before a device build whose Rust
+  side changed — especially before a TestFlight archive.
 - **GPU on Android.** CPU only; see the timings above.
 - **Video on Windows / Linux** (no frame sampler) and **video-specific
   token budgets** (frames go through the image path at its default budget,

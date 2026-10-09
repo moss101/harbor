@@ -388,16 +388,22 @@ class HarborService extends ChangeNotifier {
 
   /// Install a model from a local file the core reads itself (no base64
   /// round trip through the boundary).
+  ///
+  /// [extraFiles] are further files of the SAME package, each
+  /// `{'path': ..., 'role': ...}` — e.g. a multimodal projector with role
+  /// `mmproj`.
   Future<bool> installModelFromPath({
     required String packageId,
     required String path,
     String role = 'weights',
+    List<Map<String, String>> extraFiles = const [],
   }) async {
     try {
       await _call('models.install_from_path', {
         'package_id': packageId,
         'path': path,
         'role': role,
+        if (extraFiles.isNotEmpty) 'extra_files': extraFiles,
       });
       await refresh();
       return true;

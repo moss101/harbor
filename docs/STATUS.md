@@ -28,8 +28,11 @@ pools; decision 0015). Verified on a REAL Android phone (OnePlus, CPU): all test
 Mac; ~3.5 s/image (needs a GPU backend for bulk). Two iOS-DEVICE link bugs
 (cpp-httplib not linked; mtmd-debug `main`) found and fixed. REAL iPhone (A19 Pro,
 iOS 27): EmbeddingGemma 2 PASS on the GPU, canary passed with no fallback, 5/5
-EN/AR/FR, score identical to the Mac. Still open: multimodal on the iPhone,
-video on Windows/Linux. Routing is now model-independent
+EN/AR/FR, score identical to the Mac; multimodal on the same iPhone 7/8 (images,
+audio, video-as-frames; ~270 ms/image on the A19 Pro GPU). TRAP: Xcode does not
+track the force-loaded Rust archive, so a device build can ship a stale core -
+clear DerivedData first (decision 0015). Still open: video on Windows/Linux,
+GPU backend for Android. Routing is now model-independent
 (decision 0014): versioned per-embedder calibration data (bge-m3, EmbeddingGemma
 2, e5; uncalibrated embedders abstain), ambiguity delegated to the user's
 selected chat model through the provider contract (validated, advisory),

@@ -3290,38 +3290,61 @@ fn dispatch(
                 .get("role")
                 .and_then(|v| v.as_str())
                 .unwrap_or("weights");
-            let bytes =
-                std::fs::read(path).map_err(|e| HarborError::Other(format!("read {path}: {e}")))?;
-            let file_name = std::path::Path::new(path)
-                .file_name()
-                .and_then(|n| n.to_str())
-                .ok_or_else(|| HarborError::Other("bad file name".into()))?
-                .to_string();
+            // Optional extra files of the same package, e.g. the multimodal
+            // projector: [{"path": "...", "role": "mmproj"}].
+            let mut to_install: Vec<(String, String)> = vec![(path.to_string(), role.to_string())];
+            if let Some(extra) = args.get("extra_files").and_then(|v| v.as_array()) {
+                for f in extra {
+                    let p = f
+                        .get("path")
+                        .and_then(|v| v.as_str())
+                        .ok_or_else(|| HarborError::Other("extra file needs a path".into()))?;
+                    let r = f
+                        .get("role")
+                        .and_then(|v| v.as_str())
+                        .ok_or_else(|| HarborError::Other("extra file needs a role".into()))?;
+                    to_install.push((p.to_string(), r.to_string()));
+                }
+            }
             let installer =
                 harbor_modelhub::install::PackageInstaller::new(ws.data_root.join("models"));
-            let file = harbor_modelhub::install::PackageFile {
-                role: role.to_string(),
-                path: file_name,
-                sha256: harbor_canonical::sha256_hex(&bytes),
-                size_bytes: bytes.len() as u64,
-            };
+            let mut staged = installer
+                .begin(package_id)
+                .map_err(|e| HarborError::Other(format!("staging: {e}")))?;
+            // One file in memory at a time (a projector is hundreds of MB).
+            let mut files = Vec::new();
+            let mut total_bytes = 0usize;
+            for (p, r) in &to_install {
+                let bytes =
+                    std::fs::read(p).map_err(|e| HarborError::Other(format!("read {p}: {e}")))?;
+                let file_name = std::path::Path::new(p)
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .ok_or_else(|| HarborError::Other("bad file name".into()))?
+                    .to_string();
+                let file = harbor_modelhub::install::PackageFile {
+                    role: r.clone(),
+                    path: file_name,
+                    sha256: harbor_canonical::sha256_hex(&bytes),
+                    size_bytes: bytes.len() as u64,
+                };
+                installer
+                    .ingest_file(&mut staged, &file, &bytes)
+                    .map_err(|e| HarborError::Other(format!("ingest: {e}")))?;
+                total_bytes += bytes.len();
+                files.push(file);
+            }
             let manifest = harbor_modelhub::install::PackageManifest {
                 schema: "harbor.model/v3".into(),
                 id: package_id.to_string(),
                 reference_type: "installed_package".into(),
-                files: vec![file.clone()],
+                files,
                 runtime: harbor_modelhub::install::RuntimeBinding {
                     kind: "gguf/llama.cpp".into(),
                     min_revision: "0.1.156".into(),
                     targets: vec![std::env::consts::ARCH.to_string()],
                 },
             };
-            let mut staged = installer
-                .begin(package_id)
-                .map_err(|e| HarborError::Other(format!("staging: {e}")))?;
-            installer
-                .ingest_file(&mut staged, &file, &bytes)
-                .map_err(|e| HarborError::Other(format!("ingest: {e}")))?;
             let report = installer
                 .validate(&staged, &manifest)
                 .map_err(|e| HarborError::Other(format!("validate: {e}")))?;
@@ -3334,7 +3357,7 @@ fn dispatch(
             installer
                 .commit(&mut staged, &manifest, chrono::Utc::now())
                 .map_err(|e| HarborError::Other(format!("commit: {e}")))?;
-            Ok(serde_json::json!({ "installed": package_id, "bytes": bytes.len() }))
+            Ok(serde_json::json!({ "installed": package_id, "bytes": total_bytes }))
         }
         // --- store: download preflight (SEC-029) ---------------------------
         // Quote a package's transfer through brokered metadata and probe

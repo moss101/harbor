@@ -125,4 +125,120 @@ Future<void> _run(Directory base) async {
   say('RESULT ${correct == cases.length ? 'PASS' : 'FAIL'} '
       'backend=${service.knowledgeBackend} correct=$correct/${cases.length}');
   service.close();
+
+  final proj = File('${base.path}/mmproj-embeddinggemma-2-Q8_0.gguf');
+  if (!proj.existsSync()) {
+    say('MM SKIP projector not pushed');
+    return;
+  }
+  await _runMultimodal(base, model, proj);
+}
+
+/// Images, audio and video (as sampled frames) indexed ON THE DEVICE next to
+/// text, then retrieved by text and by image. PASS = every expected item is
+/// the top result.
+Future<void> _runMultimodal(Directory base, File model, File proj) async {
+  final media = Directory('${base.path}/media');
+  File m(String n) => File('${media.path}/$n');
+  final data = Directory('${base.path}/data_mm');
+  if (data.existsSync()) data.deleteSync(recursive: true);
+  data.createSync(recursive: true);
+  final service = await HarborService.open(
+    libraryPath: 'libharbor_ffi.dylib',
+    dataRoot: data.path,
+    workspaceId: 'ws-device-mm',
+    deviceRootHex:
+        'f47973db602cbd13c408a3a5cdf3a8eeaa3bd6870b76607542d75ff568526c3c',
+  );
+  final t0 = DateTime.now();
+  final installed = await service.installModelFromPath(
+    packageId: 'embeddinggemma2-mm-device',
+    path: model.path,
+    extraFiles: [
+      {'path': proj.path, 'role': 'mmproj'},
+    ],
+  );
+  say('MM install ok=$installed ${DateTime.now().difference(t0).inMilliseconds} ms');
+  if (!installed) {
+    say('MM RESULT FAIL package install failed');
+    return;
+  }
+  final opened =
+      await service.openKnowledge(packageId: 'embeddinggemma2-mm-device');
+  say('MM open=$opened multimodal=${service.knowledgeMultimodal} '
+      'backend=${service.knowledgeBackend}');
+  if (!opened || !service.knowledgeMultimodal) {
+    say('MM RESULT FAIL media towers not available');
+    return;
+  }
+  Future<void> timed(String what, Future<void> Function() f) async {
+    final t = DateTime.now();
+    await f();
+    say('MM index $what ${DateTime.now().difference(t).inMilliseconds} ms');
+  }
+
+  for (final n in ['invoice.jpg', 'landscape.jpg', 'chart.jpg']) {
+    await timed(n, () async {
+      await service.ingestMedia(
+          bytes: await m(n).readAsBytes(), kind: 'image', title: n);
+    });
+  }
+  for (final n in ['speech_revenue.wav', 'speech_weather.wav']) {
+    await timed(n, () async {
+      await service.ingestMedia(
+          bytes: await m(n).readAsBytes(), kind: 'audio', title: n);
+    });
+  }
+  for (final v in ['chart_growth', 'landscape_sun']) {
+    await timed('$v (video, 4 frames)', () async {
+      final frames = [
+        for (var i = 0; i < 4; i++) await m('${v}_frame$i.jpg').readAsBytes()
+      ];
+      await service.ingestVideo(frames: frames, title: '$v.mp4');
+    });
+  }
+
+  Future<String?> top(Map<String, dynamic>? r) async {
+    final c = (r?['citations'] as List?)?.cast<Map>() ?? const [];
+    return c.isEmpty ? null : c.first['title'] as String?;
+  }
+
+  var ok = 0, total = 0;
+  Future<void> check(String label, String want, Map<String, dynamic>? r) async {
+    total++;
+    final got = await top(r);
+    if (got == want) ok++;
+    final c = (r?['citations'] as List?)?.cast<Map>() ?? const [];
+    say('MM $label -> $got (want $want) '
+        'score=${c.isEmpty ? null : c.first['score']}');
+  }
+
+  const textCases = {
+    'an invoice with the total amount due': 'invoice.jpg',
+    'a sunny landscape with blue sky and green grass': 'landscape.jpg',
+    'a bar chart with four columns': 'chart.jpg',
+    'a spoken report about quarterly revenue and sales growth':
+        'speech_revenue.wav',
+    'a spoken forecast of sunny weather for a walk in the park':
+        'speech_weather.wav',
+    'a video of bars growing taller in a chart': 'chart_growth.mp4',
+    'a video of a bright sun crossing the sky over green grass':
+        'landscape_sun.mp4',
+  };
+  for (final e in textCases.entries) {
+    final t = DateTime.now();
+    final r = await service.searchKnowledge(e.key, topK: 3);
+    await check('text "${e.key}"', e.value, r);
+    say('MM   query took ${DateTime.now().difference(t).inMilliseconds} ms');
+  }
+  // Search BY an image: the invoice picture must find itself first.
+  final t = DateTime.now();
+  final byImage = await service.searchByMedia(
+      await m('invoice.jpg').readAsBytes(), 'image',
+      topK: 3);
+  await check('image query invoice.jpg', 'invoice.jpg', byImage);
+  say('MM   image query took ${DateTime.now().difference(t).inMilliseconds} ms');
+  say('MM RESULT ${ok == total ? 'PASS' : 'FAIL'} '
+      'backend=${service.knowledgeBackend} correct=$ok/$total');
+  service.close();
 }
