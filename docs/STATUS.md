@@ -26,8 +26,10 @@ embedded as one item. Real-data media benchmark: text->image R@1 0.874 over
 200 Flickr8k photos, text<->audio R@1 1.000 over 73 LibriSpeech clips (small
 pools; decision 0015). Verified on a REAL Android phone (OnePlus, CPU): all tests + benchmark match the
 Mac; ~3.5 s/image (needs a GPU backend for bulk). Two iOS-DEVICE link bugs
-(cpp-httplib not linked; mtmd-debug `main`) found and fixed; a real iPhone run
-was not completed (wireless). Still open: iPhone run, video on Windows/Linux. Routing is now model-independent
+(cpp-httplib not linked; mtmd-debug `main`) found and fixed. REAL iPhone (A19 Pro,
+iOS 27): EmbeddingGemma 2 PASS on the GPU, canary passed with no fallback, 5/5
+EN/AR/FR, score identical to the Mac. Still open: multimodal on the iPhone,
+video on Windows/Linux. Routing is now model-independent
 (decision 0014): versioned per-embedder calibration data (bge-m3, EmbeddingGemma
 2, e5; uncalibrated embedders abstain), ambiguity delegated to the user's
 selected chat model through the provider contract (validated, advisory),

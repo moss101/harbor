@@ -137,29 +137,39 @@ Metal. 6 threads is the measured default (4 → 6 took images from 3.5 s to
 Indexing a handful of items is fine; bulk image indexing on a phone needs a GPU
 backend (Vulkan / OpenCL), which this build does not include.
 
-**iOS, real iPhone** — NOT run. Reaching it required Developer Mode, an unlocked
-screen and a wired connection (`flutter test` cannot start an app on a
-wirelessly connected iPhone). What the attempt did find, on the first full
-**device** link of the model features, were two real bugs that the simulator
-and macOS builds had hidden (their dylibs dead-strip unreferenced objects, but
-the device build force-loads the whole static archive):
+**iOS, real iPhone** — iPhone 17 Pro Max (iPhone18,2, Apple A19 Pro GPU, iOS
+27.0), running the release build of the real app's core (the force-loaded
+static archive), launched with `devicectl`. Result: **PASS on the GPU** —
+`ggml_metal` reports simdgroup reduction, simdgroup matmul and **bfloat all
+true**, the numerics canary passed (`backend=gpu`, no CPU fallback), the
+768-d model opened in 325 ms, retrieval was 5/5 across English, Arabic and
+French, queries took 23–44 ms, and the top score was 0.8340969 — identical to
+the Mac's Metal result (0.834097). The simulator's silent-degradation failure
+does not occur on real hardware, which has the float formats the model
+needs. Text path only: the multimodal projector was not run on the iPhone
+(`models.install_from_path` installs single-file packages, and the 555 MB
+mmproj was not pushed).
+
+Reaching the phone took Developer Mode, an unlocked screen, trusting the
+development certificate on the device, and a release build launched with
+`devicectl` (`flutter test` cannot start an app on a wirelessly connected
+iPhone). The first full **device** link of the model features also exposed two
+bugs that the simulator and macOS builds had hidden (their dylibs dead-strip
+unreferenced objects; the device build force-loads the whole static archive):
 
 1. `libcpp-httplib.a` was built but never linked, so `download.cpp.o` failed
    with undefined `httplib::` symbols.
 2. `mtmd-debug.cpp` — a standalone tool with its own `main()` — was swept into
    the library and collided with the app's `main` (`duplicate symbol _main`).
 
-Both are fixed in the vendored `build.rs`; the signed device app (debug and
-release) now builds and links with the full core. The device entry point and
-procedure are kept in `tools/device_qualification/`. No iPhone GPU result
-exists.
+Both are fixed in the vendored `build.rs`. The procedure and entry point are in
+`tools/device_qualification/`.
 
 ## Not done
 
-- **iPhone.** Not run (see above): the first real iPhone GPU result for the
-  numerics canary is still unknown. The app shows the active embedding backend
-  on the Knowledge screen and logs a diagnostics record on a CPU fallback, so
-  a first run reports itself.
+- **Multimodal on the iPhone.** The text path passed on the real GPU; images,
+  audio and video were not run there (they pass on the Mac, an Android phone,
+  an Android emulator and the iOS simulator).
 - **GPU on Android.** CPU only; see the timings above.
 - **Video on Windows / Linux** (no frame sampler) and **video-specific
   token budgets** (frames go through the image path at its default budget,
