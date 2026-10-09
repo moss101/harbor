@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "c1055f1ebaaafac128061c576a7b1d82332e92b94ff1203932982201a5dcb477",
+  "input_manifest_sha256": "7fe8a44e6f5955a2a80c975a543ecbac348d507019df7a3b23ad0d73113a192b",
   "file_count_excluding_manifest": 2386,
   "files": [
     {
@@ -125,12 +125,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 475650,
-      "sha256": "b05da833a71c2d9b9aa34b83a917ec9deadb66207f55ac87140113a6ba547e9d"
+      "sha256": "aa89fc9b445e2862091532754459504ffbf60d6246d3ef9653c3dbd15a05a012"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "c26794fef497c8ac6762e9ba509cab7d054f01d9bcd3ec0da93772663f9fc5cb"
+      "sha256": "07eca85177c911503a725680abacaab020a71b6c24ddedf491764e92427dd08a"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -3449,8 +3449,8 @@
     },
     {
       "path": "fixtures/catalog/signed_catalog.json",
-      "bytes": 2953,
-      "sha256": "f02c84a4dfcd8d82457998ee9885d54a937d728155f9499b379bd0865f0272d7"
+      "bytes": 4309,
+      "sha256": "9ffd040f96777acdb5737f5718f59e4ceca4415b5b25cac9d5325d86f7806d32"
     },
     {
       "path": "fixtures/contracts/records.json",

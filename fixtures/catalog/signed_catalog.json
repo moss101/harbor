@@ -95,12 +95,55 @@
         "tiers": [
           "Embeddings"
         ]
+      },
+      {
+        "context_tokens": 8192,
+        "files": [
+          {
+            "path": "embeddinggemma-2-Q8_0.gguf",
+            "role": "weights",
+            "sha256": "2188ac1deca4b77dffefd603c2776a9d76d9d74ec01841392982ebb840b09135"
+          }
+        ],
+        "id": "embeddinggemma-2",
+        "license": "Apache-2.0",
+        "publisher": "harbor",
+        "quantization": "Q8_0",
+        "repo_id": "ggml-org/embeddinggemma-2-GGUF",
+        "revision": "bfcd298762cc34d0357ece5ebdd31791a3a374d8",
+        "tiers": [
+          "Embeddings"
+        ]
+      },
+      {
+        "context_tokens": 8192,
+        "files": [
+          {
+            "path": "embeddinggemma-2-Q8_0.gguf",
+            "role": "weights",
+            "sha256": "2188ac1deca4b77dffefd603c2776a9d76d9d74ec01841392982ebb840b09135"
+          },
+          {
+            "path": "mmproj-embeddinggemma-2-Q8_0.gguf",
+            "role": "mmproj",
+            "sha256": "c4a8a52691ecef40618438928bdf9e68379b854e24166f292592353db0aab64f"
+          }
+        ],
+        "id": "embeddinggemma-2-multimodal",
+        "license": "Apache-2.0",
+        "publisher": "harbor",
+        "quantization": "Q8_0",
+        "repo_id": "ggml-org/embeddinggemma-2-GGUF",
+        "revision": "bfcd298762cc34d0357ece5ebdd31791a3a374d8",
+        "tiers": [
+          "Embeddings"
+        ]
       }
     ]
   },
-  "epoch": 4,
+  "epoch": 5,
   "key_id": "5cff12934466e591",
-  "published_at": "2026-09-29T00:00:00Z",
+  "published_at": "2026-10-09T00:00:00Z",
   "schema": "harbor.catalog/v1",
-  "signature": "fdd5fe5ea79a5bb14c438fe77a2de4d285da06096b52c20fd45043a924e6ba71272076052d01ad8fce48f3dddf582c2c307982cda1f2a0437939da360743b70b"
+  "signature": "ae1ef731d2ce495437fdb372f1d9d4883130b7641cd24aa9b5f6072bd67da380ff01a5cfde3c744563292d16fe2a252f5e91109f8454221bfd6b1b595ddced06"
 }

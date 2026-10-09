@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "c1055f1ebaaafac128061c576a7b1d82332e92b94ff1203932982201a5dcb477",
+  "input_manifest_sha256": "7fe8a44e6f5955a2a80c975a543ecbac348d507019df7a3b23ad0d73113a192b",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -3431,8 +3431,8 @@
     },
     {
       "path": "fixtures/catalog/signed_catalog.json",
-      "bytes": 2953,
-      "sha256": "f02c84a4dfcd8d82457998ee9885d54a937d728155f9499b379bd0865f0272d7"
+      "bytes": 4309,
+      "sha256": "9ffd040f96777acdb5737f5718f59e4ceca4415b5b25cac9d5325d86f7806d32"
     },
     {
       "path": "fixtures/contracts/records.json",
