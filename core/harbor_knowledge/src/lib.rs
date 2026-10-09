@@ -18,6 +18,7 @@ pub mod corpus;
 pub mod eval;
 pub mod identity;
 pub mod index;
+pub mod instructions;
 
 pub use chunk::{Chunker, ChunkerConfig};
 pub use corpus::{evaluation_corpus_sha256, run_pinned_evals};

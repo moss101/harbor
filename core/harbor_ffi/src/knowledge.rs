@@ -27,6 +27,7 @@ use harbor_knowledge::identity::{
     embed_model_identity, ChunkerConfig as CC, IndexIdentity, Normalization,
 };
 use harbor_knowledge::index::{KnowledgeIndex, Source, SourceChunk};
+use harbor_knowledge::instructions::InstructionPolicy;
 use harbor_store::keys::KeyMaterial;
 use rusqlite::Connection;
 
@@ -410,6 +411,10 @@ pub struct KnowledgeService {
     index: Mutex<KnowledgeIndex>,
     provider: GgufLlamaCppProvider,
     embedding_package: String,
+    /// Instruction policy for the embedding package (decision 0011):
+    /// applied to every document/query embed so production matches the
+    /// model's training distribution.
+    policy: InstructionPolicy,
     store: KnowledgeStore,
     models_root: PathBuf,
 }
@@ -450,6 +455,7 @@ impl KnowledgeService {
             .map(|v| v.len())
             .ok_or_else(|| KnowledgeFfiError::Provider("empty embedding".into()))?
             as u32;
+        let policy = InstructionPolicy::for_package(embedding_package);
         let identity = IndexIdentity {
             embedding: embed_model_identity(
                 embedding_package,
@@ -465,6 +471,7 @@ impl KnowledgeService {
             tokenizer: "grapheme/1".into(),
             normalization: Normalization::Nfc,
             language_policy: "en,ar,mixed".into(),
+            instruction: policy.identity().into(),
             encryption_scope: "workspace".into(),
         };
         let store = KnowledgeStore::open(&db_path, chunk_key)?;
@@ -472,6 +479,7 @@ impl KnowledgeService {
             index: Mutex::new(KnowledgeIndex::new(identity)),
             provider,
             embedding_package: embedding_package.into(),
+            policy,
             store,
             models_root: data_root.join("models"),
         };
@@ -508,9 +516,10 @@ impl KnowledgeService {
         let persisted = self.store.load_chunks()?;
         let mut vectors = std::collections::BTreeMap::new();
         for chunk in &persisted {
+            let input = self.policy.format_document(&chunk.title, &chunk.text);
             let embedded = self
                 .provider
-                .embed(model, std::slice::from_ref(&chunk.text))
+                .embed(model, std::slice::from_ref(&input))
                 .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?;
             let Some(vector) = embedded.into_iter().next() else {
                 return Err(KnowledgeFfiError::Provider("empty embedding".into()));
@@ -610,9 +619,15 @@ impl KnowledgeService {
             if cancel.load(Ordering::Relaxed) {
                 return Err(KnowledgeFfiError::Cancelled);
             }
+            // The instruction policy wraps each chunk before the model
+            // sees it (decision 0011); the stored TEXT stays unprefixed.
+            let inputs: Vec<String> = chunks
+                .iter()
+                .map(|c| self.policy.format_document(title, c))
+                .collect();
             let vectors = self
                 .provider
-                .embed(&model_ref, chunks)
+                .embed(&model_ref, &inputs)
                 .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?;
             let content_hash = harbor_canonical::sha256_hex(text.as_bytes());
             let rows: Vec<(u32, String, Vec<f32>)> = chunks
@@ -704,9 +719,10 @@ impl KnowledgeService {
         let model_ref = ModelRef::InstalledPackage {
             package_id: self.embedding_package.clone(),
         };
+        let query_input = self.policy.format_query(question);
         let qv = self
             .provider
-            .embed(&model_ref, &[question.to_string()])
+            .embed(&model_ref, &[query_input])
             .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?;
         let q = qv
             .into_iter()
@@ -739,6 +755,12 @@ impl KnowledgeService {
             package_id: self.embedding_package.clone(),
         };
         self.provider.supports(&model_ref, &Capabilities::Chat)
+    }
+
+    /// The embedding provider (skill routing shares the loaded model
+    /// instead of building a second provider instance).
+    pub fn provider(&self) -> &GgufLlamaCppProvider {
+        &self.provider
     }
 
     pub fn models_root(&self) -> &Path {

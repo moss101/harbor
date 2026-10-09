@@ -31,6 +31,7 @@ fn identity() -> IndexIdentity {
         tokenizer: "grapheme/1".into(),
         normalization: Normalization::Nfc,
         language_policy: "en,ar,mixed".into(),
+        instruction: "none/1".into(),
         encryption_scope: "security-scenario".into(),
     }
 }

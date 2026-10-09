@@ -207,7 +207,9 @@ impl KnowledgeIndex {
     }
 }
 
-fn cosine(a: &[f32], b: &[f32]) -> f32 {
+/// Cosine similarity; zero when either vector is degenerate. Public so
+/// the skill router scores with the same implementation retrieval does.
+pub fn cosine(a: &[f32], b: &[f32]) -> f32 {
     let mut dot = 0f32;
     let mut na = 0f32;
     let mut nb = 0f32;
@@ -241,6 +243,7 @@ mod tests {
             tokenizer: "grapheme/1".into(),
             normalization: Normalization::Nfc,
             language_policy: "en,ar,mixed".into(),
+            instruction: "none/1".into(),
             encryption_scope: "test".into(),
         }
     }

@@ -450,6 +450,14 @@ impl ModelProvider for GgufLlamaCppProvider {
         self.generate_cancellable(req, &never, None)
     }
 
+    // The embedding implementation is inherent (takes &self, returns the
+    // pooled vectors); without this override the TRAIT default would
+    // serve UnsupportedCapability to every &dyn ModelProvider consumer
+    // — found by the live skill-routing tier (decision 0011).
+    fn embed(&self, model: &ModelRef, texts: &[String]) -> Result<Vec<Vec<f32>>, ProviderError> {
+        GgufLlamaCppProvider::embed(self, model, texts)
+    }
+
     fn execution_location(&self) -> harbor_security::policy::ExecutionLocation {
         harbor_security::policy::ExecutionLocation::OnDevice
     }

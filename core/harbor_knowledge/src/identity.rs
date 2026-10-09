@@ -32,6 +32,21 @@ pub fn embed_model_identity(model: &str, revision: &str, dimension: u32) -> Embe
     }
 }
 
+/// An embedding is storable only when every component is a finite
+/// number. NaN/Inf components poison cosine ranking silently; a
+/// broken runtime must surface as an error at the embed boundary.
+pub fn require_finite_vector(vector: &[f32]) -> Result<(), String> {
+    if vector.is_empty() {
+        return Err("empty embedding vector".into());
+    }
+    for (i, v) in vector.iter().enumerate() {
+        if !v.is_finite() {
+            return Err(format!("embedding component {i} is not finite"));
+        }
+    }
+    Ok(())
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ChunkerConfig {
     /// Target chunk size in unicode graphemes.
@@ -54,6 +69,10 @@ pub struct IndexIdentity {
     pub normalization: Normalization,
     /// e.g. "en,ar,mixed" — language policy affects preprocessing.
     pub language_policy: String,
+    /// Instruction-policy identity (`instructions::InstructionPolicy`);
+    /// the query/document anchoring a model was trained for is
+    /// preprocessing, so a change re-embeds instead of mixing.
+    pub instruction: String,
     /// Encryption scope: workspace id (private) or "public".
     pub encryption_scope: String,
 }
@@ -94,6 +113,7 @@ impl IndexIdentity {
                 "language_policy",
                 JsonValue::str(self.language_policy.clone()),
             ),
+            ("instruction", JsonValue::str(self.instruction.clone())),
             (
                 "encryption_scope",
                 JsonValue::str(self.encryption_scope.clone()),
@@ -132,6 +152,7 @@ mod tests {
             tokenizer: "grapheme/1".into(),
             normalization: Normalization::Nfc,
             language_policy: "en,ar,mixed".into(),
+            instruction: "none/1".into(),
             encryption_scope: "ws-1".into(),
         }
     }
@@ -148,6 +169,9 @@ mod tests {
         assert!(identity().require_compatible(&other).is_err());
         let mut other = identity();
         other.language_policy = "en".into();
+        assert!(identity().require_compatible(&other).is_err());
+        let mut other = identity();
+        other.instruction = "e5/1".into();
         assert!(identity().require_compatible(&other).is_err());
         let mut other = identity();
         other.chunker_config.overlap_graphemes = 0;

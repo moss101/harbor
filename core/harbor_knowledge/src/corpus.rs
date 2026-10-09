@@ -120,6 +120,7 @@ pub fn build_index(corpus: &PinnedCorpus, provider: &TestBackend) -> KnowledgeIn
         tokenizer: "grapheme/1".into(),
         normalization: Normalization::Nfc,
         language_policy: "en,ar,mixed".into(),
+        instruction: "none/1".into(),
         encryption_scope: "eval".into(),
     };
     let mut index = KnowledgeIndex::new(identity);

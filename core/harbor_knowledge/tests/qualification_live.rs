@@ -52,7 +52,14 @@ fn model_path() -> PathBuf {
 fn install(models_root: &Path, gguf: &Path) -> (String, String) {
     let bytes = std::fs::read(gguf).expect("embedding fixture readable");
     let sha = harbor_canonical::sha256_hex(&bytes);
-    let id = format!("live-embed-{}", &sha[..12]);
+    // Package id carries the model file stem so instruction-policy
+    // resolution (decision 0011) and evidence identity name the actual
+    // model, not just its hash.
+    let stem = gguf
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| "model".into());
+    let id = format!("live-embed-{stem}-{}", &sha[..12]);
     let file_name = gguf
         .file_name()
         .map(|s| s.to_string_lossy().to_string())
@@ -101,33 +108,27 @@ fn live_embedding_qualifies_the_six_behaviors() {
     };
     provider.load(&model).unwrap();
 
-    // e5-family models are trained with "query: "/"passage: " anchors
+    // Instruction policy from the SAME code production uses (decision
+    // 0011): e5-family models get their `query:`/`passage:` anchors
     // (measured on multilingual-e5-small: raw text compresses every
-    // similarity into one cluster). The harness applies the SAME rule
-    // as the production embed adapter: filename contains "e5".
-    let prefixes = gguf
-        .file_name()
-        .map(|f| f.to_string_lossy().contains("e5"))
-        .unwrap_or(false);
-    let embed_role = |text: &str, query: bool| -> Option<Vec<f32>> {
-        let input = if prefixes {
-            if query {
-                format!("query: {text}")
-            } else {
-                format!("passage: {text}")
-            }
+    // similarity into one cluster), EmbeddingGemma its task prefixes.
+    let policy = harbor_knowledge::instructions::InstructionPolicy::for_package(&package_id);
+    let embed_role = |title: &str, text: &str, query: bool| -> Option<Vec<f32>> {
+        let input = if query {
+            policy.format_query(text)
         } else {
-            text.to_string()
+            policy.format_document(title, text)
         };
         provider
             .embed(&model, std::slice::from_ref(&input))
             .ok()
             .and_then(|v| v.into_iter().next())
     };
-    let embed_one = |text: &str| -> Option<Vec<f32>> { embed_role(text, false) };
-    let embed_query = |text: &str| -> Option<Vec<f32>> { embed_role(text, true) };
-    let dim = embed_one("dimension probe").unwrap().len() as u32;
-    println!("e5 prefixes: {prefixes}");
+    let embed_one =
+        |title: &str, text: &str| -> Option<Vec<f32>> { embed_role(title, text, false) };
+    let embed_query = |text: &str| -> Option<Vec<f32>> { embed_role("", text, true) };
+    let dim = embed_one("", "dimension probe").unwrap().len() as u32;
+    println!("instruction policy: {}", policy.identity());
     let identity = IndexIdentity {
         embedding: embed_model_identity(&package_id, harbor_inference::runtime_revision(), dim),
         chunker: "paragraph-window/1".into(),
@@ -139,6 +140,7 @@ fn live_embedding_qualifies_the_six_behaviors() {
         tokenizer: "grapheme/1".into(),
         normalization: Normalization::Nfc,
         language_policy: "en,ar,mixed".into(),
+        instruction: policy.identity().into(),
         encryption_scope: "eval".into(),
     };
     println!(
@@ -164,7 +166,7 @@ fn live_embedding_qualifies_the_six_behaviors() {
             let chunks = Chunker::chunk(&s.text, &chunk_cfg);
             let mut sc = Vec::with_capacity(chunks.len());
             for c in &chunks {
-                let Some(vector) = embed_one(&c.text) else {
+                let Some(vector) = embed_one(&s.title, &c.text) else {
                     panic!("embedding failed for {}", s.id);
                 };
                 sc.push(SourceChunk {
