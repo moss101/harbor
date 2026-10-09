@@ -82,8 +82,13 @@ class _KnowledgeSurfaceState extends State<KnowledgeSurface> {
         // (about 1 per second) and the core embeds them as one item.
         final frames = await sampleVideoFrames(file.path);
         if (frames == null || frames.isEmpty) {
-          messenger.showSnackBar(
-              SnackBar(content: Text(l10n.knowledgeVideoUnsupported)));
+          // Windows / Linux sample through the user's own FFmpeg; say so
+          // instead of a generic "unsupported".
+          final needsFfmpeg = Platform.isWindows || Platform.isLinux;
+          messenger.showSnackBar(SnackBar(
+              content: Text(needsFfmpeg
+                  ? l10n.knowledgeVideoNeedsFfmpeg
+                  : l10n.knowledgeVideoUnsupported)));
           return;
         }
         await service.ingestVideo(frames: frames, title: file.name);

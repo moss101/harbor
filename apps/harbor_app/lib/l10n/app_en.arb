@@ -971,5 +971,6 @@
   "knowledgeBackendLabel": "Embedding backend",
   "knowledgeBackendGpu": "Device default (GPU where available)",
   "knowledgeBackendCpuFallback": "CPU — this device's GPU gave inconsistent results",
-  "knowledgeBackendCpuUnverified": "CPU — could not be verified"
+  "knowledgeBackendCpuUnverified": "CPU — could not be verified",
+  "knowledgeVideoNeedsFfmpeg": "Indexing video needs FFmpeg on this computer. Install FFmpeg (or set HARBOR_FFMPEG to its location) and try again."
 }

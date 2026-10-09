@@ -47,3 +47,6 @@ gguf = ["harbor_inference/gguf-backend"]
 # Image / audio indexing and search through an embedding package that ships
 # an mmproj projector (EmbeddingGemma 2; decision 0015).
 multimodal = ["gguf", "harbor_inference/multimodal"]
+# Vulkan GPU backend; build with VULKAN_INCLUDE_DIR / SPIRV_HEADERS_DIR /
+# VULKAN_GLSLC for Android (see third_party/llama-cpp-sys-2/build.rs).
+vulkan = ["gguf", "harbor_inference/vulkan"]

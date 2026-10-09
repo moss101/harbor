@@ -829,5 +829,6 @@
   "knowledgeBackendLabel": "واجهة التضمين",
   "knowledgeBackendGpu": "افتراضي الجهاز (المعالج الرسومي إن توفر)",
   "knowledgeBackendCpuFallback": "المعالج المركزي — أعطى المعالج الرسومي لهذا الجهاز نتائج غير متسقة",
-  "knowledgeBackendCpuUnverified": "المعالج المركزي — تعذّر التحقق"
+  "knowledgeBackendCpuUnverified": "المعالج المركزي — تعذّر التحقق",
+  "knowledgeVideoNeedsFfmpeg": "فهرسة الفيديو تتطلب FFmpeg على هذا الحاسوب. ثبّت FFmpeg (أو عيّن HARBOR_FFMPEG إلى موقعه) ثم أعد المحاولة."
 }

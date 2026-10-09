@@ -24,6 +24,10 @@ encoding_rs = { version = "0.8", optional = true }
 gguf-backend = ["dep:llama-cpp-2", "dep:encoding_rs"]
 # Image / audio embedding through the mmproj projector (decision 0015).
 multimodal = ["gguf-backend", "llama-cpp-2/mtmd"]
+# Vulkan GPU backend (Android; desktop where the Vulkan SDK exists). The
+# runtime falls back to CPU when the device exposes no usable Vulkan GPU, and
+# the embedding numerics canary rejects a GPU path that embeds wrongly.
+vulkan = ["gguf-backend", "llama-cpp-2/vulkan"]
 
 [dev-dependencies]
 tempfile = "3"

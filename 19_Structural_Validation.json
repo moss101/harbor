@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "f23454250445870818f961b4798e21c8417138e526f29676bafe50b3dc6c43bc",
+  "input_manifest_sha256": "758988d1eea42ffd8eceaa15384f39d0ab86e2613474d694f73f85facc8c3c84",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -516,28 +516,28 @@
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_ar.arb",
-      "bytes": 45475,
-      "sha256": "425e8bdece3d3e12c08bda7c59ba454a1cf1e8e3644bc107f3e7bfced3fd2d68"
+      "bytes": 45677,
+      "sha256": "29cb8ae8411a68da3b8409cef29459286c21bc64c263f75eb79ba3fdbe3e7d23"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_en.arb",
-      "bytes": 36680,
-      "sha256": "eca78369a94fb198f61c41c2fc05f0e47c57aa3d0631ce5452c598613fb34514"
+      "bytes": 36829,
+      "sha256": "ebffecba04e2c1604065b4a7cc12aeae9477e240fde6bd94fc2fabcf0f6ab87e"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations.dart",
-      "bytes": 93053,
-      "sha256": "71b9ffecc93252897b2e6a8615de770e51bd80d762ab6f53d77852641e3596b0"
+      "bytes": 93330,
+      "sha256": "254525d26b16800d4350342a99fb64b8d671073d8bb5bf34b51ca15ff76d12a1"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations_ar.dart",
-      "bytes": 57137,
-      "sha256": "9bdcc2c718791cd2c415db92f76c7097f24fbc6be7165e04acec019ab563a136"
+      "bytes": 57369,
+      "sha256": "8baa7878d57d49a67d3a0002f8148fa33441eb92928727874adedc25da68436b"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations_en.dart",
-      "bytes": 45458,
-      "sha256": "948bbb50385ad791da1f3f2d5eb1d359b28a6fc46f6efd6cad299a6f767d8e92"
+      "bytes": 45637,
+      "sha256": "633cdf0eb3156b844ef7effcc08f3204d3964168fee2886b2a86affaf5676a4a"
     },
     {
       "path": "apps/harbor_app/lib/main.dart",
@@ -548,6 +548,11 @@
       "path": "apps/harbor_app/lib/services/diagnostics.dart",
       "bytes": 2932,
       "sha256": "24a8ba0285fa99cb6fa96987f9b71f62cf348e3c245dfecb90489d5602665c0d"
+    },
+    {
+      "path": "apps/harbor_app/lib/services/ffmpeg_frames.dart",
+      "bytes": 5554,
+      "sha256": "8ee7a786673df1d12acbedf6e34041db95599de8ec8c3c85bdfad56a7db78caa"
     },
     {
       "path": "apps/harbor_app/lib/services/file_types.dart",
@@ -566,8 +571,8 @@
     },
     {
       "path": "apps/harbor_app/lib/services/video_frames.dart",
-      "bytes": 1274,
-      "sha256": "c35bff72776b09361fe11d51be23ecd4711c6b83cbe4d5a60b935bc6a434fe3b"
+      "bytes": 2194,
+      "sha256": "d9c67000a377da557611d0db80a01be0e10801bfd6c31f613a2a205a564a4ec3"
     },
     {
       "path": "apps/harbor_app/lib/shell/adaptive_shell.dart",
@@ -621,8 +626,8 @@
     },
     {
       "path": "apps/harbor_app/lib/surfaces/knowledge_surface.dart",
-      "bytes": 14984,
-      "sha256": "7ec040c3698dc2fc8d6a4363dd092bed56c9eae6eb46fd51bfa89fcf89f0eba7"
+      "bytes": 15260,
+      "sha256": "8b5541df79affb1949dfe63880e6cc0b52c2e61d51236e51a05fa013f0ac8cbd"
     },
     {
       "path": "apps/harbor_app/lib/surfaces/memory_panel.dart",
@@ -863,6 +868,11 @@
       "path": "apps/harbor_app/test/catalog_assets_test.dart",
       "bytes": 780,
       "sha256": "2210bb1d2f4e3018777448c614418814dfb128e4e63a8624e024fef2e753ab9c"
+    },
+    {
+      "path": "apps/harbor_app/test/ffmpeg_frames_test.dart",
+      "bytes": 5373,
+      "sha256": "adae93d394e8239367f8754da0f9a492d705fd4f488237d2921ef5b6d77b3804"
     },
     {
       "path": "apps/harbor_app/test/file_type_groups_test.dart",
@@ -2326,8 +2336,8 @@
     },
     {
       "path": "core/harbor_ffi/Cargo.toml",
-      "bytes": 1644,
-      "sha256": "5302b376668fbaef9e8e9df216936e1086b36730f23098fccf112f6abe6f3ea1"
+      "bytes": 1834,
+      "sha256": "c95fe175c3cb18e9411c2dc33942024b350a96356f40446a62e36b69efcae4c2"
     },
     {
       "path": "core/harbor_ffi/src/knowledge.rs",
@@ -2446,8 +2456,8 @@
     },
     {
       "path": "core/harbor_inference/Cargo.toml",
-      "bytes": 993,
-      "sha256": "82183896018fe510fe9d6353276c1d79ecbd46dd1148be7d06253fc53769ab3d"
+      "bytes": 1264,
+      "sha256": "86c551333f420043edf02b02d2807aed675983afdf02a634aa56df919e594a7a"
     },
     {
       "path": "core/harbor_inference/examples/embed_probe.rs",
@@ -2891,8 +2901,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 148998,
-      "sha256": "a331b28704bd01de99af6062e4c745d46a13fd1397d59c2aad18ca664ee3e2b9"
+      "bytes": 149241,
+      "sha256": "bddb085d808f7afc60334a326ad2d82a3be001afe4ae2cd00a8610c4f8b0a4c3"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -2968,6 +2978,11 @@
       "path": "docs/decisions/0015-multimodal-retrieval-and-device-hardening.md",
       "bytes": 11928,
       "sha256": "cf304bc400025d6c9562548dfe325bbc3fab5100bb9e88065be1c1b97a20a662"
+    },
+    {
+      "path": "docs/decisions/0016-android-gpu-and-desktop-video.md",
+      "bytes": 2861,
+      "sha256": "7cb62e155d7c31b9e27b17d701cc4795a00f0611ba166461e48b851a7b56a6d6"
     },
     {
       "path": "docs/nanomuse_embeddinggemma_audit.md",
@@ -3853,6 +3868,11 @@
       "path": "schemas/run_event.schema.json",
       "bytes": 13973,
       "sha256": "815a69972b3886717bf7b85c296ae7b541b6453054857f4bead0b28227a8c01d"
+    },
+    {
+      "path": "scripts/build_android_vulkan.sh",
+      "bytes": 2901,
+      "sha256": "c0c16bad2f4acf2f227b5835cd2c430d640edc6197ecb8103d3cda6500677c43"
     },
     {
       "path": "scripts/build_windows.ps1",

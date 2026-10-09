@@ -3043,6 +3043,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'CPU — could not be verified'**
   String get knowledgeBackendCpuUnverified;
+
+  /// No description provided for @knowledgeVideoNeedsFfmpeg.
+  ///
+  /// In en, this message translates to:
+  /// **'Indexing video needs FFmpeg on this computer. Install FFmpeg (or set HARBOR_FFMPEG to its location) and try again.'**
+  String get knowledgeVideoNeedsFfmpeg;
 }
 
 class _AppLocalizationsDelegate

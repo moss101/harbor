@@ -1835,4 +1835,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get knowledgeBackendCpuUnverified => 'CPU — could not be verified';
+
+  @override
+  String get knowledgeVideoNeedsFfmpeg =>
+      'Indexing video needs FFmpeg on this computer. Install FFmpeg (or set HARBOR_FFMPEG to its location) and try again.';
 }

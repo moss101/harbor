@@ -1885,4 +1885,8 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get knowledgeBackendCpuUnverified => 'المعالج المركزي — تعذّر التحقق';
+
+  @override
+  String get knowledgeVideoNeedsFfmpeg =>
+      'فهرسة الفيديو تتطلب FFmpeg على هذا الحاسوب. ثبّت FFmpeg (أو عيّن HARBOR_FFMPEG إلى موقعه) ثم أعد المحاولة.';
 }
