@@ -63,8 +63,9 @@ XTypeGroup knowledgeTypeGroup(String label) => XTypeGroup(
       ],
     );
 
-/// Images and audio the multimodal embedder can decode (stb_image and
-/// miniaudio formats; HEIC / WebP are not among them).
+/// Images, audio and video the multimodal embedder can take (stb_image and
+/// miniaudio formats; HEIC / WebP are not among them; video is sampled to
+/// frames by the platform, see video_frames.dart).
 XTypeGroup mediaTypeGroup(String label) => XTypeGroup(
       label: label,
       extensions: const [
@@ -85,6 +86,8 @@ XTypeGroup mediaTypeGroup(String label) => XTypeGroup(
         'com.microsoft.waveform-audio',
         'public.mp3',
         'org.xiph.flac',
+        'public.mpeg-4',
+        'com.apple.quicktime-movie',
       ],
     );
 

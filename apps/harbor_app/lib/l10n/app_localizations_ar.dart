@@ -1859,13 +1859,30 @@ class AppLocalizationsAr extends AppLocalizations {
       'عدة مهارات تناسب الطلب بالقدر نفسه؛ اختار نموذجك المحلي المحدد الأولى. وهي ما تزال مجرد اقتراح.';
 
   @override
-  String get fileGroupMedia => 'الصور والصوت';
+  String get fileGroupMedia => 'الصور والصوت والفيديو';
 
   @override
-  String get knowledgeAddMediaAction => 'إضافة صورة أو ملف صوتي';
+  String get knowledgeAddMediaAction => 'إضافة صورة أو صوت أو فيديو';
 
   @override
   String knowledgeMediaFailed(String name) {
     return 'تعذّرت فهرسة $name. تأكد أن الملف بصيغة صورة أو صوت مدعومة.';
   }
+
+  @override
+  String get knowledgeVideoUnsupported =>
+      'لا يستطيع هذا الجهاز قراءة ملفات الفيديو للفهرسة.';
+
+  @override
+  String get knowledgeBackendLabel => 'واجهة التضمين';
+
+  @override
+  String get knowledgeBackendGpu => 'افتراضي الجهاز (المعالج الرسومي إن توفر)';
+
+  @override
+  String get knowledgeBackendCpuFallback =>
+      'المعالج المركزي — أعطى المعالج الرسومي لهذا الجهاز نتائج غير متسقة';
+
+  @override
+  String get knowledgeBackendCpuUnverified => 'المعالج المركزي — تعذّر التحقق';
 }

@@ -20,8 +20,12 @@ sources, search by image/audio, Add image/audio in Knowledge), Matryoshka
 512/256 indexes with their own calibration, a **numerics canary** that caught
 the iOS simulator's silently-wrong GPU path and falls back to CPU, and the
 OS memory-warning hook; verified on macOS Metal+CPU, Android arm64 emulator
-and iOS simulator. Still open: catalog epoch 5 is STAGED not signed
-(operator key), video (no frame decoder), physical-device runs. Routing is now model-independent
+and iOS simulator. Catalog epoch 5 is SIGNED (existing root key, same key id; bundled app
+asset synced). Video: platform-sampled frames (AVFoundation / MediaMetadataRetriever),
+embedded as one item. Real-data media benchmark: text->image R@1 0.874 over
+200 Flickr8k photos, text<->audio R@1 1.000 over 73 LibriSpeech clips (small
+pools; decision 0015). Still open: physical-device runs (none reachable),
+video on Windows/Linux. Routing is now model-independent
 (decision 0014): versioned per-embedder calibration data (bge-m3, EmbeddingGemma
 2, e5; uncalibrated embedders abstain), ambiguity delegated to the user's
 selected chat model through the provider contract (validated, advisory),

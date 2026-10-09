@@ -59,9 +59,10 @@ no other architecture's code path changes.
 
 ## Consequences
 
-- EmbeddingGemma 2 is runnable but not yet a shipped catalog option: adding it
-  needs the signed catalog epoch (operator-held key) and the per-platform live
-  tier. `fixtures/models/embeddinggemma-2-Q8_0.gguf` is gitignored (>100 MB).
+- EmbeddingGemma 2 is a shipped catalog option (signed epoch 5, decision
+  0015) and was verified on macOS, Android arm64 (emulator) and the iOS
+  simulator. `fixtures/models/embeddinggemma-2-Q8_0.gguf` is gitignored
+  (>100 MB).
 - Multimodal: the `src/` hunks cover the TEXT tower. The vendored mtmd
   already supports the model's projector types, so image/audio embedding was
   built in decision 0015 (joint forward pass, `media:` sources). Video is

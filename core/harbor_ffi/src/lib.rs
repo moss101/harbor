@@ -4158,7 +4158,8 @@ fn truncate_for_trail(s: &str, max: usize) -> String {
     }
 }
 
-/// Decode `{kind: "image"|"audio", data_b64}` into media parts plus the
+/// Decode `{kind: "image"|"audio", data_b64}` or `{kind: "video",
+/// frames_b64: [..]}` into media parts plus the
 /// content hash. Bounded: a media item over 25 MB is refused up front.
 #[cfg(feature = "multimodal")]
 fn parse_media_input(
@@ -4167,6 +4168,38 @@ fn parse_media_input(
     use base64::Engine as _;
     use harbor_inference::multimodal::MediaPart;
     const MAX_MEDIA_BYTES: usize = 25 * 1024 * 1024;
+    // A video arrives as its sampled frames (the core has no decoder).
+    if args.get("kind").and_then(|v| v.as_str()) == Some("video") {
+        let frames_b64 = args
+            .get("frames_b64")
+            .and_then(|v| v.as_array())
+            .ok_or_else(|| HarborError::Other("frames_b64 is required for video".into()))?;
+        let max = harbor_inference::multimodal::MAX_VIDEO_FRAMES;
+        if frames_b64.is_empty() || frames_b64.len() > max {
+            return Err(HarborError::Other(format!(
+                "a video needs 1..={max} frames, got {}",
+                frames_b64.len()
+            )));
+        }
+        let mut frames = Vec::with_capacity(frames_b64.len());
+        let mut total = 0usize;
+        let mut hasher_input = String::new();
+        for f in frames_b64 {
+            let b = base64::engine::general_purpose::STANDARD
+                .decode(f.as_str().unwrap_or(""))
+                .map_err(|e| HarborError::Other(format!("bad frame base64: {e}")))?;
+            total += b.len();
+            if b.is_empty() || total > MAX_MEDIA_BYTES {
+                return Err(HarborError::Other(
+                    "video frames are empty or exceed 25 MB in total".into(),
+                ));
+            }
+            hasher_input.push_str(&harbor_canonical::sha256_hex(&b));
+            frames.push(b);
+        }
+        let hash = harbor_canonical::sha256_hex(hasher_input.as_bytes());
+        return Ok((vec![MediaPart::Video(frames)], hash));
+    }
     let b64 = args
         .get("data_b64")
         .and_then(|v| v.as_str())
@@ -4188,7 +4221,7 @@ fn parse_media_input(
         "audio" => MediaPart::AudioFile(bytes),
         other => {
             return Err(HarborError::Other(format!(
-                "kind must be image|audio, got {other:?}"
+                "kind must be image|audio|video, got {other:?}"
             )))
         }
     };

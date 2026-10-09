@@ -815,8 +815,8 @@
   "memoryOriginGoal": "كتبها هدف مجدول",
   "skillsSuggestUncalibrated": "لم يُختبر نموذج التضمين لديك لأغراض الاقتراح، لذا يعرض هاربر أقرب المهارات دون ترشيح إحداها.",
   "skillsSuggestLlmChose": "عدة مهارات تناسب الطلب بالقدر نفسه؛ اختار نموذجك المحلي المحدد الأولى. وهي ما تزال مجرد اقتراح.",
-  "fileGroupMedia": "الصور والصوت",
-  "knowledgeAddMediaAction": "إضافة صورة أو ملف صوتي",
+  "fileGroupMedia": "الصور والصوت والفيديو",
+  "knowledgeAddMediaAction": "إضافة صورة أو صوت أو فيديو",
   "knowledgeMediaFailed": "تعذّرت فهرسة {name}. تأكد أن الملف بصيغة صورة أو صوت مدعومة.",
   "@knowledgeMediaFailed": {
     "placeholders": {
@@ -824,5 +824,10 @@
         "type": "String"
       }
     }
-  }
+  },
+  "knowledgeVideoUnsupported": "لا يستطيع هذا الجهاز قراءة ملفات الفيديو للفهرسة.",
+  "knowledgeBackendLabel": "واجهة التضمين",
+  "knowledgeBackendGpu": "افتراضي الجهاز (المعالج الرسومي إن توفر)",
+  "knowledgeBackendCpuFallback": "المعالج المركزي — أعطى المعالج الرسومي لهذا الجهاز نتائج غير متسقة",
+  "knowledgeBackendCpuUnverified": "المعالج المركزي — تعذّر التحقق"
 }

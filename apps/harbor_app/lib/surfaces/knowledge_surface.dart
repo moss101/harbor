@@ -8,6 +8,7 @@ import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/file_types.dart';
 import '../services/harbor_service.dart';
+import '../services/video_frames.dart';
 import '../widgets/ops.dart';
 import '../widgets/trust.dart';
 import 'knowledge_ingest.dart';
@@ -72,14 +73,27 @@ class _KnowledgeSurfaceState extends State<KnowledgeSurface> {
     if (file == null || !mounted) return;
     final ext =
         file.name.contains('.') ? file.name.split('.').last.toLowerCase() : '';
+    final isVideo = const ['mp4', 'mov', 'm4v'].contains(ext);
     final kind = const ['wav', 'mp3', 'flac'].contains(ext) ? 'audio' : 'image';
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await service.ingestMedia(
-        bytes: await File(file.path).readAsBytes(),
-        kind: kind,
-        title: file.name,
-      );
+      if (isVideo) {
+        // The core has no video decoder: the platform samples frames
+        // (about 1 per second) and the core embeds them as one item.
+        final frames = await sampleVideoFrames(file.path);
+        if (frames == null || frames.isEmpty) {
+          messenger.showSnackBar(
+              SnackBar(content: Text(l10n.knowledgeVideoUnsupported)));
+          return;
+        }
+        await service.ingestVideo(frames: frames, title: file.name);
+      } else {
+        await service.ingestMedia(
+          bytes: await File(file.path).readAsBytes(),
+          kind: kind,
+          title: file.name,
+        );
+      }
       messenger.showSnackBar(
           SnackBar(content: Text(l10n.knowledgeSourceAdded(file.name))));
     } catch (_) {
@@ -291,6 +305,13 @@ class _KnowledgeSurfaceState extends State<KnowledgeSurface> {
                     label: l10n.knowledgeEmbedding,
                     value: 'bge-small-en-v1.5',
                     identifier: true),
+                HarborKeyValue(
+                    label: l10n.knowledgeBackendLabel,
+                    value: switch (service.knowledgeBackend) {
+                      'cpu_fallback' => l10n.knowledgeBackendCpuFallback,
+                      'cpu_unverified' => l10n.knowledgeBackendCpuUnverified,
+                      _ => l10n.knowledgeBackendGpu,
+                    }),
                 if (service.knowledgeIdentity != null)
                   HarborKeyValue(
                       label: l10n.knowledgeIdentity,

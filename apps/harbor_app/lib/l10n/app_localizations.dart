@@ -2999,13 +2999,13 @@ abstract class AppLocalizations {
   /// No description provided for @fileGroupMedia.
   ///
   /// In en, this message translates to:
-  /// **'Images and audio'**
+  /// **'Images, audio and video'**
   String get fileGroupMedia;
 
   /// No description provided for @knowledgeAddMediaAction.
   ///
   /// In en, this message translates to:
-  /// **'Add image or audio'**
+  /// **'Add image, audio or video'**
   String get knowledgeAddMediaAction;
 
   /// No description provided for @knowledgeMediaFailed.
@@ -3013,6 +3013,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not index {name}. Check that the file is a supported image or audio format.'**
   String knowledgeMediaFailed(String name);
+
+  /// No description provided for @knowledgeVideoUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This device cannot read video files for indexing.'**
+  String get knowledgeVideoUnsupported;
+
+  /// No description provided for @knowledgeBackendLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Embedding backend'**
+  String get knowledgeBackendLabel;
+
+  /// No description provided for @knowledgeBackendGpu.
+  ///
+  /// In en, this message translates to:
+  /// **'Device default (GPU where available)'**
+  String get knowledgeBackendGpu;
+
+  /// No description provided for @knowledgeBackendCpuFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'CPU — this device\'s GPU gave inconsistent results'**
+  String get knowledgeBackendCpuFallback;
+
+  /// No description provided for @knowledgeBackendCpuUnverified.
+  ///
+  /// In en, this message translates to:
+  /// **'CPU — could not be verified'**
+  String get knowledgeBackendCpuUnverified;
 }
 
 class _AppLocalizationsDelegate

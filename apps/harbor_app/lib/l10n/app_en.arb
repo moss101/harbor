@@ -957,8 +957,8 @@
   "memoryOriginGoal": "Written by a scheduled goal",
   "skillsSuggestUncalibrated": "Your embedding model has not been benchmarked for suggestions, so Harbor shows the closest skills without recommending one.",
   "skillsSuggestLlmChose": "Several skills fit equally; your selected local model picked the first one. Still only a suggestion.",
-  "fileGroupMedia": "Images and audio",
-  "knowledgeAddMediaAction": "Add image or audio",
+  "fileGroupMedia": "Images, audio and video",
+  "knowledgeAddMediaAction": "Add image, audio or video",
   "knowledgeMediaFailed": "Could not index {name}. Check that the file is a supported image or audio format.",
   "@knowledgeMediaFailed": {
     "placeholders": {
@@ -966,5 +966,10 @@
         "type": "String"
       }
     }
-  }
+  },
+  "knowledgeVideoUnsupported": "This device cannot read video files for indexing.",
+  "knowledgeBackendLabel": "Embedding backend",
+  "knowledgeBackendGpu": "Device default (GPU where available)",
+  "knowledgeBackendCpuFallback": "CPU — this device's GPU gave inconsistent results",
+  "knowledgeBackendCpuUnverified": "CPU — could not be verified"
 }

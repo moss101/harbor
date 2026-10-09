@@ -1809,13 +1809,30 @@ class AppLocalizationsEn extends AppLocalizations {
       'Several skills fit equally; your selected local model picked the first one. Still only a suggestion.';
 
   @override
-  String get fileGroupMedia => 'Images and audio';
+  String get fileGroupMedia => 'Images, audio and video';
 
   @override
-  String get knowledgeAddMediaAction => 'Add image or audio';
+  String get knowledgeAddMediaAction => 'Add image, audio or video';
 
   @override
   String knowledgeMediaFailed(String name) {
     return 'Could not index $name. Check that the file is a supported image or audio format.';
   }
+
+  @override
+  String get knowledgeVideoUnsupported =>
+      'This device cannot read video files for indexing.';
+
+  @override
+  String get knowledgeBackendLabel => 'Embedding backend';
+
+  @override
+  String get knowledgeBackendGpu => 'Device default (GPU where available)';
+
+  @override
+  String get knowledgeBackendCpuFallback =>
+      'CPU — this device\'s GPU gave inconsistent results';
+
+  @override
+  String get knowledgeBackendCpuUnverified => 'CPU — could not be verified';
 }

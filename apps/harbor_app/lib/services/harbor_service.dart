@@ -1,3 +1,4 @@
+import 'dart:async' show unawaited;
 import 'dart:convert' show base64Decode, base64Encode;
 import 'dart:io' show Platform;
 import 'dart:math';
@@ -101,6 +102,10 @@ class HarborService extends ChangeNotifier {
 
   /// The open embedding model has image/audio towers (multimodal package).
   bool knowledgeMultimodal = false;
+
+  /// Which backend serves embeddings: `gpu`, `cpu_fallback` (the device's
+  /// GPU path failed the core's numerics canary) or `cpu_unverified`.
+  String knowledgeBackend = 'gpu';
 
   /// Media items the last open had to drop because the embedding identity
   /// changed (their vectors cannot be re-derived from text); re-import.
@@ -410,6 +415,16 @@ class HarborService extends ChangeNotifier {
       knowledgeOpen = true;
       knowledgeDimension = r['dimension'] as int;
       knowledgeMultimodal = r['multimodal'] == true;
+      knowledgeBackend = r['embedding_backend'] as String? ?? 'gpu';
+      if (knowledgeBackend != 'gpu') {
+        // A device whose GPU path embeds wrongly is exactly what a first
+        // run on new hardware should leave a record of.
+        unawaited(recordDiagnostic({
+          'event': 'embedding_backend',
+          'backend': knowledgeBackend,
+          'package': packageId,
+        }).catchError((_) {}));
+      }
       knowledgeDroppedMedia =
           (r['dropped_media'] as List?)?.cast<String>() ?? const [];
       knowledgeIdentity = r['identity'] as String?;
@@ -435,6 +450,23 @@ class HarborService extends ChangeNotifier {
       'kind': kind,
       'title': title,
       'data_b64': base64Encode(bytes),
+      if (caption != null && caption.trim().isNotEmpty) 'caption': caption,
+    });
+    await refresh();
+    return r;
+  }
+
+  /// Index a video as its sampled frames (see `video_frames.dart`): one
+  /// vector for the whole clip, in the same space as text.
+  Future<Map<String, dynamic>> ingestVideo({
+    required List<List<int>> frames,
+    required String title,
+    String? caption,
+  }) async {
+    final r = await _runOp('op.start_ingest_media', {
+      'kind': 'video',
+      'title': title,
+      'frames_b64': [for (final f in frames) base64Encode(f)],
       if (caption != null && caption.trim().isNotEmpty) 'caption': caption,
     });
     await refresh();

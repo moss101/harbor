@@ -90,7 +90,9 @@ void main() {
     expect(find.textContaining('Q4_K_M'), findsNothing);
     expect(find.textContaining('4096 tokens context'), findsNothing);
     // The Advanced affordance exists and reveals the jargon on demand.
-    expect(find.text('Advanced details'), findsNWidgets(4));
+    // One per visible catalog card: 7 signed packages minus the hidden
+    // test-tier model (epoch 5 added embeddinggemma-2 and -multimodal).
+    expect(find.text('Advanced details'), findsNWidgets(6));
     await tester.tap(find
         .byKey(const ValueKey('catalog-advanced-qwen2.5-1.5b-instruct')));
     await tester.pump();

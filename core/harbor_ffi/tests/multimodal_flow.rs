@@ -300,6 +300,26 @@ mod ops {
             serde_json::json!({"kind": "image", "data_b64": b64("invoice.jpg"), "top_k": 2}),
         );
         assert_eq!(by["citations"][0]["source_id"], "media:inv");
+        // A video arrives as frames_b64 and is searchable like any item.
+        let frames: Vec<String> = (0..4)
+            .map(|i| {
+                base64::engine::general_purpose::STANDARD.encode(
+                    std::fs::read(r.join(format!("fixtures/media/chart_growth_frame{i}.jpg")))
+                        .unwrap(),
+                )
+            })
+            .collect();
+        let v = h.run_op(
+            "op.start_ingest_media",
+            serde_json::json!({"id": "vid", "title": "Growth clip", "kind": "video", "frames_b64": frames}),
+        );
+        assert_eq!(v["source_id"], "media:vid");
+        assert!(!h.call(
+            "op.start_ingest_media",
+            serde_json::json!({"title": "t", "kind": "video", "frames_b64": []})
+        )["ok"]
+            .as_bool()
+            .unwrap_or(false));
         // Bad kind / oversize / empty are typed errors, not panics.
         assert!(!h.call(
             "op.start_ingest_media",
@@ -314,4 +334,72 @@ mod ops {
             .as_bool()
             .unwrap_or(false));
     }
+}
+
+#[test]
+fn video_items_are_retrievable_from_sampled_frames() {
+    let r = root();
+    let weights = r.join("fixtures/models/embeddinggemma-2-Q8_0.gguf");
+    let mmproj = r.join("fixtures/models/mmproj-embeddinggemma-2-Q8_0.gguf");
+    if !weights.exists() || !mmproj.exists() {
+        eprintln!("SKIP: fixtures absent");
+        return;
+    }
+    let dir = tempfile::tempdir().unwrap();
+    let models_root = dir.path().join("models");
+    std::fs::create_dir_all(&models_root).unwrap();
+    let pkg = install(&models_root, &weights, &mmproj);
+    let svc = KnowledgeService::open(dir.path(), &pkg, KeyMaterial::random()).unwrap();
+    let media = r.join("fixtures/media");
+    // Frames sampled from the real MP4s by the app's AVFoundation sampler.
+    let frames = |name: &str| -> Vec<Vec<u8>> {
+        (0..4)
+            .map(|i| std::fs::read(media.join(format!("{name}_frame{i}.jpg"))).unwrap())
+            .collect()
+    };
+    for (id, title, name) in [
+        ("chart-clip", "Growth chart clip", "chart_growth"),
+        ("sun-clip", "Sunny park clip", "landscape_sun"),
+    ] {
+        let f = frames(name);
+        let hash = harbor_canonical::sha256_hex(&f.concat());
+        svc.ingest_media(
+            id,
+            title,
+            &format!("[video] {title}"),
+            &[MediaPart::Video(f)],
+            &hash,
+        )
+        .unwrap();
+    }
+    let top = |q: &str| top_of(&svc, q)[0].clone();
+    assert_eq!(
+        top("a bar chart with bars growing taller"),
+        "media:chart-clip"
+    );
+    assert_eq!(
+        top("a sunny day with a bright sun in the sky over green grass"),
+        "media:sun-clip"
+    );
+
+    // Bounds are typed errors, not panics or silent truncation.
+    let too_many: Vec<Vec<u8>> = (0..25).map(|_| frames("chart_growth")[0].clone()).collect();
+    assert!(svc
+        .ingest_media(
+            "big",
+            "big",
+            "[video] big",
+            &[MediaPart::Video(too_many)],
+            "h"
+        )
+        .is_err());
+    assert!(svc
+        .ingest_media(
+            "none",
+            "none",
+            "[video] none",
+            &[MediaPart::Video(vec![])],
+            "h"
+        )
+        .is_err());
 }

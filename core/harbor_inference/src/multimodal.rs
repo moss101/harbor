@@ -34,12 +34,23 @@ use llama_cpp_2::mtmd::{
 use crate::gguf::GgufLlamaCppProvider;
 use crate::provider::ProviderError;
 
+/// Upper bound on frames per video item (24 x ~280 tokens = ~6.7K of the
+/// shared 8,192-token context, leaving room for any text).
+pub const MAX_VIDEO_FRAMES: usize = 24;
+
 /// One piece of an interleaved input, in order.
 #[derive(Debug, Clone)]
 pub enum MediaPart {
     Text(String),
     /// An encoded image (PNG / JPEG / …).
     Image(Vec<u8>),
+    /// A video as its sampled frames, in order (each an encoded image).
+    /// The model treats video as sampled frames through the vision
+    /// encoder; the caller samples (about 1 frame per second, evenly
+    /// spaced) because the core carries no video decoder. At most
+    /// [`MAX_VIDEO_FRAMES`]: frames share the 8,192-token context at ~280
+    /// tokens each.
+    Video(Vec<Vec<u8>>),
     /// An encoded audio file (WAV / MP3 / FLAC); the runtime decodes and
     /// resamples it.
     AudioFile(Vec<u8>),
@@ -354,6 +365,26 @@ impl MediaEmbedder {
                         .map_err(|e| backend_err("image decode", e))?;
                     bitmaps.push(bm);
                     prompt.push_str(marker);
+                }
+                MediaPart::Video(frames) => {
+                    if !self.supports_vision() {
+                        return Err(backend_err("multimodal", "package has no vision tower"));
+                    }
+                    if frames.is_empty() || frames.len() > MAX_VIDEO_FRAMES {
+                        return Err(backend_err(
+                            "multimodal",
+                            format!(
+                                "a video needs 1..={MAX_VIDEO_FRAMES} frames, got {}",
+                                frames.len()
+                            ),
+                        ));
+                    }
+                    for frame in frames {
+                        let bm = MtmdBitmap::from_buffer(&self.mtmd, frame, false)
+                            .map_err(|e| backend_err("video frame decode", e))?;
+                        bitmaps.push(bm);
+                        prompt.push_str(marker);
+                    }
                 }
                 MediaPart::AudioFile(bytes) => {
                     if !self.supports_audio() {
