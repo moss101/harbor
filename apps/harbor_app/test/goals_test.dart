@@ -83,8 +83,8 @@ void main() {
       // Outcome attaches.
       await service.recordGoalOutcome(goalId, runId, 'completed');
       final afterOutcome = (await service.listGoals()).first;
-      expect((afterOutcome['executions'] as List).first['outcome'],
-          'completed');
+      expect(
+          (afterOutcome['executions'] as List).first['outcome'], 'completed');
 
       // Pause stops due-ness; resume restores the active state (the
       // claimed slot stays consumed, so due-ness returns only on the
@@ -92,12 +92,10 @@ void main() {
       await service.pauseGoal(goalId);
       expect((await service.dueGoals()), isEmpty);
       await service.resumeGoal(goalId);
-      expect(
-          (await service.listGoals()).first['state'], equals('active'));
+      expect((await service.listGoals()).first['state'], equals('active'));
       await service.cancelGoal(goalId);
       expect((await service.dueGoals()), isEmpty);
-      expect((await service.listGoals()).first['state'],
-          equals('cancelled'));
+      expect((await service.listGoals()).first['state'], equals('cancelled'));
       Object? terminal;
       try {
         await service.resumeGoal(goalId);
@@ -105,6 +103,78 @@ void main() {
         terminal = e;
       }
       expect(terminal, isNotNull);
+    });
+  });
+
+  testWidgets('skill goals, memory and suggestions through the service',
+      (tester) async {
+    if (!coreAvailable) return;
+    await tester.runAsync(() async {
+      final dir = Directory.systemTemp.createTempSync('harbor-skillgoal-');
+      final service = await HarborService.open(
+        libraryPath: dylibPath,
+        dataRoot: dir.path,
+        workspaceId: 'ws-skillgoal',
+        deviceRootHex:
+            'f47973db602cbd13c408a3a5cdf3a8eeaa3bd6870b76607542d75ff568526c3c',
+      );
+      addTearDown(() {
+        service.close();
+        dir.deleteSync(recursive: true);
+      });
+
+      await service.refresh();
+      // Every skill the dialog offers for goals exists and is runnable.
+      final byId = {for (final s in service.skills) s.id: s};
+      for (final id in HarborService.goalSkillTextInput.keys) {
+        expect(byId[id]?.runnable, isTrue, reason: '$id must be a graph skill');
+      }
+
+      // A skill goal persists with its skill reference.
+      final created = await service.createGoal(
+        title: 'Thread digest',
+        request: {
+          'kind': 'skill',
+          'skill_id': 'thread-summary',
+          'input': 'summarize this week',
+        },
+        schedule: {'kind': 'every_minutes', 'minutes': 60},
+      );
+      expect((created['request'] as Map)['kind'], 'skill');
+      expect((created['request'] as Map)['skill_id'], 'thread-summary');
+
+      // No embedding index open: suggestions and memory refuse honestly
+      // instead of pretending, and nothing is left half-saved.
+      expect(await service.suggestSkills('summarize an email thread'), isNull);
+      expect(await service.searchMemories('tea'), isNull);
+      Object? refused;
+      try {
+        await service.addMemory('likes tea');
+      } catch (e) {
+        refused = e;
+      }
+      expect(refused, isNotNull);
+      expect(await service.listMemories(), isEmpty);
+    });
+  });
+
+  testWidgets('memory pressure with no index open is a harmless no-op',
+      (tester) async {
+    if (!coreAvailable) return;
+    await tester.runAsync(() async {
+      final dir = Directory.systemTemp.createTempSync('harbor-mempressure-');
+      final service = await HarborService.open(
+        libraryPath: dylibPath,
+        dataRoot: dir.path,
+        workspaceId: 'ws-mem',
+        deviceRootHex:
+            'f47973db602cbd13c408a3a5cdf3a8eeaa3bd6870b76607542d75ff568526c3c',
+      );
+      addTearDown(() {
+        service.close();
+        dir.deleteSync(recursive: true);
+      });
+      await service.releaseEmbedder();
     });
   });
 }

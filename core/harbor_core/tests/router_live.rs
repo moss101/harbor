@@ -20,7 +20,7 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use harbor_core::router::{AbstainReason, RouteThresholds, SkillRouter};
+use harbor_core::router::{AbstainReason, SkillRouter};
 use harbor_core::skills::builtin_skills;
 use harbor_inference::gguf::GgufLlamaCppProvider;
 use harbor_inference::provider::{ModelProvider, ModelRef};
@@ -96,21 +96,51 @@ fn live_router_routes_the_builtin_eval_inputs() {
     };
     provider.load(&model).unwrap();
 
+    // HARBOR_EMBED_DIM measures a Matryoshka-truncated embedder (its own
+    // calibration entry; EmbeddingGemma 2 only).
+    let dim: Option<u32> = std::env::var("HARBOR_EMBED_DIM")
+        .ok()
+        .and_then(|d| d.parse().ok());
+    let embedder =
+        harbor_inference::mrl::TruncatedEmbedder::with_dim(&provider, dim.map(|d| d as usize));
+
     let skills = builtin_skills().expect("builtin skills parse+validate");
     let prewarm_start = std::time::Instant::now();
-    let router = SkillRouter::prewarm(&skills, &provider, &model).expect("prewarm");
+    let router = SkillRouter::prewarm_truncated(&skills, &embedder, &model, dim).expect("prewarm");
     let prewarm_ms = prewarm_start.elapsed().as_millis() as u64;
 
     // Labeled routing corpus: every built-in skill's eval inputs route
     // to the skill that carries them.
-    let mut labels: Vec<(String, String, String)> = Vec::new(); // (skill_id, input, expect)
+    let mut labels: Vec<(String, String, String, String)> = Vec::new(); // (skill_id, input, expect, lang)
     for s in &skills {
         for c in &s.eval_cases {
-            labels.push((s.id.clone(), c.input.clone(), c.expect.clone()));
+            labels.push((s.id.clone(), c.input.clone(), c.expect.clone(), "en".into()));
         }
     }
+    // Non-English routing inputs (evals/skill_routing/multilingual.json):
+    // the built-in eval cases are English-only, so without these the
+    // router's behavior for Arabic/French users would be unmeasured.
+    let multilingual: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(repo_root().join("evals/skill_routing/multilingual.json"))
+            .expect("multilingual routing fixture readable"),
+    )
+    .expect("multilingual routing fixture parses");
+    for c in multilingual["cases"].as_array().expect("cases array") {
+        labels.push((
+            c["skill"].as_str().expect("skill").to_string(),
+            c["input"].as_str().expect("input").to_string(),
+            String::new(),
+            c["lang"].as_str().expect("lang").to_string(),
+        ));
+    }
 
-    let thresholds = RouteThresholds::default();
+    // Measure at the embedder's shipped calibration; an embedder with
+    // none is measured at the bge-m3 default so the sweep stays comparable
+    // (its router would abstain as Uncalibrated in production).
+    let thresholds = router
+        .calibration()
+        .map(|c| c.thresholds())
+        .unwrap_or_default();
     let mut top1 = 0u64;
     let mut top3 = 0u64;
     let mut abstained = 0u64;
@@ -120,10 +150,10 @@ fn live_router_routes_the_builtin_eval_inputs() {
     let mut per_case: Vec<serde_json::Value> = Vec::new();
     let mut score_hist: BTreeMap<String, u64> = BTreeMap::new();
 
-    for (skill_id, input, expect) in &labels {
+    for (skill_id, input, expect, lang) in &labels {
         let t0 = std::time::Instant::now();
         let d = router
-            .evaluate(&provider, &model, input, thresholds)
+            .evaluate(&embedder, &model, input, thresholds)
             .expect("evaluate");
         eval_ms_total += t0.elapsed().as_millis() as u64;
         let hit1 = d.ranked.first().map(|h| h.skill_id.as_str()) == Some(skill_id.as_str());
@@ -151,6 +181,7 @@ fn live_router_routes_the_builtin_eval_inputs() {
         }
         per_case.push(serde_json::json!({
             "skill": skill_id,
+            "lang": lang,
             "input": input,
             "expect": expect,
             "top1": d.ranked.first().map(|h| h.skill_id.clone()),
@@ -161,6 +192,7 @@ fn live_router_routes_the_builtin_eval_inputs() {
             "reason": d.reason.map(|r| match r {
                 AbstainReason::NoConfidentMatch => "no_confident_match",
                 AbstainReason::Ambiguous => "ambiguous",
+                AbstainReason::Uncalibrated => "uncalibrated",
             }),
             "hit1": hit1,
             "hit3": hit3,
@@ -200,12 +232,41 @@ fn live_router_routes_the_builtin_eval_inputs() {
     }
 
     let total = labels.len() as f64;
+    // Per-language breakdown: a single blended rate would hide an
+    // Arabic/French collapse behind the English majority.
+    let mut by_lang: BTreeMap<String, serde_json::Value> = BTreeMap::new();
+    for lang in ["en", "ar", "fr"] {
+        let rows: Vec<&serde_json::Value> = per_case
+            .iter()
+            .filter(|c| c["lang"].as_str() == Some(lang))
+            .collect();
+        let n = rows.len().max(1) as f64;
+        let conf: Vec<&&serde_json::Value> = rows
+            .iter()
+            .filter(|c| !c["abstained"].as_bool().unwrap_or(true))
+            .collect();
+        let right = conf
+            .iter()
+            .filter(|c| c["hit1"].as_bool().unwrap_or(false))
+            .count();
+        by_lang.insert(
+            lang.to_string(),
+            serde_json::json!({
+                "cases": rows.len(),
+                "top1_rate": rows.iter().filter(|c| c["hit1"].as_bool().unwrap_or(false)).count() as f64 / n,
+                "top3_rate": rows.iter().filter(|c| c["hit3"].as_bool().unwrap_or(false)).count() as f64 / n,
+                "coverage": conf.len() as f64 / n,
+                "precision_when_confident": if conf.is_empty() { None } else { Some(right as f64 / conf.len() as f64) },
+            }),
+        );
+    }
     let report = serde_json::json!({
         "model": gguf.display().to_string(),
         "weights_sha256": sha,
         "package_id": package_id,
         "runtime": harbor_inference::runtime_identity(),
         "policy": router.policy().identity(),
+        "embedding_dimension": dim,
         "candidates": router.candidate_count(),
         "thresholds": {
             "min_score": thresholds.min_score,
@@ -228,6 +289,7 @@ fn live_router_routes_the_builtin_eval_inputs() {
         "prewarm_ms": prewarm_ms,
         "evaluate_ms_p50_note": "mean; per-case timings not recorded individually",
         "evaluate_ms_mean": eval_ms_total as f64 / total,
+        "by_language": by_lang,
         "top_score_histogram": score_hist,
         "threshold_sweep": sweep,
         "per_case": per_case,
@@ -235,7 +297,8 @@ fn live_router_routes_the_builtin_eval_inputs() {
     });
     let evidence_dir = repo_root().join("evidence/skill_routing");
     std::fs::create_dir_all(&evidence_dir).unwrap();
-    let path = evidence_dir.join(format!("live-{}.json", &sha[..12]));
+    let suffix = dim.map(|d| format!("-mrl{d}")).unwrap_or_default();
+    let path = evidence_dir.join(format!("live-{}{suffix}.json", &sha[..12]));
     std::fs::write(&path, serde_json::to_string_pretty(&report).unwrap()).unwrap();
     println!("{}", serde_json::to_string_pretty(&report).unwrap());
     println!("evidence: {}", path.display());

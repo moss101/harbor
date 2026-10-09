@@ -16,6 +16,9 @@ pub mod backend;
 pub mod cassette;
 #[cfg(feature = "gguf-backend")]
 pub mod gguf;
+pub mod mrl;
+#[cfg(feature = "multimodal")]
+pub mod multimodal;
 pub mod provider;
 pub mod router;
 pub mod system;

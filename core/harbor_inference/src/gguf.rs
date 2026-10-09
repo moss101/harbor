@@ -44,6 +44,11 @@ pub struct GgufLlamaCppProvider {
     backend: &'static LlamaBackend,
     installed_root: PathBuf,
     loaded: Mutex<BTreeMap<String, Arc<LlamaModel>>>,
+    /// Packages pinned to the CPU backend because their GPU path failed a
+    /// numerics canary (see [`GgufLlamaCppProvider::force_cpu`]). Sticky
+    /// across unload/reload so a memory release never re-enables a GPU
+    /// path already proven wrong on this device.
+    cpu_only: Mutex<std::collections::BTreeSet<String>>,
     /// Context window used for generation contexts.
     context_tokens: u32,
 }
@@ -65,12 +70,28 @@ trait Pipe: Sized {
 impl<T> Pipe for T {}
 
 impl GgufLlamaCppProvider {
+    /// Pin `package_id` to the CPU backend and drop any GPU-loaded copy;
+    /// the next `load` reloads it on the CPU. Used when a numerics canary
+    /// shows the device's GPU path produces wrong embeddings (the
+    /// simulator's GPU, or hardware without bfloat — EmbeddingGemma 2's
+    /// activations overflow float16, which then degrades silently).
+    pub fn force_cpu(&self, package_id: &str) {
+        self.cpu_only.lock().unwrap().insert(package_id.to_string());
+        self.loaded.lock().unwrap().remove(package_id);
+    }
+
+    /// Whether `package_id` is pinned to the CPU backend.
+    pub fn is_cpu_pinned(&self, package_id: &str) -> bool {
+        self.cpu_only.lock().unwrap().contains(package_id)
+    }
+
     pub fn new(installed_root: impl Into<PathBuf>) -> Result<Self, ProviderError> {
         let backend = shared_backend()?;
         Ok(GgufLlamaCppProvider {
             backend,
             installed_root: installed_root.into(),
             loaded: Mutex::new(BTreeMap::new()),
+            cpu_only: Mutex::new(Default::default()),
             context_tokens: 2048,
         })
     }
@@ -78,6 +99,41 @@ impl GgufLlamaCppProvider {
     pub fn with_context_tokens(mut self, n: u32) -> Self {
         self.context_tokens = n;
         self
+    }
+
+    /// The process-global llama backend (needed to open extra contexts).
+    pub fn backend(&self) -> &'static LlamaBackend {
+        self.backend
+    }
+
+    /// The loaded model for `package_id`, if resident.
+    pub fn loaded_model(&self, package_id: &str) -> Option<Arc<LlamaModel>> {
+        self.loaded.lock().unwrap().get(package_id).cloned()
+    }
+
+    /// Path of the package's primary weights file.
+    pub fn weights_file(&self, package_id: &str) -> Result<PathBuf, ProviderError> {
+        self.weights_path(package_id)
+    }
+
+    /// Path of the package's multimodal projector (`mmproj` role), or a
+    /// typed error when the package is text-only.
+    pub fn mmproj_file(&self, package_id: &str) -> Result<PathBuf, ProviderError> {
+        let manifest = PackageInstaller::new(&self.installed_root)
+            .load_manifest(package_id)
+            .map_err(|e| ProviderError::ModelNotFound(format!("{package_id}: {e}")))?;
+        let f = manifest.files.iter().find(|f| f.role == "mmproj").ok_or(
+            ProviderError::UnsupportedCapability("package has no multimodal projector"),
+        )?;
+        let path = self.installed_root.join(package_id).join(&f.path);
+        if path.exists() {
+            Ok(path)
+        } else {
+            Err(ProviderError::ModelNotFound(format!(
+                "missing file {}",
+                f.path
+            )))
+        }
     }
 
     fn weights_path(&self, package_id: &str) -> Result<PathBuf, ProviderError> {
@@ -426,7 +482,9 @@ impl ModelProvider for GgufLlamaCppProvider {
         // separable by taking the GPU out of the loop. It doubles as a
         // way to keep a device usable if its GPU kernels are broken.
         let mut params = llama_cpp_2::model::params::LlamaModelParams::default();
-        if std::env::var("HARBOR_GGUF_CPU_ONLY").as_deref() == Ok("1") {
+        if std::env::var("HARBOR_GGUF_CPU_ONLY").as_deref() == Ok("1")
+            || self.cpu_only.lock().unwrap().contains(package_id)
+        {
             params = params.with_n_gpu_layers(0);
         }
         let model = LlamaModel::load_from_file(self.backend, path, &params)

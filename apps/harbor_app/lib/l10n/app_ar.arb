@@ -781,5 +781,48 @@
   "agentsNotAutonomyTitle": "ليست تنسيقًا ذاتيًا",
   "agentsNotAutonomyBody": "تخطيط الوكيل متعدد الخطوات بما يتجاوز رسوم المهارات، والتنفيذ المجدول دون ضغطة، غير متضمنين في هذا الإصدار. تعمل المهارات وفق الرسوم التي تعلنها تمامًا، مع فرض الموافقات.",
   "agentsNotHandsTitle": "بلا استخدام للجهاز",
-  "agentsNotHandsBody": "لا يتحكم هاربر أبدًا في شاشتك أو في تطبيقات أخرى. يعمل عبر أدوات مكتوبة وملفات ترفقها ووثائق توافق عليها."
+  "agentsNotHandsBody": "لا يتحكم هاربر أبدًا في شاشتك أو في تطبيقات أخرى. يعمل عبر أدوات مكتوبة وملفات ترفقها ووثائق توافق عليها.",
+  "goalsKindPrompt": "طلب حر",
+  "goalsKindSkill": "مهارة",
+  "goalsSkillLabel": "المهارة",
+  "goalsSkillInputLabel": "النص الذي ستعمل عليه المهارة",
+  "goalsRunAwaitingApproval": "تنتظر عملية الهدف موافقتك — افتح النشاط لمراجعتها.",
+  "skillsSuggestHint": "صف ما تريد فعله وسيقترح هاربر مهارة",
+  "skillsSuggestAction": "اقترح مهارة",
+  "skillsSuggestBest": "أفضل المطابقات (اضغط على واحدة لفتحها):",
+  "skillsSuggestNoMatch": "لا توجد مهارة مطابقة بثقة — جرّب كلمات أخرى أو تصفّح القائمة أدناه.",
+  "skillsSuggestAmbiguous": "عدة مهارات تناسب الطلب بالقدر نفسه تقريبًا — الأقرب أدناه.",
+  "skillsSuggestUnavailable": "الاقتراحات غير متاحة حاليًا.",
+  "skillsSuggestNote": "الاقتراحات توصيات فقط. لا يعمل شيء حتى تفتح مهارة وتشغّلها.",
+  "memoryHeading": "الذاكرة",
+  "memoryExplainer": "ملاحظات يستطيع هاربر استدعاءها بالمعنى. تُظهر كل ملاحظة من كتبها، ويمكنك حذف أي منها، ولا تُستخدم الذاكرة أبدًا كمصدر للمستندات.",
+  "memoryAddHint": "شيء تريد تذكّره، مثل: «أفضّل الوحدات المترية».",
+  "memoryAddAction": "تذكّر",
+  "memoryAddFailed": "تعذّر حفظ هذه الذاكرة.",
+  "memorySearchHint": "ابحث في الذاكرة بالمعنى",
+  "memoryEmpty": "لا شيء محفوظ بعد.",
+  "memoryNoMatch": "لا توجد ذاكرة مطابقة.",
+  "memoryDeleteAction": "حذف الذاكرة",
+  "memoryOriginUser": "أضفتها أنت",
+  "memoryOriginRun": "كتبتها عملية المهارة: {skill}",
+  "@memoryOriginRun": {
+    "placeholders": {
+      "skill": {
+        "type": "String"
+      }
+    }
+  },
+  "memoryOriginGoal": "كتبها هدف مجدول",
+  "skillsSuggestUncalibrated": "لم يُختبر نموذج التضمين لديك لأغراض الاقتراح، لذا يعرض هاربر أقرب المهارات دون ترشيح إحداها.",
+  "skillsSuggestLlmChose": "عدة مهارات تناسب الطلب بالقدر نفسه؛ اختار نموذجك المحلي المحدد الأولى. وهي ما تزال مجرد اقتراح.",
+  "fileGroupMedia": "الصور والصوت",
+  "knowledgeAddMediaAction": "إضافة صورة أو ملف صوتي",
+  "knowledgeMediaFailed": "تعذّرت فهرسة {name}. تأكد أن الملف بصيغة صورة أو صوت مدعومة.",
+  "@knowledgeMediaFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

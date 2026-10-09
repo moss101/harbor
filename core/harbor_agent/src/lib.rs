@@ -20,6 +20,7 @@ pub mod event;
 pub mod goals;
 pub mod lease;
 pub mod log;
+pub mod memory;
 pub mod state;
 
 pub use budgets::Budgets;
@@ -30,4 +31,5 @@ pub use goals::{
 };
 pub use lease::{ExecutorLease, LeaseError, LeaseManager};
 pub use log::{EventLog, LogError};
+pub use memory::{MemoryError, MemoryRecord, MemoryStore, Provenance};
 pub use state::{PauseReason, RunState, StateError};

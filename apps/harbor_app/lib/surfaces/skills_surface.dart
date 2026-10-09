@@ -21,6 +21,9 @@ class SkillsSurface extends StatefulWidget {
 
 class _SkillsSurfaceState extends State<SkillsSurface> {
   final _filter = TextEditingController();
+  final _suggest = TextEditingController();
+  Map<String, dynamic>? _suggestion;
+  bool _suggesting = false;
   AppState? _state;
 
   @override
@@ -45,7 +48,102 @@ class _SkillsSurfaceState extends State<SkillsSurface> {
   void dispose() {
     _state?.removeListener(_consumePending);
     _filter.dispose();
+    _suggest.dispose();
     super.dispose();
+  }
+
+  /// Ask the router which skill fits a request. Recommend-only: the
+  /// result opens a skill's detail sheet; running still goes through
+  /// the skill's own run and approval path.
+  Future<void> _runSuggest() async {
+    final service = HarborServiceProvider.of(context).notifier;
+    final text = _suggest.text.trim();
+    if (service == null || text.isEmpty) return;
+    setState(() => _suggesting = true);
+    final preferred = AppStateScope.maybeOf(context)?.chatModel;
+    final installed = [
+      for (final m in service.installedModels) m['id'] as String
+    ];
+    final result = await service.suggestSkills(text,
+        chatPackage: preferred != null && installed.contains(preferred)
+            ? preferred
+            : null);
+    if (!mounted) return;
+    setState(() {
+      _suggesting = false;
+      _suggestion = result ?? {'unavailable': true};
+    });
+  }
+
+  Widget _suggestBar(AppLocalizations l10n, double gutter) {
+    final t = HarborTheme.of(context);
+    final all = HarborServiceProvider.of(context).notifier?.skills ??
+        const <SkillSummary>[];
+    final r = _suggestion;
+    final ranked = (r?['ranked'] as List?)?.cast<Map>() ?? const [];
+    final String? note = r == null
+        ? null
+        : r['unavailable'] == true
+            ? l10n.skillsSuggestUnavailable
+            : (r['llm_choice'] as Map?)?['status'] == 'chose'
+                ? l10n.skillsSuggestLlmChose
+                : r['abstained'] == true
+                    ? switch (r['reason']) {
+                        'ambiguous' => l10n.skillsSuggestAmbiguous,
+                        'uncalibrated' => l10n.skillsSuggestUncalibrated,
+                        _ => l10n.skillsSuggestNoMatch,
+                      }
+                    : l10n.skillsSuggestBest;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(gutter, 0, gutter, HarborSpace.s3),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        TextField(
+          key: const ValueKey('skills-suggest-field'),
+          controller: _suggest,
+          textInputAction: TextInputAction.search,
+          onSubmitted: (_) => _runSuggest(),
+          decoration: InputDecoration(
+            hintText: l10n.skillsSuggestHint,
+            prefixIcon: const Icon(Icons.auto_awesome_outlined),
+            suffixIcon: _suggesting
+                ? const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2)))
+                : IconButton(
+                    tooltip: l10n.skillsSuggestAction,
+                    icon: const Icon(Icons.arrow_forward),
+                    onPressed: _runSuggest),
+          ),
+        ),
+        if (note != null) ...[
+          const SizedBox(height: HarborSpace.s2),
+          Text(note, style: t.text.smallOf(t.colors.inkMuted)),
+        ],
+        if (ranked.isNotEmpty) ...[
+          const SizedBox(height: HarborSpace.s2),
+          Wrap(spacing: HarborSpace.s2, runSpacing: HarborSpace.s1, children: [
+            for (final h in ranked)
+              ActionChip(
+                label: Text(h['title'] as String? ?? ''),
+                onPressed: () {
+                  for (final s in all) {
+                    if (s.id == h['skill_id']) {
+                      _showDetail(s);
+                      return;
+                    }
+                  }
+                },
+              ),
+          ]),
+          const SizedBox(height: HarborSpace.s1),
+          Text(l10n.skillsSuggestNote,
+              style: t.text.smallOf(t.colors.inkMuted)),
+        ],
+      ]),
+    );
   }
 
   void _consumePending() {
@@ -223,6 +321,8 @@ class _SkillsSurfaceState extends State<SkillsSurface> {
             ),
           ),
         ),
+      if (all.isNotEmpty && (service?.knowledgeOpen ?? false))
+        _suggestBar(l10n, gutter),
       Expanded(
         child: Builder(builder: (context) {
           if (sp.failed || service == null) {

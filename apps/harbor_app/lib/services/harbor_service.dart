@@ -98,6 +98,13 @@ class HarborService extends ChangeNotifier {
 
   bool knowledgeOpen = false;
   int knowledgeDimension = 0;
+
+  /// The open embedding model has image/audio towers (multimodal package).
+  bool knowledgeMultimodal = false;
+
+  /// Media items the last open had to drop because the embedding identity
+  /// changed (their vectors cannot be re-derived from text); re-import.
+  List<String> knowledgeDroppedMedia = const [];
   String? knowledgeIdentity;
   List<Map<String, dynamic>> knowledgeSources = [];
 
@@ -112,8 +119,8 @@ class HarborService extends ChangeNotifier {
   /// Raw dispatch for tests (walkthrough evidence drives the same FFI
   /// surface the UI does).
   @visibleForTesting
-  Future<Map<String, dynamic>> callForTest(String method,
-          Map<String, dynamic> args) =>
+  Future<Map<String, dynamic>> callForTest(
+          String method, Map<String, dynamic> args) =>
       _call(method, args);
 
   Future<Map<String, dynamic>> _call(String method,
@@ -402,6 +409,9 @@ class HarborService extends ChangeNotifier {
       final r = await _call('knowledge.open', {'package_id': packageId});
       knowledgeOpen = true;
       knowledgeDimension = r['dimension'] as int;
+      knowledgeMultimodal = r['multimodal'] == true;
+      knowledgeDroppedMedia =
+          (r['dropped_media'] as List?)?.cast<String>() ?? const [];
       knowledgeIdentity = r['identity'] as String?;
       await refresh();
       return true;
@@ -409,6 +419,41 @@ class HarborService extends ChangeNotifier {
       knowledgeOpen = false;
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Index an image or audio file (`kind` = `image` | `audio`) into the
+  /// knowledge index as a media item. Needs a multimodal embedding
+  /// package; throws [ffi.HarborCoreException] otherwise.
+  Future<Map<String, dynamic>> ingestMedia({
+    required List<int> bytes,
+    required String kind,
+    required String title,
+    String? caption,
+  }) async {
+    final r = await _runOp('op.start_ingest_media', {
+      'kind': kind,
+      'title': title,
+      'data_b64': base64Encode(bytes),
+      if (caption != null && caption.trim().isNotEmpty) 'caption': caption,
+    });
+    await refresh();
+    return r;
+  }
+
+  /// Search the index by an image or audio query. Same citation shape as
+  /// [searchKnowledge]; null when unavailable.
+  Future<Map<String, dynamic>?> searchByMedia(List<int> bytes, String kind,
+      {int topK = 5}) async {
+    if (!knowledgeOpen || !knowledgeMultimodal) return null;
+    try {
+      return await _runOp('op.start_search_media', {
+        'kind': kind,
+        'data_b64': base64Encode(bytes),
+        'top_k': topK,
+      });
+    } on ffi.HarborCoreException {
+      return null;
     }
   }
 
@@ -473,9 +518,11 @@ class HarborService extends ChangeNotifier {
     List<SkillArtifact> artifacts = const [],
     Map<String, dynamic> hostInputs = const {},
     String? chatPackage,
+    String? runId,
   }) async {
     final report = await _runOp('op.start_skill_run', {
       'skill_id': skillId,
+      if (runId != null) 'run_id': runId,
       'inputs': inputs,
       'host_inputs': hostInputs,
       if (chatPackage != null) 'chat_package': chatPackage,
@@ -525,10 +572,93 @@ class HarborService extends ChangeNotifier {
     return result;
   }
 
+  // --- Skill routing (decision 0011): recommend-only -------------------
+
+  /// Rank the built-in skills for a free-text request. Returns
+  /// `{abstained, reason, ranked: [{skill_id, title, score}]}`, or null
+  /// when no embedding index is open or the core refuses. A suggestion
+  /// never starts or authorizes anything.
+  ///
+  /// [chatPackage] (the user's currently selected chat model, whichever it
+  /// is) is consulted ONLY to break a tie the embedder cannot; routing
+  /// itself never depends on it.
+  Future<Map<String, dynamic>?> suggestSkills(String text,
+      {String? chatPackage}) async {
+    if (!knowledgeOpen) return null;
+    try {
+      return await _call('skills.suggest', {
+        'text': text,
+        if (chatPackage != null) 'chat_package': chatPackage,
+      });
+    } on ffi.HarborCoreException {
+      return null;
+    }
+  }
+
+  // --- Semantic memory (decision 0012) ------------------------------------
+
+  /// All memories with provenance, oldest first. Empty on a core refusal.
+  Future<List<Map<String, dynamic>>> listMemories() async {
+    try {
+      return _mapList((await _call('memory.list'))['memories']);
+    } on ffi.HarborCoreException {
+      return const [];
+    }
+  }
+
+  /// Remember [text] as a user-authored memory. Throws
+  /// [ffi.HarborCoreException] when it cannot be embedded (no index open).
+  Future<Map<String, dynamic>> addMemory(String text) => _call('memory.add', {
+        'text': text,
+        'provenance': {'origin': 'user'},
+      });
+
+  /// Free the embedding model's memory (mobile memory pressure). The
+  /// index stays; the next lookup reloads the weights.
+  Future<void> releaseEmbedder() async {
+    if (!knowledgeOpen) return;
+    try {
+      await _call('knowledge.release');
+    } on ffi.HarborCoreException {
+      // Nothing to release.
+    }
+  }
+
+  Future<void> deleteMemory(String id) async {
+    await _call('memory.delete', {'id': id});
+  }
+
+  /// Semantic recall: `[{memory, score}]`, best first; null when no
+  /// index is open.
+  Future<List<Map<String, dynamic>>?> searchMemories(String query,
+      {int topK = 5}) async {
+    if (!knowledgeOpen) return null;
+    try {
+      final r = await _call('memory.search', {'query': query, 'top_k': topK});
+      return _mapList(r['hits']);
+    } on ffi.HarborCoreException {
+      return null;
+    }
+  }
+
   // --- Scheduled goals (decision 0011) --------------------------------
   // Durable, user-authorized proactive work. The core hosts no timers:
   // the surface polls `dueGoals` in the foreground, claims a slot, and
   // executes the claim under the returned run id (at-most-once).
+
+  /// Skills a scheduled goal may run, with the one text input each takes.
+  /// Only skills whose SOLE required input is free text qualify: a goal
+  /// carries a single string, and an unattended slot has no file handle
+  /// to hand a skill that needs one. Their approvals still happen in
+  /// the run (a goal never auto-approves).
+  static const Map<String, String> goalSkillTextInput = {
+    'email-drafting': 'notes',
+    'meeting-notes': 'transcript',
+    'presentation-builder': 'notes',
+    'second-look': 'material',
+    'sheet-builder': 'description',
+    'thread-summary': 'thread',
+  };
 
   /// All scheduled goals (any state), newest last. Empty when the core
   /// refuses (never throws for a closed store).
@@ -748,8 +878,8 @@ class HarborService extends ChangeNotifier {
     final newBytes =
         base64Decode(result['data_b64'] as String).toList(growable: false);
     _sourceBytes = newBytes;
-    _preview = await _call('artifact.preview',
-        {'data_b64': base64Encode(newBytes)});
+    _preview =
+        await _call('artifact.preview', {'data_b64': base64Encode(newBytes)});
     notifyListeners();
     return result;
   }

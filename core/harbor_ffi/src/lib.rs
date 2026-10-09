@@ -1161,6 +1161,125 @@ fn dispatch(
             ws.inner.agent_log.append(event, lease.generation, None)?;
             Ok(serde_json::json!({ "state": "PAUSED", "reason": reason.as_str() }))
         }
+        // --- semantic memory (decision 0012) --------------------------------
+        // Records (with provenance) live in the sealed memory store; the
+        // embedding index entry is a `memory:<id>` knowledge source that
+        // document retrieval never sees.
+        "memory.add" => {
+            let text = args
+                .get("text")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let provenance = match args.get("provenance") {
+                None | Some(serde_json::Value::Null) => harbor_agent::Provenance::User,
+                Some(v) => serde_json::from_value(v.clone())
+                    .map_err(|e| HarborError::Other(format!("bad provenance: {e}")))?,
+            };
+            let id = harbor_security::HarborId::generate("mem").to_string();
+            let record = ws
+                .inner
+                .memory
+                .add(harbor_agent::MemoryRecord {
+                    id: id.clone(),
+                    text,
+                    provenance,
+                    created_at: harbor_core::Workspace::now(),
+                })
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            // Index it. A memory that cannot be embedded is not
+            // remembered: roll the record back instead of leaving an
+            // unsearchable orphan.
+            #[cfg(feature = "gguf")]
+            let indexed = ws
+                .knowledge
+                .as_ref()
+                .ok_or_else(|| HarborError::Other("knowledge not open".into()))
+                .and_then(|ks| {
+                    let title: String = record.text.chars().take(60).collect();
+                    ks.ingest(&[(
+                        harbor_agent::memory::source_id(&id),
+                        title,
+                        record.text.clone(),
+                    )])
+                    .map(|_| ())
+                    .map_err(|e| HarborError::Other(e.to_string()))
+                });
+            #[cfg(not(feature = "gguf"))]
+            let indexed: Result<(), HarborError> = Err(HarborError::Other(
+                "model features are not included in this build".into(),
+            ));
+            if let Err(e) = indexed {
+                let _ = ws.inner.memory.delete(&id);
+                return Err(e);
+            }
+            Ok(serde_json::to_value(&record).unwrap_or(serde_json::json!({})))
+        }
+        "memory.list" => {
+            let memories = ws
+                .inner
+                .memory
+                .list()
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            Ok(serde_json::json!({ "memories": memories }))
+        }
+        "memory.delete" => {
+            let id = args.get("id").and_then(|v| v.as_str()).unwrap_or("");
+            ws.inner
+                .memory
+                .delete(id)
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            // The record is gone; drop its index entry too. An already
+            // missing entry is fine (never indexed, or rebuilt away).
+            #[cfg(feature = "gguf")]
+            if let Some(ks) = ws.knowledge.as_ref() {
+                let _ = ks.remove_source(&harbor_agent::memory::source_id(id));
+            }
+            Ok(serde_json::json!({ "deleted": id }))
+        }
+        "memory.search" => {
+            #[cfg(not(feature = "gguf"))]
+            {
+                let _ = args;
+                return Err(HarborError::Other(
+                    "model features are not included in this build".into(),
+                ));
+            }
+            #[cfg(feature = "gguf")]
+            {
+                let query = args
+                    .get("query")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .trim()
+                    .to_string();
+                if query.is_empty() {
+                    return Err(HarborError::Other("query is required".into()));
+                }
+                let top_k = args.get("top_k").and_then(|v| v.as_u64()).unwrap_or(5) as usize;
+                let ks = ws
+                    .knowledge
+                    .as_ref()
+                    .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
+                let hits = ks
+                    .search_memory(&query, top_k.clamp(1, 20))
+                    .map_err(|e| HarborError::Other(e.to_string()))?;
+                let mut out = Vec::new();
+                for (id, score) in hits {
+                    // An index entry without a record is an orphan
+                    // (deleted elsewhere): never surface it.
+                    if let Some(rec) = ws
+                        .inner
+                        .memory
+                        .get(&id)
+                        .map_err(|e| HarborError::Other(e.to_string()))?
+                    {
+                        out.push(serde_json::json!({ "memory": rec, "score": score }));
+                    }
+                }
+                Ok(serde_json::json!({ "hits": out }))
+            }
+        }
         // --- scheduled goals (decision 0011) --------------------------------
         // The core hosts no timers: the app polls goals.due and drives
         // due goals in the foreground. claims are write-ahead, so a
@@ -2331,7 +2450,11 @@ fn dispatch(
                     .knowledge
                     .as_ref()
                     .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
+                ks.ensure_loaded()
+                    .map_err(|e| HarborError::Other(e.to_string()))?;
                 let package = ks.embedding_package().to_string();
+                // Truncation changes every vector: it is part of the cache key.
+                let cache_key = format!("{package}@{:?}", ks.truncation());
                 let model = harbor_inference::provider::ModelRef::InstalledPackage {
                     package_id: package.clone(),
                 };
@@ -2340,7 +2463,7 @@ fn dispatch(
                 let cached = {
                     let cache = ws.router.lock().unwrap();
                     match cache.as_ref() {
-                        Some(entry) if entry.0 == package => Some(Arc::clone(entry)),
+                        Some(entry) if entry.0 == cache_key => Some(Arc::clone(entry)),
                         _ => None,
                     }
                 };
@@ -2350,11 +2473,12 @@ fn dispatch(
                         let skills = harbor_core::skills::builtin_skills()
                             .map_err(|e| HarborError::Other(e.to_string()))?;
                         let r = std::sync::Arc::new((
-                            package.clone(),
-                            harbor_core::router::SkillRouter::prewarm(
+                            cache_key.clone(),
+                            harbor_core::router::SkillRouter::prewarm_truncated(
                                 &skills,
-                                ks.provider(),
+                                &ks.embedder(),
                                 &model,
+                                ks.truncation(),
                             )
                             .map_err(|e| HarborError::Other(e.to_string()))?,
                         ));
@@ -2362,11 +2486,55 @@ fn dispatch(
                         r
                     }
                 };
-                let thresholds = harbor_core::router::RouteThresholds::default();
-                let d = router
+                let mut d = router
                     .1
-                    .evaluate(ks.provider(), &model, &text, thresholds)
+                    .evaluate_calibrated(&ks.embedder(), &model, &text)
                     .map_err(|e| HarborError::Other(e.to_string()))?;
+                // Ambiguous request: the embedder cannot separate the top
+                // candidates, so — only if the caller named a chat model
+                // and the provider verifies it can chat — let that model
+                // break the tie. Any chat model works; the answer is
+                // validated against the offered ids and is advisory.
+                let llm_choice = match (d.reason, args.get("chat_package").and_then(|v| v.as_str()))
+                {
+                    (Some(harbor_core::router::AbstainReason::Ambiguous), Some(chat_pkg)) => {
+                        let chat = ws
+                            .chat
+                            .get_or_insert_with(|| {
+                                Arc::new(crate::knowledge::ChatHandle::new(
+                                    &ws.data_root.join("models"),
+                                ))
+                            })
+                            .clone();
+                        Some((
+                            chat_pkg.to_string(),
+                            chat.disambiguate_skill(chat_pkg, &text, &d.ranked),
+                        ))
+                    }
+                    _ => None,
+                };
+                let llm_json = llm_choice.as_ref().map(|(pkg, o)| {
+                    use harbor_core::router::Disambiguation;
+                    match o {
+                        Disambiguation::Chose { skill_id } => serde_json::json!({
+                            "status": "chose", "skill_id": skill_id, "chat_package": pkg }),
+                        Disambiguation::NoneFit => serde_json::json!({
+                            "status": "none_fit", "chat_package": pkg }),
+                        Disambiguation::Unavailable(why) => serde_json::json!({
+                            "status": "unavailable", "why": why, "chat_package": pkg }),
+                    }
+                });
+                // A chosen skill moves to the front of the list. It stays a
+                // suggestion: `abstained` still reflects the embedder, and
+                // nothing here starts or authorizes a run.
+                if let Some((_, harbor_core::router::Disambiguation::Chose { skill_id })) =
+                    &llm_choice
+                {
+                    if let Some(pos) = d.ranked.iter().position(|h| &h.skill_id == skill_id) {
+                        let hit = d.ranked.remove(pos);
+                        d.ranked.insert(0, hit);
+                    }
+                }
                 let ranked: Vec<serde_json::Value> = d
                     .ranked
                     .iter()
@@ -2381,15 +2549,21 @@ fn dispatch(
                 Ok(serde_json::json!({
                     // Recommend-only: the caller may dispatch a skill run
                     // through the executor's own admission machinery; a
-                    // suggestion is never an authorization.
+                    // suggestion is never an authorization, whatever the
+                    // embedding or chat model believes.
                     "abstained": d.abstained,
                     "reason": d.reason.map(|r| match r {
                         harbor_core::router::AbstainReason::NoConfidentMatch => "no_confident_match",
                         harbor_core::router::AbstainReason::Ambiguous => "ambiguous",
+                        harbor_core::router::AbstainReason::Uncalibrated => "uncalibrated",
                     }),
                     "ranked": ranked,
                     "candidates": router.1.candidate_count(),
                     "embedding_package": package,
+                    "embedding_dimension": ks.truncation(),
+                    "calibration": router.1.calibration().map(|c| serde_json::json!({
+                        "id": c.id, "version": c.version, "evidence": c.evidence })),
+                    "llm_choice": llm_json,
                 }))
             }
         }
@@ -3360,13 +3534,34 @@ fn dispatch(
                 // Chunks are private workspace content: seal them under the
                 // workspace-derived knowledge key.
                 let chunk_key = ws.inner.knowledge_chunk_key()?;
-                let svc =
-                    crate::knowledge::KnowledgeService::open(&ws.data_root, package_id, chunk_key)
-                        .map_err(|e| HarborError::Other(e.to_string()))?;
+                // Optional Matryoshka truncation (EmbeddingGemma 2 only).
+                let dimension = args
+                    .get("dimension")
+                    .and_then(|v| v.as_u64())
+                    .map(|d| d as u32);
+                let svc = crate::knowledge::KnowledgeService::open_with_dimension(
+                    &ws.data_root,
+                    package_id,
+                    chunk_key,
+                    dimension,
+                )
+                .map_err(|e| HarborError::Other(e.to_string()))?;
                 let identity = svc.identity_hash();
                 let dimension = svc.embedding_dimension();
+                let svc_backend = svc.backend_state();
+                let svc_media = svc.supports_media();
+                let svc_dropped: Vec<String> = svc.dropped_media().to_vec();
                 ws.knowledge = Some(Arc::new(svc));
-                Ok(serde_json::json!({ "identity": identity, "dimension": dimension }))
+                Ok(serde_json::json!({
+                    "identity": identity,
+                    "dimension": dimension,
+                    "embedding_backend": svc_backend,
+                    // The package ships the image/audio towers AND this
+                    // build can run them.
+                    "multimodal": svc_media,
+                    // Media items an identity change had to drop (re-import).
+                    "dropped_media": svc_dropped,
+                }))
             }
         }
         "knowledge.ingest" => {
@@ -3410,6 +3605,26 @@ fn dispatch(
                     .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
                 ks.remove_source(source_id)
                     .map_err(|e| HarborError::Other(e.to_string()))
+            }
+        }
+        "knowledge.release" => {
+            // Drop the embedding weights (mobile memory pressure). The
+            // index and router cache stay; the next embed reloads. The
+            // chat model is unaffected: they are independent.
+            #[cfg(not(feature = "gguf"))]
+            {
+                return Err(HarborError::Other(
+                    "model features are not included in this build".into(),
+                ));
+            }
+            #[cfg(feature = "gguf")]
+            {
+                let ks = ws
+                    .knowledge
+                    .as_ref()
+                    .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
+                ks.release();
+                Ok(serde_json::json!({ "released": ks.embedding_package() }))
             }
         }
         "knowledge.sources" => {
@@ -3746,6 +3961,98 @@ fn dispatch(
                 Ok(serde_json::json!({ "op_id": op_id }))
             }
         }
+        "op.start_ingest_media" => {
+            #[cfg(not(feature = "multimodal"))]
+            {
+                let _ = args;
+                return Err(HarborError::Other(
+                    "multimodal indexing is not included in this build".into(),
+                ));
+            }
+            #[cfg(feature = "multimodal")]
+            {
+                let (parts, hash) = parse_media_input(args)?;
+                let title = args
+                    .get("title")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .trim()
+                    .to_string();
+                if title.is_empty() {
+                    return Err(HarborError::Other("title is required".into()));
+                }
+                let id = match args.get("id").and_then(|v| v.as_str()) {
+                    Some(i) if !i.trim().is_empty() => i.trim().to_string(),
+                    _ => hash[..16].to_string(),
+                };
+                let kind = args.get("kind").and_then(|v| v.as_str()).unwrap_or("image");
+                let caption = args
+                    .get("caption")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .trim()
+                    .to_string();
+                let display = if caption.is_empty() {
+                    format!("[{kind}] {title}")
+                } else {
+                    format!("[{kind}] {title}: {caption}")
+                };
+                let knowledge = ws
+                    .knowledge
+                    .clone()
+                    .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
+                if !knowledge.supports_media() {
+                    return Err(HarborError::Other(
+                        "the open embedding model has no image/audio towers (install the multimodal EmbeddingGemma 2 package)"
+                            .into(),
+                    ));
+                }
+                let (op_id, entry) = register_op("ingest_media", "");
+                let progress = entry.progress.clone();
+                let entry_clone = entry.clone();
+                spawn_op(entry.clone(), ws.diagnostics.clone(), move || {
+                    progress.set_phase("embedding");
+                    progress.set_detail(&title);
+                    let result = knowledge
+                        .ingest_media(&id, &title, &display, &parts, &hash)
+                        .map_err(|e| e.to_string());
+                    complete_op(&entry_clone, result, false);
+                });
+                Ok(serde_json::json!({ "op_id": op_id }))
+            }
+        }
+        "op.start_search_media" => {
+            #[cfg(not(feature = "multimodal"))]
+            {
+                let _ = args;
+                return Err(HarborError::Other(
+                    "multimodal search is not included in this build".into(),
+                ));
+            }
+            #[cfg(feature = "multimodal")]
+            {
+                let (parts, _) = parse_media_input(args)?;
+                let top_k = args.get("top_k").and_then(|v| v.as_u64()).unwrap_or(5) as usize;
+                let knowledge = ws
+                    .knowledge
+                    .clone()
+                    .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
+                if !knowledge.supports_media() {
+                    return Err(HarborError::Other(
+                        "the open embedding model has no image/audio towers".into(),
+                    ));
+                }
+                let (op_id, entry) = register_op("search_media", "");
+                let entry_clone = entry.clone();
+                spawn_op(entry.clone(), ws.diagnostics.clone(), move || {
+                    let result = knowledge
+                        .search_by_media(&parts, top_k.clamp(1, 20))
+                        .map_err(|e| e.to_string());
+                    complete_op(&entry_clone, result, false);
+                });
+                Ok(serde_json::json!({ "op_id": op_id }))
+            }
+        }
         "op.status" => {
             let op_id = args
                 .get("op_id")
@@ -3851,8 +4158,64 @@ fn truncate_for_trail(s: &str, max: usize) -> String {
     }
 }
 
+/// Decode `{kind: "image"|"audio", data_b64}` into media parts plus the
+/// content hash. Bounded: a media item over 25 MB is refused up front.
+#[cfg(feature = "multimodal")]
+fn parse_media_input(
+    args: &serde_json::Value,
+) -> Result<(Vec<harbor_inference::multimodal::MediaPart>, String), HarborError> {
+    use base64::Engine as _;
+    use harbor_inference::multimodal::MediaPart;
+    const MAX_MEDIA_BYTES: usize = 25 * 1024 * 1024;
+    let b64 = args
+        .get("data_b64")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| HarborError::Other("data_b64 is required".into()))?;
+    if b64.len() > MAX_MEDIA_BYTES * 4 / 3 + 8 {
+        return Err(HarborError::Other("media item exceeds 25 MB".into()));
+    }
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(b64)
+        .map_err(|e| HarborError::Other(format!("bad base64: {e}")))?;
+    if bytes.is_empty() || bytes.len() > MAX_MEDIA_BYTES {
+        return Err(HarborError::Other(
+            "media item is empty or exceeds 25 MB".into(),
+        ));
+    }
+    let hash = harbor_canonical::sha256_hex(&bytes);
+    let part = match args.get("kind").and_then(|v| v.as_str()).unwrap_or("image") {
+        "image" => MediaPart::Image(bytes),
+        "audio" => MediaPart::AudioFile(bytes),
+        other => {
+            return Err(HarborError::Other(format!(
+                "kind must be image|audio, got {other:?}"
+            )))
+        }
+    };
+    Ok((vec![part], hash))
+}
+
 #[cfg(feature = "gguf")]
 fn parse_sources(
+    args: &serde_json::Value,
+) -> Result<Vec<crate::knowledge::SourceInput>, HarborError> {
+    let sources = parse_sources_unchecked(args)?;
+    // `memory:` ids are reserved for semantic-memory records: a document
+    // ingested under one would be invisible to retrieval (and could
+    // overwrite a memory's index entry). memory.add is the only writer.
+    if let Some((id, _, _)) = sources.iter().find(|(id, _, _)| {
+        harbor_knowledge::index::is_memory_source(id)
+            || harbor_knowledge::index::is_media_source(id)
+    }) {
+        return Err(HarborError::Other(format!(
+            "source id {id:?} uses a reserved prefix (memory: / media:)"
+        )));
+    }
+    Ok(sources)
+}
+
+#[cfg(feature = "gguf")]
+fn parse_sources_unchecked(
     args: &serde_json::Value,
 ) -> Result<Vec<crate::knowledge::SourceInput>, HarborError> {
     Ok(args

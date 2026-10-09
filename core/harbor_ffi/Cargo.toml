@@ -42,5 +42,8 @@ serde_json = { workspace = true }
 # knowledge/chat/generation dispatch arms then refuse with typed errors
 # instead of linking ~27 MB of unused inference runtime.
 [features]
-default = ["gguf"]
+default = ["gguf", "multimodal"]
 gguf = ["harbor_inference/gguf-backend"]
+# Image / audio indexing and search through an embedding package that ships
+# an mmproj projector (EmbeddingGemma 2; decision 0015).
+multimodal = ["gguf", "harbor_inference/multimodal"]

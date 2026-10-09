@@ -1717,4 +1717,105 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get agentsNotHandsBody =>
       'Harbor never controls your screen or other apps. It works through typed tools, files you attach, and documents you approve.';
+
+  @override
+  String get goalsKindPrompt => 'Prompt';
+
+  @override
+  String get goalsKindSkill => 'Skill';
+
+  @override
+  String get goalsSkillLabel => 'Skill';
+
+  @override
+  String get goalsSkillInputLabel => 'Text for the skill';
+
+  @override
+  String get goalsRunAwaitingApproval =>
+      'Goal run is waiting for your approval — open Activity to review it.';
+
+  @override
+  String get skillsSuggestHint =>
+      'Describe what you want to do and Harbor suggests a skill';
+
+  @override
+  String get skillsSuggestAction => 'Suggest a skill';
+
+  @override
+  String get skillsSuggestBest => 'Best matches (tap one to open it):';
+
+  @override
+  String get skillsSuggestNoMatch =>
+      'No skill is a confident match — try different words, or browse below.';
+
+  @override
+  String get skillsSuggestAmbiguous =>
+      'Several skills fit about equally — the closest are below.';
+
+  @override
+  String get skillsSuggestUnavailable =>
+      'Suggestions are unavailable right now.';
+
+  @override
+  String get skillsSuggestNote =>
+      'Suggestions are recommendations only. Nothing runs until you open a skill and run it.';
+
+  @override
+  String get memoryHeading => 'Memory';
+
+  @override
+  String get memoryExplainer =>
+      'Notes Harbor can recall by meaning. Each one shows who wrote it, you can delete any of them, and memory is never used as a document source.';
+
+  @override
+  String get memoryAddHint =>
+      'Something to remember, e.g. “I prefer metric units.”';
+
+  @override
+  String get memoryAddAction => 'Remember';
+
+  @override
+  String get memoryAddFailed => 'Could not save that memory.';
+
+  @override
+  String get memorySearchHint => 'Search memory by meaning';
+
+  @override
+  String get memoryEmpty => 'Nothing remembered yet.';
+
+  @override
+  String get memoryNoMatch => 'No matching memory.';
+
+  @override
+  String get memoryDeleteAction => 'Delete memory';
+
+  @override
+  String get memoryOriginUser => 'Added by you';
+
+  @override
+  String memoryOriginRun(String skill) {
+    return 'Written by skill run: $skill';
+  }
+
+  @override
+  String get memoryOriginGoal => 'Written by a scheduled goal';
+
+  @override
+  String get skillsSuggestUncalibrated =>
+      'Your embedding model has not been benchmarked for suggestions, so Harbor shows the closest skills without recommending one.';
+
+  @override
+  String get skillsSuggestLlmChose =>
+      'Several skills fit equally; your selected local model picked the first one. Still only a suggestion.';
+
+  @override
+  String get fileGroupMedia => 'Images and audio';
+
+  @override
+  String get knowledgeAddMediaAction => 'Add image or audio';
+
+  @override
+  String knowledgeMediaFailed(String name) {
+    return 'Could not index $name. Check that the file is a supported image or audio format.';
+  }
 }

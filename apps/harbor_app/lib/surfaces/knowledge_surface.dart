@@ -1,12 +1,17 @@
+import 'dart:io';
+
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
 import '../l10n/app_localizations.dart';
 import '../main.dart';
+import '../services/file_types.dart';
 import '../services/harbor_service.dart';
 import '../widgets/ops.dart';
 import '../widgets/trust.dart';
 import 'knowledge_ingest.dart';
+import 'memory_panel.dart';
 
 /// Knowledge surface (UX-028/029): the durable local index with real
 /// source management — add files / paste text (background ingest with
@@ -44,6 +49,43 @@ class _KnowledgeSurfaceState extends State<KnowledgeSurface> {
     final outcome = await pickAndIngest(context, service);
     if (outcome == null || !mounted) return;
     showIngestFeedback(context, outcome, l10n);
+  }
+
+  /// Add an image or audio file to the index (multimodal embedding
+  /// packages only). The file is embedded locally; only a vector and a
+  /// caption/title are stored — never the media itself.
+  Future<void> _addMedia() async {
+    final service = HarborServiceProvider.of(context).notifier;
+    if (service == null || !mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    final XFile? file;
+    try {
+      file = await openFile(
+          acceptedTypeGroups: [mediaTypeGroup(l10n.fileGroupMedia)]);
+    } on Error {
+      // See file_types.dart: a throw from a malformed type group is a bug,
+      // not a dismissal.
+      rethrow;
+    } catch (_) {
+      return; // picker dismissed
+    }
+    if (file == null || !mounted) return;
+    final ext =
+        file.name.contains('.') ? file.name.split('.').last.toLowerCase() : '';
+    final kind = const ['wav', 'mp3', 'flac'].contains(ext) ? 'audio' : 'image';
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await service.ingestMedia(
+        bytes: await File(file.path).readAsBytes(),
+        kind: kind,
+        title: file.name,
+      );
+      messenger.showSnackBar(
+          SnackBar(content: Text(l10n.knowledgeSourceAdded(file.name))));
+    } catch (_) {
+      messenger.showSnackBar(
+          SnackBar(content: Text(l10n.knowledgeMediaFailed(file.name))));
+    }
   }
 
   Future<void> _pasteText() async {
@@ -168,6 +210,13 @@ class _KnowledgeSurfaceState extends State<KnowledgeSurface> {
               icon: const Icon(Icons.note_add_outlined, size: 16),
               label: Text(l10n.addSources),
             ),
+            if (service.knowledgeMultimodal)
+              OutlinedButton.icon(
+                key: const ValueKey('knowledge-add-media'),
+                onPressed: open ? _addMedia : null,
+                icon: const Icon(Icons.perm_media_outlined, size: 16),
+                label: Text(l10n.knowledgeAddMediaAction),
+              ),
             OutlinedButton.icon(
               onPressed: open ? _pasteText : null,
               icon: const Icon(Icons.content_paste_outlined, size: 16),
@@ -266,7 +315,10 @@ class _KnowledgeSurfaceState extends State<KnowledgeSurface> {
                       if (i > 0)
                         Divider(height: 1, color: t.colors.borderSubtle),
                       HarborListRow(
-                        leading: const Icon(Icons.article_outlined),
+                        leading: Icon(
+                            (s['source_id'] as String).startsWith('media:')
+                                ? Icons.perm_media_outlined
+                                : Icons.article_outlined),
                         title: Text(s['title'] as String),
                         subtitle: Text(
                           '${l10n.knowledgeChunksCount(s['chunks'] as int)} · '
@@ -304,6 +356,8 @@ class _KnowledgeSurfaceState extends State<KnowledgeSurface> {
                 ),
                 aside: indexCard,
               ),
+              const SizedBox(height: HarborSpace.s5),
+              MemoryPanel(service: service),
             ],
           );
         }),

@@ -923,5 +923,48 @@
   "agentsNotAutonomyTitle": "Not autonomous orchestration",
   "agentsNotAutonomyBody": "Multi-step agent planning beyond skill graphs, and scheduled execution without a tap, are not in this release. Skills run exactly the graphs they declare, with approvals enforced.",
   "agentsNotHandsTitle": "No computer use",
-  "agentsNotHandsBody": "Harbor never controls your screen or other apps. It works through typed tools, files you attach, and documents you approve."
+  "agentsNotHandsBody": "Harbor never controls your screen or other apps. It works through typed tools, files you attach, and documents you approve.",
+  "goalsKindPrompt": "Prompt",
+  "goalsKindSkill": "Skill",
+  "goalsSkillLabel": "Skill",
+  "goalsSkillInputLabel": "Text for the skill",
+  "goalsRunAwaitingApproval": "Goal run is waiting for your approval — open Activity to review it.",
+  "skillsSuggestHint": "Describe what you want to do and Harbor suggests a skill",
+  "skillsSuggestAction": "Suggest a skill",
+  "skillsSuggestBest": "Best matches (tap one to open it):",
+  "skillsSuggestNoMatch": "No skill is a confident match — try different words, or browse below.",
+  "skillsSuggestAmbiguous": "Several skills fit about equally — the closest are below.",
+  "skillsSuggestUnavailable": "Suggestions are unavailable right now.",
+  "skillsSuggestNote": "Suggestions are recommendations only. Nothing runs until you open a skill and run it.",
+  "memoryHeading": "Memory",
+  "memoryExplainer": "Notes Harbor can recall by meaning. Each one shows who wrote it, you can delete any of them, and memory is never used as a document source.",
+  "memoryAddHint": "Something to remember, e.g. “I prefer metric units.”",
+  "memoryAddAction": "Remember",
+  "memoryAddFailed": "Could not save that memory.",
+  "memorySearchHint": "Search memory by meaning",
+  "memoryEmpty": "Nothing remembered yet.",
+  "memoryNoMatch": "No matching memory.",
+  "memoryDeleteAction": "Delete memory",
+  "memoryOriginUser": "Added by you",
+  "memoryOriginRun": "Written by skill run: {skill}",
+  "@memoryOriginRun": {
+    "placeholders": {
+      "skill": {
+        "type": "String"
+      }
+    }
+  },
+  "memoryOriginGoal": "Written by a scheduled goal",
+  "skillsSuggestUncalibrated": "Your embedding model has not been benchmarked for suggestions, so Harbor shows the closest skills without recommending one.",
+  "skillsSuggestLlmChose": "Several skills fit equally; your selected local model picked the first one. Still only a suggestion.",
+  "fileGroupMedia": "Images and audio",
+  "knowledgeAddMediaAction": "Add image or audio",
+  "knowledgeMediaFailed": "Could not index {name}. Check that the file is a supported image or audio format.",
+  "@knowledgeMediaFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

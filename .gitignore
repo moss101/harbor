@@ -28,6 +28,9 @@ fixtures/models/qwen2.5-1.5b-instruct-q4_k_m.gguf
 fixtures/models/multilingual-e5-small-q8_0.gguf
 # 635MB: exceeds the 100MB push limit; gpustack/bge-m3-GGUF, sha 950f4a8e5e19...
 fixtures/models/bge-m3-q8_0.gguf
+# >100MB push limit; ggml-org/embeddinggemma-2-GGUF rev bfcd2987 (Apache-2.0)
+fixtures/models/embeddinggemma-2-Q8_0.gguf
+fixtures/models/mmproj-embeddinggemma-2-Q8_0.gguf
 
 # Bulk model store: re-acquire via the perf example or brokered acquisition
 fixtures/models-store/

@@ -63,6 +63,31 @@ XTypeGroup knowledgeTypeGroup(String label) => XTypeGroup(
       ],
     );
 
+/// Images and audio the multimodal embedder can decode (stb_image and
+/// miniaudio formats; HEIC / WebP are not among them).
+XTypeGroup mediaTypeGroup(String label) => XTypeGroup(
+      label: label,
+      extensions: const [
+        'png',
+        'jpg',
+        'jpeg',
+        'bmp',
+        'gif',
+        'wav',
+        'mp3',
+        'flac'
+      ],
+      uniformTypeIdentifiers: const [
+        'public.png',
+        'public.jpeg',
+        'com.microsoft.bmp',
+        'com.compuserve.gif',
+        'com.microsoft.waveform-audio',
+        'public.mp3',
+        'org.xiph.flac',
+      ],
+    );
+
 /// Local GGUF weights.
 ///
 /// `.gguf` has no registered UTI on any Apple platform — it is not

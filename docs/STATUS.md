@@ -7,6 +7,48 @@ ran at.
 
 ---
 
+## Session 59 (2026-10-09): the decision-0011 gaps that can be closed
+
+**EmbeddingGemma 2 now RUNS (decision 0013).** No released binding had the
+architecture, but upstream llama.cpp added it in one commit (`4fbc76dec5`);
+its `src/` hunks are back-ported into a vendored `llama-cpp-sys-2 0.1.156`
+(`third_party/llama-cpp-sys-2`, `[patch.crates-io]`). The official GGUF loads
+and retrieves on Metal through the production path (EN/AR/FR, memory
+isolation, finite deterministic scores); **multimodal retrieval** (decision 0015:
+images + audio embedded into the same space in one joint pass, `media:`
+sources, search by image/audio, Add image/audio in Knowledge), Matryoshka
+512/256 indexes with their own calibration, a **numerics canary** that caught
+the iOS simulator's silently-wrong GPU path and falls back to CPU, and the
+OS memory-warning hook; verified on macOS Metal+CPU, Android arm64 emulator
+and iOS simulator. Still open: catalog epoch 5 is STAGED not signed
+(operator key), video (no frame decoder), physical-device runs. Routing is now model-independent
+(decision 0014): versioned per-embedder calibration data (bge-m3, EmbeddingGemma
+2, e5; uncalibrated embedders abstain), ambiguity delegated to the user's
+selected chat model through the provider contract (validated, advisory),
+`knowledge.release` for mobile memory pressure. Gates: workspace 474 tests 0
+failed on the patched runtime, clippy clean, lean build OK, supply chain PASS,
+app 59/59. NOT done: catalog pin (needs operator-signed epoch),
+non-Metal backends, and multimodal (text tower only; vision/audio need the
+`mtmd` projector + bindings). Also closed this session (decision 0012):
+
+- **Semantic memory with provenance**: sealed record store
+  (`harbor_agent::memory`), `memory.add/list/delete/search`, indexed as
+  `memory:` knowledge sources that document retrieval structurally cannot
+  see (index, ingest guard, source list). Memory section on Knowledge.
+  Live-tested on bge-small: paraphrase recall, isolation both ways,
+  reopen/rebuild, removal.
+- **Router UI**: suggest box on Skills (recommend-only).
+- **Multilingual routing eval**: 36 ar/fr cases; first live numbers in
+  decision 0012 with the not-comparable caveat.
+- **Skill goals** in the create dialog (text-input skills only; approvals
+  stay with the user).
+
+Honest limits: no automatic memory capture or prompt injection; multilingual
+numbers are not a threshold recalibration; the skill-goal run path is covered
+by service-level tests, not a live chat-model run.
+
+---
+
 ## Session 58 (2026-10-09): EmbeddingGemma 2 feasibility + instruction policies + skill routing + scheduled goals
 
 The nanoMuse/EmbeddingGemma 2 integration task (decision 0011, audit in

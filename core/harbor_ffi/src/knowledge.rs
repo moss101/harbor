@@ -407,7 +407,52 @@ impl KnowledgeStore {
     }
 }
 
+/// Fixed-sentence numerics canary. Three short English sentences, one
+/// paraphrase pair and two unrelated: the paraphrase must outrank both
+/// unrelated sentences and every vector must be finite. English-only on
+/// purpose — every supported embedder (multilingual or not) handles it —
+/// and cheap enough to run on each open. Policy prefixes apply, so a
+/// prefixed model is checked the way it is used.
+fn embedding_canary_ok(provider: &GgufLlamaCppProvider, model: &ModelRef, package: &str) -> bool {
+    let policy = InstructionPolicy::for_package(package);
+    let inputs: Vec<String> = [
+        "The cat is sitting on the mat.",
+        "A cat sits on a mat.",
+        "Quarterly revenue increased by ten percent.",
+        "The stock market closed higher on Friday.",
+    ]
+    .iter()
+    .map(|t| policy.format_document("", t))
+    .collect();
+    let Ok(v) = provider.embed(model, &inputs) else {
+        return false;
+    };
+    if v.len() != 4
+        || v.iter()
+            .any(|x| x.is_empty() || x.iter().any(|f| !f.is_finite()))
+    {
+        return false;
+    }
+    let near = harbor_knowledge::index::cosine(&v[0], &v[1]);
+    let far_a = harbor_knowledge::index::cosine(&v[0], &v[2]);
+    let far_b = harbor_knowledge::index::cosine(&v[0], &v[3]);
+    near > far_a + 0.02 && near > far_b + 0.02
+}
+
 pub struct KnowledgeService {
+    /// Media towers (image / audio), opened lazily and dropped on
+    /// [`release`](Self::release) so a memory warning frees them too.
+    #[cfg(feature = "multimodal")]
+    media: Mutex<Option<std::sync::Arc<harbor_inference::multimodal::MediaEmbedder>>>,
+    /// Media sources dropped by the identity rebuild at open (their
+    /// vectors cannot be re-derived from sealed text).
+    dropped_media: Vec<String>,
+    /// "gpu" (canary passed on the default backend), "cpu_fallback" (the
+    /// GPU path failed the canary; running on CPU, canary passed) or
+    /// "cpu_unverified" (even the CPU canary failed — surfaced, not hidden).
+    backend_state: &'static str,
+    /// Matryoshka truncation (EmbeddingGemma 2): None = native dimension.
+    truncate_to: Option<usize>,
     index: Mutex<KnowledgeIndex>,
     provider: GgufLlamaCppProvider,
     embedding_package: String,
@@ -425,6 +470,160 @@ impl KnowledgeService {
     pub fn embedding_package(&self) -> &str {
         &self.embedding_package
     }
+
+    /// The embedding provider every call site must use: the loaded
+    /// model behind the configured Matryoshka truncation. (Chat uses its
+    /// own provider; this one never generates.)
+    pub fn embedder(&self) -> harbor_inference::mrl::TruncatedEmbedder<'_> {
+        harbor_inference::mrl::TruncatedEmbedder::with_dim(&self.provider, self.truncate_to)
+    }
+
+    /// Which backend serves embeddings (see the field docs).
+    pub fn backend_state(&self) -> &'static str {
+        self.backend_state
+    }
+
+    /// Whether this embedding package ships the media towers (an `mmproj`
+    /// file) AND this build can run them.
+    pub fn supports_media(&self) -> bool {
+        #[cfg(feature = "multimodal")]
+        {
+            self.provider.mmproj_file(&self.embedding_package).is_ok()
+        }
+        #[cfg(not(feature = "multimodal"))]
+        {
+            false
+        }
+    }
+
+    #[cfg(feature = "multimodal")]
+    fn media_embedder(
+        &self,
+    ) -> Result<std::sync::Arc<harbor_inference::multimodal::MediaEmbedder>, KnowledgeFfiError>
+    {
+        self.ensure_loaded()?;
+        let mut slot = self.media.lock().unwrap();
+        if let Some(m) = slot.as_ref() {
+            return Ok(m.clone());
+        }
+        let m = std::sync::Arc::new(
+            harbor_inference::multimodal::MediaEmbedder::open(
+                &self.provider,
+                &self.embedding_package,
+            )
+            .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?,
+        );
+        *slot = Some(m.clone());
+        Ok(m)
+    }
+
+    /// Embed an image / audio / interleaved input into the index's space:
+    /// same model, same Matryoshka truncation, so it is directly
+    /// comparable with every text vector.
+    #[cfg(feature = "multimodal")]
+    fn embed_media(
+        &self,
+        parts: &[harbor_inference::multimodal::MediaPart],
+    ) -> Result<Vec<f32>, KnowledgeFfiError> {
+        let raw = self
+            .media_embedder()?
+            .embed(parts)
+            .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?;
+        match self.truncate_to {
+            Some(d) => harbor_inference::mrl::truncate_normalize(&raw, d)
+                .map_err(|e| KnowledgeFfiError::Provider(e.to_string())),
+            None => Ok(raw),
+        }
+    }
+
+    /// Index one image / audio item as source `media:<id>`. `display_text`
+    /// is what citations show (a caption or filename); the vector comes
+    /// from the media itself. Replaces an existing item with the same id.
+    #[cfg(feature = "multimodal")]
+    pub fn ingest_media(
+        &self,
+        id: &str,
+        title: &str,
+        display_text: &str,
+        parts: &[harbor_inference::multimodal::MediaPart],
+        content_hash: &str,
+    ) -> Result<serde_json::Value, KnowledgeFfiError> {
+        let source_id = format!("{}{id}", harbor_knowledge::index::MEDIA_SOURCE_PREFIX);
+        let vector = self.embed_media(parts)?;
+        let rows = vec![(0u32, display_text.to_string(), vector.clone())];
+        self.store
+            .replace_source(&source_id, title, content_hash, &rows)?;
+        let mut index = self.index.lock().unwrap();
+        let _ = index.remove_source(&source_id);
+        index
+            .add_source(
+                Source {
+                    source_id: source_id.clone(),
+                    title: title.to_string(),
+                    content_hash: content_hash.to_string(),
+                    indexed_at: chrono::Utc::now(),
+                },
+                vec![SourceChunk {
+                    source_id: source_id.clone(),
+                    chunk_id: format!("{source_id}-0"),
+                    ordinal: 0,
+                    text: display_text.to_string(),
+                    vector,
+                }],
+            )
+            .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?;
+        Ok(
+            serde_json::json!({ "source_id": source_id, "identity": index.identity.canonical_hash() }),
+        )
+    }
+
+    /// Search the index BY an image / audio query (e.g. "find documents
+    /// that look like this"). Same citation shape as [`search`](Self::search).
+    #[cfg(feature = "multimodal")]
+    pub fn search_by_media(
+        &self,
+        parts: &[harbor_inference::multimodal::MediaPart],
+        top_k: usize,
+    ) -> Result<serde_json::Value, KnowledgeFfiError> {
+        let q = self.embed_media(parts)?;
+        let index = self.index.lock().unwrap();
+        Ok(citations_json(&index.search_with_text(&q, top_k)))
+    }
+
+    /// Configured truncation (None = native dimension).
+    pub fn truncation(&self) -> Option<u32> {
+        self.truncate_to.map(|d| d as u32)
+    }
+
+    fn embed_model_ref(&self) -> ModelRef {
+        ModelRef::InstalledPackage {
+            package_id: self.embedding_package.clone(),
+        }
+    }
+
+    /// Make sure the embedding model is resident. Idempotent and cheap
+    /// when loaded; reloads after [`release`](Self::release). Every embed
+    /// path calls it, so releasing is always safe.
+    pub fn ensure_loaded(&self) -> Result<(), KnowledgeFfiError> {
+        self.provider
+            .load(&self.embed_model_ref())
+            .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))
+    }
+
+    /// Drop the embedding model's weights from memory (mobile memory
+    /// pressure, or before loading a large chat model). The index, its
+    /// vectors and the prewarmed router stay; the next embed reloads the
+    /// weights transparently. The embedder is independent of the chat
+    /// model, so this never affects generation.
+    pub fn release(&self) {
+        #[cfg(feature = "multimodal")]
+        {
+            // The media towers hold their own handle on the weights:
+            // drop them first or nothing is actually freed.
+            *self.media.lock().unwrap() = None;
+        }
+        let _ = self.provider.unload(&self.embed_model_ref());
+    }
 }
 
 impl KnowledgeService {
@@ -436,6 +635,20 @@ impl KnowledgeService {
         embedding_package: &str,
         chunk_key: KeyMaterial,
     ) -> Result<Self, KnowledgeFfiError> {
+        Self::open_with_dimension(data_root, embedding_package, chunk_key, None)
+    }
+
+    /// Like [`open`](Self::open), with optional Matryoshka truncation.
+    /// `dimension` must be one the model was trained for (EmbeddingGemma 2:
+    /// 512 / 256 / 128). The truncated dimension and the truncation itself
+    /// are part of the index identity, so an index built at another
+    /// dimension rebuilds from its sealed texts and is never mixed.
+    pub fn open_with_dimension(
+        data_root: &Path,
+        embedding_package: &str,
+        chunk_key: KeyMaterial,
+        dimension: Option<u32>,
+    ) -> Result<Self, KnowledgeFfiError> {
         let db_path = data_root.join("db").join("knowledge.db");
         let provider = GgufLlamaCppProvider::new(data_root.join("models"))
             .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?;
@@ -446,16 +659,50 @@ impl KnowledgeService {
         provider.load(&model_ref).map_err(|e| {
             KnowledgeFfiError::NoEmbeddingModel(format!("{embedding_package}: {e}"))
         })?;
+        // Numerics canary: a GPU path can load fine and still embed wrongly
+        // (no bfloat, software GPUs). Verify before any vector is stored;
+        // on failure pin the model to the CPU backend and re-verify.
+        let mut backend = "gpu";
+        if !embedding_canary_ok(&provider, &model_ref, embedding_package) {
+            provider.force_cpu(embedding_package);
+            provider.load(&model_ref).map_err(|e| {
+                KnowledgeFfiError::NoEmbeddingModel(format!("{embedding_package}: {e}"))
+            })?;
+            backend = "cpu_fallback";
+            if !embedding_canary_ok(&provider, &model_ref, embedding_package) {
+                backend = "cpu_unverified";
+            }
+        }
         // Identity from the REAL model: embed a probe to learn the dimension.
         let probe = provider
             .embed(&model_ref, &["identity probe".to_string()])
             .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?;
-        let dimension = probe
+        let native_dimension = probe
             .first()
             .map(|v| v.len())
             .ok_or_else(|| KnowledgeFfiError::Provider("empty embedding".into()))?
             as u32;
         let policy = InstructionPolicy::for_package(embedding_package);
+        let truncate_to = match dimension {
+            None => None,
+            Some(d) if d == native_dimension => None,
+            Some(d) => {
+                if policy != InstructionPolicy::GemmaEmbedding
+                    || !harbor_inference::mrl::GEMMA_MRL_DIMENSIONS.contains(&(d as usize))
+                    || d > native_dimension
+                {
+                    return Err(KnowledgeFfiError::Provider(format!(
+                        "{embedding_package} was not trained for {d}-d Matryoshka embeddings"
+                    )));
+                }
+                Some(d as usize)
+            }
+        };
+        let dimension = truncate_to.map(|d| d as u32).unwrap_or(native_dimension);
+        let instruction = match truncate_to {
+            Some(d) => format!("{}+mrl{d}", policy.identity()),
+            None => policy.identity().to_string(),
+        };
         let identity = IndexIdentity {
             embedding: embed_model_identity(
                 embedding_package,
@@ -471,11 +718,16 @@ impl KnowledgeService {
             tokenizer: "grapheme/1".into(),
             normalization: Normalization::Nfc,
             language_policy: "en,ar,mixed".into(),
-            instruction: policy.identity().into(),
+            instruction,
             encryption_scope: "workspace".into(),
         };
         let store = KnowledgeStore::open(&db_path, chunk_key)?;
-        let svc = KnowledgeService {
+        let mut svc = KnowledgeService {
+            #[cfg(feature = "multimodal")]
+            media: Mutex::new(None),
+            dropped_media: Vec::new(),
+            backend_state: backend,
+            truncate_to,
             index: Mutex::new(KnowledgeIndex::new(identity)),
             provider,
             embedding_package: embedding_package.into(),
@@ -496,7 +748,8 @@ impl KnowledgeService {
             }
             Some(old_hash) if old_hash == new_hash => {}
             Some(_old_hash) => {
-                svc.rebuild_vectors_for_new_identity(&model_ref)?;
+                let (_, dropped) = svc.rebuild_vectors_for_new_identity(&model_ref)?;
+                svc.dropped_media = dropped;
                 svc.store.set_meta(IDENTITY_KEY, &new_hash)?;
             }
         }
@@ -512,13 +765,21 @@ impl KnowledgeService {
     fn rebuild_vectors_for_new_identity(
         &self,
         model: &ModelRef,
-    ) -> Result<usize, KnowledgeFfiError> {
+    ) -> Result<(usize, Vec<String>), KnowledgeFfiError> {
         let persisted = self.store.load_chunks()?;
         let mut vectors = std::collections::BTreeMap::new();
+        // Image / audio vectors came from the media, which is not kept:
+        // re-embedding their caption text would silently turn them into
+        // text vectors. They are dropped (and reported) instead.
+        let mut dropped: std::collections::BTreeSet<String> = Default::default();
         for chunk in &persisted {
+            if harbor_knowledge::index::is_media_source(&chunk.source_id) {
+                dropped.insert(chunk.source_id.clone());
+                continue;
+            }
             let input = self.policy.format_document(&chunk.title, &chunk.text);
             let embedded = self
-                .provider
+                .embedder()
                 .embed(model, std::slice::from_ref(&input))
                 .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?;
             let Some(vector) = embedded.into_iter().next() else {
@@ -528,7 +789,16 @@ impl KnowledgeService {
         }
         let count = vectors.len();
         self.store.rewrite_vectors(&vectors)?;
-        Ok(count)
+        for sid in &dropped {
+            self.store.remove_source(sid)?;
+        }
+        Ok((count, dropped.into_iter().collect()))
+    }
+
+    /// Media sources the identity rebuild at open had to drop (re-import
+    /// them under the new embedder). Empty for a normal open.
+    pub fn dropped_media(&self) -> &[String] {
+        &self.dropped_media
     }
 
     pub fn identity_hash(&self) -> String {
@@ -590,6 +860,7 @@ impl KnowledgeService {
         cancel: &AtomicBool,
         progress: Option<&harbor_modelhub::progress::AcquireProgress>,
     ) -> Result<serde_json::Value, KnowledgeFfiError> {
+        self.ensure_loaded()?;
         let model_ref = ModelRef::InstalledPackage {
             package_id: self.embedding_package.clone(),
         };
@@ -626,7 +897,7 @@ impl KnowledgeService {
                 .map(|c| self.policy.format_document(title, c))
                 .collect();
             let vectors = self
-                .provider
+                .embedder()
                 .embed(&model_ref, &inputs)
                 .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?;
             let content_hash = harbor_canonical::sha256_hex(text.as_bytes());
@@ -694,8 +965,11 @@ impl KnowledgeService {
     /// Indexed sources for the management UI.
     pub fn sources(&self) -> Result<serde_json::Value, KnowledgeFfiError> {
         let sources = self.store.sources()?;
+        // Memory records are managed by memory.*; the document list
+        // never shows (or counts) them.
         let out: Vec<serde_json::Value> = sources
             .iter()
+            .filter(|s| !harbor_knowledge::index::is_memory_source(&s.source_id))
             .map(|s| {
                 serde_json::json!({
                     "source_id": s.source_id,
@@ -716,12 +990,13 @@ impl KnowledgeService {
         question: &str,
         top_k: usize,
     ) -> Result<serde_json::Value, KnowledgeFfiError> {
+        self.ensure_loaded()?;
         let model_ref = ModelRef::InstalledPackage {
             package_id: self.embedding_package.clone(),
         };
         let query_input = self.policy.format_query(question);
         let qv = self
-            .provider
+            .embedder()
             .embed(&model_ref, &[query_input])
             .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?;
         let q = qv
@@ -730,24 +1005,39 @@ impl KnowledgeService {
             .ok_or_else(|| KnowledgeFfiError::Provider("empty query vector".into()))?;
         let index = self.index.lock().unwrap();
         let hits = index.search_with_text(&q, top_k);
-        let citations: Vec<serde_json::Value> = hits
-            .iter()
-            .map(|c| {
-                serde_json::json!({
-                    "source_id": c.citation.source_id,
-                    "title": c.citation.title,
-                    "chunk_id": c.citation.chunk_id,
-                    "score": c.citation.score,
-                    "state": format!("{:?}", c.citation.state),
-                    "content_hash": c.citation.content_hash,
-                    // Chunk text rides with the citation so grounded
-                    // generation can quote evidence; the UI shows only
-                    // title/score/state.
-                    "_text": c.text,
-                })
+        Ok(citations_json(&hits))
+    }
+
+    /// Semantic-memory search: the same embedding and instruction policy
+    /// as document search, restricted to `memory:` records. Hits carry
+    /// the record id (the caller joins provenance from the memory store).
+    pub fn search_memory(
+        &self,
+        question: &str,
+        top_k: usize,
+    ) -> Result<Vec<(String, f32)>, KnowledgeFfiError> {
+        self.ensure_loaded()?;
+        let model_ref = ModelRef::InstalledPackage {
+            package_id: self.embedding_package.clone(),
+        };
+        let query_input = self.policy.format_query(question);
+        let q = self
+            .embedder()
+            .embed(&model_ref, &[query_input])
+            .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?
+            .into_iter()
+            .next()
+            .ok_or_else(|| KnowledgeFfiError::Provider("empty query vector".into()))?;
+        let index = self.index.lock().unwrap();
+        Ok(index
+            .search_memory(&q, top_k)
+            .into_iter()
+            .filter_map(|c| {
+                c.source_id
+                    .strip_prefix(harbor_knowledge::index::MEMORY_SOURCE_PREFIX)
+                    .map(|id| (id.to_string(), c.score))
             })
-            .collect();
-        Ok(serde_json::json!({ "citations": citations }))
+            .collect())
     }
 
     pub fn supports_chat(&self) -> bool {
@@ -794,6 +1084,29 @@ impl ChatHandle {
     /// a loaded model must not be deleted underneath a live handle).
     pub fn loaded_package_ids(&self) -> Vec<String> {
         self.loaded.lock().unwrap().keys().cloned().collect()
+    }
+
+    /// Ask the selected chat model to break a routing tie (decision 0014).
+    /// Generic over the model: it is loaded like any generation target and
+    /// reached only through the provider contract.
+    pub fn disambiguate_skill(
+        &self,
+        package_id: &str,
+        request: &str,
+        candidates: &[harbor_core::router::RouteHit],
+    ) -> harbor_core::router::Disambiguation {
+        use harbor_core::router::Disambiguation;
+        let model = ModelRef::InstalledPackage {
+            package_id: package_id.into(),
+        };
+        if let Err(e) = self.provider.load(&model) {
+            return Disambiguation::Unavailable(format!("chat model load: {e}"));
+        }
+        self.loaded
+            .lock()
+            .unwrap()
+            .insert(package_id.to_string(), ());
+        harbor_core::router::disambiguate(&self.provider, &model, request, candidates)
     }
 
     pub fn new(models_root: &Path) -> Self {
@@ -921,4 +1234,25 @@ impl harbor_core::tools::KnowledgeSearch for KnowledgeService {
     fn search(&self, query: &str, top_k: usize) -> Result<serde_json::Value, String> {
         KnowledgeService::search(self, query, top_k).map_err(|e| e.to_string())
     }
+}
+
+/// Citation JSON shared by text search and search-by-media. Chunk text
+/// rides along (`_text`) so grounded generation can quote evidence; the
+/// UI shows only title / score / state.
+fn citations_json(hits: &[harbor_knowledge::index::CitationWithText]) -> serde_json::Value {
+    let citations: Vec<serde_json::Value> = hits
+        .iter()
+        .map(|c| {
+            serde_json::json!({
+                "source_id": c.citation.source_id,
+                "title": c.citation.title,
+                "chunk_id": c.citation.chunk_id,
+                "score": c.citation.score,
+                "state": format!("{:?}", c.citation.state),
+                "content_hash": c.citation.content_hash,
+                "_text": c.text,
+            })
+        })
+        .collect();
+    serde_json::json!({ "citations": citations })
 }

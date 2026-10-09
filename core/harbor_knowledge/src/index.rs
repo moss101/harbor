@@ -7,6 +7,29 @@ use chrono::{DateTime, Utc};
 
 use crate::identity::IndexIdentity;
 
+/// Source ids with this prefix are semantic-memory records, not
+/// documents. They are invisible to ordinary retrieval (so agent- or
+/// run-written memory can never silently ground an answer or be cited as
+/// a document) and reachable only through [`KnowledgeIndex::search_memory`].
+/// `knowledge.ingest` refuses caller-supplied ids under this prefix.
+pub const MEMORY_SOURCE_PREFIX: &str = "memory:";
+
+pub fn is_memory_source(source_id: &str) -> bool {
+    source_id.starts_with(MEMORY_SOURCE_PREFIX)
+}
+
+/// Source ids with this prefix are image / audio items. Unlike memory they
+/// ARE ordinary retrieval results (a text query finds the picture), but
+/// their vectors come from the media itself, which the index does not
+/// keep — so an identity change cannot re-embed them from sealed text and
+/// drops them instead of mixing vector spaces. `knowledge.ingest` refuses
+/// caller ids under this prefix; `knowledge.ingest_media` is the writer.
+pub const MEDIA_SOURCE_PREFIX: &str = "media:";
+
+pub fn is_media_source(source_id: &str) -> bool {
+    source_id.starts_with(MEDIA_SOURCE_PREFIX)
+}
+
 #[derive(Debug, Clone)]
 pub struct Source {
     pub source_id: String,
@@ -133,10 +156,21 @@ impl KnowledgeIndex {
     /// Cosine search over live chunks with citation states resolved
     /// against the CURRENT registry.
     pub fn search(&self, query: &[f32], top_k: usize) -> Vec<Citation> {
+        self.search_scoped(query, top_k, false)
+    }
+
+    /// Cosine search over MEMORY records only (see
+    /// [`MEMORY_SOURCE_PREFIX`]).
+    pub fn search_memory(&self, query: &[f32], top_k: usize) -> Vec<Citation> {
+        self.search_scoped(query, top_k, true)
+    }
+
+    fn search_scoped(&self, query: &[f32], top_k: usize, memory: bool) -> Vec<Citation> {
         let mut scored: Vec<(f32, &SourceChunk)> = self
             .chunks
             .iter()
             .filter(|c| !self.revoked.contains(&c.source_id))
+            .filter(|c| is_memory_source(&c.source_id) == memory)
             .map(|c| (cosine(query, &c.vector), c))
             .collect();
         scored.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
@@ -175,7 +209,16 @@ impl KnowledgeIndex {
     /// Like [`search`], but each citation carries its chunk text so
     /// grounded generation can quote evidence.
     pub fn search_with_text(&self, query: &[f32], top_k: usize) -> Vec<CitationWithText> {
-        self.search(query, top_k)
+        self.with_text(self.search(query, top_k))
+    }
+
+    /// [`search_with_text`] over memory records only.
+    pub fn search_memory_with_text(&self, query: &[f32], top_k: usize) -> Vec<CitationWithText> {
+        self.with_text(self.search_memory(query, top_k))
+    }
+
+    fn with_text(&self, citations: Vec<Citation>) -> Vec<CitationWithText> {
+        citations
             .into_iter()
             .map(|c| {
                 let text = self
@@ -314,6 +357,42 @@ mod tests {
         idx.remove_source("s1").unwrap();
         assert!(idx.search(&vec8(3), 3).is_empty());
         assert_eq!(idx.citation_state("s1", "h1"), SourceVersionState::Removed);
+    }
+
+    #[test]
+    fn memory_sources_are_invisible_to_document_search_and_vice_versa() {
+        let mut idx = KnowledgeIndex::new(identity());
+        for (sid, text) in [("doc1", "a document"), ("memory:m1", "a remembered note")] {
+            idx.add_source(
+                Source {
+                    source_id: sid.into(),
+                    title: sid.into(),
+                    content_hash: "h".into(),
+                    indexed_at: Utc::now(),
+                },
+                vec![SourceChunk {
+                    source_id: sid.into(),
+                    chunk_id: format!("{sid}-0"),
+                    ordinal: 0,
+                    text: text.into(),
+                    vector: vec8(3),
+                }],
+            )
+            .unwrap();
+        }
+        let docs = idx.search(&vec8(3), 5);
+        assert_eq!(docs.len(), 1);
+        assert_eq!(
+            docs[0].source_id, "doc1",
+            "memory must never ground a document answer"
+        );
+        let mem = idx.search_memory(&vec8(3), 5);
+        assert_eq!(mem.len(), 1);
+        assert_eq!(mem[0].source_id, "memory:m1");
+        assert_eq!(
+            idx.search_memory_with_text(&vec8(3), 5)[0].text,
+            "a remembered note"
+        );
     }
 
     #[test]

@@ -1770,4 +1770,102 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get agentsNotHandsBody =>
       'لا يتحكم هاربر أبدًا في شاشتك أو في تطبيقات أخرى. يعمل عبر أدوات مكتوبة وملفات ترفقها ووثائق توافق عليها.';
+
+  @override
+  String get goalsKindPrompt => 'طلب حر';
+
+  @override
+  String get goalsKindSkill => 'مهارة';
+
+  @override
+  String get goalsSkillLabel => 'المهارة';
+
+  @override
+  String get goalsSkillInputLabel => 'النص الذي ستعمل عليه المهارة';
+
+  @override
+  String get goalsRunAwaitingApproval =>
+      'تنتظر عملية الهدف موافقتك — افتح النشاط لمراجعتها.';
+
+  @override
+  String get skillsSuggestHint => 'صف ما تريد فعله وسيقترح هاربر مهارة';
+
+  @override
+  String get skillsSuggestAction => 'اقترح مهارة';
+
+  @override
+  String get skillsSuggestBest => 'أفضل المطابقات (اضغط على واحدة لفتحها):';
+
+  @override
+  String get skillsSuggestNoMatch =>
+      'لا توجد مهارة مطابقة بثقة — جرّب كلمات أخرى أو تصفّح القائمة أدناه.';
+
+  @override
+  String get skillsSuggestAmbiguous =>
+      'عدة مهارات تناسب الطلب بالقدر نفسه تقريبًا — الأقرب أدناه.';
+
+  @override
+  String get skillsSuggestUnavailable => 'الاقتراحات غير متاحة حاليًا.';
+
+  @override
+  String get skillsSuggestNote =>
+      'الاقتراحات توصيات فقط. لا يعمل شيء حتى تفتح مهارة وتشغّلها.';
+
+  @override
+  String get memoryHeading => 'الذاكرة';
+
+  @override
+  String get memoryExplainer =>
+      'ملاحظات يستطيع هاربر استدعاءها بالمعنى. تُظهر كل ملاحظة من كتبها، ويمكنك حذف أي منها، ولا تُستخدم الذاكرة أبدًا كمصدر للمستندات.';
+
+  @override
+  String get memoryAddHint => 'شيء تريد تذكّره، مثل: «أفضّل الوحدات المترية».';
+
+  @override
+  String get memoryAddAction => 'تذكّر';
+
+  @override
+  String get memoryAddFailed => 'تعذّر حفظ هذه الذاكرة.';
+
+  @override
+  String get memorySearchHint => 'ابحث في الذاكرة بالمعنى';
+
+  @override
+  String get memoryEmpty => 'لا شيء محفوظ بعد.';
+
+  @override
+  String get memoryNoMatch => 'لا توجد ذاكرة مطابقة.';
+
+  @override
+  String get memoryDeleteAction => 'حذف الذاكرة';
+
+  @override
+  String get memoryOriginUser => 'أضفتها أنت';
+
+  @override
+  String memoryOriginRun(String skill) {
+    return 'كتبتها عملية المهارة: $skill';
+  }
+
+  @override
+  String get memoryOriginGoal => 'كتبها هدف مجدول';
+
+  @override
+  String get skillsSuggestUncalibrated =>
+      'لم يُختبر نموذج التضمين لديك لأغراض الاقتراح، لذا يعرض هاربر أقرب المهارات دون ترشيح إحداها.';
+
+  @override
+  String get skillsSuggestLlmChose =>
+      'عدة مهارات تناسب الطلب بالقدر نفسه؛ اختار نموذجك المحلي المحدد الأولى. وهي ما تزال مجرد اقتراح.';
+
+  @override
+  String get fileGroupMedia => 'الصور والصوت';
+
+  @override
+  String get knowledgeAddMediaAction => 'إضافة صورة أو ملف صوتي';
+
+  @override
+  String knowledgeMediaFailed(String name) {
+    return 'تعذّرت فهرسة $name. تأكد أن الملف بصيغة صورة أو صوت مدعومة.';
+  }
 }

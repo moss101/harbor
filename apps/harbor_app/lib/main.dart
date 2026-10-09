@@ -288,6 +288,15 @@ class _HarborAppState extends State<HarborApp> with WidgetsBindingObserver {
     DiagnosticsSink.instance.attach(opened);
   }
 
+  /// The OS asked for memory back (iOS memory warning, Android
+  /// onTrimMemory). Drop the embedding weights; the index, vectors and
+  /// router cache stay, and the next lookup reloads them. The chat model
+  /// is independent and untouched.
+  @override
+  void didHaveMemoryPressure() {
+    service?.releaseEmbedder();
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // The view controller is going away for good: release the native

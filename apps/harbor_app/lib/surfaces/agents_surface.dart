@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:harbor_domain/harbor_domain.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
 import '../l10n/app_localizations.dart';
@@ -63,8 +64,8 @@ class _AgentsSurfaceState extends State<AgentsSurface> {
     final slot = entry['slot'] as String;
     final chat = _pickChatPackage(service);
     if (chat == null) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(content: Text(l10n.goalsNoChatModel)));
+      ScaffoldMessenger.maybeOf(context)
+          ?.showSnackBar(SnackBar(content: Text(l10n.goalsNoChatModel)));
       return;
     }
     setState(() => _busyGoal = goal['id'] as String);
@@ -73,19 +74,44 @@ class _AgentsSurfaceState extends State<AgentsSurface> {
       final runId = claim['run_id'] as String;
       final request = (goal['request'] as Map).cast<String, dynamic>();
       try {
-        await service.generateAnswer(
-          request['text'] as String? ?? '',
-          chatPackage: chat,
-          runId: runId,
-          maxTokens: 512,
-        );
-        await service.recordGoalOutcome(goal['id'] as String, runId, 'completed');
+        var outcome = 'completed';
+        if (request['kind'] == 'skill') {
+          // The claimed run id is the run's identity; the skill's own
+          // graph, budgets and approvals apply. A goal never approves
+          // anything: a run that stops at an approval is left WAITING
+          // for the user in Activity.
+          final skillId = request['skill_id'] as String? ?? '';
+          final key = HarborService.goalSkillTextInput[skillId];
+          if (key == null) {
+            throw StateError('skill $skillId cannot run as a goal');
+          }
+          final report = await service.startSkillRun(
+            skillId: skillId,
+            inputs: {key: request['input'] as String? ?? ''},
+            chatPackage: chat,
+            runId: runId,
+          );
+          if (report['state'] == 'WAITING_APPROVAL') {
+            outcome = 'awaiting_approval';
+          }
+        } else {
+          await service.generateAnswer(
+            request['text'] as String? ?? '',
+            chatPackage: chat,
+            runId: runId,
+            maxTokens: 512,
+          );
+        }
+        await service.recordGoalOutcome(goal['id'] as String, runId, outcome);
         if (mounted) {
-          ScaffoldMessenger.maybeOf(context)
-              ?.showSnackBar(SnackBar(content: Text(l10n.goalsRunCompleted)));
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+              content: Text(outcome == 'awaiting_approval'
+                  ? l10n.goalsRunAwaitingApproval
+                  : l10n.goalsRunCompleted)));
         }
       } catch (e) {
-        await service.recordGoalOutcome(goal['id'] as String, runId, 'failed: $e');
+        await service.recordGoalOutcome(
+            goal['id'] as String, runId, 'failed: $e');
         if (mounted) {
           ScaffoldMessenger.maybeOf(context)
               ?.showSnackBar(SnackBar(content: Text(l10n.goalsRunFailed)));
@@ -109,13 +135,26 @@ class _AgentsSurfaceState extends State<AgentsSurface> {
     if (service == null) return;
     final spec = await showDialog<_GoalDraft>(
       context: context,
-      builder: (_) => const _GoalCreateDialog(),
+      builder: (_) => _GoalCreateDialog(
+        skills: [
+          for (final k in service.skills)
+            if (k.runnable &&
+                HarborService.goalSkillTextInput.containsKey(k.id))
+              k,
+        ],
+      ),
     );
     if (spec == null) return;
     try {
       await service.createGoal(
         title: spec.title,
-        request: {'kind': 'prompt', 'text': spec.prompt},
+        request: spec.skillId == null
+            ? {'kind': 'prompt', 'text': spec.prompt}
+            : {
+                'kind': 'skill',
+                'skill_id': spec.skillId,
+                'input': spec.prompt,
+              },
         schedule: spec.schedule,
         maxRuns: spec.maxRuns,
       );
@@ -173,11 +212,11 @@ class _AgentsSurfaceState extends State<AgentsSurface> {
       final at = DateTime.tryParse(schedule['at'] as String? ?? '');
       return l10n.goalsOnceAt(at == null
           ? ''
-          : MaterialLocalizations.of(context)
-              .formatFullDate(at));
+          : MaterialLocalizations.of(context).formatFullDate(at));
     }
     final minutes = schedule['minutes'];
-    return l10n.goalsEveryMinutes(minutes is int ? minutes : int.tryParse('$minutes') ?? 0);
+    return l10n.goalsEveryMinutes(
+        minutes is int ? minutes : int.tryParse('$minutes') ?? 0);
   }
 
   @override
@@ -223,8 +262,10 @@ class _AgentsSurfaceState extends State<AgentsSurface> {
                 for (final entry in _due)
                   _GoalCard(
                     goal: (entry['goal'] as Map).cast<String, dynamic>(),
-                    scheduleLabel:
-                        _scheduleLabel(((entry['goal'] as Map)['schedule'] as Map).cast<String, dynamic>(), l10n),
+                    scheduleLabel: _scheduleLabel(
+                        ((entry['goal'] as Map)['schedule'] as Map)
+                            .cast<String, dynamic>(),
+                        l10n),
                     due: true,
                     busy: _busyGoal == entry['goal']['id'],
                     onRun: () => _runNow(entry),
@@ -244,19 +285,20 @@ class _AgentsSurfaceState extends State<AgentsSurface> {
                 for (final goal in _goals)
                   _GoalCard(
                     goal: goal,
-                    scheduleLabel:
-                        _scheduleLabel((goal['schedule'] as Map).cast<String, dynamic>(), l10n),
+                    scheduleLabel: _scheduleLabel(
+                        (goal['schedule'] as Map).cast<String, dynamic>(),
+                        l10n),
                     due: false,
                     busy: false,
                     onRun: null,
-                    onPauseResume: (goal['state'] == 'active' ||
-                            goal['state'] == 'paused')
-                        ? (paused) => _setPaused(goal, paused)
-                        : null,
-                    onCancel: (goal['state'] == 'active' ||
-                            goal['state'] == 'paused')
-                        ? () => _cancelGoal(goal)
-                        : null,
+                    onPauseResume:
+                        (goal['state'] == 'active' || goal['state'] == 'paused')
+                            ? (paused) => _setPaused(goal, paused)
+                            : null,
+                    onCancel:
+                        (goal['state'] == 'active' || goal['state'] == 'paused')
+                            ? () => _cancelGoal(goal)
+                            : null,
                   ),
             ],
             const SizedBox(height: HarborSpace.s6),
@@ -285,15 +327,15 @@ class _AgentsSurfaceState extends State<AgentsSurface> {
                       runSpacing: HarborSpace.s2,
                       children: [
                           OutlinedButton.icon(
-                            onPressed: () =>
-                                AppStateScope.maybeOf(context)!.goTo(HarborSurface.skills),
+                            onPressed: () => AppStateScope.maybeOf(context)!
+                                .goTo(HarborSurface.skills),
                             icon: const Icon(Icons.construction_outlined,
                                 size: 16),
                             label: Text(l10n.agentsGoSkills),
                           ),
                           OutlinedButton.icon(
-                            onPressed: () =>
-                                AppStateScope.maybeOf(context)!.goTo(HarborSurface.activity),
+                            onPressed: () => AppStateScope.maybeOf(context)!
+                                .goTo(HarborSurface.activity),
                             icon: const Icon(Icons.timeline_outlined, size: 16),
                             label: Text(l10n.agentsGoActivity),
                           ),
@@ -307,7 +349,8 @@ class _AgentsSurfaceState extends State<AgentsSurface> {
 }
 
 class _NotYetCard extends StatelessWidget {
-  const _NotYetCard({required this.icon, required this.title, required this.body});
+  const _NotYetCard(
+      {required this.icon, required this.title, required this.body});
   final IconData icon;
   final String title;
   final String body;
@@ -328,13 +371,12 @@ class _NotYetCard extends StatelessWidget {
         ),
         const SizedBox(width: HarborSpace.s3),
         Expanded(
-          child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: t.text.bodyStrongOf(t.colors.ink)),
-                const SizedBox(height: 2),
-                Text(body, style: t.text.smallOf(t.colors.inkMuted)),
-              ]),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(title, style: t.text.bodyStrongOf(t.colors.ink)),
+            const SizedBox(height: 2),
+            Text(body, style: t.text.smallOf(t.colors.inkMuted)),
+          ]),
         ),
       ]),
     );
@@ -409,39 +451,45 @@ class _GoalCard extends StatelessWidget {
                     icon: Icons.repeat_outlined),
             ],
           ),
-          if (due || onRun != null || onPauseResume != null || onCancel != null) ...[
+          if (due ||
+              onRun != null ||
+              onPauseResume != null ||
+              onCancel != null) ...[
             const SizedBox(height: HarborSpace.s3),
-            Wrap(spacing: HarborSpace.s2, runSpacing: HarborSpace.s2, children: [
-              if (due)
-                FilledButton.icon(
-                  onPressed: busy ? null : onRun,
-                  icon: busy
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.play_arrow_outlined, size: 18),
-                  label: Text(l10n.goalsRunNow),
-                ),
-              if (onPauseResume != null && !due)
-                OutlinedButton.icon(
-                  onPressed: () => onPauseResume!(state == 'active'),
-                  icon: Icon(
-                      state == 'active'
-                          ? Icons.pause_outlined
-                          : Icons.play_arrow_outlined,
-                      size: 18),
-                  label: Text(state == 'active'
-                      ? l10n.goalsPause
-                      : l10n.goalsResume),
-                ),
-              if (onCancel != null && !due)
-                OutlinedButton.icon(
-                  onPressed: onCancel,
-                  icon: const Icon(Icons.close_outlined, size: 18),
-                  label: Text(l10n.goalsCancel),
-                ),
-            ]),
+            Wrap(
+                spacing: HarborSpace.s2,
+                runSpacing: HarborSpace.s2,
+                children: [
+                  if (due)
+                    FilledButton.icon(
+                      onPressed: busy ? null : onRun,
+                      icon: busy
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.play_arrow_outlined, size: 18),
+                      label: Text(l10n.goalsRunNow),
+                    ),
+                  if (onPauseResume != null && !due)
+                    OutlinedButton.icon(
+                      onPressed: () => onPauseResume!(state == 'active'),
+                      icon: Icon(
+                          state == 'active'
+                              ? Icons.pause_outlined
+                              : Icons.play_arrow_outlined,
+                          size: 18),
+                      label: Text(state == 'active'
+                          ? l10n.goalsPause
+                          : l10n.goalsResume),
+                    ),
+                  if (onCancel != null && !due)
+                    OutlinedButton.icon(
+                      onPressed: onCancel,
+                      icon: const Icon(Icons.close_outlined, size: 18),
+                      label: Text(l10n.goalsCancel),
+                    ),
+                ]),
           ],
         ]),
       ),
@@ -451,26 +499,38 @@ class _GoalCard extends StatelessWidget {
 
 /// A goal draft from the create dialog.
 class _GoalDraft {
-  _GoalDraft(this.title, this.prompt, this.schedule, this.maxRuns);
+  _GoalDraft(this.title, this.prompt, this.schedule, this.maxRuns,
+      {this.skillId});
   final String title;
+
+  /// The prompt text, or — for a skill goal — the skill's text input.
   final String prompt;
+
+  /// Null for a prompt goal.
+  final String? skillId;
   final Map<String, dynamic> schedule;
   final int? maxRuns;
 }
 
 class _GoalCreateDialog extends StatefulWidget {
-  const _GoalCreateDialog();
+  const _GoalCreateDialog({this.skills = const []});
+
+  /// Skills a goal may run (text-input skills only).
+  final List<SkillSummary> skills;
 
   @override
   State<_GoalCreateDialog> createState() => _GoalCreateDialogState();
 }
 
 class _GoalCreateDialogState extends State<_GoalCreateDialog> {
+  List<SkillSummary> get _skills => widget.skills;
+
   final _title = TextEditingController();
   final _prompt = TextEditingController();
   final _minutes = TextEditingController(text: '60');
   bool _repeating = true;
   bool _limited = false;
+  String? _skillId; // null ⇒ prompt goal
   int _maxRuns = 5;
 
   @override
@@ -496,7 +556,8 @@ class _GoalCreateDialogState extends State<_GoalCreateDialog> {
       initialTime: TimeOfDay.fromDateTime(now.add(const Duration(hours: 1))),
     );
     if (time == null || !mounted) return;
-    final at = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    final at =
+        DateTime(date.year, date.month, date.day, time.hour, time.minute);
     // Replace the placeholder controller content with the chosen time.
     _minutes.text = at.toIso8601String();
     // ignore: use_build_context_synchronously
@@ -519,12 +580,43 @@ class _GoalCreateDialogState extends State<_GoalCreateDialog> {
                 labelText: l10n.goalsNameLabel, hintText: l10n.goalsNameHint),
           ),
           const SizedBox(height: HarborSpace.s3),
+          if (_skills.isNotEmpty) ...[
+            SegmentedButton<bool>(
+              segments: [
+                ButtonSegment<bool>(
+                    value: false, label: Text(l10n.goalsKindPrompt)),
+                ButtonSegment<bool>(
+                    value: true, label: Text(l10n.goalsKindSkill)),
+              ],
+              selected: {_skillId != null},
+              onSelectionChanged: (sel) => setState(
+                  () => _skillId = sel.first ? _skills.first.id : null),
+            ),
+            const SizedBox(height: HarborSpace.s3),
+          ],
+          if (_skillId != null) ...[
+            DropdownButtonFormField<String>(
+              initialValue: _skillId,
+              isExpanded: true,
+              decoration: InputDecoration(labelText: l10n.goalsSkillLabel),
+              items: [
+                for (final s in _skills)
+                  DropdownMenuItem(
+                      value: s.id,
+                      child: Text(s.title, overflow: TextOverflow.ellipsis)),
+              ],
+              onChanged: (v) => setState(() => _skillId = v),
+            ),
+            const SizedBox(height: HarborSpace.s3),
+          ],
           TextField(
             controller: _prompt,
             maxLines: 3,
             decoration: InputDecoration(
-                labelText: l10n.goalsPromptLabel,
-                hintText: l10n.goalsPromptHint),
+                labelText: _skillId == null
+                    ? l10n.goalsPromptLabel
+                    : l10n.goalsSkillInputLabel,
+                hintText: _skillId == null ? l10n.goalsPromptHint : null),
           ),
           const SizedBox(height: HarborSpace.s3),
           SegmentedButton<bool>(
@@ -562,8 +654,8 @@ class _GoalCreateDialogState extends State<_GoalCreateDialog> {
           CheckboxListTile(
             value: _limited,
             onChanged: (v) => setState(() => _limited = v ?? false),
-            title: Text(l10n.goalsLimitLabel,
-                style: t.text.smallOf(t.colors.ink)),
+            title:
+                Text(l10n.goalsLimitLabel, style: t.text.smallOf(t.colors.ink)),
             contentPadding: EdgeInsets.zero,
             dense: true,
             controlAffinity: ListTileControlAffinity.leading,
@@ -612,8 +704,8 @@ class _GoalCreateDialogState extends State<_GoalCreateDialog> {
                   };
             Navigator.pop(
               context,
-              _GoalDraft(
-                  title, prompt, schedule, _limited ? _maxRuns : null),
+              _GoalDraft(title, prompt, schedule, _limited ? _maxRuns : null,
+                  skillId: _skillId),
             );
           },
           child: Text(l10n.goalsCreateConfirm),

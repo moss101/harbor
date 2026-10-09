@@ -2839,6 +2839,180 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Harbor never controls your screen or other apps. It works through typed tools, files you attach, and documents you approve.'**
   String get agentsNotHandsBody;
+
+  /// No description provided for @goalsKindPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt'**
+  String get goalsKindPrompt;
+
+  /// No description provided for @goalsKindSkill.
+  ///
+  /// In en, this message translates to:
+  /// **'Skill'**
+  String get goalsKindSkill;
+
+  /// No description provided for @goalsSkillLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Skill'**
+  String get goalsSkillLabel;
+
+  /// No description provided for @goalsSkillInputLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Text for the skill'**
+  String get goalsSkillInputLabel;
+
+  /// No description provided for @goalsRunAwaitingApproval.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal run is waiting for your approval — open Activity to review it.'**
+  String get goalsRunAwaitingApproval;
+
+  /// No description provided for @skillsSuggestHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe what you want to do and Harbor suggests a skill'**
+  String get skillsSuggestHint;
+
+  /// No description provided for @skillsSuggestAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest a skill'**
+  String get skillsSuggestAction;
+
+  /// No description provided for @skillsSuggestBest.
+  ///
+  /// In en, this message translates to:
+  /// **'Best matches (tap one to open it):'**
+  String get skillsSuggestBest;
+
+  /// No description provided for @skillsSuggestNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No skill is a confident match — try different words, or browse below.'**
+  String get skillsSuggestNoMatch;
+
+  /// No description provided for @skillsSuggestAmbiguous.
+  ///
+  /// In en, this message translates to:
+  /// **'Several skills fit about equally — the closest are below.'**
+  String get skillsSuggestAmbiguous;
+
+  /// No description provided for @skillsSuggestUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestions are unavailable right now.'**
+  String get skillsSuggestUnavailable;
+
+  /// No description provided for @skillsSuggestNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestions are recommendations only. Nothing runs until you open a skill and run it.'**
+  String get skillsSuggestNote;
+
+  /// No description provided for @memoryHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory'**
+  String get memoryHeading;
+
+  /// No description provided for @memoryExplainer.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes Harbor can recall by meaning. Each one shows who wrote it, you can delete any of them, and memory is never used as a document source.'**
+  String get memoryExplainer;
+
+  /// No description provided for @memoryAddHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Something to remember, e.g. “I prefer metric units.”'**
+  String get memoryAddHint;
+
+  /// No description provided for @memoryAddAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remember'**
+  String get memoryAddAction;
+
+  /// No description provided for @memoryAddFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save that memory.'**
+  String get memoryAddFailed;
+
+  /// No description provided for @memorySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search memory by meaning'**
+  String get memorySearchHint;
+
+  /// No description provided for @memoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing remembered yet.'**
+  String get memoryEmpty;
+
+  /// No description provided for @memoryNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching memory.'**
+  String get memoryNoMatch;
+
+  /// No description provided for @memoryDeleteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete memory'**
+  String get memoryDeleteAction;
+
+  /// No description provided for @memoryOriginUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Added by you'**
+  String get memoryOriginUser;
+
+  /// No description provided for @memoryOriginRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Written by skill run: {skill}'**
+  String memoryOriginRun(String skill);
+
+  /// No description provided for @memoryOriginGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Written by a scheduled goal'**
+  String get memoryOriginGoal;
+
+  /// No description provided for @skillsSuggestUncalibrated.
+  ///
+  /// In en, this message translates to:
+  /// **'Your embedding model has not been benchmarked for suggestions, so Harbor shows the closest skills without recommending one.'**
+  String get skillsSuggestUncalibrated;
+
+  /// No description provided for @skillsSuggestLlmChose.
+  ///
+  /// In en, this message translates to:
+  /// **'Several skills fit equally; your selected local model picked the first one. Still only a suggestion.'**
+  String get skillsSuggestLlmChose;
+
+  /// No description provided for @fileGroupMedia.
+  ///
+  /// In en, this message translates to:
+  /// **'Images and audio'**
+  String get fileGroupMedia;
+
+  /// No description provided for @knowledgeAddMediaAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add image or audio'**
+  String get knowledgeAddMediaAction;
+
+  /// No description provided for @knowledgeMediaFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not index {name}. Check that the file is a supported image or audio format.'**
+  String knowledgeMediaFailed(String name);
 }
 
 class _AppLocalizationsDelegate

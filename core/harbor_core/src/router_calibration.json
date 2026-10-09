@@ -1,0 +1,79 @@
+{
+  "schema": "harbor.router_calibration/v1",
+  "note": "Routing bars are properties of an embedding model, never of the user's chat model. Each entry was measured with router_live over 106 labeled requests (70 English built-in eval inputs + 36 Arabic/French, evals/skill_routing/multilingual.json) on Q8_0 weights, Apple Metal, 2026-10-09. An embedder with no entry is UNCALIBRATED: the router still ranks but never recommends. Re-measure (and bump `version`) when the model, quantization, instruction policy or skill set changes. Matryoshka-truncated indexes (EmbeddingGemma 2) are separate entries keyed by `dimension`; 128-d measured 48% top-1, below the broken-embedder floor, so it has no entry and never recommends. Selection rule for every entry: highest coverage with precision-when-confident >= 0.75 on the sweep grid.",
+  "entries": [
+    {
+      "id": "bge-m3",
+      "version": 1,
+      "matches": [
+        "bge-m3"
+      ],
+      "min_score": 0.75,
+      "min_margin": 0.02,
+      "corpus_cases": 106,
+      "coverage": 0.45,
+      "precision_when_confident": 0.79,
+      "top1": 0.62,
+      "evidence": "evidence/skill_routing/live-950f4a8e5e19.json"
+    },
+    {
+      "id": "embeddinggemma-2",
+      "version": 1,
+      "matches": [
+        "embeddinggemma"
+      ],
+      "min_score": 0.7,
+      "min_margin": 0.02,
+      "corpus_cases": 106,
+      "coverage": 0.44,
+      "precision_when_confident": 0.79,
+      "top1": 0.6,
+      "evidence": "evidence/skill_routing/live-2188ac1deca4.json"
+    },
+    {
+      "id": "multilingual-e5-small",
+      "version": 1,
+      "matches": [
+        "multilingual-e5-small",
+        "multilingual_e5_small"
+      ],
+      "min_score": 0.8,
+      "min_margin": 0.02,
+      "corpus_cases": 106,
+      "coverage": 0.3,
+      "precision_when_confident": 0.81,
+      "top1": 0.5,
+      "evidence": "evidence/skill_routing/live-e011debc1208.json"
+    },
+    {
+      "id": "embeddinggemma-2@512",
+      "version": 1,
+      "matches": [
+        "embeddinggemma"
+      ],
+      "dimension": 512,
+      "min_score": 0.7,
+      "min_margin": 0.05,
+      "corpus_cases": 106,
+      "coverage": 0.29,
+      "precision_when_confident": 0.87,
+      "top1": 0.585,
+      "evidence": "evidence/skill_routing/live-2188ac1deca4-mrl512.json"
+    },
+    {
+      "id": "embeddinggemma-2@256",
+      "version": 1,
+      "matches": [
+        "embeddinggemma"
+      ],
+      "dimension": 256,
+      "min_score": 0.7,
+      "min_margin": 0.05,
+      "corpus_cases": 106,
+      "coverage": 0.28,
+      "precision_when_confident": 0.87,
+      "top1": 0.566,
+      "evidence": "evidence/skill_routing/live-2188ac1deca4-mrl256.json"
+    }
+  ]
+}

@@ -22,6 +22,8 @@ encoding_rs = { version = "0.8", optional = true }
 
 [features]
 gguf-backend = ["dep:llama-cpp-2", "dep:encoding_rs"]
+# Image / audio embedding through the mmproj projector (decision 0015).
+multimodal = ["gguf-backend", "llama-cpp-2/mtmd"]
 
 [dev-dependencies]
 tempfile = "3"

@@ -35,6 +35,9 @@ pub struct Workspace {
     /// Scheduled goals (decision 0011): sealed under a domain-separated
     /// subkey of the workspace key, like the agent event log.
     pub goals: harbor_agent::GoalStore,
+    /// Semantic-memory records with provenance (decision 0012), sealed
+    /// under their own domain-separated subkey.
+    pub memory: harbor_agent::MemoryStore,
 }
 
 impl Workspace {
@@ -134,6 +137,16 @@ impl Workspace {
         )
         .map_err(|e| HarborError::Security(format!("goal store: {e}")))?;
 
+        let memory_key = harbor_store::keys::KeyMaterial::derive_subkey(
+            key.kek_material(),
+            "harbor.agent.memory/v1",
+        );
+        let memory = harbor_agent::MemoryStore::open_with_key(
+            opts.data_root.join("db").join("memory.json"),
+            memory_key,
+        )
+        .map_err(|e| HarborError::Security(format!("memory store: {e}")))?;
+
         Ok(Workspace {
             workspace_id: workspace_id.into(),
             privacy_mode: mode,
@@ -145,6 +158,7 @@ impl Workspace {
             key_source,
             workspace_key: key,
             goals,
+            memory,
         })
     }
 

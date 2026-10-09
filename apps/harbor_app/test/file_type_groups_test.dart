@@ -22,6 +22,7 @@ void main() {
     'office': officeTypeGroup('office'),
     'knowledge': knowledgeTypeGroup('knowledge'),
     'model': modelTypeGroup('models'),
+    'media': mediaTypeGroup('media'),
   };
 
   group('every shipped picker group', () {

@@ -74,3 +74,14 @@ strip = "debuginfo"
 # crates.io source; the patched tree is pinned by tools/pin_engine.py.
 [patch.crates-io]
 formualizer-eval = { path = "../third_party/formualizer-eval" }
+
+# HARBOR PATCH (decision 0013): llama-cpp-sys-2 0.1.156 with the
+# `gemma-embedding2` architecture back-ported from upstream llama.cpp
+# 4fbc76dec5 (PR #30054; src/ hunks only, two helper calls adapted to this
+# snapshot). Everything else is the exact crates.io source. See
+# third_party/llama-cpp-sys-2/HARBOR_PATCH.md.
+llama-cpp-sys-2 = { path = "../third_party/llama-cpp-sys-2" }
+
+# HARBOR PATCH (decision 0015): llama-cpp-2 0.1.156 + embedding-batch and
+# mtmd-output accessors (additive). See third_party/llama-cpp-2/HARBOR_PATCH.md.
+llama-cpp-2 = { path = "../third_party/llama-cpp-2" }
