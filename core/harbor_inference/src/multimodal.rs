@@ -308,6 +308,7 @@ impl MediaEmbedder {
         let params = MtmdContextParams {
             use_gpu: !provider.is_cpu_pinned(package_id)
                 && std::env::var("HARBOR_GGUF_CPU_ONLY").as_deref() != Ok("1"),
+            n_threads: crate::gguf::compute_threads(),
             ..MtmdContextParams::default()
         };
         let mtmd = MtmdContext::init_from_file(
@@ -474,7 +475,9 @@ impl MediaEmbedder {
             .with_n_batch(n_ctx.get())
             .with_n_ubatch(n_ctx.get())
             .with_embeddings(true)
-            .with_pooling_type(llama_cpp_2::context::params::LlamaPoolingType::Mean);
+            .with_pooling_type(llama_cpp_2::context::params::LlamaPoolingType::Mean)
+            .with_n_threads(crate::gguf::compute_threads())
+            .with_n_threads_batch(crate::gguf::compute_threads());
         let mut ctx = self
             .model
             .new_context(self.backend, params)

@@ -1124,7 +1124,13 @@ fn main() {
                 Ok(path) => {
                     // Skip CLI / deprecation-warning binaries — we only want the library sources
                     let filename = path.file_name().unwrap().to_str().unwrap();
-                    if filename == "mtmd-cli.cpp" || filename == "deprecation-warning.cpp" {
+                    // HARBOR PATCH: mtmd-debug.cpp is a standalone tool with its
+                    // own `main`; in a force-loaded static archive (iOS device)
+                    // it collides with the app's `main` ("duplicate symbol _main").
+                    if filename == "mtmd-cli.cpp"
+                        || filename == "deprecation-warning.cpp"
+                        || filename == "mtmd-debug.cpp"
+                    {
                         continue;
                     }
                     mtmd_build.file(&path);
@@ -1321,6 +1327,26 @@ fn main() {
                 "cargo:warning=common feature was enabled, but no common library was found in {}",
                 common_lib_dir.display()
             );
+        }
+    }
+
+    // HARBOR PATCH (decision 0015): llama-common's download.cpp references
+    // cpp-httplib, which cmake builds as its own static library that this
+    // script never linked. Dylib builds dead-strip the unreferenced object,
+    // but a static archive that an app force-loads (iOS device) pulls in
+    // every object and fails with undefined `httplib::` symbols.
+    if cfg!(feature = "common") {
+        let httplib_dir = out_dir.join("build").join("vendor").join("cpp-httplib");
+        let mut dirs = vec![httplib_dir.clone()];
+        let profile_dir = httplib_dir.join(&profile);
+        if profile_dir.is_dir() {
+            dirs.push(profile_dir);
+        }
+        if library_file_exists(&dirs, "cpp-httplib", build_shared_libs, &target_os) {
+            for d in &dirs {
+                println!("cargo:rustc-link-search=native={}", d.display());
+            }
+            println!("cargo:rustc-link-lib={llama_libs_kind}=cpp-httplib");
         }
     }
 

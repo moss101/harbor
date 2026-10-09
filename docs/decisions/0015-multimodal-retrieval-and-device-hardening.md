@@ -122,14 +122,45 @@ bounds are typed errors. The three app builds (macOS, iOS simulator,
 Android arm64) compile with the samplers; the native samplers have not been
 driven through a full UI run on a device.
 
+## Physical-device evidence (follow-up)
+
+**Android, real phone** — OnePlus CPH2767 (Snapdragon `SM8845`, 8 cores, 11 GB,
+Android 16), natively over adb, CPU backend (the Android build has no GPU
+backend): text + Matryoshka + multimodal (images, audio, video, ops) tests all
+pass, and the real-data benchmark matches the Mac within numerical noise —
+text→image R@1 0.877 (Mac Metal 0.874), image→text 0.860, text↔audio 1.000.
+The text top score is 0.832777, identical to the emulator. **Speed is the
+limit**: ~3.5 s per image and ~2.5 s per audio clip on the CPU (release
+build; the C++ kernels were already optimized), against ~95 ms per image on
+Metal. 6 threads is the measured default (4 → 6 took images from 3.5 s to
+2.6 s; 8 added nothing); llama.cpp's own default is 4 whatever the device.
+Indexing a handful of items is fine; bulk image indexing on a phone needs a GPU
+backend (Vulkan / OpenCL), which this build does not include.
+
+**iOS, real iPhone** — NOT run. Reaching it required Developer Mode, an unlocked
+screen and a wired connection (`flutter test` cannot start an app on a
+wirelessly connected iPhone). What the attempt did find, on the first full
+**device** link of the model features, were two real bugs that the simulator
+and macOS builds had hidden (their dylibs dead-strip unreferenced objects, but
+the device build force-loads the whole static archive):
+
+1. `libcpp-httplib.a` was built but never linked, so `download.cpp.o` failed
+   with undefined `httplib::` symbols.
+2. `mtmd-debug.cpp` — a standalone tool with its own `main()` — was swept into
+   the library and collided with the app's `main` (`duplicate symbol _main`).
+
+Both are fixed in the vendored `build.rs`; the signed device app (debug and
+release) now builds and links with the full core. The device entry point and
+procedure are kept in `tools/device_qualification/`. No iPhone GPU result
+exists.
+
 ## Not done
 
-- **Physical devices.** No phone was reachable (every device listed is a
-  simulator/emulator), so Android was an arm64 emulator (CPU) and iOS the
-  simulator. A real iPhone/Android GPU will go through the same numerics
-  canary; the app now shows the active embedding backend on the Knowledge
-  screen and logs a diagnostics record when a device falls back to CPU, so a
-  first real-device run reports itself. What a real GPU reports is unknown.
+- **iPhone.** Not run (see above): the first real iPhone GPU result for the
+  numerics canary is still unknown. The app shows the active embedding backend
+  on the Knowledge screen and logs a diagnostics record on a CPU fallback, so
+  a first run reports itself.
+- **GPU on Android.** CPU only; see the timings above.
 - **Video on Windows / Linux** (no frame sampler) and **video-specific
   token budgets** (frames go through the image path at its default budget,
   not the 140-token video rate in the model card).

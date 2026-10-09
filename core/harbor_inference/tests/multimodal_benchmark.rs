@@ -24,6 +24,10 @@ use harbor_inference::provider::{ModelProvider, ModelRef};
 use harbor_modelhub::install::{PackageFile, PackageInstaller, PackageManifest, RuntimeBinding};
 
 fn root() -> PathBuf {
+    // On-device runs push the fixtures next to the binary.
+    if let Ok(r) = std::env::var("HARBOR_FIXTURE_ROOT") {
+        return PathBuf::from(r);
+    }
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../..")
         .canonicalize()
@@ -205,7 +209,13 @@ fn real_media_retrieval_quality() {
         "ms_per_audio_embed": aud_ms,
         "command": "HARBOR_MM_BENCH_DIR=<dir> cargo test -p harbor_inference --features multimodal --test multimodal_benchmark -- --ignored --nocapture",
     });
-    let out = r.join("evidence/media_retrieval");
+    // On a device the repo tree is not writable: evidence goes next to the
+    // dataset and is pulled back with adb.
+    let out = if std::env::var("HARBOR_FIXTURE_ROOT").is_ok() {
+        bench.join("evidence")
+    } else {
+        r.join("evidence/media_retrieval")
+    };
     std::fs::create_dir_all(&out).unwrap();
     let path = out.join(format!("eg2-{}.json", &weights_hash[..12]));
     std::fs::write(&path, serde_json::to_string_pretty(&report).unwrap()).unwrap();

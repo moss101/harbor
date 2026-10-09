@@ -25,3 +25,16 @@ text tower) back-ported into the vendored `llama.cpp/src`.
 Retire this directory (delete it and the `[patch.crates-io]` line in
 `core/Cargo.toml`) when a `llama-cpp-sys-2` release vendors llama.cpp at or
 after `4fbc76dec5`.
+
+## build.rs: link cpp-httplib (decision 0015 follow-up)
+
+`build.rs` additionally links the `cpp-httplib` static library that cmake
+already builds. Without it, an iOS DEVICE build — where the app force-loads the
+whole `libharbor_ffi.a` — fails with undefined `httplib::` symbols from
+`download.cpp.o`; dylib builds dead-strip the object and never noticed.
+
+## build.rs: skip mtmd-debug.cpp
+
+`tools/mtmd/debug/mtmd-debug.cpp` is a standalone tool with its own `main()`.
+The mtmd source glob picked it up; in a force-loaded static archive (iOS
+device) it collides with the app's `main` ("duplicate symbol _main").

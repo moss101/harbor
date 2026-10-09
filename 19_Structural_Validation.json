@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "44876dc778b551b723c3900e6f1fdc1afd272d6128407542105b1da796d743da",
+  "input_manifest_sha256": "dd56a112d75182b17f10012fa773359c1976e3664a4e8105e69abceebba1124e",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -2461,8 +2461,8 @@
     },
     {
       "path": "core/harbor_inference/src/gguf.rs",
-      "bytes": 21973,
-      "sha256": "e200d51d340c575b0125f0c7d45785583c7de2c385d29a79f52f08db6ae9684c"
+      "bytes": 22773,
+      "sha256": "1551bdde4439c873dc2ebfce7af3e3f2a75e1e9f838b49c3185bd471af6549da"
     },
     {
       "path": "core/harbor_inference/src/lib.rs",
@@ -2476,8 +2476,8 @@
     },
     {
       "path": "core/harbor_inference/src/multimodal.rs",
-      "bytes": 19948,
-      "sha256": "aba9b6df0ad9f3580b641405f15d71dc7404dc105217c3e5c527390e6ea33640"
+      "bytes": 20129,
+      "sha256": "1094f49852695a1db8df912e3ad704b0dfd3490a8f3a25252cafdc4fa26dfc8f"
     },
     {
       "path": "core/harbor_inference/src/provider.rs",
@@ -2501,8 +2501,8 @@
     },
     {
       "path": "core/harbor_inference/tests/multimodal_benchmark.rs",
-      "bytes": 8810,
-      "sha256": "993d72ff1985862f43dc2fe2a962966f2b41ab5bf93eaebf65fd6fda3df92f92"
+      "bytes": 9195,
+      "sha256": "93cb20ec2c9ff3e2875c6f17fe09f8b18183175a7a84ea151a608bb46695a08f"
     },
     {
       "path": "core/harbor_inference/tests/multimodal_live.rs",
@@ -2886,8 +2886,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 148413,
-      "sha256": "fb1cea66d4ebf8274d92cf255f20d602070839b5be83f1bd2a29df10fa1121db"
+      "bytes": 148651,
+      "sha256": "51b9089088fef8b5a82b4fb2d6c8b195bc7cd09a25c3d0e6bfc0ecc89fac5c4a"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -2961,8 +2961,8 @@
     },
     {
       "path": "docs/decisions/0015-multimodal-retrieval-and-device-hardening.md",
-      "bytes": 8310,
-      "sha256": "3d4e6bbd2850bb4ebe4343c135070c539c812b28a208fdcd25b48ae87016dbd4"
+      "bytes": 10088,
+      "sha256": "b1c4a9ccc9b5d49e8a22d178f8a4b8609730cf6f94103ef239a64fa24695283f"
     },
     {
       "path": "docs/nanomuse_embeddinggemma_audit.md",
@@ -6181,8 +6181,8 @@
     },
     {
       "path": "third_party/llama-cpp-sys-2/HARBOR_PATCH.md",
-      "bytes": 1504,
-      "sha256": "4c23c4980f8dc44d8cd0aada6893a5708c10c429045690869dfd248b70884737"
+      "bytes": 2120,
+      "sha256": "69912856796dd23d4f93cbd13991c3cb984665ee3ec4b5985ed3e6fa120b76e0"
     },
     {
       "path": "third_party/llama-cpp-sys-2/README.md",
@@ -6191,8 +6191,8 @@
     },
     {
       "path": "third_party/llama-cpp-sys-2/build.rs",
-      "bytes": 56439,
-      "sha256": "a458b7eed691fee0b0e39d8f28a6d9ac5247f47eb1a6d23bf2a50132aeaf4daf"
+      "bytes": 57755,
+      "sha256": "0852e5f197dffaa70799a49af67e2b6e9ddc771f4e2276d32be48c2f65de278d"
     },
     {
       "path": "third_party/llama-cpp-sys-2/llama.cpp/CMakeLists.txt",
@@ -11928,6 +11928,16 @@
       "path": "tools/contracts.py",
       "bytes": 16743,
       "sha256": "502498134afe4645749154e5622980e49bbbad389bbebf69fb269b24e83c71b0"
+    },
+    {
+      "path": "tools/device_qualification/README.md",
+      "bytes": 1202,
+      "sha256": "47cb902af5ec07eda56f40f5f3169cacae37fc2c4a1f71d12751a8bce52bb631"
+    },
+    {
+      "path": "tools/device_qualification/qualify_main.dart",
+      "bytes": 4509,
+      "sha256": "b1166e390c9e126dafc115167e218f2eab7c1da3760865d290b061cac1fc6d31"
     },
     {
       "path": "tools/expand_eval_corpus.py",

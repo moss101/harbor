@@ -53,6 +53,26 @@ pub struct GgufLlamaCppProvider {
     context_tokens: u32,
 }
 
+/// Threads for CPU compute. llama.cpp defaults to 4 whatever the device
+/// has; `HARBOR_GGUF_THREADS` overrides, otherwise [`default_threads`].
+pub fn compute_threads() -> i32 {
+    std::env::var("HARBOR_GGUF_THREADS")
+        .ok()
+        .and_then(|v| v.parse::<i32>().ok())
+        .filter(|n| *n >= 1)
+        .unwrap_or_else(default_threads)
+}
+
+fn default_threads() -> i32 {
+    std::thread::available_parallelism()
+        .map(|n| n.get() as i32)
+        .unwrap_or(4)
+        // Measured on a OnePlus (8 cores, Snapdragon 8-class): images go
+        // 3.5 s -> 2.6 s from 4 to 6 threads and gain nothing from 8;
+        // audio does not benefit from more than 4.
+        .clamp(1, 6)
+}
+
 /// Process-global backend: llama.cpp's `llama_backend_init` is
 /// process-global and may only be marked initialized once.
 fn shared_backend() -> Result<&'static LlamaBackend, ProviderError> {
@@ -398,7 +418,9 @@ impl GgufLlamaCppProvider {
             .with_n_batch(n_ctx.get())
             .with_n_ubatch(n_ctx.get())
             .with_embeddings(true)
-            .with_pooling_type(LlamaPoolingType::Mean);
+            .with_pooling_type(LlamaPoolingType::Mean)
+            .with_n_threads(compute_threads())
+            .with_n_threads_batch(compute_threads());
         let mut ctx = model
             .new_context(self.backend, ctx_params)
             .map_err(|e| ProviderError::Backend(format!("context: {e}")))?;
