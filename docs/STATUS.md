@@ -34,7 +34,9 @@ track the force-loaded Rust archive, so a device build can ship a stale core -
 clear DerivedData first (decision 0015). Windows/Linux video: sampled through the user's FFmpeg (not bundled; decision 0016;
 verified against real FFmpeg on macOS, not run on Windows/Linux). Android GPU:
 the Vulkan backend now cross-compiles reproducibly (scripts/build_android_vulkan.sh);
-on-device result pending. Still open: Android GPU run. Routing is now model-independent
+on a real OnePlus (Adreno 829) it embeds WRONG (canary caught it, fp32 mode segfaults), so
+Vulkan stays opt-in and Android runs on the CPU; a CPU-fallback bug (zero GPU layers still
+offloaded) was found and fixed. Still open: a GPU backend that is correct on mobile. Routing is now model-independent
 (decision 0014): versioned per-embedder calibration data (bge-m3, EmbeddingGemma
 2, e5; uncalibrated embedders abstain), ambiguity delegated to the user's
 selected chat model through the provider contract (validated, advisory),

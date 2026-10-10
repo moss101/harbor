@@ -74,7 +74,7 @@ truncation, and the catalog pin.
 | Platform | Backend | Result |
 |---|---|---|
 | macOS (Apple GPU) | Metal | text + Matryoshka + multimodal pass; top score 0.8341 |
-| macOS | CPU only | pass; top score 0.8330 |
+| macOS | CPU only (see decision 0016: this first run was a Metal-offload hybrid; true CPU is 0.8364) | pass; top score 0.8330 |
 | Android arm64 emulator | CPU | text, Matryoshka, multimodal pass; 0.8328 |
 | iOS simulator | GPU path fails canary → CPU | text, Matryoshka, multimodal pass; 0.8364 |
 

@@ -507,7 +507,15 @@ impl ModelProvider for GgufLlamaCppProvider {
         if std::env::var("HARBOR_GGUF_CPU_ONLY").as_deref() == Ok("1")
             || self.cpu_only.lock().unwrap().contains(package_id)
         {
-            params = params.with_n_gpu_layers(0);
+            // Zero GPU layers is NOT enough when a GPU backend is compiled
+            // in: ggml's scheduler still offloads heavy host-weight ops to
+            // the device. An empty device list is the real CPU-only switch
+            // (found on an Adreno Vulkan phone where the "CPU fallback"
+            // kept producing the GPU's wrong embeddings).
+            params = params
+                .with_n_gpu_layers(0)
+                .with_devices(&[])
+                .map_err(|e| ProviderError::Backend(format!("cpu-only devices: {e}")))?;
         }
         let model = LlamaModel::load_from_file(self.backend, path, &params)
             .map_err(|e| ProviderError::Backend(format!("model load: {e}")))?;

@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "758988d1eea42ffd8eceaa15384f39d0ab86e2613474d694f73f85facc8c3c84",
+  "input_manifest_sha256": "c9b8493e61cf34fbf12265a2ca899a3642999f9b791f342a9a462f76de46c793",
   "file_count_excluding_manifest": 2407,
   "files": [
     {
@@ -125,12 +125,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 479328,
-      "sha256": "fd95b34ef511bd08f1d8452c7ac322ec553430280260ef61dd4f20e7360f75a4"
+      "sha256": "bfe21ae9d0d0ae9cdacb50c66f980a46c7e4facce8d5fca782684ae0bf4fb8f7"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "eb69e9f9009f65d323dabb8f732aa9ba57691fcc5667e67693d95017d9a66fe0"
+      "sha256": "8b153fa5cb1f263c2e4c94263f84bccb9acd05b4951ca2b0dd1c43d5907437d6"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -2494,8 +2494,8 @@
     },
     {
       "path": "core/harbor_inference/src/gguf.rs",
-      "bytes": 22773,
-      "sha256": "1551bdde4439c873dc2ebfce7af3e3f2a75e1e9f838b49c3185bd471af6549da"
+      "bytes": 23273,
+      "sha256": "ba2388eaf557278cdf9fbebf20def8dc469d51d3c25e0ab23b49a93e4aae0391"
     },
     {
       "path": "core/harbor_inference/src/lib.rs",
@@ -2919,8 +2919,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 149241,
-      "sha256": "bddb085d808f7afc60334a326ad2d82a3be001afe4ae2cd00a8610c4f8b0a4c3"
+      "bytes": 149453,
+      "sha256": "47aa13df63dc30740fdebb886c768a3c06b53d0316a0c878c603a2873bed316e"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -2994,13 +2994,13 @@
     },
     {
       "path": "docs/decisions/0015-multimodal-retrieval-and-device-hardening.md",
-      "bytes": 11928,
-      "sha256": "cf304bc400025d6c9562548dfe325bbc3fab5100bb9e88065be1c1b97a20a662"
+      "bytes": 12011,
+      "sha256": "9743c8f6474e8af518c989351d21655846e75497b1d4a93e7869a93dd398fe00"
     },
     {
       "path": "docs/decisions/0016-android-gpu-and-desktop-video.md",
-      "bytes": 2861,
-      "sha256": "7cb62e155d7c31b9e27b17d701cc4795a00f0611ba166461e48b851a7b56a6d6"
+      "bytes": 4638,
+      "sha256": "6185bcbabcc6b7d872e34ba5e78813666b3c5ff3d8bbcad1e39690de0dac6725"
     },
     {
       "path": "docs/nanomuse_embeddinggemma_audit.md",
