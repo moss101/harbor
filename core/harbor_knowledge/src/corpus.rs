@@ -284,4 +284,23 @@ mod tests {
     fn corpus_hash_is_stable() {
         assert_eq!(evaluation_corpus_sha256(), evaluation_corpus_sha256());
     }
+
+    #[test]
+    fn corpus_hash_is_bound_in_the_authority_profile() {
+        // ACC-056 binds the qualification evidence to this exact corpus
+        // (26_Qualification_Profiles.json production_bindings). Editing
+        // evals/*/corpus.json without rebinding the profile would
+        // silently detach every recorded evaluation from the corpus it
+        // claims to have measured.
+        let profile: serde_json::Value =
+            serde_json::from_str(crate::eval::QUALIFICATION_PROFILE).unwrap();
+        let bound = profile["production_bindings"]["evaluation_corpus_sha256"]
+            .as_str()
+            .expect("evaluation_corpus_sha256 binding present");
+        assert_eq!(
+            evaluation_corpus_sha256(),
+            bound,
+            "evals/ corpora changed without rebinding 26_Qualification_Profiles.json"
+        );
+    }
 }

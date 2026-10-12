@@ -7,6 +7,39 @@ ran at.
 
 ---
 
+## Session 60 (2026-10-12): the eval-corpus gap was already closed — and its binding was unguarded
+
+The "evaluation corpus expansion (9 → 100 cases/language)" that
+`docs/release_checklist_status.md` still named as the remaining M3
+engineering gap is DONE and has been since session 43: 208 cases per
+language (832 total, `2e34c4f`, after the first 116/lang pass in
+`5e5a6bd`), per-behavior minimums enforced by
+`corpus::tests::every_behavior_has_its_profile_minimum_per_language`,
+the pinned tier clearing every profile threshold (25 harbor_knowledge
+tests, 0 failed), and the combined corpus SHA-256 matching the
+`production_bindings.evaluation_corpus_sha256` recorded in
+`26_Qualification_Profiles.json`. The stale checklist line is corrected
+with the closing commits and the enforcing test names.
+
+The real gap the sweep found: NOTHING compared the Rust-computed corpus
+hash to the profile binding. `corpus_hash_is_stable` checked only
+self-consistency, and the Python validator checks binding PRESENCE, not
+value — so editing `evals/*/corpus.json` without rebinding
+`26_Qualification_Profiles.json` would have silently detached every
+recorded evaluation (and ACC-056's evidence) from the corpus it claims
+to have measured. Added
+`corpus::tests::corpus_hash_is_bound_in_the_authority_profile`, which
+parses the embedded authority file and asserts equality, failing with a
+rebinding hint. Dossier regenerated (19/20/24); validator PASS,
+contracts 124/0, clippy clean.
+
+Live tier NOT rerun: ar/mixed qualification needs a multilingual
+embedder (bge-m3 session 43; EmbeddingGemma 2 session 59) and the repo
+carries only English fixtures; the corpora are unchanged since that
+evidence was bound, so the recorded qualification stands.
+
+---
+
 ## Session 59 (2026-10-09): the decision-0011 gaps that can be closed
 
 **EmbeddingGemma 2 now RUNS (decision 0013).** No released binding had the

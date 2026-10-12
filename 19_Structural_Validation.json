@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "c9b8493e61cf34fbf12265a2ca899a3642999f9b791f342a9a462f76de46c793",
+  "input_manifest_sha256": "1d415b5e0d1ef40e4f5a90f40b5c087275ebc97da7e0ca9bfba96d9c7e634a6b",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -2581,8 +2581,8 @@
     },
     {
       "path": "core/harbor_knowledge/src/corpus.rs",
-      "bytes": 10474,
-      "sha256": "b11f2583f8dbc06a06c8bc7701f625bab9df1fdd266661c7ea2fc1652ee8d204"
+      "bytes": 11333,
+      "sha256": "8657230f3d6c1e0016a7ec7ad3be493f2e2d694e2eed508f79d8a680a83baf63"
     },
     {
       "path": "core/harbor_knowledge/src/eval.rs",
@@ -3156,8 +3156,8 @@
     },
     {
       "path": "docs/release_checklist_status.md",
-      "bytes": 5445,
-      "sha256": "5dcbbf1579804d6fd8f8c71c10069c71cf87cc9e010a8c0c1bd12c6ef76ce0d2"
+      "bytes": 5808,
+      "sha256": "5ec4626411b03d4844b09da560824a83f7aa53cb7eefac41f673242b0a4c85d5"
     },
     {
       "path": "evals/ar/corpus.json",
