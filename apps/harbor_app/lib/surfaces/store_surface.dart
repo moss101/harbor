@@ -95,8 +95,10 @@ class _OfficeCardState extends State<_OfficeCard> {
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: TextButton.icon(
-              onPressed: () => setState(() => _insideExpanded = !_insideExpanded),
-              icon: Icon(_insideExpanded ? Icons.expand_less : Icons.expand_more,
+              onPressed: () =>
+                  setState(() => _insideExpanded = !_insideExpanded),
+              icon: Icon(
+                  _insideExpanded ? Icons.expand_less : Icons.expand_more,
                   size: 18),
               label: Text(l10n.storeOfficeInside),
             ),
@@ -114,12 +116,15 @@ class _OfficeCardState extends State<_OfficeCard> {
                   (l10n.storeSuitePdf, false),
                 ])
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: HarborSpace.s1),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: HarborSpace.s1),
                     child: Row(children: [
                       Expanded(
                         child: Text(name, style: t.text.smallOf(t.colors.ink)),
                       ),
-                      HarborPill(live ? l10n.suiteStatusLive : l10n.suiteStatusPreview),
+                      HarborPill(live
+                          ? l10n.suiteStatusLive
+                          : l10n.suiteStatusPreview),
                     ]),
                   ),
               ]),
@@ -326,8 +331,8 @@ class _InstalledCard extends StatelessWidget {
       if (!context.mounted) return;
       final ok = await showUninstallConfirmDialog(context, preview);
       if (!ok) return;
-      final result = await service.uninstallCommit(
-          id, preview['scope_digest'] as String);
+      final result =
+          await service.uninstallCommit(id, preview['scope_digest'] as String);
       if (!context.mounted) return;
       final trashEntry = result['trash_entry'] as String?;
       final messenger = ScaffoldMessenger.of(context);
@@ -349,8 +354,8 @@ class _InstalledCard extends StatelessWidget {
       ));
     } on ffi.HarborCoreException catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('${l10n.storeUninstallFailed}: ${e.message}')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('${l10n.storeUninstallFailed}: ${e.message}')));
     }
   }
 
@@ -437,12 +442,14 @@ Future<bool> showUninstallConfirmDialog(
   final l10n = AppLocalizations.of(context)!;
   final t = HarborTheme.of(context);
   final inUse = preview['in_use'] == true;
-  final reasons =
-      (preview['in_use_reasons'] as List? ?? const []).cast<String>().join(', ');
+  final reasons = (preview['in_use_reasons'] as List? ?? const [])
+      .cast<String>()
+      .join(', ');
   final result = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: Text(l10n.storeUninstallTitle(preview['package_id'] as String? ?? '')),
+      title: Text(
+          l10n.storeUninstallTitle(preview['package_id'] as String? ?? '')),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

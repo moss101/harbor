@@ -1300,8 +1300,6 @@ dependencies = [
 [[package]]
 name = "formualizer-eval"
 version = "0.9.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6fe4be1693b4fde2ee0f69890409fe7d8b5c6e605864c66dc9b2f6da565463b1"
 dependencies = [
  "arrow",
  "arrow-array",
@@ -1655,6 +1653,7 @@ dependencies = [
  "harbor_net",
  "harbor_security",
  "hex",
+ "libc",
  "rand 0.8.8",
  "rand_core 0.6.4",
  "serde",
@@ -1662,6 +1661,7 @@ dependencies = [
  "sha2 0.10.9",
  "thiserror 2.0.20",
  "url",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2190,8 +2190,6 @@ checksum = "47d9d19d1d6efa0109d2f65ff4c85cddd50bd572e5a00127ab10987290bcefae"
 [[package]]
 name = "llama-cpp-2"
 version = "0.1.156"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6450f6d59b4d758b0d92f50a640136c713ec7e08d8ebb0595db03c939b502d4"
 dependencies = [
  "encoding_rs",
  "enumflags2",
@@ -2204,8 +2202,6 @@ dependencies = [
 [[package]]
 name = "llama-cpp-sys-2"
 version = "0.1.156"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aaeb4c4a83335b5e3f1ae87aaa3af447a249dac1b1f8b2249e33b1d74da104a3"
 dependencies = [
  "bindgen",
  "cc",

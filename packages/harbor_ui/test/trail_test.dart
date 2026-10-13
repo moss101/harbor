@@ -7,10 +7,10 @@ import 'package:harbor_ui/harbor_ui.dart';
 void main() {
   testWidgets('run trail technical detail is collapsed then expandable',
       (tester) async {
-    await tester.pumpWidget(HarborTheme(
+    await tester.pumpWidget(const HarborTheme(
       colors: HarborColors.light,
       text: HarborType(arabic: false),
-      child: const MaterialApp(
+      child: MaterialApp(
         home: Scaffold(
           body: RunTrail(entries: [
             RunTrailEntry(

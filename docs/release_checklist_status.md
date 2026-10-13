@@ -72,7 +72,13 @@ surface).
       evaluation_corpus_sha256, qualified_device_manifest_sha256,
       formula engine + fixture bundle hashes
       (`26_Qualification_Profiles.json`). Evaluation corpus expansion
-      (9 → 100 cases/language) is the remaining engineering gap.
+      (9 → 100 cases/language) was the remaining engineering gap at
+      session 27; closed at 116/lang (`5e5a6bd`) and superseded by the
+      208/lang regeneration (`2e34c4f`, session 43; 832 cases total).
+      Per-behavior minimums are enforced by
+      `corpus::tests::every_behavior_has_its_profile_minimum_per_language`
+      and the hash binding by
+      `corpus::tests::corpus_hash_is_bound_in_the_authority_profile`.
 - [ ] **BLOCKED** Store/notarization/privacy declarations: needs Apple
       Developer identity, notarization, Play Console ownership + upload key
       (packaging scripts stop exactly at this boundary).
