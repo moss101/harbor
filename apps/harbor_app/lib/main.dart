@@ -69,7 +69,14 @@ enum HarborSurface {
 
   /// Primary compact destinations (bottom bar); the rest live under More.
   static const primary = [home, ask, work, models];
-  static const secondary = [agents, store, skills, knowledge, activity, settings];
+  static const secondary = [
+    agents,
+    store,
+    skills,
+    knowledge,
+    activity,
+    settings
+  ];
 
   /// ⌘1–9 map to this stable order (a published desktop contract the
   /// tests pin). Store is reachable from the rail, the More sheet and the

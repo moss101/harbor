@@ -290,8 +290,8 @@ void main() {
     // Medium rail: icon + caption for all ten surfaces; the rail scrolls
     // to reach the later ones at this window size.
     await tester.scrollUntilVisible(find.text('Knowledge'), 80,
-        scrollable:
-            find.descendant(of: find.byType(HarborRail), matching: find.byType(Scrollable)));
+        scrollable: find.descendant(
+            of: find.byType(HarborRail), matching: find.byType(Scrollable)));
     expect(find.text('Knowledge'), findsOneWidget);
   });
 

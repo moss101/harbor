@@ -53,8 +53,7 @@ Future<void> pumpApp(WidgetTester tester,
       text: const HarborType(arabic: arabic),
       child: child!,
     ),
-    home: HarborApp(
-        service: service, preferences: MemoryPreferencesStore()),
+    home: HarborApp(service: service, preferences: MemoryPreferencesStore()),
   ));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 100));

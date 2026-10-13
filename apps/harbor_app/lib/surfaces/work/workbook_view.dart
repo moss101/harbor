@@ -154,8 +154,8 @@ class _WorkbookViewState extends State<WorkbookView> {
     final value = _cells[_selected!]?.value;
     final threshold = double.tryParse(value ?? '');
     if (threshold == null) {
-      setState(() => _editError =
-          'select a numeric cell to set the highlight threshold');
+      setState(() =>
+          _editError = 'select a numeric cell to set the highlight threshold');
       return;
     }
     setState(() => _savingEdit = true);
