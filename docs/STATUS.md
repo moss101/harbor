@@ -74,11 +74,21 @@ language version when `package_config.json` exists (pub get) — without
 it the standalone dart defaults to 3.13 tall style and wants to
 reformat everything. Reproduced CI exactly with the Flutter 3.47.4
 archive (dart 3.13.3, pub get first), formatted the same 7 files, gate
-green in all four dirs. Also accepted advisory RUSTSEC-2024-0449
+green in all four dirs. also accepted advisory RUSTSEC-2024-0449
 (unsafe-libyaml unmaintained via serde_yaml ← sheetport-spec in the
 formualizer 0.9.3 pin; notice, local sheet import only) in
-`core/deny.toml` + mirrored `core/.cargo/audit.toml` — CI installs
-latest cargo-deny, which now flags it.
+core/deny.toml + mirrored core/.cargo/audit.toml — CI installs
+latest cargo-deny, which now flags it. (4) With format green, the
+flutter job's NEXT gate surfaced: `flutter analyze` exits non-zero on
+lint infos, and `trail_test.dart` tripped `prefer_const_constructors`
+on `HarborTheme` (fixing it then flagged `unnecessary_const` on the
+inner `MaterialApp`). Const fixed; analyze clean in all four dirs;
+full flutter job mirrored locally before re-pushing — package tests
+19/19 (domain 1, native 2 incl. the live-dylib FFI round-trip, ui 16)
+and app tests 71/71 against the live core. Note for local
+reproduction: an x64 Flutter SDK on an arm64 Mac runs under Rosetta
+and cannot dlopen the arm64 dylib — use the arm64 archive
+(`flutter_macos_arm64_3.47.4-stable.zip`) for FFI/app tests.
 
 
 ---

@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "adb9dc9290f80f4fda0a1a0e9f187af0a399e79987cdd79dec96d4fc1d987a24",
+  "input_manifest_sha256": "220efe56a9621522c245201f1c2e5170fc055c853852597afe48f329f3dddf82",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -2901,8 +2901,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 154003,
-      "sha256": "5e8d1e92dee6339c19604cbd58d0f0d7bc404db29cf80fa1e17cccab09a18552"
+      "bytes": 154688,
+      "sha256": "bc8dc7dc52f4688db54727619699b23fc3cd1056bfdc8f28b676e096f2f75715"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -3812,7 +3812,7 @@
     {
       "path": "packages/harbor_ui/test/trail_test.dart",
       "bytes": 1378,
-      "sha256": "532e71ccecb493933f9e72caab041acfa279739dbc5aedae1a8bc3e61eef4b8b"
+      "sha256": "311aa9e12f0f885ede74e2eac7bbb48fe0cd82f54c9f4d3178600f4ffddfeedd"
     },
     {
       "path": "requirements-validation.txt",
