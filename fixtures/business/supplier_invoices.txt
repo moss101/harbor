@@ -1,0 +1,6 @@
+SUPPLIER INVOICES - batch received October 2026
+Invoice INV-1001 from Acme Supplies. Issued 2026-08-01, due 2026-08-31. Amount 4,200.00 USD. Status: unpaid.
+Invoice INV-1002 from Northwind Parts. Issued 2026-09-05, due 2026-10-05. Amount 1,850.50 USD. Status: unpaid.
+Invoice INV-1003 from Acme Supplies. Issued 2026-09-20, due 2026-10-20. Amount 900.00 USD. Status: unpaid.
+Invoice INV-1004 from Delta Logistics. Issued 2026-07-15, due 2026-08-14. Amount 2,300.00 USD. Status: paid on 2026-08-10.
+Invoice INV-1005 from Delta Logistics. Issued 2026-08-20, due 2026-09-19. Amount 3,100.00 USD. Status: unpaid.

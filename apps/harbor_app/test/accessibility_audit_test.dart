@@ -166,12 +166,10 @@ void main() {
     await pumpApp(tester);
     _assertLabeled(tester, 'home');
     for (final surface in [
-      'Ask',
       'Work',
-      'Agents',
+      'Library',
       'Models',
       'Skills',
-      'Knowledge',
       'Activity',
       'Settings'
     ]) {
@@ -185,12 +183,10 @@ void main() {
     await pumpApp(tester, width: 390, height: 844, textScale: 2.0);
     expect(tester.takeException(), isNull);
     for (final surface in [
-      'Ask',
       'Work',
+      'Library',
       'Models',
-      'Agents',
       'Skills',
-      'Knowledge',
       'Activity',
       'Settings'
     ]) {
@@ -204,6 +200,60 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     expect(tester.takeException(), isNull,
         reason: 'overflow in the Lens\n${takeLayoutError()}');
+  });
+
+  testWidgets(
+      'merged surfaces survive 200% text: Home conversation, Models Store, '
+      'Activity Goals', (tester) async {
+    await pumpApp(tester, width: 390, height: 844, textScale: 2.0);
+    // A question on a fresh workspace (no chat model) becomes a turn with
+    // the install guidance — the conversation layout with its docked
+    // composer.
+    await tester.enterText(
+        find.byKey(const ValueKey('composer-field')), 'What changed?');
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const ValueKey('composer-send')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('composer-send')));
+    for (var i = 0; i < 40; i++) {
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 50));
+      if (find
+          .byKey(const ValueKey('home-needs-model'))
+          .evaluate()
+          .isNotEmpty) {
+        break;
+      }
+    }
+    expect(find.byKey(const ValueKey('home-conversation')), findsOneWidget);
+    expect(tester.takeException(), isNull,
+        reason: 'overflow in the Home conversation\n${takeLayoutError()}');
+    _assertLabeled(tester, 'home conversation');
+    // The notice's own "Models" action is in the conversation too: use the
+    // bottom bar.
+    await tester.tap(find.descendant(
+        of: find.byType(NavigationBar), matching: find.text('Models')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
+    await tester.ensureVisible(find.text('Store'));
+    await tester.pump();
+    await tester.tap(find.text('Store'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Harbor Office Suite'), findsOneWidget);
+    expect(tester.takeException(), isNull,
+        reason: 'overflow on the Store tab\n${takeLayoutError()}');
+    await goTo(tester, 'Activity');
+    await tester.ensureVisible(find.text('Goals'));
+    await tester.pump();
+    await tester.tap(find.text('Goals'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Your goals'), findsOneWidget);
+    expect(tester.takeException(), isNull,
+        reason: 'overflow on the Goals tab\n${takeLayoutError()}');
   });
 
   testWidgets('critical flows survive 320px at 200% text scale',
@@ -220,7 +270,13 @@ void main() {
   testWidgets('desktop surfaces survive 200% text scale', (tester) async {
     await pumpApp(tester, width: 1280, height: 800, textScale: 2.0);
     expect(tester.takeException(), isNull);
-    for (final surface in ['Ask', 'Work', 'Models', 'Knowledge', 'Settings']) {
+    for (final surface in [
+      'Work',
+      'Library',
+      'Models',
+      'Activity',
+      'Settings'
+    ]) {
       await goTo(tester, surface);
       expect(tester.takeException(), isNull,
           reason:

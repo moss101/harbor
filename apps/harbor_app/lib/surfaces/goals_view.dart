@@ -6,19 +6,20 @@ import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/harbor_service.dart';
 
-/// Agents: scheduled goals (decision 0011) — durable, user-authorized
-/// proactive work — plus an honest account of what agent orchestration
-/// is NOT in this release (no autonomous multi-step orchestration, no
-/// computer use). The core hosts no timers: goals come due here and run
-/// only while Harbor is open, with an explicit tap.
-class AgentsSurface extends StatefulWidget {
-  const AgentsSurface({super.key});
+/// Scheduled goals (decision 0011): durable, user-authorized proactive
+/// work, shown as the Goals tab of Activity (their runs land in the Runs
+/// tab next to it). Agent orchestration is not enabled in this release, so
+/// goals are the only proactive work and there is no Agents destination.
+/// The core hosts no timers: goals come due here and run only while
+/// Harbor is open, with an explicit tap.
+class GoalsView extends StatefulWidget {
+  const GoalsView({super.key});
 
   @override
-  State<AgentsSurface> createState() => _AgentsSurfaceState();
+  State<GoalsView> createState() => _GoalsViewState();
 }
 
-class _AgentsSurfaceState extends State<AgentsSurface> {
+class _GoalsViewState extends State<GoalsView> {
   List<Map<String, dynamic>> _goals = [];
   List<Map<String, dynamic>> _due = [];
   bool _loading = true;
@@ -223,162 +224,80 @@ class _AgentsSurfaceState extends State<AgentsSurface> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final t = HarborTheme.of(context);
-    return Column(children: [
-      HarborSurfaceHeader(
-          title: l10n.surfaceAgents, subtitle: l10n.agentsSubtitle),
-      Expanded(
-        child: HarborPage(
-          maxWidth: HarborLayout.readingMax + 160,
-          children: [
-            HarborBanner(
-              tone: HarborBannerTone.info,
-              icon: Icons.schedule_outlined,
-              title: l10n.goalsBannerTitle,
-              body: l10n.goalsBannerBody,
-            ),
-            const SizedBox(height: HarborSpace.s5),
-            Row(children: [
-              Expanded(
-                child: HarborSectionHeader(
-                    title: l10n.goalsSectionTitle,
-                    subtitle: l10n.goalsSectionSubtitle),
-              ),
-              const SizedBox(width: HarborSpace.s2),
-              FilledButton.tonalIcon(
-                onPressed: _createGoal,
-                icon: const Icon(Icons.add_alarm_outlined, size: 18),
-                label: Text(l10n.goalsNew),
-              ),
-            ]),
-            if (_loading)
-              Padding(
-                padding: const EdgeInsets.all(HarborSpace.s5),
-                child: Center(
-                    child: CircularProgressIndicator(color: t.colors.brand)),
-              )
-            else ...[
-              if (_due.isNotEmpty) ...[
-                const SizedBox(height: HarborSpace.s3),
-                for (final entry in _due)
-                  _GoalCard(
-                    goal: (entry['goal'] as Map).cast<String, dynamic>(),
-                    scheduleLabel: _scheduleLabel(
-                        ((entry['goal'] as Map)['schedule'] as Map)
-                            .cast<String, dynamic>(),
-                        l10n),
-                    due: true,
-                    busy: _busyGoal == entry['goal']['id'],
-                    onRun: () => _runNow(entry),
-                    onPauseResume: null,
-                    onCancel: null,
-                  ),
-              ],
-              if (_goals.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: HarborSpace.s6),
-                  child: Center(
-                    child: Text(l10n.goalsEmpty,
-                        style: t.text.smallOf(t.colors.inkMuted)),
-                  ),
-                )
-              else
-                for (final goal in _goals)
-                  _GoalCard(
-                    goal: goal,
-                    scheduleLabel: _scheduleLabel(
-                        (goal['schedule'] as Map).cast<String, dynamic>(),
-                        l10n),
-                    due: false,
-                    busy: false,
-                    onRun: null,
-                    onPauseResume:
-                        (goal['state'] == 'active' || goal['state'] == 'paused')
-                            ? (paused) => _setPaused(goal, paused)
-                            : null,
-                    onCancel:
-                        (goal['state'] == 'active' || goal['state'] == 'paused')
-                            ? () => _cancelGoal(goal)
-                            : null,
-                  ),
-            ],
-            const SizedBox(height: HarborSpace.s6),
-            HarborSectionHeader(
-                title: l10n.agentsWhatTitle, subtitle: l10n.agentsEmptyBody),
-            const SizedBox(height: HarborSpace.s3),
-            _NotYetCard(
-                icon: Icons.hub_outlined,
-                title: l10n.agentsNotAutonomyTitle,
-                body: l10n.agentsNotAutonomyBody),
-            const SizedBox(height: HarborSpace.s3),
-            _NotYetCard(
-                icon: Icons.mouse_outlined,
-                title: l10n.agentsNotHandsTitle,
-                body: l10n.agentsNotHandsBody),
-            const SizedBox(height: HarborSpace.s3),
-            HarborBanner(
-              tone: HarborBannerTone.info,
-              icon: Icons.construction_outlined,
-              title: l10n.agentsUnavailableTitle,
-              body: l10n.agentsUnavailableBody,
-              action: AppStateScope.maybeOf(context) == null
-                  ? null
-                  : Wrap(
-                      spacing: HarborSpace.s2,
-                      runSpacing: HarborSpace.s2,
-                      children: [
-                          OutlinedButton.icon(
-                            onPressed: () => AppStateScope.maybeOf(context)!
-                                .goTo(HarborSurface.skills),
-                            icon: const Icon(Icons.construction_outlined,
-                                size: 16),
-                            label: Text(l10n.agentsGoSkills),
-                          ),
-                          OutlinedButton.icon(
-                            onPressed: () => AppStateScope.maybeOf(context)!
-                                .goTo(HarborSurface.activity),
-                            icon: const Icon(Icons.timeline_outlined, size: 16),
-                            label: Text(l10n.agentsGoActivity),
-                          ),
-                        ]),
-            ),
-          ],
+    return HarborPage(
+      maxWidth: HarborLayout.readingMax + 160,
+      children: [
+        HarborBanner(
+          tone: HarborBannerTone.info,
+          icon: Icons.schedule_outlined,
+          title: l10n.goalsBannerTitle,
+          body: l10n.goalsBannerBody,
         ),
-      ),
-    ]);
-  }
-}
-
-class _NotYetCard extends StatelessWidget {
-  const _NotYetCard(
-      {required this.icon, required this.title, required this.body});
-  final IconData icon;
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = HarborTheme.of(context);
-    return HarborCard(
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: t.colors.surfaceRaised,
-            borderRadius: BorderRadius.circular(HarborRadius.sm),
+        const SizedBox(height: HarborSpace.s5),
+        Row(children: [
+          Expanded(
+            child: HarborSectionHeader(
+                title: l10n.goalsSectionTitle,
+                subtitle: l10n.goalsSectionSubtitle),
           ),
-          child: Icon(icon, size: 18, color: t.colors.inkMuted),
-        ),
-        const SizedBox(width: HarborSpace.s3),
-        Expanded(
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: t.text.bodyStrongOf(t.colors.ink)),
-            const SizedBox(height: 2),
-            Text(body, style: t.text.smallOf(t.colors.inkMuted)),
-          ]),
-        ),
-      ]),
+          const SizedBox(width: HarborSpace.s2),
+          FilledButton.tonalIcon(
+            onPressed: _createGoal,
+            icon: const Icon(Icons.add_alarm_outlined, size: 18),
+            label: Text(l10n.goalsNew),
+          ),
+        ]),
+        if (_loading)
+          Padding(
+            padding: const EdgeInsets.all(HarborSpace.s5),
+            child:
+                Center(child: CircularProgressIndicator(color: t.colors.brand)),
+          )
+        else ...[
+          if (_due.isNotEmpty) ...[
+            const SizedBox(height: HarborSpace.s3),
+            for (final entry in _due)
+              _GoalCard(
+                goal: (entry['goal'] as Map).cast<String, dynamic>(),
+                scheduleLabel: _scheduleLabel(
+                    ((entry['goal'] as Map)['schedule'] as Map)
+                        .cast<String, dynamic>(),
+                    l10n),
+                due: true,
+                busy: _busyGoal == entry['goal']['id'],
+                onRun: () => _runNow(entry),
+                onPauseResume: null,
+                onCancel: null,
+              ),
+          ],
+          if (_goals.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: HarborSpace.s6),
+              child: Center(
+                child: Text(l10n.goalsEmpty,
+                    style: t.text.smallOf(t.colors.inkMuted)),
+              ),
+            )
+          else
+            for (final goal in _goals)
+              _GoalCard(
+                goal: goal,
+                scheduleLabel: _scheduleLabel(
+                    (goal['schedule'] as Map).cast<String, dynamic>(), l10n),
+                due: false,
+                busy: false,
+                onRun: null,
+                onPauseResume:
+                    (goal['state'] == 'active' || goal['state'] == 'paused')
+                        ? (paused) => _setPaused(goal, paused)
+                        : null,
+                onCancel:
+                    (goal['state'] == 'active' || goal['state'] == 'paused')
+                        ? () => _cancelGoal(goal)
+                        : null,
+              ),
+        ],
+      ],
     );
   }
 }

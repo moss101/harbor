@@ -130,6 +130,11 @@ class SettingsSurface extends StatelessWidget {
               ]),
             ),
             section(
+              l10n.settingsEngines,
+              EnginesCard(service: service),
+              body: l10n.settingsEnginesBody,
+            ),
+            section(
               l10n.settingsDiagnostics,
               DiagnosticsCard(service: service),
               body: l10n.settingsDiagnosticsBody,
@@ -226,6 +231,65 @@ class SettingsSurface extends StatelessWidget {
         ),
       ),
     ]);
+  }
+}
+
+/// Which OS engines read scans and recordings on this device, as the core
+/// reports them (`ocr.status` / `speech.status`) - the visible proof that the
+/// Runner's adapters registered.
+class EnginesCard extends StatefulWidget {
+  const EnginesCard({super.key, required this.service});
+  final HarborService? service;
+
+  @override
+  State<EnginesCard> createState() => _EnginesCardState();
+}
+
+class _EnginesCardState extends State<EnginesCard> {
+  Future<Map<String, Map<String, dynamic>>>? _status;
+
+  @override
+  void initState() {
+    super.initState();
+    _status = widget.service?.engineStatus();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final t = HarborTheme.of(context);
+    return HarborCard(
+      child: FutureBuilder<Map<String, Map<String, dynamic>>>(
+        future: _status,
+        builder: (context, snap) {
+          String value(String key) {
+            final s = snap.data?[key];
+            if (s != null && s['available'] == true) {
+              return (s['engine'] ?? '').toString();
+            }
+            return l10n.settingsEngineUnavailable;
+          }
+
+          if (snap.connectionState != ConnectionState.done && _status != null) {
+            return Text(l10n.appStarting,
+                style: t.text.smallOf(t.colors.inkMuted));
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              HarborKeyValue(
+                  label: l10n.settingsEngineScans,
+                  value: value('ocr'),
+                  identifier: true),
+              HarborKeyValue(
+                  label: l10n.settingsEngineVoice,
+                  value: value('speech'),
+                  identifier: true),
+            ],
+          );
+        },
+      ),
+    );
   }
 }
 

@@ -4,6 +4,8 @@
 <dict>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
+	<key>com.apple.security.device.audio-input</key>
+	<true/>
 	<!-- Least privilege for what Harbor actually does. The file was the
 	     unmodified Flutter template (sandbox alone) from the first commit
 	     and was never revisited as the app gained documents and model

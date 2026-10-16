@@ -27,6 +27,7 @@ pub fn all() -> Vec<Arc<dyn Tool>> {
     vec![
         Arc::new(FsReadWorkspaceFile::new()),
         Arc::new(KnowledgeSearchTool::new()),
+        Arc::new(KnowledgeGather::new()),
         Arc::new(ArtifactRead::new()),
         Arc::new(ArtifactPlaceholders::new()),
         Arc::new(ArtifactFillPlaceholders::new()),
@@ -56,6 +57,9 @@ pub fn all() -> Vec<Arc<dyn Tool>> {
         Arc::new(super::authoring::DocumentSentences::new()),
         Arc::new(super::table::TableInspect::new()),
         Arc::new(super::table::TableBuildCleanup::new()),
+        Arc::new(super::invoices::InvoiceReview::new()),
+        Arc::new(super::scan::OcrExtract::new()),
+        Arc::new(super::speech::SpeechTranscribe::new()),
     ]
 }
 
@@ -373,6 +377,134 @@ impl Tool for KnowledgeSearchTool {
         let top_k = args.get("top_k").and_then(Value::as_u64).unwrap_or(5) as usize;
         k.search(&q, top_k)
             .map_err(|e| ToolError::failed(&self.spec.id, e))
+    }
+}
+
+// ---------------------------------------------------------------------------
+// knowledge.gather
+
+/// Opt-in retrieval for authoring skills. Unlike `knowledge.search` it never
+/// fails a run: with retrieval switched off, or no index open, it hands the
+/// brief back unchanged, so a graph that uses it behaves exactly as before.
+/// With retrieval on it returns the passages (as model context) and a
+/// `source_text` = brief + passages, which is what the numeric checkers read:
+/// a figure may come from the brief or from a passage the user can see cited,
+/// never from the model.
+pub struct KnowledgeGather {
+    spec: ToolSpec,
+}
+
+impl KnowledgeGather {
+    pub fn new() -> Self {
+        KnowledgeGather {
+            spec: ToolSpec {
+                id: "knowledge.gather".into(),
+                description: "Optionally gather supporting passages from the local Knowledge index for a brief. Returns the passages, their citations (source, title, score) and source_text = brief + passages for grounding checks. Off or unavailable: returns the brief unchanged.".into(),
+                args_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "enabled": {"type": ["boolean", "null"]},
+                        "base": {"type": "string", "maxLength": 200000},
+                        "query": {"type": ["string", "null"], "maxLength": 20000},
+                        "top_k": {"type": "integer", "minimum": 1, "maximum": 8}
+                    },
+                    "required": ["base"],
+                    "additionalProperties": false
+                }),
+                risk: RiskClass::Read,
+                requires: vec![],
+                timeout_ms: 30_000,
+                max_output_bytes: 2 * MB,
+            },
+        }
+    }
+}
+
+impl Default for KnowledgeGather {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Tool for KnowledgeGather {
+    fn spec(&self) -> &ToolSpec {
+        &self.spec
+    }
+
+    fn call(&self, ctx: &ToolContext<'_>, args: &Value) -> Result<Value, ToolError> {
+        let base = s(args, "base").unwrap_or_default();
+        let off = |reason: &str| {
+            Ok(json!({
+                "available": false,
+                "reason": reason,
+                "citations": [],
+                "passages_text": "",
+                "source_text": base,
+            }))
+        };
+        if args.get("enabled").and_then(Value::as_bool) != Some(true) {
+            return off("retrieval not requested");
+        }
+        let Some(k) = ctx.knowledge else {
+            return off("no Knowledge index is open");
+        };
+        let query: String = s(args, "query")
+            .filter(|q| !q.trim().is_empty())
+            .unwrap_or_else(|| base.clone())
+            .chars()
+            .take(1000)
+            .collect();
+        let top_k = args.get("top_k").and_then(Value::as_u64).unwrap_or(4) as usize;
+        let found = match k.search(&query, top_k.clamp(1, 8)) {
+            Ok(v) => v,
+            Err(e) => return off(&format!("retrieval failed: {e}")),
+        };
+        ctx.check_alive(&self.spec.id)?;
+        let mut citations = Vec::new();
+        let mut passages = String::new();
+        let mut seen = BTreeSet::new();
+        for c in found
+            .get("citations")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+        {
+            let id = c.get("chunk_id").and_then(Value::as_str).unwrap_or("");
+            if !seen.insert(id.to_string()) {
+                continue;
+            }
+            let text: String = c
+                .get("_text")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .chars()
+                .take(1200)
+                .collect();
+            if text.trim().is_empty() {
+                continue;
+            }
+            let title = c.get("title").and_then(Value::as_str).unwrap_or("");
+            passages.push_str(&format!("[{}] {}\n", citations.len() + 1, text.trim()));
+            citations.push(json!({
+                "n": citations.len() + 1,
+                "source_id": c.get("source_id"),
+                "title": title,
+                "chunk_id": id,
+                "score": c.get("score"),
+            }));
+        }
+        let source_text = if passages.is_empty() {
+            base.clone()
+        } else {
+            format!("{base}\n\n{passages}")
+        };
+        Ok(json!({
+            "available": true,
+            "reason": null,
+            "citations": citations,
+            "passages_text": passages,
+            "source_text": source_text,
+        }))
     }
 }
 

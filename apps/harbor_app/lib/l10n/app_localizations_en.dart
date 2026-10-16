@@ -12,13 +12,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get surfaceHome => 'Home';
 
   @override
-  String get surfaceAsk => 'Ask';
-
-  @override
   String get surfaceWork => 'Work';
-
-  @override
-  String get surfaceAgents => 'Agents';
 
   @override
   String get surfaceModels => 'Models';
@@ -27,7 +21,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get surfaceSkills => 'Skills';
 
   @override
-  String get surfaceKnowledge => 'Knowledge';
+  String get surfaceKnowledge => 'Library';
 
   @override
   String get surfaceActivity => 'Activity';
@@ -74,9 +68,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get modelsRecommended => 'Recommended';
-
-  @override
-  String get modelsLibrary => 'Harbor Library';
 
   @override
   String get modelsHuggingFace => 'Hugging Face';
@@ -130,10 +121,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentsEmptyTitle => 'No agents configured';
 
   @override
-  String get agentsEmptyBody =>
-      'Agents combine a model, tools, skills, knowledge and policy. Create one to delegate multi-step work with durable, inspectable runs.';
-
-  @override
   String get skillsEmptyTitle => 'Built-in skills loaded';
 
   @override
@@ -141,7 +128,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Skill definitions for documents, spreadsheets, research, translation and more. Runnable ones carry an executable graph.';
 
   @override
-  String get knowledgeEmptyTitle => 'Knowledge is empty';
+  String get knowledgeEmptyTitle => 'Your Library is empty';
 
   @override
   String get knowledgeEmptyBody =>
@@ -153,13 +140,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get activityEmptyBody =>
       'Durable agent runs appear here with their full Run Trail — including pause, approval and recovery states.';
-
-  @override
-  String get askEmptyTitle => 'Ask works on your files';
-
-  @override
-  String get askEmptyBody =>
-      'Answers ground in your workspace with citations and abstain when evidence is insufficient.';
 
   @override
   String get lensButton => 'Lens';
@@ -192,10 +172,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Core unavailable — native runtime not loaded';
 
   @override
-  String get modelsLibraryEmpty =>
-      'Curated Harbor library packages appear here.';
-
-  @override
   String get modelsHfEmpty =>
       'Search public repositories. Model packages are data — no repository code ever executes.';
 
@@ -205,7 +181,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get modelsInstalledEmpty =>
-      'Install a model from Recommended or the Library. Fit Score shows what your device can run well.';
+      'Install a model from Recommended or Hugging Face. Fit Score shows what your device can run well.';
 
   @override
   String get modelsBenchmarkEmpty =>
@@ -264,11 +240,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get askKnowledgeNotOpen =>
-      'Knowledge is not open yet. Install an embedding model (Models → Installed) to ground answers locally.';
+      'The Library is not open yet. Install an embedding model (Models → Installed) to ground answers locally.';
 
   @override
   String get askAbstentionHeading =>
-      'I could not find support for this in your Knowledge.';
+      'I could not find support for this in your Library.';
 
   @override
   String get sendAction => 'Send';
@@ -277,16 +253,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lensOpenTooltip => 'Open the Harbor Lens inspector';
 
   @override
-  String get askSearchTooltip => 'Search Knowledge';
+  String get askSearchTooltip => 'Search the Library';
 
   @override
   String get statusInstalled => 'INSTALLED';
 
   @override
   String get cancelAction => 'Cancel';
-
-  @override
-  String get askGenerateTooltip => 'Generate answer';
 
   @override
   String get askAnswerHeading => 'Answer';
@@ -313,10 +286,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get askNoChatModel =>
-      'No chat model installed. Answers need a chat model (Models → Hugging Face); with Knowledge open, retrieval-only citations still work.';
+      'No chat model installed. Answers need a chat model (Models → Recommended); with the Library open, retrieval-only citations still work.';
 
   @override
-  String get askSearchOnly => 'Search Knowledge';
+  String get askSearchOnly => 'Search the Library only';
 
   @override
   String get knowledgeSourcesHeading => 'Indexed sources';
@@ -379,10 +352,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String knowledgeRemoved(String title) {
     return 'Removed $title';
   }
-
-  @override
-  String get agentsUnavailableBody =>
-      'Agent orchestration is not enabled in this release. The built-in skill families (Skills tab) are available today.';
 
   @override
   String get modelInstallAction => 'Install';
@@ -489,7 +458,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lensSectionModel => 'Active model';
 
   @override
-  String get lensSectionKnowledge => 'Knowledge index';
+  String get lensSectionKnowledge => 'Library index';
 
   @override
   String get viewAllAction => 'View all';
@@ -593,17 +562,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeOpenActivity => 'Open Activity';
 
   @override
-  String get homeRequestQueued => 'Request recorded as a durable run';
-
-  @override
   String get homeRequestFailed => 'The request could not be recorded';
 
   @override
   String get quickActionsHeading => 'Quick actions';
-
-  @override
-  String get askSubtitle =>
-      'Grounded answers with citations from your Knowledge';
 
   @override
   String get askYou => 'You';
@@ -625,9 +587,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get askClearConversation => 'Clear conversation';
-
-  @override
-  String get askComposerHint => 'Ask about your files…';
 
   @override
   String get askErrorTitle => 'Generation failed';
@@ -800,7 +759,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Install a local GGUF file. Packages are data only — no repository code ever executes.';
 
   @override
-  String get modelsUseForAsk => 'Use for Ask';
+  String get modelsUseForAsk => 'Use for answers';
 
   @override
   String get modelsInUse => 'In use';
@@ -885,16 +844,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fileGroupModels => 'Model packages';
 
   @override
-  String get agentsSubtitle =>
-      'Profiles that combine a model, tools, skills, knowledge and policy';
-
-  @override
-  String get agentsUnavailableTitle => 'Not enabled in this release';
-
-  @override
-  String get agentsWhatTitle => 'What an agent profile will contain';
-
-  @override
   String get agentsPartModel => 'Model';
 
   @override
@@ -921,12 +870,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get agentsPartPolicyBody =>
       'Protected effects pause for a Harbor Sheet review before anything is written.';
-
-  @override
-  String get agentsGoSkills => 'Browse skills';
-
-  @override
-  String get agentsGoActivity => 'View runs';
 
   @override
   String get skillsSubtitle =>
@@ -1041,7 +984,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityOpKindAcquire => 'Model acquisition';
 
   @override
-  String get activityOpKindIngest => 'Knowledge indexing';
+  String get activityOpKindIngest => 'Library indexing';
 
   @override
   String get activityOpKindGenerate => 'Grounded generation';
@@ -1407,10 +1350,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get skillsCopied => 'Copied to the clipboard';
 
   @override
-  String get surfaceStore => 'Store';
-
-  @override
-  String get storeTagline => 'Included products and first-party models';
+  String get storeTagline => 'Products included with Harbor';
 
   @override
   String get storeOfficeTitle => 'Harbor Office Suite';
@@ -1424,18 +1364,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storeOfficeOpen => 'Open in Work';
-
-  @override
-  String storeModelsHeading(int count) {
-    return 'Harbor models ($count)';
-  }
-
-  @override
-  String get storeModelsBody =>
-      'Signed, first-party catalog entries. Downloads are quoted and confirmed before transfer.';
-
-  @override
-  String get storeInstalledHeading => 'Installed on this device';
 
   @override
   String get storeUninstall => 'Uninstall';
@@ -1491,10 +1419,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storePreviewFailed => 'Could not read the package';
-
-  @override
-  String get storeEmpty =>
-      'The accepted signed catalog is empty on this device.';
 
   @override
   String get storeManageHint =>
@@ -1607,7 +1531,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalsNoChatModel =>
-      'Install a chat model first — goals answer through Ask.';
+      'Install a chat model first — goals answer with it.';
 
   @override
   String get goalsStateActive => 'Active';
@@ -1703,20 +1627,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalsCreateConfirm => 'Create goal';
-
-  @override
-  String get agentsNotAutonomyTitle => 'Not autonomous orchestration';
-
-  @override
-  String get agentsNotAutonomyBody =>
-      'Multi-step agent planning beyond skill graphs, and scheduled execution without a tap, are not in this release. Skills run exactly the graphs they declare, with approvals enforced.';
-
-  @override
-  String get agentsNotHandsTitle => 'No computer use';
-
-  @override
-  String get agentsNotHandsBody =>
-      'Harbor never controls your screen or other apps. It works through typed tools, files you attach, and documents you approve.';
 
   @override
   String get goalsKindPrompt => 'Prompt';
@@ -1839,4 +1749,274 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get knowledgeVideoNeedsFfmpeg =>
       'Indexing video needs FFmpeg on this computer. Install FFmpeg (or set HARBOR_FFMPEG to its location) and try again.';
+
+  @override
+  String get settingsEngines => 'On-device engines';
+
+  @override
+  String get settingsEnginesBody =>
+      'Reading scans and transcribing recordings use the operating system\'s own models on this device. Nothing is uploaded.';
+
+  @override
+  String get settingsEngineScans => 'Scans and photos';
+
+  @override
+  String get settingsEngineVoice => 'Voice recordings';
+
+  @override
+  String get settingsEngineUnavailable => 'Not available on this device';
+
+  @override
+  String get captureScanTooltip => 'Read a scan or photo';
+
+  @override
+  String get captureRecordTooltip => 'Dictate or transcribe a recording';
+
+  @override
+  String get captureChooseFile => 'Choose a file';
+
+  @override
+  String get captureTakePhoto => 'Take a photo';
+
+  @override
+  String get captureRecordNow => 'Record now';
+
+  @override
+  String get captureChooseRecording => 'Choose a recording';
+
+  @override
+  String get captureReading => 'Reading on this device…';
+
+  @override
+  String get captureTranscribing => 'Transcribing on this device…';
+
+  @override
+  String get captureCancel => 'Cancel';
+
+  @override
+  String get captureReviewScanTitle => 'Review the text';
+
+  @override
+  String get captureReviewVoiceTitle => 'Review the transcript';
+
+  @override
+  String get captureReviewBody =>
+      'Check it against the original before you use it. Nothing leaves this device.';
+
+  @override
+  String captureEngine(String engine) {
+    return 'Engine: $engine';
+  }
+
+  @override
+  String captureCheckPages(String pages) {
+    return 'Pages to check by eye: $pages';
+  }
+
+  @override
+  String captureSuggestion(String kind) {
+    return 'This looks like: $kind';
+  }
+
+  @override
+  String get captureUseAsInput => 'Use as input';
+
+  @override
+  String get captureDiscard => 'Discard';
+
+  @override
+  String get captureRecording => 'Recording…';
+
+  @override
+  String get captureStop => 'Stop and transcribe';
+
+  @override
+  String captureFailed(String message) {
+    return 'Could not read this: $message';
+  }
+
+  @override
+  String get captureMicDenied =>
+      'Microphone access is off. Allow it in system settings to record.';
+
+  @override
+  String get captureEmptyResult => 'Nothing was recognised in this file.';
+
+  @override
+  String get intentRunSkill => 'Do a task on your files';
+
+  @override
+  String get intentSearchDocuments => 'Find something in your documents';
+
+  @override
+  String get intentRememberFact => 'Remember something';
+
+  @override
+  String get intentRecallMemory => 'Recall what you told Harbor';
+
+  @override
+  String get intentScheduleGoal => 'Do this on a schedule';
+
+  @override
+  String get intentReadScan => 'Read a scan or photo';
+
+  @override
+  String get intentTranscribeAudio => 'Transcribe a recording';
+
+  @override
+  String get intentGeneralChat => 'Ask or discuss';
+
+  @override
+  String get modelsUseForScanning => 'Use for scanning';
+
+  @override
+  String modelsScanningActive(String backend) {
+    return 'Reading scans ($backend)';
+  }
+
+  @override
+  String get modelsScanningStop => 'Stop using for scans';
+
+  @override
+  String get modelsScanBackendGpu => 'GPU';
+
+  @override
+  String get modelsScanBackendCpu => 'CPU - this device\'s GPU read wrongly';
+
+  @override
+  String get modelsScanningLoading => 'Loading and checking the model…';
+
+  @override
+  String modelsScanningFailed(String message) {
+    return 'This model cannot read scans: $message';
+  }
+
+  @override
+  String get modelsScanningNote =>
+      'Pages read by a model are always listed for you to check.';
+
+  @override
+  String get fileGroupScans => 'Scans and photos';
+
+  @override
+  String get fileGroupAudio => 'Audio recordings';
+
+  @override
+  String get captureMicUnresponsive =>
+      'The microphone did not respond. Try again, or choose a recording instead.';
+
+  @override
+  String get composerScopeEverything => 'Everything';
+
+  @override
+  String composerScopeThisFile(String name) {
+    return 'This file · $name';
+  }
+
+  @override
+  String composerScopeCollection(String name) {
+    return 'Collection · $name';
+  }
+
+  @override
+  String get composerModeAsk => 'Ask';
+
+  @override
+  String get composerModeChange => 'Change';
+
+  @override
+  String get composerModeAutoTooltip =>
+      'Harbor picks Ask or Change from your words. Tap one to choose yourself.';
+
+  @override
+  String get workCommandHintAuto => 'Ask about this file, or describe a change';
+
+  @override
+  String get workCommandHintAsk => 'Ask a question about this file';
+
+  @override
+  String get workCommandHintChange => 'Describe the change you want';
+
+  @override
+  String workCitationJump(String label) {
+    return 'Show $label in the file';
+  }
+
+  @override
+  String workParagraph(int index) {
+    return 'Paragraph $index';
+  }
+
+  @override
+  String workCell(String ref) {
+    return 'Cell $ref';
+  }
+
+  @override
+  String get answerDismiss => 'Dismiss';
+
+  @override
+  String get workNeedsChatModel =>
+      'Install a chat model to ask about this file. Answers are generated on this device, from this file\'s text only.';
+
+  @override
+  String get workNoReadableText =>
+      'This file has no text Harbor can read to answer from.';
+
+  @override
+  String workReloadedResult(String name) {
+    return 'Showing the saved result: $name';
+  }
+
+  @override
+  String get workReloadFailed =>
+      'The result was saved, but it could not be opened here';
+
+  @override
+  String routeMatched(String skill) {
+    return 'Opened $skill. Nothing changes until you run it and approve the result.';
+  }
+
+  @override
+  String get routeOtherSkills => 'Other skills that fit';
+
+  @override
+  String get routeNoIndex =>
+      'Skills are ranked by the Library\'s embedding model, which is not open. Choose a skill yourself:';
+
+  @override
+  String get routeNoMatch => 'No skill clearly fits this request.';
+
+  @override
+  String get routeAmbiguous => 'More than one skill could fit. Choose one:';
+
+  @override
+  String get routeNoRunnable => 'No skill that can run here fits this request.';
+
+  @override
+  String get routeBrowseSkills => 'Browse skills';
+
+  @override
+  String homeAttachmentRemove(String name) {
+    return 'Remove $name from this request';
+  }
+
+  @override
+  String get homeAddToKnowledge => 'Add to Library';
+
+  @override
+  String get homeAttachmentsNote =>
+      'Attached files go with this request only. Add them to the Library to search them later.';
+
+  @override
+  String get activityTabGoals => 'Goals';
+
+  @override
+  String get homeTaskViewRun => 'View run';
+
+  @override
+  String get homeTaskReopen => 'Open again';
+
+  @override
+  String get modelsTabStore => 'Store';
 }

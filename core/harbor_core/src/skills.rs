@@ -126,6 +126,7 @@ impl Default for CapabilityCatalog {
             tools: [
                 "fs.read_workspace_file",
                 "knowledge.search",
+                "knowledge.gather",
                 "artifact.read",
                 "artifact.placeholders",
                 "artifact.fill_placeholders",
@@ -152,6 +153,9 @@ impl Default for CapabilityCatalog {
                 "document.sentences",
                 "table.inspect",
                 "table.build_cleanup",
+                "invoice.review",
+                "ocr.extract",
+                "speech.transcribe",
                 "model.ask",
                 "model.embed",
                 "clipboard.read",
@@ -334,6 +338,7 @@ const BUILTIN_GRAPH_JSON: &[&str] = &[
     include_str!("graphs/document-drafter.json"),
     include_str!("graphs/email-drafting.json"),
     include_str!("graphs/thread-summary.json"),
+    include_str!("graphs/supplier-invoice-review.json"),
 ];
 
 pub fn builtin_graphs() -> Vec<crate::graph::Graph> {
@@ -387,6 +392,7 @@ mod tests {
             "report-to-slides",
             "second-look",
             "sheet-builder",
+            "supplier-invoice-review",
             "table-cleanup",
             "team-update",
             "thread-summary",

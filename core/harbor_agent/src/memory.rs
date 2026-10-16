@@ -52,6 +52,15 @@ pub struct MemoryRecord {
     pub text: String,
     pub provenance: Provenance,
     pub created_at: DateTime<Utc>,
+    /// The record this one corrects. Absent in files written before
+    /// corrections existed (`serde(default)` keeps those loadable).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub supersedes: Option<String>,
+    /// Set on the OLD record when a correction replaces it: it stays listed
+    /// for audit until the user deletes it, but is no longer indexed, so it
+    /// can never be retrieved as a current fact.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub superseded_by: Option<String>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -75,11 +84,11 @@ pub fn source_id(id: &str) -> String {
 const SEALED_PREFIX: &str = "enc.v1:";
 const MEMORY_AAD: &[u8] = b"harbor.agent.memory/v1";
 
-fn hex_encode(bytes: &[u8]) -> String {
+pub(crate) fn hex_encode(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-fn hex_decode(s: &str) -> Option<Vec<u8>> {
+pub(crate) fn hex_decode(s: &str) -> Option<Vec<u8>> {
     if !s.len().is_multiple_of(2) {
         return None;
     }
@@ -217,6 +226,46 @@ impl MemoryStore {
         Ok(self.read()?.memories.into_iter().find(|m| m.id == id))
     }
 
+    /// Replace a memory with a corrected one. The old record is kept,
+    /// marked `superseded_by`, so history is auditable; `new` is stored as a
+    /// fresh record whose `supersedes` points back. One atomic write.
+    pub fn correct(&self, old_id: &str, new: MemoryRecord) -> Result<MemoryRecord, MemoryError> {
+        let text = new.text.trim();
+        if new.id.trim().is_empty() || text.is_empty() {
+            return Err(MemoryError::Invalid("id and text are required".into()));
+        }
+        if text.chars().count() > MAX_MEMORY_CHARS {
+            return Err(MemoryError::Invalid(format!(
+                "text exceeds {MAX_MEMORY_CHARS} characters"
+            )));
+        }
+        new.provenance.validate()?;
+        let mut file = self.read()?;
+        if file.memories.iter().any(|m| m.id == new.id) {
+            return Err(MemoryError::Invalid(format!("memory {} exists", new.id)));
+        }
+        let old = file
+            .memories
+            .iter_mut()
+            .find(|m| m.id == old_id)
+            .ok_or_else(|| MemoryError::NotFound(old_id.to_string()))?;
+        if let Some(by) = &old.superseded_by {
+            return Err(MemoryError::Invalid(format!(
+                "memory {old_id} was already corrected by {by}; correct the newer record"
+            )));
+        }
+        old.superseded_by = Some(new.id.clone());
+        let stored = MemoryRecord {
+            text: text.to_string(),
+            supersedes: Some(old_id.to_string()),
+            superseded_by: None,
+            ..new
+        };
+        file.memories.push(stored.clone());
+        self.write(&file)?;
+        Ok(stored)
+    }
+
     pub fn delete(&self, id: &str) -> Result<(), MemoryError> {
         let mut file = self.read()?;
         let before = file.memories.len();
@@ -238,6 +287,8 @@ mod tests {
             text: text.into(),
             provenance,
             created_at: Utc::now(),
+            supersedes: None,
+            superseded_by: None,
         }
     }
 
@@ -304,5 +355,45 @@ mod tests {
         let again = MemoryStore::open_with_key(&path, key()).unwrap();
         assert_eq!(again.list().unwrap().len(), 1);
         assert!(MemoryStore::open(&path).unwrap().list().is_err());
+    }
+
+    #[test]
+    fn correction_keeps_history_marks_the_old_record_and_refuses_double_correction() {
+        let dir = tempfile::tempdir().unwrap();
+        let s = MemoryStore::open(dir.path().join("memory.json")).unwrap();
+        s.add(rec("m1", "client pays net 30", Provenance::User))
+            .unwrap();
+        let fixed = s
+            .correct("m1", rec("m2", "client pays net 45", Provenance::User))
+            .unwrap();
+        assert_eq!(fixed.supersedes.as_deref(), Some("m1"));
+        let all = s.list().unwrap();
+        assert_eq!(all.len(), 2);
+        assert_eq!(all[0].superseded_by.as_deref(), Some("m2"));
+        // The stale record cannot be corrected again; the live one can.
+        assert!(s.correct("m1", rec("m3", "x", Provenance::User)).is_err());
+        assert!(s.correct("nope", rec("m4", "x", Provenance::User)).is_err());
+        s.correct("m2", rec("m5", "client pays net 60", Provenance::User))
+            .unwrap();
+        // Deleting a record leaves no dangling success path.
+        s.delete("m1").unwrap();
+        assert_eq!(s.list().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn files_written_before_corrections_existed_still_load() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("memory.json");
+        std::fs::write(
+            &path,
+            r#"{"memories":[{"id":"old","text":"legacy","provenance":{"origin":"user"},"created_at":"2026-10-01T00:00:00Z"}]}"#,
+        )
+        .unwrap();
+        let s = MemoryStore::open(&path).unwrap();
+        let all = s.list().unwrap();
+        assert_eq!(
+            (all[0].supersedes.clone(), all[0].superseded_by.clone()),
+            (None, None)
+        );
     }
 }

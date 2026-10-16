@@ -13,6 +13,7 @@ import 'package:harbor_app/services/harbor_service.dart';
 import 'package:harbor_app/services/preferences.dart';
 import 'package:harbor_app/shell/adaptive_shell.dart';
 import 'package:harbor_app/shell/keyboard.dart';
+import 'package:harbor_app/surfaces/home_surface.dart';
 import 'package:harbor_app/surfaces/settings_surface.dart';
 import 'package:harbor_app/surfaces/skill_run.dart';
 import 'package:harbor_app/surfaces/work_surface.dart';
@@ -139,8 +140,8 @@ Future<void> pumpApp(
 }
 
 /// Navigate to a surface by its label. On compact widths the five-item
-/// bottom bar keeps Agents/Skills/Knowledge/Activity/Settings under
-/// "More", so the helper opens that sheet first when needed.
+/// bottom bar keeps Skills/Activity/Settings under "More", so the helper
+/// opens that sheet first when needed.
 Future<void> goTo(WidgetTester tester, String label,
     {String more = 'More'}) async {
   var target = find.text(label);
@@ -249,33 +250,31 @@ void main() {
     expect(find.byType(HarborRail), findsNothing);
     // Material guidance: 3–5 destinations. Primary surfaces are direct.
     expect(find.byType(NavigationDestination), findsNWidgets(5));
-    for (final label in ['Home', 'Ask', 'Work', 'Models', 'More']) {
+    for (final label in ['Home', 'Work', 'Library', 'Models', 'More']) {
       expect(find.text(label), findsOneWidget);
     }
     // The Trust chip is visible on every compact surface (§1 "Local is
     // visible") and opens the Lens sheet.
     expect(find.text('LOCAL'), findsOneWidget);
-    // The remaining surfaces are one tap away under More.
+    // The secondary surfaces are one tap away under More — and only they:
+    // Ask is Home, Store is a Models tab, Agents is not a destination.
     await tester.tap(find.text('More'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    for (final label in [
-      'Agents',
-      'Skills',
-      'Knowledge',
-      'Activity',
-      'Settings'
-    ]) {
+    for (final label in ['Skills', 'Activity', 'Settings']) {
       expect(find.text(label), findsOneWidget);
     }
-    await tester.tap(find.text('Knowledge'));
+    for (final gone in ['Ask', 'Agents', 'Store', 'Knowledge']) {
+      expect(find.text(gone), findsNothing);
+    }
+    await tester.tap(find.text('Activity'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     // The app bar names the secondary surface (the surface header does
     // not repeat it on compact widths); More reads as selected.
     expect(find.byType(NavigationDestination), findsNWidgets(5));
-    expect(find.text('Knowledge'), findsOneWidget);
-    expect(find.textContaining('citation-backed'), findsOneWidget);
+    expect(find.text('Activity'), findsOneWidget);
+    expect(find.textContaining('Durable runs and background'), findsOneWidget);
     expect(find.text('More'), findsOneWidget);
     final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
     expect(bar.selectedIndex, 4);
@@ -287,12 +286,13 @@ void main() {
     expect(find.byType(HarborRail), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
     expect(find.byType(TrustPulse), findsNothing);
-    // Medium rail: icon + caption for all ten surfaces; the rail scrolls
-    // to reach the later ones at this window size.
-    await tester.scrollUntilVisible(find.text('Knowledge'), 80,
-        scrollable:
-            find.descendant(of: find.byType(HarborRail), matching: find.byType(Scrollable)));
-    expect(find.text('Knowledge'), findsOneWidget);
+    // Medium rail: icon + caption for all seven surfaces; the rail
+    // scrolls to reach the later ones on short windows.
+    await tester.scrollUntilVisible(find.text('Settings'), 80,
+        scrollable: find.descendant(
+            of: find.byType(HarborRail), matching: find.byType(Scrollable)));
+    expect(find.text('Library'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
   });
 
   testWidgets(
@@ -325,9 +325,9 @@ void main() {
     expect(tester.getSize(find.byType(HarborRail)).width,
         HarborLayout.desktopRailCollapsed);
     // Collapsed: labels become tooltips; the canvas keeps >= 640.
-    expect(find.text('Knowledge'), findsNothing);
-    // Tooltip carries the label (plus the ⌘7 hint on desktop).
-    expect(find.byTooltip(RegExp(r'^Knowledge')), findsOneWidget);
+    expect(find.text('Library'), findsNothing);
+    // Tooltip carries the label (plus the ⌘3 hint on desktop).
+    expect(find.byTooltip(RegExp(r'^Library')), findsOneWidget);
     expect(find.byType(TrustPulse), findsNothing);
     await tester.tap(find.byIcon(Icons.view_sidebar_outlined));
     await tester.pump();
@@ -366,12 +366,12 @@ void main() {
     if (!harborHasKeyboardShortcuts) return;
     await pumpApp(tester);
     await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
-    await tester.sendKeyEvent(LogicalKeyboardKey.digit7);
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit3);
     await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    // Knowledge header (+ rail label, + the docked Lens link).
-    expect(find.text('Knowledge'), findsAtLeastNWidgets(2));
+    // Library header (+ rail label, + the docked Lens link).
+    expect(find.text('Library'), findsAtLeastNWidgets(2));
     expect(find.textContaining('citation-backed'), findsOneWidget);
   });
 
@@ -574,7 +574,7 @@ void _appendSkillRunTests() {
     await pumpApp(tester);
     if (!coreAvailable) return;
     await goTo(tester, 'Skills');
-    // Cards say honestly which skills can run: the sixteen graph skills
+    // Cards say honestly which skills can run: the seventeen graph skills
     // are runnable, the prose ones are declarations.
     expect(find.text('Runnable graph'), findsWidgets);
     expect(find.text('Declaration only'), findsWidgets);
@@ -600,8 +600,9 @@ void _appendSkillRunTests() {
           'document-drafter',
           'email-drafting',
           'thread-summary',
+          'supplier-invoice-review',
         ]));
-    expect(runnable, hasLength(16));
+    expect(runnable, hasLength(17));
     expect(
         runnable.firstWhere((s) => s.id == 'placeholder-fill').graph!.usesModel,
         isFalse);
@@ -843,7 +844,7 @@ void _appendRagTest() {
 }
 
 void _appendComposerTest() {
-  testWidgets('home composer creates a durable run through the core',
+  testWidgets('home composer routes the request through the live core',
       (tester) async {
     if (!coreAvailable) return;
     await pumpApp(tester);
@@ -852,27 +853,18 @@ void _appendComposerTest() {
     await tester.pump();
     // The send action is the labeled FilledButton in the composer.
     await tester.tap(find.text('Send'));
-    // submitRequest runs through the worker isolate (create + log +
-    // full refresh) — give the real async chain time to finish.
-    await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 1500)));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
-    // The submitted request became a durable run visible in Activity.
-    // The submit chain (create + log + refresh) is real async on the
-    // worker isolate: poll the service state until the durable run lands.
-    final sp = HarborServiceProvider.of(
-        tester.element(find.text('What do you want to get done?')));
-    var durable = false;
-    for (var i = 0; i < 40 && !durable; i++) {
-      await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 150)));
-      durable = sp.notifier!.runs.isNotEmpty;
-    }
-    expect(durable, isTrue,
-        reason: 'the composer submit must create a durable run');
-    await goTo(tester, 'Activity');
-    expect(find.textContaining('run-'), findsWidgets);
+    // Routing asks the real core (index open, intent, skill ranking) on
+    // the worker isolate. A fresh data root has no embedding model, so it
+    // cannot rank skills and must say so rather than guess.
+    await settleUntil(tester, find.byKey(const ValueKey('route-panel')),
+        budget: const Duration(seconds: 30), what: 'the routing panel');
+    expect(find.textContaining('Choose a skill yourself'), findsOneWidget);
+    // Sending no longer records a log-only "request" run that nothing
+    // ever executes.
+    final sp =
+        HarborServiceProvider.of(tester.element(find.byType(HomeSurface)));
+    expect(sp.notifier!.runs, isEmpty,
+        reason: 'routing recommends; it never starts or records a run');
   });
 }
 

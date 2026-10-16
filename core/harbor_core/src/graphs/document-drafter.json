@@ -2,7 +2,7 @@
   "schema": "harbor.graph/v1",
   "id": "document-drafter",
   "version": 1,
-  "description": "Draft a proposal, report or letter from a brief as a new Word document. The section template is data (a constant per kind), the model fills the sections from the brief and writes [needs input] where the brief is silent, and document.verify_draft checks the template's sections are all there in order, with no template text and no figure the brief does not contain; a failed check goes back to the model once with the problems listed. docx.build lays out a headed document, or for a letter the sender, date, recipient, salutation and sign-off from the inputs, and proposes the file as a creation batch; nothing is saved until the user approves.",
+  "description": "Draft a proposal, report or letter from a brief as a new Word document. The section template is data (a constant per kind), the model fills the sections from the brief and writes [needs input] where the brief is silent, and document.verify_draft checks the template's sections are all there in order, with no template text and no figure the brief does not contain; a failed check goes back to the model once with the problems listed. docx.build lays out a headed document, or for a letter the sender, date, recipient, salutation and sign-off from the inputs, and proposes the file as a creation batch; nothing is saved until the user approves. Optionally (use_sources) the brief is supplemented with passages retrieved from the user's Knowledge index; figures in the draft may then come from the brief or a cited passage, and the passages are listed with the result.",
   "inputs": {
     "type": "object",
     "properties": {
@@ -37,6 +37,10 @@
       "date": {
         "type": "string",
         "maxLength": 80
+      },
+      "use_sources": {
+        "type": "boolean",
+        "description": "Also draw on passages retrieved from your Knowledge index (cited in the result). Off by default."
       }
     },
     "required": [
@@ -48,7 +52,7 @@
   "entry": "template",
   "budgets": {
     "max_steps": 14,
-    "max_tool_calls": 4,
+    "max_tool_calls": 6,
     "max_context_tokens": 30000
   },
   "nodes": [
@@ -90,7 +94,7 @@
         "layout": "headed"
       },
       "out": "/template",
-      "next": "draft"
+      "next": "gather"
     },
     {
       "id": "t_report",
@@ -105,7 +109,7 @@
         "layout": "headed"
       },
       "out": "/template",
-      "next": "draft"
+      "next": "gather"
     },
     {
       "id": "t_letter",
@@ -119,6 +123,22 @@
         "layout": "letter"
       },
       "out": "/template",
+      "next": "gather"
+    },
+    {
+      "id": "gather",
+      "kind": "tool.call",
+      "description": "Optional retrieval from the user's Knowledge index; a no-op unless use_sources is set and an index is open.",
+      "tool": "knowledge.gather",
+      "args": {
+        "enabled": {
+          "$state": "/input/use_sources"
+        },
+        "base": {
+          "$state": "/input/brief"
+        }
+      },
+      "out": "/gather",
       "next": "draft"
     },
     {
@@ -138,6 +158,12 @@
         {
           "label": "Title to use",
           "from": "/input/title",
+          "optional": true
+        },
+        {
+          "label": "Passages retrieved from the user's own documents (use only what bears on the brief; do not invent anything they do not say)",
+          "from": "/gather/passages_text",
+          "max_chars": 4000,
           "optional": true
         },
         {
@@ -214,7 +240,7 @@
           "$state": "/template/headings"
         },
         "source": {
-          "$state": "/input/brief"
+          "$state": "/gather/source_text"
         },
         "max_paragraph_words": 140,
         "layout": {
@@ -288,7 +314,8 @@
         "/proposal/checks",
         "/check/needs_input",
         "/approvals/approve",
-        "/check/warnings"
+        "/check/warnings",
+        "/gather/citations"
       ]
     },
     {

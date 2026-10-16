@@ -75,6 +75,7 @@ class _CommandPaletteState extends State<_CommandPalette> {
           section: l10n.commandSectionSurfaces,
           title: l10n.commandGoTo(d.label),
           icon: d.icon,
+          // Destinations are listed in ⌘1–7 order.
           hint: desktop ? harborShortcutHint('${i + 1}') : null,
           run: () => state.selectSurface(i),
         ),
@@ -91,6 +92,22 @@ class _CommandPaletteState extends State<_CommandPalette> {
         subtitle: l10n.surfaceKnowledge,
         icon: Icons.note_add_outlined,
         run: () => state.goTo(HarborSurface.knowledge),
+      ),
+      // Former destinations, now inside one: the Store is a Models tab and
+      // scheduled goals are an Activity tab.
+      _Command(
+        section: l10n.commandSectionActions,
+        title: l10n.modelsTabStore,
+        subtitle: l10n.surfaceModels,
+        icon: Icons.storefront_outlined,
+        run: () => state.openModels(ModelsTab.store),
+      ),
+      _Command(
+        section: l10n.commandSectionActions,
+        title: l10n.goalsBannerTitle,
+        subtitle: l10n.surfaceActivity,
+        icon: Icons.schedule_outlined,
+        run: () => state.openActivity(ActivityTab.goals),
       ),
       _Command(
         section: l10n.commandSectionActions,

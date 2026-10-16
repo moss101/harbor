@@ -1,0 +1,486 @@
+{
+ "schema": "harbor.decision_eval/v1",
+ "task": "intent",
+ "cases": [
+  {
+   "intent": "run_skill",
+   "lang": "en",
+   "input": "Turn this quarterly report into a short slide deck"
+  },
+  {
+   "intent": "run_skill",
+   "lang": "en",
+   "input": "Clean up the duplicate rows in my sales spreadsheet"
+  },
+  {
+   "intent": "run_skill",
+   "lang": "en",
+   "input": "Draft a proposal for the Dubai clinic from these notes"
+  },
+  {
+   "intent": "run_skill",
+   "lang": "en",
+   "input": "Check the formulas in my budget workbook for errors"
+  },
+  {
+   "intent": "run_skill",
+   "lang": "en",
+   "input": "Convert this Word document to a PDF"
+  },
+  {
+   "intent": "run_skill",
+   "lang": "en",
+   "input": "Build a monthly budget spreadsheet with totals"
+  },
+  {
+   "intent": "run_skill",
+   "lang": "en",
+   "input": "Fill in the name and date fields in this contract template"
+  },
+  {
+   "intent": "run_skill",
+   "lang": "en",
+   "input": "Review these supplier invoices and prepare an Excel report"
+  },
+  {
+   "intent": "run_skill",
+   "lang": "ar",
+   "input": "حوّل هذا التقرير الفصلي إلى عرض تقديمي قصير"
+  },
+  {
+   "intent": "run_skill",
+   "lang": "ar",
+   "input": "نظّف الصفوف المكررة في جدول المبيعات"
+  },
+  {
+   "intent": "run_skill",
+   "lang": "fr",
+   "input": "Prépare un tableau de budget mensuel avec les totaux"
+  },
+  {
+   "intent": "run_skill",
+   "lang": "fr",
+   "input": "Transforme ce rapport en présentation de cinq diapositives"
+  },
+  {
+   "intent": "search_documents",
+   "lang": "en",
+   "input": "What does the lease say about early termination?"
+  },
+  {
+   "intent": "search_documents",
+   "lang": "en",
+   "input": "Find where the contract mentions the late payment fee"
+  },
+  {
+   "intent": "search_documents",
+   "lang": "en",
+   "input": "Which of my documents talk about the warranty period?"
+  },
+  {
+   "intent": "search_documents",
+   "lang": "en",
+   "input": "Look up the hotel reimbursement limit in the travel policy"
+  },
+  {
+   "intent": "search_documents",
+   "lang": "en",
+   "input": "What did the board minutes decide about the new branch?"
+  },
+  {
+   "intent": "search_documents",
+   "lang": "en",
+   "input": "Search my files for the supplier's bank details"
+  },
+  {
+   "intent": "search_documents",
+   "lang": "en",
+   "input": "According to my handbook, how many leave days do I get?"
+  },
+  {
+   "intent": "search_documents",
+   "lang": "en",
+   "input": "Where is the clause about confidentiality in the NDA?"
+  },
+  {
+   "intent": "search_documents",
+   "lang": "ar",
+   "input": "ماذا يقول العقد عن غرامة التأخير؟"
+  },
+  {
+   "intent": "search_documents",
+   "lang": "ar",
+   "input": "ابحث في مستنداتي عن مدة الضمان"
+  },
+  {
+   "intent": "search_documents",
+   "lang": "fr",
+   "input": "Que dit le contrat sur la résiliation anticipée ?"
+  },
+  {
+   "intent": "search_documents",
+   "lang": "fr",
+   "input": "Cherche dans mes documents le plafond de remboursement des hôtels"
+  },
+  {
+   "intent": "remember_fact",
+   "lang": "en",
+   "input": "Remember that Acme Supplies pays net 45"
+  },
+  {
+   "intent": "remember_fact",
+   "lang": "en",
+   "input": "Note that I prefer reports with the totals first"
+  },
+  {
+   "intent": "remember_fact",
+   "lang": "en",
+   "input": "Keep in mind that the clinic closes on Fridays"
+  },
+  {
+   "intent": "remember_fact",
+   "lang": "en",
+   "input": "Save this: our fiscal year starts in April"
+  },
+  {
+   "intent": "remember_fact",
+   "lang": "en",
+   "input": "Please remember my accountant's name is Laura Grant"
+  },
+  {
+   "intent": "remember_fact",
+   "lang": "en",
+   "input": "Make a note that invoices over 10,000 need a second approval"
+  },
+  {
+   "intent": "remember_fact",
+   "lang": "en",
+   "input": "Don't forget that Omar prefers email over phone calls"
+  },
+  {
+   "intent": "remember_fact",
+   "lang": "en",
+   "input": "Store the fact that our main warehouse is in Sharjah"
+  },
+  {
+   "intent": "remember_fact",
+   "lang": "ar",
+   "input": "تذكّر أن المورد أكمي يدفع خلال 45 يوماً"
+  },
+  {
+   "intent": "remember_fact",
+   "lang": "ar",
+   "input": "سجّل أنني أفضّل التقارير التي تبدأ بالإجمالي"
+  },
+  {
+   "intent": "remember_fact",
+   "lang": "fr",
+   "input": "Souviens-toi que le client paie à 60 jours"
+  },
+  {
+   "intent": "remember_fact",
+   "lang": "fr",
+   "input": "Note que je préfère les rapports avec les totaux en premier"
+  },
+  {
+   "intent": "recall_memory",
+   "lang": "en",
+   "input": "What did I tell you about Acme's payment terms?"
+  },
+  {
+   "intent": "recall_memory",
+   "lang": "en",
+   "input": "What is my accountant's name again?"
+  },
+  {
+   "intent": "recall_memory",
+   "lang": "en",
+   "input": "Remind me what we decided about the second approval"
+  },
+  {
+   "intent": "recall_memory",
+   "lang": "en",
+   "input": "What do I prefer in reports?"
+  },
+  {
+   "intent": "recall_memory",
+   "lang": "en",
+   "input": "Which day does the clinic close?"
+  },
+  {
+   "intent": "recall_memory",
+   "lang": "en",
+   "input": "What did I say about Omar's contact preference?"
+  },
+  {
+   "intent": "recall_memory",
+   "lang": "en",
+   "input": "Do you remember when our fiscal year starts?"
+  },
+  {
+   "intent": "recall_memory",
+   "lang": "en",
+   "input": "What was the note I gave you about the warehouse?"
+  },
+  {
+   "intent": "recall_memory",
+   "lang": "ar",
+   "input": "ماذا أخبرتك عن شروط الدفع لدى أكمي؟"
+  },
+  {
+   "intent": "recall_memory",
+   "lang": "ar",
+   "input": "ما اسم محاسبي مرة أخرى؟"
+  },
+  {
+   "intent": "recall_memory",
+   "lang": "fr",
+   "input": "Qu'est-ce que je t'ai dit sur les conditions de paiement ?"
+  },
+  {
+   "intent": "recall_memory",
+   "lang": "fr",
+   "input": "Rappelle-moi quel jour la clinique ferme"
+  },
+  {
+   "intent": "schedule_goal",
+   "lang": "en",
+   "input": "Every Monday morning summarize the new invoices"
+  },
+  {
+   "intent": "schedule_goal",
+   "lang": "en",
+   "input": "Remind me on the 25th to review the payroll sheet"
+  },
+  {
+   "intent": "schedule_goal",
+   "lang": "en",
+   "input": "Run the overdue payments check every week"
+  },
+  {
+   "intent": "schedule_goal",
+   "lang": "en",
+   "input": "Each month on the first, prepare the management report"
+  },
+  {
+   "intent": "schedule_goal",
+   "lang": "en",
+   "input": "Check the supplier inbox tomorrow at nine and tell me what is new"
+  },
+  {
+   "intent": "schedule_goal",
+   "lang": "en",
+   "input": "Do this again every day at 6pm"
+  },
+  {
+   "intent": "schedule_goal",
+   "lang": "en",
+   "input": "Set up a weekly reminder to back up the workbook"
+  },
+  {
+   "intent": "schedule_goal",
+   "lang": "en",
+   "input": "Repeat the budget review at the end of every quarter"
+  },
+  {
+   "intent": "schedule_goal",
+   "lang": "ar",
+   "input": "كل يوم اثنين لخّص الفواتير الجديدة"
+  },
+  {
+   "intent": "schedule_goal",
+   "lang": "ar",
+   "input": "ذكّرني في الخامس والعشرين بمراجعة كشف الرواتب"
+  },
+  {
+   "intent": "schedule_goal",
+   "lang": "fr",
+   "input": "Chaque lundi, résume les nouvelles factures"
+  },
+  {
+   "intent": "schedule_goal",
+   "lang": "fr",
+   "input": "Rappelle-moi le 25 de vérifier la paie"
+  },
+  {
+   "intent": "read_scan",
+   "lang": "en",
+   "input": "Read the text from this scanned invoice"
+  },
+  {
+   "intent": "read_scan",
+   "lang": "en",
+   "input": "Extract the words from this photo of a receipt"
+  },
+  {
+   "intent": "read_scan",
+   "lang": "en",
+   "input": "This PDF is just a picture of a page, get the text out of it"
+  },
+  {
+   "intent": "read_scan",
+   "lang": "en",
+   "input": "Can you read what is written on this photographed letter?"
+  },
+  {
+   "intent": "read_scan",
+   "lang": "en",
+   "input": "Digitize this scanned contract so I can search it"
+  },
+  {
+   "intent": "read_scan",
+   "lang": "en",
+   "input": "What does the text in this screenshot say?"
+  },
+  {
+   "intent": "read_scan",
+   "lang": "en",
+   "input": "OCR this image of a delivery note"
+  },
+  {
+   "intent": "read_scan",
+   "lang": "en",
+   "input": "I took a picture of the price list, pull the text from it"
+  },
+  {
+   "intent": "read_scan",
+   "lang": "ar",
+   "input": "اقرأ النص من هذه الفاتورة الممسوحة ضوئياً"
+  },
+  {
+   "intent": "read_scan",
+   "lang": "ar",
+   "input": "استخرج الكلمات من صورة هذا الإيصال"
+  },
+  {
+   "intent": "read_scan",
+   "lang": "fr",
+   "input": "Lis le texte de cette facture scannée"
+  },
+  {
+   "intent": "read_scan",
+   "lang": "fr",
+   "input": "Extrais le texte de cette photo de reçu"
+  },
+  {
+   "intent": "transcribe_audio",
+   "lang": "en",
+   "input": "Transcribe this voice memo"
+  },
+  {
+   "intent": "transcribe_audio",
+   "lang": "en",
+   "input": "Turn the meeting recording into text"
+  },
+  {
+   "intent": "transcribe_audio",
+   "lang": "en",
+   "input": "Write down what is said in this audio file"
+  },
+  {
+   "intent": "transcribe_audio",
+   "lang": "en",
+   "input": "Convert my dictated notes to text"
+  },
+  {
+   "intent": "transcribe_audio",
+   "lang": "en",
+   "input": "Give me a transcript of the call with the supplier"
+  },
+  {
+   "intent": "transcribe_audio",
+   "lang": "en",
+   "input": "What was said in this recording?"
+  },
+  {
+   "intent": "transcribe_audio",
+   "lang": "en",
+   "input": "Type up this voice message for me"
+  },
+  {
+   "intent": "transcribe_audio",
+   "lang": "en",
+   "input": "Make minutes from the audio of today's meeting"
+  },
+  {
+   "intent": "transcribe_audio",
+   "lang": "ar",
+   "input": "فرّغ هذا المقطع الصوتي إلى نص"
+  },
+  {
+   "intent": "transcribe_audio",
+   "lang": "ar",
+   "input": "حوّل تسجيل الاجتماع إلى نص مكتوب"
+  },
+  {
+   "intent": "transcribe_audio",
+   "lang": "fr",
+   "input": "Transcris ce mémo vocal"
+  },
+  {
+   "intent": "transcribe_audio",
+   "lang": "fr",
+   "input": "Convertis l'enregistrement de la réunion en texte"
+  },
+  {
+   "intent": "general_chat",
+   "lang": "en",
+   "input": "Explain what net 30 payment terms mean"
+  },
+  {
+   "intent": "general_chat",
+   "lang": "en",
+   "input": "Give me ideas for a name for my new clinic"
+  },
+  {
+   "intent": "general_chat",
+   "lang": "en",
+   "input": "How do I politely ask a client to pay on time?"
+  },
+  {
+   "intent": "general_chat",
+   "lang": "en",
+   "input": "What is the difference between a budget and a forecast?"
+  },
+  {
+   "intent": "general_chat",
+   "lang": "en",
+   "input": "Help me think through whether to hire another assistant"
+  },
+  {
+   "intent": "general_chat",
+   "lang": "en",
+   "input": "Why do invoices have due dates?"
+  },
+  {
+   "intent": "general_chat",
+   "lang": "en",
+   "input": "Suggest a good structure for a business plan"
+  },
+  {
+   "intent": "general_chat",
+   "lang": "en",
+   "input": "Tell me a short joke to open my presentation"
+  },
+  {
+   "intent": "general_chat",
+   "lang": "ar",
+   "input": "اشرح لي معنى شروط الدفع خلال 30 يوماً"
+  },
+  {
+   "intent": "general_chat",
+   "lang": "ar",
+   "input": "اقترح لي أسماء لعيادتي الجديدة"
+  },
+  {
+   "intent": "general_chat",
+   "lang": "fr",
+   "input": "Explique-moi ce que signifie paiement à 30 jours"
+  },
+  {
+   "intent": "general_chat",
+   "lang": "fr",
+   "input": "Donne-moi des idées de nom pour ma nouvelle clinique"
+  }
+ ]
+}

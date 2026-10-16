@@ -1580,6 +1580,7 @@ dependencies = [
  "harbor_security",
  "harbor_store",
  "hex",
+ "libloading",
  "rusqlite",
  "serde_json",
  "tempfile",
@@ -1704,9 +1705,11 @@ dependencies = [
 name = "harbor_render"
 version = "0.1.0"
 dependencies = [
+ "flate2",
  "harbor_artifacts",
  "harbor_canonical",
  "harbor_formula",
+ "lopdf",
  "pdf-extract",
  "serde",
  "serde_json",

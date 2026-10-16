@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Desktop keyboard contract (UX-038): ⌘/Ctrl+1…9 switch surfaces,
+/// Desktop keyboard contract (UX-038): ⌘/Ctrl+1…7 switch surfaces,
 /// ⌘/Ctrl+K opens the command palette, ⌘/Ctrl+L toggles the Lens,
 /// ⌘/Ctrl+O opens a file on the Work Canvas, ⌘/Ctrl+, opens Settings.
 class GoToSurfaceIntent extends Intent {
@@ -46,6 +46,7 @@ String harborShortcutHint(String key) => '$harborModifierGlyph$key';
 /// so the map is platform-neutral; the hint text picks the right glyph.
 Map<ShortcutActivator, Intent> harborShortcuts() {
   final map = <ShortcutActivator, Intent>{};
+  // One digit per surface (HarborSurface.shortcutOrder); ⌘8/⌘9 stay free.
   const digits = [
     LogicalKeyboardKey.digit1,
     LogicalKeyboardKey.digit2,
@@ -54,8 +55,6 @@ Map<ShortcutActivator, Intent> harborShortcuts() {
     LogicalKeyboardKey.digit5,
     LogicalKeyboardKey.digit6,
     LogicalKeyboardKey.digit7,
-    LogicalKeyboardKey.digit8,
-    LogicalKeyboardKey.digit9,
   ];
   for (final (i, key) in digits.indexed) {
     map[SingleActivator(key, meta: true)] = GoToSurfaceIntent(i);

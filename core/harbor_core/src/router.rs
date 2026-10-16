@@ -25,6 +25,9 @@ pub struct RouteCandidate {
     /// Embedded `{title}. {description}` (title-slot for structured
     /// policies) under the routing policy.
     pub vector: Vec<f32>,
+    /// Embedded example requests (few-shot exemplars): a request scores as
+    /// its best match over the description and every example.
+    pub exemplars: Vec<Vec<f32>>,
 }
 
 /// A router prewarmed for one embedding model.
@@ -32,6 +35,10 @@ pub struct SkillRouter {
     policy: InstructionPolicy,
     calibration: Option<CalibrationEntry>,
     candidates: Vec<RouteCandidate>,
+    /// Learned head over the candidates' descriptions and examples, when
+    /// every option carries enough examples to train one. Its probabilities
+    /// replace raw cosine as the score.
+    head: Option<crate::decision_head::LinearHead>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -99,16 +106,45 @@ struct CalibrationFile {
     entries: Vec<CalibrationEntry>,
 }
 
+/// What a router is deciding. Bars are measured per embedder AND per task:
+/// a threshold that separates 36 skills says nothing about choosing between
+/// eight kinds of action.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DecisionTask {
+    /// Which built-in skill fits the request.
+    Skill,
+    /// What kind of action the request needs (decision 0019).
+    Intent,
+    /// Caller-supplied options: no benchmark exists, so ranking only.
+    Custom,
+}
+
 impl CalibrationEntry {
     /// The calibration for an installed embedding package, matched by
     /// model-family substring of its id (the instruction-policy rule). None
     /// = uncalibrated: the router ranks but abstains from recommending.
     pub fn for_package(package_id: &str, truncation: Option<u32>) -> Option<CalibrationEntry> {
-        static FILE: std::sync::OnceLock<CalibrationFile> = std::sync::OnceLock::new();
-        let file = FILE.get_or_init(|| {
-            serde_json::from_str(include_str!("router_calibration.json"))
-                .expect("router_calibration.json parses (checked by test)")
-        });
+        Self::for_task(DecisionTask::Skill, package_id, truncation)
+    }
+
+    pub fn for_task(
+        task: DecisionTask,
+        package_id: &str,
+        truncation: Option<u32>,
+    ) -> Option<CalibrationEntry> {
+        static SKILL: std::sync::OnceLock<CalibrationFile> = std::sync::OnceLock::new();
+        static INTENT: std::sync::OnceLock<CalibrationFile> = std::sync::OnceLock::new();
+        let file = match task {
+            DecisionTask::Skill => SKILL.get_or_init(|| {
+                serde_json::from_str(include_str!("router_calibration.json"))
+                    .expect("router_calibration.json parses (checked by test)")
+            }),
+            DecisionTask::Intent => INTENT.get_or_init(|| {
+                serde_json::from_str(include_str!("decision_calibration.json"))
+                    .expect("decision_calibration.json parses (checked by test)")
+            }),
+            DecisionTask::Custom => return None,
+        };
         let lower = package_id.to_ascii_lowercase();
         file.entries
             .iter()
@@ -156,6 +192,16 @@ pub struct RouteDecision {
     pub reason: Option<AbstainReason>,
 }
 
+/// One option a router can choose between.
+#[derive(Debug, Clone)]
+pub struct RouteItem {
+    pub id: String,
+    pub title: String,
+    pub description: String,
+    /// Example requests that mean this option (optional, in any language).
+    pub examples: Vec<String>,
+}
+
 impl SkillRouter {
     /// Embed every skill's key once. `model` must be loaded on the
     /// provider; the key text is the user-language title and
@@ -178,19 +224,39 @@ impl SkillRouter {
         model: &ModelRef,
         truncation: Option<u32>,
     ) -> Result<Self, RouterError> {
+        let items: Vec<RouteItem> = skills
+            .iter()
+            .map(|s| RouteItem {
+                id: s.id.clone(),
+                title: s.title.clone(),
+                description: s.description.clone(),
+                examples: Vec::new(),
+            })
+            .collect();
+        Self::prewarm_items(&items, DecisionTask::Skill, provider, model, truncation)
+    }
+
+    /// Prewarm over any set of options for `task`. The routing key is the
+    /// user-language title plus description; calibration is the embedder's
+    /// bars FOR THAT TASK (none for `Custom`: rank, never recommend).
+    pub fn prewarm_items(
+        items: &[RouteItem],
+        task: DecisionTask,
+        provider: &dyn ModelProvider,
+        model: &ModelRef,
+        truncation: Option<u32>,
+    ) -> Result<Self, RouterError> {
         let (policy, calibration) = match model {
             ModelRef::InstalledPackage { package_id } => (
                 InstructionPolicy::for_package(package_id),
-                CalibrationEntry::for_package(package_id, truncation),
+                CalibrationEntry::for_task(task, package_id, truncation),
             ),
             _ => (InstructionPolicy::None, None),
         };
-        let mut candidates = Vec::with_capacity(skills.len());
-        for s in skills {
-            // Routing key: the user-language title plus description.
-            // Structured policies (GemmaEmbedding) put the title in its
-            // own slot; the others carry it in the body so the key never
-            // loses it.
+        let mut candidates = Vec::with_capacity(items.len());
+        for s in items {
+            // Structured policies (GemmaEmbedding) put the title in its own
+            // slot; the others carry it in the body so the key never loses it.
             let body = format!("{}. {}", s.title, s.description);
             let input = match policy {
                 InstructionPolicy::GemmaEmbedding => {
@@ -205,20 +271,50 @@ impl SkillRouter {
                 .next()
                 .ok_or_else(|| RouterError::Embed("empty embedding".into()))?;
             require_finite_vector(&vector).map_err(RouterError::Embed)?;
+            let mut exemplars = Vec::with_capacity(s.examples.len());
+            for ex in &s.examples {
+                let v = provider
+                    .embed(model, &[policy.format_query(ex)])
+                    .map_err(|e| RouterError::Embed(e.to_string()))?
+                    .into_iter()
+                    .next()
+                    .ok_or_else(|| RouterError::Embed("empty embedding".into()))?;
+                require_finite_vector(&v).map_err(RouterError::Embed)?;
+                exemplars.push(v);
+            }
             candidates.push(RouteCandidate {
                 skill_id: s.id.clone(),
                 title: s.title.clone(),
                 description: s.description.clone(),
                 vector,
+                exemplars,
             });
         }
         if candidates.is_empty() {
             return Err(RouterError::NoCandidates);
         }
+        // A learned head needs examples for EVERY option; otherwise the
+        // router stays on best-match cosine.
+        let head = if candidates.iter().all(|c| c.exemplars.len() >= 4) {
+            let mut xs = Vec::new();
+            let mut ys = Vec::new();
+            for (ci, c) in candidates.iter().enumerate() {
+                xs.push(c.vector.clone());
+                ys.push(ci);
+                for e in &c.exemplars {
+                    xs.push(e.clone());
+                    ys.push(ci);
+                }
+            }
+            crate::decision_head::LinearHead::train(&xs, &ys, candidates.len())
+        } else {
+            None
+        };
         Ok(SkillRouter {
             policy,
             calibration,
             candidates,
+            head,
         })
     }
 
@@ -282,12 +378,23 @@ impl SkillRouter {
             .ok_or_else(|| RouterError::Embed("empty embedding".into()))?;
         require_finite_vector(&query).map_err(RouterError::Embed)?;
 
-        let mut scored: Vec<(usize, f32)> = self
-            .candidates
-            .iter()
-            .enumerate()
-            .map(|(i, c)| (i, cosine(&query, &c.vector)))
-            .collect();
+        let probs = self.head.as_ref().and_then(|h| h.predict(&query));
+        let mut scored: Vec<(usize, f32)> = match probs {
+            Some(p) => p.into_iter().enumerate().collect(),
+            None => self
+                .candidates
+                .iter()
+                .enumerate()
+                .map(|(i, c)| {
+                    let best = c
+                        .exemplars
+                        .iter()
+                        .map(|e| cosine(&query, e))
+                        .fold(cosine(&query, &c.vector), f32::max);
+                    (i, best)
+                })
+                .collect(),
+        };
         scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
         let ranked: Vec<RouteHit> = scored
@@ -459,7 +566,7 @@ mod tests {
     fn calibration_is_per_embedder_versioned_data() {
         // The shipped file parses and every entry carries its evidence.
         let m3 = CalibrationEntry::for_package("bge-m3-q8_0", None).unwrap();
-        assert_eq!((m3.id.as_str(), m3.version), ("bge-m3", 1));
+        assert_eq!((m3.id.as_str(), m3.version), ("bge-m3", 2));
         let g = CalibrationEntry::for_package("embeddinggemma2-ab12", None).unwrap();
         assert!(g.min_score < m3.min_score, "gemma band sits lower");
         assert!(g.evidence.starts_with("evidence/skill_routing/"));

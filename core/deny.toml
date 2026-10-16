@@ -45,6 +45,12 @@ ignore = [
   # 0.12.1 (latest). Used only to read glyph tables while extracting text
   # from a user-chosen PDF. Re-check when pdf-extract or lopdf drops it.
   { id = "RUSTSEC-2026-0192", reason = "unmaintained notice via pdf-extract 0.12.1 (latest); text-extraction path only" },
+  # unsafe-libyaml is unmaintained (RUSTSEC-2024-0449, a maintenance notice,
+  # not a vulnerability). Reached only through formualizer 0.9.3 ->
+  # sheetport-spec -> serde_yaml 0.9; Harbor never feeds YAML to it (no
+  # sheetport manifests are loaded). Re-check: formualizer > 0.9.3 or
+  # sheetport-spec moving off serde_yaml.
+  { id = "RUSTSEC-2024-0449", reason = "unmaintained notice via formualizer -> sheetport-spec -> serde_yaml; Harbor loads no YAML; re-check on formualizer release" },
 ]
 
 # ---------------------------------------------------------------------------

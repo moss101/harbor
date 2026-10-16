@@ -1,0 +1,5 @@
+invoice_no,supplier,amount,status
+INV-1001,Acme Supplies,4200.00,unpaid
+INV-1002,Northwind Parts,1580.50,unpaid
+INV-1004,Delta Logistics,2300.00,paid
+INV-0990,Acme Supplies,500.00,paid

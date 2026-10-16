@@ -30,6 +30,10 @@
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Harbor records your voice only when you press Record, and turns it into text on this device. The recording is not kept and nothing is uploaded.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Harbor opens the camera only when you choose Take a photo, to read the page on this device. The photo is not kept and nothing is uploaded.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

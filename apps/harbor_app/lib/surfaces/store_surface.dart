@@ -5,46 +5,32 @@ import 'package:harbor_ui/harbor_ui.dart';
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/harbor_service.dart';
-import '../widgets/ops.dart';
 
-/// Store surface: included products (Harbor Office) and first-party model
-/// management. Office is INCLUDED — the engine ships compiled in every
-/// build, so the store's office card is an activation/status view, never a
-/// download (platform policy 2.5.2 and Harbor's own resource policy).
-/// Model downloads quote their size through the brokered preflight and
-/// require an explicit confirmation before transfer (SEC-029); uninstall
-/// previews the exact owned-file scope and keeps an undo window (SEC-024).
-class StoreSurface extends StatelessWidget {
-  const StoreSurface({super.key, required this.state});
-  final AppState state;
+/// The Store tab of Models: products included with Harbor (the Office
+/// suite). Office is INCLUDED — the engine ships compiled in every build,
+/// so its card is an activation/status view, never a download (platform
+/// policy 2.5.2 and Harbor's own resource policy). Harbor's first-party
+/// models are the signed catalog under Recommended; this file also holds
+/// the model install / uninstall confirmations every Models tab uses:
+/// downloads quote their size through the brokered preflight and require an
+/// explicit confirmation before transfer (SEC-029); uninstall previews the
+/// exact owned-file scope and keeps an undo window (SEC-024).
+class StoreTab extends StatelessWidget {
+  const StoreTab({super.key});
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final t = HarborTheme.of(context);
-    final sp = HarborServiceProvider.of(context);
-    final service = sp.notifier;
-    if (sp.failed || service == null) {
-      return HarborErrorState(
-          title: l10n.coreDegradedTitle, message: l10n.coreNotLoadedModels);
-    }
+    final state = AppStateScope.maybeOf(context);
     return HarborPage(
       maxWidth: HarborLayout.readingMax + 80,
       children: [
-        _OfficeCard(onOpenWork: () => state.goTo(HarborSurface.work)),
-        const SizedBox(height: HarborSpace.s5),
-        _HarborModelsSection(service: service),
-        const SizedBox(height: HarborSpace.s5),
-        _InstalledSection(service: service),
-        if (service.kindProgress['acquire'] != null) ...[
-          const SizedBox(height: HarborSpace.s3),
-          OpProgressCard(
-            progress: service.kindProgress['acquire']!,
-            service: service,
-          ),
-        ],
+        Text(l10n.storeTagline, style: t.text.captionOf(t.colors.inkMuted)),
         const SizedBox(height: HarborSpace.s3),
-        Text(l10n.storeManageHint, style: t.text.smallOf(t.colors.inkMuted)),
+        _OfficeCard(
+            onOpenWork:
+                state == null ? null : () => state.goTo(HarborSurface.work)),
       ],
     );
   }
@@ -59,7 +45,7 @@ class StoreSurface extends StatelessWidget {
 /// contract — dormant code keeps no live authority path).
 class _OfficeCard extends StatefulWidget {
   const _OfficeCard({required this.onOpenWork});
-  final VoidCallback onOpenWork;
+  final VoidCallback? onOpenWork;
 
   @override
   State<_OfficeCard> createState() => _OfficeCardState();
@@ -95,8 +81,10 @@ class _OfficeCardState extends State<_OfficeCard> {
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: TextButton.icon(
-              onPressed: () => setState(() => _insideExpanded = !_insideExpanded),
-              icon: Icon(_insideExpanded ? Icons.expand_less : Icons.expand_more,
+              onPressed: () =>
+                  setState(() => _insideExpanded = !_insideExpanded),
+              icon: Icon(
+                  _insideExpanded ? Icons.expand_less : Icons.expand_more,
                   size: 18),
               label: Text(l10n.storeOfficeInside),
             ),
@@ -114,12 +102,15 @@ class _OfficeCardState extends State<_OfficeCard> {
                   (l10n.storeSuitePdf, false),
                 ])
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: HarborSpace.s1),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: HarborSpace.s1),
                     child: Row(children: [
                       Expanded(
                         child: Text(name, style: t.text.smallOf(t.colors.ink)),
                       ),
-                      HarborPill(live ? l10n.suiteStatusLive : l10n.suiteStatusPreview),
+                      HarborPill(live
+                          ? l10n.suiteStatusLive
+                          : l10n.suiteStatusPreview),
                     ]),
                   ),
               ]),
@@ -139,251 +130,42 @@ class _OfficeCardState extends State<_OfficeCard> {
   }
 }
 
-/// First-party models: the accepted signed catalog. Each entry quotes the
-/// real transfer through [showAcquireConfirmDialog] before acquiring; the
-/// core refuses any transfer larger than what the user confirmed.
-class _HarborModelsSection extends StatelessWidget {
-  const _HarborModelsSection({required this.service});
-  final HarborService service;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final t = HarborTheme.of(context);
-    if (!service.catalogImported || service.catalog.isEmpty) {
-      return HarborEmptyState(
-        icon: Icons.storefront_outlined,
-        title: l10n.surfaceStore,
-        body: l10n.storeEmpty,
-      );
-    }
-    final packages = service.catalog
-        .where((p) => !(p['tiers'] as List? ?? const []).contains('Test'))
-        .toList()
-      ..sort((a, b) {
-        int first(Map p) => p['publisher'] == 'harbor' ? 0 : 1;
-        return first(a).compareTo(first(b));
-      });
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        HarborSectionHeader(title: l10n.storeModelsHeading(packages.length)),
-        const SizedBox(height: HarborSpace.s2),
-        Text(l10n.storeModelsBody, style: t.text.captionOf(t.colors.inkMuted)),
-        const SizedBox(height: HarborSpace.s3),
-        for (final p in packages)
-          Padding(
-            padding: const EdgeInsets.only(bottom: HarborSpace.s3),
-            child: _StoreModelCard(package: p, service: service),
-          ),
-      ],
-    );
-  }
-}
-
-class _StoreModelCard extends StatefulWidget {
-  const _StoreModelCard({required this.package, required this.service});
-  final Map<String, dynamic> package;
-  final HarborService service;
-
-  @override
-  State<_StoreModelCard> createState() => _StoreModelCardState();
-}
-
-class _StoreModelCardState extends State<_StoreModelCard> {
-  bool _busy = false;
-  String? _error;
-
-  Map<String, dynamic> get p => widget.package;
-  bool get _installed => p['installed'] == true;
-
-  List<Map<String, String>> get _files => [
-        for (final f in (p['files'] as List? ?? const []).cast<Map>())
-          {
-            'path': f['path'] as String,
-            'role': f['role'] as String? ?? 'weights',
-            'sha256': f['sha256'] as String? ?? '',
-          }
-      ];
-
-  Future<void> _install() async {
-    final l10n = AppLocalizations.of(context)!;
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    try {
-      final quote = await widget.service.acquirePreflight(
-        repoId: p['repo_id'] as String,
-        files: _files,
-      );
-      if (!mounted) return;
-      final confirmed = await showAcquireConfirmDialog(context, quote);
-      if (!mounted || !confirmed) {
-        setState(() => _busy = false);
-        return;
-      }
-      await widget.service.acquireModelHf(
-        packageId: p['id'] as String,
-        repoId: p['repo_id'] as String,
-        files: _files,
-        confirmedTotalBytes: (quote['quoted_bytes'] as num? ?? 0).toInt(),
-      );
-    } on ffi.HarborCoreException catch (e) {
-      if (!mounted) return;
-      setState(() => _error = e.message.toLowerCase().contains('cancel')
-          ? l10n.modelInstallCancelled
-          : l10n.modelInstallFailed);
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final t = HarborTheme.of(context);
-    final tiers = (p['tiers'] as List? ?? const []).cast<String>();
-    return HarborCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            Expanded(
-              child: Text(p['id'] as String? ?? '',
-                  style: t.text.bodyStrongOf(t.colors.ink)),
+/// SEC-024 uninstall of an installed package: preview the exact owned-file
+/// scope (blocked while in use), commit on confirmation, and offer Undo
+/// for the trash window.
+Future<void> uninstallModel(
+    BuildContext context, HarborService service, String id) async {
+  final l10n = AppLocalizations.of(context)!;
+  try {
+    final preview = await service.uninstallPreview(id);
+    if (!context.mounted) return;
+    final ok = await showUninstallConfirmDialog(context, preview);
+    if (!ok) return;
+    final result =
+        await service.uninstallCommit(id, preview['scope_digest'] as String);
+    if (!context.mounted) return;
+    final trashEntry = result['trash_entry'] as String?;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(SnackBar(
+      content: Text(l10n.storeUninstallDone(id)),
+      action: trashEntry == null
+          ? null
+          : SnackBarAction(
+              label: l10n.storeUndo,
+              onPressed: () async {
+                try {
+                  await service.uninstallRestore(trashEntry);
+                } on ffi.HarborCoreException {
+                  messenger.showSnackBar(
+                      SnackBar(content: Text(l10n.storeUndoFailed)));
+                }
+              },
             ),
-            if (p['publisher'] == 'harbor')
-              const Padding(
-                padding: EdgeInsetsDirectional.only(end: HarborSpace.s2),
-                child: HarborPill('Harbor', brand: true),
-              ),
-            if (_installed)
-              HarborPill(AppLocalizations.of(context)!.modelsInstalledBadge),
-          ]),
-          const SizedBox(height: HarborSpace.s1),
-          Text(
-            [
-              p['quantization'] as String? ?? 'Q4_K_M',
-              AppLocalizations.of(context)!.modelsContextTokens(
-                  (p['context_tokens'] as num? ?? 2048).toInt()),
-              ...tiers,
-            ].join(' · '),
-            style: t.text.captionOf(t.colors.inkMuted),
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: HarborSpace.s2),
-            Text(_error!, style: t.text.captionOf(t.colors.danger)),
-          ],
-          const SizedBox(height: HarborSpace.s3),
-          FilledButton.icon(
-            onPressed: _busy || _installed ? null : _install,
-            icon: const Icon(Icons.download_outlined),
-            label: Text(AppLocalizations.of(context)!.modelInstallAction),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Installed packages with the SEC-024 uninstall flow: preview the exact
-/// scope, block when in use, keep a 72-hour undo window.
-class _InstalledSection extends StatelessWidget {
-  const _InstalledSection({required this.service});
-  final HarborService service;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    if (service.installedModels.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        HarborSectionHeader(title: l10n.storeInstalledHeading),
-        const SizedBox(height: HarborSpace.s2),
-        for (final m in service.installedModels)
-          Padding(
-            padding: const EdgeInsets.only(bottom: HarborSpace.s3),
-            child: _InstalledCard(model: m, service: service),
-          ),
-      ],
-    );
-  }
-}
-
-class _InstalledCard extends StatelessWidget {
-  const _InstalledCard({required this.model, required this.service});
-  final Map<String, dynamic> model;
-  final HarborService service;
-
-  Future<void> _uninstall(BuildContext context) async {
-    final l10n = AppLocalizations.of(context)!;
-    final id = model['id'] as String? ?? '';
-    try {
-      final preview = await service.uninstallPreview(id);
-      if (!context.mounted) return;
-      final ok = await showUninstallConfirmDialog(context, preview);
-      if (!ok) return;
-      final result = await service.uninstallCommit(
-          id, preview['scope_digest'] as String);
-      if (!context.mounted) return;
-      final trashEntry = result['trash_entry'] as String?;
-      final messenger = ScaffoldMessenger.of(context);
-      messenger.showSnackBar(SnackBar(
-        content: Text(l10n.storeUninstallDone(id)),
-        action: trashEntry == null
-            ? null
-            : SnackBarAction(
-                label: l10n.storeUndo,
-                onPressed: () async {
-                  try {
-                    await service.uninstallRestore(trashEntry);
-                  } on ffi.HarborCoreException {
-                    messenger.showSnackBar(
-                        SnackBar(content: Text(l10n.storeUndoFailed)));
-                  }
-                },
-              ),
-      ));
-    } on ffi.HarborCoreException catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('${l10n.storeUninstallFailed}: ${e.message}')));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final t = HarborTheme.of(context);
-    return HarborCard(
-      child: Row(children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(model['id'] as String? ?? '',
-                  style: t.text.bodyStrongOf(t.colors.ink)),
-              const SizedBox(height: HarborSpace.s1),
-              Text(
-                '${_gb((model['total_bytes'] as num? ?? 0).toInt())} · '
-                '${model['files']} files · ${model['runtime']}',
-                style: t.text.captionOf(t.colors.inkMuted),
-              ),
-            ],
-          ),
-        ),
-        OutlinedButton.icon(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: t.colors.danger,
-          ),
-          onPressed: () => _uninstall(context),
-          icon: const Icon(Icons.delete_outline),
-          label: Text(AppLocalizations.of(context)!.storeUninstall),
-        ),
-      ]),
-    );
+    ));
+  } on ffi.HarborCoreException catch (e) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${l10n.storeUninstallFailed}: ${e.message}')));
   }
 }
 
@@ -437,12 +219,14 @@ Future<bool> showUninstallConfirmDialog(
   final l10n = AppLocalizations.of(context)!;
   final t = HarborTheme.of(context);
   final inUse = preview['in_use'] == true;
-  final reasons =
-      (preview['in_use_reasons'] as List? ?? const []).cast<String>().join(', ');
+  final reasons = (preview['in_use_reasons'] as List? ?? const [])
+      .cast<String>()
+      .join(', ');
   final result = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: Text(l10n.storeUninstallTitle(preview['package_id'] as String? ?? '')),
+      title: Text(
+          l10n.storeUninstallTitle(preview['package_id'] as String? ?? '')),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

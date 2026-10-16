@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'l10n/app_localizations.dart';
 import 'services/diagnostics.dart';
 import 'services/harbor_service.dart';
+import 'services/native_adapters.dart';
 import 'services/preferences.dart';
 import 'shell/adaptive_shell.dart';
 import 'shell/keyboard.dart';
@@ -53,39 +54,48 @@ Future<bool> importBundledCatalog(HarborService service) async {
   }
 }
 
-/// The ten product surfaces: Home · Ask · Work · Agents · Models · Store ·
-/// Skills · Knowledge · Activity · Settings.
+/// The seven product surfaces. Four are primary — Home (one conversation:
+/// questions answered inline, tasks routed to a skill's run sheet; the
+/// dashboard is its empty state) · Work · Library (the Knowledge index) ·
+/// Models (Recommended · Installed · Hugging Face · Store · Benchmark) —
+/// and three are secondary: Skills · Activity (runs, operations and
+/// scheduled goals) · Settings. Ask was merged into Home, Store into
+/// Models, and Agents (not enabled in this release) is not a destination:
+/// its working part, scheduled goals, lives in Activity.
 enum HarborSurface {
   home,
-  ask,
   work,
-  agents,
-  models,
-  store,
-  skills,
   knowledge,
+  models,
+  skills,
   activity,
   settings;
 
-  /// Primary compact destinations (bottom bar); the rest live under More.
-  static const primary = [home, ask, work, models];
-  static const secondary = [agents, store, skills, knowledge, activity, settings];
+  /// Primary destinations: the compact bottom bar (plus More) and the
+  /// upper rail group.
+  static const primary = [home, work, knowledge, models];
 
-  /// ⌘1–9 map to this stable order (a published desktop contract the
-  /// tests pin). Store is reachable from the rail, the More sheet and the
-  /// palette but takes no digit.
+  /// Under More on compact widths; the lower rail group elsewhere.
+  static const secondary = [skills, activity, settings];
+
+  /// ⌘1–7 map to this stable order (a published desktop contract the
+  /// tests pin): every destination, in rail order.
   static const shortcutOrder = [
     home,
-    ask,
     work,
-    agents,
+    knowledge,
     models,
     skills,
-    knowledge,
     activity,
     settings
   ];
 }
+
+/// Tabs of the Models surface, in display order.
+enum ModelsTab { recommended, installed, huggingFace, store, benchmark }
+
+/// Tabs of the Activity surface, in display order.
+enum ActivityTab { runs, operations, goals }
 
 /// App-level UI state (language, theme, current surface, Lens). The Rust
 /// core owns policy and runtime truth; this only mirrors presentation
@@ -111,6 +121,12 @@ class AppState extends ChangeNotifier {
 
   /// Set by ⌘O / the palette: the Work Canvas opens its picker on arrival.
   bool pendingOpenFile = false;
+
+  /// A Models tab to show on arrival (first-run install, the Store).
+  ModelsTab? pendingModelsTab;
+
+  /// An Activity tab to show on arrival (scheduled goals).
+  ActivityTab? pendingActivityTab;
 
   Locale get locale => _prefs.locale;
   ThemeMode get themeMode => _prefs.themeMode;
@@ -165,6 +181,20 @@ class AppState extends ChangeNotifier {
   void filterSkills(String query) {
     pendingSkillsFilter = query;
     surfaceIndex = HarborSurface.skills.index;
+    notifyListeners();
+  }
+
+  /// Navigate to Models on [tab] (Store and model installs live there).
+  void openModels(ModelsTab tab) {
+    pendingModelsTab = tab;
+    surfaceIndex = HarborSurface.models.index;
+    notifyListeners();
+  }
+
+  /// Navigate to Activity on [tab] (scheduled goals live there).
+  void openActivity(ActivityTab tab) {
+    pendingActivityTab = tab;
+    surfaceIndex = HarborSurface.activity.index;
     notifyListeners();
   }
 }
@@ -246,6 +276,7 @@ class _HarborAppState extends State<HarborApp> with WidgetsBindingObserver {
         libraryPath: HarborBinding.defaultLibraryPath(),
         dataRoot: dataRoot.path,
         deviceRootHex: deviceRootHex,
+        nativeAdapters: await nativeAdapterAddresses(),
       );
       await opened.refresh();
       // Import the bundled signed catalog on first run AND whenever the
@@ -295,6 +326,7 @@ class _HarborAppState extends State<HarborApp> with WidgetsBindingObserver {
   @override
   void didHaveMemoryPressure() {
     service?.releaseEmbedder();
+    service?.releaseScanModel();
   }
 
   @override
@@ -436,20 +468,14 @@ class _BootingView extends StatelessWidget {
 List<HarborDestination> harborDestinations(AppLocalizations l10n) => [
       HarborDestination(l10n.surfaceHome, Icons.home_outlined,
           selectedIcon: Icons.home),
-      HarborDestination(l10n.surfaceAsk, Icons.question_answer_outlined,
-          selectedIcon: Icons.question_answer),
       HarborDestination(l10n.surfaceWork, Icons.description_outlined,
           selectedIcon: Icons.description),
-      HarborDestination(l10n.surfaceAgents, Icons.smart_toy_outlined,
-          selectedIcon: Icons.smart_toy),
+      HarborDestination(l10n.surfaceKnowledge, Icons.local_library_outlined,
+          selectedIcon: Icons.local_library),
       HarborDestination(l10n.surfaceModels, Icons.memory_outlined,
           selectedIcon: Icons.memory),
-      HarborDestination(l10n.surfaceStore, Icons.storefront_outlined,
-          selectedIcon: Icons.storefront),
       HarborDestination(l10n.surfaceSkills, Icons.construction_outlined,
           selectedIcon: Icons.construction),
-      HarborDestination(l10n.surfaceKnowledge, Icons.library_books_outlined,
-          selectedIcon: Icons.library_books),
       HarborDestination(l10n.surfaceActivity, Icons.timeline_outlined,
           selectedIcon: Icons.timeline),
       HarborDestination(l10n.surfaceSettings, Icons.settings_outlined,
@@ -460,20 +486,14 @@ Widget surfaceFor(int index, AppState state) {
   switch (HarborSurface.values[index]) {
     case HarborSurface.home:
       return HomeSurface(state: state);
-    case HarborSurface.ask:
-      return const AskSurface();
     case HarborSurface.work:
       return const WorkSurface();
-    case HarborSurface.agents:
-      return const AgentsSurface();
-    case HarborSurface.models:
-      return const ModelsSurface();
-    case HarborSurface.store:
-      return StoreSurface(state: state);
-    case HarborSurface.skills:
-      return const SkillsSurface();
     case HarborSurface.knowledge:
       return const KnowledgeSurface();
+    case HarborSurface.models:
+      return const ModelsSurface();
+    case HarborSurface.skills:
+      return const SkillsSurface();
     case HarborSurface.activity:
       return const ActivitySurface();
     case HarborSurface.settings:

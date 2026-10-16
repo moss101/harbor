@@ -12,10 +12,12 @@ import '../widgets/ops.dart';
 import '../widgets/trust.dart';
 import 'store_surface.dart';
 
-/// Models surface (goal §23): Recommended / Library / Hugging Face /
-/// Installed / Benchmark with Fit Score first, plus Import (a real local
-/// GGUF install through the staged installer). Acquisition and import run
-/// as cancellable background ops with live progress.
+/// Models surface (goal §23): Recommended / Installed / Hugging Face /
+/// Store / Benchmark ([ModelsTab]) with Fit Score first, plus Import (a
+/// real local GGUF install through the staged installer). Acquisition and
+/// import run as cancellable background ops with live progress. Store (the
+/// products included with Harbor) was its own destination and is now a
+/// tab here; its uninstall flow lives on the Installed cards.
 class ModelsSurface extends StatefulWidget {
   const ModelsSurface({super.key});
 
@@ -25,13 +27,38 @@ class ModelsSurface extends StatefulWidget {
 
 class _ModelsSurfaceState extends State<ModelsSurface>
     with SingleTickerProviderStateMixin {
-  late final TabController _tabs = TabController(length: 5, vsync: this);
+  late final TabController _tabs =
+      TabController(length: ModelsTab.values.length, vsync: this);
   bool _importing = false;
+  AppState? _state;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final state = AppStateScope.maybeOf(context);
+    if (!identical(state, _state)) {
+      _state?.removeListener(_consumePending);
+      _state = state;
+      _state?.addListener(_consumePending);
+    }
+    _consumePending();
+  }
 
   @override
   void dispose() {
+    _state?.removeListener(_consumePending);
     _tabs.dispose();
     super.dispose();
+  }
+
+  void _show(ModelsTab tab) => _tabs.animateTo(tab.index);
+
+  /// First-run "Choose a model" and the palette's Store land on a tab.
+  void _consumePending() {
+    final tab = _state?.pendingModelsTab;
+    if (tab == null) return;
+    _state!.pendingModelsTab = null;
+    _tabs.index = tab.index;
   }
 
   /// Import a local GGUF file: package id from the file name, installed
@@ -68,7 +95,7 @@ class _ModelsSurfaceState extends State<ModelsSurface>
       content: Text(
           ok ? l10n.importModelInstalled(packageId) : l10n.importModelFailed),
     ));
-    if (ok) _tabs.animateTo(3);
+    if (ok) _show(ModelsTab.installed);
   }
 
   @override
@@ -105,11 +132,16 @@ class _ModelsSurfaceState extends State<ModelsSurface>
         padding: EdgeInsets.symmetric(
             horizontal: HarborBreakpoints.gutter(wc) - HarborSpace.s3),
         tabs: [
-          Tab(text: l10n.modelsRecommended),
-          Tab(text: l10n.modelsLibrary),
-          Tab(text: l10n.modelsHuggingFace),
-          Tab(text: l10n.modelsInstalled),
-          Tab(text: l10n.modelsBenchmark),
+          for (final tab in ModelsTab.values)
+            Tab(
+              text: switch (tab) {
+                ModelsTab.recommended => l10n.modelsRecommended,
+                ModelsTab.installed => l10n.modelsInstalled,
+                ModelsTab.huggingFace => l10n.modelsHuggingFace,
+                ModelsTab.store => l10n.modelsTabStore,
+                ModelsTab.benchmark => l10n.modelsBenchmark,
+              },
+            ),
         ],
       ),
       Expanded(
@@ -117,16 +149,12 @@ class _ModelsSurfaceState extends State<ModelsSurface>
           controller: _tabs,
           children: [
             _RecommendedTab(
-              onHuggingFace: () => _tabs.animateTo(2),
+              onHuggingFace: () => _show(ModelsTab.huggingFace),
               onImport: _importLocal,
             ),
-            HarborEmptyState(
-              icon: Icons.local_library_outlined,
-              title: l10n.modelsLibrary,
-              body: l10n.modelsLibraryEmpty,
-            ),
+            _InstalledTab(onRecommended: () => _show(ModelsTab.recommended)),
             const _HfSearchView(),
-            _InstalledTab(onRecommended: () => _tabs.animateTo(0)),
+            const StoreTab(),
             HarborEmptyState(
               icon: Icons.speed_outlined,
               title: l10n.modelsBenchmark,
@@ -192,6 +220,11 @@ class _RecommendedTab extends StatelessWidget {
               title: l10n.modelsFirstRunTitle,
               body: l10n.modelsFirstRunBody,
             ),
+          ),
+        if (service.kindProgress['acquire'] case final acquiring?)
+          Padding(
+            padding: const EdgeInsets.only(bottom: HarborSpace.s4),
+            child: OpProgressCard(progress: acquiring, service: service),
           ),
         Text(l10n.modelsCatalogHeading(service.catalog.length),
             style: t.text.captionOf(t.colors.inkMuted)),
@@ -475,6 +508,7 @@ class _InstalledTab extends StatelessWidget {
         onAction: onRecommended,
       );
     }
+    final t = HarborTheme.of(context);
     final state = AppStateScope.maybeOf(context);
     final chosen = state?.chatModel ?? models.first['id'];
     return HarborPage(
@@ -491,8 +525,11 @@ class _InstalledTab extends StatelessWidget {
               onUse: state == null
                   ? null
                   : () => state.setChatModel(m['id'] as String),
+              onUninstall: () =>
+                  uninstallModel(context, service, m['id'] as String),
             ),
           ),
+        Text(l10n.storeManageHint, style: t.text.smallOf(t.colors.inkMuted)),
       ],
     );
   }
@@ -504,11 +541,15 @@ class _InstalledCard extends StatelessWidget {
     required this.inUse,
     required this.runtimeLabel,
     required this.onUse,
+    required this.onUninstall,
   });
   final Map<String, dynamic> model;
   final bool inUse;
   final String runtimeLabel;
   final VoidCallback? onUse;
+
+  /// SEC-024 uninstall (preview, confirm, undo window).
+  final VoidCallback onUninstall;
 
   @override
   Widget build(BuildContext context) {
@@ -572,15 +613,38 @@ class _InstalledCard extends StatelessWidget {
           const SizedBox(height: HarborSpace.s3),
           Divider(height: 1, color: t.colors.borderSubtle),
           const SizedBox(height: HarborSpace.s3),
-          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Expanded(child: _FitBadge(packageId: id)),
-            if (!inUse && onUse != null)
-              TextButton.icon(
-                onPressed: onUse,
-                icon: const Icon(Icons.question_answer_outlined, size: 16),
-                label: Text(l10n.modelsUseForAsk),
-              ),
-          ]),
+          _FitBadge(packageId: id),
+          const SizedBox(height: HarborSpace.s2),
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: Wrap(
+              alignment: WrapAlignment.end,
+              spacing: HarborSpace.s2,
+              runSpacing: HarborSpace.s2,
+              children: [
+                if (!inUse && onUse != null)
+                  TextButton.icon(
+                    onPressed: onUse,
+                    icon: const Icon(Icons.question_answer_outlined, size: 16),
+                    label: Text(l10n.modelsUseForAsk),
+                  ),
+                OutlinedButton.icon(
+                  key: ValueKey('models-uninstall-$id'),
+                  style: OutlinedButton.styleFrom(
+                      foregroundColor: t.colors.danger),
+                  onPressed: onUninstall,
+                  icon: const Icon(Icons.delete_outline, size: 16),
+                  label: Text(l10n.storeUninstall),
+                ),
+              ],
+            ),
+          ),
+          // Vision-language packages (a multimodal projector ships with
+          // them) can also read scans; embedders carry media towers but are
+          // not chat/vision models, so they are not offered.
+          if (model['has_projector'] == true &&
+              !id.toLowerCase().contains('embed'))
+            _ScanModelAction(packageId: id),
         ],
       ),
     );
@@ -878,5 +942,85 @@ class _HfSearchViewState extends State<_HfSearchView> {
               style: t.text.captionOf(t.colors.inkMuted)),
         ),
     ]);
+  }
+}
+
+/// "Use for scanning": read scans with this installed vision-language model.
+/// The core checks it on a canary and says which backend it runs on; every
+/// page it reads is still listed for the person to check.
+class _ScanModelAction extends StatefulWidget {
+  const _ScanModelAction({required this.packageId});
+  final String packageId;
+
+  @override
+  State<_ScanModelAction> createState() => _ScanModelActionState();
+}
+
+class _ScanModelActionState extends State<_ScanModelAction> {
+  bool _busy = false;
+  String? _error;
+
+  Future<void> _use(HarborService service) async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await service.useForScanning(widget.packageId);
+    } catch (e) {
+      _error =
+          e.toString().replaceFirst(RegExp(r'^HarborCoreException:?\s*'), '');
+    }
+    if (mounted) setState(() => _busy = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final t = HarborTheme.of(context);
+    final service = HarborServiceProvider.of(context).notifier;
+    if (service == null) return const SizedBox.shrink();
+    final active = service.scanModel == widget.packageId;
+    final backend = service.scanBackend == 'gpu'
+        ? l10n.modelsScanBackendGpu
+        : l10n.modelsScanBackendCpu;
+    return Padding(
+      padding: const EdgeInsets.only(top: HarborSpace.s2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Expanded(
+              child: Text(
+                _busy
+                    ? l10n.modelsScanningLoading
+                    : active
+                        ? l10n.modelsScanningActive(backend)
+                        : l10n.modelsScanningNote,
+                key: ValueKey('scan-status-${widget.packageId}'),
+                style: t.text.smallOf(t.colors.inkMuted),
+              ),
+            ),
+            if (active)
+              TextButton.icon(
+                key: ValueKey('scan-stop-${widget.packageId}'),
+                onPressed: _busy ? null : service.releaseScanModel,
+                icon: const Icon(Icons.stop_circle_outlined, size: 16),
+                label: Text(l10n.modelsScanningStop),
+              )
+            else
+              TextButton.icon(
+                key: ValueKey('scan-use-${widget.packageId}'),
+                onPressed: _busy ? null : () => _use(service),
+                icon: const Icon(Icons.document_scanner_outlined, size: 16),
+                label: Text(l10n.modelsUseForScanning),
+              ),
+          ]),
+          if (_error != null)
+            Text(l10n.modelsScanningFailed(_error!),
+                style: t.text.smallOf(t.colors.statusDangerText)),
+        ],
+      ),
+    );
   }
 }

@@ -8,6 +8,11 @@ pub enum StoreError {
     Io(#[from] std::io::Error),
     #[error("cryptographic operation failed")]
     Crypto,
+    /// The platform keystore holds (or should hold) the workspace key but
+    /// refused to hand it over. Never answered by minting a new key: that
+    /// would orphan everything already sealed under the old one.
+    #[error("workspace key unavailable: {0}")]
+    KeyUnavailable(String),
     #[error("key not found: {0}")]
     KeyNotFound(String),
     #[error("blob not found: {0}")]

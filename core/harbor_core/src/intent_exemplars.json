@@ -1,0 +1,98 @@
+{
+ "run_skill": [
+  "Make a PowerPoint from the figures in this spreadsheet",
+  "Fix the broken formulas in my cash flow file",
+  "Write a cover letter based on these bullet points",
+  "Merge these two Word documents and tidy the headings",
+  "Create a tracker for job applications",
+  "Compare the old and new version of this contract",
+  "حوّل ملف الإكسل هذا إلى مستند وورد",
+  "أنشئ جدول ميزانية بسيطاً",
+  "Rédige une lettre à partir de ces notes",
+  "Nettoie ce tableau Excel"
+ ],
+ "search_documents": [
+  "What are the payment terms in the Northwind agreement?",
+  "Find the paragraph about data retention in our policy",
+  "Which file mentions the renewal date?",
+  "Look in my documents for the safety checklist",
+  "What does the handbook say about overtime?",
+  "Show me where the report discusses revenue growth",
+  "ما الذي تقوله السياسة عن الإجازات؟",
+  "أين ورد ذكر تاريخ التجديد في ملفاتي؟",
+  "Où le contrat parle-t-il de la garantie ?",
+  "Retrouve dans mes fichiers la clause de paiement"
+ ],
+ "remember_fact": [
+  "Remember that the printer is on the second floor",
+  "Please keep in mind I do not work on Sundays",
+  "Add to your notes that the Delta account manager is Karim",
+  "Memorize our VAT number ends in 4471",
+  "Make a note: quarterly reviews happen in the first week",
+  "From now on, remember that I like short summaries",
+  "تذكر أن الطابعة في الطابق الثاني",
+  "دوّن أنني لا أعمل أيام الأحد",
+  "Retiens que le comptable s'appelle Hugo",
+  "Garde en mémoire que je ne travaille pas le dimanche"
+ ],
+ "recall_memory": [
+  "What did I say about the printer?",
+  "Remind me who the Delta account manager is",
+  "When do our quarterly reviews happen?",
+  "What was my VAT number again?",
+  "Did I tell you which days I work?",
+  "What do you know about my reporting preferences?",
+  "ماذا قلت لك عن الطابعة؟",
+  "ذكّرني من هو مدير حساب دلتا",
+  "Qu'est-ce que je t'ai dit sur le comptable ?",
+  "Rappelle-moi mes jours de travail"
+ ],
+ "schedule_goal": [
+  "Run this check again every Friday afternoon",
+  "Ping me tomorrow morning about the pending approvals",
+  "Every first of the month, send me the cash summary",
+  "Schedule a weekly review of open invoices",
+  "Remind me next Tuesday to call the supplier",
+  "Do this automatically each evening",
+  "جدول مراجعة الفواتير المفتوحة كل أسبوع",
+  "ذكرني غداً صباحاً بالموافقات المعلقة",
+  "Programme un rapport chaque premier du mois",
+  "Rappelle-moi mardi prochain d'appeler le fournisseur"
+ ],
+ "read_scan": [
+  "Pull the text out of this picture of a form",
+  "Read this photographed page for me",
+  "This is a scanned PDF with no selectable text, extract the words",
+  "Recognize the text on this image of a menu",
+  "Get the figures off this scanned statement",
+  "Convert this image of a letter into editable text",
+  "اقرأ النص الموجود في صورة هذه الوثيقة",
+  "استخرج النص من ملف PDF الممسوح هذا",
+  "Reconnais le texte de cette image de document",
+  "Extrais le texte de ce PDF scanné"
+ ],
+ "transcribe_audio": [
+  "Convert this phone call recording into written text",
+  "Transcribe the interview audio",
+  "Make a text version of this dictation",
+  "Write out the speech in this sound file",
+  "I recorded my thoughts, can you type them up?",
+  "Produce a transcript of the board meeting audio",
+  "حوّل هذه المكالمة المسجلة إلى نص",
+  "فرّغ الملف الصوتي لهذه المقابلة",
+  "Fais une transcription de cet audio",
+  "Transforme cette dictée en texte"
+ ],
+ "general_chat": [
+  "What is the meaning of working capital?",
+  "Brainstorm taglines for a dental practice",
+  "How should I word a polite reminder email?",
+  "Compare leasing and buying equipment in general terms",
+  "Walk me through how VAT usually works",
+  "Give me tips for running better meetings",
+  "ما هو رأس المال العامل؟",
+  "اقترح عبارات دعائية لعيادة أسنان",
+  "Explique-moi comment fonctionne la TVA en général",
+  "Donne-moi des conseils pour mieux gérer mon temps"
+ ]
+}

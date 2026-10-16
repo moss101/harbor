@@ -1,12 +1,10 @@
 {
   "@@locale": "en",
   "surfaceHome": "Home",
-  "surfaceAsk": "Ask",
   "surfaceWork": "Work",
-  "surfaceAgents": "Agents",
   "surfaceModels": "Models",
   "surfaceSkills": "Skills",
-  "surfaceKnowledge": "Knowledge",
+  "surfaceKnowledge": "Library",
   "surfaceActivity": "Activity",
   "surfaceSettings": "Settings",
   "homeHeadline": "What do you want to get done?",
@@ -22,7 +20,6 @@
   "workEmptyBody": "Open a document, workbook, deck or PDF to see it here with version, verification and conflict state.",
   "modelsInstalled": "Installed",
   "modelsRecommended": "Recommended",
-  "modelsLibrary": "Harbor Library",
   "modelsHuggingFace": "Hugging Face",
   "modelsImport": "Import",
   "modelsBenchmark": "Benchmark",
@@ -40,15 +37,12 @@
   "settingsThemeDark": "Dark",
   "settingsPrivacy": "Workspace privacy",
   "agentsEmptyTitle": "No agents configured",
-  "agentsEmptyBody": "Agents combine a model, tools, skills, knowledge and policy. Create one to delegate multi-step work with durable, inspectable runs.",
   "skillsEmptyTitle": "Built-in skills loaded",
   "skillsEmptyBody": "Skill definitions for documents, spreadsheets, research, translation and more. Runnable ones carry an executable graph.",
-  "knowledgeEmptyTitle": "Knowledge is empty",
+  "knowledgeEmptyTitle": "Your Library is empty",
   "knowledgeEmptyBody": "Add folders or documents to build a local, citation-backed index. Sources never leave the device under Local Only.",
   "activityEmptyTitle": "No runs yet",
   "activityEmptyBody": "Durable agent runs appear here with their full Run Trail — including pause, approval and recovery states.",
-  "askEmptyTitle": "Ask works on your files",
-  "askEmptyBody": "Answers ground in your workspace with citations and abstain when evidence is insufficient.",
   "lensButton": "Lens",
   "@lensButton": {},
   "workCanvasRuleActive": "canvas ≥ {min}px rule active",
@@ -77,13 +71,11 @@
   "@modelDockEmpty": {},
   "modelDockCoreUnavailable": "Core unavailable — native runtime not loaded",
   "@modelDockCoreUnavailable": {},
-  "modelsLibraryEmpty": "Curated Harbor library packages appear here.",
-  "@modelsLibraryEmpty": {},
   "modelsHfEmpty": "Search public repositories. Model packages are data — no repository code ever executes.",
   "@modelsHfEmpty": {},
   "coreNotLoadedModels": "Native core not loaded; installed models are unavailable. Build core/harbor_ffi to enable this view.",
   "@coreNotLoadedModels": {},
-  "modelsInstalledEmpty": "Install a model from Recommended or the Library. Fit Score shows what your device can run well.",
+  "modelsInstalledEmpty": "Install a model from Recommended or Hugging Face. Fit Score shows what your device can run well.",
   "@modelsInstalledEmpty": {},
   "modelsBenchmarkEmpty": "Controlled device-local benchmark workloads with model/runtime/device identity.",
   "@modelsBenchmarkEmpty": {},
@@ -145,16 +137,15 @@
   "@askNoEvidenceTitle": {},
   "askNoEvidenceBody": "Nothing in the local index supports this question, so I am abstaining rather than guessing.",
   "@askNoEvidenceBody": {},
-  "askKnowledgeNotOpen": "Knowledge is not open yet. Install an embedding model (Models → Installed) to ground answers locally.",
+  "askKnowledgeNotOpen": "The Library is not open yet. Install an embedding model (Models → Installed) to ground answers locally.",
   "@askKnowledgeNotOpen": {},
-  "askAbstentionHeading": "I could not find support for this in your Knowledge.",
+  "askAbstentionHeading": "I could not find support for this in your Library.",
   "@askAbstentionHeading": {},
   "sendAction": "Send",
   "lensOpenTooltip": "Open the Harbor Lens inspector",
-  "askSearchTooltip": "Search Knowledge",
+  "askSearchTooltip": "Search the Library",
   "statusInstalled": "INSTALLED",
   "cancelAction": "Cancel",
-  "askGenerateTooltip": "Generate answer",
   "askAnswerHeading": "Answer",
   "askCitationsHeading": "Cited sources",
   "askExecutedOnLine": "Executed on {model} · {tokens} tokens on-device",
@@ -178,8 +169,8 @@
     }
   },
   "askInsufficientNote": "The model reports the evidence is insufficient — this answer is not grounded in your sources.",
-  "askNoChatModel": "No chat model installed. Answers need a chat model (Models → Hugging Face); with Knowledge open, retrieval-only citations still work.",
-  "askSearchOnly": "Search Knowledge",
+  "askNoChatModel": "No chat model installed. Answers need a chat model (Models → Recommended); with the Library open, retrieval-only citations still work.",
+  "askSearchOnly": "Search the Library only",
   "knowledgeSourcesHeading": "Indexed sources",
   "knowledgeChunksCount": "{count, plural, one{1 chunk} other{{count} chunks}}",
   "@knowledgeChunksCount": {
@@ -233,7 +224,6 @@
       }
     }
   },
-  "agentsUnavailableBody": "Agent orchestration is not enabled in this release. The built-in skill families (Skills tab) are available today.",
   "modelInstallAction": "Install",
   "modelInstalling": "Installing…",
   "modelInstallFailed": "Install failed",
@@ -293,7 +283,7 @@
   "lensSectionOps": "Background work",
   "lensSectionRuns": "Recent runs",
   "lensSectionModel": "Active model",
-  "lensSectionKnowledge": "Knowledge index",
+  "lensSectionKnowledge": "Library index",
   "viewAllAction": "View all",
   "trustPolicyHeading": "Workspace policy",
   "trustExecutionHeading": "Current execution",
@@ -344,10 +334,8 @@
   },
   "homeKnowledgeNotOpen": "Index not open",
   "homeOpenActivity": "Open Activity",
-  "homeRequestQueued": "Request recorded as a durable run",
   "homeRequestFailed": "The request could not be recorded",
   "quickActionsHeading": "Quick actions",
-  "askSubtitle": "Grounded answers with citations from your Knowledge",
   "askYou": "You",
   "askEvidenceHeading": "Evidence",
   "askRetrievalOnlyNote": "Retrieval only — no chat model was used.",
@@ -355,7 +343,6 @@
   "askCancelledBody": "Nothing was recorded for this question.",
   "askModelPicker": "Chat model",
   "askClearConversation": "Clear conversation",
-  "askComposerHint": "Ask about your files…",
   "askErrorTitle": "Generation failed",
   "askGroundedBadge": "GROUNDED",
   "askUngroundedBadge": "NOT GROUNDED",
@@ -449,7 +436,7 @@
   "workNoSelection": "Select a cell",
   "modelsSubtitle": "Install, inspect and choose what runs on this device",
   "modelsImportBody": "Install a local GGUF file. Packages are data only — no repository code ever executes.",
-  "modelsUseForAsk": "Use for Ask",
+  "modelsUseForAsk": "Use for answers",
   "modelsInUse": "In use",
   "modelsRuntime": "Runtime",
   "modelsFiles": "Files",
@@ -490,9 +477,6 @@
   "fitLabelTooLarge": "Too large",
   "fitLabelUnsupported": "Unsupported",
   "fileGroupModels": "Model packages",
-  "agentsSubtitle": "Profiles that combine a model, tools, skills, knowledge and policy",
-  "agentsUnavailableTitle": "Not enabled in this release",
-  "agentsWhatTitle": "What an agent profile will contain",
   "agentsPartModel": "Model",
   "agentsPartModelBody": "A qualified installed model with an explicit, sticky lock per workspace.",
   "agentsPartTools": "Tools",
@@ -501,8 +485,6 @@
   "agentsPartKnowledgeBody": "Collections the agent may cite, never sources it was not granted.",
   "agentsPartPolicy": "Policy & approvals",
   "agentsPartPolicyBody": "Protected effects pause for a Harbor Sheet review before anything is written.",
-  "agentsGoSkills": "Browse skills",
-  "agentsGoActivity": "View runs",
   "skillsSubtitle": "Built-in skill definitions. Graph skills run through the durable executor; prose skills are declarations until decomposed.",
   "skillsSearchHint": "Filter skills",
   "skillsCount": "{count, plural, one{1 skill} other{{count} skills}}",
@@ -560,7 +542,7 @@
   },
   "activityReplayFailed": "The run could not be replayed",
   "activityOpKindAcquire": "Model acquisition",
-  "activityOpKindIngest": "Knowledge indexing",
+  "activityOpKindIngest": "Library indexing",
   "activityOpKindGenerate": "Grounded generation",
   "settingsSubtitle": "Appearance, language, privacy and identity",
   "settingsThemeSystem": "System",
@@ -781,22 +763,11 @@
   "skillsSavedNewFile": "Saved as a new file",
   "skillsCopy": "Copy",
   "skillsCopied": "Copied to the clipboard",
-  "surfaceStore": "Store",
-  "storeTagline": "Included products and first-party models",
+  "storeTagline": "Products included with Harbor",
   "storeOfficeTitle": "Harbor Office Suite",
   "storeOfficeIncluded": "Included with this app",
   "storeOfficeStatus": "Spreadsheet editing, charts and highlights are live in Work; formula targets qualify as their platform gates pass.",
   "storeOfficeOpen": "Open in Work",
-  "storeModelsHeading": "Harbor models ({count})",
-  "@storeModelsHeading": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "storeModelsBody": "Signed, first-party catalog entries. Downloads are quoted and confirmed before transfer.",
-  "storeInstalledHeading": "Installed on this device",
   "storeUninstall": "Uninstall",
   "storeUninstallTitle": "Uninstall {id}?",
   "@storeUninstallTitle": {
@@ -851,7 +822,6 @@
   "storeAcquireConfirm": "Download",
   "storeUninstallFailed": "Uninstall failed",
   "storePreviewFailed": "Could not read the package",
-  "storeEmpty": "The accepted signed catalog is empty on this device.",
   "storeManageHint": "Uninstall frees every owned file; a preview shows the exact scope before anything moves.",
   "workEditHint": "Enter a value or =formula",
   "workEditCommit": "Commit cell",
@@ -892,7 +862,7 @@
   "goalsRunCompleted": "Goal completed — see Activity for the run.",
   "goalsRunFailed": "Goal run failed — the outcome is recorded on the goal.",
   "goalsClaimRefused": "This slot already ran (the claim is kept even across restarts).",
-  "goalsNoChatModel": "Install a chat model first — goals answer through Ask.",
+  "goalsNoChatModel": "Install a chat model first — goals answer with it.",
   "goalsStateActive": "Active",
   "goalsStatePaused": "Paused",
   "goalsStateDone": "Done",
@@ -920,10 +890,6 @@
   "goalsLimitLabel": "Stop after a number of runs",
   "goalsRunsCount": "{count} runs",
   "goalsCreateConfirm": "Create goal",
-  "agentsNotAutonomyTitle": "Not autonomous orchestration",
-  "agentsNotAutonomyBody": "Multi-step agent planning beyond skill graphs, and scheduled execution without a tap, are not in this release. Skills run exactly the graphs they declare, with approvals enforced.",
-  "agentsNotHandsTitle": "No computer use",
-  "agentsNotHandsBody": "Harbor never controls your screen or other apps. It works through typed tools, files you attach, and documents you approve.",
   "goalsKindPrompt": "Prompt",
   "goalsKindSkill": "Skill",
   "goalsSkillLabel": "Skill",
@@ -972,5 +938,144 @@
   "knowledgeBackendGpu": "Device default (GPU where available)",
   "knowledgeBackendCpuFallback": "CPU — this device's GPU gave inconsistent results",
   "knowledgeBackendCpuUnverified": "CPU — could not be verified",
-  "knowledgeVideoNeedsFfmpeg": "Indexing video needs FFmpeg on this computer. Install FFmpeg (or set HARBOR_FFMPEG to its location) and try again."
+  "knowledgeVideoNeedsFfmpeg": "Indexing video needs FFmpeg on this computer. Install FFmpeg (or set HARBOR_FFMPEG to its location) and try again.",
+  "settingsEngines": "On-device engines",
+  "settingsEnginesBody": "Reading scans and transcribing recordings use the operating system's own models on this device. Nothing is uploaded.",
+  "settingsEngineScans": "Scans and photos",
+  "settingsEngineVoice": "Voice recordings",
+  "settingsEngineUnavailable": "Not available on this device",
+  "captureScanTooltip": "Read a scan or photo",
+  "captureRecordTooltip": "Dictate or transcribe a recording",
+  "captureChooseFile": "Choose a file",
+  "captureTakePhoto": "Take a photo",
+  "captureRecordNow": "Record now",
+  "captureChooseRecording": "Choose a recording",
+  "captureReading": "Reading on this device…",
+  "captureTranscribing": "Transcribing on this device…",
+  "captureCancel": "Cancel",
+  "captureReviewScanTitle": "Review the text",
+  "captureReviewVoiceTitle": "Review the transcript",
+  "captureReviewBody": "Check it against the original before you use it. Nothing leaves this device.",
+  "captureEngine": "Engine: {engine}",
+  "@captureEngine": {"placeholders": {"engine": {"type": "String"}}},
+  "captureCheckPages": "Pages to check by eye: {pages}",
+  "@captureCheckPages": {"placeholders": {"pages": {"type": "String"}}},
+  "captureSuggestion": "This looks like: {kind}",
+  "@captureSuggestion": {"placeholders": {"kind": {"type": "String"}}},
+  "captureUseAsInput": "Use as input",
+  "captureDiscard": "Discard",
+  "captureRecording": "Recording…",
+  "captureStop": "Stop and transcribe",
+  "captureFailed": "Could not read this: {message}",
+  "@captureFailed": {"placeholders": {"message": {"type": "String"}}},
+  "captureMicDenied": "Microphone access is off. Allow it in system settings to record.",
+  "captureEmptyResult": "Nothing was recognised in this file.",
+  "intentRunSkill": "Do a task on your files",
+  "intentSearchDocuments": "Find something in your documents",
+  "intentRememberFact": "Remember something",
+  "intentRecallMemory": "Recall what you told Harbor",
+  "intentScheduleGoal": "Do this on a schedule",
+  "intentReadScan": "Read a scan or photo",
+  "intentTranscribeAudio": "Transcribe a recording",
+  "intentGeneralChat": "Ask or discuss",
+  "modelsUseForScanning": "Use for scanning",
+  "modelsScanningActive": "Reading scans ({backend})",
+  "@modelsScanningActive": {"placeholders": {"backend": {"type": "String"}}},
+  "modelsScanningStop": "Stop using for scans",
+  "modelsScanBackendGpu": "GPU",
+  "modelsScanBackendCpu": "CPU - this device's GPU read wrongly",
+  "modelsScanningLoading": "Loading and checking the model…",
+  "modelsScanningFailed": "This model cannot read scans: {message}",
+  "@modelsScanningFailed": {"placeholders": {"message": {"type": "String"}}},
+  "modelsScanningNote": "Pages read by a model are always listed for you to check.",
+  "fileGroupScans": "Scans and photos",
+  "fileGroupAudio": "Audio recordings",
+  "captureMicUnresponsive": "The microphone did not respond. Try again, or choose a recording instead.",
+  "composerScopeEverything": "Everything",
+  "composerScopeThisFile": "This file · {name}",
+  "@composerScopeThisFile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "composerScopeCollection": "Collection · {name}",
+  "@composerScopeCollection": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "composerModeAsk": "Ask",
+  "composerModeChange": "Change",
+  "composerModeAutoTooltip": "Harbor picks Ask or Change from your words. Tap one to choose yourself.",
+  "workCommandHintAuto": "Ask about this file, or describe a change",
+  "workCommandHintAsk": "Ask a question about this file",
+  "workCommandHintChange": "Describe the change you want",
+  "workCitationJump": "Show {label} in the file",
+  "@workCitationJump": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "workParagraph": "Paragraph {index}",
+  "@workParagraph": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "workCell": "Cell {ref}",
+  "@workCell": {
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "answerDismiss": "Dismiss",
+  "workNeedsChatModel": "Install a chat model to ask about this file. Answers are generated on this device, from this file's text only.",
+  "workNoReadableText": "This file has no text Harbor can read to answer from.",
+  "workReloadedResult": "Showing the saved result: {name}",
+  "@workReloadedResult": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "workReloadFailed": "The result was saved, but it could not be opened here",
+  "routeMatched": "Opened {skill}. Nothing changes until you run it and approve the result.",
+  "@routeMatched": {
+    "placeholders": {
+      "skill": {
+        "type": "String"
+      }
+    }
+  },
+  "routeOtherSkills": "Other skills that fit",
+  "routeNoIndex": "Skills are ranked by the Library's embedding model, which is not open. Choose a skill yourself:",
+  "routeNoMatch": "No skill clearly fits this request.",
+  "routeAmbiguous": "More than one skill could fit. Choose one:",
+  "routeNoRunnable": "No skill that can run here fits this request.",
+  "routeBrowseSkills": "Browse skills",
+  "homeAttachmentRemove": "Remove {name} from this request",
+  "@homeAttachmentRemove": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeAddToKnowledge": "Add to Library",
+  "homeAttachmentsNote": "Attached files go with this request only. Add them to the Library to search them later.",
+  "activityTabGoals": "Goals",
+  "homeTaskViewRun": "View run",
+  "homeTaskReopen": "Open again",
+  "modelsTabStore": "Store"
 }

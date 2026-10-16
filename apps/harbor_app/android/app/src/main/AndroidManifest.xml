@@ -1,12 +1,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Harbor is local-first: INTERNET is the ONLY permission the app
-         requests. It enables the user-authorized Hugging Face model
-         acquisition through the Egress Broker (per-request authorization,
-         hash verification against the signed catalog, hash-chained audit
-         log). Offline runtime (chat, artifacts, RAG, durable runs) makes no
-         network requests; Local Only is the default. No other permissions
-         are required: all storage is app-private, encrypted at rest. -->
+    <!-- Harbor is local-first. INTERNET enables the user-authorized Hugging
+         Face model acquisition through the Egress Broker (per-request
+         authorization, hash verification against the signed catalog,
+         hash-chained audit log). Offline runtime (chat, artifacts, RAG,
+         durable runs) makes no network requests; Local Only is the default.
+         RECORD_AUDIO is requested at the moment the person presses Record in
+         the composer, to dictate on this device (the on-device recognizer
+         only, never a network one); recordings are temp files deleted after
+         use. Photos use the system camera app through an intent, so no CAMERA
+         permission is declared. All storage is app-private, encrypted at
+         rest. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <application
         android:label="Harbor"
         android:name="${applicationName}"
@@ -34,6 +39,16 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Hands the system camera a cache file to write the photo to. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.capture"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/capture_paths" />
+        </provider>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
@@ -46,6 +61,9 @@
 
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE"/>
+        </intent>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>

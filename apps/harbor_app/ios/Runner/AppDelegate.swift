@@ -16,6 +16,30 @@ import UniformTypeIdentifiers
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
 
+    // OS OCR / speech engines for the core (Dart: lib/services/native_adapters.dart).
+    if let messenger = engineBridge.pluginRegistry.registrar(forPlugin: "HarborNativeAdapters")?
+      .messenger()
+    {
+      FlutterMethodChannel(name: "dev.harbor/native_adapters", binaryMessenger: messenger)
+        .setMethodCallHandler { call, result in
+          if call.method == "addresses" {
+            result(harborNativeAdapterAddresses())
+          } else {
+            result(FlutterMethodNotImplemented)
+          }
+        }
+    }
+
+    // Microphone / camera capture for the composer (Dart: lib/services/capture.dart).
+    if let messenger = engineBridge.pluginRegistry.registrar(forPlugin: "HarborCapture")?
+      .messenger()
+    {
+      FlutterMethodChannel(name: "dev.harbor/capture", binaryMessenger: messenger)
+        .setMethodCallHandler { [capture = HarborCapture()] call, result in
+          capture.handle(call.method, result: result)
+        }
+    }
+
     // Video -> sampled JPEG frames for multimodal indexing (the Rust core
     // carries no video decoder). Dart: lib/services/video_frames.dart.
     if let messenger = engineBridge.pluginRegistry.registrar(forPlugin: "HarborVideoFrames")?

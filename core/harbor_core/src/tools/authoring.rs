@@ -1193,6 +1193,33 @@ fn message_author(source: &str) -> Option<String> {
     })
 }
 
+/// A model often signs `sign_off` with the sender's own name ("Sincerely,\nOmar
+/// Haddad") although Harbor appends the name itself. When what follows the
+/// closing phrase is exactly the sender's name, drop it: nothing is lost (the
+/// name is added back) and nothing is invented. Any other name, or a name that
+/// is not the sender's, is left for the checker to refuse.
+fn closing_without_sender(sign_off: &str, sender: &str) -> String {
+    let sign_off = sign_off.trim();
+    let sender: Vec<&str> = sender.split_whitespace().collect();
+    if sender.is_empty() {
+        return sign_off.to_string();
+    }
+    let words: Vec<&str> = sign_off.split_whitespace().collect();
+    if words.len() > sender.len() {
+        let (head, tail) = words.split_at(words.len() - sender.len());
+        let same = tail.iter().zip(&sender).all(|(a, b)| {
+            a.trim_matches(|c: char| !c.is_alphanumeric())
+                .to_lowercase()
+                == b.trim_matches(|c: char| !c.is_alphanumeric())
+                    .to_lowercase()
+        });
+        if same {
+            return head.join(" ");
+        }
+    }
+    sign_off.to_string()
+}
+
 pub struct EmailVerifyDraft {
     spec: ToolSpec,
 }
@@ -1305,7 +1332,7 @@ impl Tool for EmailVerifyDraft {
                 ));
             }
         }
-        let sign_off = s(draft, "sign_off").trim().to_string();
+        let sign_off = closing_without_sender(&s(draft, "sign_off"), &sender);
         let named_in_sign_off = sign_off
             .split(|c: char| !c.is_alphanumeric() && c != '-' && c != '\'')
             .filter(|t| t.chars().next().is_some_and(char::is_uppercase))
@@ -1421,7 +1448,12 @@ impl Tool for EmailRender {
         let draft = &args["draft"];
         let subject = s(draft, "subject").trim().to_string();
         let greeting = s(draft, "greeting").trim().to_string();
-        let mut sign_off = s(draft, "sign_off").trim().to_string();
+        let mut sign_off = closing_without_sender(
+            &s(draft, "sign_off"),
+            args.get("sender_name")
+                .and_then(Value::as_str)
+                .unwrap_or(""),
+        );
         if sign_off.is_empty() {
             sign_off = "Best regards".into();
         }
@@ -1774,6 +1806,44 @@ mod tests {
         assert_eq!(problems.len(), 1, "{problems:?}");
         let p = problems[0].as_str().unwrap();
         assert!(p.contains("Row 4 (internet)") && p.contains("once"), "{p}");
+    }
+
+    /// The 1.5B model signs `sign_off` with the sender's own name even after
+    /// being told not to (live eval `email-drafting/reply`). That exact case
+    /// is normalised - the name is added back by the renderer, once - while a
+    /// different person's name is still refused.
+    #[test]
+    fn the_senders_own_name_in_the_sign_off_is_dropped_and_no_other_name_is() {
+        let message = "From: Amina Khan <amina@example.com>\nSubject: Delivery date for order 4471\n\nHi Omar,\nCan you confirm the delivery date for order 4471? Our clinic opens on 3 October and we need the equipment before then.\nThanks,\nAmina";
+        let notes = "Confirm delivery on 30 September, before their opening. The driver will call an hour before arrival.";
+        let draft = |sign_off: &str| {
+            json!({
+                "subject": "Re: Delivery date for order 4471",
+                "greeting": "Hi Amina,",
+                "paragraphs": [
+                    "The delivery date for order 4471 is confirmed as 30 September, before the clinic opens on 3 October.",
+                    "The driver will call an hour before arrival."
+                ],
+                "sign_off": sign_off
+            })
+        };
+        let verify = |sign_off: &str| {
+            call(
+                "email.verify_draft",
+                json!({"draft": draft(sign_off), "sources": [message, notes], "sender_name": "Omar Haddad"}),
+            )
+        };
+        assert_eq!(verify("Sincerely,\nOmar Haddad")["ok"], true);
+        assert_eq!(verify("Sincerely, Omar Haddad")["ok"], true);
+        assert_eq!(verify("Sincerely,\nAmina Khan")["ok"], false);
+        assert_eq!(verify("Sincerely,\nOmar Haddad\nCEO")["ok"], false);
+        let out = call(
+            "email.render",
+            json!({"draft": draft("Sincerely,\nOmar Haddad"), "sender_name": "Omar Haddad"}),
+        );
+        let text = out["text"].as_str().unwrap();
+        assert!(text.ends_with("Sincerely,\nOmar Haddad"), "{text}");
+        assert_eq!(text.matches("Omar Haddad").count(), 1, "{text}");
     }
 
     /// The reply the pinned model drafted on the iOS simulator: it greeted

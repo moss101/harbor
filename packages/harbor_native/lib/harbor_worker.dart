@@ -23,11 +23,18 @@ import 'dart:isolate';
 
 import 'package:ffi/ffi.dart';
 
-import 'harbor_ffi.dart' show HarborCoreException;
+import 'harbor_ffi.dart' show HarborCoreException, lastOpenError;
 
 class _SpawnConfig {
-  _SpawnConfig(this.ready, this.responses, this.libraryPath, this.dataRoot,
-      this.workspaceId, this.privacyMode, this.deviceRootHex);
+  _SpawnConfig(
+      this.ready,
+      this.responses,
+      this.libraryPath,
+      this.dataRoot,
+      this.workspaceId,
+      this.privacyMode,
+      this.deviceRootHex,
+      this.nativeAdapters);
   final SendPort ready;
   final SendPort responses;
   final String libraryPath;
@@ -35,6 +42,44 @@ class _SpawnConfig {
   final String workspaceId;
   final int privacyMode;
   final String? deviceRootHex;
+  final Map<String, List<int>> nativeAdapters;
+}
+
+typedef _RegisterNative = Int32 Function(
+    Pointer<Void>, Pointer<Void>, Pointer<Void>);
+typedef _RegisterDart = int Function(
+    Pointer<Void>, Pointer<Void>, Pointer<Void>);
+
+/// Hand the platform's OS-engine adapters (Apple Vision OCR, on-device speech)
+/// to the core. [adapters] maps `ocr` / `asr` to the addresses of the three C
+/// entry points (descriptor, run, free_string) in the host app. The core
+/// refuses an adapter that does not report itself on-device; a refusal or a
+/// missing symbol leaves that engine unregistered (its tools then answer a
+/// typed "no engine" error) and never prevents the workspace from opening.
+/// Returns the engines that registered.
+List<String> registerNativeAdapters(
+    DynamicLibrary lib, Map<String, List<int>> adapters) {
+  final registered = <String>[];
+  const symbols = {
+    'ocr': 'harbor_ocr_register_host',
+    'asr': 'harbor_asr_register_host',
+  };
+  for (final entry in symbols.entries) {
+    final addrs = adapters[entry.key];
+    if (addrs == null || addrs.length != 3 || addrs.any((a) => a == 0)) {
+      continue;
+    }
+    try {
+      final register =
+          lib.lookupFunction<_RegisterNative, _RegisterDart>(entry.value);
+      final code = register(Pointer.fromAddress(addrs[0]),
+          Pointer.fromAddress(addrs[1]), Pointer.fromAddress(addrs[2]));
+      if (code == 0) registered.add(entry.key);
+    } on ArgumentError {
+      // Core built without the symbol: engine stays unregistered.
+    }
+  }
+  return registered;
 }
 
 /// A long-lived background isolate owning the native workspace handle.
@@ -57,6 +102,7 @@ class HarborCoreWorker {
     required String workspaceId,
     required int privacyMode,
     String? deviceRootHex,
+    Map<String, List<int>> nativeAdapters = const {},
   }) async {
     final ready = ReceivePort();
     final responses = ReceivePort();
@@ -64,7 +110,7 @@ class HarborCoreWorker {
     final isolate = await Isolate.spawn(
       _entry,
       _SpawnConfig(ready.sendPort, responses.sendPort, libraryPath, dataRoot,
-          workspaceId, privacyMode, deviceRootHex),
+          workspaceId, privacyMode, deviceRootHex, nativeAdapters),
       onError: errors.sendPort,
       errorsAreFatal: true,
     );
@@ -190,8 +236,10 @@ class HarborCoreWorker {
         ..free(wsPtr);
       if (rootHexPtr != nullptr) malloc.free(rootHexPtr);
       if (handle == Pointer<Void>.fromAddress(0)) {
-        throw HarborCoreException('harbor_core_open failed');
+        throw HarborCoreException(
+            'harbor_core_open failed${lastOpenError(lib)}');
       }
+      registerNativeAdapters(lib, config.nativeAdapters);
       call = lib.lookupFunction<_CallNative, _CallDart>('harbor_core_call');
       stringFree = lib.lookupFunction<_StringFreeNative, _StringFreeDart>(
           'harbor_core_string_free');

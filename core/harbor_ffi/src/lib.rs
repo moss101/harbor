@@ -13,6 +13,7 @@
 //! The workspace event log and egress broker are shared across threads
 //! (`Arc`), so activity logged by a background op is durable and audited.
 
+pub mod doc_scope;
 #[cfg(feature = "gguf")]
 pub mod knowledge;
 
@@ -45,6 +46,8 @@ pub struct WorkspaceHandle {
     /// demand; decision 0011). Recommend-only: it never dispatches.
     #[cfg(feature = "gguf")]
     router: Mutex<Option<Arc<(String, harbor_core::router::SkillRouter)>>>,
+    #[cfg(feature = "gguf")]
+    intent_router: Mutex<Option<Arc<(String, harbor_core::router::SkillRouter)>>>,
     /// Shared HTTPS transport for brokered acquisition.
     transport: Arc<harbor_net::transport::UreqTransport>,
     /// The device root key source this workspace was opened with (also
@@ -187,6 +190,41 @@ fn watch_op_with(
             });
         }
     }
+}
+
+/// Validate a direct read-tool request: only Read-class `ocr.extract` and
+/// `speech.transcribe` may be called outside a skill run.
+fn read_tool_name(args: &serde_json::Value) -> Result<String, HarborError> {
+    let tool = args.get("tool").and_then(|v| v.as_str()).unwrap_or("");
+    let registry = harbor_core::tools::ToolRegistry::builtin();
+    let spec = registry
+        .spec(tool)
+        .ok_or_else(|| HarborError::Other(format!("unknown tool {tool:?}")))?;
+    if !matches!(spec.risk, harbor_core::tools::RiskClass::Read)
+        || !matches!(tool, "ocr.extract" | "speech.transcribe")
+    {
+        return Err(HarborError::Other(format!(
+            "{tool} cannot be called directly; run it through a skill"
+        )));
+    }
+    Ok(tool.to_string())
+}
+
+fn run_read_tool(
+    tool: &str,
+    artifacts: &harbor_core::tools::MemoryArtifacts,
+    args: &serde_json::Value,
+    cancel: &AtomicBool,
+) -> Result<serde_json::Value, HarborError> {
+    let registry = harbor_core::tools::ToolRegistry::builtin();
+    let host = serde_json::json!({});
+    let ctx = harbor_core::tools::ToolContext::new(artifacts, &host, cancel);
+    let allow: std::collections::BTreeSet<String> = [tool.to_string()].into();
+    let call_args = args.get("args").cloned().unwrap_or(serde_json::json!({}));
+    registry
+        .call(&ctx, tool, &call_args, &allow)
+        .map(|r| r.output)
+        .map_err(|e| HarborError::Other(e.to_string()))
 }
 
 fn spawn_op<F: FnOnce() + Send + 'static>(
@@ -612,6 +650,8 @@ pub extern "C" fn harbor_core_open_ex(
             chat: None,
             #[cfg(feature = "gguf")]
             router: Mutex::new(None),
+            #[cfg(feature = "gguf")]
+            intent_router: Mutex::new(None),
             transport: Arc::new(harbor_net::transport::UreqTransport::new()),
             keystore,
             catalog: load_catalog_state(&opts.data_root),
@@ -620,8 +660,102 @@ pub extern "C" fn harbor_core_open_ex(
         })
     });
     match result {
-        Ok(Ok(h)) => Box::into_raw(Box::new(h)),
-        _ => ptr::null_mut(),
+        Ok(Ok(h)) => {
+            set_last_open_error(String::new());
+            Box::into_raw(Box::new(h))
+        }
+        Ok(Err(e)) => {
+            set_last_open_error(e.to_string());
+            ptr::null_mut()
+        }
+        Err(_) => {
+            set_last_open_error("the core panicked while opening the workspace".into());
+            ptr::null_mut()
+        }
+    }
+}
+
+static LAST_OPEN_ERROR: Mutex<String> = Mutex::new(String::new());
+
+fn set_last_open_error(msg: String) {
+    if let Ok(mut g) = LAST_OPEN_ERROR.lock() {
+        *g = msg;
+    }
+}
+
+/// Why the most recent `harbor_core_open*` returned null (empty when it did
+/// not). The app shows this instead of a bare "open failed". Free with
+/// [`harbor_core_string_free`].
+#[no_mangle]
+pub extern "C" fn harbor_core_last_open_error() -> *mut c_char {
+    let msg = LAST_OPEN_ERROR
+        .lock()
+        .map(|g| g.clone())
+        .unwrap_or_default();
+    CString::new(msg.replace('\0', " "))
+        .map(|c| c.into_raw())
+        .unwrap_or(ptr::null_mut())
+}
+
+/// Register the platform's OCR adapter (e.g. Apple Vision compiled into the
+/// Runner) with this process. Returns 0 on success, non-zero when the adapter
+/// is refused (not on-device, wrong schema). The function pointers and their
+/// library must stay alive for the life of the process.
+///
+/// # Safety
+/// The three function pointers must follow `native/apple/include/harbor_ocr_host.h`.
+#[no_mangle]
+pub unsafe extern "C" fn harbor_ocr_register_host(
+    descriptor: unsafe extern "C" fn() -> *mut c_char,
+    recognize: unsafe extern "C" fn(
+        *const c_char,
+        *const u8,
+        usize,
+        *const std::sync::atomic::AtomicBool,
+        *mut *mut c_char,
+    ) -> std::ffi::c_int,
+    free_string: unsafe extern "C" fn(*mut c_char),
+) -> std::ffi::c_int {
+    match harbor_inference::ocr::register_ocr_host(harbor_inference::ocr::OcrHostVtable {
+        descriptor,
+        recognize,
+        free_string,
+    }) {
+        Ok(()) => 0,
+        Err(e) => {
+            set_last_open_error(format!("OCR host refused: {e}"));
+            1
+        }
+    }
+}
+
+/// Register the platform's speech adapter. Same contract as
+/// [`harbor_ocr_register_host`], for `native/apple/include/harbor_asr_host.h`.
+///
+/// # Safety
+/// The three function pointers must follow the ASR host header.
+#[no_mangle]
+pub unsafe extern "C" fn harbor_asr_register_host(
+    descriptor: unsafe extern "C" fn() -> *mut c_char,
+    transcribe: unsafe extern "C" fn(
+        *const c_char,
+        *const u8,
+        usize,
+        *const std::sync::atomic::AtomicBool,
+        *mut *mut c_char,
+    ) -> std::ffi::c_int,
+    free_string: unsafe extern "C" fn(*mut c_char),
+) -> std::ffi::c_int {
+    match harbor_inference::asr::register_asr_host(harbor_inference::asr::AsrHostVtable {
+        descriptor,
+        transcribe,
+        free_string,
+    }) {
+        Ok(()) => 0,
+        Err(e) => {
+            set_last_open_error(format!("speech host refused: {e}"));
+            1
+        }
     }
 }
 
@@ -994,6 +1128,81 @@ fn running_acquire_subjects() -> Vec<String> {
 /// Parse a goal request from FFI args (decision 0011): a free prompt or
 /// a skill reference. The request is fixed at creation — a goal never
 /// widens its own authority.
+/// The three nearest CURRENT memories to `text`, with scores, for the
+/// possible-restatement-or-contradiction prompt. Best effort: without an
+/// open index (or on any search error) there is simply nothing to show.
+fn similar_memories(ws: &WorkspaceHandle, text: &str) -> Vec<serde_json::Value> {
+    #[cfg(feature = "gguf")]
+    {
+        let Some(ks) = ws.knowledge.as_ref() else {
+            return Vec::new();
+        };
+        let Ok(hits) = ks.search_memory(text.trim(), 3) else {
+            return Vec::new();
+        };
+        hits.into_iter()
+            .filter_map(|(id, score)| {
+                let rec = ws.inner.memory.get(&id).ok().flatten()?;
+                rec.superseded_by
+                    .is_none()
+                    .then(|| serde_json::json!({ "memory": rec, "score": score }))
+            })
+            .collect()
+    }
+    #[cfg(not(feature = "gguf"))]
+    {
+        let _ = (ws, text);
+        Vec::new()
+    }
+}
+
+/// State name and final blackboard of a run, if it has a snapshot. A run
+/// with none is `STARTING` (or was never started).
+fn workflow_run_view(ws: &WorkspaceHandle, run_id: &str) -> (String, Option<serde_json::Value>) {
+    use harbor_core::executor::RunStateStore as _;
+    let store = harbor_core::executor::BlobStateStore::new(
+        ws.inner.blobs_arc(),
+        &ws.inner.workspace_id,
+        &ws.data_root,
+    );
+    match store.load(run_id) {
+        Ok(Some(snap)) => match ws.inner.agent_log.run_state(run_id) {
+            Ok((state, _, _)) => (state.as_str().to_string(), Some(snap.state)),
+            Err(_) => ("STARTING".into(), None),
+        },
+        _ => ("STARTING".into(), None),
+    }
+}
+
+fn workflow_prior_states(ws: &WorkspaceHandle, run_ids: &[String]) -> Vec<serde_json::Value> {
+    run_ids
+        .iter()
+        .map(|r| {
+            workflow_run_view(ws, r)
+                .1
+                .unwrap_or(serde_json::Value::Null)
+        })
+        .collect()
+}
+
+fn workflow_start_step(
+    ws: &mut WorkspaceHandle,
+    skill_id: &str,
+    inputs: serde_json::Value,
+    chat_package: &Option<String>,
+    run_id: &str,
+    artifacts: Option<&serde_json::Value>,
+) -> Result<serde_json::Value, HarborError> {
+    let mut a = serde_json::json!({"skill_id": skill_id, "inputs": inputs, "run_id": run_id});
+    if let Some(art) = artifacts {
+        a["artifacts"] = art.clone();
+    }
+    if let Some(c) = chat_package {
+        a["chat_package"] = serde_json::json!(c);
+    }
+    dispatch(ws, "op.start_skill_run", &a)
+}
+
 fn parse_goal_request(v: &serde_json::Value) -> Result<harbor_agent::GoalRequest, HarborError> {
     let kind = v.get("kind").and_then(|k| k.as_str()).unwrap_or("");
     match kind {
@@ -1176,6 +1385,7 @@ fn dispatch(
                 Some(v) => serde_json::from_value(v.clone())
                     .map_err(|e| HarborError::Other(format!("bad provenance: {e}")))?,
             };
+            let similar = similar_memories(ws, &text);
             let id = harbor_security::HarborId::generate("mem").to_string();
             let record = ws
                 .inner
@@ -1185,6 +1395,8 @@ fn dispatch(
                     text,
                     provenance,
                     created_at: harbor_core::Workspace::now(),
+                    supersedes: None,
+                    superseded_by: None,
                 })
                 .map_err(|e| HarborError::Other(e.to_string()))?;
             // Index it. A memory that cannot be embedded is not
@@ -1213,7 +1425,85 @@ fn dispatch(
                 let _ = ws.inner.memory.delete(&id);
                 return Err(e);
             }
-            Ok(serde_json::to_value(&record).unwrap_or(serde_json::json!({})))
+            // `similar` lets the app show "this may restate or contradict
+            // ..." BEFORE the user moves on. Nothing is resolved here: a
+            // similarity score cannot tell agreement from contradiction,
+            // so the person decides (keep both, correct, or delete).
+            let mut out = serde_json::to_value(&record).unwrap_or(serde_json::json!({}));
+            out["similar"] = serde_json::Value::Array(similar);
+            Ok(out)
+        }
+        "memory.correct" => {
+            let old_id = args.get("id").and_then(|v| v.as_str()).unwrap_or("");
+            let text = args.get("text").and_then(|v| v.as_str()).unwrap_or("");
+            if text.trim().is_empty() {
+                return Err(HarborError::Other("text is required".into()));
+            }
+            let old = ws
+                .inner
+                .memory
+                .get(old_id)
+                .map_err(|e| HarborError::Other(e.to_string()))?
+                .ok_or_else(|| HarborError::Other(format!("memory not found: {old_id}")))?;
+            if old.superseded_by.is_some() {
+                return Err(HarborError::Other(format!(
+                    "memory {old_id} was already corrected; correct the newer record"
+                )));
+            }
+            let new_id = harbor_security::HarborId::generate("mem").to_string();
+            #[cfg(feature = "gguf")]
+            {
+                // Index the correction first: if it cannot be embedded,
+                // nothing has changed and the old memory still stands.
+                let ks = ws
+                    .knowledge
+                    .as_ref()
+                    .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
+                let title: String = text.trim().chars().take(60).collect();
+                ks.ingest(&[(
+                    harbor_agent::memory::source_id(&new_id),
+                    title,
+                    text.trim().to_string(),
+                )])
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            }
+            #[cfg(not(feature = "gguf"))]
+            {
+                let _ = new_id;
+                return Err(HarborError::Other(
+                    "model features are not included in this build".into(),
+                ));
+            }
+            #[cfg(feature = "gguf")]
+            {
+                let stored = ws.inner.memory.correct(
+                    old_id,
+                    harbor_agent::MemoryRecord {
+                        id: new_id.clone(),
+                        text: text.to_string(),
+                        provenance: harbor_agent::Provenance::User,
+                        created_at: harbor_core::Workspace::now(),
+                        supersedes: None,
+                        superseded_by: None,
+                    },
+                );
+                let ks = ws.knowledge.as_ref();
+                match stored {
+                    Ok(rec) => {
+                        // The stale fact stops being retrievable at once.
+                        if let Some(ks) = ks {
+                            let _ = ks.remove_source(&harbor_agent::memory::source_id(old_id));
+                        }
+                        Ok(serde_json::to_value(&rec).unwrap_or(serde_json::json!({})))
+                    }
+                    Err(e) => {
+                        if let Some(ks) = ks {
+                            let _ = ks.remove_source(&harbor_agent::memory::source_id(&new_id));
+                        }
+                        Err(HarborError::Other(e.to_string()))
+                    }
+                }
+            }
         }
         "memory.list" => {
             let memories = ws
@@ -1590,6 +1880,10 @@ fn dispatch(
                     "min_revision": m.runtime.min_revision,
                     "files": m.files.len(),
                     "total_bytes": total,
+                    // A multimodal projector ships with the package: it can read
+                    // images (vision-language chat models, and the embedder's
+                    // media towers - the app filters those by id).
+                    "has_projector": m.files.iter().any(|f| f.role == "mmproj"),
                 }));
             }
             Ok(serde_json::json!({ "models": out }))
@@ -2425,6 +2719,223 @@ fn dispatch(
             Ok(serde_json::json!({ "skills": out }))
         }
         // --- skill routing (decision 0011): recommend-only --------------
+        // Read-class tools called from the app: OCR of an attached scan or
+        // photo, transcription of an attached recording. They only READ and
+        // return text (decision 0019); anything that proposes or commits goes
+        // through a skill run and its approvals, never through here.
+        "tools.read" => {
+            let tool = read_tool_name(args)?;
+            let artifacts = decode_artifacts(args)?;
+            run_read_tool(&tool, &artifacts, args, &AtomicBool::new(false))
+        }
+        // Same call, off the core worker: a vision-model OCR takes 17-90 s on
+        // CPU, so the app starts it as an op, polls `op.status` and can
+        // `op.cancel` it (the op's cancel flag is the tool's cancel flag).
+        "op.start_tools_read" => {
+            let tool = read_tool_name(args)?;
+            let artifacts = decode_artifacts(args)?;
+            let args = args.clone();
+            let (op_id, entry) = register_op("tools_read", "");
+            let entry_clone = entry.clone();
+            spawn_op(entry.clone(), ws.diagnostics.clone(), move || {
+                let result = run_read_tool(&tool, &artifacts, &args, &entry_clone.progress.cancel)
+                    .map_err(|e| e.to_string());
+                let cancelled = entry_clone.progress.is_cancelled();
+                complete_op(&entry_clone, result, cancelled);
+            });
+            Ok(serde_json::json!({ "op_id": op_id }))
+        }
+        // The decision layer beyond skills (decision 0019): what KIND of action
+        // does a request need, or which of the caller's own options fits? The
+        // installed embedder ranks (a learned head over its vectors for the
+        // built-in action kinds); a custom option set is ranked only, since
+        // no benchmark exists for it. RECOMMEND-ONLY: it starts, approves and
+        // authorizes nothing, whatever the scores say.
+        "decision.choose" => {
+            #[cfg(not(feature = "gguf"))]
+            {
+                let _ = args;
+                return Err(HarborError::Other(
+                    "model features are not included in this build".into(),
+                ));
+            }
+            #[cfg(feature = "gguf")]
+            {
+                use harbor_core::router::{DecisionTask, RouteItem, SkillRouter};
+                let text = args
+                    .get("text")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .trim()
+                    .to_string();
+                if text.is_empty() {
+                    return Err(HarborError::Other("text is required".into()));
+                }
+                let ks = ws
+                    .knowledge
+                    .as_ref()
+                    .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
+                ks.ensure_loaded()
+                    .map_err(|e| HarborError::Other(e.to_string()))?;
+                let package = ks.embedding_package().to_string();
+                let model = harbor_inference::provider::ModelRef::InstalledPackage {
+                    package_id: package.clone(),
+                };
+                let custom: Option<Vec<RouteItem>> = match args.get("options") {
+                    None | Some(serde_json::Value::Null) => None,
+                    Some(v) => {
+                        let list = v
+                            .as_array()
+                            .ok_or_else(|| HarborError::Other("options must be a list".into()))?;
+                        if list.len() < 2 || list.len() > 64 {
+                            return Err(HarborError::Other(
+                                "options needs between 2 and 64 entries".into(),
+                            ));
+                        }
+                        let mut out = Vec::new();
+                        for o in list {
+                            let id = o.get("id").and_then(|x| x.as_str()).unwrap_or("").trim();
+                            let desc = o
+                                .get("description")
+                                .and_then(|x| x.as_str())
+                                .unwrap_or("")
+                                .trim();
+                            if id.is_empty() || desc.is_empty() {
+                                return Err(HarborError::Other(
+                                    "every option needs an id and a description".into(),
+                                ));
+                            }
+                            out.push(RouteItem {
+                                id: id.into(),
+                                title: o.get("title").and_then(|x| x.as_str()).unwrap_or(id).into(),
+                                description: desc.into(),
+                                examples: Vec::new(),
+                            });
+                        }
+                        Some(out)
+                    }
+                };
+                let (task, router) = match custom {
+                    Some(items) => (
+                        "custom",
+                        Arc::new((
+                            String::new(),
+                            SkillRouter::prewarm_items(
+                                &items,
+                                DecisionTask::Custom,
+                                &ks.embedder(),
+                                &model,
+                                ks.truncation(),
+                            )
+                            .map_err(|e| HarborError::Other(e.to_string()))?,
+                        )),
+                    ),
+                    None => {
+                        let cache_key = format!("{package}@{:?}", ks.truncation());
+                        let cached = {
+                            let c = ws.intent_router.lock().unwrap();
+                            match c.as_ref() {
+                                Some(e) if e.0 == cache_key => Some(Arc::clone(e)),
+                                _ => None,
+                            }
+                        };
+                        let r = match cached {
+                            Some(r) => r,
+                            None => {
+                                let r = Arc::new((
+                                    cache_key,
+                                    SkillRouter::prewarm_items(
+                                        &harbor_core::decision::intent_catalog(),
+                                        DecisionTask::Intent,
+                                        &ks.embedder(),
+                                        &model,
+                                        ks.truncation(),
+                                    )
+                                    .map_err(|e| HarborError::Other(e.to_string()))?,
+                                ));
+                                *ws.intent_router.lock().unwrap() = Some(r.clone());
+                                r
+                            }
+                        };
+                        ("intent", r)
+                    }
+                };
+                let d = router
+                    .1
+                    .evaluate_calibrated(&ks.embedder(), &model, &text)
+                    .map_err(|e| HarborError::Other(e.to_string()))?;
+                Ok(serde_json::json!({
+                    "task": task,
+                    "recommend_only": true,
+                    "abstained": d.abstained,
+                    "reason": d.reason.map(|r| match r {
+                        harbor_core::router::AbstainReason::NoConfidentMatch => "no_confident_match",
+                        harbor_core::router::AbstainReason::Ambiguous => "ambiguous",
+                        harbor_core::router::AbstainReason::Uncalibrated => "uncalibrated",
+                    }),
+                    "ranked": d.ranked.iter().map(|h| serde_json::json!({
+                        "id": h.skill_id, "title": h.title, "score": h.score })).collect::<Vec<_>>(),
+                    "calibration": router.1.calibration().map(|c| serde_json::json!({
+                        "id": c.id, "version": c.version, "evidence": c.evidence })),
+                    "embedding_package": package,
+                }))
+            }
+        }
+        // OCR through an installed vision-language model (decision 0019): the
+        // engine every platform has. The platform's own engine (Apple Vision)
+        // registers through `harbor_ocr_register_host` at launch instead.
+        "ocr.open" => {
+            #[cfg(not(all(feature = "gguf", feature = "multimodal")))]
+            {
+                let _ = args;
+                return Err(HarborError::Other(
+                    "vision models are not included in this build".into(),
+                ));
+            }
+            #[cfg(all(feature = "gguf", feature = "multimodal"))]
+            {
+                let package = args
+                    .get("package_id")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| HarborError::Other("package_id is required".into()))?
+                    .to_string();
+                let provider =
+                    harbor_inference::GgufLlamaCppProvider::new(ws.data_root.join("models"))
+                        .map_err(|e| HarborError::Other(e.to_string()))?;
+                let model = harbor_inference::provider::ModelRef::InstalledPackage {
+                    package_id: package.clone(),
+                };
+                use harbor_inference::ModelProvider as _;
+                provider
+                    .load(&model)
+                    .map_err(|e| HarborError::Other(e.to_string()))?;
+                let (engine, backend) = harbor_inference::vision_ocr::VisionOcr::open_verified(
+                    &provider, &model, &package,
+                )
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+                use harbor_inference::ocr::OcrEngine as _;
+                let name = engine.name();
+                harbor_inference::ocr::register_ocr_engine(Arc::new(engine));
+                Ok(serde_json::json!({ "engine": name, "backend": backend }))
+            }
+        }
+        "ocr.status" => Ok(match harbor_inference::ocr::ocr_host() {
+            Ok(e) => {
+                serde_json::json!({ "available": true, "engine": e.name(), "reads_pdf": e.reads_pdf(), "languages": e.languages() })
+            }
+            Err(_) => serde_json::json!({ "available": false }),
+        }),
+        // Drop the vision-model engine (its weights) and fall back to the
+        // platform's own engine, if the device has one.
+        "ocr.release" => {
+            let fallback = harbor_inference::ocr::release_ocr_engine();
+            Ok(serde_json::json!({ "released": true, "platform_engine_available": fallback }))
+        }
+        "speech.status" => Ok(match harbor_inference::asr::asr_engine() {
+            Ok(e) => serde_json::json!({ "available": true, "engine": e.name(),
+                    "installed_locales": e.installed_locales(), "supported_locales": e.supported_locales() }),
+            Err(_) => serde_json::json!({ "available": false }),
+        }),
         "skills.suggest" => {
             // Lean builds (no gguf runtime): this arm needs the
             // embedding model and refuses with a typed error.
@@ -2847,6 +3358,206 @@ fn dispatch(
                 })),
                 Err(e) => Err(HarborError::Other(e.to_string())),
             }
+        }
+        // --- multi-skill workflows (decision 0018) ---------------------------
+        // A workflow is an ordered list of ordinary skill runs; each keeps
+        // its own approvals. The record only remembers which runs belong to
+        // it. Run ids are written ahead of the start and pinned, so an
+        // advance repeated after a crash cannot start a step twice.
+        "workflow.templates" => {
+            let list: Vec<serde_json::Value> = harbor_core::workflow::templates()
+                .iter()
+                .map(|t| {
+                    serde_json::json!({
+                        "id": t.id, "title": t.title, "description": t.description,
+                        "required_inputs": t.required, "one_of": t.one_of,
+                        "steps": t.steps.iter().map(|s| s.skill_id).collect::<Vec<_>>(),
+                    })
+                })
+                .collect();
+            Ok(serde_json::json!({ "templates": list }))
+        }
+        "workflow.start" => {
+            let tid = args.get("template").and_then(|v| v.as_str()).unwrap_or("");
+            let t = harbor_core::workflow::find(tid)
+                .ok_or_else(|| HarborError::Other(format!("unknown workflow template {tid:?}")))?;
+            let inputs = args.get("inputs").cloned().unwrap_or(serde_json::json!({}));
+            t.validate_inputs(&inputs).map_err(HarborError::Other)?;
+            let chat = args
+                .get("chat_package")
+                .and_then(|v| v.as_str())
+                .map(str::to_string);
+            let first = t.step_inputs(0, &inputs, &[]).map_err(HarborError::Other)?;
+            let id = harbor_security::HarborId::generate("wf").to_string();
+            let run_id = harbor_security::HarborId::generate("run").to_string();
+            let record = harbor_agent::WorkflowRecord {
+                id: id.clone(),
+                template: t.id.to_string(),
+                chat_package: chat.clone(),
+                inputs,
+                created_at: harbor_core::Workspace::now(),
+                run_ids: vec![run_id.clone()],
+                status: "running".into(),
+                stop_reason: None,
+            };
+            ws.inner
+                .workflows
+                .create(record)
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let started = workflow_start_step(
+                ws,
+                t.steps[0].skill_id,
+                first,
+                &chat,
+                &run_id,
+                args.get("artifacts"),
+            );
+            match started {
+                Ok(op) => Ok(serde_json::json!({
+                    "workflow_id": id, "step": 0, "run_id": run_id, "op_id": op["op_id"],
+                })),
+                Err(e) => {
+                    let _ = ws.inner.workflows.delete(&id);
+                    Err(e)
+                }
+            }
+        }
+        "workflow.list" => {
+            let all = ws
+                .inner
+                .workflows
+                .list()
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            Ok(serde_json::json!({ "workflows": all }))
+        }
+        "workflow.status" => {
+            let id = args
+                .get("workflow_id")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+            let rec = ws
+                .inner
+                .workflows
+                .get(id)
+                .map_err(|e| HarborError::Other(e.to_string()))?
+                .ok_or_else(|| HarborError::Other(format!("workflow not found: {id}")))?;
+            let t = harbor_core::workflow::find(&rec.template)
+                .ok_or_else(|| HarborError::Other("workflow template no longer exists".into()))?;
+            let steps: Vec<serde_json::Value> = t
+                .steps
+                .iter()
+                .enumerate()
+                .map(|(i, s)| match rec.run_ids.get(i) {
+                    Some(run) => {
+                        let (state, _) = workflow_run_view(ws, run);
+                        serde_json::json!({"step": i, "skill_id": s.skill_id, "run_id": run, "state": state})
+                    }
+                    None => serde_json::json!({"step": i, "skill_id": s.skill_id, "run_id": null, "state": "NOT_STARTED"}),
+                })
+                .collect();
+            Ok(serde_json::json!({ "workflow": rec, "steps": steps }))
+        }
+        "workflow.advance" => {
+            let id = args
+                .get("workflow_id")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+            let mut rec = ws
+                .inner
+                .workflows
+                .get(id)
+                .map_err(|e| HarborError::Other(e.to_string()))?
+                .ok_or_else(|| HarborError::Other(format!("workflow not found: {id}")))?;
+            let t = harbor_core::workflow::find(&rec.template)
+                .ok_or_else(|| HarborError::Other("workflow template no longer exists".into()))?;
+            if rec.status != "running" {
+                return Ok(serde_json::json!({
+                    "advanced": false, "status": rec.status, "reason": rec.stop_reason,
+                }));
+            }
+            let last = rec.run_ids.len() - 1;
+            let (state, snap_state) = workflow_run_view(ws, &rec.run_ids[last]);
+            let stop = |ws: &mut WorkspaceHandle,
+                        rec: &mut harbor_agent::WorkflowRecord,
+                        reason: String|
+             -> Result<serde_json::Value, HarborError> {
+                rec.status = "stopped".into();
+                rec.stop_reason = Some(reason.clone());
+                ws.inner
+                    .workflows
+                    .update(rec.clone())
+                    .map_err(|e| HarborError::Other(e.to_string()))?;
+                Ok(serde_json::json!({"advanced": false, "status": "stopped", "reason": reason}))
+            };
+            match state.as_str() {
+                "COMPLETED" => {}
+                "FAILED" | "CANCELLED" => {
+                    return stop(ws, &mut rec, format!("step {last} ended {state}"));
+                }
+                "STARTING" => {
+                    // No snapshot yet: either still starting or the process
+                    // died between the write-ahead and the start. Starting
+                    // again under the SAME pinned run id is idempotent.
+                    let prior = workflow_prior_states(ws, &rec.run_ids[..last]);
+                    let inputs = t
+                        .step_inputs(last, &rec.inputs, &prior)
+                        .map_err(HarborError::Other)?;
+                    let run = rec.run_ids[last].clone();
+                    let chat = rec.chat_package.clone();
+                    let _ =
+                        workflow_start_step(ws, t.steps[last].skill_id, inputs, &chat, &run, None);
+                    return Ok(serde_json::json!({"advanced": false, "waiting": "STARTING"}));
+                }
+                other => {
+                    return Ok(serde_json::json!({"advanced": false, "waiting": other}));
+                }
+            }
+            let state_json = snap_state.unwrap_or(serde_json::Value::Null);
+            // A rejected approval, or a run that ended asking for input,
+            // stops the chain: later steps would be built on nothing.
+            if let Some(approvals) = state_json.get("approvals").and_then(|a| a.as_object()) {
+                if approvals
+                    .values()
+                    .any(|a| a.get("approved") == Some(&serde_json::json!(false)))
+                {
+                    return stop(ws, &mut rec, format!("step {last} was not approved"));
+                }
+            }
+            if state_json.get("approvals").is_none() {
+                return stop(
+                    ws,
+                    &mut rec,
+                    format!("step {last} finished without a proposal to approve"),
+                );
+            }
+            if last + 1 >= t.steps.len() {
+                rec.status = "done".into();
+                ws.inner
+                    .workflows
+                    .update(rec.clone())
+                    .map_err(|e| HarborError::Other(e.to_string()))?;
+                return Ok(serde_json::json!({"advanced": false, "status": "done"}));
+            }
+            let prior = workflow_prior_states(ws, &rec.run_ids);
+            let inputs = t
+                .step_inputs(last + 1, &rec.inputs, &prior)
+                .map_err(HarborError::Other);
+            let inputs = match inputs {
+                Ok(i) => i,
+                Err(e) => return stop(ws, &mut rec, e.to_string()),
+            };
+            let run_id = harbor_security::HarborId::generate("run").to_string();
+            rec.run_ids.push(run_id.clone());
+            ws.inner
+                .workflows
+                .update(rec.clone())
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let chat = rec.chat_package.clone();
+            let op =
+                workflow_start_step(ws, t.steps[last + 1].skill_id, inputs, &chat, &run_id, None)?;
+            Ok(serde_json::json!({
+                "advanced": true, "step": last + 1, "run_id": run_id, "op_id": op["op_id"],
+            }))
         }
         "run.snapshot" => {
             let run_id = args
@@ -3830,6 +4541,15 @@ fn dispatch(
                     .get("run_id")
                     .and_then(|v| v.as_str())
                     .map(str::to_string);
+                // Optional document scope ("Ask about this file"): ground
+                // ONLY on host-supplied passages; the index is not searched.
+                let document = match args.get("document") {
+                    None | Some(serde_json::Value::Null) => None,
+                    Some(d) => Some(
+                        crate::doc_scope::parse_document(d)
+                            .map_err(|e| HarborError::Other(format!("invalid document: {e}")))?,
+                    ),
+                };
                 let (op_id, entry) = register_op("generate", &chat_package);
                 let knowledge = ws.knowledge.clone();
                 let chat = ws
@@ -3845,12 +4565,44 @@ fn dispatch(
                 let progress = entry.progress.clone();
                 let entry_clone = entry.clone();
                 spawn_op(entry.clone(), ws.diagnostics.clone(), move || {
-                    // 1. Retrieve grounding (may be absent).
-                    let citations = knowledge
+                    // 1. Retrieve grounding (may be absent). Document scope:
+                    //    select among the supplied passages instead (embedding
+                    //    rank when an index model is open, else lexical).
+                    let mut scope = None;
+                    let citations = match &document {
+                        None => knowledge
+                            .as_ref()
+                            .and_then(|ks| ks.search(&question, 3).ok())
+                            .and_then(|v| v.get("citations").cloned())
+                            .unwrap_or_else(|| serde_json::json!([])),
+                        Some(doc) => {
+                            let embed = |texts: &[&str]| {
+                                knowledge
+                                    .as_ref()
+                                    .ok_or_else(|| "knowledge not open".to_string())?
+                                    .embed_passages(&question, &doc.name, texts)
+                                    .map_err(|e| e.to_string())
+                            };
+                            let embed_ref: crate::doc_scope::Embed<'_> = &embed;
+                            let (selected, ranking) = crate::doc_scope::select(
+                                doc,
+                                &question,
+                                knowledge.as_ref().map(|_| embed_ref),
+                            );
+                            scope = Some(serde_json::json!({
+                                "kind": "document",
+                                "name": doc.name,
+                                "passages_total": doc.passages.len(),
+                                "passages_used": selected.len(),
+                                "ranking": ranking.as_str(),
+                            }));
+                            serde_json::Value::Array(crate::doc_scope::citations(doc, &selected))
+                        }
+                    };
+                    let scope_note = document
                         .as_ref()
-                        .and_then(|ks| ks.search(&question, 3).ok())
-                        .and_then(|v| v.get("citations").cloned())
-                        .unwrap_or_else(|| serde_json::json!([]));
+                        .map(|d| format!(" [document-scoped: {}]", d.name))
+                        .unwrap_or_default();
                     // 2. Durable activity: the question is the run's step.
                     if let Some(run) = &run_id {
                         let step_seq = agent_log
@@ -3865,7 +4617,7 @@ fn dispatch(
                             EventType::RunStepStarted,
                             EventPayload::StepStarted {
                                 step_id: format!("step-{}", step_seq + 1),
-                                description: question.clone(),
+                                description: format!("{question}{scope_note}"),
                                 node_id: None,
                                 input_hash: None,
                             },
@@ -3891,7 +4643,7 @@ fn dispatch(
                                     .and_then(|s| s.last().map(|h| h.counters.step_count_total))
                                     .unwrap_or(1);
                                 let summary = format!(
-                                    "{} ({} tokens, citations: {})",
+                                    "{} ({} tokens, citations: {}){scope_note}",
                                     truncate_for_trail(&answer.answer, 200),
                                     answer.completion_tokens,
                                     answer.used_citations,
@@ -3911,21 +4663,21 @@ fn dispatch(
                                     false,
                                 );
                             }
-                            complete_op(
-                                &entry_clone,
-                                Ok(serde_json::json!({
-                                    "answer": answer.answer,
-                                    "used_citations": answer.used_citations,
-                                    "executed_on": answer.executed_on,
-                                    "execution": "ON_DEVICE",
-                                    "citations": citations,
-                                    "usage": {
-                                        "prompt_tokens": answer.prompt_tokens,
-                                        "completion_tokens": answer.completion_tokens,
-                                    },
-                                })),
-                                false,
-                            );
+                            let mut out = serde_json::json!({
+                                "answer": answer.answer,
+                                "used_citations": answer.used_citations,
+                                "executed_on": answer.executed_on,
+                                "execution": "ON_DEVICE",
+                                "citations": citations,
+                                "usage": {
+                                    "prompt_tokens": answer.prompt_tokens,
+                                    "completion_tokens": answer.completion_tokens,
+                                },
+                            });
+                            if let Some(scope) = scope {
+                                out["scope"] = scope;
+                            }
+                            complete_op(&entry_clone, Ok(out), false);
                         }
                         Err(e) => {
                             let cancelled =

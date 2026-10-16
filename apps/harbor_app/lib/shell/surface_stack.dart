@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
-/// Keeps every visited surface alive (Ask conversations, search results
+/// Keeps every visited surface alive (the Home conversation, search results
 /// and filters survive navigation) and cross-fades between them with the
 /// token motion scale. Inactive surfaces are offstage, unfocusable,
 /// non-interactive and hidden from assistive technology.

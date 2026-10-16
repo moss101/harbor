@@ -33,8 +33,27 @@ class MainActivity : FlutterActivity() {
     private val keystoreAlias = "harbor-device-root-wrap"
     private val blobFile = "harbor-device-root.bin"
 
+    private val capture by lazy { HarborCapture(this) }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        capture.onRequestPermissionsResult(requestCode, grantResults.firstOrNull() == android.content.pm.PackageManager.PERMISSION_GRANTED)
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        capture.onActivityResult(requestCode, resultCode)
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        // Microphone / camera capture and on-device dictation for the composer
+        // (Dart: lib/services/capture.dart).
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "dev.harbor/capture")
+            .setMethodCallHandler { call, result ->
+                capture.handle(call.method, call.arguments as? Map<*, *>, result)
+            }
         // Video -> sampled JPEG frames for multimodal indexing (the Rust core
         // carries no video decoder). Dart: lib/services/video_frames.dart.
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "dev.harbor.video_frames")

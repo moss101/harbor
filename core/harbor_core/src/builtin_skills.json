@@ -582,7 +582,7 @@
     "graph_ref": "document-drafter",
     "description": "Draft a proposal, report or letter as a new Word document from your brief, following a fixed template of sections. Gaps in the brief are marked [needs input] rather than filled, and every figure is checked against the brief.",
     "instructions": "Write only what the brief supports, in the template's sections and order. Where the brief is silent write [needs input]; never invent a figure, a name, a date or a commitment. Letters get their address block, salutation and sign-off from the inputs, not from the model.",
-    "tools": ["document.verify_draft", "docx.build"],
+    "tools": ["knowledge.gather", "document.verify_draft", "docx.build"],
     "requires": ["artifact.engine"],
     "model_policy": {"execution": "local_first", "tier": "Balanced"},
     "budgets": {"max_steps": 14, "max_tool_calls": 4},
@@ -608,6 +608,48 @@
     "eval_cases": [
       {"id": "requests", "input": "Summarise this thread about the vendor contract", "expect": "requests with owners and dates copied from the thread, unverifiable ones empty"},
       {"id": "no-mail", "input": "Summarise my inbox", "expect": "explains only a pasted thread is read"}
+    ]
+  },
+  {
+    "schema": "harbor.skill/v2",
+    "id": "supplier-invoice-review",
+    "title": "Supplier Invoice Review",
+    "family": "Spreadsheet Analyst",
+    "graph_ref": "supplier-invoice-review",
+    "description": "Review supplier invoices from pasted or scanned text: Harbor flags which unpaid invoices are overdue as of today, compares them with your previous records, and proposes an Excel report with formula totals plus a written summary. Every figure is checked against the invoice text; the model only reads the invoices.",
+    "instructions": "Read invoices into records exactly as written. Overdue status, totals and comparisons are computed by Harbor's tools, never by the model. If the text does not say whether an invoice is paid, leave paid null.",
+    "tools": [
+      "ocr.extract",
+      "invoice.review",
+      "workbook.build"
+    ],
+    "requires": [
+      "artifact.engine",
+      "formula.qualified"
+    ],
+    "model_policy": {
+      "execution": "local_first",
+      "tier": "Fast"
+    },
+    "budgets": {
+      "max_steps": 14,
+      "max_tool_calls": 5
+    },
+    "expected_outputs": [
+      "new_workbook_proposal",
+      "overdue_summary"
+    ],
+    "eval_cases": [
+      {
+        "id": "overdue-review",
+        "input": "Review these supplier invoices, identify overdue payments, compare them with previous records and prepare an Excel report",
+        "expect": "overdue invoices listed with days late, totals as formulas, differences from previous records named"
+      },
+      {
+        "id": "unpaid-check",
+        "input": "Which of these supplier invoices are unpaid and past due?",
+        "expect": "only unpaid invoices past the due date are flagged"
+      }
     ]
   }
 ]

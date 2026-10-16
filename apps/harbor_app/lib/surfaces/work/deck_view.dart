@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../services/file_passages.dart';
+import 'work_focus.dart';
 
 /// Presentation workspace (UX-010): slide navigator (filmstrip) plus a
 /// 16:9 canvas showing the selected slide's title and bullets.
 class DeckView extends StatefulWidget {
-  const DeckView({super.key, required this.preview});
+  const DeckView({super.key, required this.preview, this.focus});
   final Map preview;
+
+  /// A cited slide to select.
+  final WorkFocusListenable? focus;
 
   @override
   State<DeckView> createState() => _DeckViewState();
@@ -15,6 +20,36 @@ class DeckView extends StatefulWidget {
 
 class _DeckViewState extends State<DeckView> {
   int _selected = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.focus?.addListener(_onFocus);
+  }
+
+  @override
+  void didUpdateWidget(DeckView old) {
+    super.didUpdateWidget(old);
+    if (!identical(old.focus, widget.focus)) {
+      old.focus?.removeListener(_onFocus);
+      widget.focus?.addListener(_onFocus);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.focus?.removeListener(_onFocus);
+    super.dispose();
+  }
+
+  void _onFocus() {
+    final target = widget.focus?.value?.target;
+    if (target == null || target.kind != PassageKind.slide) return;
+    final slides = (widget.preview['slides'] as List? ?? const []).cast<Map>();
+    final at =
+        slides.indexWhere((s) => (s['index'] as num?)?.toInt() == target.index);
+    if (at >= 0) setState(() => _selected = at);
+  }
 
   @override
   Widget build(BuildContext context) {

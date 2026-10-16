@@ -2,13 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../services/file_passages.dart';
+import 'work_focus.dart';
 
 /// Document workspace (UX-008): paragraphs rendered with typographic
 /// hierarchy from their DOCX styles, a page-like reading column and an
 /// outline of headings (side panel on wide canvases, sheet on compact).
 class DocumentView extends StatefulWidget {
-  const DocumentView({super.key, required this.preview});
+  const DocumentView({super.key, required this.preview, this.focus});
   final Map preview;
+
+  /// A cited paragraph to scroll to and mark.
+  final WorkFocusListenable? focus;
 
   @override
   State<DocumentView> createState() => _DocumentViewState();
@@ -17,11 +22,35 @@ class DocumentView extends StatefulWidget {
 class _DocumentViewState extends State<DocumentView> {
   final _scroll = ScrollController();
   final Map<int, GlobalKey> _anchors = {};
+  int? _marked;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.focus?.addListener(_onFocus);
+  }
+
+  @override
+  void didUpdateWidget(DocumentView old) {
+    super.didUpdateWidget(old);
+    if (!identical(old.focus, widget.focus)) {
+      old.focus?.removeListener(_onFocus);
+      widget.focus?.addListener(_onFocus);
+    }
+  }
 
   @override
   void dispose() {
+    widget.focus?.removeListener(_onFocus);
     _scroll.dispose();
     super.dispose();
+  }
+
+  void _onFocus() {
+    final target = widget.focus?.value?.target;
+    if (target == null || target.kind != PassageKind.paragraph) return;
+    setState(() => _marked = target.index);
+    _jumpTo(target.index);
   }
 
   static int? headingLevel(String? style) {
@@ -92,6 +121,7 @@ class _DocumentViewState extends State<DocumentView> {
                       key: _anchors.putIfAbsent(
                           (p['index'] as num).toInt(), GlobalKey.new),
                       paragraph: p,
+                      marked: _marked == (p['index'] as num).toInt(),
                     ),
                 ],
               ),
@@ -166,11 +196,32 @@ class _Outline extends StatelessWidget {
 }
 
 class _Paragraph extends StatelessWidget {
-  const _Paragraph({super.key, required this.paragraph});
+  const _Paragraph({super.key, required this.paragraph, this.marked = false});
   final Map paragraph;
+
+  /// Cited by the answer the person is reading: tinted, with a bar at the
+  /// start edge (a cue that does not rely on colour alone).
+  final bool marked;
 
   @override
   Widget build(BuildContext context) {
+    final body = _content(context);
+    if (!marked) return body;
+    final t = HarborTheme.of(context);
+    return Container(
+      key: const ValueKey('work-marked-paragraph'),
+      decoration: BoxDecoration(
+        color: t.colors.brandSoft,
+        border: BorderDirectional(
+            start: BorderSide(color: t.colors.brand, width: 3)),
+      ),
+      padding: const EdgeInsetsDirectional.only(
+          start: HarborSpace.s2, top: HarborSpace.s1),
+      child: body,
+    );
+  }
+
+  Widget _content(BuildContext context) {
     final t = HarborTheme.of(context);
     final text = (paragraph['text'] as String? ?? '');
     final style = paragraph['style'] as String?;

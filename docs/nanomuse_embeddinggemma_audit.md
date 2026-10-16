@@ -1,5 +1,9 @@
 # Audit — nanoMuse + EmbeddingGemma 2 vs Harbor (evidence-based)
 
+> **SUPERSEDED 2026-10-10** by `docs/verification_2026-10-10.md`. This audit predates the
+> EmbeddingGemma 2 runtime back-port (decision 0013): its "blocked on runtime", "multimodal
+> missing" and "semantic memory missing" rows are no longer true. Kept as history.
+
 Date: 2026-10-09. Companion to decision `0011-embeddinggemma2-personal-agents.md`.
 Every status below is backed by code, a test, or a measured artifact — a file
 name or a stale document is not evidence. Repo state: branch `enhancements`,

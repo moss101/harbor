@@ -14,13 +14,17 @@ export 'harbor_lens.dart' show HarborLens;
 
 /// The adaptive product shell (UI authority §4/§20):
 /// - <=599: top bar (title + Trust chip), five-item bottom navigation
-///   (Home · Ask · Work · Models · More), Lens as a modal sheet
+///   (Home · Work · Library · Models · More; More holds Skills · Activity
+///   · Settings), Lens as a modal sheet
 /// - 600-1023: icon + label side rail, Lens as an end drawer
 /// - 1024-1179: collapsed 72px rail, Lens drawer; canvas >= 640
 /// - 1180-1279: full 220px rail, Lens drawer
 /// - 1280+: 220px rail + docked 320px Lens (toggleable), canvas >= 640
 ///
-/// Desktop adds keyboard intents (⌘/Ctrl+1…9, ⌘K palette, ⌘L Lens, ⌘O
+/// The rail lists the primary destinations first, then the secondary ones
+/// ([HarborSurface.primary] / [HarborSurface.secondary]).
+///
+/// Desktop adds keyboard intents (⌘/Ctrl+1…7, ⌘K palette, ⌘L Lens, ⌘O
 /// open file, ⌘, settings) and shortcut hints in rail tooltips.
 class AdaptiveShell extends StatefulWidget {
   const AdaptiveShell({super.key, required this.state});
@@ -89,9 +93,12 @@ class _AdaptiveShellState extends State<AdaptiveShell> {
 
     return Actions(
       actions: <Type, Action<Intent>>{
-        GoToSurfaceIntent: CallbackAction<GoToSurfaceIntent>(
-            onInvoke: (i) => state
-                .selectSurface(HarborSurface.shortcutOrder[i.index].index)),
+        GoToSurfaceIntent: CallbackAction<GoToSurfaceIntent>(onInvoke: (i) {
+          // Defensive: a digit past the contract maps to no surface.
+          if (i.index >= HarborSurface.shortcutOrder.length) return null;
+          state.selectSurface(HarborSurface.shortcutOrder[i.index].index);
+          return null;
+        }),
         CommandPaletteIntent: CallbackAction<CommandPaletteIntent>(
             onInvoke: (_) => showCommandPalette(context, state)),
         ToggleLensIntent:
@@ -190,8 +197,8 @@ class _CompactShell extends StatelessWidget {
     return showModalBottomSheet<void>(
       context: context,
       useSafeArea: true,
-      // Tall enough for all five destinations at 200% text on a 320px
-      // phone; the list still scrolls beyond that.
+      // Tall enough for every secondary destination at 200% text on a
+      // 320px phone; the list still scrolls beyond that.
       isScrollControlled: true,
       constraints:
           BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.85),
@@ -308,8 +315,7 @@ class _RailShell extends StatelessWidget {
       onSelected: state.selectSurface,
       shortcutHint: desktop
           ? (int i) {
-              // Hints follow the ⌘1–9 contract, not the raw index: Store
-              // takes no digit, so it shows none.
+              // Hints follow the ⌘1–7 contract, not the raw index.
               final digit =
                   HarborSurface.shortcutOrder.indexOf(HarborSurface.values[i]);
               return digit >= 0 ? harborShortcutHint('${digit + 1}') : '';

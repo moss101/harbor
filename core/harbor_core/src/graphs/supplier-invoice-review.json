@@ -1,0 +1,242 @@
+{
+  "schema": "harbor.graph/v1",
+  "id": "supplier-invoice-review",
+  "version": 1,
+  "description": "Review supplier invoices for a business owner. The invoices arrive as typed text or as an attached scan or photo (ocr.extract: on-device OCR, page numbers kept, low-confidence pages flagged). The model only reads that text into records (number, supplier, dates, amount, paid or not). invoice.review then checks every field against the source text, decides which unpaid invoices are overdue as of the date the user gave, compares them with the previous records, and returns a workbook spec and a summary computed from the same figures; workbook.build writes the totals as formulas and proposes the Excel report. A record the source does not support goes back to the model once with the problems listed; a second failure ends in needs_input. Nothing is saved until the user approves.",
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "invoices": {
+        "type": "string",
+        "maxLength": 60000,
+        "description": "The invoice text (typed or pasted). Give this or attach a scan."
+      },
+      "as_of": {
+        "type": "string",
+        "minLength": 10,
+        "maxLength": 10,
+        "description": "Today's date, YYYY-MM-DD; overdue is judged against it."
+      },
+      "previous": {
+        "type": "string",
+        "maxLength": 60000,
+        "description": "Optional previous records, CSV: invoice_no,supplier,amount,status."
+      },
+      "artifact_id": {
+        "type": "string",
+        "maxLength": 128,
+        "description": "A scanned PDF or a photo (PNG/JPEG) of the invoices, attached to the run; read on this device by the platform OCR engine."
+      }
+    },
+    "required": [
+      "as_of"
+    ],
+    "additionalProperties": false
+  },
+  "entry": "read",
+  "budgets": {
+    "max_steps": 14,
+    "max_tool_calls": 6,
+    "max_context_tokens": 24000
+  },
+  "nodes": [
+    {
+      "id": "read",
+      "kind": "tool.call",
+      "description": "Get the document text: typed, or read from an attached scan on-device.",
+      "tool": "ocr.extract",
+      "args": {
+        "artifact_id": {
+          "$state": "/input/artifact_id"
+        },
+        "fallback": {
+          "$state": "/input/invoices"
+        }
+      },
+      "out": "/doc",
+      "next": "extract"
+    },
+    {
+      "id": "extract",
+      "kind": "model.structured",
+      "description": "Read the invoices into records; decide nothing.",
+      "instructions": "Read the supplier invoices below into records. Copy invoice numbers, supplier names, dates and amounts exactly as written; write dates as YYYY-MM-DD and amounts as plain numbers. paid is true only if the text says the invoice was paid or settled, false if it says unpaid, outstanding or open, and null if it does not say. Never invent an invoice, a figure or a date, and never decide whether anything is overdue — Harbor does that.",
+      "context": [
+        {
+          "label": "Invoices",
+          "from": "/doc/text",
+          "max_chars": 40000
+        },
+        {
+          "label": "Your previous answer was rejected. Write a new answer that fixes every one of these problems",
+          "from": "/review/problems",
+          "max_chars": 4000,
+          "optional": true
+        }
+      ],
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "records": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "type": "object",
+              "properties": {
+                "invoice_no": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60
+                },
+                "supplier": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "issued": {
+                  "type": "string",
+                  "maxLength": 10
+                },
+                "due": {
+                  "type": "string",
+                  "maxLength": 10
+                },
+                "amount": {
+                  "type": "number"
+                },
+                "currency": {
+                  "type": "string",
+                  "maxLength": 3
+                },
+                "paid": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "invoice_no",
+                "supplier",
+                "issued",
+                "due",
+                "amount",
+                "currency",
+                "paid"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "records"
+        ],
+        "additionalProperties": false
+      },
+      "out": "/extracted",
+      "max_tokens": 3000,
+      "max_retries": 1,
+      "next": "review"
+    },
+    {
+      "id": "review",
+      "kind": "tool.call",
+      "description": "Ground every field, decide overdue, compare with previous records.",
+      "tool": "invoice.review",
+      "args": {
+        "records": {
+          "$state": "/extracted/records"
+        },
+        "source": {
+          "$state": "/doc/text"
+        },
+        "as_of": {
+          "$state": "/input/as_of"
+        },
+        "previous": {
+          "$state": "/input/previous"
+        }
+      },
+      "out": "/review",
+      "next": "gate"
+    },
+    {
+      "id": "gate",
+      "kind": "branch",
+      "description": "An unsupported record goes back to the model once; a second failure stops.",
+      "cases": [
+        {
+          "when": {
+            "from": "/review/ok",
+            "op": "truthy"
+          },
+          "next": "build"
+        }
+      ],
+      "default": {
+        "to": "extract",
+        "max_iterations": 1,
+        "exhausted": "unfixable"
+      }
+    },
+    {
+      "id": "build",
+      "kind": "tool.call",
+      "description": "Formulas, layout and bytes are decided here, then recalculated and checked.",
+      "tool": "workbook.build",
+      "args": {
+        "spec": {
+          "$state": "/review/spec"
+        }
+      },
+      "out": "/proposal",
+      "next": "approve"
+    },
+    {
+      "id": "approve",
+      "kind": "approval",
+      "description": "A new file is a protected artifact commit: nothing is written until the user approves.",
+      "effect_class": "artifact.commit",
+      "batch": "/proposal/batch",
+      "next_approved": "done",
+      "next_rejected": "rejected"
+    },
+    {
+      "id": "done",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/review/summary_text",
+        "/review/summary",
+        "/proposal/file_name",
+        "/proposal/preview",
+        "/proposal/checks",
+        "/approvals/approve",
+        "/doc/engine",
+        "/doc/source",
+        "/doc/check_pages"
+      ]
+    },
+    {
+      "id": "rejected",
+      "kind": "end",
+      "outcome": "completed",
+      "outputs": [
+        "/review/summary_text",
+        "/review/summary",
+        "/proposal/file_name",
+        "/proposal/preview",
+        "/approvals/approve"
+      ]
+    },
+    {
+      "id": "unfixable",
+      "kind": "end",
+      "outcome": "needs_input",
+      "outputs": [
+        "/extracted",
+        "/review/problems"
+      ]
+    }
+  ]
+}

@@ -1008,6 +1008,39 @@ impl KnowledgeService {
         Ok(citations_json(&hits))
     }
 
+    /// Embed a question and host-supplied passages (document-scoped Ask)
+    /// with the index's model and instruction policy. Nothing is stored:
+    /// the vectors only rank passages for one answer.
+    pub fn embed_passages(
+        &self,
+        question: &str,
+        title: &str,
+        passages: &[&str],
+    ) -> Result<(Vec<f32>, Vec<Vec<f32>>), KnowledgeFfiError> {
+        self.ensure_loaded()?;
+        let model_ref = ModelRef::InstalledPackage {
+            package_id: self.embedding_package.clone(),
+        };
+        let mut inputs = Vec::with_capacity(passages.len() + 1);
+        inputs.push(self.policy.format_query(question));
+        inputs.extend(
+            passages
+                .iter()
+                .map(|p| self.policy.format_document(title, p)),
+        );
+        let mut vs = self
+            .embedder()
+            .embed(&model_ref, &inputs)
+            .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?;
+        if vs.len() != inputs.len() {
+            return Err(KnowledgeFfiError::Provider(
+                "embedding count mismatch".into(),
+            ));
+        }
+        let q = vs.remove(0);
+        Ok((q, vs))
+    }
+
     /// Semantic-memory search: the same embedding and instruction policy
     /// as document search, restricted to `memory:` records. Hits carry
     /// the record id (the caller joins provenance from the memory store).

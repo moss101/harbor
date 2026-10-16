@@ -260,3 +260,89 @@ fn embedder_can_be_released_and_reloads_transparently() {
     let r = svc.search("how many leave days?", 1).unwrap();
     assert_eq!(r["citations"][0]["source_id"], "doc2");
 }
+
+#[test]
+fn a_correction_replaces_the_stale_fact_and_a_restatement_is_surfaced() {
+    let bge = repo_root().join("fixtures/models/bge-small-en-v1.5-q8_0.gguf");
+    if !bge.exists() {
+        eprintln!("SKIP: embedding fixture absent ({})", bge.display());
+        return;
+    }
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().join("data");
+    std::fs::create_dir_all(root.join("models")).unwrap();
+    let pkg = install(&root.join("models"), &bge);
+    let h = Handle::open(&root);
+    h.ok("knowledge.open", serde_json::json!({ "package_id": pkg }));
+
+    let first = h.ok(
+        "memory.add",
+        serde_json::json!({"text": "Acme Supplies are paid net 30 days."}),
+    );
+    assert_eq!(
+        first["similar"],
+        serde_json::json!([]),
+        "nothing to compare with yet"
+    );
+    let old_id = first["id"].as_str().unwrap().to_string();
+
+    // A conflicting statement is added and the person is shown the nearest
+    // existing memory instead of the two silently coexisting.
+    let second = h.ok(
+        "memory.add",
+        serde_json::json!({"text": "Acme Supplies payment terms are net 45 days."}),
+    );
+    let similar = second["similar"].as_array().unwrap();
+    assert_eq!(similar[0]["memory"]["id"], old_id.as_str(), "{similar:?}");
+
+    // The person corrects the old record.
+    let fixed = h.ok(
+        "memory.correct",
+        serde_json::json!({"id": old_id, "text": "Acme Supplies are paid net 60 days."}),
+    );
+    assert_eq!(fixed["supersedes"], old_id.as_str());
+    // History stays listed and marked; the stale text is no longer retrievable.
+    let listed = h.ok("memory.list", serde_json::json!({}));
+    let old = listed["memories"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|m| m["id"] == old_id.as_str())
+        .unwrap();
+    assert_eq!(old["superseded_by"], fixed["id"]);
+    let hits = h.ok(
+        "memory.search",
+        serde_json::json!({"query": "what are Acme's payment terms?", "top_k": 5}),
+    );
+    let ids: Vec<&str> = hits["hits"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|x| x["memory"]["id"].as_str().unwrap())
+        .collect();
+    assert!(
+        !ids.contains(&old_id.as_str()),
+        "stale memory retrieved: {ids:?}"
+    );
+    assert!(ids.contains(&fixed["id"].as_str().unwrap()));
+    // The same record cannot be corrected twice, and empty text is refused.
+    assert!(h.fails(
+        "memory.correct",
+        serde_json::json!({"id": old_id, "text": "x"})
+    ));
+    assert!(h.fails(
+        "memory.correct",
+        serde_json::json!({"id": fixed["id"], "text": "  "})
+    ));
+    // Deleting the correction removes it from retrieval too.
+    h.ok("memory.delete", serde_json::json!({"id": fixed["id"]}));
+    let hits = h.ok(
+        "memory.search",
+        serde_json::json!({"query": "Acme payment terms", "top_k": 5}),
+    );
+    assert!(hits["hits"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|x| x["memory"]["id"] != fixed["id"]));
+}

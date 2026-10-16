@@ -22,6 +22,7 @@ pub mod lease;
 pub mod log;
 pub mod memory;
 pub mod state;
+pub mod workflows;
 
 pub use budgets::Budgets;
 pub use cancellation::{CancelPhase, CancelRequest, ACK_SLO, UNACK_TIMEOUT};
@@ -33,3 +34,4 @@ pub use lease::{ExecutorLease, LeaseError, LeaseManager};
 pub use log::{EventLog, LogError};
 pub use memory::{MemoryError, MemoryRecord, MemoryStore, Provenance};
 pub use state::{PauseReason, RunState, StateError};
+pub use workflows::{WorkflowError, WorkflowRecord, WorkflowStore};

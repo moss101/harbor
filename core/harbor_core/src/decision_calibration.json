@@ -1,0 +1,49 @@
+{
+  "schema": "harbor.router_calibration/v1",
+  "note": "Bars for choosing an ACTION KIND (decision 0019), measured per embedder with core/harbor_core/tests/decision_live.rs over evals/decision/intents.json (96 labeled requests, EN/AR/FR, 8 action kinds) with the learned decision head trained from src/intent_exemplars.json (no example is a corpus case). Scores are head PROBABILITIES, not cosine. Selection rule: highest coverage with precision-when-confident >= 0.90 on the sweep grid (stricter than the skill rule because these decisions route actions). In-sample: the bars were chosen on the same cases they are scored on. An embedder with no entry (including Matryoshka-truncated indexes) ranks but never recommends. Re-measure and bump `version` when the model, quantization, instruction policy, exemplars or action kinds change. Measured on Q8_0 / Apple Metal, 2026-10-10.",
+  "entries": [
+    {
+      "id": "embeddinggemma-2",
+      "version": 1,
+      "matches": [
+        "embeddinggemma"
+      ],
+      "min_score": 0.3,
+      "min_margin": 0.05,
+      "corpus_cases": 96,
+      "coverage": 0.938,
+      "precision_when_confident": 0.9,
+      "top1": 0.885,
+      "evidence": "evidence/decision/intent-2188ac1deca4.json"
+    },
+    {
+      "id": "bge-m3",
+      "version": 1,
+      "matches": [
+        "bge-m3"
+      ],
+      "min_score": 0.3,
+      "min_margin": 0.1,
+      "corpus_cases": 96,
+      "coverage": 0.854,
+      "precision_when_confident": 0.927,
+      "top1": 0.865,
+      "evidence": "evidence/decision/intent-950f4a8e5e19.json"
+    },
+    {
+      "id": "multilingual-e5-small",
+      "version": 1,
+      "matches": [
+        "multilingual-e5-small",
+        "multilingual_e5_small"
+      ],
+      "min_score": 0.3,
+      "min_margin": 0.0,
+      "corpus_cases": 96,
+      "coverage": 0.865,
+      "precision_when_confident": 0.964,
+      "top1": 0.885,
+      "evidence": "evidence/decision/intent-e011debc1208.json"
+    }
+  ]
+}

@@ -82,15 +82,31 @@ mod imp {
     impl KeyStore for KeychainKeyStore {
         fn device_root_key(&self, service: &str) -> Result<KeyMaterial> {
             let account = self.account(service);
+            // errSecItemNotFound is the ONLY answer that means "first use on
+            // this device". Any other failure (an item that exists but this
+            // build may not read - a re-signed development build, a locked
+            // keychain, a missing entitlement) must NOT mint a replacement:
+            // the write would collide with the existing item, or worse
+            // succeed and orphan every record sealed under the old key.
+            const ERR_SEC_ITEM_NOT_FOUND: i32 = -25300;
             match passwords::get_generic_password(&self.service_namespace, &account) {
                 Ok(bytes) => KeyMaterial::from_bytes(&bytes),
-                Err(_) => {
-                    // First use on this device: generate and store.
+                Err(e) if e.code() == ERR_SEC_ITEM_NOT_FOUND => {
                     let key = KeyMaterial::random();
                     passwords::set_generic_password(&self.service_namespace, &account, &key.0)
-                        .map_err(|_| StoreError::Crypto)?;
+                        .map_err(|e| {
+                            StoreError::KeyUnavailable(format!(
+                                "the keychain refused to store a new workspace key (OSStatus {})",
+                                e.code()
+                            ))
+                        })?;
                     Ok(key)
                 }
+                Err(e) => Err(StoreError::KeyUnavailable(format!(
+                    "the keychain item for this workspace exists but could not be read (OSStatus {}); \
+                     a build signed differently from the one that created it cannot open its data",
+                    e.code()
+                ))),
             }
         }
     }

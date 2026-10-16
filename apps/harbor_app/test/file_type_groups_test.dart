@@ -23,6 +23,8 @@ void main() {
     'knowledge': knowledgeTypeGroup('knowledge'),
     'model': modelTypeGroup('models'),
     'media': mediaTypeGroup('media'),
+    'scan': scanTypeGroup('scan'),
+    'audio': audioTypeGroup('audio'),
   };
 
   group('every shipped picker group', () {

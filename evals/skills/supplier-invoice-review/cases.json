@@ -1,0 +1,219 @@
+{
+  "schema": "harbor.skill_eval/v1",
+  "skill": "supplier-invoice-review",
+  "cases": [
+    {
+      "id": "overdue_review",
+      "title": "Invoices become a workbook proposal; overdue, totals and comparison are computed by the tool and match the known fixture",
+      "inputs": {
+        "invoices": "SUPPLIER INVOICES - batch received October 2026\nInvoice INV-1001 from Acme Supplies. Issued 2026-08-01, due 2026-08-31. Amount 4,200.00 USD. Status: unpaid.\nInvoice INV-1002 from Northwind Parts. Issued 2026-09-05, due 2026-10-05. Amount 1,850.50 USD. Status: unpaid.\nInvoice INV-1003 from Acme Supplies. Issued 2026-09-20, due 2026-10-20. Amount 900.00 USD. Status: unpaid.\nInvoice INV-1004 from Delta Logistics. Issued 2026-07-15, due 2026-08-14. Amount 2,300.00 USD. Status: paid on 2026-08-10.\nInvoice INV-1005 from Delta Logistics. Issued 2026-08-20, due 2026-09-19. Amount 3,100.00 USD. Status: unpaid.\n",
+        "as_of": "2026-10-09",
+        "previous": "invoice_no,supplier,amount,status\nINV-1001,Acme Supplies,4200.00,unpaid\nINV-1002,Northwind Parts,1580.50,unpaid\nINV-1004,Delta Logistics,2300.00,paid\nINV-0990,Acme Supplies,500.00,paid\n"
+      },
+      "cassette": "cassettes/batch.json",
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "approval_requested"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/review/ok",
+          "value": true
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/review/summary/total_invoiced_cents",
+          "value": 1235050
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/review/summary/total_overdue_cents",
+          "value": 915050
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/review/summary/overdue",
+          "min": 3,
+          "max": 3
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/review/summary/overdue/0/invoice_no",
+          "value": "INV-1001"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/review/summary/overdue/0/days_overdue",
+          "value": 39
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/review/summary/overdue/1/days_overdue",
+          "value": 20
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/review/summary/overdue/2/days_overdue",
+          "value": 4
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/review/summary/changed",
+          "min": 1,
+          "max": 1
+        },
+        {
+          "kind": "contains",
+          "pointer": "/review/summary_text",
+          "text": "1,580.50"
+        },
+        {
+          "kind": "contains",
+          "pointer": "/review/summary_text",
+          "text": "INV-0990"
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/proposal/kind",
+          "value": "xlsx"
+        },
+        {
+          "kind": "batch_proposed",
+          "pointer": "/proposal/batch",
+          "min_ops": 10
+        },
+        {
+          "kind": "state_empty",
+          "pointer": "/proposal/checks/errors"
+        },
+        {
+          "kind": "array_len",
+          "pointer": "/proposal/checks/totals",
+          "min": 2,
+          "max": 2
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 3
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "invented_then_repaired",
+      "title": "Guard: an invented amount and a contradicted paid status go back to the model once; the corrected records are reviewed",
+      "inputs": {
+        "invoices": "SUPPLIER INVOICES - batch received October 2026\nInvoice INV-1001 from Acme Supplies. Issued 2026-08-01, due 2026-08-31. Amount 4,200.00 USD. Status: unpaid.\nInvoice INV-1002 from Northwind Parts. Issued 2026-09-05, due 2026-10-05. Amount 1,850.50 USD. Status: unpaid.\nInvoice INV-1003 from Acme Supplies. Issued 2026-09-20, due 2026-10-20. Amount 900.00 USD. Status: unpaid.\nInvoice INV-1004 from Delta Logistics. Issued 2026-07-15, due 2026-08-14. Amount 2,300.00 USD. Status: paid on 2026-08-10.\nInvoice INV-1005 from Delta Logistics. Issued 2026-08-20, due 2026-09-19. Amount 3,100.00 USD. Status: unpaid.\n",
+        "as_of": "2026-10-09",
+        "previous": "invoice_no,supplier,amount,status\nINV-1001,Acme Supplies,4200.00,unpaid\nINV-1002,Northwind Parts,1580.50,unpaid\nINV-1004,Delta Logistics,2300.00,paid\nINV-0990,Acme Supplies,500.00,paid\n"
+      },
+      "cassette": "cassettes/invented_then_repaired.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "WAITING_APPROVAL"
+        },
+        {
+          "kind": "node_runs",
+          "node": "extract",
+          "min": 2,
+          "max": 2
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/review/ok",
+          "value": true
+        },
+        {
+          "kind": "state_equals",
+          "pointer": "/review/summary/total_overdue_cents",
+          "value": 915050
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 4
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    },
+    {
+      "id": "invented_twice",
+      "title": "Guard: a second unsupported answer stops in needs_input with the problems named; nothing is proposed",
+      "inputs": {
+        "invoices": "SUPPLIER INVOICES - batch received October 2026\nInvoice INV-1001 from Acme Supplies. Issued 2026-08-01, due 2026-08-31. Amount 4,200.00 USD. Status: unpaid.\nInvoice INV-1002 from Northwind Parts. Issued 2026-09-05, due 2026-10-05. Amount 1,850.50 USD. Status: unpaid.\nInvoice INV-1003 from Acme Supplies. Issued 2026-09-20, due 2026-10-20. Amount 900.00 USD. Status: unpaid.\nInvoice INV-1004 from Delta Logistics. Issued 2026-07-15, due 2026-08-14. Amount 2,300.00 USD. Status: paid on 2026-08-10.\nInvoice INV-1005 from Delta Logistics. Issued 2026-08-20, due 2026-09-19. Amount 3,100.00 USD. Status: unpaid.\n",
+        "as_of": "2026-10-09",
+        "previous": "invoice_no,supplier,amount,status\nINV-1001,Acme Supplies,4200.00,unpaid\nINV-1002,Northwind Parts,1580.50,unpaid\nINV-1004,Delta Logistics,2300.00,paid\nINV-0990,Acme Supplies,500.00,paid\n"
+      },
+      "cassette": "cassettes/invented_twice.json",
+      "tiers": [
+        "replay"
+      ],
+      "assertions": [
+        {
+          "kind": "run_state",
+          "equals": "COMPLETED"
+        },
+        {
+          "kind": "outcome",
+          "equals": "needs_input"
+        },
+        {
+          "kind": "node_runs",
+          "node": "extract",
+          "min": 2,
+          "max": 2
+        },
+        {
+          "kind": "contains",
+          "pointer": "/review/problems",
+          "text": "9,000.00"
+        },
+        {
+          "kind": "contains",
+          "pointer": "/review/problems",
+          "text": "INV-1004"
+        },
+        {
+          "kind": "state_missing",
+          "pointer": "/proposal"
+        },
+        {
+          "kind": "tool_calls_le",
+          "max": 3
+        },
+        {
+          "kind": "tools_within_graph"
+        },
+        {
+          "kind": "replay_verified"
+        },
+        {
+          "kind": "no_cassette_misses"
+        }
+      ]
+    }
+  ]
+}

@@ -6,6 +6,8 @@ import 'package:harbor_ui/harbor_ui.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../services/harbor_service.dart';
+import '../../services/file_passages.dart';
+import 'work_focus.dart';
 
 /// Excel column letters for a 1-based column index.
 String columnLetter(int col) {
@@ -36,8 +38,11 @@ class GridCell {
 /// formula bar bound to the selected cell, sheet tabs and a cached-value
 /// disclaimer (values are never presented as verified by themselves).
 class WorkbookView extends StatefulWidget {
-  const WorkbookView({super.key, required this.preview});
+  const WorkbookView({super.key, required this.preview, this.focus});
   final Map preview;
+
+  /// A cited cell to select (the formula bar then explains it).
+  final WorkFocusListenable? focus;
 
   @override
   State<WorkbookView> createState() => _WorkbookViewState();
@@ -69,12 +74,36 @@ class _WorkbookViewState extends State<WorkbookView> {
     _index();
     _bodyV.addListener(() => _sync(_bodyV, _headerV));
     _headerV.addListener(() => _sync(_headerV, _bodyV));
+    widget.focus?.addListener(_onFocus);
   }
 
   @override
   void didUpdateWidget(covariant WorkbookView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.preview, widget.preview)) _index();
+    if (!identical(oldWidget.focus, widget.focus)) {
+      oldWidget.focus?.removeListener(_onFocus);
+      widget.focus?.addListener(_onFocus);
+    }
+  }
+
+  /// Select a cited cell and scroll it into view.
+  void _onFocus() {
+    final target = widget.focus?.value?.target;
+    if (target == null || target.kind != PassageKind.cell) return;
+    final rc = FileDocument.parseA1(target.cell ?? '');
+    if (rc == null || rc.$1 > _rows || rc.$2 > _cols) return;
+    setState(() => _selected = rc);
+    if (_bodyV.hasClients) {
+      final y = ((rc.$1 - 1) * rowHeight - rowHeight * 2)
+          .clamp(0.0, _bodyV.position.maxScrollExtent);
+      _bodyV.jumpTo(y);
+    }
+    if (_hScroll.hasClients) {
+      final x = ((rc.$2 - 1) * colWidth - colWidth)
+          .clamp(0.0, _hScroll.position.maxScrollExtent);
+      _hScroll.jumpTo(x);
+    }
   }
 
   void _sync(ScrollController from, ScrollController to) {
@@ -113,6 +142,7 @@ class _WorkbookViewState extends State<WorkbookView> {
 
   @override
   void dispose() {
+    widget.focus?.removeListener(_onFocus);
     _hScroll.dispose();
     _bodyV.dispose();
     _headerV.dispose();

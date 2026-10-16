@@ -9,6 +9,10 @@ import 'package:harbor_domain/harbor_domain.dart';
 import 'package:harbor_native/harbor_ffi.dart' as ffi;
 import 'package:harbor_native/harbor_worker.dart';
 
+import 'file_passages.dart';
+
+export 'file_passages.dart' show FileDocument, FilePassage;
+
 /// Bridge between the Flutter layer and Harbor Core. Policy and runtime
 /// truth stay in Rust; this only surfaces facts and typed errors.
 ///
@@ -20,7 +24,13 @@ import 'package:harbor_native/harbor_worker.dart';
 class HarborService extends ChangeNotifier {
   HarborService._(this._worker);
 
-  final HarborCoreWorker _worker;
+  /// A service with no core behind it: every core call fails with a typed
+  /// [ffi.HarborCoreException]. Only for widget tests, which subclass it
+  /// and override the calls a journey needs (no dylib, deterministic).
+  @visibleForTesting
+  HarborService.detached() : _worker = null;
+
+  final HarborCoreWorker? _worker;
 
   /// Opens the native core on the worker isolate. [deviceRootHex] injects
   /// an embedding-layer device root (Android Keystore unseal path); when
@@ -30,6 +40,7 @@ class HarborService extends ChangeNotifier {
     required String dataRoot,
     String workspaceId = 'ws-default',
     String? deviceRootHex,
+    Map<String, List<int>> nativeAdapters = const {},
   }) async {
     final worker = await HarborCoreWorker.spawn(
       libraryPath: libraryPath,
@@ -37,6 +48,7 @@ class HarborService extends ChangeNotifier {
       workspaceId: workspaceId,
       privacyMode: ffi.HarborPrivacyMode.localOnly.index,
       deviceRootHex: deviceRootHex,
+      nativeAdapters: nativeAdapters,
     );
     return HarborService._(worker);
   }
@@ -56,6 +68,7 @@ class HarborService extends ChangeNotifier {
   Map<String, dynamic>? _preview;
   List<int>? _sourceBytes;
   String? _previewName;
+  String? _previewPath;
   String? _previewError;
   bool _previewLoading = false;
   String? _deviceId;
@@ -88,6 +101,15 @@ class HarborService extends ChangeNotifier {
 
   /// File name of the open Work Canvas artifact (presentation only).
   String? get previewName => _previewName;
+
+  /// Bytes of the open Work Canvas artifact (after any workbook edits):
+  /// what a skill run started from Work is handed. Null when none is open.
+  List<int>? get previewSourceBytes => _sourceBytes;
+
+  /// Where the open artifact came from, when the picker handed back a real
+  /// path (desktop). Only ever used as an Overwrite destination, which the
+  /// core refuses unless the file there still matches the approved base.
+  String? get previewPath => _previewPath;
 
   /// Core error for the last failed preview load (null when none).
   String? get previewError => _previewError;
@@ -130,7 +152,11 @@ class HarborService extends ChangeNotifier {
 
   Future<Map<String, dynamic>> _call(String method,
       [Map<String, dynamic>? args]) async {
-    final result = await _worker.request(method, args);
+    final worker = _worker;
+    if (worker == null) {
+      throw ffi.HarborCoreException('no core attached ($method)');
+    }
+    final result = await worker.request(method, args);
     return (result as Map).cast<String, dynamic>();
   }
 
@@ -495,6 +521,51 @@ class HarborService extends ChangeNotifier {
     }
   }
 
+  /// Text of a recording, as a cancellable background op (the OS speech
+  /// engine can take a while on a long memo). Read-only: the transcript is
+  /// returned to the caller, never acted on.
+  Future<Map<String, dynamic>> transcribeAudio(
+    List<int> bytes,
+    String fileName, {
+    String locale = 'en_US',
+    void Function(String opId)? onStarted,
+  }) {
+    return _runOp(
+        'op.start_tools_read',
+        {
+          'tool': 'speech.transcribe',
+          'args': {'artifact_id': 'rec', 'locale': locale},
+          'artifacts': [
+            {'id': 'rec', 'name': fileName, 'data_b64': base64Encode(bytes)},
+          ],
+        },
+        onStarted: onStarted);
+  }
+
+  /// Text of a scanned page, photo or image-only PDF, as a cancellable
+  /// background op (a vision-model OCR takes tens of seconds on CPU). The
+  /// result lists the engine and the pages worth checking by eye.
+  Future<Map<String, dynamic>> ocrDocument(
+    List<int> bytes,
+    String fileName, {
+    List<String> languages = const [],
+    void Function(String opId)? onStarted,
+  }) {
+    return _runOp(
+        'op.start_tools_read',
+        {
+          'tool': 'ocr.extract',
+          'args': {
+            'artifact_id': 'scan',
+            if (languages.isNotEmpty) 'languages': languages,
+          },
+          'artifacts': [
+            {'id': 'scan', 'name': fileName, 'data_b64': base64Encode(bytes)},
+          ],
+        },
+        onStarted: onStarted);
+  }
+
   /// Ingest sources as a cancellable background op with chunk-level
   /// progress. Ingesting an existing source id replaces its chunks.
   Future<Map<String, dynamic>?> ingestSources(
@@ -539,6 +610,34 @@ class HarborService extends ChangeNotifier {
       'question': question,
       'chat_package': chatPackage,
       'max_tokens': maxTokens,
+      if (runId != null) 'run_id': runId,
+    });
+    if (runId != null) await refresh();
+    return answer;
+  }
+
+  /// Grounded generation over ONE open file instead of the Knowledge index:
+  /// the same `op.start_generate` op, with the file's passages passed as
+  /// `document: {name, passages: [{id, text, locator}]}`. The answer has
+  /// the shape [generateAnswer] returns; its citations carry the
+  /// `passage_id` and `locator` of the passage they quote. [document]
+  /// defaults to the open Work Canvas artifact. The file's text goes to
+  /// the core for this one call only; nothing is indexed or kept.
+  /// Throws [ffi.HarborCoreException] on failure or cancellation.
+  Future<Map<String, dynamic>> askAboutFile(String question,
+      {required String chatPackage,
+      String? runId,
+      int maxTokens = 384,
+      FileDocument? document}) async {
+    final doc = document ?? FileDocument.fromPreview(_previewName, _preview);
+    if (doc == null || doc.passages.isEmpty) {
+      throw ffi.HarborCoreException('the open file has no readable text');
+    }
+    final answer = await _runOp('op.start_generate', {
+      'question': question,
+      'chat_package': chatPackage,
+      'max_tokens': maxTokens,
+      'document': doc.toWire(),
       if (runId != null) 'run_id': runId,
     });
     if (runId != null) await refresh();
@@ -763,6 +862,66 @@ class HarborService extends ChangeNotifier {
       _call('diag.record', record);
 
   /// Recent diagnostics records (redacted), newest last.
+  /// What KIND of action [text] asks for (`decision.choose`): the ranked
+  /// action kinds, or an abstention. Recommend-only - the caller may show it
+  /// as a suggestion and must never act on it. Null when no index is open or
+  /// the core cannot answer.
+  Future<Map<String, dynamic>?> suggestIntent(String text) async {
+    if (!knowledgeOpen || text.trim().isEmpty) return null;
+    try {
+      return await _call('decision.choose', {'text': text});
+    } on ffi.HarborCoreException {
+      return null;
+    }
+  }
+
+  /// The installed vision-language package scans are read with (null: the
+  /// platform's own engine, if any) and the backend it runs on (`gpu` /
+  /// `cpu_fallback`).
+  String? scanModel;
+  String? scanBackend;
+
+  /// Read scans with an installed vision-language model. The core verifies it
+  /// on a canary first and pins it to the CPU if the GPU reads wrongly.
+  Future<void> useForScanning(String packageId) async {
+    final r = await _call('ocr.open', {'package_id': packageId});
+    scanModel = packageId;
+    scanBackend = r['backend'] as String?;
+    notifyListeners();
+  }
+
+  /// Drop the vision-model engine (memory pressure, or the person's choice);
+  /// the platform engine, if there is one, takes over again.
+  Future<void> releaseScanModel() async {
+    if (scanModel == null) return;
+    try {
+      await _call('ocr.release');
+    } on ffi.HarborCoreException {
+      // Nothing to release.
+    }
+    scanModel = null;
+    scanBackend = null;
+    notifyListeners();
+  }
+
+  /// Which OS engines the core has registered (`{ocr: {...}, speech: {...}}`,
+  /// each with `available` and, when true, `engine`). Never throws: an older
+  /// core without the ops reads as unavailable.
+  Future<Map<String, Map<String, dynamic>>> engineStatus() async {
+    Future<Map<String, dynamic>> one(String method) async {
+      try {
+        return await _call(method, {});
+      } catch (_) {
+        return {'available': false};
+      }
+    }
+
+    return {
+      'ocr': await one('ocr.status'),
+      'speech': await one('speech.status')
+    };
+  }
+
   Future<Map<String, dynamic>> listDiagnostics({int limit = 50}) =>
       _call('diag.list', {'limit': limit});
 
@@ -801,9 +960,11 @@ class HarborService extends ChangeNotifier {
   /// One background op end-to-end: start it, poll real progress into
   /// [opProgress] (UI re-renders on each change), resolve with the result.
   Future<Map<String, dynamic>> _runOp(
-      String startMethod, Map<String, dynamic> args) async {
+      String startMethod, Map<String, dynamic> args,
+      {void Function(String opId)? onStarted}) async {
     final started = await _call(startMethod, args);
     final opId = started['op_id'] as String;
+    onStarted?.call(opId);
     while (true) {
       final status = await _call('op.status', {'op_id': opId});
       final state = status['state'] as String;
@@ -866,7 +1027,8 @@ class HarborService extends ChangeNotifier {
   /// Failure is reported (not swallowed) so the canvas can explain it.
   /// The source bytes are retained so the workbook editor can round-trip
   /// edits through the core (stateless per call, no stale handles).
-  Future<void> loadPreviewFromBytes(List<int> bytes, {String? name}) async {
+  Future<void> loadPreviewFromBytes(List<int> bytes,
+      {String? name, String? path}) async {
     _previewLoading = true;
     _previewError = null;
     notifyListeners();
@@ -874,10 +1036,12 @@ class HarborService extends ChangeNotifier {
       _preview =
           await _call('artifact.preview', {'data_b64': base64Encode(bytes)});
       _previewName = name;
+      _previewPath = path;
       _sourceBytes = bytes;
     } on ffi.HarborCoreException catch (e) {
       _preview = null;
       _previewName = name;
+      _previewPath = null;
       _previewError = e.message;
       _sourceBytes = null;
     }
@@ -926,6 +1090,7 @@ class HarborService extends ChangeNotifier {
   void clearPreview() {
     _preview = null;
     _previewName = null;
+    _previewPath = null;
     _previewError = null;
     _sourceBytes = null;
     notifyListeners();
@@ -967,12 +1132,12 @@ class HarborService extends ChangeNotifier {
   /// Release the native core (idempotent). The worker closes the handle
   /// inside its isolate, then stops.
   Future<void> close() async {
-    await _worker.close();
+    await _worker?.close();
   }
 
   @override
   void dispose() {
-    _worker.close();
+    _worker?.close();
     super.dispose();
   }
 }

@@ -36,6 +36,8 @@ encoding_rs = "0.8"
 [dev-dependencies]
 tempfile = "3"
 serde_json = { workspace = true }
+# Loads the platform OCR adapter in the scan end-to-end test.
+libloading = "0.8"
 
 # The GGUF runtime (llama.cpp) is the heavy dependency: office-only
 # builds of this library (the Harbor Office Suite) compile WITHOUT it —

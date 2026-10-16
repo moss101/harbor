@@ -106,3 +106,28 @@ XTypeGroup modelTypeGroup(String label) => XTypeGroup(
       extensions: const ['gguf'],
       uniformTypeIdentifiers: const ['public.data'],
     );
+
+/// A scanned page, a photo of a document or a PDF, for on-device OCR.
+XTypeGroup scanTypeGroup(String label) => XTypeGroup(
+      label: label,
+      extensions: const ['png', 'jpg', 'jpeg', 'pdf'],
+      uniformTypeIdentifiers: const [
+        'public.png',
+        'public.jpeg',
+        'com.adobe.pdf'
+      ],
+    );
+
+/// A recording for on-device transcription (what the OS speech engine reads).
+XTypeGroup audioTypeGroup(String label) => XTypeGroup(
+      label: label,
+      extensions: const ['wav', 'm4a', 'mp3', 'caf', 'aac', 'aiff'],
+      uniformTypeIdentifiers: const [
+        'com.microsoft.waveform-audio',
+        'com.apple.m4a-audio',
+        'public.mp3',
+        'com.apple.coreaudio-format',
+        'public.aac-audio',
+        'public.aiff-audio',
+      ],
+    );

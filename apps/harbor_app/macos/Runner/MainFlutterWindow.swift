@@ -13,6 +13,26 @@ class MainFlutterWindow: NSWindow {
 
     RegisterGeneratedPlugins(registry: flutterViewController)
 
+    // OS OCR / speech engines for the core (Dart: lib/services/native_adapters.dart).
+    FlutterMethodChannel(
+      name: "dev.harbor/native_adapters",
+      binaryMessenger: flutterViewController.engine.binaryMessenger
+    ).setMethodCallHandler { call, result in
+      if call.method == "addresses" {
+        result(harborNativeAdapterAddresses())
+      } else {
+        result(FlutterMethodNotImplemented)
+      }
+    }
+
+    // Microphone capture for the composer (Dart: lib/services/capture.dart).
+    FlutterMethodChannel(
+      name: "dev.harbor/capture",
+      binaryMessenger: flutterViewController.engine.binaryMessenger
+    ).setMethodCallHandler { [capture = HarborCapture()] call, result in
+      capture.handle(call.method, result: result)
+    }
+
     // Video -> sampled JPEG frames for multimodal indexing (the Rust core
     // carries no video decoder). Dart: lib/services/video_frames.dart.
     FlutterMethodChannel(

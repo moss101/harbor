@@ -7,6 +7,85 @@ ran at.
 
 ---
 
+## Session 60 follow-up (2026-10-14): review fixes and the open items
+
+Closed:
+- `scan_images`: Flate page rasters are inflated under a cap derived from the declared size (a
+  small hostile PDF can no longer expand to gigabytes); test added.
+- `op.start_tools_read` (+ `HarborService.ocrDocument` / `transcribeAudio`): OCR and speech reads
+  run as cancellable ops; `tools.read` shares the validation.
+- **Apple Runners register the OS engines** (`dev.harbor/native_adapters`, addresses taken inside the
+  host files; speech gated to iOS/macOS 26). VERIFIED ON SCREEN on the iOS simulator: Settings ->
+  "On-device engines" shows `apple-vision` and `apple-speech-transcriber`. macOS debug build links;
+  the macOS app was not seen running (login-keychain prompt for a differently signed build).
+- **Capture UI** (T3): Home composer has Scan and Record buttons; each ends in an editable review
+  dialog (engine, pages to check by eye, recommend-only `decision.choose` suggestion) and fills the
+  composer - never submits. `dev.harbor/capture` in Swift (iOS/macOS; photo on iOS) and Kotlin
+  (Android: WAV recorder, system camera via FileProvider, on-device `SpeechRecognizer` for recordings
+  made in Harbor). Permission strings: iOS mic+camera, macOS mic (+ audio-input entitlement), Android
+  RECORD_AUDIO (no CAMERA permission: photos go through the camera app).
+- **Vision-model OCR in Models** (T4): "Use for scanning" on installed packages with a projector
+  (`models.installed.has_projector`; embedders excluded); shows the backend the core verified
+  (`gpu` / `cpu_fallback`); released on memory pressure. Core fix: the OCR registry kept ONE slot, so
+  choosing a vision model replaced Apple Vision and releasing it left no engine - the platform engine
+  is now kept underneath and restored (`release_ocr_engine`, own test binary).
+- `email-drafting/reply` live failure: the 1.5B model puts the sender's own name in `sign_off`; the
+  checker/renderer drop exactly that name (re-added once), another person's name is still refused.
+  Live tier 26/32 (the other six failures are unchanged from the pre-work commit).
+- `deny.toml`: RUSTSEC-2024-0449 (unsafe-libyaml unmaintained, via formualizer -> sheetport-spec)
+  recorded with reason and re-check trigger; supply chain PASS.
+
+Found by running it: on the iOS simulator `AVAudioRecorder.record()` with the AAC encoder blocked
+the MAIN thread (UI frozen). Recording is now 16 kHz mono PCM WAV (no encoder), set up off the main
+thread, with a 20 s Dart timeout and a cancel token so a late-starting recorder cannot leave the
+microphone open. The simulator's audio daemon still never answers `record()`, so the happy path
+(record -> transcribe) is UNVERIFIED on any device: needs a physical iPhone / Android phone.
+
+NOT verified: recording and transcription end to end on a device; Android capture/dictation at
+runtime (Kotlin compiles, manifest merges; on-device recognizer needs Android 13+ and the language
+pack); the vision-model scan action with a real installed VLM through the UI; Windows/Linux speech
+(none exists; UI offers files only).
+
+---
+
+## Session 60 (2026-10-10): independent verification + gap closure (decision 0017)
+
+Full report: `docs/verification_2026-10-10.md`. Baseline re-run first (workspace 484/0/15),
+router calibration and retrieval re-measured on both embedders: EmbeddingGemma 2 and BGE-M3 are
+tied at skill routing (45-46 % coverage, 78-80 % precision, in-sample); on Harbor's 832-case
+corpus EmbeddingGemma 2 ranks at the ceiling (NDCG@10 1.000) vs BGE-M3 0.973-0.990 - a ceiling
+effect on a templated corpus, not a general margin. Gaps found and closed: a runnable
+`supplier-invoice-review` skill (deterministic overdue/comparison/totals; opened in Excel, no
+repair; live Qwen2.5-1.5B passes), opt-in retrieval in `document-drafter` (`knowledge.gather`),
+`memory.correct` + `similar` on `memory.add`, ranking metrics in the retrieval qualification,
+router calibration v2 (36 skills). Verified with two chat models on one index: Qwen drafts from
+retrieved passages, the 260K fixture fails explicitly (context), retrieval/routing/memory
+unchanged. Gate: workspace 501/0/16, clippy/fmt clean, Dart 71/71. NOT done / unverified: voice,
+camera capture, OS background work, desktop handoff, PDF OCR check, device re-runs, a second
+capable chat model, Decision Maker; live tier is 25/32 with `email-drafting/reply` failing
+(explained and fixed in the follow-up below; the S41 record was 25/31). Changes are uncommitted.
+
+---
+
+### Session 60 addendum (round 3, decision 0019)
+Voice via the OS's embedded speech model (`speech.transcribe`, macOS/iOS 26, no Arabic), portable OCR through
+vision-language GGUFs (Qwen2.5-VL-3B exact on English scans; SmolVLM2-500M flagged for review), a learned
+decision head (`decision.choose`: EmbeddingGemma 2 88.5 % top-1 over 8 action kinds), keystore never mints a
+key over an unreadable one + `harbor_core_last_open_error`, EmbeddingGemma 2 gains research
+(`docs/embeddinggemma2_gains.md`). Gate: workspace 522/0 (+ heavy ignored VLM tier), clippy/fmt clean, Dart 71/71,
+supply chain PASS. Open: Runner wiring of Apple adapters, capture UI, Android adapters, Arabic speech.
+
+### Session 60 addendum (round 2, decision 0018)
+Closed: `workflow.*` orchestrator (invoices -> Excel -> Word -> PowerPoint, one approval per step, live
+Qwen run), on-device OCR (Apple Vision host, `ocr.extract`, scanned-PDF and photo fixtures, CER 0 on
+synthetic scans), second chat model (Llama-3.2-1B, both models agree on tool-computed totals), Office
+files opened in Word/PowerPoint, live-tier "flip" explained (24/31 on the pre-back-port commit),
+iOS-simulator check of the new skill. Gate: workspace 510/0/16, Dart 71/71. Open: ASR, capture UI,
+reminders, handoff, Decision Maker, Android/Windows OCR, Vision host registration in the iOS Runner,
+device runs. Uncommitted.
+
+---
+
 ## Session 59 (2026-10-09): the decision-0011 gaps that can be closed
 
 **EmbeddingGemma 2 now RUNS (decision 0013).** No released binding had the

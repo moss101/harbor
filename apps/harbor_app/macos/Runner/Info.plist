@@ -30,5 +30,7 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Harbor records your voice only when you press Record, and turns it into text on this Mac. The recording is not kept and nothing is uploaded.</string>
 </dict>
 </plist>

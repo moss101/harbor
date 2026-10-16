@@ -118,6 +118,48 @@ String firstFreePath(
 typedef SaveDestinationResolver = Future<String?> Function(
     String suggestedName);
 
+/// A file the caller already holds (the open Work Canvas file, a file
+/// attached on Home), handed to a run sheet so it starts attached. [path]
+/// is the user's own file where the picker handed one back (desktop); it
+/// is only ever an Overwrite destination, which the core refuses unless
+/// the file there still matches the approved base.
+final class AttachedFile {
+  const AttachedFile({required this.name, required this.bytes, this.path});
+  final String name;
+  final List<int> bytes;
+  final String? path;
+}
+
+/// The text field of [graph]'s inputs a free-text request belongs in: an
+/// instruction-like field first, then the first required free-text field.
+/// Null when the skill takes no free text (the request is then not used).
+String? requestFieldFor(SkillGraphInfo graph) {
+  const preferred = [
+    'instruction',
+    'user_request',
+    'focus',
+    'brief',
+    'notes',
+    'description',
+    'request',
+  ];
+  bool isText(Map<String, dynamic> schema) =>
+      schema['enum'] is! List &&
+      schema['type'] != 'integer' &&
+      schema['type'] != 'object' &&
+      schema['type'] != 'boolean';
+  final props = {for (final e in graph.inputProperties) e.key: e.value};
+  for (final key in preferred) {
+    final schema = props[key];
+    if (schema != null && isText(schema)) return key;
+  }
+  for (final key in graph.requiredInputs) {
+    final schema = props[key];
+    if (key != 'artifact_id' && schema != null && isText(schema)) return key;
+  }
+  return null;
+}
+
 class SkillRunSheet extends StatefulWidget {
   const SkillRunSheet({
     super.key,
@@ -125,6 +167,11 @@ class SkillRunSheet extends StatefulWidget {
     required this.service,
     this.resolveSaveDestination,
     this.pickArtifact,
+    this.initialArtifact,
+    this.initialRequest,
+    this.chatPackage,
+    this.onCommitted,
+    this.onReport,
   });
 
   final SkillSummary skill;
@@ -134,10 +181,50 @@ class SkillRunSheet extends StatefulWidget {
   /// Replaces the platform file picker (tests attach fixtures directly).
   final Future<XFile?> Function()? pickArtifact;
 
+  /// A file to start attached (the person can still replace it).
+  final AttachedFile? initialArtifact;
+
+  /// The person's request, prefilled into the skill's free-text field
+  /// ([requestFieldFor]); editable, and nothing runs until they press Run.
+  final String? initialRequest;
+
+  /// The chat model to preselect (when installed).
+  final String? chatPackage;
+
+  /// Called after a proposal was written: the core's `commit` record
+  /// (`destination`, `mode`, `version_id`).
+  final ValueChanged<Map<String, dynamic>>? onCommitted;
+
+  /// Called with every run report the sheet receives (started, decided,
+  /// committed), so the opener can link to the durable run.
+  final ValueChanged<Map<String, dynamic>>? onReport;
+
+  /// Test hook: where Save New Copy lands for sheets opened through
+  /// [show] (which has no resolver parameter of its own).
+  @visibleForTesting
+  static SaveDestinationResolver? debugResolveSaveDestination;
+
   static Future<void> show(
-      BuildContext context, SkillSummary skill, HarborService service) {
+    BuildContext context,
+    SkillSummary skill,
+    HarborService service, {
+    AttachedFile? initialArtifact,
+    String? initialRequest,
+    String? chatPackage,
+    ValueChanged<Map<String, dynamic>>? onCommitted,
+    ValueChanged<Map<String, dynamic>>? onReport,
+  }) {
     final compact = HarborBreakpoints.isCompact(HarborBreakpoints.of(context));
-    final sheet = SkillRunSheet(skill: skill, service: service);
+    final sheet = SkillRunSheet(
+      skill: skill,
+      service: service,
+      resolveSaveDestination: debugResolveSaveDestination,
+      initialArtifact: initialArtifact,
+      initialRequest: initialRequest,
+      chatPackage: chatPackage,
+      onCommitted: onCommitted,
+      onReport: onReport,
+    );
     if (compact) {
       return showModalBottomSheet<void>(
         context: context,
@@ -163,7 +250,7 @@ class SkillRunSheet extends StatefulWidget {
 class _SkillRunSheetState extends State<SkillRunSheet> {
   final Map<String, TextEditingController> _fields = {};
   final Map<String, String?> _choices = {};
-  final Map<String, XFile> _attached = {};
+  final Map<String, AttachedFile> _attached = {};
   final Map<String, List<int>> _attachedBytes = {};
   String? _chatPackage;
   bool _busy = false;
@@ -186,7 +273,20 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
       }
     }
     final models = widget.service.installedModels;
-    if (models.isNotEmpty) _chatPackage = models.first['id'] as String;
+    if (models.isNotEmpty) {
+      final ids = [for (final m in models) m['id'] as String];
+      _chatPackage =
+          ids.contains(widget.chatPackage) ? widget.chatPackage : ids.first;
+    }
+    final initial = widget.initialArtifact;
+    if (initial != null &&
+        _graph.inputProperties.any((e) => _isArtifact(e.key))) {
+      _attached['artifact_id'] = initial;
+      _attachedBytes['artifact_id'] = initial.bytes;
+    }
+    final request = widget.initialRequest?.trim() ?? '';
+    final field = request.isEmpty ? null : requestFieldFor(_graph);
+    if (field != null) _fields[field]?.text = request;
   }
 
   @override
@@ -242,7 +342,8 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
     if (file == null) return;
     final bytes = await file.readAsBytes();
     setState(() {
-      _attached[key] = file!;
+      _attached[key] =
+          AttachedFile(name: file!.name, bytes: bytes, path: file.path);
       _attachedBytes[key] = bytes;
     });
   }
@@ -318,6 +419,7 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
       );
       if (!mounted) return;
       setState(() => _report = report);
+      widget.onReport?.call(report);
     } on ffi.HarborCoreException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
@@ -334,6 +436,7 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
       final report = await widget.service.decideRun(runId, approved: approved);
       if (!mounted) return;
       setState(() => _report = report);
+      widget.onReport?.call(report);
     } on ffi.HarborCoreException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
@@ -344,7 +447,7 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
 
   /// The attached artifact the proposal is bound to (its bytes go back to
   /// the core with the commit; the core keeps no document content).
-  MapEntry<String, XFile>? get _proposalFile {
+  MapEntry<String, AttachedFile>? get _proposalFile {
     if (_attached.isEmpty) return null;
     return _attached.entries.first;
   }
@@ -353,7 +456,7 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
       ApprovalActions.of(
         approval,
         attachedName: _proposalFile?.value.name,
-        attachedHasRealPath: _proposalFile?.value.path.isNotEmpty ?? false,
+        attachedHasRealPath: _proposalFile?.value.path?.isNotEmpty ?? false,
         pickerReturnsUsersFile: pickerReturnsTheUsersFile,
       );
 
@@ -405,7 +508,7 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
       if (destination == null) return; // dialog dismissed
     } else if (target == CommitTarget.overwrite) {
       final picked = file!;
-      final original = picked.value.path;
+      final original = picked.value.path ?? '';
       if (original.isEmpty) return;
       final ok = await showDialog<bool>(
         context: context,
@@ -460,6 +563,9 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
           _error = '${commitError['outcome']}: ${commitError['error']}';
         }
       });
+      widget.onReport?.call(_report!);
+      final commit = _commit;
+      if (commit != null) widget.onCommitted?.call(commit);
     } on ffi.HarborCoreException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);

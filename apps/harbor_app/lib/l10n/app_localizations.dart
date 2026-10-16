@@ -104,23 +104,11 @@ abstract class AppLocalizations {
   /// **'Home'**
   String get surfaceHome;
 
-  /// No description provided for @surfaceAsk.
-  ///
-  /// In en, this message translates to:
-  /// **'Ask'**
-  String get surfaceAsk;
-
   /// No description provided for @surfaceWork.
   ///
   /// In en, this message translates to:
   /// **'Work'**
   String get surfaceWork;
-
-  /// No description provided for @surfaceAgents.
-  ///
-  /// In en, this message translates to:
-  /// **'Agents'**
-  String get surfaceAgents;
 
   /// No description provided for @surfaceModels.
   ///
@@ -137,7 +125,7 @@ abstract class AppLocalizations {
   /// No description provided for @surfaceKnowledge.
   ///
   /// In en, this message translates to:
-  /// **'Knowledge'**
+  /// **'Library'**
   String get surfaceKnowledge;
 
   /// No description provided for @surfaceActivity.
@@ -229,12 +217,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recommended'**
   String get modelsRecommended;
-
-  /// No description provided for @modelsLibrary.
-  ///
-  /// In en, this message translates to:
-  /// **'Harbor Library'**
-  String get modelsLibrary;
 
   /// No description provided for @modelsHuggingFace.
   ///
@@ -338,12 +320,6 @@ abstract class AppLocalizations {
   /// **'No agents configured'**
   String get agentsEmptyTitle;
 
-  /// No description provided for @agentsEmptyBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Agents combine a model, tools, skills, knowledge and policy. Create one to delegate multi-step work with durable, inspectable runs.'**
-  String get agentsEmptyBody;
-
   /// No description provided for @skillsEmptyTitle.
   ///
   /// In en, this message translates to:
@@ -359,7 +335,7 @@ abstract class AppLocalizations {
   /// No description provided for @knowledgeEmptyTitle.
   ///
   /// In en, this message translates to:
-  /// **'Knowledge is empty'**
+  /// **'Your Library is empty'**
   String get knowledgeEmptyTitle;
 
   /// No description provided for @knowledgeEmptyBody.
@@ -379,18 +355,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Durable agent runs appear here with their full Run Trail — including pause, approval and recovery states.'**
   String get activityEmptyBody;
-
-  /// No description provided for @askEmptyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Ask works on your files'**
-  String get askEmptyTitle;
-
-  /// No description provided for @askEmptyBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Answers ground in your workspace with citations and abstain when evidence is insufficient.'**
-  String get askEmptyBody;
 
   /// No description provided for @lensButton.
   ///
@@ -440,12 +404,6 @@ abstract class AppLocalizations {
   /// **'Core unavailable — native runtime not loaded'**
   String get modelDockCoreUnavailable;
 
-  /// No description provided for @modelsLibraryEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'Curated Harbor library packages appear here.'**
-  String get modelsLibraryEmpty;
-
   /// No description provided for @modelsHfEmpty.
   ///
   /// In en, this message translates to:
@@ -461,7 +419,7 @@ abstract class AppLocalizations {
   /// No description provided for @modelsInstalledEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Install a model from Recommended or the Library. Fit Score shows what your device can run well.'**
+  /// **'Install a model from Recommended or Hugging Face. Fit Score shows what your device can run well.'**
   String get modelsInstalledEmpty;
 
   /// No description provided for @modelsBenchmarkEmpty.
@@ -539,13 +497,13 @@ abstract class AppLocalizations {
   /// No description provided for @askKnowledgeNotOpen.
   ///
   /// In en, this message translates to:
-  /// **'Knowledge is not open yet. Install an embedding model (Models → Installed) to ground answers locally.'**
+  /// **'The Library is not open yet. Install an embedding model (Models → Installed) to ground answers locally.'**
   String get askKnowledgeNotOpen;
 
   /// No description provided for @askAbstentionHeading.
   ///
   /// In en, this message translates to:
-  /// **'I could not find support for this in your Knowledge.'**
+  /// **'I could not find support for this in your Library.'**
   String get askAbstentionHeading;
 
   /// No description provided for @sendAction.
@@ -563,7 +521,7 @@ abstract class AppLocalizations {
   /// No description provided for @askSearchTooltip.
   ///
   /// In en, this message translates to:
-  /// **'Search Knowledge'**
+  /// **'Search the Library'**
   String get askSearchTooltip;
 
   /// No description provided for @statusInstalled.
@@ -577,12 +535,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get cancelAction;
-
-  /// No description provided for @askGenerateTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Generate answer'**
-  String get askGenerateTooltip;
 
   /// No description provided for @askAnswerHeading.
   ///
@@ -623,13 +575,13 @@ abstract class AppLocalizations {
   /// No description provided for @askNoChatModel.
   ///
   /// In en, this message translates to:
-  /// **'No chat model installed. Answers need a chat model (Models → Hugging Face); with Knowledge open, retrieval-only citations still work.'**
+  /// **'No chat model installed. Answers need a chat model (Models → Recommended); with the Library open, retrieval-only citations still work.'**
   String get askNoChatModel;
 
   /// No description provided for @askSearchOnly.
   ///
   /// In en, this message translates to:
-  /// **'Search Knowledge'**
+  /// **'Search the Library only'**
   String get askSearchOnly;
 
   /// No description provided for @knowledgeSourcesHeading.
@@ -721,12 +673,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Removed {title}'**
   String knowledgeRemoved(String title);
-
-  /// No description provided for @agentsUnavailableBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent orchestration is not enabled in this release. The built-in skill families (Skills tab) are available today.'**
-  String get agentsUnavailableBody;
 
   /// No description provided for @modelInstallAction.
   ///
@@ -923,7 +869,7 @@ abstract class AppLocalizations {
   /// No description provided for @lensSectionKnowledge.
   ///
   /// In en, this message translates to:
-  /// **'Knowledge index'**
+  /// **'Library index'**
   String get lensSectionKnowledge;
 
   /// No description provided for @viewAllAction.
@@ -1100,12 +1046,6 @@ abstract class AppLocalizations {
   /// **'Open Activity'**
   String get homeOpenActivity;
 
-  /// No description provided for @homeRequestQueued.
-  ///
-  /// In en, this message translates to:
-  /// **'Request recorded as a durable run'**
-  String get homeRequestQueued;
-
   /// No description provided for @homeRequestFailed.
   ///
   /// In en, this message translates to:
@@ -1117,12 +1057,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Quick actions'**
   String get quickActionsHeading;
-
-  /// No description provided for @askSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Grounded answers with citations from your Knowledge'**
-  String get askSubtitle;
 
   /// No description provided for @askYou.
   ///
@@ -1165,12 +1099,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear conversation'**
   String get askClearConversation;
-
-  /// No description provided for @askComposerHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Ask about your files…'**
-  String get askComposerHint;
 
   /// No description provided for @askErrorTitle.
   ///
@@ -1397,7 +1325,7 @@ abstract class AppLocalizations {
   /// No description provided for @modelsUseForAsk.
   ///
   /// In en, this message translates to:
-  /// **'Use for Ask'**
+  /// **'Use for answers'**
   String get modelsUseForAsk;
 
   /// No description provided for @modelsInUse.
@@ -1514,24 +1442,6 @@ abstract class AppLocalizations {
   /// **'Model packages'**
   String get fileGroupModels;
 
-  /// No description provided for @agentsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Profiles that combine a model, tools, skills, knowledge and policy'**
-  String get agentsSubtitle;
-
-  /// No description provided for @agentsUnavailableTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Not enabled in this release'**
-  String get agentsUnavailableTitle;
-
-  /// No description provided for @agentsWhatTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'What an agent profile will contain'**
-  String get agentsWhatTitle;
-
   /// No description provided for @agentsPartModel.
   ///
   /// In en, this message translates to:
@@ -1579,18 +1489,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Protected effects pause for a Harbor Sheet review before anything is written.'**
   String get agentsPartPolicyBody;
-
-  /// No description provided for @agentsGoSkills.
-  ///
-  /// In en, this message translates to:
-  /// **'Browse skills'**
-  String get agentsGoSkills;
-
-  /// No description provided for @agentsGoActivity.
-  ///
-  /// In en, this message translates to:
-  /// **'View runs'**
-  String get agentsGoActivity;
 
   /// No description provided for @skillsSubtitle.
   ///
@@ -1769,7 +1667,7 @@ abstract class AppLocalizations {
   /// No description provided for @activityOpKindIngest.
   ///
   /// In en, this message translates to:
-  /// **'Knowledge indexing'**
+  /// **'Library indexing'**
   String get activityOpKindIngest;
 
   /// No description provided for @activityOpKindGenerate.
@@ -2312,16 +2210,10 @@ abstract class AppLocalizations {
   /// **'Copied to the clipboard'**
   String get skillsCopied;
 
-  /// No description provided for @surfaceStore.
-  ///
-  /// In en, this message translates to:
-  /// **'Store'**
-  String get surfaceStore;
-
   /// No description provided for @storeTagline.
   ///
   /// In en, this message translates to:
-  /// **'Included products and first-party models'**
+  /// **'Products included with Harbor'**
   String get storeTagline;
 
   /// No description provided for @storeOfficeTitle.
@@ -2347,24 +2239,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open in Work'**
   String get storeOfficeOpen;
-
-  /// No description provided for @storeModelsHeading.
-  ///
-  /// In en, this message translates to:
-  /// **'Harbor models ({count})'**
-  String storeModelsHeading(int count);
-
-  /// No description provided for @storeModelsBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Signed, first-party catalog entries. Downloads are quoted and confirmed before transfer.'**
-  String get storeModelsBody;
-
-  /// No description provided for @storeInstalledHeading.
-  ///
-  /// In en, this message translates to:
-  /// **'Installed on this device'**
-  String get storeInstalledHeading;
 
   /// No description provided for @storeUninstall.
   ///
@@ -2443,12 +2317,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not read the package'**
   String get storePreviewFailed;
-
-  /// No description provided for @storeEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'The accepted signed catalog is empty on this device.'**
-  String get storeEmpty;
 
   /// No description provided for @storeManageHint.
   ///
@@ -2651,7 +2519,7 @@ abstract class AppLocalizations {
   /// No description provided for @goalsNoChatModel.
   ///
   /// In en, this message translates to:
-  /// **'Install a chat model first — goals answer through Ask.'**
+  /// **'Install a chat model first — goals answer with it.'**
   String get goalsNoChatModel;
 
   /// No description provided for @goalsStateActive.
@@ -2815,30 +2683,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create goal'**
   String get goalsCreateConfirm;
-
-  /// No description provided for @agentsNotAutonomyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Not autonomous orchestration'**
-  String get agentsNotAutonomyTitle;
-
-  /// No description provided for @agentsNotAutonomyBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Multi-step agent planning beyond skill graphs, and scheduled execution without a tap, are not in this release. Skills run exactly the graphs they declare, with approvals enforced.'**
-  String get agentsNotAutonomyBody;
-
-  /// No description provided for @agentsNotHandsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'No computer use'**
-  String get agentsNotHandsTitle;
-
-  /// No description provided for @agentsNotHandsBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Harbor never controls your screen or other apps. It works through typed tools, files you attach, and documents you approve.'**
-  String get agentsNotHandsBody;
 
   /// No description provided for @goalsKindPrompt.
   ///
@@ -3049,6 +2893,468 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Indexing video needs FFmpeg on this computer. Install FFmpeg (or set HARBOR_FFMPEG to its location) and try again.'**
   String get knowledgeVideoNeedsFfmpeg;
+
+  /// No description provided for @settingsEngines.
+  ///
+  /// In en, this message translates to:
+  /// **'On-device engines'**
+  String get settingsEngines;
+
+  /// No description provided for @settingsEnginesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading scans and transcribing recordings use the operating system\'s own models on this device. Nothing is uploaded.'**
+  String get settingsEnginesBody;
+
+  /// No description provided for @settingsEngineScans.
+  ///
+  /// In en, this message translates to:
+  /// **'Scans and photos'**
+  String get settingsEngineScans;
+
+  /// No description provided for @settingsEngineVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice recordings'**
+  String get settingsEngineVoice;
+
+  /// No description provided for @settingsEngineUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available on this device'**
+  String get settingsEngineUnavailable;
+
+  /// No description provided for @captureScanTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Read a scan or photo'**
+  String get captureScanTooltip;
+
+  /// No description provided for @captureRecordTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Dictate or transcribe a recording'**
+  String get captureRecordTooltip;
+
+  /// No description provided for @captureChooseFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a file'**
+  String get captureChooseFile;
+
+  /// No description provided for @captureTakePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a photo'**
+  String get captureTakePhoto;
+
+  /// No description provided for @captureRecordNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Record now'**
+  String get captureRecordNow;
+
+  /// No description provided for @captureChooseRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a recording'**
+  String get captureChooseRecording;
+
+  /// No description provided for @captureReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading on this device…'**
+  String get captureReading;
+
+  /// No description provided for @captureTranscribing.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing on this device…'**
+  String get captureTranscribing;
+
+  /// No description provided for @captureCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get captureCancel;
+
+  /// No description provided for @captureReviewScanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the text'**
+  String get captureReviewScanTitle;
+
+  /// No description provided for @captureReviewVoiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the transcript'**
+  String get captureReviewVoiceTitle;
+
+  /// No description provided for @captureReviewBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Check it against the original before you use it. Nothing leaves this device.'**
+  String get captureReviewBody;
+
+  /// No description provided for @captureEngine.
+  ///
+  /// In en, this message translates to:
+  /// **'Engine: {engine}'**
+  String captureEngine(String engine);
+
+  /// No description provided for @captureCheckPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages to check by eye: {pages}'**
+  String captureCheckPages(String pages);
+
+  /// No description provided for @captureSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'This looks like: {kind}'**
+  String captureSuggestion(String kind);
+
+  /// No description provided for @captureUseAsInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Use as input'**
+  String get captureUseAsInput;
+
+  /// No description provided for @captureDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get captureDiscard;
+
+  /// No description provided for @captureRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording…'**
+  String get captureRecording;
+
+  /// No description provided for @captureStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop and transcribe'**
+  String get captureStop;
+
+  /// No description provided for @captureFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read this: {message}'**
+  String captureFailed(String message);
+
+  /// No description provided for @captureMicDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone access is off. Allow it in system settings to record.'**
+  String get captureMicDenied;
+
+  /// No description provided for @captureEmptyResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was recognised in this file.'**
+  String get captureEmptyResult;
+
+  /// No description provided for @intentRunSkill.
+  ///
+  /// In en, this message translates to:
+  /// **'Do a task on your files'**
+  String get intentRunSkill;
+
+  /// No description provided for @intentSearchDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'Find something in your documents'**
+  String get intentSearchDocuments;
+
+  /// No description provided for @intentRememberFact.
+  ///
+  /// In en, this message translates to:
+  /// **'Remember something'**
+  String get intentRememberFact;
+
+  /// No description provided for @intentRecallMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Recall what you told Harbor'**
+  String get intentRecallMemory;
+
+  /// No description provided for @intentScheduleGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Do this on a schedule'**
+  String get intentScheduleGoal;
+
+  /// No description provided for @intentReadScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Read a scan or photo'**
+  String get intentReadScan;
+
+  /// No description provided for @intentTranscribeAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribe a recording'**
+  String get intentTranscribeAudio;
+
+  /// No description provided for @intentGeneralChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask or discuss'**
+  String get intentGeneralChat;
+
+  /// No description provided for @modelsUseForScanning.
+  ///
+  /// In en, this message translates to:
+  /// **'Use for scanning'**
+  String get modelsUseForScanning;
+
+  /// No description provided for @modelsScanningActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading scans ({backend})'**
+  String modelsScanningActive(String backend);
+
+  /// No description provided for @modelsScanningStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop using for scans'**
+  String get modelsScanningStop;
+
+  /// No description provided for @modelsScanBackendGpu.
+  ///
+  /// In en, this message translates to:
+  /// **'GPU'**
+  String get modelsScanBackendGpu;
+
+  /// No description provided for @modelsScanBackendCpu.
+  ///
+  /// In en, this message translates to:
+  /// **'CPU - this device\'s GPU read wrongly'**
+  String get modelsScanBackendCpu;
+
+  /// No description provided for @modelsScanningLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading and checking the model…'**
+  String get modelsScanningLoading;
+
+  /// No description provided for @modelsScanningFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'This model cannot read scans: {message}'**
+  String modelsScanningFailed(String message);
+
+  /// No description provided for @modelsScanningNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages read by a model are always listed for you to check.'**
+  String get modelsScanningNote;
+
+  /// No description provided for @fileGroupScans.
+  ///
+  /// In en, this message translates to:
+  /// **'Scans and photos'**
+  String get fileGroupScans;
+
+  /// No description provided for @fileGroupAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio recordings'**
+  String get fileGroupAudio;
+
+  /// No description provided for @captureMicUnresponsive.
+  ///
+  /// In en, this message translates to:
+  /// **'The microphone did not respond. Try again, or choose a recording instead.'**
+  String get captureMicUnresponsive;
+
+  /// No description provided for @composerScopeEverything.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything'**
+  String get composerScopeEverything;
+
+  /// No description provided for @composerScopeThisFile.
+  ///
+  /// In en, this message translates to:
+  /// **'This file · {name}'**
+  String composerScopeThisFile(String name);
+
+  /// No description provided for @composerScopeCollection.
+  ///
+  /// In en, this message translates to:
+  /// **'Collection · {name}'**
+  String composerScopeCollection(String name);
+
+  /// No description provided for @composerModeAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask'**
+  String get composerModeAsk;
+
+  /// No description provided for @composerModeChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get composerModeChange;
+
+  /// No description provided for @composerModeAutoTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Harbor picks Ask or Change from your words. Tap one to choose yourself.'**
+  String get composerModeAutoTooltip;
+
+  /// No description provided for @workCommandHintAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about this file, or describe a change'**
+  String get workCommandHintAuto;
+
+  /// No description provided for @workCommandHintAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask a question about this file'**
+  String get workCommandHintAsk;
+
+  /// No description provided for @workCommandHintChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the change you want'**
+  String get workCommandHintChange;
+
+  /// No description provided for @workCitationJump.
+  ///
+  /// In en, this message translates to:
+  /// **'Show {label} in the file'**
+  String workCitationJump(String label);
+
+  /// No description provided for @workParagraph.
+  ///
+  /// In en, this message translates to:
+  /// **'Paragraph {index}'**
+  String workParagraph(int index);
+
+  /// No description provided for @workCell.
+  ///
+  /// In en, this message translates to:
+  /// **'Cell {ref}'**
+  String workCell(String ref);
+
+  /// No description provided for @answerDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get answerDismiss;
+
+  /// No description provided for @workNeedsChatModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Install a chat model to ask about this file. Answers are generated on this device, from this file\'s text only.'**
+  String get workNeedsChatModel;
+
+  /// No description provided for @workNoReadableText.
+  ///
+  /// In en, this message translates to:
+  /// **'This file has no text Harbor can read to answer from.'**
+  String get workNoReadableText;
+
+  /// No description provided for @workReloadedResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing the saved result: {name}'**
+  String workReloadedResult(String name);
+
+  /// No description provided for @workReloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The result was saved, but it could not be opened here'**
+  String get workReloadFailed;
+
+  /// No description provided for @routeMatched.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened {skill}. Nothing changes until you run it and approve the result.'**
+  String routeMatched(String skill);
+
+  /// No description provided for @routeOtherSkills.
+  ///
+  /// In en, this message translates to:
+  /// **'Other skills that fit'**
+  String get routeOtherSkills;
+
+  /// No description provided for @routeNoIndex.
+  ///
+  /// In en, this message translates to:
+  /// **'Skills are ranked by the Library\'s embedding model, which is not open. Choose a skill yourself:'**
+  String get routeNoIndex;
+
+  /// No description provided for @routeNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No skill clearly fits this request.'**
+  String get routeNoMatch;
+
+  /// No description provided for @routeAmbiguous.
+  ///
+  /// In en, this message translates to:
+  /// **'More than one skill could fit. Choose one:'**
+  String get routeAmbiguous;
+
+  /// No description provided for @routeNoRunnable.
+  ///
+  /// In en, this message translates to:
+  /// **'No skill that can run here fits this request.'**
+  String get routeNoRunnable;
+
+  /// No description provided for @routeBrowseSkills.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse skills'**
+  String get routeBrowseSkills;
+
+  /// No description provided for @homeAttachmentRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name} from this request'**
+  String homeAttachmentRemove(String name);
+
+  /// No description provided for @homeAddToKnowledge.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Library'**
+  String get homeAddToKnowledge;
+
+  /// No description provided for @homeAttachmentsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Attached files go with this request only. Add them to the Library to search them later.'**
+  String get homeAttachmentsNote;
+
+  /// No description provided for @activityTabGoals.
+  ///
+  /// In en, this message translates to:
+  /// **'Goals'**
+  String get activityTabGoals;
+
+  /// No description provided for @homeTaskViewRun.
+  ///
+  /// In en, this message translates to:
+  /// **'View run'**
+  String get homeTaskViewRun;
+
+  /// No description provided for @homeTaskReopen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open again'**
+  String get homeTaskReopen;
+
+  /// No description provided for @modelsTabStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Store'**
+  String get modelsTabStore;
 }
 
 class _AppLocalizationsDelegate

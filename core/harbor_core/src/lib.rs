@@ -6,6 +6,8 @@
 //! (and its FFI projection). One runtime, one permission model, one
 //! artifact model, one evidence model.
 
+pub mod decision;
+pub mod decision_head;
 pub mod diagnostics;
 pub mod executor;
 pub mod graph;
@@ -15,6 +17,7 @@ pub mod pointer;
 pub mod router;
 pub mod skills;
 pub mod tools;
+pub mod workflow;
 pub mod workspace;
 
 pub use skills::{

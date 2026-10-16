@@ -16,7 +16,10 @@
 pub mod authoring;
 pub mod builtin;
 pub mod create;
+pub mod invoices;
 pub mod review;
+pub mod scan;
+pub mod speech;
 pub mod table;
 
 use std::collections::{BTreeMap, BTreeSet};

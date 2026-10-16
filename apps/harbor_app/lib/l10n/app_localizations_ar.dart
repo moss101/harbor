@@ -12,13 +12,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get surfaceHome => 'الرئيسية';
 
   @override
-  String get surfaceAsk => 'اسأل';
-
-  @override
   String get surfaceWork => 'العمل';
-
-  @override
-  String get surfaceAgents => 'الوكلاء';
 
   @override
   String get surfaceModels => 'النماذج';
@@ -27,7 +21,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get surfaceSkills => 'المهارات';
 
   @override
-  String get surfaceKnowledge => 'المعرفة';
+  String get surfaceKnowledge => 'المكتبة';
 
   @override
   String get surfaceActivity => 'النشاط';
@@ -74,9 +68,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get modelsRecommended => 'الموصى بها';
-
-  @override
-  String get modelsLibrary => 'مكتبة هاربر';
 
   @override
   String get modelsHuggingFace => 'هاجينج فيس';
@@ -130,10 +121,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get agentsEmptyTitle => 'لا يوجد وكلاء';
 
   @override
-  String get agentsEmptyBody =>
-      'يجمع الوكلاء نموذجاً وأدوات ومهارات ومعرفة وسياسة. أنشئ واحداً لتفويض عمل متعدد الخطوات بمهام دائمة قابلة للفحص.';
-
-  @override
   String get skillsEmptyTitle => 'تم تحميل المهارات المدمجة';
 
   @override
@@ -141,7 +128,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعريفات مهارات للمستندات وجداول البيانات والبحث والترجمة وغيرها. القابلة للتشغيل منها تحمل مخططاً تنفيذياً.';
 
   @override
-  String get knowledgeEmptyTitle => 'المعرفة فارغة';
+  String get knowledgeEmptyTitle => 'مكتبتك فارغة';
 
   @override
   String get knowledgeEmptyBody =>
@@ -153,13 +140,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get activityEmptyBody =>
       'تظهر مهام الوكلاء الدائمة هنا مع مسار التشغيل الكامل — بما فيه الإيقاف والموافقة والاسترداد.';
-
-  @override
-  String get askEmptyTitle => 'اسأل يعمل على ملفاتك';
-
-  @override
-  String get askEmptyBody =>
-      'تؤسس الإجابات على مساحة عملك مع استشهادات وتمتنع عندما تكون الأدلة غير كافية.';
 
   @override
   String get lensButton => 'العدسة';
@@ -191,9 +171,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'النواة غير متاحة — لم يتم تحميل بيئة التشغيل الأصلية';
 
   @override
-  String get modelsLibraryEmpty => 'حزم مكتبة هاربر المنتقاة تظهر هنا.';
-
-  @override
   String get modelsHfEmpty =>
       'ابحث في المستودعات العامة. حزم النماذج بيانات فقط — لا ينفَّذ أي كود من المستودعات أبداً.';
 
@@ -203,7 +180,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get modelsInstalledEmpty =>
-      'ثبّت نموذجاً من الموصى بها أو المكتبة. يُظهر مقياس الملاءمة ما يستطيع جهازك تشغيله جيداً.';
+      'ثبّت نموذجاً من الموصى بها أو Hugging Face. يُظهر مقياس الملاءمة ما يستطيع جهازك تشغيله جيداً.';
 
   @override
   String get modelsBenchmarkEmpty =>
@@ -266,10 +243,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get askKnowledgeNotOpen =>
-      'المعرفة غير مفتوحة بعد. ثبّت نموذج تضمين (النماذج ← المثبتة) لتأسيس الإجابات محلياً.';
+      'المكتبة غير مفتوحة بعد. ثبّت نموذج تضمين (النماذج ← المثبتة) لتأسيس الإجابات محلياً.';
 
   @override
-  String get askAbstentionHeading => 'لم أجد دعماً لذلك في معرفتك.';
+  String get askAbstentionHeading => 'لم أجد دعماً لذلك في مكتبتك.';
 
   @override
   String get sendAction => 'إرسال';
@@ -278,16 +255,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lensOpenTooltip => 'افتح مفتش العدسة';
 
   @override
-  String get askSearchTooltip => 'ابحث في المعرفة';
+  String get askSearchTooltip => 'ابحث في المكتبة';
 
   @override
   String get statusInstalled => 'مثبت';
 
   @override
   String get cancelAction => 'إلغاء';
-
-  @override
-  String get askGenerateTooltip => 'توليد الإجابة';
 
   @override
   String get askAnswerHeading => 'الإجابة';
@@ -314,10 +288,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get askNoChatModel =>
-      'لا يوجد نموذج محادثة مثبّت. تحتاج الإجابات إلى نموذج محادثة (النماذج ← Hugging Face)؛ وعند فتح المعرفة تبقى الاستشهادات المسترجَعة متاحة.';
+      'لا يوجد نموذج محادثة مثبّت. تحتاج الإجابات إلى نموذج محادثة (النماذج ← الموصى بها)؛ وعند فتح المكتبة تبقى الاستشهادات المسترجَعة متاحة.';
 
   @override
-  String get askSearchOnly => 'بحث في المعرفة';
+  String get askSearchOnly => 'ابحث في المكتبة فقط';
 
   @override
   String get knowledgeSourcesHeading => 'المصادر المفهرسة';
@@ -384,10 +358,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String knowledgeRemoved(String title) {
     return 'تمت إزالة $title';
   }
-
-  @override
-  String get agentsUnavailableBody =>
-      'تنسيق الوكلاء غير مُفعّل في هذا الإصدار. عائلات المهارات المدمجة (تبويب المهارات) متاحة اليوم.';
 
   @override
   String get modelInstallAction => 'تثبيت';
@@ -494,7 +464,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lensSectionModel => 'النموذج النشط';
 
   @override
-  String get lensSectionKnowledge => 'فهرس المعرفة';
+  String get lensSectionKnowledge => 'فهرس المكتبة';
 
   @override
   String get viewAllAction => 'عرض الكل';
@@ -602,16 +572,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get homeOpenActivity => 'افتح النشاط';
 
   @override
-  String get homeRequestQueued => 'تم تسجيل الطلب كمهمة دائمة';
-
-  @override
   String get homeRequestFailed => 'تعذر تسجيل الطلب';
 
   @override
   String get quickActionsHeading => 'إجراءات سريعة';
-
-  @override
-  String get askSubtitle => 'إجابات مستندة إلى اقتباسات من معرفتك';
 
   @override
   String get askYou => 'أنت';
@@ -633,9 +597,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get askClearConversation => 'مسح المحادثة';
-
-  @override
-  String get askComposerHint => 'اسأل عن ملفاتك…';
 
   @override
   String get askErrorTitle => 'فشل التوليد';
@@ -828,7 +789,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'ثبّت ملف GGUF محلياً. الحزم بيانات فقط — لا يُنفَّذ أي كود من المستودعات أبداً.';
 
   @override
-  String get modelsUseForAsk => 'استخدم في اسأل';
+  String get modelsUseForAsk => 'استخدم للإجابات';
 
   @override
   String get modelsInUse => 'قيد الاستخدام';
@@ -925,16 +886,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fileGroupModels => 'حزم النماذج';
 
   @override
-  String get agentsSubtitle =>
-      'ملفات تجمع بين نموذج وأدوات ومهارات ومعرفة وسياسة';
-
-  @override
-  String get agentsUnavailableTitle => 'غير مفعّل في هذا الإصدار';
-
-  @override
-  String get agentsWhatTitle => 'ما سيحتويه ملف الوكيل';
-
-  @override
   String get agentsPartModel => 'النموذج';
 
   @override
@@ -961,12 +912,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get agentsPartPolicyBody =>
       'تتوقف التأثيرات المحمية لمراجعة في ورقة هاربر قبل كتابة أي شيء.';
-
-  @override
-  String get agentsGoSkills => 'تصفح المهارات';
-
-  @override
-  String get agentsGoActivity => 'عرض المهام';
 
   @override
   String get skillsSubtitle =>
@@ -1088,7 +1033,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get activityOpKindAcquire => 'الحصول على نموذج';
 
   @override
-  String get activityOpKindIngest => 'فهرسة المعرفة';
+  String get activityOpKindIngest => 'فهرسة المكتبة';
 
   @override
   String get activityOpKindGenerate => 'توليد مستند إلى أدلة';
@@ -1464,10 +1409,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get skillsCopied => 'نُسخ إلى الحافظة';
 
   @override
-  String get surfaceStore => 'المتجر';
-
-  @override
-  String get storeTagline => 'المنتجات المضمّنة والنماذج الأولى';
+  String get storeTagline => 'منتجات مضمّنة مع Harbor';
 
   @override
   String get storeOfficeTitle => 'حزمة Harbor Office';
@@ -1481,18 +1423,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get storeOfficeOpen => 'فتح في «العمل»';
-
-  @override
-  String storeModelsHeading(int count) {
-    return 'نماذج Harbor ($count)';
-  }
-
-  @override
-  String get storeModelsBody =>
-      'إدخالات الفهرس الموقّع الأول. تُعرض أحجام التنزيلات ويُؤكَّد قبل النقل.';
-
-  @override
-  String get storeInstalledHeading => 'المثبّت على هذا الجهاز';
 
   @override
   String get storeUninstall => 'إزالة';
@@ -1548,9 +1478,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get storePreviewFailed => 'تعذّرت قراءة الحزمة';
-
-  @override
-  String get storeEmpty => 'فهرس التوقيع المقبول فارغ على هذا الجهاز.';
 
   @override
   String get storeManageHint =>
@@ -1661,7 +1588,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get goalsNoChatModel =>
-      'ثبّت نموذج محادثة أولًا — تجيب الأهداف عبر «اسأل».';
+      'ثبّت نموذج محادثة أولًا — تجيب الأهداف من خلاله.';
 
   @override
   String get goalsStateActive => 'نشط';
@@ -1756,20 +1683,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get goalsCreateConfirm => 'إنشاء الهدف';
-
-  @override
-  String get agentsNotAutonomyTitle => 'ليست تنسيقًا ذاتيًا';
-
-  @override
-  String get agentsNotAutonomyBody =>
-      'تخطيط الوكيل متعدد الخطوات بما يتجاوز رسوم المهارات، والتنفيذ المجدول دون ضغطة، غير متضمنين في هذا الإصدار. تعمل المهارات وفق الرسوم التي تعلنها تمامًا، مع فرض الموافقات.';
-
-  @override
-  String get agentsNotHandsTitle => 'بلا استخدام للجهاز';
-
-  @override
-  String get agentsNotHandsBody =>
-      'لا يتحكم هاربر أبدًا في شاشتك أو في تطبيقات أخرى. يعمل عبر أدوات مكتوبة وملفات ترفقها ووثائق توافق عليها.';
 
   @override
   String get goalsKindPrompt => 'طلب حر';
@@ -1889,4 +1802,275 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get knowledgeVideoNeedsFfmpeg =>
       'فهرسة الفيديو تتطلب FFmpeg على هذا الحاسوب. ثبّت FFmpeg (أو عيّن HARBOR_FFMPEG إلى موقعه) ثم أعد المحاولة.';
+
+  @override
+  String get settingsEngines => 'المحرّكات على الجهاز';
+
+  @override
+  String get settingsEnginesBody =>
+      'قراءة المسح الضوئي والصور وتفريغ التسجيلات الصوتية تستخدم نماذج نظام التشغيل نفسه على هذا الجهاز. لا يُرفع شيء.';
+
+  @override
+  String get settingsEngineScans => 'المسح الضوئي والصور';
+
+  @override
+  String get settingsEngineVoice => 'التسجيلات الصوتية';
+
+  @override
+  String get settingsEngineUnavailable => 'غير متاح على هذا الجهاز';
+
+  @override
+  String get captureScanTooltip => 'قراءة مسح ضوئي أو صورة';
+
+  @override
+  String get captureRecordTooltip => 'إملاء أو تفريغ تسجيل صوتي';
+
+  @override
+  String get captureChooseFile => 'اختر ملفاً';
+
+  @override
+  String get captureTakePhoto => 'التقاط صورة';
+
+  @override
+  String get captureRecordNow => 'سجّل الآن';
+
+  @override
+  String get captureChooseRecording => 'اختر تسجيلاً';
+
+  @override
+  String get captureReading => 'القراءة جارية على هذا الجهاز…';
+
+  @override
+  String get captureTranscribing => 'التفريغ جارٍ على هذا الجهاز…';
+
+  @override
+  String get captureCancel => 'إلغاء';
+
+  @override
+  String get captureReviewScanTitle => 'راجع النص';
+
+  @override
+  String get captureReviewVoiceTitle => 'راجع النص المفرَّغ';
+
+  @override
+  String get captureReviewBody =>
+      'قارنه بالأصل قبل استخدامه. لا يغادر شيء هذا الجهاز.';
+
+  @override
+  String captureEngine(String engine) {
+    return 'المحرّك: $engine';
+  }
+
+  @override
+  String captureCheckPages(String pages) {
+    return 'صفحات تحتاج مراجعة بالعين: $pages';
+  }
+
+  @override
+  String captureSuggestion(String kind) {
+    return 'يبدو أن هذا: $kind';
+  }
+
+  @override
+  String get captureUseAsInput => 'استخدمه كمدخل';
+
+  @override
+  String get captureDiscard => 'تجاهل';
+
+  @override
+  String get captureRecording => 'جارٍ التسجيل…';
+
+  @override
+  String get captureStop => 'أوقف وفرّغ';
+
+  @override
+  String captureFailed(String message) {
+    return 'تعذّرت قراءة هذا: $message';
+  }
+
+  @override
+  String get captureMicDenied =>
+      'الوصول إلى الميكروفون مغلق. اسمح به من إعدادات النظام للتسجيل.';
+
+  @override
+  String get captureEmptyResult => 'لم يُتعرَّف على أي نص في هذا الملف.';
+
+  @override
+  String get intentRunSkill => 'تنفيذ مهمة على ملفاتك';
+
+  @override
+  String get intentSearchDocuments => 'البحث عن شيء في مستنداتك';
+
+  @override
+  String get intentRememberFact => 'تذكّر شيئاً';
+
+  @override
+  String get intentRecallMemory => 'استرجاع ما أخبرت به Harbor';
+
+  @override
+  String get intentScheduleGoal => 'تنفيذ هذا وفق جدول';
+
+  @override
+  String get intentReadScan => 'قراءة مسح ضوئي أو صورة';
+
+  @override
+  String get intentTranscribeAudio => 'تفريغ تسجيل صوتي';
+
+  @override
+  String get intentGeneralChat => 'سؤال أو نقاش';
+
+  @override
+  String get modelsUseForScanning => 'استخدمه للمسح الضوئي';
+
+  @override
+  String modelsScanningActive(String backend) {
+    return 'يقرأ المسح الضوئي ($backend)';
+  }
+
+  @override
+  String get modelsScanningStop => 'إيقاف استخدامه للمسح';
+
+  @override
+  String get modelsScanBackendGpu => 'وحدة الرسوميات';
+
+  @override
+  String get modelsScanBackendCpu =>
+      'المعالج - قرأت وحدة رسوميات هذا الجهاز خطأً';
+
+  @override
+  String get modelsScanningLoading => 'جارٍ تحميل النموذج والتحقق منه…';
+
+  @override
+  String modelsScanningFailed(String message) {
+    return 'لا يستطيع هذا النموذج قراءة المسح الضوئي: $message';
+  }
+
+  @override
+  String get modelsScanningNote =>
+      'الصفحات التي يقرؤها نموذج تُعرض دائماً لتراجعها.';
+
+  @override
+  String get fileGroupScans => 'مسح ضوئي وصور';
+
+  @override
+  String get fileGroupAudio => 'تسجيلات صوتية';
+
+  @override
+  String get captureMicUnresponsive =>
+      'لم يستجب الميكروفون. حاول مجدداً أو اختر تسجيلاً بدلاً من ذلك.';
+
+  @override
+  String get composerScopeEverything => 'كل شيء';
+
+  @override
+  String composerScopeThisFile(String name) {
+    return 'هذا الملف · $name';
+  }
+
+  @override
+  String composerScopeCollection(String name) {
+    return 'المجموعة · $name';
+  }
+
+  @override
+  String get composerModeAsk => 'اسأل';
+
+  @override
+  String get composerModeChange => 'عدّل';
+
+  @override
+  String get composerModeAutoTooltip =>
+      'يختار Harbor بين السؤال والتعديل من كلماتك. اضغط أحدهما لتختار بنفسك.';
+
+  @override
+  String get workCommandHintAuto => 'اسأل عن هذا الملف أو صف تعديلاً';
+
+  @override
+  String get workCommandHintAsk => 'اطرح سؤالاً عن هذا الملف';
+
+  @override
+  String get workCommandHintChange => 'صف التعديل الذي تريده';
+
+  @override
+  String workCitationJump(String label) {
+    return 'اعرض $label في الملف';
+  }
+
+  @override
+  String workParagraph(int index) {
+    return 'الفقرة $index';
+  }
+
+  @override
+  String workCell(String ref) {
+    return 'الخلية $ref';
+  }
+
+  @override
+  String get answerDismiss => 'إغلاق';
+
+  @override
+  String get workNeedsChatModel =>
+      'ثبّت نموذج محادثة لتسأل عن هذا الملف. تُولَّد الإجابات على هذا الجهاز ومن نص هذا الملف فقط.';
+
+  @override
+  String get workNoReadableText =>
+      'لا يحتوي هذا الملف على نص يستطيع Harbor قراءته للإجابة منه.';
+
+  @override
+  String workReloadedResult(String name) {
+    return 'تُعرض النتيجة المحفوظة: $name';
+  }
+
+  @override
+  String get workReloadFailed => 'حُفظت النتيجة لكن تعذّر فتحها هنا';
+
+  @override
+  String routeMatched(String skill) {
+    return 'فُتحت $skill. لن يتغير شيء حتى تشغّلها وتوافق على النتيجة.';
+  }
+
+  @override
+  String get routeOtherSkills => 'مهارات أخرى مناسبة';
+
+  @override
+  String get routeNoIndex =>
+      'تُرتَّب المهارات بنموذج التضمين في المكتبة، وهو غير مفتوح. اختر مهارة بنفسك:';
+
+  @override
+  String get routeNoMatch => 'لا توجد مهارة تناسب هذا الطلب بوضوح.';
+
+  @override
+  String get routeAmbiguous => 'قد تناسب أكثر من مهارة. اختر واحدة:';
+
+  @override
+  String get routeNoRunnable =>
+      'لا توجد مهارة قابلة للتشغيل هنا تناسب هذا الطلب.';
+
+  @override
+  String get routeBrowseSkills => 'تصفح المهارات';
+
+  @override
+  String homeAttachmentRemove(String name) {
+    return 'أزل $name من هذا الطلب';
+  }
+
+  @override
+  String get homeAddToKnowledge => 'أضف إلى المكتبة';
+
+  @override
+  String get homeAttachmentsNote =>
+      'الملفات المرفقة تُرسل مع هذا الطلب فقط. أضفها إلى المكتبة للبحث فيها لاحقاً.';
+
+  @override
+  String get activityTabGoals => 'الأهداف';
+
+  @override
+  String get homeTaskViewRun => 'عرض التشغيل';
+
+  @override
+  String get homeTaskReopen => 'افتح مرة أخرى';
+
+  @override
+  String get modelsTabStore => 'المتجر';
 }

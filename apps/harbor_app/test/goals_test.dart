@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:harbor_app/services/harbor_service.dart';
 
 /// Scheduled goals through the real core (decision 0011): the service
-/// API the Agents surface drives — create with typed validation, due
+/// API the Activity Goals tab drives — create with typed validation, due
 /// slots, write-ahead claims that dedupe across restarts, pause/resume/
 /// cancel, and receipts that survive a reopen. The surface render path
 /// is covered by the shell tests; this file proves the contract.

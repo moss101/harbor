@@ -14,10 +14,11 @@ const arabic = false;
 final dylibPath = '$repoRoot/core/target/debug/libharbor_ffi.dylib';
 final coreAvailable = File(dylibPath).existsSync();
 
-/// The Store surface: Harbor Office is an INCLUDED product card (never a
-/// download), the first-party catalog quotes before transfer, and the
-/// installed section manages uninstalls. This test exercises the render
-/// path against the real dylib when it is available.
+/// The Store, now a tab of Models: Harbor Office is an INCLUDED product
+/// card (never a download). First-party models install from Recommended
+/// and uninstall from Installed (covered by navigation_test.dart with a
+/// scripted core). This test exercises the render path against the real
+/// dylib when it is available.
 Future<void> pumpApp(WidgetTester tester,
     {double width = 390, double height = 844}) async {
   tester.view.physicalSize = Size(width, height);
@@ -53,29 +54,41 @@ Future<void> pumpApp(WidgetTester tester,
       text: const HarborType(arabic: arabic),
       child: child!,
     ),
-    home: HarborApp(
-        service: service, preferences: MemoryPreferencesStore()),
+    home: HarborApp(service: service, preferences: MemoryPreferencesStore()),
   ));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 100));
 }
 
 void main() {
-  testWidgets('store opens from More with the included office card',
+  testWidgets('the Store tab of Models shows the included office card',
       (tester) async {
     if (!coreAvailable) return;
     await pumpApp(tester);
+    // Store is no longer a destination: Models is, on the bottom bar.
     await tester.tap(find.text('More').first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    await tester.tap(find.text('Store').first);
+    expect(find.text('Store'), findsNothing);
+    Navigator.of(tester.element(find.text('Settings'))).pop();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Models').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.ensureVisible(find.text('Store'));
+    await tester.pump();
+    await tester.tap(find.text('Store'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     // The office card is an INSTALLED-product listing: the suite ships
     // inside the app, so the store shows Installed (never a download)
     // with the contents expandable; Open in Work is secondary.
-    expect(find.text('Harbor Office Suite'), findsOneWidget);
-    expect(find.text('Installed'), findsOneWidget);
+    final card = find.ancestor(
+        of: find.text('Harbor Office Suite'),
+        matching: find.byType(HarborCard));
+    expect(card, findsOneWidget);
+    expect(find.descendant(of: card, matching: find.text('Installed')),
+        findsOneWidget);
     expect(find.text('Part of the app you already have — nothing to download.'),
         findsOneWidget);
     expect(find.text('Download office'), findsNothing);
@@ -87,9 +100,12 @@ void main() {
     expect(find.text('Live'), findsNWidgets(3));
     expect(find.text('Preview'), findsNWidgets(3));
     // Open in Work navigates to the Work surface.
+    await tester.ensureVisible(find.text('Open in Work'));
+    await tester.pump();
     await tester.tap(find.text('Open in Work'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('Work'), findsWidgets);
+    final nav = tester.widget<NavigationBar>(find.byType(NavigationBar));
+    expect(nav.selectedIndex, 1, reason: 'Work is the second destination');
   });
 }

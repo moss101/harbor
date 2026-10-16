@@ -12,6 +12,7 @@
 //! implements this contract on top of `harbor_modelhub` installed
 //! packages; platform providers implement it via their native adapters.
 
+pub mod asr;
 pub mod backend;
 pub mod cassette;
 #[cfg(feature = "gguf-backend")]
@@ -19,9 +20,12 @@ pub mod gguf;
 pub mod mrl;
 #[cfg(feature = "multimodal")]
 pub mod multimodal;
+pub mod ocr;
 pub mod provider;
 pub mod router;
 pub mod system;
+#[cfg(feature = "multimodal")]
+pub mod vision_ocr;
 
 pub use backend::TestBackend;
 pub use cassette::{Cassette, CassetteMode, RecordReplayProvider};

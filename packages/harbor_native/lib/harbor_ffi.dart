@@ -114,7 +114,7 @@ class HarborCoreClient {
       ..free(wsPtr);
     if (rootPtr != nullptr) malloc.free(rootPtr);
     if (handle == Pointer<Void>.fromAddress(0)) {
-      throw HarborCoreException('harbor_core_open failed');
+      throw HarborCoreException('harbor_core_open failed${lastOpenError(lib)}');
     }
     return HarborCoreClient._(lib, handle);
   }
@@ -273,5 +273,25 @@ class HarborCoreClient {
     final closeFn =
         _lib.lookupFunction<_CloseNative, _CloseDart>('harbor_core_close');
     closeFn(_handle);
+  }
+}
+
+/// The core's reason for the last failed open (empty when the loaded core
+/// predates `harbor_core_last_open_error`). Appended to the exception so a
+/// banner says WHY, not just that it failed.
+String lastOpenError(DynamicLibrary lib) {
+  try {
+    final fn =
+        lib.lookupFunction<Pointer<Utf8> Function(), Pointer<Utf8> Function()>(
+            'harbor_core_last_open_error');
+    final free = lib.lookupFunction<Void Function(Pointer<Utf8>),
+        void Function(Pointer<Utf8>)>('harbor_core_string_free');
+    final p = fn();
+    if (p == nullptr) return '';
+    final msg = p.toDartString();
+    free(p);
+    return msg.isEmpty ? '' : ': $msg';
+  } catch (_) {
+    return '';
   }
 }

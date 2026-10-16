@@ -38,6 +38,8 @@ pub struct Workspace {
     /// Semantic-memory records with provenance (decision 0012), sealed
     /// under their own domain-separated subkey.
     pub memory: harbor_agent::MemoryStore,
+    /// Multi-skill workflow records (decision 0018), sealed.
+    pub workflows: harbor_agent::WorkflowStore,
 }
 
 impl Workspace {
@@ -147,6 +149,16 @@ impl Workspace {
         )
         .map_err(|e| HarborError::Security(format!("memory store: {e}")))?;
 
+        let workflows_key = harbor_store::keys::KeyMaterial::derive_subkey(
+            key.kek_material(),
+            "harbor.agent.workflows/v1",
+        );
+        let workflows = harbor_agent::WorkflowStore::open_with_key(
+            opts.data_root.join("db").join("workflows.json"),
+            workflows_key,
+        )
+        .map_err(|e| HarborError::Security(format!("workflow store: {e}")))?;
+
         Ok(Workspace {
             workspace_id: workspace_id.into(),
             privacy_mode: mode,
@@ -159,6 +171,7 @@ impl Workspace {
             workspace_key: key,
             goals,
             memory,
+            workflows,
         })
     }
 

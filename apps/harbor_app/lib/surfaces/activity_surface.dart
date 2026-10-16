@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
 import '../l10n/app_localizations.dart';
+import '../main.dart';
 import '../services/harbor_service.dart';
 import '../widgets/ops.dart';
+import 'goals_view.dart';
 
 /// Activity center (UX-030): durable runs (state badge, id, executor time,
-/// replayable Run Trail) and background operations (live and finished),
-/// all straight from the core.
+/// replayable Run Trail), background operations (live and finished) and
+/// scheduled goals (whose runs land in Runs), all straight from the core.
 class ActivitySurface extends StatefulWidget {
   const ActivitySurface({super.key});
 
@@ -17,12 +19,35 @@ class ActivitySurface extends StatefulWidget {
 
 class _ActivitySurfaceState extends State<ActivitySurface>
     with SingleTickerProviderStateMixin {
-  late final TabController _tabs = TabController(length: 2, vsync: this);
+  late final TabController _tabs =
+      TabController(length: ActivityTab.values.length, vsync: this);
+  AppState? _state;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final state = AppStateScope.maybeOf(context);
+    if (!identical(state, _state)) {
+      _state?.removeListener(_consumePending);
+      _state = state;
+      _state?.addListener(_consumePending);
+    }
+    _consumePending();
+  }
 
   @override
   void dispose() {
+    _state?.removeListener(_consumePending);
     _tabs.dispose();
     super.dispose();
+  }
+
+  /// The palette's "Scheduled goals" lands on the Goals tab.
+  void _consumePending() {
+    final tab = _state?.pendingActivityTab;
+    if (tab == null) return;
+    _state!.pendingActivityTab = null;
+    _tabs.index = tab.index;
   }
 
   Future<void> _showRun(HarborService service, Map<String, dynamic> run) async {
@@ -93,6 +118,7 @@ class _ActivitySurfaceState extends State<ActivitySurface>
         tabs: [
           Tab(text: l10n.activityTabRuns),
           Tab(text: l10n.activityTabOps),
+          Tab(text: l10n.activityTabGoals),
         ],
       ),
       Expanded(
@@ -101,6 +127,7 @@ class _ActivitySurfaceState extends State<ActivitySurface>
           children: [
             _RunsTab(onOpen: (run) => _showRun(service!, run)),
             const _OpsTab(),
+            const GoalsView(),
           ],
         ),
       ),

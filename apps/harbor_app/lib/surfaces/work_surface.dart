@@ -10,11 +10,14 @@ import '../services/file_types.dart';
 
 import '../l10n/app_localizations.dart';
 import '../main.dart';
+import '../services/file_passages.dart' show PassageTarget;
 import '../services/harbor_service.dart';
 import 'work/deck_view.dart';
 import 'work/document_view.dart';
 import 'work/pdf_view.dart';
 import 'skill_run.dart' show firstFreePath;
+import 'work/command_bar.dart';
+import 'work/work_focus.dart';
 import 'work/workbook_view.dart';
 
 /// Work Canvas (goal §22): the artifact workspace. The user must always be
@@ -22,6 +25,12 @@ import 'work/workbook_view.dart';
 /// preview in this build, and which parts the Office Feature Matrix
 /// preserves without rendering (compatibility banner). "Open file" is a
 /// real picker routed through the core's qualified preview paths.
+///
+/// With a file open, the [WorkCommandBar] is docked under the canvas: ask
+/// about the file (answers cite paragraphs / pages / slides / cells, and a
+/// tapped citation is brought into view) or ask for a change, which goes
+/// through a skill's run sheet and approval — the canvas never edits a
+/// document by itself.
 class WorkSurface extends StatefulWidget {
   const WorkSurface({super.key});
 
@@ -32,6 +41,8 @@ class WorkSurface extends StatefulWidget {
 class _WorkSurfaceState extends State<WorkSurface> {
   bool _showParts = false;
   AppState? _state;
+  final _focus = ValueNotifier<WorkFocus?>(null);
+  int _focusSerial = 0;
 
   @override
   void didChangeDependencies() {
@@ -48,8 +59,12 @@ class _WorkSurfaceState extends State<WorkSurface> {
   @override
   void dispose() {
     _state?.removeListener(_consumePending);
+    _focus.dispose();
     super.dispose();
   }
+
+  void _cite(PassageTarget target) =>
+      _focus.value = WorkFocus(target, ++_focusSerial);
 
   /// ⌘O / palette: open the picker once we are the visible surface.
   void _consumePending() {
@@ -139,7 +154,8 @@ class _WorkSurfaceState extends State<WorkSurface> {
     if (file == null) return;
     final bytes = await file.readAsBytes();
     setState(() => _showParts = false);
-    await service.loadPreviewFromBytes(bytes, name: file.name);
+    await service.loadPreviewFromBytes(bytes,
+        name: file.name, path: file.path.isEmpty ? null : file.path);
   }
 
   @override
@@ -304,13 +320,23 @@ class _WorkSurfaceState extends State<WorkSurface> {
             }
             final map = data is Map ? data : const <String, dynamic>{};
             return switch (kind) {
-              'workbook' => WorkbookView(preview: map),
-              'docx' => DocumentView(preview: map),
-              'pdf' => PdfView(preview: map),
-              _ => DeckView(preview: map),
+              'workbook' => WorkbookView(preview: map, focus: _focus),
+              'docx' => DocumentView(preview: map, focus: _focus),
+              'pdf' => PdfView(preview: map, focus: _focus),
+              _ => DeckView(preview: map, focus: _focus),
             };
           }),
         ),
+        if (service != null &&
+            !sp.failed &&
+            preview != null &&
+            !service.previewLoading &&
+            service.previewError == null)
+          WorkCommandBar(
+            // A new file (or a saved result reopened) starts a clean bar.
+            key: ObjectKey(service.previewSourceBytes),
+            onCite: _cite,
+          ),
       ],
     );
   }

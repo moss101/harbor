@@ -1,0 +1,17 @@
+{
+  "schema": "harbor.cassette/v1",
+  "entries": [
+    {
+      "trace_key": "supplier-invoice-review/extract#1",
+      "response": {
+        "content": "{\"records\": [{\"invoice_no\": \"INV-1001\", \"supplier\": \"Acme Supplies\", \"issued\": \"2026-08-01\", \"due\": \"2026-08-31\", \"amount\": 4200.0, \"currency\": \"USD\", \"paid\": false}, {\"invoice_no\": \"INV-1002\", \"supplier\": \"Northwind Parts\", \"issued\": \"2026-09-05\", \"due\": \"2026-10-05\", \"amount\": 1850.5, \"currency\": \"USD\", \"paid\": false}, {\"invoice_no\": \"INV-1003\", \"supplier\": \"Acme Supplies\", \"issued\": \"2026-09-20\", \"due\": \"2026-10-20\", \"amount\": 9000.0, \"currency\": \"USD\", \"paid\": false}, {\"invoice_no\": \"INV-1004\", \"supplier\": \"Delta Logistics\", \"issued\": \"2026-07-15\", \"due\": \"2026-08-14\", \"amount\": 2300.0, \"currency\": \"USD\", \"paid\": false}, {\"invoice_no\": \"INV-1005\", \"supplier\": \"Delta Logistics\", \"issued\": \"2026-08-20\", \"due\": \"2026-09-19\", \"amount\": 3100.0, \"currency\": \"USD\", \"paid\": false}]}"
+      }
+    },
+    {
+      "trace_key": "supplier-invoice-review/extract#2",
+      "response": {
+        "content": "{\"records\": [{\"invoice_no\": \"INV-1001\", \"supplier\": \"Acme Supplies\", \"issued\": \"2026-08-01\", \"due\": \"2026-08-31\", \"amount\": 4200.0, \"currency\": \"USD\", \"paid\": false}, {\"invoice_no\": \"INV-1002\", \"supplier\": \"Northwind Parts\", \"issued\": \"2026-09-05\", \"due\": \"2026-10-05\", \"amount\": 1850.5, \"currency\": \"USD\", \"paid\": false}, {\"invoice_no\": \"INV-1003\", \"supplier\": \"Acme Supplies\", \"issued\": \"2026-09-20\", \"due\": \"2026-10-20\", \"amount\": 900.0, \"currency\": \"USD\", \"paid\": false}, {\"invoice_no\": \"INV-1004\", \"supplier\": \"Delta Logistics\", \"issued\": \"2026-07-15\", \"due\": \"2026-08-14\", \"amount\": 2300.0, \"currency\": \"USD\", \"paid\": true}, {\"invoice_no\": \"INV-1005\", \"supplier\": \"Delta Logistics\", \"issued\": \"2026-08-20\", \"due\": \"2026-09-19\", \"amount\": 3100.0, \"currency\": \"USD\", \"paid\": false}]}"
+      }
+    }
+  ]
+}

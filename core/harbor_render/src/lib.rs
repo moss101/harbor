@@ -7,6 +7,7 @@
 
 pub mod pdf;
 pub mod pdf_out;
+pub mod scan_images;
 pub use pdf_out::{write_text_pdf, TextBlock};
 pub mod preview;
 

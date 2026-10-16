@@ -306,6 +306,59 @@ fn live_embedding_qualifies_the_six_behaviors() {
         };
         let report = run_eval_with(&index, &pipeline, &embed_query, &corpus.cases, &facts, &cfg);
 
+        // Ranking quality over the cases that expect retrieval. Recall@10
+        // saturates on this corpus (every embedder reaches 1.0), so the
+        // comparison between embedders rests on where the first relevant
+        // source ranks: Recall@1, MRR@10 and binary-relevance NDCG@10 over
+        // UNIQUE sources in rank order (two chunks of one source are one hit).
+        let ranking = {
+            let (mut n, mut r1, mut r10, mut rr, mut ndcg) = (0usize, 0f64, 0f64, 0f64, 0f64);
+            for case in &corpus.cases {
+                if case.expect_abstention || case.expect_sources.is_empty() {
+                    continue;
+                }
+                let Some(q) = embed_query(&case.question) else {
+                    continue;
+                };
+                let mut seen = BTreeSet::new();
+                let ranked: Vec<String> = index
+                    .search(&q, 40)
+                    .into_iter()
+                    .filter(|h| seen.insert(h.source_id.clone()))
+                    .take(10)
+                    .map(|h| h.source_id)
+                    .collect();
+                let rel: BTreeSet<&str> = case.expect_sources.iter().map(|s| s.as_str()).collect();
+                let hits: Vec<bool> = ranked.iter().map(|id| rel.contains(id.as_str())).collect();
+                n += 1;
+                r1 += f64::from(hits.first().copied().unwrap_or(false));
+                r10 += hits.iter().filter(|h| **h).count() as f64 / rel.len() as f64;
+                rr += hits
+                    .iter()
+                    .position(|h| *h)
+                    .map(|i| 1.0 / (i as f64 + 1.0))
+                    .unwrap_or(0.0);
+                let dcg: f64 = hits
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, h)| **h)
+                    .map(|(i, _)| 1.0 / (i as f64 + 2.0).log2())
+                    .sum();
+                let idcg: f64 = (0..rel.len().min(10))
+                    .map(|i| 1.0 / (i as f64 + 2.0).log2())
+                    .sum();
+                ndcg += dcg / idcg;
+            }
+            let d = n.max(1) as f64;
+            serde_json::json!({
+                "cases": n,
+                "recall_at_1": r1 / d,
+                "recall_at_10": r10 / d,
+                "mrr_at_10": rr / d,
+                "ndcg_at_10": ndcg / d,
+            })
+        };
+        println!("{}: ranking {ranking}", corpus.language);
         let mut mets = serde_json::Map::new();
         for (name, m) in &report.metrics {
             let clears = m.clears();
@@ -349,6 +402,7 @@ fn live_embedding_qualifies_the_six_behaviors() {
             },
             "cases_passed": report.passed,
             "cases_total": report.cases.len(),
+            "ranking": ranking,
             "metrics": mets,
             "failing_cases": report
                 .cases
