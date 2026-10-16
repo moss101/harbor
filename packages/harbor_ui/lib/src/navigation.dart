@@ -34,6 +34,7 @@ class HarborRail extends StatelessWidget {
     this.footer,
     this.header,
     this.shortcutHint,
+    this.secondaryFromIndex,
   });
 
   final List<HarborDestination> destinations;
@@ -53,6 +54,11 @@ class HarborRail extends StatelessWidget {
   /// Builds a shortcut label per index for tooltips (e.g. "⌘1").
   final String Function(int index)? shortcutHint;
 
+  /// First index of the secondary group. Destinations from here on are
+  /// pinned under a divider (they never scroll away); the ones before it
+  /// scroll. Null keeps one flat scrolling list.
+  final int? secondaryFromIndex;
+
   HarborRailMode get _mode =>
       mode ??
       (width >= HarborLayout.desktopRail
@@ -64,6 +70,17 @@ class HarborRail extends StatelessWidget {
     final t = HarborTheme.of(context);
     final m = _mode;
     final extended = m == HarborRailMode.extended;
+    final split = (secondaryFromIndex ?? destinations.length)
+        .clamp(0, destinations.length);
+    final primary = [for (var i = 0; i < split; i++) i];
+    final secondary = [for (var i = split; i < destinations.length; i++) i];
+    Widget item(int i) => _RailItem(
+          destination: destinations[i],
+          selected: i == selectedIndex,
+          mode: m,
+          onTap: () => onSelected(i),
+          shortcut: shortcutHint?.call(i),
+        );
     return Semantics(
       container: true,
       explicitChildNodes: true,
@@ -96,18 +113,23 @@ class HarborRail extends StatelessWidget {
                   padding: EdgeInsets.symmetric(
                       horizontal: extended ? HarborSpace.s3 : HarborSpace.s2),
                   children: [
-                    for (final (i, d) in destinations.indexed)
-                      _RailItem(
-                        destination: d,
-                        selected: i == selectedIndex,
-                        mode: m,
-                        onTap: () => onSelected(i),
-                        shortcut: shortcutHint?.call(i),
-                      ),
+                    for (final i in primary) item(i),
                   ],
                 ),
               ),
             ),
+            if (secondary.isNotEmpty)
+              Padding(
+                padding: EdgeInsets.symmetric(
+                    horizontal: extended ? HarborSpace.s3 : HarborSpace.s2),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Divider(height: HarborSpace.s3, color: t.colors.border),
+                    for (final i in secondary) item(i),
+                  ],
+                ),
+              ),
             if (footer != null)
               Padding(
                 padding: EdgeInsets.fromLTRB(

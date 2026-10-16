@@ -227,6 +227,37 @@ void main() {
     expect(tester.getSize(find.byType(HarborRail)).width, 72);
   });
 
+  testWidgets('rail pins the secondary group while the primary list scrolls',
+      (tester) async {
+    tester.view.physicalSize = const Size(400, 420);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    var selected = 0;
+    await tester.pumpWidget(host(Row(children: [
+      HarborRail(
+        width: 220,
+        secondaryFromIndex: 6,
+        destinations: [
+          for (var i = 0; i < 8; i++)
+            HarborDestination(i < 6 ? 'P$i' : 'S$i', Icons.circle_outlined),
+        ],
+        selectedIndex: selected,
+        onSelected: (i) => selected = i,
+        footer: const SizedBox(height: 80),
+      ),
+      const Expanded(child: SizedBox()),
+    ])));
+    // The pinned group is on screen even though the primary list is
+    // taller than the viewport, and it is selectable.
+    final rail = tester.getRect(find.byType(HarborRail));
+    final pinned = tester.getRect(find.text('S7'));
+    expect(pinned.bottom, lessThanOrEqualTo(rail.bottom));
+    await tester.tap(find.text('S7'));
+    expect(selected, 7);
+    expect(find.byType(Divider), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('motion collapses to zero under reduced motion', (tester) async {
     late HarborMotion normal;
     late HarborMotion reduced;

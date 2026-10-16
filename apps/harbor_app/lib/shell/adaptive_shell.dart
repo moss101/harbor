@@ -321,6 +321,7 @@ class _RailShell extends StatelessWidget {
               return digit >= 0 ? harborShortcutHint('${digit + 1}') : '';
             }
           : null,
+      secondaryFromIndex: HarborSurface.secondary.first.index,
       footer: footer,
     );
 

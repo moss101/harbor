@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "00123a84cd17927f9ec4023d44816282db55e1b06473307cad4f5057fba73c7d",
+  "input_manifest_sha256": "f564f85ebfad1233b7b30a39e5671f53ecb7569204ab7c70c392adc6b7a722e4",
   "file_count_excluding_manifest": 2492,
   "files": [
     {
@@ -125,12 +125,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 494347,
-      "sha256": "aba1358aa24743b598af00303024549ee72f184638b7d7277d6997c223631220"
+      "sha256": "77c05716e3e3692a0adcb34aae1ce39a06fb1cacff06255be4fff89663e9a532"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1374,
-      "sha256": "0ab53436f89cb9b1fcfebfb63ad039b3024ea81cd08b101f5269b86c71597dcc"
+      "sha256": "593a3745dd294598e58f422edef3b1a6891ee1c7952b34add7acdb15e86bfaac"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -624,8 +624,8 @@
     },
     {
       "path": "apps/harbor_app/lib/shell/adaptive_shell.dart",
-      "bytes": 12465,
-      "sha256": "a74158435f31566e1dd84866fabe389c51b5238b42c063a67f6860da34fe42c3"
+      "bytes": 12528,
+      "sha256": "7516ae04502f47983e0321b485ab43fd1aec935c1335df19b5879d2482145b41"
     },
     {
       "path": "apps/harbor_app/lib/shell/command_palette.dart",
@@ -4189,8 +4189,8 @@
     },
     {
       "path": "packages/harbor_ui/lib/src/navigation.dart",
-      "bytes": 7722,
-      "sha256": "26b92b13988953882c23f979b90445a56676ad642780cf4b60b7025f445cbea4"
+      "bytes": 8644,
+      "sha256": "70f265070880a001c7612b721f8d5ed77b924556e0962c1dfea6a4d287d01f65"
     },
     {
       "path": "packages/harbor_ui/lib/src/progress.dart",
@@ -4234,8 +4234,8 @@
     },
     {
       "path": "packages/harbor_ui/test/components_test.dart",
-      "bytes": 11536,
-      "sha256": "6e2f3a9bfe8ddfe749b2ba29b992b78bba31cf7d62a7283907953671df04ebe1"
+      "bytes": 12690,
+      "sha256": "133a988c54d448ef0d57e0a58bbacd99ec215475ceed2ca2312b1ec44956195a"
     },
     {
       "path": "packages/harbor_ui/test/trail_test.dart",
