@@ -218,19 +218,27 @@ impl TokenEmbeddings {
         f.read_exact(&mut raw).map_err(io)?;
         let row: Vec<f32> = match self.ggml_type {
             0 => raw
-                .chunks_exact(4)
+                .as_chunks::<4>()
+                .0
+                .iter()
                 .map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]]))
                 .collect(),
             1 => raw
-                .chunks_exact(2)
+                .as_chunks::<2>()
+                .0
+                .iter()
                 .map(|b| f16_to_f32(u16::from_le_bytes([b[0], b[1]])))
                 .collect(),
             30 => raw
-                .chunks_exact(2)
+                .as_chunks::<2>()
+                .0
+                .iter()
                 .map(|b| f32::from_bits((u16::from_le_bytes([b[0], b[1]]) as u32) << 16))
                 .collect(),
             _ => raw
-                .chunks_exact(34)
+                .as_chunks::<34>()
+                .0
+                .iter()
                 .flat_map(|blk| {
                     let d = f16_to_f32(u16::from_le_bytes([blk[0], blk[1]]));
                     blk[2..].iter().map(move |q| d * (*q as i8) as f32)

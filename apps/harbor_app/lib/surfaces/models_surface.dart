@@ -396,8 +396,8 @@ class _CatalogCardState extends State<_CatalogCard> {
             child: TextButton.icon(
               key: ValueKey('catalog-advanced-${p['id']}'),
               onPressed: () => setState(() => _advanced = !_advanced),
-              icon: Icon(
-                  _advanced ? Icons.expand_less : Icons.expand_more, size: 18),
+              icon: Icon(_advanced ? Icons.expand_less : Icons.expand_more,
+                  size: 18),
               label: Text(l10n.modelsAdvancedDetails),
             ),
           ),
@@ -406,35 +406,38 @@ class _CatalogCardState extends State<_CatalogCard> {
             // technical fact, inspectable BEFORE install.
             Padding(
               padding: const EdgeInsetsDirectional.only(bottom: HarborSpace.s2),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(
-                  [
-                    p['repo_id'] as String,
-                    'revision ${p['revision'] ?? 'main'}',
-                    if (p['quantization'] != null) p['quantization'] as String,
-                    if (p['context_tokens'] != null)
-                      l10n.modelsContextTokens(
-                          (p['context_tokens'] as num).toInt()),
-                  ].join(' · '),
-                  style: t.text.smallOf(t.colors.ink),
-                ),
-                const SizedBox(height: HarborSpace.s1),
-                Text(
-                  '${l10n.modelsBackendLabel}: gguf/llama.cpp'
-                  '${p['license'] != null ? ' · ${p['license']}' : ''}',
-                  style: t.text.smallOf(t.colors.ink),
-                ),
-                for (final f in _files)
-                  Directionality(
-                    textDirection: TextDirection.ltr,
-                    child: Text(
-                      '${f['path']}  ${(f['sha256'] as String?)?.substring(0, 12)}…',
-                      style: t.text.monoOf(t.colors.inkMuted, size: 11),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      [
+                        p['repo_id'] as String,
+                        'revision ${p['revision'] ?? 'main'}',
+                        if (p['quantization'] != null)
+                          p['quantization'] as String,
+                        if (p['context_tokens'] != null)
+                          l10n.modelsContextTokens(
+                              (p['context_tokens'] as num).toInt()),
+                      ].join(' · '),
+                      style: t.text.smallOf(t.colors.ink),
                     ),
-                  ),
-              ]),
+                    const SizedBox(height: HarborSpace.s1),
+                    Text(
+                      '${l10n.modelsBackendLabel}: gguf/llama.cpp'
+                      '${p['license'] != null ? ' · ${p['license']}' : ''}',
+                      style: t.text.smallOf(t.colors.ink),
+                    ),
+                    for (final f in _files)
+                      Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: Text(
+                          '${f['path']}  ${(f['sha256'] as String?)?.substring(0, 12)}…',
+                          style: t.text.monoOf(t.colors.inkMuted, size: 11),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ]),
             ),
           if (fit != null) ...[
             const SizedBox(height: HarborSpace.s2),

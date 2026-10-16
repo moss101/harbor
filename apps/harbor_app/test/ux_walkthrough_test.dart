@@ -55,16 +55,19 @@ void main() {
             'f47973db602cbd13c408a3a5cdf3a8eeaa3bd6870b76607542d75ff568526c3c');
     // Import the committed signed catalog from fixtures (same document the
     // app bundles) so the Recommended tab has real entries.
-    final doc = jsonDecode(await File(
-            '$repoRoot/fixtures/catalog/signed_catalog.json')
-        .readAsString()) as Map<String, dynamic>;
+    final doc = jsonDecode(
+        await File('$repoRoot/fixtures/catalog/signed_catalog.json')
+            .readAsString()) as Map<String, dynamic>;
     final root =
         await File('$repoRoot/fixtures/catalog/root_public.hex').readAsString();
-    final imported = await service.importCatalog(doc, rootPublicHex: root.trim());
-    expect(imported, isTrue, reason: 'signed catalog must import for walkthroughs');
+    final imported =
+        await service.importCatalog(doc, rootPublicHex: root.trim());
+    expect(imported, isTrue,
+        reason: 'signed catalog must import for walkthroughs');
     // Durable run for the Activity walkthrough (real FFI calls must run
     // outside the widget tests' fake-async zone).
-    final run = await service.callForTest('run.create', {'run_id': 'ux-trail-run'});
+    final run =
+        await service.callForTest('run.create', {'run_id': 'ux-trail-run'});
     expect(run['run_id'], 'ux-trail-run');
     await service.callForTest('run.log_request',
         {'run_id': 'ux-trail-run', 'text': 'Summarize the quarterly report'});
@@ -93,8 +96,8 @@ void main() {
     // One per visible catalog card: 7 signed packages minus the hidden
     // test-tier model (epoch 5 added embeddinggemma-2 and -multimodal).
     expect(find.text('Advanced details'), findsNWidgets(6));
-    await tester.tap(find
-        .byKey(const ValueKey('catalog-advanced-qwen2.5-1.5b-instruct')));
+    await tester.tap(
+        find.byKey(const ValueKey('catalog-advanced-qwen2.5-1.5b-instruct')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.textContaining('Q4_K_M'), findsOneWidget);
@@ -108,8 +111,8 @@ void main() {
     await tester.tap(find.text('Models').first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    await tester.tap(find
-        .byKey(const ValueKey('catalog-advanced-qwen2.5-1.5b-instruct')));
+    await tester.tap(
+        find.byKey(const ValueKey('catalog-advanced-qwen2.5-1.5b-instruct')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
     // Every install-relevant fact is inspectable pre-install.

@@ -47,3 +47,13 @@ path = "fuzz_targets/graph_from_value.rs"
 test = false
 doc = false
 bench = false
+
+# HARBOR PATCH: this manifest is its own workspace, so the [patch.crates-io]
+# entries that steer the core workspace (core/Cargo.toml) do NOT apply here.
+# Without them, cargo resolves llama-cpp-2 from crates.io and harbor_inference
+# fails to compile (the embedding-batch/mtmd accessors live only in the
+# vendored tree). Keep the three entries in sync with core/Cargo.toml.
+[patch.crates-io]
+formualizer-eval = { path = "../../third_party/formualizer-eval" }
+llama-cpp-sys-2 = { path = "../../third_party/llama-cpp-sys-2" }
+llama-cpp-2 = { path = "../../third_party/llama-cpp-2" }

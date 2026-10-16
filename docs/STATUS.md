@@ -84,6 +84,90 @@ iOS-simulator check of the new skill. Gate: workspace 510/0/16, Dart 71/71. Open
 reminders, handoff, Decision Maker, Android/Windows OCR, Vision host registration in the iOS Runner,
 device runs. Uncommitted.
 
+## Session 60 (2026-10-12): the eval-corpus gap was already closed — and its binding was unguarded
+
+The "evaluation corpus expansion (9 → 100 cases/language)" that
+`docs/release_checklist_status.md` still named as the remaining M3
+engineering gap is DONE and has been since session 43: 208 cases per
+language (832 total, `2e34c4f`, after the first 116/lang pass in
+`5e5a6bd`), per-behavior minimums enforced by
+`corpus::tests::every_behavior_has_its_profile_minimum_per_language`,
+the pinned tier clearing every profile threshold (25 harbor_knowledge
+tests, 0 failed), and the combined corpus SHA-256 matching the
+`production_bindings.evaluation_corpus_sha256` recorded in
+`26_Qualification_Profiles.json`. The stale checklist line is corrected
+with the closing commits and the enforcing test names.
+
+The real gap the sweep found: NOTHING compared the Rust-computed corpus
+hash to the profile binding. `corpus_hash_is_stable` checked only
+self-consistency, and the Python validator checks binding PRESENCE, not
+value — so editing `evals/*/corpus.json` without rebinding
+`26_Qualification_Profiles.json` would have silently detached every
+recorded evaluation (and ACC-056's evidence) from the corpus it claims
+to have measured. Added
+`corpus::tests::corpus_hash_is_bound_in_the_authority_profile`, which
+parses the embedded authority file and asserts equality, failing with a
+rebinding hint. Dossier regenerated (19/20/24); validator PASS,
+contracts 124/0, clippy clean.
+
+Live tier NOT rerun: ar/mixed qualification needs a multilingual
+embedder (bge-m3 session 43; EmbeddingGemma 2 session 59) and the repo
+carries only English fixtures; the corpora are unchanged since that
+evidence was bound, so the recorded qualification stands.
+
+Audit continuation (same session): two more items named as open in
+older session notes were verified ALREADY CLOSED at HEAD. (1) The
+`TEXT(0.285,"0.0%")` truncation deviation — fixed session 47 by
+vendoring formualizer-eval 0.9.3 with the percent-format patch
+(`third_party/formualizer-eval`, engine identity `0.9.3+harbor-textfix`,
+fixture `txt-text-2` expects `28.5%`); `cargo test -p harbor_formula`
+9/9. (2) CF authoring — also session 47:
+`WorkbookDoc::add_conditional_format` in `harbor_artifacts/src/workbook.rs`,
+exposed through `workbook.edit` and FFI. The session-59 snapshot's
+stale "NOT done … multimodal" clause is corrected in place (mtmd
+multimodal shipped in `2134698`/`2401b31`). What remains open is
+genuinely external: operator-signed catalog pin, CUDA/mobile-correct
+GPU backends, Windows and physical-device tiers, store credentials,
+M4 activation evidence.
+
+Audit continuation, part 2 (same session): CI on main has been red
+since 2026-10-09 — three independent pre-existing breakages, none from
+the device-bring-up work itself. (1) `rust`/`windows-core` jobs: the
+2026-10 stable clippy (1.99) ships `chunks_exact_to_as_chunks`; the
+four constant-chunk iterations in `harbor_inference/src/multimodal.rs`
+now use `as_chunks::<N>()` (stable since 1.88, so 1.97 still builds
+it); the runtime-sized `chunks_exact` at the embed loop is untouched.
+(2) `fuzz` job: `core/fuzz/Cargo.toml` is its own workspace, so the
+`[patch.crates-io]` steering in `core/Cargo.toml` never applied to it —
+cargo resolved llama-cpp-2 from the registry and `harbor_inference`
+failed on the vendored-only embedding-batch/mtmd accessors (decision
+0015). The patch block is now duplicated there (with a keep-in-sync
+comment) and `core/fuzz/Cargo.lock` regenerated; `cargo tree -i` shows
+all three crates resolving to `third_party/`. (3) `flutter` job:
+`dart format --set-exit-if-changed` flagged 7 files in
+`apps/harbor_app`. Root cause of the local/CI mismatch: the packages
+declare `sdk: >=3.4.0`, so the formatter only picks the intended
+language version when `package_config.json` exists (pub get) — without
+it the standalone dart defaults to 3.13 tall style and wants to
+reformat everything. Reproduced CI exactly with the Flutter 3.47.4
+archive (dart 3.13.3, pub get first), formatted the same 7 files, gate
+green in all four dirs. also accepted advisory RUSTSEC-2024-0449
+(unsafe-libyaml unmaintained via serde_yaml ← sheetport-spec in the
+formualizer 0.9.3 pin; notice, local sheet import only) in
+core/deny.toml + mirrored core/.cargo/audit.toml — CI installs
+latest cargo-deny, which now flags it. (4) With format green, the
+flutter job's NEXT gate surfaced: `flutter analyze` exits non-zero on
+lint infos, and `trail_test.dart` tripped `prefer_const_constructors`
+on `HarborTheme` (fixing it then flagged `unnecessary_const` on the
+inner `MaterialApp`). Const fixed; analyze clean in all four dirs;
+full flutter job mirrored locally before re-pushing — package tests
+19/19 (domain 1, native 2 incl. the live-dylib FFI round-trip, ui 16)
+and app tests 71/71 against the live core. Note for local
+reproduction: an x64 Flutter SDK on an arm64 Mac runs under Rosetta
+and cannot dlopen the arm64 dylib — use the arm64 archive
+(`flutter_macos_arm64_3.47.4-stable.zip`) for FFI/app tests.
+
+
 ---
 
 ## Session 59 (2026-10-09): the decision-0011 gaps that can be closed
@@ -121,9 +205,11 @@ offloaded) was found and fixed. Still open: a GPU backend that is correct on mob
 selected chat model through the provider contract (validated, advisory),
 `knowledge.release` for mobile memory pressure. Gates: workspace 474 tests 0
 failed on the patched runtime, clippy clean, lean build OK, supply chain PASS,
-app 59/59. NOT done: catalog pin (needs operator-signed epoch),
-non-Metal backends, and multimodal (text tower only; vision/audio need the
-`mtmd` projector + bindings). Also closed this session (decision 0012):
+app 59/59. NOT done: catalog pin (needs operator-signed epoch) and
+non-Metal backends. (The original clause "and multimodal (text tower
+only; vision/audio need the `mtmd` projector + bindings)" was stale the
+moment it landed: `mtmd` multimodal shipped later in this same session
+series — real iPhone 7/8 results above, commits `2134698`/`2401b31`.) Also closed this session (decision 0012):
 
 - **Semantic memory with provenance**: sealed record store
   (`harbor_agent::memory`), `memory.add/list/delete/search`, indexed as

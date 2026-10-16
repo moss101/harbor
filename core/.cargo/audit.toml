@@ -8,6 +8,7 @@ ignore = [
   "RUSTSEC-2026-0194", # quick-xml DoS via formualizer 0.9.3 pin (see deny.toml)
   "RUSTSEC-2026-0195", # quick-xml DoS via formualizer 0.9.3 pin (see deny.toml)
   "RUSTSEC-2026-0192", # ttf-parser unmaintained via pdf-extract 0.12.1 (see deny.toml)
+  "RUSTSEC-2024-0449", # unsafe-libyaml unmaintained via serde_yaml <- sheetport-spec (see deny.toml)
 ]
 informational_warnings = ["unmaintained", "unsound", "notice"]
 
