@@ -52,6 +52,20 @@ ignore = [
   # open security advisory, and the dependency is inert outside sheet
   # parsing. Re-check: formualizer > 0.9.3 (drops sheetport-spec/serde_yaml).
   { id = "RUSTSEC-2024-0449", reason = "unmaintained notice via serde_yaml <- sheetport-spec in formualizer 0.9.3 pin; local sheet import only; re-check on formualizer release" },
+  # zip 0.x-8.x `extract()` advisories (SUID/SGID bits kept, symlink targets
+  # outside the destination, permissions applied through symlinks). All three
+  # concern extracting an archive to DISK; patched only in zip >= 9.0.0. Harbor
+  # never extracts: harbor_artifacts (zip 4.6.1) opens Office/package archives
+  # from bytes (`ZipArchive::new(Cursor)`) and reads entries into memory, and
+  # the other locked zips (2.4.2 / 7.2.0 via formualizer-workbook 0.9.3, 8.6.0
+  # via calamine 0.36.1 and umya-spreadsheet 3.1.0) are third-party loaders that
+  # contain no `.extract(` call (checked in the registry sources). No path in
+  # Harbor writes archive members to the filesystem.
+  # Re-check: formualizer / calamine / umya moving to zip >= 9, or any new
+  # code that extracts an archive to disk (then bump harbor_artifacts to zip 9).
+  { id = "RUSTSEC-2026-0367", reason = "zip extract() SUID/SGID; Harbor never extracts to disk (in-memory reads only); patched zip >= 9 pending upstream pins" },
+  { id = "RUSTSEC-2026-0368", reason = "zip extract() symlink escape; Harbor never extracts to disk (in-memory reads only); patched zip >= 9 pending upstream pins" },
+  { id = "RUSTSEC-2026-0369", reason = "zip extract() perms through symlinks; Harbor never extracts to disk (in-memory reads only); patched zip >= 9 pending upstream pins" },
 ]
 
 # ---------------------------------------------------------------------------
