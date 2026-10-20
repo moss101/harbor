@@ -336,6 +336,11 @@ impl GgufLlamaCppProvider {
         let mut sampler = LlamaSampler::chain_simple(chain);
         let eos = model.token_eos();
         let mut out = String::new();
+        // One decoder for the whole generation: it holds the bytes of a
+        // multi-byte character that a token only starts (byte-level BPE
+        // splits e.g. Arabic-Indic digits across tokens). A fresh decoder
+        // per token turned each fragment into U+FFFD.
+        let mut decoder = encoding_rs::UTF_8.new_decoder();
         let mut generated: u64 = 0;
         let mut next_pos = prompt_len as i32;
         let max_tokens = req.max_tokens.max(1);
@@ -351,7 +356,6 @@ impl GgufLlamaCppProvider {
             if tok == eos {
                 break;
             }
-            let mut decoder = encoding_rs::UTF_8.new_decoder();
             let piece = model
                 .token_to_piece(tok, &mut decoder, false, None)
                 .map_err(|e| ProviderError::Backend(format!("detokenize: {e}")))?;

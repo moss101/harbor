@@ -182,6 +182,9 @@ impl VisionOcr {
             .map_err(|e| err(format!("image eval: {e}")))?;
         let mut sampler = LlamaSampler::chain_simple(vec![LlamaSampler::greedy()]);
         let mut text = String::new();
+        // One decoder for the whole page: a multi-byte character can span
+        // tokens, and a fresh decoder per token would corrupt it.
+        let mut decoder = encoding_rs::UTF_8.new_decoder();
         let (mut prob_sum, mut prob_n, mut n) = (0.0f64, 0usize, 0usize);
         let mut logits_index: i32 = -1;
         let mut degenerate = false;
@@ -210,7 +213,6 @@ impl VisionOcr {
                 prob_n += 1;
             }
             n += 1;
-            let mut decoder = encoding_rs::UTF_8.new_decoder();
             text.push_str(
                 &self
                     .model

@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "4ea85adf811a9ff3a80f4224d2d8dc22a72de2664ab8f6e0a9c829e116938760",
+  "input_manifest_sha256": "1c127c0da546bb5f65c2120957cc381757f7186e28bba3a9805297e1bdb18703",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -1021,8 +1021,8 @@
     },
     {
       "path": "apps/harbor_app/test/work_command_bar_test.dart",
-      "bytes": 11695,
-      "sha256": "4a0f946b98f6c30b0cf756e86f0ad4ba2e41a01b986ca742f7cb035891fa6bff"
+      "bytes": 14182,
+      "sha256": "df081b8cea80a1fcaa06784e6fdc6ecdbb9259eb87a56a72c464c989e4b07b9f"
     },
     {
       "path": "apps/harbor_app/test/work_header_test.dart",
@@ -1031,8 +1031,8 @@
     },
     {
       "path": "apps/harbor_app/test/work_live_test.dart",
-      "bytes": 9339,
-      "sha256": "8490afe581a1b4af00e1f6fa4396538b9daa1c2e38d2cfe706060413ab022aac"
+      "bytes": 25543,
+      "sha256": "19847a80d8ee4a90e15a2523b6c872313949f3b87c5f7d3db0adf11f2b56d3ce"
     },
     {
       "path": "apps/harbor_app/windows/.gitignore",
@@ -2595,6 +2595,11 @@
       "sha256": "c1aa54750ebf5a97e90068a95ea9a9b67e0606f4f7e12b4a95bcafb84c7ea447"
     },
     {
+      "path": "core/harbor_ffi/tests/knowledge_open_timing.rs",
+      "bytes": 5017,
+      "sha256": "07f2995a058aa9eb120c977674d7854c49066dfd497b11fa865c3f2402d2be10"
+    },
+    {
       "path": "core/harbor_ffi/tests/memory_flow.rs",
       "bytes": 12407,
       "sha256": "0f022909798dc4d0280fd30f6ed19e5d4542ba39bf290aaec5da8b52aded0b0e"
@@ -2638,6 +2643,11 @@
       "path": "core/harbor_ffi/tests/tools_read_op.rs",
       "bytes": 2461,
       "sha256": "e0967787b580b1336c109b86274144ad59db220705d75f94df5bd21a79898059"
+    },
+    {
+      "path": "core/harbor_ffi/tests/utf8_multibyte_live.rs",
+      "bytes": 3958,
+      "sha256": "9df59595f7974c3b0eb7467bf326d4d485ec90fd3ec086ffbafacc8089833603"
     },
     {
       "path": "core/harbor_ffi/tests/vision_ocr_live.rs",
@@ -2731,8 +2741,8 @@
     },
     {
       "path": "core/harbor_inference/src/gguf.rs",
-      "bytes": 23273,
-      "sha256": "ba2388eaf557278cdf9fbebf20def8dc469d51d3c25e0ab23b49a93e4aae0391"
+      "bytes": 23545,
+      "sha256": "f8effb3a332340657c64045ec1cd005401ed4a7c494d431c37cae56dd4b56ab2"
     },
     {
       "path": "core/harbor_inference/src/lib.rs",
@@ -2771,8 +2781,8 @@
     },
     {
       "path": "core/harbor_inference/src/vision_ocr.rs",
-      "bytes": 13761,
-      "sha256": "666682744ee7a852cec85572066762607d2c008cc24c3e95caab96efda4f96c5"
+      "bytes": 13899,
+      "sha256": "eaf225ebaff9e2a5fc708e1c40b2aabf6cfed55482a196e03393f02f605e9c10"
     },
     {
       "path": "core/harbor_inference/tests/gguf_provider.rs",
@@ -3191,8 +3201,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 164694,
-      "sha256": "040189d45614f0be3b653e63d4d9badc4c8887f18bf4c42990d8bfb56b96e97d"
+      "bytes": 168284,
+      "sha256": "d7ef946ba298cb95937073625a0f3ea8d68861e2796540e5351429b3ec8a101c"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",

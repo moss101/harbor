@@ -114,6 +114,60 @@ void main() {
     expect(s.calls, contains('askAboutFile'));
   });
 
+  testWidgets(
+      'an Arabic answer and its paragraph citations lay out right-to-left at '
+      '390x844 without overflow', (tester) async {
+    const payment = 'شروط الدفع: يتم سداد كل فاتورة خلال ٤٥ يوماً من تاريخ '
+        'استلامها، ولا يجوز للمشتري خصم أي مبلغ دون موافقة كتابية مسبقة من المورد.';
+    final s = withFile()
+      ..fakePreviewName = 'اتفاقية توريد بين شركة الأفق وشركة هاربر.docx'
+      ..answer = {
+        'answer': 'تنص شروط الدفع على أن يتم سداد كل فاتورة خلال ٤٥ يوماً '
+            'من تاريخ استلامها [1]. ولا يجوز للمشتري الخصم دون موافقة كتابية.',
+        'used_citations': true,
+        'execution': 'ON_DEVICE',
+        'executed_on': 'cpu',
+        'scope': {'kind': 'document', 'ranking': 'embedding'},
+        'citations': [
+          {
+            'passage_id': 'para-5',
+            'locator': '¶5',
+            'snippet': payment,
+            'score': 0.82,
+            'state': 'Current'
+          },
+          {
+            'passage_id': 'para-12',
+            'locator': '¶12',
+            'snippet':
+                'يتم تعديل هذه الاتفاقية بموافقة كتابية موقعة من الطرفين.',
+            'score': 0.41,
+            'state': 'Current'
+          },
+        ],
+      };
+    await pumpSurface(tester, s, (_) => const WorkSurface(),
+        size: const Size(390, 844), locale: const Locale('ar'));
+    await tester.tap(find.byTooltip('اسأل'));
+    await tester.pump();
+    await send(tester, 'ما هي شروط الدفع؟');
+
+    final answer = find.textContaining('تنص شروط الدفع');
+    expect(answer, findsOneWidget);
+    expect(Directionality.of(tester.element(answer)), TextDirection.rtl);
+    expect(find.text('الفقرة 5'), findsOneWidget, reason: 'citation label');
+    for (final f in [answer, find.text('الفقرة 5')]) {
+      final box = tester.getRect(f);
+      expect(box.left, greaterThanOrEqualTo(0));
+      expect(box.right, lessThanOrEqualTo(390));
+    }
+    // Citation chips read from the right edge in RTL.
+    final label = tester.getRect(find.text('الفقرة 5'));
+    expect(label.right, greaterThan(390 / 2),
+        reason: 'the label starts at the right in RTL');
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('without a chat model the bar says how to get one',
       (tester) async {
     final s = withFile(models: const [])..indexOpens = false;

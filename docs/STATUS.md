@@ -41,15 +41,52 @@ Done (decision 0020, `docs/decisions/0020-navigation-consolidation-and-file-scop
   `07_Screen_Inventory.csv` (frozen, hash-pinned) is untouched and is re-issued with the next
   authority revision. Files 19/20/24 need the usual reseal.
 
-Observation: with a calibrated embedder the first `knowledge.open` on the debug core took 6 min and
-18 min in two runs while other builds were running on the machine, and 0.7 s when the machine was
-quiet (the same call); treat the first number as contention plus prewarm, not as a regression, but the
-live tests use generous timeouts (20 min for the router test).
+Observation (measured, replaces the earlier speculation): `knowledge.open` is bounded work - load the
+weights, a 4-text numerics canary, one identity probe, open the sealed store. On a quiet machine (debug
+core, Apple M5 Pro, Metal; `core/harbor_ffi/tests/knowledge_open_timing.rs`, one fresh process each):
+EmbeddingGemma 2 loads in 0.33 s, first embed 27 ms, `knowledge.open` on a fresh root 0.42 s, reopen
+0.40 s; bge-small loads in 15 ms, `open` 41 ms, reopen 31 ms. Through the Flutter service (`work_live_test.dart`)
+the same call took 0.55-0.68 s, and the first router call (intent catalog + 36-skill prewarm, one embed
+per entry, plus the disambiguation) 1.1 s. Reading the open path found no unbounded loop, no calibration
+recomputed per open (calibration is static data selected by embedder id), no lock held across slow work
+and no per-open GPU kernel build beyond the 0.03 s embedded Metal library. So the 6 and 18 minute runs were
+NOT reproduced and no defect was found; they happened while other builds were running and the volume was
+at 97-100 % (the model weights are memory-mapped, so a loaded machine with a full disk can stall page-ins).
+That cause is a hypothesis, not a measurement; if it recurs on a quiet machine, sample the process
+(`sample <pid>`) while it hangs. The live tests keep generous timeouts (20 min for the router test).
+
+Session 61 follow-up (live runs, same day):
+- **Change this file, driven through the widget, for real** (`work_live_test.dart`, real Flutter service,
+  real core, Qwen2.5-1.5B + EmbeddingGemma 2): the Work bar in Change mode routes "Fill in the placeholders
+  in this contract template" to `placeholder-fill`, the real run sheet opens with the .docx attached, the
+  `values` field is filled through the UI, Run reaches the approval, "Save new copy" commits to a temp
+  destination: original bytes unchanged, the copy exists, re-opens as a valid docx with the values filled
+  and `net 45 days` untouched, canvas reloaded onto the copy - PASS (1 min 42 s whole test). Caveat:
+  `placeholder-fill` has no model node; it is the only built-in skill that edits an existing .docx with a
+  commit, so the commit path is not exercised with a model. The model path is covered by a second test:
+  "Review the style and formatting of this document" routes to `document-style-review`, the sheet runs the
+  real Qwen node (grammar-constrained, ~5 s) and reaches COMPLETED with its verified locations; a review
+  proposes nothing, so there is no approval there.
+- **Arabic question over an Arabic file** (honest probe, one 20-paragraph contract, two Arabic questions,
+  one unsupported): Qwen2.5-1.5B answers in Arabic and correctly states 45 days; the payment paragraph
+  (`para-5`, locator `¶5`) is the top-ranked passage under EmbeddingGemma 2, bge-m3 and
+  multilingual-e5-small for both questions, and under lexical ranking; English-only bge-small ranks it
+  3rd for the direct question (still selected) and 1st for the paraphrase. The unsupported Arabic question
+  abstains with `INSUFFICIENT_EVIDENCE` on Qwen. Llama-3.2-1B abstains on the SUPPORTED question too (it
+  had the right paragraph): a 1B-model quality limit, so Qwen stays the default. Not a benchmark.
+- **Real bug found and fixed**: the generation loop decoded each token with a fresh UTF-8 decoder, so a
+  character that byte-level BPE splits across tokens (Arabic-Indic digits such as ٤٥) came back as U+FFFD
+  ("خلال �� يوماً"). One decoder now lives for the whole generation (`harbor_inference/src/gguf.rs`, and
+  the same pattern in `vision_ocr.rs`); regression `harbor_ffi/tests/utf8_multibyte_live.rs`, which failed
+  before the fix.
+- **Found, not changed**: the app opens the Knowledge index with a hard-coded default package
+  (`bge-small-en-v1.5`); with only another embedder installed the Work bar's router reports "no index".
+  The live tests open the installed embedder explicitly.
 
 NOT verified: any of this on a physical iPhone/Android device or Windows; touch behaviour of the
 command bar and the wrapped phone header on a device (verified in widget tests only); extraction on
-scanned or very large files; Arabic questions about Arabic files; routing accuracy beyond one request;
-a full Change run (approve + commit) started from the Work bar.
+scanned or very large files; Arabic questions beyond one synthetic contract (see above); routing
+accuracy beyond a couple of requests; a Change run that commits a MODEL-authored edit to a .docx.
 
 Still open, and genuinely external (unchanged): operator-signed model catalog pin (epoch), physical
 iOS/Android device tiers, a Windows machine and a minimum-spec Apple-silicon device, Apple Developer
