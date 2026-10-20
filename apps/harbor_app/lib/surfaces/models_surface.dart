@@ -8,6 +8,7 @@ import '../services/file_types.dart';
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/harbor_service.dart';
+import '../services/request_router.dart';
 import '../widgets/ops.dart';
 import '../widgets/trust.dart';
 import 'store_surface.dart';
@@ -513,7 +514,7 @@ class _InstalledTab extends StatelessWidget {
     }
     final t = HarborTheme.of(context);
     final state = AppStateScope.maybeOf(context);
-    final chosen = state?.chatModel ?? models.first['id'];
+    final chosen = state?.chatModel ?? chatPackageFor(service, null);
     return HarborPage(
       padding: EdgeInsets.all(
           HarborBreakpoints.gutter(HarborBreakpoints.of(context))),
@@ -523,9 +524,9 @@ class _InstalledTab extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: HarborSpace.s3),
             child: _InstalledCard(
               model: m,
-              inUse: m['id'] == chosen,
+              inUse: m['id'] == chosen && isChatModel(m),
               runtimeLabel: runtimeLabelFor(service),
-              onUse: state == null
+              onUse: state == null || !isChatModel(m)
                   ? null
                   : () => state.setChatModel(m['id'] as String),
               onUninstall: () =>

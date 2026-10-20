@@ -90,6 +90,23 @@ fn ops_registry() -> &'static Mutex<BTreeMap<String, Arc<OpEntry>>> {
     OPS.get_or_init(|| Mutex::new(BTreeMap::new()))
 }
 
+/// Fail fast, with a clear message, when `package_id` is an embedding model:
+/// it has no chat template and would otherwise die deep in generation with
+/// the opaque `template: ffi error -1`. `unknown` (unreadable header) is
+/// allowed through unchanged.
+fn refuse_embedder_as_chat(
+    data_root: &std::path::Path,
+    package_id: &str,
+) -> Result<(), HarborError> {
+    let installer = harbor_modelhub::install::PackageInstaller::new(data_root.join("models"));
+    if installer.package_role(package_id) == harbor_modelhub::gguf_meta::ModelRole::Embedder {
+        return Err(HarborError::Other(format!(
+            "{package_id} is an embedding model, not a chat model"
+        )));
+    }
+    Ok(())
+}
+
 fn register_op(kind: &'static str, subject: &str) -> (String, Arc<OpEntry>) {
     let op_id = harbor_security::HarborId::generate("op");
     let entry = Arc::new(OpEntry {
@@ -1884,6 +1901,10 @@ fn dispatch(
                     // images (vision-language chat models, and the embedder's
                     // media towers - the app filters those by id).
                     "has_projector": m.files.iter().any(|f| f.role == "mmproj"),
+                    // "embedder" | "chat" | "unknown", read from the weights'
+                    // GGUF header. The app must not offer an embedder as the
+                    // chat model; "unknown" means the header was unreadable.
+                    "role": installer.package_role(&id).as_str(),
                 }));
             }
             Ok(serde_json::json!({ "models": out }))
@@ -3141,6 +3162,9 @@ fn dispatch(
                     "this skill has model nodes; choose an installed chat model (chat_package)"
                         .into(),
                 ));
+            }
+            if let Some(c) = &chat_package {
+                refuse_embedder_as_chat(&ws.data_root, c)?;
             }
             let (op_id, entry) = register_op("skill_run", "");
             #[cfg(feature = "gguf")]
@@ -4463,6 +4487,7 @@ fn dispatch(
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| HarborError::Other("missing chat_package".into()))?
                     .to_string();
+                refuse_embedder_as_chat(&ws.data_root, &chat_package)?;
                 let max_tokens = args
                     .get("max_tokens")
                     .and_then(|v| v.as_u64())
@@ -4593,6 +4618,7 @@ fn dispatch(
                 // set): retrieve ONLY from that collection's sources. An
                 // unknown collection grounds on nothing (abstention).
                 let collection = optional_collection(args)?;
+                refuse_embedder_as_chat(&ws.data_root, &chat_package)?;
                 let (op_id, entry) = register_op("generate", &chat_package);
                 let knowledge = ws.knowledge.clone();
                 let chat = ws

@@ -276,6 +276,23 @@ impl PackageInstaller {
         serde_json::from_slice(&bytes).map_err(|e| InstallError::Manifest(e.to_string()))
     }
 
+    /// Whether an installed package is an embedder or a chat model, read
+    /// from the weights file's GGUF header (no model load). `Unknown` when
+    /// the package, its weights or the header cannot be read.
+    pub fn package_role(&self, package_id: &str) -> crate::gguf_meta::ModelRole {
+        let Ok(m) = self.load_manifest(package_id) else {
+            return crate::gguf_meta::ModelRole::Unknown;
+        };
+        let Some(f) = m
+            .files
+            .iter()
+            .find(|f| f.role == "weights" || f.role == "weights_shard")
+        else {
+            return crate::gguf_meta::ModelRole::Unknown;
+        };
+        crate::gguf_meta::classify_file(&self.package_dir(package_id).join(&f.path))
+    }
+
     /// Remove an installed package.
     pub fn remove(&self, package_id: &str) -> Result<(), InstallError> {
         let dir = self.package_dir(package_id);

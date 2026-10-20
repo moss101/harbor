@@ -125,8 +125,8 @@ void main() {
 
   test('the chat model is the preferred one when installed', () {
     final s = FakeHarborService(models: [
-      {'id': 'a'},
-      {'id': 'b'},
+      {'id': 'a', 'role': 'chat'},
+      {'id': 'b', 'role': 'chat'},
     ]);
     expect(chatPackageFor(s, 'b'), 'b');
     expect(chatPackageFor(s, 'gone'), 'a');

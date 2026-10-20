@@ -11,7 +11,7 @@ import 'fake_service.dart';
 /// collection (scripted core).
 void main() {
   const List<Map<String, dynamic>> chat = [
-    {'id': 'qwen-chat'},
+    {'id': 'qwen-chat', 'role': 'chat'},
   ];
 
   List<Map<String, dynamic>> sources() => [

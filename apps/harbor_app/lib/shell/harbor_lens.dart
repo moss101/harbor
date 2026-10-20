@@ -4,6 +4,7 @@ import 'package:harbor_ui/harbor_ui.dart';
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/harbor_service.dart';
+import '../services/request_router.dart';
 import '../widgets/ops.dart';
 import '../widgets/trust.dart';
 
@@ -25,7 +26,7 @@ class HarborLens extends StatelessWidget {
     final state = AppStateScope.maybeOf(context);
     final runs = service?.runs ?? const [];
     final ops = service?.activeOps ?? const [];
-    final models = service?.installedModels ?? const [];
+    final models = chatModelsOf(service);
     final chatModel = state?.chatModel;
     final activeModel = models.isEmpty
         ? null

@@ -15,6 +15,7 @@ pub mod acquire;
 pub mod catalog;
 pub mod catalog_signing;
 pub mod fit;
+pub mod gguf_meta;
 pub mod hf;
 pub mod install;
 pub mod progress;

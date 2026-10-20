@@ -7,6 +7,12 @@ import 'fake_service.dart';
 /// test: bge-small sorted before the chat model and every ask failed with
 /// a chat-template error).
 void main() {
+  FakeHarborService withRoles(Map<String, String?> roles) =>
+      FakeHarborService(models: [
+        for (final e in roles.entries)
+          {'id': e.key, if (e.value != null) 'role': e.value}
+      ]);
+
   FakeHarborService with_(List<String> ids) => FakeHarborService(models: [
         for (final i in ids) {'id': i}
       ]);
@@ -49,5 +55,31 @@ void main() {
     ]) {
       expect(looksLikeEmbedder(id), isTrue, reason: id);
     }
+  });
+
+  test('the core role wins over the id heuristic', () {
+    // An embedder with an innocuous id is skipped; a chat model whose id
+    // looks like an embedder is accepted.
+    final s = withRoles({
+      'mystery-7b': 'embedder',
+      'bge-chat-tuned': 'chat',
+      'zeta': 'chat',
+    });
+    expect(chatPackageFor(s, null), 'bge-chat-tuned');
+    expect(chatPackageFor(s, 'zeta'), 'zeta');
+    // A stale preference that is an embedder is not honoured.
+    expect(chatPackageFor(s, 'mystery-7b'), 'bge-chat-tuned');
+    expect(chatModelsOf(s).map((m) => m['id']), ['bge-chat-tuned', 'zeta']);
+  });
+
+  test('unknown or absent role falls back to the id guard', () {
+    final s = withRoles({
+      'bge-small-en-v1.5': 'unknown',
+      'embeddinggemma-2': null,
+      'llama-3.2-1b': 'unknown',
+    });
+    expect(chatPackageFor(s, null), 'llama-3.2-1b');
+    expect(chatPackageFor(withRoles({'bge-m3': 'unknown'}), null), isNull);
+    expect(chatPackageFor(withRoles({'only': 'embedder'}), null), isNull);
   });
 }

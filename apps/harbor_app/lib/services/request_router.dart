@@ -245,20 +245,38 @@ final _embedderId = RegExp(
 
 bool looksLikeEmbedder(String id) => _embedderId.hasMatch(id);
 
+/// Whether an installed-model entry can be the chat model. The core reads
+/// the weights' GGUF header and reports `role` ("embedder" | "chat" |
+/// "unknown"); that wins. The id heuristic is only the fallback for an
+/// "unknown" role or an older core that reports none.
+bool isChatModel(Map<String, dynamic> m) {
+  final id = m['id'];
+  if (id is! String) return false;
+  switch (m['role']) {
+    case 'embedder':
+      return false;
+    case 'chat':
+      return true;
+    default:
+      return !looksLikeEmbedder(id);
+  }
+}
+
+/// The installed models that can be offered as the chat model.
+List<Map<String, dynamic>> chatModelsOf(HarborService? service) => [
+      for (final m
+          in service?.installedModels ?? const <Map<String, dynamic>>[])
+        if (isChatModel(m)) m
+    ];
+
 /// The chat model a request runs with: the person's choice when it is still
-/// installed, else the first installed model that is not an embedder, else
+/// installed (and not an embedder), else the first installed chat model, else
 /// null (nothing can generate: the caller shows the install-a-model
 /// guidance).
 String? chatPackageFor(HarborService service, String? preferred) {
-  final installed = [
-    for (final m in service.installedModels)
-      if (m['id'] is String) m['id'] as String
-  ];
+  final installed = [for (final m in chatModelsOf(service)) m['id'] as String];
   if (preferred != null && installed.contains(preferred)) return preferred;
-  for (final id in installed) {
-    if (!looksLikeEmbedder(id)) return id;
-  }
-  return null;
+  return installed.isEmpty ? null : installed.first;
 }
 
 /// Files a skill can take as its artifact and the canvas can read: the

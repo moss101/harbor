@@ -258,5 +258,28 @@ void main() {
       await settle(tester);
       expect(find.text('Uninstall qwen-chat?'), findsNothing);
     });
+
+    testWidgets('an embedder is never offered as the chat model',
+        (tester) async {
+      Map<String, dynamic> m(String id, String role) => {
+            'id': id,
+            'role': role,
+            'total_bytes': 1 << 20,
+            'files': 1,
+            'runtime': 'gguf'
+          };
+      final s = FakeHarborService(models: [
+        m('bge-small', 'embedder'),
+        m('llama-chat', 'chat'),
+        m('qwen-chat', 'chat'),
+      ]);
+      final state = await pumpShell(tester, s);
+      state.openModels(ModelsTab.installed);
+      await settle(tester);
+      // The first chat model is in use by default (not the embedder that
+      // sorts first); only the other chat model offers "Use for answers".
+      expect(find.text('Use for answers'), findsOneWidget);
+      expect(find.text('In use'), findsOneWidget);
+    });
   });
 }

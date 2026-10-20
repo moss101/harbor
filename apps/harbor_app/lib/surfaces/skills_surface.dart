@@ -5,6 +5,7 @@ import 'package:harbor_ui/harbor_ui.dart';
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/harbor_service.dart';
+import '../services/request_router.dart';
 import 'skill_run.dart';
 
 /// Skills library (UX-026): the built-in skill definitions from the core,
@@ -62,7 +63,7 @@ class _SkillsSurfaceState extends State<SkillsSurface> {
     setState(() => _suggesting = true);
     final preferred = AppStateScope.maybeOf(context)?.chatModel;
     final installed = [
-      for (final m in service.installedModels) m['id'] as String
+      for (final m in chatModelsOf(service)) m['id'] as String
     ];
     final result = await service.suggestSkills(text,
         chatPackage: preferred != null && installed.contains(preferred)

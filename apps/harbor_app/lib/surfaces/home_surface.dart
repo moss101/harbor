@@ -394,10 +394,7 @@ class _HomeSurfaceState extends State<HomeSurface> {
       AppLocalizations l10n, HarborTheme t, HarborService? service,
       {required bool docked}) {
     final office = _officeAttachment;
-    final models = [
-      for (final m in service?.installedModels ?? const [])
-        if (m['id'] is String) m['id'] as String
-    ];
+    final models = [for (final m in chatModelsOf(service)) m['id'] as String];
     final generating = _generating;
     final canSearch =
         service != null && !_busy && _composer.text.trim().isNotEmpty;
@@ -900,7 +897,7 @@ class _AsideColumn extends StatelessWidget {
     final t = HarborTheme.of(context);
     final sp = HarborServiceProvider.of(context);
     final service = sp.notifier;
-    final models = service?.installedModels ?? const [];
+    final models = chatModelsOf(service);
     final chosen = state.chatModel;
     final active = models.isEmpty
         ? null

@@ -15,8 +15,8 @@ import 'fake_service.dart';
 /// is the empty state and comes back when the conversation is cleared.
 void main() {
   const List<Map<String, dynamic>> chat = [
-    {'id': 'qwen-chat'},
-    {'id': 'llama-chat'},
+    {'id': 'qwen-chat', 'role': 'chat'},
+    {'id': 'llama-chat', 'role': 'chat'},
   ];
 
   Future<void> send(WidgetTester tester, String text) async {

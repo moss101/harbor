@@ -15,7 +15,7 @@ import 'fake_service.dart';
 void main() {
   FakeHarborService withFile({
     List<Map<String, dynamic>> models = const [
-      {'id': 'qwen-chat'}
+      {'id': 'qwen-chat', 'role': 'chat'}
     ],
   }) {
     final s =
@@ -38,7 +38,7 @@ void main() {
 
   testWidgets('the bar appears only while a file is open', (tester) async {
     final s = FakeHarborService(models: const [
-      {'id': 'qwen-chat'}
+      {'id': 'qwen-chat', 'role': 'chat'}
     ]);
     await pumpSurface(tester, s, (_) => const WorkSurface());
     expect(find.byKey(const ValueKey('work-command-bar')), findsNothing);
@@ -236,7 +236,7 @@ void main() {
     testWidgets('a question is answered inline, grounded in Knowledge',
         (tester) async {
       final s = FakeHarborService(models: const [
-        {'id': 'qwen-chat'}
+        {'id': 'qwen-chat', 'role': 'chat'}
       ], skillList: [
         emailSkill
       ], indexOpens: false);
@@ -250,7 +250,7 @@ void main() {
     testWidgets('a task opens the routed skill sheet, prefilled, unrun',
         (tester) async {
       final s = FakeHarborService(models: const [
-        {'id': 'qwen-chat'}
+        {'id': 'qwen-chat', 'role': 'chat'}
       ], skillList: [
         emailSkill,
         tidySkill
@@ -281,7 +281,7 @@ void main() {
     testWidgets('a quick action routes on send, never just records',
         (tester) async {
       final s = FakeHarborService(models: const [
-        {'id': 'qwen-chat'}
+        {'id': 'qwen-chat', 'role': 'chat'}
       ], skillList: [
         emailSkill
       ], indexOpens: false);

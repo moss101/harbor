@@ -5,6 +5,7 @@ import 'package:harbor_ui/harbor_ui.dart';
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/harbor_service.dart';
+import '../services/request_router.dart';
 
 /// Scheduled goals (decision 0011): durable, user-authorized proactive
 /// work, shown as the Goals tab of Activity (their runs land in the Runs
@@ -45,12 +46,7 @@ class _GoalsViewState extends State<GoalsView> {
   }
 
   String? _pickChatPackage(HarborService service) {
-    final models = service.installedModels;
-    if (models.isEmpty) return null;
-    final installed = models.map((m) => m['id'] as String).toList();
-    final preferred = AppStateScope.maybeOf(context)?.chatModel;
-    if (preferred != null && installed.contains(preferred)) return preferred;
-    return installed.first;
+    return chatPackageFor(service, AppStateScope.maybeOf(context)?.chatModel);
   }
 
   /// The only execution path: an explicit tap. The claim is write-ahead

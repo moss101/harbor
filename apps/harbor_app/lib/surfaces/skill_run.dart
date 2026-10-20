@@ -13,6 +13,7 @@ import '../services/file_types.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/harbor_service.dart';
+import '../services/request_router.dart';
 import '../widgets/ops.dart';
 
 /// Whether this platform's file picker hands back the user's actual file.
@@ -272,7 +273,7 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
         _fields[e.key] = TextEditingController();
       }
     }
-    final models = widget.service.installedModels;
+    final models = chatModelsOf(widget.service);
     if (models.isNotEmpty) {
       final ids = [for (final m in models) m['id'] as String];
       _chatPackage =
@@ -686,7 +687,7 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
         const SizedBox(height: HarborSpace.s3),
       ],
       if (_graph.usesModel) ...[
-        if (widget.service.installedModels.isEmpty)
+        if (chatModelsOf(widget.service).isEmpty)
           HarborBanner(
               tone: HarborBannerTone.warning,
               title: l10n.skillsModelLabel,
@@ -697,7 +698,7 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
             initialValue: _chatPackage,
             decoration: InputDecoration(labelText: l10n.skillsModelLabel),
             items: [
-              for (final m in widget.service.installedModels)
+              for (final m in chatModelsOf(widget.service))
                 DropdownMenuItem(
                     value: m['id'] as String, child: Text(m['id'] as String)),
             ],
