@@ -7,6 +7,7 @@ import 'fake_service.dart';
 /// test: bge-small sorted before the chat model and every ask failed with
 /// a chat-template error).
 void main() {
+  embedderDefaultTests();
   FakeHarborService withRoles(Map<String, String?> roles) =>
       FakeHarborService(models: [
         for (final e in roles.entries)
@@ -81,5 +82,37 @@ void main() {
     expect(chatPackageFor(s, null), 'llama-3.2-1b');
     expect(chatPackageFor(withRoles({'bge-m3': 'unknown'}), null), isNull);
     expect(chatPackageFor(withRoles({'only': 'embedder'}), null), isNull);
+  });
+}
+
+/// The Library opens an installed embedder, not a hard-coded one (found by
+/// the live Change test: only EmbeddingGemma 2 installed => "no index").
+void embedderDefaultTests() {
+  FakeHarborService roles(Map<String, String> r) => FakeHarborService(models: [
+        for (final e in r.entries) {'id': e.key, 'role': e.value}
+      ]);
+
+  test('defaultEmbedder keeps bge-small when it is installed', () {
+    final s = roles({
+      'embeddinggemma-2': 'embedder',
+      'bge-small-en-v1.5': 'embedder',
+      'qwen2.5-1.5b': 'chat',
+    });
+    expect(s.defaultEmbedder, 'bge-small-en-v1.5');
+  });
+
+  test('defaultEmbedder uses the first installed embedder otherwise', () {
+    final s = roles({'qwen2.5-1.5b': 'chat', 'embeddinggemma-2': 'embedder'});
+    expect(s.defaultEmbedder, 'embeddinggemma-2');
+  });
+
+  test('defaultEmbedder falls back to the historical default', () {
+    expect(
+        roles({'qwen2.5-1.5b': 'chat'}).defaultEmbedder, 'bge-small-en-v1.5');
+    expect(
+        FakeHarborService(models: [
+          {'id': 'embeddinggemma-2'}
+        ]).defaultEmbedder,
+        'bge-small-en-v1.5');
   });
 }

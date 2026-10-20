@@ -438,13 +438,36 @@ class HarborService extends ChangeNotifier {
     }
   }
 
-  /// Open the durable knowledge index over an installed embedding model.
-  /// Reports failure honestly (no embedding model installed) instead of
-  /// fabricating search results.
-  Future<bool> openKnowledge({String packageId = 'bge-small-en-v1.5'}) async {
+  /// The embedding package the Library opens when the caller names none: the
+  /// historical default (`bge-small-en-v1.5`) when it is installed, else the
+  /// first installed package the core reports as an embedder. Falls back to
+  /// the default so the core's refusal ("not installed") stays the honest
+  /// answer when no embedder is installed (or an older core reports no role).
+  String get defaultEmbedder {
+    final embedders = [
+      for (final m in installedModels)
+        if (m['role'] == 'embedder' && m['id'] is String) m['id'] as String
+    ];
+    if (embedders.isEmpty || embedders.contains(_defaultEmbedder)) {
+      return _defaultEmbedder;
+    }
+    return embedders.first;
+  }
+
+  static const _defaultEmbedder = 'bge-small-en-v1.5';
+
+  /// The package the open index was built with (null while closed).
+  String? knowledgePackage;
+
+  /// Open the durable knowledge index over an installed embedding model
+  /// ([defaultEmbedder] when none is named). Reports failure honestly (no
+  /// embedding model installed) instead of fabricating search results.
+  Future<bool> openKnowledge({String? packageId}) async {
+    packageId ??= defaultEmbedder;
     try {
       final r = await _call('knowledge.open', {'package_id': packageId});
       knowledgeOpen = true;
+      knowledgePackage = packageId;
       knowledgeDimension = r['dimension'] as int;
       knowledgeMultimodal = r['multimodal'] == true;
       knowledgeBackend = r['embedding_backend'] as String? ?? 'gpu';
@@ -464,6 +487,7 @@ class HarborService extends ChangeNotifier {
       return true;
     } on ffi.HarborCoreException {
       knowledgeOpen = false;
+      knowledgePackage = null;
       notifyListeners();
       return false;
     }

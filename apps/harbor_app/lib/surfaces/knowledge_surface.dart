@@ -434,7 +434,7 @@ class _KnowledgeSurfaceState extends State<KnowledgeSurface> {
                 const SizedBox(height: HarborSpace.s3),
                 HarborKeyValue(
                     label: l10n.knowledgeEmbedding,
-                    value: 'bge-small-en-v1.5',
+                    value: service.knowledgePackage ?? service.defaultEmbedder,
                     identifier: true),
                 HarborKeyValue(
                     label: l10n.knowledgeBackendLabel,

@@ -79,7 +79,7 @@ class FakeHarborService extends HarborService {
   void notify() => notifyListeners();
 
   @override
-  Future<bool> openKnowledge({String packageId = 'bge-small-en-v1.5'}) async {
+  Future<bool> openKnowledge({String? packageId}) async {
     calls.add('openKnowledge');
     knowledgeOpen = indexOpens;
     return indexOpens;

@@ -116,6 +116,14 @@ void main() {
     late HarborService s;
     await tester.runAsync(() async {
       final dir = await Directory.systemTemp.createTemp('harbor-work-live-');
+      // Each data root holds a ~1.5 GB model copy: never leave it behind.
+      addTearDown(() {
+        try {
+          dir.deleteSync(recursive: true);
+        } on FileSystemException {
+          // best effort
+        }
+      });
       s = await HarborService.open(
           libraryPath: dylibPath,
           dataRoot: dir.path,
@@ -202,14 +210,12 @@ void main() {
     SkillRunSheet.debugResolveSaveDestination = (_) async => dest;
     addTearDown(() => SkillRunSheet.debugResolveSaveDestination = null);
 
-    // The skill router needs an open embedding index. The app only opens
-    // its default (`bge-small-en-v1.5`); this run installed EmbeddingGemma 2
-    // instead, so open that one the way Library would.
+    // The skill router needs an open embedding index. Only EmbeddingGemma 2
+    // is installed here, so the default open must pick it by its core role
+    // (it used to be hard-wired to bge-small and the router said "no index").
     final open = Stopwatch()..start();
-    expect(
-        await tester
-            .runAsync(() => s.openKnowledge(packageId: 'embeddinggemma-2')),
-        isTrue);
+    expect(await tester.runAsync(() => s.openKnowledge()), isTrue);
+    expect(s.knowledgePackage, 'embeddinggemma-2');
     // ignore: avoid_print
     print('live change: knowledge open in ${open.elapsed}');
     await pumpSurface(tester, s, (_) => const WorkSurface());
@@ -353,6 +359,14 @@ void main() {
     final texts = arabicContract();
     expect(texts[4], contains('٤٥'));
     final dir = await Directory.systemTemp.createTemp('harbor-work-ar-');
+    // Each data root holds a ~1.5 GB model copy: never leave it behind.
+    addTearDown(() {
+      try {
+        dir.deleteSync(recursive: true);
+      } on FileSystemException {
+        // best effort
+      }
+    });
     final s = await HarborService.open(
         libraryPath: dylibPath,
         dataRoot: dir.path,
@@ -458,6 +472,14 @@ void main() {
       return;
     }
     final dir = await Directory.systemTemp.createTemp('harbor-work-live2-');
+    // Each data root holds a ~1.5 GB model copy: never leave it behind.
+    addTearDown(() {
+      try {
+        dir.deleteSync(recursive: true);
+      } on FileSystemException {
+        // best effort
+      }
+    });
     final s = await HarborService.open(
         libraryPath: dylibPath,
         dataRoot: dir.path,
@@ -503,6 +525,14 @@ void main() {
       return;
     }
     final dir = await Directory.systemTemp.createTemp('harbor-work-live3-');
+    // Each data root holds a ~1.5 GB model copy: never leave it behind.
+    addTearDown(() {
+      try {
+        dir.deleteSync(recursive: true);
+      } on FileSystemException {
+        // best effort
+      }
+    });
     final s = await HarborService.open(
         libraryPath: dylibPath,
         dataRoot: dir.path,
