@@ -72,6 +72,10 @@ class _Entry {
   /// The office file the request was about, kept for re-opening the sheet.
   _Attachment? office;
 
+  /// The Library collection the question was scoped to (never set with
+  /// [office]); the answer is grounded only on its sources.
+  String? collection;
+
   /// The latest report of the run the task's sheet started.
   Map<String, dynamic>? report;
 }
@@ -83,6 +87,24 @@ class _HomeSurfaceState extends State<HomeSurface> {
   final _thread = ScrollController();
   final List<_Attachment> _attachments = [];
   final List<_Entry> _entries = [];
+
+  /// What the next question is about (Everything or one collection). A
+  /// file attached to the request overrides it ("This file").
+  ComposerScope _scope = const ComposerScope.everything();
+
+  /// The scope in effect: a collection that no longer has sources falls
+  /// back to Everything, so a stale choice can never silently empty an
+  /// answer.
+  ComposerScope _effectiveScope(HarborService? service) {
+    final office = _officeAttachment;
+    if (office != null) return ComposerScope.thisFile(office.name);
+    if (_scope.kind == ComposerScopeKind.collection &&
+        (service?.knowledgeCollections ?? const [])
+            .any((c) => c['name'] == _scope.name)) {
+      return _scope;
+    }
+    return const ComposerScope.everything();
+  }
 
   @override
   void initState() {
@@ -209,6 +231,12 @@ class _HomeSurfaceState extends State<HomeSurface> {
 
   _Entry _begin(String text) {
     final entry = _Entry(text)..office = _officeAttachment;
+    if (entry.office == null) {
+      final scope = _effectiveScope(HarborServiceProvider.of(context).notifier);
+      if (scope.kind == ComposerScopeKind.collection) {
+        entry.collection = scope.name;
+      }
+    }
     setState(() => _entries.add(entry));
     _scrollToEnd();
     return entry;
@@ -259,11 +287,13 @@ class _HomeSurfaceState extends State<HomeSurface> {
       return;
     }
     final runId = chat == null ? null : HarborService.newRunId();
-    final turn = AnswerTurn(question, runId: runId);
+    final turn =
+        AnswerTurn(question, runId: runId, collection: entry.collection);
     setState(() => entry.turn = turn);
     try {
       if (chat == null) {
-        final evidence = await service.searchKnowledge(question, topK: 5);
+        final evidence = await service.searchKnowledge(question,
+            topK: 5, collection: entry.collection);
         turn.evidence = evidence ?? const {'citations': []};
       } else if (office != null) {
         final preview = await service.extractPreview(office.bytes);
@@ -278,7 +308,7 @@ class _HomeSurfaceState extends State<HomeSurface> {
       } else {
         await service.createRun(runId!);
         turn.answer = await service.generateAnswer(question,
-            chatPackage: chat, runId: runId);
+            chatPackage: chat, runId: runId, collection: entry.collection);
       }
     } on ffi.HarborCoreException catch (e) {
       turn.cancelled = e.message.toLowerCase().contains('cancel');
@@ -305,12 +335,13 @@ class _HomeSurfaceState extends State<HomeSurface> {
       });
       return;
     }
-    final turn = AnswerTurn(question);
+    final turn = AnswerTurn(question, collection: entry.collection);
     setState(() {
       entry.routing = false;
       entry.turn = turn;
     });
-    final result = await service.searchKnowledge(question, topK: 5);
+    final result = await service.searchKnowledge(question,
+        topK: 5, collection: entry.collection);
     if (!mounted) return;
     setState(() {
       turn.evidence = result ?? const {'citations': []};
@@ -408,9 +439,15 @@ class _HomeSurfaceState extends State<HomeSurface> {
           onSubmit: _submit,
           busy: _busy,
           onCancel: generating == null ? null : _cancel,
-          scope: office == null
-              ? const ComposerScope.everything()
-              : ComposerScope.thisFile(office.name),
+          scope: _effectiveScope(service),
+          scopeOptions: office != null
+              ? null
+              : [
+                  const ComposerScope.everything(),
+                  for (final c in service?.knowledgeCollections ?? const [])
+                    ComposerScope.collection(c['name'] as String),
+                ],
+          onScopeChanged: (s) => setState(() => _scope = s),
           attachments: [
             for (final a in _attachments)
               InputChip(

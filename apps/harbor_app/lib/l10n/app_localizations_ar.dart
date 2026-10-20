@@ -2073,4 +2073,58 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get modelsTabStore => 'المتجر';
+
+  @override
+  String get knowledgeCollectionAll => 'الكل';
+
+  @override
+  String get knowledgeCollectionFilterLabel => 'التصفية حسب المجموعة';
+
+  @override
+  String knowledgeCollectionChip(String name, int count) {
+    return '$name · $count';
+  }
+
+  @override
+  String get knowledgeCollectionMenuTooltip => 'المجموعة';
+
+  @override
+  String get knowledgeCollectionNone => 'بلا مجموعة';
+
+  @override
+  String get knowledgeCollectionNew => 'مجموعة جديدة…';
+
+  @override
+  String get knowledgeCollectionNewTitle => 'مجموعة جديدة';
+
+  @override
+  String get knowledgeCollectionNameHint => 'اسم المجموعة';
+
+  @override
+  String get knowledgeCollectionCreate => 'انقل إليها';
+
+  @override
+  String knowledgeCollectionMoved(String title, String name) {
+    return 'أصبح «$title» في «$name»';
+  }
+
+  @override
+  String knowledgeCollectionCleared(String title) {
+    return 'لم يعد «$title» ضمن مجموعة';
+  }
+
+  @override
+  String get knowledgeCollectionFailed =>
+      'تعذّر تغيير المجموعة. يصل طول الاسم إلى 64 حرفاً.';
+
+  @override
+  String get knowledgeCollectionEmpty => 'لا توجد مصادر في هذه المجموعة بعد.';
+
+  @override
+  String get composerScopeMenuTooltip => 'اختر موضوع سؤالك';
+
+  @override
+  String askGroundedInCollection(String name) {
+    return 'الإجابة من المجموعة «$name» فقط';
+  }
 }

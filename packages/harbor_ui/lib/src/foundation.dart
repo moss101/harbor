@@ -178,30 +178,18 @@ class HarborSurfaceHeader extends StatelessWidget {
     if (titleEmpty && actionRowOrNull(actions) == null) {
       return const SizedBox(height: HarborSpace.s2);
     }
-    // Compact: one horizontally scrolling row (never stacks); wider:
-    // a wrapping row with room to spare.
+    // Actions WRAP at every width. A compact row used to scroll
+    // horizontally, which hid the trailing action off the edge (the
+    // Arabic Work header lost "Open file"); wrapping keeps every action
+    // on screen and reachable.
     final actionRow = actions.isEmpty
         ? null
-        : compact
-            ? SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                clipBehavior: Clip.none,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final (i, a) in actions.indexed) ...[
-                      if (i > 0) const SizedBox(width: HarborSpace.s2),
-                      a,
-                    ],
-                  ],
-                ),
-              )
-            : Wrap(
-                spacing: HarborSpace.s2,
-                runSpacing: HarborSpace.s2,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: actions,
-              );
+        : Wrap(
+            spacing: HarborSpace.s2,
+            runSpacing: HarborSpace.s2,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: actions,
+          );
     return Padding(
       padding: EdgeInsets.fromLTRB(
         HarborBreakpoints.gutter(wc),

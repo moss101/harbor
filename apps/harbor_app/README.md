@@ -43,6 +43,12 @@ empty state) · **Work** · **Library** (the Knowledge index) · **Models**
 not a destination while agent orchestration is off; its working part,
 scheduled goals, is the Goals tab of Activity.
 
+**Work** has a command bar once a file is open: **Ask** answers from that
+file's own text only (`op.start_generate` with a `document`; citations carry
+the paragraph/page/slide/cell they quote), **Change** opens the routed skill's
+run sheet with the file attached. Neither runs or saves anything by itself.
+Header actions wrap on phones rather than scrolling out of view.
+
 ## Responsive contract (UI authority §4)
 
 | Width        | Navigation                              | Lens                 |
@@ -77,6 +83,8 @@ flutter test                  # shell, accessibility and l10n gates
   RTL mirroring, persisted preferences, palette + shortcuts, and the live
   core journeys (composer → durable run, workbook grid, skills, knowledge,
   grounded generation)
+- `test/work_live_test.dart` — the Work command bar against the real
+  service, core and weights (needs `fixtures/models`; skips without them)
 - `test/accessibility_audit_test.dart` — every control labeled, 44 px
   targets, keyboard traversal, and no overflow at 200 % text on 320 / 390
   / 1280 px (failures name the offending widget)

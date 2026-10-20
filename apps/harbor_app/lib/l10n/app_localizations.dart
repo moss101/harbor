@@ -3355,6 +3355,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Store'**
   String get modelsTabStore;
+
+  /// No description provided for @knowledgeCollectionAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get knowledgeCollectionAll;
+
+  /// No description provided for @knowledgeCollectionFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by collection'**
+  String get knowledgeCollectionFilterLabel;
+
+  /// No description provided for @knowledgeCollectionChip.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} · {count}'**
+  String knowledgeCollectionChip(String name, int count);
+
+  /// No description provided for @knowledgeCollectionMenuTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Collection'**
+  String get knowledgeCollectionMenuTooltip;
+
+  /// No description provided for @knowledgeCollectionNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No collection'**
+  String get knowledgeCollectionNone;
+
+  /// No description provided for @knowledgeCollectionNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New collection…'**
+  String get knowledgeCollectionNew;
+
+  /// No description provided for @knowledgeCollectionNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New collection'**
+  String get knowledgeCollectionNewTitle;
+
+  /// No description provided for @knowledgeCollectionNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Collection name'**
+  String get knowledgeCollectionNameHint;
+
+  /// No description provided for @knowledgeCollectionCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Move here'**
+  String get knowledgeCollectionCreate;
+
+  /// No description provided for @knowledgeCollectionMoved.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} is now in {name}'**
+  String knowledgeCollectionMoved(String title, String name);
+
+  /// No description provided for @knowledgeCollectionCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} is no longer in a collection'**
+  String knowledgeCollectionCleared(String title);
+
+  /// No description provided for @knowledgeCollectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change the collection. Names can be up to 64 characters.'**
+  String get knowledgeCollectionFailed;
+
+  /// No description provided for @knowledgeCollectionEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No sources in this collection yet.'**
+  String get knowledgeCollectionEmpty;
+
+  /// No description provided for @composerScopeMenuTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what to ask about'**
+  String get composerScopeMenuTooltip;
+
+  /// No description provided for @askGroundedInCollection.
+  ///
+  /// In en, this message translates to:
+  /// **'Answered only from the collection {name}'**
+  String askGroundedInCollection(String name);
 }
 
 class _AppLocalizationsDelegate

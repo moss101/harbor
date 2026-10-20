@@ -7,6 +7,58 @@ ran at.
 
 ---
 
+## Session 61 (2026-10-20): Work gets an input, ten surfaces become seven, and the path is run for real
+
+Done (decision 0020, `docs/decisions/0020-navigation-consolidation-and-file-scoped-composer.md`):
+- **Navigation 10 -> 7**: Home (absorbs Ask), Work, Library, Models (absorbs Store), Skills, Activity
+  (absorbs Goals), Settings; Agents hidden while orchestration is off; the rail's secondary group sits
+  under a divider.
+- **`HarborComposer` with scopes** on Home and Work; **recommend-only `RequestRouter`**
+  (mode > `decision.choose` > `skills.suggest`, file-aware); the Home composer now answers or opens a
+  skill's run sheet instead of only logging.
+- **Work command bar**: "Ask about this file" via a new `document` scope on `op.start_generate`
+  (passages `{id,text,locator}`, caps 5000 / 64 KiB / 4 MiB, response adds `scope`, citations carry
+  `passage_id`/`locator`/`snippet`; ranking `all` / `embedding` / `lexical`); "Change this file" opens
+  the routed skill's run sheet with the file attached, nothing run.
+- **Live end-to-end run** (`apps/harbor_app/test/work_live_test.dart`, real Flutter service + real debug
+  core + real Qwen2.5-1.5B and EmbeddingGemma 2; skips when fixtures are absent): (1) the Work
+  command bar in Ask mode over a real .docx: grounded answer stating 45 days, a "Paragraph 2" citation,
+  then an unsupported question abstains - PASS; (2) `askAboutFile` response contract (answer, `scope`,
+  citation `passage_id`=`para-2`, locator `¶2`, `title`, score > 0, `INSUFFICIENT_EVIDENCE`) - PASS;
+  (3) the real router with EmbeddingGemma 2 returns a runnable DOCX skill (`document-style-review`) for
+  "Review the style and formatting of this document" - PASS (one request; not a routing benchmark).
+  The widget test drives the real service through `WorkSurface`; the Change path was NOT driven through
+  the widget (the run sheet and a real run were not exercised, only the router's decision).
+- **Found by running it**: the default chat model was "the first installed package", which is the
+  embedder whenever one sorts before the chat model (`bge-small-en-v1.5` < `qwen...`); every ask then
+  failed with `backend failure: template: ffi error -1`. Fixed in `chatPackageFor` (skips ids that name
+  embedders; `test/chat_package_test.dart`). The proper fix is a `role` on `models.installed`.
+- **Phone header clip** (pre-existing, reproduced in English too at 390x844): `HarborSurfaceHeader`'s
+  compact action row scrolled horizontally, so a trailing action ("Open file") sat past the edge.
+  It now wraps at every width (`packages/harbor_ui/lib/src/foundation.dart`);
+  `test/work_header_test.dart` covers 390x844 in English and Arabic.
+- Dossier: 28_Correction_Log.md addendum maps the affected UX rows to their new homes;
+  `07_Screen_Inventory.csv` (frozen, hash-pinned) is untouched and is re-issued with the next
+  authority revision. Files 19/20/24 need the usual reseal.
+
+Observation: with a calibrated embedder the first `knowledge.open` on the debug core took 6 min and
+18 min in two runs while other builds were running on the machine, and 0.7 s when the machine was
+quiet (the same call); treat the first number as contention plus prewarm, not as a regression, but the
+live tests use generous timeouts (20 min for the router test).
+
+NOT verified: any of this on a physical iPhone/Android device or Windows; touch behaviour of the
+command bar and the wrapped phone header on a device (verified in widget tests only); extraction on
+scanned or very large files; Arabic questions about Arabic files; routing accuracy beyond one request;
+a full Change run (approve + commit) started from the Work bar.
+
+Still open, and genuinely external (unchanged): operator-signed model catalog pin (epoch), physical
+iOS/Android device tiers, a Windows machine and a minimum-spec Apple-silicon device, Apple Developer
+identity + notarization, Play Console ownership + upload key (see `docs/release_checklist_status.md`,
+"External blockers"). Remaining machine-doable follow-ups: a core `role` field for installed packages
+(retire the id heuristic), and re-issuing `07_Screen_Inventory.csv`.
+
+---
+
 ## Session 60 follow-up (2026-10-14): review fixes and the open items
 
 Closed:

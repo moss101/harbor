@@ -19,6 +19,13 @@ final class ComposerScope {
   const ComposerScope.collection(String this.name)
       : kind = ComposerScopeKind.collection;
 
+  @override
+  bool operator ==(Object other) =>
+      other is ComposerScope && other.kind == kind && other.name == name;
+
+  @override
+  int get hashCode => Object.hash(kind, name);
+
   final ComposerScopeKind kind;
 
   /// File or collection name (data, shown as is).
@@ -54,6 +61,8 @@ class HarborComposer extends StatefulWidget {
     this.onScan,
     this.onRecord,
     this.scope,
+    this.scopeOptions,
+    this.onScopeChanged,
     this.mode,
     this.onModeChanged,
     this.attachments = const [],
@@ -82,6 +91,12 @@ class HarborComposer extends StatefulWidget {
 
   /// Scope chip at the start of the field; none when null.
   final ComposerScope? scope;
+
+  /// When both are set (and there is more than one option) the chip is a
+  /// menu of [scopeOptions]; choosing one calls [onScopeChanged]. A
+  /// composer without them keeps a plain, non-interactive chip.
+  final List<ComposerScope>? scopeOptions;
+  final ValueChanged<ComposerScope>? onScopeChanged;
 
   /// Ask / Change toggle, shown when [onModeChanged] is set. A null [mode]
   /// means "let the router decide"; tapping the selected mode clears it.
@@ -184,19 +199,48 @@ class _HarborComposerState extends State<HarborComposer> {
           )
         : field;
     final scope = widget.scope;
+    final options = widget.scopeOptions;
+    final menu = scope != null &&
+        options != null &&
+        options.length > 1 &&
+        widget.onScopeChanged != null;
     final scopeChip = scope == null
         ? null
         : ConstrainedBox(
             constraints: BoxConstraints(maxWidth: compact ? 280 : 240),
-            child: Tooltip(
-              message: scope.label(l10n),
-              child: HarborPill(
-                scope.label(l10n),
-                key: const ValueKey('composer-scope'),
-                icon: scope.icon,
-                brand: true,
-              ),
-            ),
+            child: menu
+                ? PopupMenuButton<ComposerScope>(
+                    key: const ValueKey('composer-scope-menu'),
+                    tooltip: l10n.composerScopeMenuTooltip,
+                    padding: EdgeInsets.zero,
+                    onSelected: widget.onScopeChanged,
+                    itemBuilder: (context) => [
+                      for (final o in options)
+                        CheckedPopupMenuItem<ComposerScope>(
+                          key: ValueKey('composer-scope-${o.kind.name}-'
+                              '${o.name ?? ''}'),
+                          value: o,
+                          checked: o == scope,
+                          child: Text(o.label(l10n),
+                              overflow: TextOverflow.ellipsis),
+                        ),
+                    ],
+                    child: HarborPill(
+                      scope.label(l10n),
+                      key: const ValueKey('composer-scope'),
+                      icon: scope.icon,
+                      brand: true,
+                    ),
+                  )
+                : Tooltip(
+                    message: scope.label(l10n),
+                    child: HarborPill(
+                      scope.label(l10n),
+                      key: const ValueKey('composer-scope'),
+                      icon: scope.icon,
+                      brand: true,
+                    ),
+                  ),
           );
     final showAttach = widget.onAttach != null ||
         widget.onScan != null ||

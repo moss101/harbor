@@ -2019,4 +2019,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get modelsTabStore => 'Store';
+
+  @override
+  String get knowledgeCollectionAll => 'All';
+
+  @override
+  String get knowledgeCollectionFilterLabel => 'Filter by collection';
+
+  @override
+  String knowledgeCollectionChip(String name, int count) {
+    return '$name · $count';
+  }
+
+  @override
+  String get knowledgeCollectionMenuTooltip => 'Collection';
+
+  @override
+  String get knowledgeCollectionNone => 'No collection';
+
+  @override
+  String get knowledgeCollectionNew => 'New collection…';
+
+  @override
+  String get knowledgeCollectionNewTitle => 'New collection';
+
+  @override
+  String get knowledgeCollectionNameHint => 'Collection name';
+
+  @override
+  String get knowledgeCollectionCreate => 'Move here';
+
+  @override
+  String knowledgeCollectionMoved(String title, String name) {
+    return '$title is now in $name';
+  }
+
+  @override
+  String knowledgeCollectionCleared(String title) {
+    return '$title is no longer in a collection';
+  }
+
+  @override
+  String get knowledgeCollectionFailed =>
+      'Could not change the collection. Names can be up to 64 characters.';
+
+  @override
+  String get knowledgeCollectionEmpty => 'No sources in this collection yet.';
+
+  @override
+  String get composerScopeMenuTooltip => 'Choose what to ask about';
+
+  @override
+  String askGroundedInCollection(String name) {
+    return 'Answered only from the collection $name';
+  }
 }

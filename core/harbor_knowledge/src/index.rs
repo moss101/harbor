@@ -81,6 +81,8 @@ pub enum IndexError {
     DimensionMismatch { expected: usize, got: usize },
     #[error("source not found: {0}")]
     SourceNotFound(String),
+    #[error("invalid collection: {0}")]
+    InvalidCollection(String),
 }
 
 pub struct KnowledgeIndex {
@@ -89,6 +91,37 @@ pub struct KnowledgeIndex {
     chunks: Vec<SourceChunk>,
     /// Revoked sources are excluded from retrieval immediately.
     revoked: std::collections::BTreeSet<String>,
+    /// Optional grouping: source id -> collection label. Kept apart from
+    /// [`Source`] so a versioned re-ingest (which removes then re-adds the
+    /// source) does not lose it; only an explicit removal clears it.
+    collections: BTreeMap<String, String>,
+}
+
+/// Longest collection label, in characters.
+pub const MAX_COLLECTION_CHARS: usize = 64;
+
+/// Trim and validate a collection label (free text, case preserved).
+pub fn normalize_collection(raw: &str) -> Result<String, IndexError> {
+    let name = raw.trim();
+    if name.is_empty() {
+        return Err(IndexError::InvalidCollection("name is empty".into()));
+    }
+    if name.chars().count() > MAX_COLLECTION_CHARS {
+        return Err(IndexError::InvalidCollection(format!(
+            "name is longer than {MAX_COLLECTION_CHARS} characters"
+        )));
+    }
+    if name.chars().any(char::is_control) {
+        return Err(IndexError::InvalidCollection(
+            "name contains control characters".into(),
+        ));
+    }
+    Ok(name.to_string())
+}
+
+/// Collection labels are unique by case-insensitive comparison.
+pub fn same_collection(a: &str, b: &str) -> bool {
+    a.to_lowercase() == b.to_lowercase()
 }
 
 impl KnowledgeIndex {
@@ -99,7 +132,66 @@ impl KnowledgeIndex {
             sources: BTreeMap::new(),
             chunks: Vec::new(),
             revoked: Default::default(),
+            collections: BTreeMap::new(),
         }
+    }
+
+    /// Load a persisted collection label without validation against the
+    /// live registry (used when the index is rebuilt from disk).
+    pub fn restore_collection(&mut self, source_id: &str, name: &str) {
+        self.collections.insert(source_id.into(), name.into());
+    }
+
+    /// Assign (or clear, with `None`) a source's collection. A name equal
+    /// to an existing collection ignoring case adopts that collection's
+    /// spelling. Returns the stored label.
+    pub fn set_collection(
+        &mut self,
+        source_id: &str,
+        name: Option<&str>,
+    ) -> Result<Option<String>, IndexError> {
+        if !self.sources.contains_key(source_id) || is_memory_source(source_id) {
+            return Err(IndexError::SourceNotFound(source_id.into()));
+        }
+        let Some(raw) = name else {
+            self.collections.remove(source_id);
+            return Ok(None);
+        };
+        let wanted = normalize_collection(raw)?;
+        let canonical = self
+            .collections
+            .iter()
+            .filter(|(sid, _)| sid.as_str() != source_id)
+            .map(|(_, c)| c)
+            .find(|c| same_collection(c, &wanted))
+            .cloned()
+            .unwrap_or(wanted);
+        self.collections.insert(source_id.into(), canonical.clone());
+        Ok(Some(canonical))
+    }
+
+    pub fn collection_of(&self, source_id: &str) -> Option<&str> {
+        self.collections.get(source_id).map(String::as_str)
+    }
+
+    /// Distinct collections with their live source counts, sorted by name
+    /// (case-insensitive).
+    pub fn collections(&self) -> Vec<(String, usize)> {
+        let mut out: BTreeMap<String, (String, usize)> = BTreeMap::new();
+        for (sid, name) in &self.collections {
+            if !self.sources.contains_key(sid) || is_memory_source(sid) {
+                continue;
+            }
+            out.entry(name.to_lowercase())
+                .or_insert_with(|| (name.clone(), 0))
+                .1 += 1;
+        }
+        out.into_values().collect()
+    }
+
+    /// Drop a source's collection label (the source was removed).
+    pub fn clear_collection(&mut self, source_id: &str) {
+        self.collections.remove(source_id);
     }
 
     /// Attach vectors produced by another identity: hard error.
@@ -156,21 +248,46 @@ impl KnowledgeIndex {
     /// Cosine search over live chunks with citation states resolved
     /// against the CURRENT registry.
     pub fn search(&self, query: &[f32], top_k: usize) -> Vec<Citation> {
-        self.search_scoped(query, top_k, false)
+        self.search_scoped(query, top_k, false, None)
+    }
+
+    /// [`search`](Self::search) restricted to one collection (matched
+    /// ignoring case). An unknown collection yields no hits: scope never
+    /// falls back to the whole index.
+    pub fn search_in_collection(
+        &self,
+        query: &[f32],
+        top_k: usize,
+        collection: &str,
+    ) -> Vec<Citation> {
+        self.search_scoped(query, top_k, false, Some(collection))
     }
 
     /// Cosine search over MEMORY records only (see
     /// [`MEMORY_SOURCE_PREFIX`]).
     pub fn search_memory(&self, query: &[f32], top_k: usize) -> Vec<Citation> {
-        self.search_scoped(query, top_k, true)
+        self.search_scoped(query, top_k, true, None)
     }
 
-    fn search_scoped(&self, query: &[f32], top_k: usize, memory: bool) -> Vec<Citation> {
+    fn search_scoped(
+        &self,
+        query: &[f32],
+        top_k: usize,
+        memory: bool,
+        collection: Option<&str>,
+    ) -> Vec<Citation> {
         let mut scored: Vec<(f32, &SourceChunk)> = self
             .chunks
             .iter()
             .filter(|c| !self.revoked.contains(&c.source_id))
             .filter(|c| is_memory_source(&c.source_id) == memory)
+            .filter(|c| match collection {
+                None => true,
+                Some(want) => self
+                    .collections
+                    .get(&c.source_id)
+                    .is_some_and(|have| same_collection(have, want.trim())),
+            })
             .map(|c| (cosine(query, &c.vector), c))
             .collect();
         scored.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
@@ -210,6 +327,16 @@ impl KnowledgeIndex {
     /// grounded generation can quote evidence.
     pub fn search_with_text(&self, query: &[f32], top_k: usize) -> Vec<CitationWithText> {
         self.with_text(self.search(query, top_k))
+    }
+
+    /// [`search_with_text`] restricted to one collection.
+    pub fn search_with_text_in_collection(
+        &self,
+        query: &[f32],
+        top_k: usize,
+        collection: &str,
+    ) -> Vec<CitationWithText> {
+        self.with_text(self.search_in_collection(query, top_k, collection))
     }
 
     /// [`search_with_text`] over memory records only.
@@ -357,6 +484,65 @@ mod tests {
         idx.remove_source("s1").unwrap();
         assert!(idx.search(&vec8(3), 3).is_empty());
         assert_eq!(idx.citation_state("s1", "h1"), SourceVersionState::Removed);
+    }
+
+    fn add_doc(idx: &mut KnowledgeIndex, sid: &str, seed: u32) {
+        idx.add_source(
+            Source {
+                source_id: sid.into(),
+                title: sid.into(),
+                content_hash: "h".into(),
+                indexed_at: Utc::now(),
+            },
+            vec![SourceChunk {
+                source_id: sid.into(),
+                chunk_id: format!("{sid}-0"),
+                ordinal: 0,
+                text: format!("text of {sid}"),
+                vector: vec8(seed),
+            }],
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn collections_assign_normalize_dedupe_and_restrict_search() {
+        let mut idx = KnowledgeIndex::new(identity());
+        add_doc(&mut idx, "a", 3);
+        add_doc(&mut idx, "b", 3);
+        add_doc(&mut idx, "c", 3);
+        assert_eq!(
+            idx.set_collection("a", Some("  Legal  "))
+                .unwrap()
+                .as_deref(),
+            Some("Legal")
+        );
+        // Same name ignoring case adopts the existing spelling.
+        assert_eq!(
+            idx.set_collection("b", Some("LEGAL")).unwrap().as_deref(),
+            Some("Legal")
+        );
+        assert_eq!(idx.collections(), vec![("Legal".to_string(), 2)]);
+        // Restricted search never returns the unassigned source.
+        let hits = idx.search_in_collection(&vec8(3), 10, "legal");
+        let ids: Vec<_> = hits.iter().map(|h| h.source_id.as_str()).collect();
+        assert_eq!(ids.len(), 2);
+        assert!(!ids.contains(&"c"));
+        // Unknown collection: empty, never everything.
+        assert!(idx.search_in_collection(&vec8(3), 10, "Nope").is_empty());
+        assert_eq!(idx.search(&vec8(3), 10).len(), 3);
+        // Clearing.
+        assert_eq!(idx.set_collection("a", None).unwrap(), None);
+        assert_eq!(idx.collections(), vec![("Legal".to_string(), 1)]);
+        // Validation.
+        assert!(idx.set_collection("a", Some("   ")).is_err());
+        assert!(idx.set_collection("a", Some(&"x".repeat(65))).is_err());
+        assert!(idx.set_collection("a", Some(&"x".repeat(64))).is_ok());
+        assert!(idx.set_collection("a", Some("bad\nname")).is_err());
+        assert!(matches!(
+            idx.set_collection("zzz", Some("Legal")),
+            Err(IndexError::SourceNotFound(_))
+        ));
     }
 
     #[test]

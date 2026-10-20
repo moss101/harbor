@@ -874,5 +874,20 @@
   "activityTabGoals": "الأهداف",
   "homeTaskViewRun": "عرض التشغيل",
   "homeTaskReopen": "افتح مرة أخرى",
-  "modelsTabStore": "المتجر"
+  "modelsTabStore": "المتجر",
+  "knowledgeCollectionAll": "الكل",
+  "knowledgeCollectionFilterLabel": "التصفية حسب المجموعة",
+  "knowledgeCollectionChip": "{name} · {count}",
+  "knowledgeCollectionMenuTooltip": "المجموعة",
+  "knowledgeCollectionNone": "بلا مجموعة",
+  "knowledgeCollectionNew": "مجموعة جديدة…",
+  "knowledgeCollectionNewTitle": "مجموعة جديدة",
+  "knowledgeCollectionNameHint": "اسم المجموعة",
+  "knowledgeCollectionCreate": "انقل إليها",
+  "knowledgeCollectionMoved": "أصبح «{title}» في «{name}»",
+  "knowledgeCollectionCleared": "لم يعد «{title}» ضمن مجموعة",
+  "knowledgeCollectionFailed": "تعذّر تغيير المجموعة. يصل طول الاسم إلى 64 حرفاً.",
+  "knowledgeCollectionEmpty": "لا توجد مصادر في هذه المجموعة بعد.",
+  "composerScopeMenuTooltip": "اختر موضوع سؤالك",
+  "askGroundedInCollection": "الإجابة من المجموعة «{name}» فقط"
 }

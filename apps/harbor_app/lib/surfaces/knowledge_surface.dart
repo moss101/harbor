@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show MaxLengthEnforcement;
 import 'package:harbor_ui/harbor_ui.dart';
 
 import '../l10n/app_localizations.dart';
@@ -26,6 +27,9 @@ class KnowledgeSurface extends StatefulWidget {
 
 class _KnowledgeSurfaceState extends State<KnowledgeSurface> {
   bool _opening = false;
+
+  /// The collection the source list is filtered to (null: every source).
+  String? _filter;
 
   @override
   void initState() {
@@ -205,6 +209,115 @@ class _KnowledgeSurfaceState extends State<KnowledgeSurface> {
         .showSnackBar(SnackBar(content: Text(l10n.knowledgeRemoved(title))));
   }
 
+  /// Assign [source] to [name], or take it out of its collection (null).
+  Future<void> _setCollection(
+      HarborService service, Map<String, dynamic> source, String? name) async {
+    final l10n = AppLocalizations.of(context)!;
+    final title = source['title'] as String;
+    final ok =
+        await service.setSourceCollection(source['source_id'] as String, name);
+    if (!mounted) return;
+    final stored = ok
+        ? (service.knowledgeSources.firstWhere(
+            (s) => s['source_id'] == source['source_id'],
+            orElse: () => const {})['collection'] as String?)
+        : null;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(!ok
+          ? l10n.knowledgeCollectionFailed
+          : stored == null
+              ? l10n.knowledgeCollectionCleared(title)
+              : l10n.knowledgeCollectionMoved(title, stored)),
+    ));
+  }
+
+  /// Ask for a new collection's name, then assign [source] to it.
+  Future<void> _newCollection(
+      HarborService service, Map<String, dynamic> source) async {
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => const _CollectionNameDialog(),
+    );
+    if (name == null || name.trim().isEmpty || !mounted) return;
+    await _setCollection(service, source, name.trim());
+  }
+
+  /// The per-source collection menu: existing collections, none, or new.
+  Widget _collectionMenu(HarborService service, Map<String, dynamic> source,
+      List<Map<String, dynamic>> collections) {
+    final l10n = AppLocalizations.of(context)!;
+    final current = source['collection'] as String?;
+    final id = source['source_id'] as String;
+    return PopupMenuButton<String>(
+      key: ValueKey('source-collection-menu-$id'),
+      tooltip: l10n.knowledgeCollectionMenuTooltip,
+      icon: Icon(current == null ? Icons.folder_outlined : Icons.folder,
+          color: current == null ? null : HarborTheme.of(context).colors.brand),
+      onSelected: (value) {
+        if (value == '\u0000new') {
+          _newCollection(service, source);
+        } else if (value == '\u0000none') {
+          _setCollection(service, source, null);
+        } else {
+          _setCollection(service, source, value);
+        }
+      },
+      itemBuilder: (context) => [
+        for (final c in collections)
+          CheckedPopupMenuItem<String>(
+            key: ValueKey('collection-item-${c['name']}'),
+            value: c['name'] as String,
+            checked: c['name'] == current,
+            // Collection names are data.
+            child: Text(c['name'] as String, overflow: TextOverflow.ellipsis),
+          ),
+        if (current != null)
+          PopupMenuItem<String>(
+            key: const ValueKey('collection-clear'),
+            value: '\u0000none',
+            child: Text(l10n.knowledgeCollectionNone),
+          ),
+        PopupMenuItem<String>(
+          key: const ValueKey('collection-new'),
+          value: '\u0000new',
+          child: Text(l10n.knowledgeCollectionNew),
+        ),
+      ],
+    );
+  }
+
+  /// The collections filter: All plus one chip per collection.
+  Widget _collectionFilter(
+      AppLocalizations l10n, List<Map<String, dynamic>> collections) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: HarborSpace.s2),
+      child: Wrap(
+        key: const ValueKey('collection-filter'),
+        spacing: HarborSpace.s2,
+        runSpacing: HarborSpace.s1,
+        children: [
+          ChoiceChip(
+            key: const ValueKey('collection-filter-all'),
+            label: Text(l10n.knowledgeCollectionAll),
+            selected: _filter == null,
+            onSelected: (_) => setState(() => _filter = null),
+          ),
+          for (final c in collections)
+            ChoiceChip(
+              key: ValueKey('collection-filter-${c['name']}'),
+              avatar: const Icon(Icons.folder_outlined, size: 16),
+              label: Text(
+                  l10n.knowledgeCollectionChip(
+                      c['name'] as String, c['source_count'] as int),
+                  overflow: TextOverflow.ellipsis),
+              selected: _filter == c['name'],
+              onSelected: (_) => setState(() => _filter = c['name'] as String),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -213,10 +326,20 @@ class _KnowledgeSurfaceState extends State<KnowledgeSurface> {
     final service = sp.notifier;
     final state = AppStateScope.maybeOf(context);
     final open = service?.knowledgeOpen == true;
-    final sources = service?.knowledgeSources ?? const [];
+    final allSources = service?.knowledgeSources ?? const [];
+    final collections = service?.knowledgeCollections ?? const [];
+    // A filter whose collection has emptied out falls back to everything.
+    final filter =
+        collections.any((c) => c['name'] == _filter) ? _filter : null;
+    final sources = filter == null
+        ? allSources
+        : [
+            for (final s in allSources)
+              if (s['collection'] == filter) s
+          ];
     final ingest = service?.kindProgress['ingest'];
     final totalChunks =
-        sources.fold<int>(0, (sum, s) => sum + (s['chunks'] as int));
+        allSources.fold<int>(0, (sum, s) => sum + (s['chunks'] as int));
 
     return Column(children: [
       HarborSurfaceHeader(
@@ -275,9 +398,12 @@ class _KnowledgeSurfaceState extends State<KnowledgeSurface> {
                 Row(children: [
                   Icon(Icons.hub_outlined, size: 18, color: t.colors.brand),
                   const SizedBox(width: HarborSpace.s2),
-                  Text(l10n.knowledgeIndexHeading,
-                      style: t.text.bodyStrongOf(t.colors.ink)),
-                  const Spacer(),
+                  Expanded(
+                    child: Text(l10n.knowledgeIndexHeading,
+                        style: t.text.bodyStrongOf(t.colors.ink),
+                        overflow: TextOverflow.ellipsis),
+                  ),
+                  const SizedBox(width: HarborSpace.s2),
                   StatusBadge(
                       semantic: ExecutionSemantic.local,
                       label: executionDisplay(service, l10n)),
@@ -286,7 +412,7 @@ class _KnowledgeSurfaceState extends State<KnowledgeSurface> {
                 Row(children: [
                   Expanded(
                     child: HarborMetric(
-                        value: '${sources.length}',
+                        value: '${allSources.length}',
                         label: l10n.knowledgeSourcesHeading,
                         icon: Icons.article_outlined),
                   ),
@@ -325,7 +451,7 @@ class _KnowledgeSurfaceState extends State<KnowledgeSurface> {
               ],
             ),
           );
-          final sourceList = sources.isEmpty && ingest == null
+          final sourceList = allSources.isEmpty && ingest == null
               ? HarborEmptyState(
                   compact: true,
                   icon: Icons.note_add_outlined,
@@ -348,15 +474,28 @@ class _KnowledgeSurfaceState extends State<KnowledgeSurface> {
                         title: Text(s['title'] as String),
                         subtitle: Text(
                           '${l10n.knowledgeChunksCount(s['chunks'] as int)} · '
-                          '${l10n.knowledgeSourceKb(((s['bytes'] as num?)?.toInt() ?? 0) ~/ 1024)}',
+                          '${l10n.knowledgeSourceKb(((s['bytes'] as num?)?.toInt() ?? 0) ~/ 1024)}'
+                          '${s['collection'] is String ? ' · ${s['collection']}' : ''}',
                         ),
-                        trailing: IconButton(
-                          tooltip: l10n.knowledgeRemoveAction,
-                          icon: const Icon(Icons.delete_outline),
-                          onPressed: () => _remove(service, s),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _collectionMenu(service, s, collections),
+                            IconButton(
+                              tooltip: l10n.knowledgeRemoveAction,
+                              icon: const Icon(Icons.delete_outline),
+                              onPressed: () => _remove(service, s),
+                            ),
+                          ],
                         ),
                       ),
                     ],
+                    if (sources.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(HarborSpace.s4),
+                        child: Text(l10n.knowledgeCollectionEmpty,
+                            style: t.text.captionOf(t.colors.inkMuted)),
+                      ),
                   ]),
                 );
           return HarborPage(
@@ -377,6 +516,8 @@ class _KnowledgeSurfaceState extends State<KnowledgeSurface> {
                           : HarborPill(
                               l10n.knowledgeSourcesCount(sources.length)),
                     ),
+                    if (collections.isNotEmpty)
+                      _collectionFilter(l10n, collections),
                     sourceList,
                   ],
                 ),
@@ -389,5 +530,59 @@ class _KnowledgeSurfaceState extends State<KnowledgeSurface> {
         }),
       ),
     ]);
+  }
+}
+
+/// Asks for a collection name (free text, up to 64 characters). Owns its
+/// controller so it outlives the dialog's exit animation.
+class _CollectionNameDialog extends StatefulWidget {
+  const _CollectionNameDialog();
+
+  @override
+  State<_CollectionNameDialog> createState() => _CollectionNameDialogState();
+}
+
+class _CollectionNameDialogState extends State<_CollectionNameDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AlertDialog(
+      title: Text(l10n.knowledgeCollectionNewTitle),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 360),
+        child: TextField(
+          key: const ValueKey('collection-name-field'),
+          controller: _controller,
+          autofocus: true,
+          maxLength: 64,
+          maxLengthEnforcement: MaxLengthEnforcement.enforced,
+          buildCounter: (_,
+                  {required currentLength, required isFocused, maxLength}) =>
+              null,
+          decoration:
+              InputDecoration(hintText: l10n.knowledgeCollectionNameHint),
+          onSubmitted: (v) => Navigator.of(context).pop(v),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.cancelAction),
+        ),
+        FilledButton(
+          key: const ValueKey('collection-name-confirm'),
+          onPressed: () => Navigator.of(context).pop(_controller.text),
+          child: Text(l10n.knowledgeCollectionCreate),
+        ),
+      ],
+    );
   }
 }

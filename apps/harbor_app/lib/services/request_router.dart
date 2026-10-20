@@ -234,18 +234,31 @@ class RequestRouter {
       };
 }
 
+/// Package ids that name an embedding model (never a chat model). The core
+/// lists every installed package alike, so without this the default "first
+/// installed model" was the embedder whenever one sorted before the chat
+/// model (`bge-small-en-v1.5` < `qwen...`), and every ask failed with a
+/// chat-template error.
+final _embedderId = RegExp(
+    r'(^|[-_.])(embed\w*|bge|e5|gte|minilm|nomic|arctic|rerank\w*)([-_.\d]|$)',
+    caseSensitive: false);
+
+bool looksLikeEmbedder(String id) => _embedderId.hasMatch(id);
+
 /// The chat model a request runs with: the person's choice when it is still
-/// installed, else the first installed model, else null (nothing can
-/// generate: the caller shows the install-a-model guidance).
+/// installed, else the first installed model that is not an embedder, else
+/// null (nothing can generate: the caller shows the install-a-model
+/// guidance).
 String? chatPackageFor(HarborService service, String? preferred) {
   final installed = [
     for (final m in service.installedModels)
       if (m['id'] is String) m['id'] as String
   ];
-  if (installed.isEmpty) return null;
-  return preferred != null && installed.contains(preferred)
-      ? preferred
-      : installed.first;
+  if (preferred != null && installed.contains(preferred)) return preferred;
+  for (final id in installed) {
+    if (!looksLikeEmbedder(id)) return id;
+  }
+  return null;
 }
 
 /// Files a skill can take as its artifact and the canvas can read: the

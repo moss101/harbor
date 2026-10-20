@@ -1077,5 +1077,54 @@
   "activityTabGoals": "Goals",
   "homeTaskViewRun": "View run",
   "homeTaskReopen": "Open again",
-  "modelsTabStore": "Store"
+  "modelsTabStore": "Store",
+  "knowledgeCollectionAll": "All",
+  "knowledgeCollectionFilterLabel": "Filter by collection",
+  "knowledgeCollectionChip": "{name} · {count}",
+  "@knowledgeCollectionChip": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "knowledgeCollectionMenuTooltip": "Collection",
+  "knowledgeCollectionNone": "No collection",
+  "knowledgeCollectionNew": "New collection…",
+  "knowledgeCollectionNewTitle": "New collection",
+  "knowledgeCollectionNameHint": "Collection name",
+  "knowledgeCollectionCreate": "Move here",
+  "knowledgeCollectionMoved": "{title} is now in {name}",
+  "@knowledgeCollectionMoved": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "knowledgeCollectionCleared": "{title} is no longer in a collection",
+  "@knowledgeCollectionCleared": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "knowledgeCollectionFailed": "Could not change the collection. Names can be up to 64 characters.",
+  "knowledgeCollectionEmpty": "No sources in this collection yet.",
+  "composerScopeMenuTooltip": "Choose what to ask about",
+  "askGroundedInCollection": "Answered only from the collection {name}",
+  "@askGroundedInCollection": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

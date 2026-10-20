@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "aa9f2e396bca3398814795985788349e922d7145cfb34e0d7ab30a66fc46b344",
+  "input_manifest_sha256": "eb18fb5b10b2b0256c5930332f4fa822251ec3547633b3e910f73c696e47281a",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -146,8 +146,8 @@
     },
     {
       "path": "28_Correction_Log.md",
-      "bytes": 7738,
-      "sha256": "ba22e7795ed5efe266ec716491443bef1a202691fd420679f401e07209da164d"
+      "bytes": 10348,
+      "sha256": "3c74d92e5f6754845db2ffb5831ace1682bb766c493ae7171cfd8aa4ba2a7081"
     },
     {
       "path": "CHANGELOG.md",
@@ -176,8 +176,8 @@
     },
     {
       "path": "apps/harbor_app/README.md",
-      "bytes": 4328,
-      "sha256": "09b131448e0a06494b8c9851aefa606c763ab046bd322025abb050f65a7ff024"
+      "bytes": 4845,
+      "sha256": "5b407d50751d144787cca7a4f3bb3aaeb9019ebf0b4920f712fa476f1a07c6ff"
     },
     {
       "path": "apps/harbor_app/analysis_options.yaml",
@@ -526,28 +526,28 @@
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_ar.arb",
-      "bytes": 48729,
-      "sha256": "877f3b1f123db78875e402397cbb58a3cac6e15965da2da8aa2877b5b91f3e83"
+      "bytes": 49753,
+      "sha256": "34e7a684afbae5d144e62c23c2424b75480aa2c7a3c035efa18e5bf48f9e42af"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_en.arb",
-      "bytes": 40433,
-      "sha256": "6606b3627734cff8f4a64464d19b3b4fa9be65c067c15bdcde3d0b13ccb2fee0"
+      "bytes": 41860,
+      "sha256": "7801052766df330c416ce8085a1505fd513d886af2b74fe2657bd8834f324c45"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations.dart",
-      "bytes": 102073,
-      "sha256": "4424b98f35441559ac5dfaf352bd88f658084102048f69710c6ace789290a770"
+      "bytes": 104922,
+      "sha256": "956ff7a5b929482e9d0f31c9b763e657e183a52c1e7a6862db0a4c4f4ff300fa"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations_ar.dart",
-      "bytes": 62081,
-      "sha256": "58486576970f1696f4a7310d4c6f50e99f716d797ab7cdc2bed39fe35cc525f2"
+      "bytes": 63583,
+      "sha256": "4a5efa3287fd6e079a929e84b98abb0d02d4a921fd56e6e9954390493e82a755"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations_en.dart",
-      "bytes": 49610,
-      "sha256": "a659cc05fd70231147937e0eea2d7264ec7ef4fd3fd4f19b0286b75dcfd566fa"
+      "bytes": 50955,
+      "sha256": "b59a9d986d9ed4b124efe32de527f673ef04d29d1677931ee417d4e2a870e4ef"
     },
     {
       "path": "apps/harbor_app/lib/main.dart",
@@ -581,8 +581,8 @@
     },
     {
       "path": "apps/harbor_app/lib/services/harbor_service.dart",
-      "bytes": 43452,
-      "sha256": "fd18d983ecda7677e95eec17e234e1627da588d5905d0e7d58af7652eada96c5"
+      "bytes": 45862,
+      "sha256": "76fd36580a7bc55aa2faa545ffbc64026714d9c9bdd782ad07dd5589399c4694"
     },
     {
       "path": "apps/harbor_app/lib/services/native_adapters.dart",
@@ -596,8 +596,8 @@
     },
     {
       "path": "apps/harbor_app/lib/services/request_router.dart",
-      "bytes": 9194,
-      "sha256": "4735045de510fe413529d3e0c16d51dc96e6387517ca0bcfd564b0105bf43771"
+      "bytes": 9775,
+      "sha256": "f07d9a7e64eb2f9abf96c9e591bfcf1953b1522630090fb7381c0c9f6465ae4d"
     },
     {
       "path": "apps/harbor_app/lib/services/video_frames.dart",
@@ -646,8 +646,8 @@
     },
     {
       "path": "apps/harbor_app/lib/surfaces/home_surface.dart",
-      "bytes": 33396,
-      "sha256": "f2966c70fa65bed418e4bd12a411f722ef705f714e6d1a8c731ad0fa1de4ff0e"
+      "bytes": 34970,
+      "sha256": "79d0531eff655b1c35db07d3a9f65f0771491cd5149a2084c12040de4e77e53e"
     },
     {
       "path": "apps/harbor_app/lib/surfaces/knowledge_ingest.dart",
@@ -656,8 +656,8 @@
     },
     {
       "path": "apps/harbor_app/lib/surfaces/knowledge_surface.dart",
-      "bytes": 15260,
-      "sha256": "8b5541df79affb1949dfe63880e6cc0b52c2e61d51236e51a05fa013f0ac8cbd"
+      "bytes": 22699,
+      "sha256": "a3f22c9c96518799194bdfac6ca090c8ec70c896338e55fce5625999178cd027"
     },
     {
       "path": "apps/harbor_app/lib/surfaces/memory_panel.dart",
@@ -731,13 +731,13 @@
     },
     {
       "path": "apps/harbor_app/lib/widgets/answer.dart",
-      "bytes": 14093,
-      "sha256": "c02bc36af291738457b332a7923efd0cd22cb5daf7c9ef3d02265031952bbd45"
+      "bytes": 14675,
+      "sha256": "c3a30209adc90b03ead97b6f2aa304be98493357ad35b3f4d574c60f15c3cad4"
     },
     {
       "path": "apps/harbor_app/lib/widgets/composer.dart",
-      "bytes": 12355,
-      "sha256": "965378d029c711527d9123fa974e46a527c58c09d76cd5a92c508d496ff02a83"
+      "bytes": 14196,
+      "sha256": "6cec858b392a03e973c777968c6088a78fcd8a314519ab6cbaa2a9d490f3475d"
     },
     {
       "path": "apps/harbor_app/lib/widgets/ops.dart",
@@ -930,9 +930,19 @@
       "sha256": "2210bb1d2f4e3018777448c614418814dfb128e4e63a8624e024fef2e753ab9c"
     },
     {
+      "path": "apps/harbor_app/test/chat_package_test.dart",
+      "bytes": 1658,
+      "sha256": "31be34020a84eee80d85279f78e4a5786ddae61917738958a93fde1842d3d0b0"
+    },
+    {
+      "path": "apps/harbor_app/test/collections_test.dart",
+      "bytes": 8836,
+      "sha256": "6cab67d6406434a76da215432a74d9b77c765892caa9e0209a7730f9a9d07736"
+    },
+    {
       "path": "apps/harbor_app/test/fake_service.dart",
-      "bytes": 9939,
-      "sha256": "d4f3f361aba9af97606ef126836c474f7e201876d7563006252516ad8c80101d"
+      "bytes": 11382,
+      "sha256": "31d5e79ff37e247ecf14131053cb4295da5cb1189b256cf1bdeb1c23cc49521a"
     },
     {
       "path": "apps/harbor_app/test/ffmpeg_frames_test.dart",
@@ -1013,6 +1023,16 @@
       "path": "apps/harbor_app/test/work_command_bar_test.dart",
       "bytes": 11615,
       "sha256": "3ca69e6f2027f616a4307393bf04e9148fe9e2fe4752768f46cd663015b0fb47"
+    },
+    {
+      "path": "apps/harbor_app/test/work_header_test.dart",
+      "bytes": 1404,
+      "sha256": "f9ed9134458e21c5b1789ec5f96b4f26717d2238484b49bc4ef84a9511ae3feb"
+    },
+    {
+      "path": "apps/harbor_app/test/work_live_test.dart",
+      "bytes": 9339,
+      "sha256": "8490afe581a1b4af00e1f6fa4396538b9daa1c2e38d2cfe706060413ab022aac"
     },
     {
       "path": "apps/harbor_app/windows/.gitignore",
@@ -2511,18 +2531,23 @@
     },
     {
       "path": "core/harbor_ffi/src/knowledge.rs",
-      "bytes": 51891,
-      "sha256": "c4add54f30df8cacb27e159bcc44cff57e957026fa049d0496c24055012745aa"
+      "bytes": 56500,
+      "sha256": "01725064db9876aad789f54170e14597e46817ca13c948a8b0b48bc746f1c8e0"
     },
     {
       "path": "core/harbor_ffi/src/lib.rs",
-      "bytes": 240965,
-      "sha256": "f1c4f3c7d65b698333cb2db404d7119feb4cd9418e1fc8552c1f19f92937e113"
+      "bytes": 244526,
+      "sha256": "c4047ba24fe1a0946a5e05e40c07f3d531e2d86ba95494ad9765e4b611343539"
     },
     {
       "path": "core/harbor_ffi/tests/catalog_first_run.rs",
       "bytes": 5396,
       "sha256": "32d855fcbe80f2fe0e44aa603c3ebfd03f2cb19db185825229ece7210b501d8a"
+    },
+    {
+      "path": "core/harbor_ffi/tests/collections_live.rs",
+      "bytes": 10852,
+      "sha256": "9767946505c85069ae2a109793bd797a99fc52205717a6336b643fd130b05f0b"
     },
     {
       "path": "core/harbor_ffi/tests/decision_flow_live.rs",
@@ -2836,8 +2861,8 @@
     },
     {
       "path": "core/harbor_knowledge/src/index.rs",
-      "bytes": 15201,
-      "sha256": "8db665a9c2d3032929183c209b041a7ea1cba013e34363039b01e1138e131034"
+      "bytes": 22072,
+      "sha256": "740b154460f10340723c1ea835f141e08f0646ddf0bf45f0e0f6a6c668d262d0"
     },
     {
       "path": "core/harbor_knowledge/src/instructions.rs",
@@ -3156,8 +3181,8 @@
     },
     {
       "path": "docs/STATUS.md",
-      "bytes": 160558,
-      "sha256": "58b5e1f13869c1065ec0e8cc18c8c75fdd8de6c4bdbed25fdbcf4c1861679bac"
+      "bytes": 164694,
+      "sha256": "040189d45614f0be3b653e63d4d9badc4c8887f18bf4c42990d8bfb56b96e97d"
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
@@ -3253,6 +3278,11 @@
       "path": "docs/decisions/0019-portable-ocr-on-device-speech-and-the-decision-head.md",
       "bytes": 5830,
       "sha256": "c4134a22cd6928e31647ae447cf114da3f7288ce65946087e5a83a0362b136f1"
+    },
+    {
+      "path": "docs/decisions/0020-navigation-consolidation-and-file-scoped-composer.md",
+      "bytes": 9339,
+      "sha256": "7934997d8e99dcbf1fa0a7b78590aad66e480925b9fe81e57543ecc0d0cb61b3"
     },
     {
       "path": "docs/embeddinggemma2_gains.md",
@@ -4161,8 +4191,8 @@
     },
     {
       "path": "packages/harbor_ui/lib/src/foundation.dart",
-      "bytes": 23750,
-      "sha256": "2a4594e34060bb8ae5b9eb9c0d8d75677bdeaa4cc92e2c6e29efe4022647cb49"
+      "bytes": 23360,
+      "sha256": "bfa855716555bf1309e4f5f3973929e77e9a413634aa121c8c476cc70d5e240b"
     },
     {
       "path": "packages/harbor_ui/lib/src/model_dock.dart",

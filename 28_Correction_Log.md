@@ -35,6 +35,28 @@ The package contains 115 tasks, 81 acceptance gates, 47 routes, 47 security scen
 - The closed tool catalog grows by `workbook.build`, `deck.build`, `docx.build` (propose class) and `workbook.verify_spec`, `deck.verify_outline`, `document.verify_draft`, `email.verify_draft`, `email.render`, `text.verify_items`, `text.verify_citations`, `document.units`, `document.sentences`, `table.inspect`, `table.build_cleanup` (read class). No tool commits anything and none reaches the network.
 - Office matrix scope is unchanged: created files use only SUPPORTED_GA features (paragraphs, headings, lists; values, formulas, styles, number formats; slides, text, speaker notes, themes). The PPTX part classifier now recognises `presProps.xml`, `viewProps.xml` and `tableStyles.xml` as presentation-level properties instead of unknown parts.
 
+## Addendum — 20 October 2026 (decision 0020: seven surfaces; screen-inventory mapping)
+
+`07_Screen_Inventory.csv` is a frozen authority file whose hash is pinned in the manifests, so it is NOT edited here. The application consolidated its navigation from ten destinations to seven (Home incl. Ask, Work, Library, Models incl. Store, Skills, Activity, Settings; Agents hidden, Goals moved under Activity). Until the CSV is re-issued with the next authority revision, read its rows with this mapping. No row's requirement, task link or state list changes; only where the screen lives.
+
+| UX row | Row's Screen / Area | Now lives in |
+|---|---|---|
+| UX-004 | Home command center | **Home**: one conversation; the dashboard (recent work, active runs, quick actions) is its empty state |
+| UX-005 | Universal composer | `HarborComposer` on **Home** (scope: Library or an attached file) and on **Work** (scope: the open file); Ask / Change modes |
+| UX-006 | Conversation workspace (Chat) | **Home** (questions are answered inline; the separate Ask surface is retired) |
+| UX-007 | Work hub | **Work** (unchanged destination; now with a file-scoped command bar, "Ask about this file" / "Change this file") |
+| UX-014 | Agents gallery | **Hidden** while agent orchestration is off (`N/A_DISABLED`); not a destination |
+| UX-015 | Agent builder | **Hidden** with Agents |
+| UX-016 | Agent run detail (Agents/Activity) | **Activity** (runs); Agents-side entry hidden |
+| UX-018, UX-019 | Models recommended; Harbor Library (curated catalog) | **Models** (Recommended and Store tabs); the catalog surface is the Models > **Store** tab, no longer a destination of its own |
+| UX-020 | Hugging Face search | **Models** > Hugging Face tab (unchanged) |
+| UX-028, UX-029 | Knowledge collections; Knowledge source detail | **Library** (the surface formerly named Knowledge) |
+| UX-030 | Activity center | **Activity**, which now also holds scheduled **Goals** (moved from Agents) |
+
+Ask, Store and Agents as named surfaces in the dossier's prose map to Home, Models > Store and (hidden) respectively. The Rail keeps the secondary destinations (Skills, Activity, Settings) under a divider.
+
+New contract, additive: `op.start_generate` accepts an optional `document` argument for answers grounded on one open file (caps 5000 passages / 64 KiB per passage / 4 MiB total; the response adds `scope` and citations carry `passage_id`, `locator` and `snippet`). Documented in `docs/decisions/0020-navigation-consolidation-and-file-scoped-composer.md`. It does not change the tool, effect, approval or artifact-commit contracts.
+
 ## Verification and remaining work
 
 Run `python3 tools/validate_dossier.py` after installing `requirements-validation.txt`. The check is read-only. `--write` regenerates files 19, 20 and 24 only after checks pass. See `tools/README.md` for evidence evaluation.

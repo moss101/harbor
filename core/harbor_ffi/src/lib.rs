@@ -4379,6 +4379,44 @@ fn dispatch(
                 ks.sources().map_err(|e| HarborError::Other(e.to_string()))
             }
         }
+        "knowledge.set_collection" => {
+            #[cfg(not(feature = "gguf"))]
+            {
+                return Err(HarborError::Other(
+                    "model features are not included in this build".into(),
+                ));
+            }
+            #[cfg(feature = "gguf")]
+            {
+                let source_id = args
+                    .get("source_id")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| HarborError::Other("missing source_id".into()))?;
+                let collection = optional_collection(args)?;
+                let ks = ws
+                    .knowledge
+                    .as_ref()
+                    .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
+                ks.set_collection(source_id, collection.as_deref())
+                    .map_err(|e| HarborError::Other(e.to_string()))
+            }
+        }
+        "knowledge.collections" => {
+            #[cfg(not(feature = "gguf"))]
+            {
+                return Err(HarborError::Other(
+                    "model features are not included in this build".into(),
+                ));
+            }
+            #[cfg(feature = "gguf")]
+            {
+                let ks = ws
+                    .knowledge
+                    .as_ref()
+                    .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
+                Ok(ks.collections())
+            }
+        }
         "knowledge.search" => {
             // Lean builds (no gguf runtime): this arm needs the
             // model/inference stack and refuses with a typed error.
@@ -4399,7 +4437,8 @@ fn dispatch(
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| HarborError::Other("missing question".into()))?;
                 let top_k = args.get("top_k").and_then(|v| v.as_u64()).unwrap_or(5) as usize;
-                ks.search(question, top_k)
+                let collection = optional_collection(args)?;
+                ks.search_in(question, top_k, collection.as_deref())
                     .map_err(|e| HarborError::Other(e.to_string()))
             }
         }
@@ -4550,6 +4589,10 @@ fn dispatch(
                             .map_err(|e| HarborError::Other(format!("invalid document: {e}")))?,
                     ),
                 };
+                // Optional collection scope (ignored when `document` is
+                // set): retrieve ONLY from that collection's sources. An
+                // unknown collection grounds on nothing (abstention).
+                let collection = optional_collection(args)?;
                 let (op_id, entry) = register_op("generate", &chat_package);
                 let knowledge = ws.knowledge.clone();
                 let chat = ws
@@ -4570,11 +4613,31 @@ fn dispatch(
                     //    rank when an index model is open, else lexical).
                     let mut scope = None;
                     let citations = match &document {
-                        None => knowledge
-                            .as_ref()
-                            .and_then(|ks| ks.search(&question, 3).ok())
-                            .and_then(|v| v.get("citations").cloned())
-                            .unwrap_or_else(|| serde_json::json!([])),
+                        None => {
+                            let found = knowledge
+                                .as_ref()
+                                .and_then(|ks| {
+                                    ks.search_in(&question, 3, collection.as_deref()).ok()
+                                })
+                                .and_then(|v| v.get("citations").cloned())
+                                .unwrap_or_else(|| serde_json::json!([]));
+                            if let Some(name) = &collection {
+                                scope = Some(serde_json::json!({
+                                    "kind": "collection",
+                                    "name": name,
+                                    "sources_used": found
+                                        .as_array()
+                                        .map(|a| {
+                                            a.iter()
+                                                .filter_map(|c| c.get("source_id").and_then(|v| v.as_str()))
+                                                .collect::<std::collections::BTreeSet<_>>()
+                                                .len()
+                                        })
+                                        .unwrap_or(0),
+                                }));
+                            }
+                            found
+                        }
                         Some(doc) => {
                             let embed = |texts: &[&str]| {
                                 knowledge
@@ -4599,10 +4662,11 @@ fn dispatch(
                             serde_json::Value::Array(crate::doc_scope::citations(doc, &selected))
                         }
                     };
-                    let scope_note = document
-                        .as_ref()
-                        .map(|d| format!(" [document-scoped: {}]", d.name))
-                        .unwrap_or_default();
+                    let scope_note = match (&document, &collection) {
+                        (Some(d), _) => format!(" [document-scoped: {}]", d.name),
+                        (None, Some(c)) => format!(" [collection-scoped: {c}]"),
+                        _ => String::new(),
+                    };
                     // 2. Durable activity: the question is the run's step.
                     if let Some(run) = &run_id {
                         let step_seq = agent_log
@@ -5004,6 +5068,18 @@ fn parse_media_input(
 }
 
 #[cfg(feature = "gguf")]
+/// Optional `collection` argument: absent or null is `None`; a string is
+/// the label as given (the index trims and matches it); anything else is
+/// refused rather than silently widening the scope.
+#[cfg(feature = "gguf")]
+fn optional_collection(args: &serde_json::Value) -> Result<Option<String>, HarborError> {
+    match args.get("collection") {
+        None | Some(serde_json::Value::Null) => Ok(None),
+        Some(serde_json::Value::String(s)) => Ok(Some(s.clone())),
+        Some(_) => Err(HarborError::Other("collection must be a string".into())),
+    }
+}
+
 fn parse_sources(
     args: &serde_json::Value,
 ) -> Result<Vec<crate::knowledge::SourceInput>, HarborError> {

@@ -124,6 +124,13 @@ impl KnowledgeStore {
             CREATE TABLE IF NOT EXISTS knowledge_meta (
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL
+            );
+            -- Optional source grouping (a source belongs to zero or one
+            -- collection). Additive: workspaces created before collections
+            -- simply gain the empty table on open.
+            CREATE TABLE IF NOT EXISTS knowledge_collections (
+                source_id TEXT PRIMARY KEY,
+                collection TEXT NOT NULL
             );",
         )
         .map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
@@ -359,9 +366,49 @@ impl KnowledgeStore {
         Ok(())
     }
 
+    /// Persist (or clear) one source's collection label.
+    pub fn set_collection(
+        &self,
+        source_id: &str,
+        collection: Option<&str>,
+    ) -> Result<(), KnowledgeFfiError> {
+        let conn = self.connect()?;
+        match collection {
+            Some(c) => conn.execute(
+                "INSERT INTO knowledge_collections (source_id, collection) VALUES (?1, ?2)
+                 ON CONFLICT(source_id) DO UPDATE SET collection = excluded.collection",
+                rusqlite::params![source_id, c],
+            ),
+            None => conn.execute(
+                "DELETE FROM knowledge_collections WHERE source_id = ?1",
+                [source_id],
+            ),
+        }
+        .map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
+        Ok(())
+    }
+
+    /// Every persisted (source_id, collection) pair.
+    pub fn load_collections(&self) -> Result<Vec<(String, String)>, KnowledgeFfiError> {
+        let conn = self.connect()?;
+        let mut stmt = conn
+            .prepare("SELECT source_id, collection FROM knowledge_collections")
+            .map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
+        let rows = stmt
+            .query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))
+            .map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
+        rows.collect::<Result<Vec<_>, _>>()
+            .map_err(|e| KnowledgeFfiError::Db(e.to_string()))
+    }
+
     /// Remove a source's rows. Returns false when nothing was stored.
     pub fn remove_source(&self, source_id: &str) -> Result<bool, KnowledgeFfiError> {
         let conn = self.connect()?;
+        conn.execute(
+            "DELETE FROM knowledge_collections WHERE source_id = ?1",
+            [source_id],
+        )
+        .map_err(|e| KnowledgeFfiError::Db(e.to_string()))?;
         let deleted = conn
             .execute(
                 "DELETE FROM knowledge_chunks WHERE source_id = ?1",
@@ -843,7 +890,50 @@ impl KnowledgeService {
                 )
                 .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?;
         }
+        for (sid, name) in self.store.load_collections()? {
+            index.restore_collection(&sid, &name);
+        }
         Ok(())
+    }
+
+    /// Assign a source to a named collection, or clear it with `None`.
+    /// The label is trimmed, capped, and matched case-insensitively
+    /// against existing collections (their spelling wins). Durable.
+    pub fn set_collection(
+        &self,
+        source_id: &str,
+        collection: Option<&str>,
+    ) -> Result<serde_json::Value, KnowledgeFfiError> {
+        let mut index = self.index.lock().unwrap();
+        let previous = index.collection_of(source_id).map(str::to_string);
+        let stored = index
+            .set_collection(source_id, collection)
+            .map_err(|e| match e {
+                harbor_knowledge::index::IndexError::SourceNotFound(s) => {
+                    KnowledgeFfiError::SourceNotFound(s)
+                }
+                other => KnowledgeFfiError::Provider(other.to_string()),
+            })?;
+        if let Err(e) = self.store.set_collection(source_id, stored.as_deref()) {
+            // Keep memory and disk in agreement.
+            match previous {
+                Some(p) => index.restore_collection(source_id, &p),
+                None => index.clear_collection(source_id),
+            }
+            return Err(e);
+        }
+        Ok(serde_json::json!({ "source_id": source_id, "collection": stored }))
+    }
+
+    /// Collections with their source counts, sorted by name.
+    pub fn collections(&self) -> serde_json::Value {
+        let index = self.index.lock().unwrap();
+        let list: Vec<serde_json::Value> = index
+            .collections()
+            .into_iter()
+            .map(|(name, n)| serde_json::json!({ "name": name, "source_count": n }))
+            .collect();
+        serde_json::Value::Array(list)
     }
 
     /// Ingest sources: chunk -> embed (pinned runtime) -> persist sealed +
@@ -958,6 +1048,7 @@ impl KnowledgeService {
             index
                 .remove_source(source_id)
                 .map_err(|_| KnowledgeFfiError::SourceNotFound(source_id.to_string()))?;
+            index.clear_collection(source_id);
         }
         Ok(serde_json::json!({ "removed": source_id, "had_chunks": deleted }))
     }
@@ -967,19 +1058,24 @@ impl KnowledgeService {
         let sources = self.store.sources()?;
         // Memory records are managed by memory.*; the document list
         // never shows (or counts) them.
-        let out: Vec<serde_json::Value> = sources
-            .iter()
-            .filter(|s| !harbor_knowledge::index::is_memory_source(&s.source_id))
-            .map(|s| {
-                serde_json::json!({
-                    "source_id": s.source_id,
-                    "title": s.title,
-                    "content_hash": s.content_hash,
-                    "chunks": s.chunks,
-                    "bytes": s.bytes,
+        let out: Vec<serde_json::Value> = {
+            let index = self.index.lock().unwrap();
+            sources
+                .iter()
+                .filter(|s| !harbor_knowledge::index::is_memory_source(&s.source_id))
+                .map(|s| {
+                    serde_json::json!({
+                        "source_id": s.source_id,
+                        "title": s.title,
+                        "content_hash": s.content_hash,
+                        "chunks": s.chunks,
+                        "bytes": s.bytes,
+                        "collection": index.collection_of(&s.source_id),
+                    })
                 })
-            })
-            .collect();
+                .collect()
+        };
+        // The index lock is released: identity_hash locks it again.
         Ok(serde_json::json!({ "sources": out, "identity": self.identity_hash() }))
     }
 
@@ -989,6 +1085,17 @@ impl KnowledgeService {
         &self,
         question: &str,
         top_k: usize,
+    ) -> Result<serde_json::Value, KnowledgeFfiError> {
+        self.search_in(question, top_k, None)
+    }
+
+    /// [`search`](Self::search) optionally restricted to one collection.
+    /// An unknown collection returns no citations (never the whole index).
+    pub fn search_in(
+        &self,
+        question: &str,
+        top_k: usize,
+        collection: Option<&str>,
     ) -> Result<serde_json::Value, KnowledgeFfiError> {
         self.ensure_loaded()?;
         let model_ref = ModelRef::InstalledPackage {
@@ -1004,7 +1111,10 @@ impl KnowledgeService {
             .next()
             .ok_or_else(|| KnowledgeFfiError::Provider("empty query vector".into()))?;
         let index = self.index.lock().unwrap();
-        let hits = index.search_with_text(&q, top_k);
+        let hits = match collection {
+            None => index.search_with_text(&q, top_k),
+            Some(c) => index.search_with_text_in_collection(&q, top_k, c),
+        };
         Ok(citations_json(&hits))
     }
 

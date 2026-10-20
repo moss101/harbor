@@ -590,12 +590,67 @@ class HarborService extends ChangeNotifier {
     }
   }
 
+  /// Collections that have at least one listed source, as
+  /// `{name, source_count}` sorted by name. Derived from the last
+  /// [refresh]ed source list (each source's `collection`), so it is always
+  /// consistent with what the Library shows; [listCollections] asks the
+  /// core directly.
+  List<Map<String, dynamic>> get knowledgeCollections {
+    final byKey = <String, Map<String, dynamic>>{};
+    for (final s in knowledgeSources) {
+      final name = s['collection'];
+      if (name is! String || name.isEmpty) continue;
+      final entry = byKey.putIfAbsent(
+          name.toLowerCase(), () => {'name': name, 'source_count': 0});
+      entry['source_count'] = (entry['source_count'] as int) + 1;
+    }
+    final list = byKey.values.toList()
+      ..sort((a, b) => (a['name'] as String)
+          .toLowerCase()
+          .compareTo((b['name'] as String).toLowerCase()));
+    return list;
+  }
+
+  /// Group a source under a named collection (free text, up to 64
+  /// characters; the core trims it and matches existing collections
+  /// ignoring case) or take it out of its collection with a null
+  /// [collection]. Returns false when the core refused.
+  Future<bool> setSourceCollection(String sourceId, String? collection) async {
+    try {
+      await _call('knowledge.set_collection',
+          {'source_id': sourceId, 'collection': collection});
+      await refresh();
+      return true;
+    } on ffi.HarborCoreException {
+      return false;
+    }
+  }
+
+  /// The collections that have at least one source, with how many each:
+  /// `[{name, source_count}]`, sorted by name. Empty when the Library is
+  /// not open.
+  Future<List<Map<String, dynamic>>> listCollections() async {
+    if (!knowledgeOpen) return const [];
+    try {
+      final worker = _worker;
+      if (worker == null) return const [];
+      return _mapList(await worker.request('knowledge.collections', null));
+    } on ffi.HarborCoreException {
+      return const [];
+    }
+  }
+
+  /// Search the Library. With [collection], only that collection's sources
+  /// are searched; an unknown collection finds nothing.
   Future<Map<String, dynamic>?> searchKnowledge(String question,
-      {int topK = 5}) async {
+      {int topK = 5, String? collection}) async {
     if (!knowledgeOpen) return null;
     try {
-      return await _call(
-          'knowledge.search', {'question': question, 'top_k': topK});
+      return await _call('knowledge.search', {
+        'question': question,
+        'top_k': topK,
+        if (collection != null) 'collection': collection,
+      });
     } on ffi.HarborCoreException {
       return null;
     }
@@ -604,13 +659,19 @@ class HarborService extends ChangeNotifier {
   /// Grounded generation as a cancellable background op. When [runId] is
   /// given the question and answer become durable run events (Activity).
   /// Throws [ffi.HarborCoreException] on failure or cancellation.
+  /// With [collection], the answer is grounded ONLY on that collection's
+  /// sources (no collection: the whole Library).
   Future<Map<String, dynamic>> generateAnswer(String question,
-      {required String chatPackage, int maxTokens = 256, String? runId}) async {
+      {required String chatPackage,
+      int maxTokens = 256,
+      String? runId,
+      String? collection}) async {
     final answer = await _runOp('op.start_generate', {
       'question': question,
       'chat_package': chatPackage,
       'max_tokens': maxTokens,
       if (runId != null) 'run_id': runId,
+      if (collection != null) 'collection': collection,
     });
     if (runId != null) await refresh();
     return answer;

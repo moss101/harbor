@@ -113,9 +113,16 @@ class FakeHarborService extends HarborService {
 
   @override
   Future<Map<String, dynamic>> generateAnswer(String question,
-      {required String chatPackage, int maxTokens = 256, String? runId}) async {
+      {required String chatPackage,
+      int maxTokens = 256,
+      String? runId,
+      String? collection}) async {
     calls.add('generateAnswer');
-    generateArgs.add({'question': question, 'chat_package': chatPackage});
+    generateArgs.add({
+      'question': question,
+      'chat_package': chatPackage,
+      'collection': collection,
+    });
     generateRunIds.add(runId);
     final gate = generateGate;
     if (gate != null) {
@@ -149,9 +156,52 @@ class FakeHarborService extends HarborService {
 
   @override
   Future<Map<String, dynamic>?> searchKnowledge(String question,
-      {int topK = 5}) async {
+      {int topK = 5, String? collection}) async {
     calls.add('searchKnowledge');
+    searchCollections.add(collection);
     return knowledgeOpen ? evidence : null;
+  }
+
+  /// The `collection:` each retrieval-only search was scoped to.
+  final List<String?> searchCollections = [];
+
+  /// Scripted Library sources (each may carry a `collection`).
+  void setSources(List<Map<String, dynamic>> sources) {
+    knowledgeOpen = true;
+    knowledgeSources = [
+      for (final s in sources) {...s}
+    ];
+  }
+
+  /// Whether [setSourceCollection] is accepted.
+  bool collectionsAccepted = true;
+
+  @override
+  Future<bool> setSourceCollection(String sourceId, String? collection) async {
+    calls.add('setSourceCollection:$sourceId:${collection ?? '-'}');
+    if (!collectionsAccepted) return false;
+    // Like the core: trimmed, and an existing collection's spelling wins.
+    String? stored = collection?.trim();
+    if (stored != null) {
+      for (final s in knowledgeSources) {
+        final c = s['collection'];
+        if (c is String && c.toLowerCase() == stored!.toLowerCase()) {
+          stored = c;
+        }
+      }
+    }
+    knowledgeSources = [
+      for (final s in knowledgeSources)
+        s['source_id'] == sourceId ? {...s, 'collection': stored} : s,
+    ];
+    notifyListeners();
+    return true;
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> listCollections() async {
+    calls.add('listCollections');
+    return knowledgeCollections;
   }
 
   @override

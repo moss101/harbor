@@ -9,9 +9,12 @@ import '../services/file_passages.dart';
 /// conversation and the Work command bar so a grounded answer reads the
 /// same everywhere (goal §12).
 class AnswerTurn {
-  AnswerTurn(this.question, {this.runId});
+  AnswerTurn(this.question, {this.runId, this.collection});
   final String question;
   final String? runId;
+
+  /// The Library collection the answer was restricted to, if any.
+  final String? collection;
   Map<String, dynamic>? answer;
   Map<String, dynamic>? evidence;
   String? error;
@@ -63,6 +66,18 @@ class AnswerTurnView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           QuestionBubble(text: turn.question),
+          if (turn.collection != null) ...[
+            const SizedBox(height: HarborSpace.s2),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: HarborPill(
+                // Collection names are data.
+                l10n.askGroundedInCollection(turn.collection!),
+                key: const ValueKey('answer-collection-scope'),
+                icon: Icons.folder_outlined,
+              ),
+            ),
+          ],
           const SizedBox(height: HarborSpace.s3),
           if (turn.busy)
             GeneratingCard(progress: progress, onCancel: onCancel)
