@@ -80,7 +80,28 @@ impl DocxPreview {
 pub struct DeckPreview {
     pub kind: String,
     pub title: String,
+    /// Slide titles and bullets: always present, the accessible outline and
+    /// the fallback when no scene could be drawn.
     pub slides: Vec<SlidePreview>,
+    /// The resolved slides for real previews (see `slides.rs`); `None`
+    /// with `scene_error` when the package could not be resolved.
+    pub scene: Option<crate::scene::DeckScene>,
+    pub scene_error: Option<String>,
+    /// How the deck was designed, when it carries Harbor's design source
+    /// (so its design can be changed); `None` for any other deck.
+    pub design: Option<DeckDesignInfo>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct DeckDesignInfo {
+    pub theme: String,
+    pub theme_name: String,
+    pub palette: Option<String>,
+    pub motion: String,
+    pub rtl: bool,
+    /// Always true when present: the source is what makes a deck
+    /// restylable.
+    pub restylable: bool,
 }
 
 impl WorkbookPreview {
@@ -131,9 +152,26 @@ impl WorkbookPreview {
 impl DeckPreview {
     pub fn from_pptx(bytes: &[u8]) -> Result<Self, PreviewError> {
         let deck = PptxDeck::from_pptx_bytes(bytes)?;
+        let (scene, scene_error) = match crate::slides::deck_scene(bytes) {
+            Ok(s) => (Some(s), None),
+            Err(e) => (None, Some(e.to_string())),
+        };
+        let design = harbor_artifacts::deck::source::read_source(bytes).map(|d| DeckDesignInfo {
+            theme_name: harbor_artifacts::deck::theme_by_id(&d.design.theme)
+                .map(|t| t.name.to_string())
+                .unwrap_or_else(|| d.design.theme.clone()),
+            theme: d.design.theme.clone(),
+            palette: d.design.palette.clone(),
+            motion: d.design.motion.id().to_string(),
+            rtl: d.design.rtl,
+            restylable: true,
+        });
         Ok(DeckPreview {
             kind: "deck".into(),
             title: deck.title,
+            scene,
+            scene_error,
+            design,
             slides: deck
                 .slides
                 .iter()

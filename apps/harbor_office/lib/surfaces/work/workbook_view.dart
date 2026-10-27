@@ -78,7 +78,13 @@ class _WorkbookViewState extends State<WorkbookView> {
   @override
   void didUpdateWidget(covariant WorkbookView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!identical(oldWidget.preview, widget.preview)) _index();
+    if (!identical(oldWidget.preview, widget.preview)) {
+      // An edit reloads the preview of the same sheet: stay on the cell the
+      // user was editing instead of jumping back to the first formula.
+      _index(
+          keepSelection:
+              oldWidget.preview['sheet'] == widget.preview['sheet']);
+    }
   }
 
   void _sync(ScrollController from, ScrollController to) {
@@ -89,7 +95,7 @@ class _WorkbookViewState extends State<WorkbookView> {
     _syncing = false;
   }
 
-  void _index() {
+  void _index({bool keepSelection = false}) {
     final raw = (widget.preview['cells'] as List? ?? const []).cast<Map>();
     _cells = {};
     var maxRow = 0;
@@ -111,8 +117,10 @@ class _WorkbookViewState extends State<WorkbookView> {
     _cols = math.min(math.max(maxCol + 1, 8), maxCols);
     // Default selection: the first formula (the most informative cell)
     // so the formula bar explains something immediately; else A1.
-    _selected =
-        firstFormula == null ? (1, 1) : (firstFormula.row, firstFormula.col);
+    if (!(keepSelection && _selected != null)) {
+      _selected =
+          firstFormula == null ? (1, 1) : (firstFormula.row, firstFormula.col);
+    }
   }
 
   @override
@@ -307,6 +315,7 @@ class _WorkbookViewState extends State<WorkbookView> {
           _FormulaBar(
             cellRef: selectedRef,
             cell: selected,
+            selection: _selected,
             showFormulas: _showFormulas,
             onToggleFormulas: (v) => setState(() => _showFormulas = v),
             onCommit: _commitEdit,
@@ -377,6 +386,7 @@ class _WorkbookViewState extends State<WorkbookView> {
                                   return Row(children: [
                                     for (var c = 1; c <= _cols; c++)
                                       _GridCellView(
+                                        key: ValueKey('cell-$r-$c'),
                                         width: colW,
                                         height: rowH,
                                         cell: _cells[(r, c)],
@@ -420,6 +430,7 @@ class _FormulaBar extends StatefulWidget {
   const _FormulaBar({
     required this.cellRef,
     required this.cell,
+    required this.selection,
     required this.showFormulas,
     required this.onToggleFormulas,
     required this.onCommit,
@@ -428,6 +439,10 @@ class _FormulaBar extends StatefulWidget {
   });
   final String cellRef;
   final GridCell? cell;
+
+  /// The selected (row, col), set even when the cell is blank: a blank
+  /// cell has no record in the preview but must still accept input.
+  final (int, int)? selection;
   final bool showFormulas;
   final ValueChanged<bool> onToggleFormulas;
   final ValueChanged<String> onCommit;
@@ -454,7 +469,7 @@ class _FormulaBarState extends State<_FormulaBar> {
   /// selection actually changes — never while the user is typing.
   void _syncInput() {
     final cell = widget.cell;
-    final key = cell == null ? null : (cell.row, cell.col);
+    final key = widget.selection;
     if (key != _editedFor) {
       _editedFor = key;
       _controller.text = cell == null
@@ -513,7 +528,7 @@ class _FormulaBarState extends State<_FormulaBar> {
               child: TextField(
                 controller: _controller,
                 focusNode: _focus,
-                enabled: cell != null && !widget.saving,
+                enabled: widget.selection != null && !widget.saving,
                 minLines: 1,
                 maxLines: 1,
                 style: t.text.monoOf(t.colors.ink, size: 13),
@@ -531,7 +546,7 @@ class _FormulaBarState extends State<_FormulaBar> {
             const SizedBox(width: HarborSpace.s2),
             IconButton(
               tooltip: l10n.workEditCommit,
-              onPressed: cell == null || widget.saving ? null : _commit,
+              onPressed: widget.selection == null || widget.saving ? null : _commit,
               icon: widget.saving
                   ? const SizedBox(
                       width: 16,
@@ -633,6 +648,7 @@ class _HeaderCell extends StatelessWidget {
 
 class _GridCellView extends StatelessWidget {
   const _GridCellView({
+    super.key,
     required this.width,
     required this.height,
     required this.cell,

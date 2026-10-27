@@ -11,6 +11,9 @@ harbor_canonical = { workspace = true }
 harbor_formula = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+zip = { workspace = true }
+roxmltree = { workspace = true }
+base64 = "0.22"
 pdf-extract = "0.12"
 # Same version pdf-extract already resolves to: page images are read straight
 # out of the PDF objects (no renderer), so a scan can reach any OCR engine.

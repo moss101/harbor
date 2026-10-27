@@ -3,6 +3,10 @@ import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:harbor_ui/deck_designer.dart' show DeckDesignPrefs;
+
+// The remembered New presentation choices live with the shared sheet.
+export 'package:harbor_ui/deck_designer.dart' show DeckDesignPrefs;
 
 /// A recently opened or created file: identity for the Work surface's
 /// recents list (the path is what the picker granted; reopening verifies
@@ -35,10 +39,7 @@ class RecentFile {
     final at = json['at'];
     if (name is! String || path is! String || kind is! String) return null;
     return RecentFile(
-        name: name,
-        path: path,
-        kind: kind,
-        at: at is String ? at : '');
+        name: name, path: path, kind: kind, at: at is String ? at : '');
   }
 }
 
@@ -56,6 +57,7 @@ class HarborPreferences {
     this.lensDocked = true,
     this.chatModel,
     this.recentFiles = const [],
+    this.deckDesign,
   });
 
   final Locale locale;
@@ -63,6 +65,9 @@ class HarborPreferences {
   final bool lensDocked;
   final String? chatModel;
   final List<RecentFile> recentFiles;
+
+  /// Last New presentation choices (null until the sheet was used).
+  final DeckDesignPrefs? deckDesign;
 
   /// [file] moved to the front (deduped by path), capped at 8.
   HarborPreferences withRecentFile(RecentFile file) {
@@ -77,6 +82,7 @@ class HarborPreferences {
     String? chatModel,
     bool clearChatModel = false,
     List<RecentFile>? recentFiles,
+    DeckDesignPrefs? deckDesign,
   }) {
     return HarborPreferences(
       locale: locale ?? this.locale,
@@ -84,6 +90,7 @@ class HarborPreferences {
       lensDocked: lensDocked ?? this.lensDocked,
       chatModel: clearChatModel ? null : (chatModel ?? this.chatModel),
       recentFiles: recentFiles ?? this.recentFiles,
+      deckDesign: deckDesign ?? this.deckDesign,
     );
   }
 
@@ -93,6 +100,7 @@ class HarborPreferences {
         'lens_docked': lensDocked,
         if (chatModel != null) 'chat_model': chatModel,
         'recent_files': [for (final r in recentFiles) r.toJson()],
+        if (deckDesign != null) 'deck_design': deckDesign!.toJson(),
       };
 
   static HarborPreferences fromJson(Map<String, dynamic> json) {
@@ -112,11 +120,16 @@ class HarborPreferences {
           json['chat_model'] is String ? json['chat_model'] as String : null,
       recentFiles: json['recent_files'] is List
           ? (json['recent_files'] as List)
-              .map((e) =>
-                  e is Map ? RecentFile.fromJson(e.cast<String, dynamic>()) : null)
+              .map((e) => e is Map
+                  ? RecentFile.fromJson(e.cast<String, dynamic>())
+                  : null)
               .whereType<RecentFile>()
               .toList()
           : const [],
+      deckDesign: json['deck_design'] is Map
+          ? DeckDesignPrefs.fromJson(
+              (json['deck_design'] as Map).cast<String, dynamic>())
+          : null,
     );
   }
 
@@ -127,11 +140,17 @@ class HarborPreferences {
       other.themeMode == themeMode &&
       other.lensDocked == lensDocked &&
       other.chatModel == chatModel &&
+      other.deckDesign == deckDesign &&
       const ListEquality().equals(other.recentFiles, recentFiles);
 
   @override
-  int get hashCode =>
-      Object.hash(locale, themeMode, lensDocked, chatModel, Object.hashAll(
+  int get hashCode => Object.hash(
+      locale,
+      themeMode,
+      lensDocked,
+      chatModel,
+      deckDesign,
+      Object.hashAll(
           recentFiles.map((r) => Object.hash(r.name, r.path, r.kind))));
 }
 

@@ -1752,4 +1752,221 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get workPrintUnavailable =>
       'الطباعة غير متاحة هنا — استخدم «تصدير PDF» بدلاً منها.';
+
+  @override
+  String get deckPresent => 'عرض';
+
+  @override
+  String get deckPresentFromStart => 'من البداية';
+
+  @override
+  String get deckPreviewMotion => 'معاينة الحركة';
+
+  @override
+  String get deckStopPreview => 'إيقاف المعاينة';
+
+  @override
+  String deckUnsupportedNote(String items) {
+    return 'لا يمكن معاينة بعض محتوى هذه الشريحة: $items';
+  }
+
+  @override
+  String get deckFilmstrip => 'متصفح الشرائح';
+
+  @override
+  String presentSlideOf(int index, int count) {
+    return 'الشريحة $index من $count';
+  }
+
+  @override
+  String get presentExit => 'إنهاء العرض';
+
+  @override
+  String get presentNext => 'التالي';
+
+  @override
+  String get presentPrevious => 'السابق';
+
+  @override
+  String get presentShowNotes => 'إظهار ملاحظات المتحدث';
+
+  @override
+  String get presentHideNotes => 'إخفاء ملاحظات المتحدث';
+
+  @override
+  String get presentNoNotes => 'لا توجد ملاحظات لهذه الشريحة';
+
+  @override
+  String presentElapsed(String time) {
+    return 'الزمن المنقضي $time';
+  }
+
+  @override
+  String get presentBlackScreen => 'شاشة سوداء';
+
+  @override
+  String get presentWhiteScreen => 'شاشة بيضاء';
+
+  @override
+  String get presentProgress => 'تقدّم العرض';
+
+  @override
+  String get workNewPresentation => 'عرض تقديمي جديد';
+
+  @override
+  String get deckNewTitle => 'عرض تقديمي جديد';
+
+  @override
+  String get deckStepPurpose => 'الغرض';
+
+  @override
+  String get deckStepDesign => 'التصميم';
+
+  @override
+  String get deckStepStyle => 'الحركة واللغة';
+
+  @override
+  String deckStepOf(int step, int count) {
+    return 'الخطوة $step من $count';
+  }
+
+  @override
+  String get deckPurposeHeading => 'ما الغرض من هذا العرض؟';
+
+  @override
+  String get deckPurposeHelp => 'يأتي كل غرض مع تسلسل جاهز للعرض.';
+
+  @override
+  String get deckDesignHeading => 'اختر تصميمًا';
+
+  @override
+  String get deckStyleHeading => 'اختر الحركة واللغة';
+
+  @override
+  String get deckPaletteHeading => 'الألوان';
+
+  @override
+  String get deckPaletteOwn => 'ألوان التصميم الأصلية';
+
+  @override
+  String get deckMotionHeading => 'الحركة';
+
+  @override
+  String get deckMotionNone => 'بدون';
+
+  @override
+  String get deckMotionSubtle => 'خفيفة';
+
+  @override
+  String get deckMotionDynamic => 'ديناميكية';
+
+  @override
+  String get deckMotionCinematic => 'سينمائية';
+
+  @override
+  String get deckMotionNoneDesc => 'بدون حركة';
+
+  @override
+  String get deckMotionSubtleDesc => 'تلاشٍ لطيف';
+
+  @override
+  String get deckMotionDynamicDesc => 'دفع وطفو وتكبير';
+
+  @override
+  String get deckMotionCinematicDesc => 'تموّجات ودوامات وظهور تدريجي';
+
+  @override
+  String get deckLanguageHeading => 'اللغة';
+
+  @override
+  String get deckLanguageLtr => 'الإنجليزية (من اليسار إلى اليمين)';
+
+  @override
+  String get deckLanguageRtl => 'العربية (من اليمين إلى اليسار)';
+
+  @override
+  String get deckDarkLabel => 'داكن';
+
+  @override
+  String get deckLightLabel => 'فاتح';
+
+  @override
+  String get deckSuggested => 'مقترح';
+
+  @override
+  String get deckThumbUnavailable => 'لا توجد معاينة';
+
+  @override
+  String get deckGalleryLabel => 'التصاميم';
+
+  @override
+  String get deckPaletteLabel => 'لوحات الألوان';
+
+  @override
+  String get deckMotionLabel => 'إعدادات الحركة';
+
+  @override
+  String get deckPurposeLabel => 'أغراض العرض التقديمي';
+
+  @override
+  String get deckBack => 'رجوع';
+
+  @override
+  String get deckNext => 'التالي';
+
+  @override
+  String get deckCreate => 'إنشاء العرض';
+
+  @override
+  String get deckCreating => 'جارٍ إنشاء عرضك التقديمي…';
+
+  @override
+  String get deckCreateFailed => 'تعذّر إنشاء العرض التقديمي';
+
+  @override
+  String get deckRetry => 'أعد المحاولة';
+
+  @override
+  String get deckCatalogFailed => 'تعذّر تحميل التصاميم';
+
+  @override
+  String get deckCatalogLoading => 'جارٍ تحميل التصاميم…';
+
+  @override
+  String get deckPreviewHeading => 'معاينة';
+
+  @override
+  String deckPreviewOf(String name) {
+    return 'معاينة $name';
+  }
+
+  @override
+  String get deckPreviewUnavailable => 'المعاينة غير متاحة';
+
+  @override
+  String get deckChangeDesign => 'التصميم';
+
+  @override
+  String get deckChangeDesignDisabled =>
+      'حُفظ هذا العرض بواسطة تطبيق آخر، لذا لا يمكن تغيير تصميمه هنا.';
+
+  @override
+  String get deckChangeDesignTitle => 'تغيير التصميم';
+
+  @override
+  String deckCurrentDesign(String name) {
+    return 'التصميم الحالي: $name';
+  }
+
+  @override
+  String get deckApplyDesign => 'تطبيق التصميم';
+
+  @override
+  String get deckDesignApplied => 'تم تغيير التصميم. احفظ نسخة للاحتفاظ به.';
+
+  @override
+  String get deckDesignFailed => 'تعذّر تغيير التصميم';
+
+  @override
+  String get deckRestyling => 'جارٍ تطبيق التصميم…';
 }

@@ -1681,4 +1681,222 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get workPrintUnavailable =>
       'यहाँ प्रिंटिंग उपलब्ध नहीं — «PDF निर्यात करें» का उपयोग करें।';
+
+  @override
+  String get deckPresent => 'प्रस्तुत करें';
+
+  @override
+  String get deckPresentFromStart => 'शुरुआत से';
+
+  @override
+  String get deckPreviewMotion => 'गति का पूर्वावलोकन';
+
+  @override
+  String get deckStopPreview => 'पूर्वावलोकन रोकें';
+
+  @override
+  String deckUnsupportedNote(String items) {
+    return 'इस स्लाइड की कुछ सामग्री का पूर्वावलोकन नहीं किया जा सकता: $items';
+  }
+
+  @override
+  String get deckFilmstrip => 'स्लाइड नेविगेटर';
+
+  @override
+  String presentSlideOf(int index, int count) {
+    return 'स्लाइड $index / $count';
+  }
+
+  @override
+  String get presentExit => 'प्रस्तुति से बाहर निकलें';
+
+  @override
+  String get presentNext => 'अगला';
+
+  @override
+  String get presentPrevious => 'पिछला';
+
+  @override
+  String get presentShowNotes => 'वक्ता नोट्स दिखाएँ';
+
+  @override
+  String get presentHideNotes => 'वक्ता नोट्स छिपाएँ';
+
+  @override
+  String get presentNoNotes => 'इस स्लाइड के लिए कोई नोट्स नहीं';
+
+  @override
+  String presentElapsed(String time) {
+    return 'बीता समय $time';
+  }
+
+  @override
+  String get presentBlackScreen => 'काली स्क्रीन';
+
+  @override
+  String get presentWhiteScreen => 'सफ़ेद स्क्रीन';
+
+  @override
+  String get presentProgress => 'प्रस्तुति की प्रगति';
+
+  @override
+  String get workNewPresentation => 'नई प्रस्तुति';
+
+  @override
+  String get deckNewTitle => 'नई प्रस्तुति';
+
+  @override
+  String get deckStepPurpose => 'उद्देश्य';
+
+  @override
+  String get deckStepDesign => 'डिज़ाइन';
+
+  @override
+  String get deckStepStyle => 'गति और भाषा';
+
+  @override
+  String deckStepOf(int step, int count) {
+    return 'चरण $step / $count';
+  }
+
+  @override
+  String get deckPurposeHeading => 'यह प्रस्तुति किस लिए है?';
+
+  @override
+  String get deckPurposeHelp => 'हर उद्देश्य के साथ एक तैयार कथा-क्रम आता है।';
+
+  @override
+  String get deckDesignHeading => 'डिज़ाइन चुनें';
+
+  @override
+  String get deckStyleHeading => 'गति और भाषा चुनें';
+
+  @override
+  String get deckPaletteHeading => 'रंग';
+
+  @override
+  String get deckPaletteOwn => 'डिज़ाइन के अपने रंग';
+
+  @override
+  String get deckMotionHeading => 'गति';
+
+  @override
+  String get deckMotionNone => 'कोई नहीं';
+
+  @override
+  String get deckMotionSubtle => 'हल्की';
+
+  @override
+  String get deckMotionDynamic => 'गतिशील';
+
+  @override
+  String get deckMotionCinematic => 'सिनेमाई';
+
+  @override
+  String get deckMotionNoneDesc => 'कोई गति नहीं';
+
+  @override
+  String get deckMotionSubtleDesc => 'हल्के फ़ेड';
+
+  @override
+  String get deckMotionDynamicDesc => 'धक्का, तैरना और ज़ूम';
+
+  @override
+  String get deckMotionCinematicDesc => 'लहरें, भँवर और चरणबद्ध प्रस्तुति';
+
+  @override
+  String get deckLanguageHeading => 'भाषा';
+
+  @override
+  String get deckLanguageLtr => 'अंग्रेज़ी (बाएँ से दाएँ)';
+
+  @override
+  String get deckLanguageRtl => 'अरबी (दाएँ से बाएँ)';
+
+  @override
+  String get deckDarkLabel => 'गहरा';
+
+  @override
+  String get deckLightLabel => 'हल्का';
+
+  @override
+  String get deckSuggested => 'सुझाया गया';
+
+  @override
+  String get deckThumbUnavailable => 'कोई पूर्वावलोकन नहीं';
+
+  @override
+  String get deckGalleryLabel => 'डिज़ाइन';
+
+  @override
+  String get deckPaletteLabel => 'रंग पैलेट';
+
+  @override
+  String get deckMotionLabel => 'गति प्रीसेट';
+
+  @override
+  String get deckPurposeLabel => 'प्रस्तुति के उद्देश्य';
+
+  @override
+  String get deckBack => 'वापस';
+
+  @override
+  String get deckNext => 'आगे';
+
+  @override
+  String get deckCreate => 'प्रस्तुति बनाएँ';
+
+  @override
+  String get deckCreating => 'आपकी प्रस्तुति बनाई जा रही है…';
+
+  @override
+  String get deckCreateFailed => 'प्रस्तुति नहीं बनाई जा सकी';
+
+  @override
+  String get deckRetry => 'फिर कोशिश करें';
+
+  @override
+  String get deckCatalogFailed => 'डिज़ाइन लोड नहीं हो सके';
+
+  @override
+  String get deckCatalogLoading => 'डिज़ाइन लोड हो रहे हैं…';
+
+  @override
+  String get deckPreviewHeading => 'पूर्वावलोकन';
+
+  @override
+  String deckPreviewOf(String name) {
+    return '$name का पूर्वावलोकन';
+  }
+
+  @override
+  String get deckPreviewUnavailable => 'पूर्वावलोकन उपलब्ध नहीं';
+
+  @override
+  String get deckChangeDesign => 'डिज़ाइन';
+
+  @override
+  String get deckChangeDesignDisabled =>
+      'यह डेक किसी दूसरे ऐप से सहेजा गया था, इसलिए इसका डिज़ाइन यहाँ बदला नहीं जा सकता।';
+
+  @override
+  String get deckChangeDesignTitle => 'डिज़ाइन बदलें';
+
+  @override
+  String deckCurrentDesign(String name) {
+    return 'वर्तमान डिज़ाइन: $name';
+  }
+
+  @override
+  String get deckApplyDesign => 'डिज़ाइन लागू करें';
+
+  @override
+  String get deckDesignApplied =>
+      'डिज़ाइन बदल गया। इसे रखने के लिए एक प्रति सहेजें।';
+
+  @override
+  String get deckDesignFailed => 'डिज़ाइन नहीं बदला जा सका';
+
+  @override
+  String get deckRestyling => 'डिज़ाइन लागू किया जा रहा है…';
 }

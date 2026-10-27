@@ -185,8 +185,8 @@ class HarborSurfaceHeader extends StatelessWidget {
     final actionRow = actions.isEmpty
         ? null
         : Wrap(
-            spacing: HarborSpace.s2,
-            runSpacing: HarborSpace.s2,
+            spacing: compact ? HarborSpace.s1 : HarborSpace.s2,
+            runSpacing: compact ? HarborSpace.s1 : HarborSpace.s2,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: actions,
           );
@@ -447,6 +447,9 @@ class HarborBanner extends StatelessWidget {
     this.action,
     this.icon,
     this.dense = false,
+    this.oneLine = false,
+    this.actionLabel,
+    this.onAction,
   });
 
   final HarborBannerTone tone;
@@ -455,6 +458,13 @@ class HarborBanner extends StatelessWidget {
   final Widget? action;
   final IconData? icon;
   final bool dense;
+
+  /// A single ellipsised line (the body, else the title) with a text
+  /// button, for narrow screens where a stacked banner would push the
+  /// document off the screen. Tapping the line also runs [onAction].
+  final bool oneLine;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -488,6 +498,55 @@ class HarborBanner extends StatelessWidget {
         ),
     };
     final bodyColor = tone == HarborBannerTone.info ? c.inkMuted : text;
+    if (oneLine) {
+      return Semantics(
+        container: true,
+        liveRegion: tone != HarborBannerTone.info,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onAction,
+            borderRadius: BorderRadius.circular(HarborRadius.md),
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 44),
+              padding: const EdgeInsetsDirectional.only(
+                  start: HarborSpace.s3, end: HarborSpace.s1),
+              decoration: ShapeDecoration(
+                color: fill,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(HarborRadius.md),
+                  side: BorderSide(color: border),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(icon ?? defaultIcon, size: 18, color: text),
+                  const SizedBox(width: HarborSpace.s2),
+                  Expanded(
+                    child: Text(
+                      body ?? title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: t.text.smallOf(text),
+                    ),
+                  ),
+                  if (actionLabel != null)
+                    TextButton(
+                      onPressed: onAction,
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size(44, 44),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: HarborSpace.s2),
+                      ),
+                      child: Text(actionLabel!),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     return Semantics(
       container: true,
       liveRegion: tone != HarborBannerTone.info,

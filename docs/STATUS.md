@@ -7,6 +7,26 @@ ran at.
 
 ---
 
+## Session 62 (2026-10-28): the unlanded branches are integrated into main
+
+Done (plan: `docs/UPGRADE_PLAN_2026-10-28.md`, WS-0):
+- **`designed-decks-and-motion` merged** (it carried `ask-multi-turn-threads`): designed decks (14
+  designs, palettes, authored motion, slide scene renderer, chart writer fix, deck designer, New
+  presentation / Change design), formula expansion to 407 targets, durable sealed conversation threads
+  in the core (`thread.*` ops, `thread_id` on `op.start_generate`), derived-chat purge preview in Library.
+  Conflicts resolved: `lib.rs` (thread memory + `document`/`collection` scopes are orthogonal; a
+  follow-up retrieves on the previous question too, including in a collection), `harbor_service.dart`,
+  the Work header (phone Open-file is an icon), l10n (key union), STATUS.
+- **Threads UI re-ported onto Home** (the Ask surface stays deleted): latest conversation restored on
+  entry, follow-ups carry memory, History dialog (switch / rename / delete with confirmation), New
+  conversation, Library-only search turns recorded. Questions about an attached file and routed task
+  cards are not part of a thread. The Work command bar has no per-file thread yet.
+- **Decision renumbered 0011 -> 0021** (`docs/decisions/0021-designed-decks-and-authored-motion.md`).
+- **Vision-OCR UI test and `docs/verification_2026-10-11.md`** cherry-picked from
+  `moss101-animated-giggle`, adapted to the current models surface.
+- Evidence bound to the branch commits (formula tiers, device runs) does NOT bind to the merged commit;
+  re-running the tiers is WS-15.
+
 ## Session 61 (2026-10-20): Work gets an input, ten surfaces become seven, and the path is run for real
 
 Done (decision 0020, `docs/decisions/0020-navigation-consolidation-and-file-scoped-composer.md`):
@@ -373,6 +393,65 @@ harbor_app 58/58 (new goals service test), office suite green, analyze
 clean. Honest limits: EmbeddingGemma 2 unrunnable until a binding ships the
 v2 arch; router UI exposure beyond `skills.suggest` is next; memory layer
 not started; goal creation dialog exposes prompt goals only.
+
+## Session 58 (2026-10-03): designed decks — real designs, authored motion, real preview
+
+- **Preview is a real slide render**, not text: `harbor_render` reads any
+  PPTX into a size-bounded slide scene (theme/master/layout inheritance,
+  colour maps, placeholders, groups, geometry, text style chain, pictures,
+  tables, charts, transitions, animations; unsupported features listed per
+  slide) and `harbor_ui` paints it (`SlideView`), with present mode and motion
+  preview in both apps. Contract: `docs/operations/slide-scene-contract.md`.
+- **Designs are layout languages, palettes are colour.** 14 designs differ in
+  header, cover, section, card chrome, stats, cards, timeline, comparison,
+  agenda and team compositions (`docs/operations/deck-design-languages.md`);
+  20 palettes recolour any of them. Tests enforce it: no two designs share
+  a look; text contrast gates over every design x palette; a generic gate
+  that no variant overflows its text boxes or the page, under every header.
+- **Authored motion**: none/subtle/dynamic/cinematic presets, bounded
+  per-slide budget, p14/p159 transitions with a fade fallback. 20 purposes
+  (pitch deck, investor update, project report, product launch, ...) each
+  with a storyline; `deck.brief`, `deck.catalog/sample/starter/restyle`.
+  Decision record: `docs/decisions/0021-designed-decks-and-authored-motion.md`.
+- **Real PowerPoint**: all 14 designs at cinematic motion open without a
+  repair prompt (12 slides, 12 transitions, 83-112 animation effects each).
+  A chart-writer bug (every chart invalid) found on the way and fixed.
+- **UI**: "New presentation" (purpose -> design gallery with live
+  thumbnails -> palette -> motion/language) and "Change design" ship in both
+  apps on shared `harbor_ui` widgets (`deck_designer.dart`); Arabic and (office)
+  de/es/fr/hi strings included. Tests: office 67, app 112, harbor_ui 178,
+  artifacts 143, all green; real-core round trip (14 designs, 20 palettes,
+  20 purposes, starter + restyle) runs in both apps.
+- **Mobile pass** (iPhone 17 simulator + Android arm64 emulator, real core):
+  device runs found and fixed bugs no widget test caught — a new spreadsheet
+  could not be typed into (formula bar disabled on blank cells), the selection
+  jumped to the first formula after every edit, the header hid its close button
+  off-screen, document editing was long-press only (conflicts with text
+  selection on touch; phones get an edit button), a dialog controller disposed
+  mid fade-out crashed Android debug builds, Present did not rotate to
+  landscape. The new-presentation sheet now lives once in `harbor_ui`;
+  `harbor_app` can save a restyled deck. Android "Open with" via content://
+  was not exercised.
+- **Formula expansion** (`docs/operations/formula-expansion.md`): the qualified
+  target set grew from 99 to **398** in 17 batches of about 25, 1,220 corpus
+  cases, every expected value taken from real Microsoft Excel (the engine is
+  the subject, never the source of truth). Excel found real engine defects:
+  GAMMA.INV, F.INV, CHISQ.TEST, Z.TEST, CUMIPMT/CUMPRINC, ACCRINT, AGGREGATE
+  options, CEILING/FLOOR.MATH mode, DAYS360, the complex-number text format and
+  — most important — the COUNTIF/SUMIF/*IFS family (text-numbers, `<>`, blanks,
+  wildcards, whole columns). All fixed in the vendored engine (decision 0001
+  addendum 2, engine `0.9.3+harbor-excel-fidelity`, re-pinned); a size guard I
+  introduced and then found breaking whole-column SUMIFS was caught by the
+  engine's own tests and narrowed. The nine first-deferred functions were closed (engine rules for T.INV.2T, DROP/TAKE/SEQUENCE and immediate LAMBDA calls; oracle-design changes for locale, array-formula and last-digit cases; decision 0001 addendum 3): **407 targets, 1,261 cases, none deferred**. The
+  content gate now blocks HYPERLINK/INDIRECT/CELL/INFO for model-written
+  formulas even though they are qualified. **Tiers re-run on commit 59a9269:** macOS, iOS Simulator and Android emulator each 1261/1261 cases · 407/407 targets, no deviations. The **physical iPhone tier** is also done (1261/1261 · 407/407, `tools/qualify_ios`). Nothing is PASS before the five-platform rule is met and the **physical Android phone tier** (OnePlus CPH2767, Android 16: 1261/1261 · 407/407). Only Windows x64 and arm64 remain operator-bound.
+- **Not done / honest limits**: no visual run of the Flutter screens (widget
+  tests only); embedded design source is lost when another app re-saves a deck
+  (restyle is then disabled); harbor_app is preview-only for decks, so a
+  restyle there is not savable; the new-presentation sheet is duplicated in
+  both apps (~980 lines, should move to harbor_ui); new Arabic/de/es/fr/hi
+  strings have no native review; design/palette/purpose names come from the
+  core in English. Nothing here is committed yet.
 
 ---
 

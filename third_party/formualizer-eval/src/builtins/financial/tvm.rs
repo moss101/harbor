@@ -605,9 +605,10 @@ impl Function for NperFn {
 
         let nper = if rate.abs() < 1e-10 {
             if pmt.abs() < 1e-10 {
-                return Ok(CalcValue::Scalar(
-                    LiteralValue::Error(ExcelError::new_num()),
-                ));
+                // Excel divides by the payment here: rate=0 and pmt=0 is #DIV/0!.
+                return Ok(CalcValue::Scalar(LiteralValue::Error(
+                    ExcelError::new_div(),
+                )));
             }
             -(pv + fv) / pmt
         } else {
@@ -861,31 +862,7 @@ impl Function for IpmtFn {
             ));
         }
 
-        // Calculate PMT first
-        let pmt = if rate.abs() < 1e-10 {
-            -(pv + fv) / nper
-        } else {
-            let factor = (1.0 + rate).powf(nper);
-            let type_adj = if pmt_type != 0 { 1.0 + rate } else { 1.0 };
-            -(rate * (pv * factor + fv)) / ((factor - 1.0) * type_adj)
-        };
-
-        // Calculate FV at start of period
-        let fv_at_start = if rate.abs() < 1e-10 {
-            -pv - pmt * (per - 1.0)
-        } else {
-            let factor = (1.0 + rate).powf(per - 1.0);
-            let type_adj = if pmt_type != 0 { 1.0 + rate } else { 1.0 };
-            -pv * factor - pmt * type_adj * (factor - 1.0) / rate
-        };
-
-        // Interest is rate * balance at start of period
-        // fv_at_start is negative of balance, so ipmt = fv_at_start * rate
-        let ipmt = if pmt_type != 0 && per == 1.0 {
-            0.0 // No interest in first period for annuity due
-        } else {
-            fv_at_start * rate
-        };
+        let (_pmt, ipmt) = pmt_and_ipmt(rate, per, nper, pv, fv, pmt_type);
 
         Ok(CalcValue::Scalar(LiteralValue::Number(ipmt)))
     }
@@ -983,31 +960,7 @@ impl Function for PpmtFn {
             ));
         }
 
-        // Calculate PMT
-        let pmt = if rate.abs() < 1e-10 {
-            -(pv + fv) / nper
-        } else {
-            let factor = (1.0 + rate).powf(nper);
-            let type_adj = if pmt_type != 0 { 1.0 + rate } else { 1.0 };
-            -(rate * (pv * factor + fv)) / ((factor - 1.0) * type_adj)
-        };
-
-        // Calculate IPMT
-        let fv_at_start = if rate.abs() < 1e-10 {
-            -pv - pmt * (per - 1.0)
-        } else {
-            let factor = (1.0 + rate).powf(per - 1.0);
-            let type_adj = if pmt_type != 0 { 1.0 + rate } else { 1.0 };
-            -pv * factor - pmt * type_adj * (factor - 1.0) / rate
-        };
-
-        let ipmt = if pmt_type != 0 && per == 1.0 {
-            0.0
-        } else {
-            fv_at_start * rate
-        };
-
-        // PPMT = PMT - IPMT
+        let (pmt, ipmt) = pmt_and_ipmt(rate, per, nper, pv, fv, pmt_type);
         let ppmt = pmt - ipmt;
 
         Ok(CalcValue::Scalar(LiteralValue::Number(ppmt)))
@@ -1695,31 +1648,11 @@ impl Function for CumipmtFn {
             ));
         }
 
-        // Calculate PMT
-        let pmt = if rate == 0.0 {
-            -pv / nper as f64
-        } else {
-            -pv * rate * (1.0 + rate).powi(nper) / ((1.0 + rate).powi(nper) - 1.0)
-        };
-
-        // Sum interest payments from start to end
-        let mut cum_int = 0.0;
-        let mut balance = pv;
-
-        for period in 1..=end {
-            let interest = if pay_type == 1 && period == 1 {
-                0.0
-            } else {
-                balance * rate
-            };
-
-            if period >= start {
-                cum_int += interest;
-            }
-
-            let principal = pmt - interest;
-            balance += principal;
-        }
+        // Excel sums IPMT over the window (same sign convention: loan positive,
+        // interest negative).
+        let cum_int: f64 = (start..=end)
+            .map(|per| pmt_and_ipmt(rate, per as f64, nper as f64, pv, 0.0, pay_type).1)
+            .sum();
 
         Ok(CalcValue::Scalar(LiteralValue::Number(cum_int)))
     }
@@ -1814,32 +1747,13 @@ impl Function for CumprincFn {
             ));
         }
 
-        // Calculate PMT
-        let pmt = if rate == 0.0 {
-            -pv / nper as f64
-        } else {
-            -pv * rate * (1.0 + rate).powi(nper) / ((1.0 + rate).powi(nper) - 1.0)
-        };
-
-        // Sum principal payments from start to end
-        let mut cum_princ = 0.0;
-        let mut balance = pv;
-
-        for period in 1..=end {
-            let interest = if pay_type == 1 && period == 1 {
-                0.0
-            } else {
-                balance * rate
-            };
-
-            let principal = pmt - interest;
-
-            if period >= start {
-                cum_princ += principal;
-            }
-
-            balance += principal;
-        }
+        // Excel sums PPMT = PMT - IPMT over the window.
+        let cum_princ: f64 = (start..=end)
+            .map(|per| {
+                let (pmt, ipmt) = pmt_and_ipmt(rate, per as f64, nper as f64, pv, 0.0, pay_type);
+                pmt - ipmt
+            })
+            .sum();
 
         Ok(CalcValue::Scalar(LiteralValue::Number(cum_princ)))
     }
@@ -1912,6 +1826,12 @@ impl Function for XnpvFn {
     ) -> Result<CalcValue<'b>, ExcelError> {
         let date_system = ctx.date_system();
         let rate = coerce_num(&args[0])?;
+        // Excel (verified against the oracle) rejects rate = 0 as well as rate <= -1.
+        if rate == 0.0 || rate <= -1.0 {
+            return Ok(CalcValue::Scalar(LiteralValue::Error(
+                ExcelError::new_num(),
+            )));
+        }
 
         // Collect values
         let mut values = Vec::new();
@@ -2305,7 +2225,13 @@ impl Function for DollardeFn {
         let fractional_dollar = coerce_num(&args[0])?;
         let fraction = coerce_num(&args[1])?.trunc() as i32;
 
-        // Validate fraction
+        // Excel: a fraction that truncates to 0 divides by zero (#DIV/0!);
+        // a negative fraction is #NUM!.
+        if fraction == 0 {
+            return Ok(CalcValue::Scalar(LiteralValue::Error(
+                ExcelError::new_div(),
+            )));
+        }
         if fraction < 1 {
             return Ok(CalcValue::Scalar(
                 LiteralValue::Error(ExcelError::new_num()),
@@ -2397,7 +2323,13 @@ impl Function for DollarfrFn {
         let decimal_dollar = coerce_num(&args[0])?;
         let fraction = coerce_num(&args[1])?.trunc() as i32;
 
-        // Validate fraction
+        // Excel: a fraction that truncates to 0 divides by zero (#DIV/0!);
+        // a negative fraction is #NUM!.
+        if fraction == 0 {
+            return Ok(CalcValue::Scalar(LiteralValue::Error(
+                ExcelError::new_div(),
+            )));
+        }
         if fraction < 1 {
             return Ok(CalcValue::Scalar(
                 LiteralValue::Error(ExcelError::new_num()),
@@ -2566,9 +2498,10 @@ impl Function for IspmtFn {
         let pv = coerce_num(&args[3])?;
 
         if nper == 0.0 {
-            return Ok(CalcValue::Scalar(
-                LiteralValue::Error(ExcelError::new_num()),
-            ));
+            // Excel: division by nper -> #DIV/0!.
+            return Ok(CalcValue::Scalar(LiteralValue::Error(
+                ExcelError::new_div(),
+            )));
         }
 
         // ISPMT = pv * rate * (per / nper - 1)
@@ -2659,6 +2592,34 @@ impl Function for PdurationFn {
     }
 }
 
+/// Level payment and the interest portion of period `per` for an annuity.
+/// Excel sign convention: a positive `pv` (loan received) yields negative payments
+/// and negative interest. For type 1 (payments at period start) the interest of
+/// period 1 is zero and later periods' interest is the type-0 style balance
+/// interest discounted by one period -- `/(1+rate)` -- because the payment is
+/// made before interest accrues (this is what Excel's IPMT/CUMIPMT return).
+fn pmt_and_ipmt(rate: f64, per: f64, nper: f64, pv: f64, fv: f64, pmt_type: i32) -> (f64, f64) {
+    let type_adj = if pmt_type != 0 { 1.0 + rate } else { 1.0 };
+    let pmt = if rate.abs() < 1e-10 {
+        -(pv + fv) / nper
+    } else {
+        let factor = (1.0 + rate).powf(nper);
+        -(rate * (pv * factor + fv)) / ((factor - 1.0) * type_adj)
+    };
+    let fv_at_start = if rate.abs() < 1e-10 {
+        -pv - pmt * (per - 1.0)
+    } else {
+        let factor = (1.0 + rate).powf(per - 1.0);
+        -pv * factor - pmt * type_adj * (factor - 1.0) / rate
+    };
+    let ipmt = if pmt_type != 0 {
+        if per == 1.0 { 0.0 } else { fv_at_start * rate / (1.0 + rate) }
+    } else {
+        fv_at_start * rate
+    };
+    (pmt, ipmt)
+}
+
 pub fn register_builtins() {
     use std::sync::Arc;
     crate::function_registry::register_builtin(Arc::new(PmtFn));
@@ -2682,4 +2643,88 @@ pub fn register_builtins() {
     crate::function_registry::register_builtin(Arc::new(RriFn));
     crate::function_registry::register_builtin(Arc::new(IspmtFn));
     crate::function_registry::register_builtin(Arc::new(PdurationFn));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn close(a: f64, b: f64) {
+        assert!((a - b).abs() < 1e-9, "expected {b}, got {a}");
+    }
+
+    // Excel oracle values (batch 11): CUMIPMT/CUMPRINC are sums of IPMT/PPMT.
+    #[test]
+    fn cum_interest_and_principal_match_excel() {
+        let (r, n, pv) = (0.09 / 12.0, 360.0, 125000.0);
+        let ci = |s: i32, e: i32, t: i32| -> f64 {
+            (s..=e).map(|p| pmt_and_ipmt(r, p as f64, n, pv, 0.0, t).1).sum()
+        };
+        let cp = |s: i32, e: i32, t: i32| -> f64 {
+            (s..=e)
+                .map(|p| {
+                    let (pmt, i) = pmt_and_ipmt(r, p as f64, n, pv, 0.0, t);
+                    pmt - i
+                })
+                .sum()
+        };
+        close(ci(1, 12, 0), -11215.3428811283);
+        close(ci(13, 24, 1), -11052.3395838718);
+        close(cp(1, 12, 0), -853.996373043423);
+        close(cp(13, 24, 1), -927.153472378062);
+    }
+
+    fn eval(formula: &str) -> LiteralValue {
+        use crate::engine::{Engine, EvalConfig};
+        use crate::interpreter::Interpreter;
+        use crate::test_workbook::TestWorkbook;
+        use formualizer_parse::parser::parse;
+        use std::sync::Arc;
+
+        let wb = TestWorkbook::new()
+            .with_function(Arc::new(NperFn))
+            .with_function(Arc::new(IspmtFn))
+            .with_function(Arc::new(DollardeFn))
+            .with_function(Arc::new(DollarfrFn))
+            .with_function(Arc::new(XnpvFn))
+            .with_function(Arc::new(CumipmtFn));
+        let engine = Engine::new(wb, EvalConfig::default());
+        Interpreter::new(&engine, "Sheet1")
+            .evaluate_ast(&parse(formula).expect("parse"))
+            .expect("eval")
+            .into_literal()
+    }
+
+    fn is_err(v: LiteralValue, code: &str) -> bool {
+        matches!(v, LiteralValue::Error(e) if e == code)
+    }
+
+    // Excel oracle (batch 10): division-by-zero situations are #DIV/0!.
+    #[test]
+    fn zero_divisors_are_div0_and_negative_fraction_stays_num() {
+        assert!(is_err(eval("=NPER(0,0,100)"), "#DIV/0!"));
+        assert!(is_err(eval("=ISPMT(0.1,1,0,4000000)"), "#DIV/0!"));
+        assert!(is_err(eval("=DOLLARDE(1.02,0)"), "#DIV/0!"));
+        assert!(is_err(eval("=DOLLARFR(1.125,0)"), "#DIV/0!"));
+        assert!(is_err(eval("=DOLLARDE(1.02,-4)"), "#NUM!"));
+    }
+
+    // Excel oracle (batch 11): XNPV rejects rate = 0 and rate <= -1.
+    #[test]
+    fn xnpv_rejects_zero_rate() {
+        assert!(is_err(eval("=XNPV(0,{-100,110},{1,366})"), "#NUM!"));
+        assert!(is_err(eval("=XNPV(-1,{-100,110},{1,366})"), "#NUM!"));
+        assert!(matches!(eval("=XNPV(0.09,{-100,110},{1,366})"), LiteralValue::Number(_)));
+        assert!(matches!(eval("=XNPV(-0.5,{-100,110},{1,366})"), LiteralValue::Number(_)));
+    }
+
+    #[test]
+    fn cumipmt_domain_errors() {
+        assert!(is_err(eval("=CUMIPMT(0.0075,360,125000,12,1,0)"), "#NUM!"));
+        assert!(is_err(eval("=CUMIPMT(0.0075,360,125000,1,12,2)"), "#NUM!"));
+        match eval("=CUMIPMT(0.09/12,360,125000,1,12,0)") {
+            LiteralValue::Number(n) => close(n, -11215.3428811283),
+            other => panic!("{other:?}"),
+        }
+    }
 }

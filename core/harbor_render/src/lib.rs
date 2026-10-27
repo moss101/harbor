@@ -10,6 +10,10 @@ pub mod pdf_out;
 pub mod scan_images;
 pub use pdf_out::{write_text_pdf, TextBlock};
 pub mod preview;
+pub mod scene;
+pub mod scene_chart;
+pub mod slides;
 
+pub use slides::{deck_scene, SceneError};
 pub use pdf::{PdfError, PdfPage, PdfPreview};
 pub use preview::{DeckPreview, DocxParagraphPreview, DocxPreview, SlidePreview, WorkbookPreview};

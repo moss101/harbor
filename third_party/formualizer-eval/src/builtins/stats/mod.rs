@@ -2057,6 +2057,21 @@ impl Function for AvedevFn {
         args: &'c [ArgumentHandle<'a, 'b>],
         _ctx: &dyn FunctionContext<'b>,
     ) -> Result<crate::traits::CalcValue<'b>, ExcelError> {
+        // Excel: text typed directly as an argument (not inside a range) is a
+        // #VALUE! for AVEDEV; text inside ranges is skipped by collect_numeric_stats.
+        for a in args {
+            if a.inline_array_literal()?.is_none() && a.range_view().is_err() {
+                let v = scalar_like_value(a)?;
+                if let LiteralValue::Error(e) = v {
+                    return Err(e);
+                }
+                if coerce_num(&v).is_err() {
+                    return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
+                        ExcelError::new_value(),
+                    )));
+                }
+            }
+        }
         let nums = collect_numeric_stats(args)?;
         if nums.is_empty() {
             return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
@@ -2328,6 +2343,23 @@ fn eval_maxminifs<'a, 'b>(
     };
 
     let (rows, cols) = target_view.dims();
+
+    // Excel: every criteria range must be the same size as the target range,
+    // otherwise MAXIFS/MINIFS return #VALUE!.
+    // Only for fully bounded references: whole-column / open-ended ranges are
+    // trimmed to their used region, so their view sizes legitimately differ.
+    let bounded = super::utils::ifs_ranges_bounded(args, false);
+    for i in (1..args.len()).step_by(2) {
+        if bounded
+            && let Ok(v) = args[i].range_view()
+            && v.dims() != (rows, cols)
+        {
+            return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
+                ExcelError::new_value()
+                    .with_message("criteria range must match the size of the target range"),
+            )));
+        }
+    }
 
     // Parse all criteria
     let mut criteria_ranges = Vec::new();
@@ -3782,35 +3814,62 @@ fn chisq_cdf(x: f64, df: f64) -> f64 {
     gamma_p(df / 2.0, x / 2.0)
 }
 
-/// Helper: Chi-square inverse CDF using Newton-Raphson
-fn chisq_inv(p: f64, df: f64) -> Option<f64> {
-    if p <= 0.0 || p >= 1.0 {
+/// Helper: invert a continuous, non-decreasing CDF on [0, inf) for `p` in (0, 1).
+///
+/// WHY: the earlier Newton-Raphson inverses started from a fixed guess and could
+/// overshoot into the far tail for small `p` (GAMMA.INV(0.068094,9,2) returned
+/// 14928, F.INV(0.01,6,4) returned 2e26). A bracketed bisection cannot diverge:
+/// the CDF is monotone, so the root stays inside [lo, hi] and the interval halves
+/// every step until it is down to adjacent floating-point numbers.
+fn invert_monotone_cdf(p: f64, cdf: impl Fn(f64) -> f64, start: f64) -> Option<f64> {
+    if !(p > 0.0 && p < 1.0) {
         return None;
     }
-
-    // Initial guess
-    let mut x = df.max(1.0);
-    if p < 0.5 {
-        x = x.min(1.0);
+    let mut hi = if start.is_finite() && start > 0.0 { start } else { 1.0 };
+    let mut lo = 0.0_f64;
+    // Grow `hi` until it covers the target probability.
+    let mut grown = 0;
+    while cdf(hi) < p {
+        lo = hi;
+        hi *= 2.0;
+        grown += 1;
+        if grown > 1100 || !hi.is_finite() {
+            return None;
+        }
     }
-
-    // Newton-Raphson iteration
-    for _ in 0..100 {
-        let cdf = chisq_cdf(x, df);
-        let pdf = chisq_pdf(x, df);
-        if pdf.abs() < 1e-30 {
+    // If `hi` was not grown, shrink toward zero until `lo` is below the target.
+    if grown == 0 {
+        let mut shrink = 0;
+        loop {
+            let cand = hi / 2.0;
+            if cand < 1e-300 || shrink > 1100 {
+                break;
+            }
+            if cdf(cand) < p {
+                lo = cand;
+                break;
+            }
+            hi = cand;
+            shrink += 1;
+        }
+    }
+    for _ in 0..300 {
+        let mid = 0.5 * (lo + hi);
+        if mid <= lo || mid >= hi {
             break;
         }
-        let delta = (cdf - p) / pdf;
-        let new_x = (x - delta).max(1e-15);
-        if (new_x - x).abs() < 1e-12 * x {
-            x = new_x;
-            break;
+        if cdf(mid) < p {
+            lo = mid;
+        } else {
+            hi = mid;
         }
-        x = new_x;
     }
+    Some(0.5 * (lo + hi))
+}
 
-    Some(x)
+/// Helper: Chi-square inverse CDF (bracketed bisection)
+fn chisq_inv(p: f64, df: f64) -> Option<f64> {
+    invert_monotone_cdf(p, |x| chisq_cdf(x, df), df.max(1.0))
 }
 
 /// Helper: Chi-square PDF
@@ -3831,32 +3890,9 @@ fn f_cdf(f: f64, d1: f64, d2: f64) -> f64 {
     beta_i(x, d1 / 2.0, d2 / 2.0)
 }
 
-/// Helper: F distribution inverse CDF using Newton-Raphson
+/// Helper: F distribution inverse CDF (bracketed bisection)
 fn f_inv(p: f64, d1: f64, d2: f64) -> Option<f64> {
-    if p <= 0.0 || p >= 1.0 {
-        return None;
-    }
-
-    // Initial guess
-    let mut f = 1.0;
-
-    // Newton-Raphson iteration
-    for _ in 0..100 {
-        let cdf = f_cdf(f, d1, d2);
-        let pdf = f_pdf(f, d1, d2);
-        if pdf.abs() < 1e-30 {
-            break;
-        }
-        let delta = (cdf - p) / pdf;
-        let new_f = (f - delta).max(1e-15);
-        if (new_f - f).abs() < 1e-12 * f {
-            f = new_f;
-            break;
-        }
-        f = new_f;
-    }
-
-    Some(f)
+    invert_monotone_cdf(p, |x| f_cdf(x, d1, d2), 1.0)
 }
 
 /// Helper: F distribution PDF
@@ -6555,6 +6591,13 @@ impl Function for ConfidenceTFn {
                 ExcelError::new_num(),
             )));
         }
+        // Excel: a sample of exactly 1 gives #DIV/0! (df = 0); anything
+        // smaller than 1 is still #NUM!.
+        if size.trunc() == 1.0 {
+            return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
+                ExcelError::new_div(),
+            )));
+        }
         if size < 2.0 {
             return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
                 ExcelError::new_num(),
@@ -6676,8 +6719,14 @@ impl Function for ZTestFn {
             }
             s
         } else {
-            // Population standard deviation
-            let variance: f64 = data.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n;
+            // Excel's omitted-sigma default is the SAMPLE standard deviation
+            // (STDEV.S, n-1 divisor), not the population one. n=1 is #DIV/0!.
+            if data.len() < 2 {
+                return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
+                    ExcelError::new_div(),
+                )));
+            }
+            let variance: f64 = data.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / (n - 1.0);
             let std_dev = variance.sqrt();
             if std_dev == 0.0 {
                 return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
@@ -7903,8 +7952,9 @@ impl Function for TInv2TFn {
         let p = coerce_num(&scalar_like_value(&args[0])?)?;
         let df = coerce_num(&scalar_like_value(&args[1])?)?;
 
-        // probability must be in (0, 1], df >= 1
-        if p <= 0.0 || p > 1.0 || df < 1.0 {
+        // Excel evaluates T.INV(1 - p/2, df) for 0 < p < 2, so a "probability"
+        // above 1 gives a negative t (T.INV.2T(1.5,10) = -0.6998); p >= 2 is #NUM!.
+        if p <= 0.0 || p >= 2.0 || df < 1.0 {
             return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
                 ExcelError::new_num(),
             )));
@@ -8304,6 +8354,21 @@ impl Function for ChisqTestFn {
         let actual = collect_numeric_stats(&args[0..1])?;
         let expected = collect_numeric_stats(&args[1..2])?;
 
+        // Excel requires identical shapes (not merely equal cell counts) and
+        // derives the degrees of freedom from that shape.
+        let shape = |a: &ArgumentHandle| -> Option<(usize, usize)> {
+            if let Ok(Some(arr)) = a.inline_array_literal() {
+                return Some((arr.len(), arr.first().map_or(0, |r| r.len())));
+            }
+            a.range_view().ok().map(|v| v.dims())
+        };
+        let dims_a = shape(&args[0]);
+        let dims_e = shape(&args[1]);
+        if dims_a.is_some() && dims_e.is_some() && dims_a != dims_e {
+            return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
+                ExcelError::new_na(),
+            )));
+        }
         // Arrays must have same length
         if actual.len() != expected.len() {
             return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
@@ -8328,8 +8393,12 @@ impl Function for ChisqTestFn {
             chi_sq += (obs - exp).powi(2) / exp;
         }
 
-        // Degrees of freedom = number of categories - 1
-        let df = (actual.len() - 1) as f64;
+        // Excel's rule: a table with r>1 and c>1 has (r-1)(c-1) degrees of
+        // freedom; a single row or column has n-1.
+        let df = match dims_a {
+            Some((r, c)) if r > 1 && c > 1 => ((r - 1) * (c - 1)) as f64,
+            _ => (actual.len() - 1) as f64,
+        };
 
         if df < 1.0 {
             return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
@@ -8466,36 +8535,7 @@ fn gamma_inv_helper(p: f64, alpha: f64, beta: f64) -> Option<f64> {
     if alpha <= 0.0 || beta <= 0.0 {
         return None;
     }
-
-    // Initial guess
-    let mut x = alpha * beta;
-    if p < 0.5 {
-        x = x.min(beta);
-    }
-
-    // Newton-Raphson on the standardized gamma CDF (gamma_p)
-    for _ in 0..100 {
-        let z = x / beta;
-        let cdf = gamma_p(alpha, z);
-        // Gamma PDF: z^(alpha-1) * e^(-z) / Gamma(alpha) / beta
-        let pdf = if z > 0.0 {
-            ((alpha - 1.0) * z.ln() - z - ln_gamma(alpha)).exp() / beta
-        } else {
-            1e-30
-        };
-        if pdf.abs() < 1e-30 {
-            break;
-        }
-        let delta = (cdf - p) / pdf;
-        let new_x = (x - delta).max(1e-15);
-        if (new_x - x).abs() < 1e-12 * x.max(1e-15) {
-            x = new_x;
-            break;
-        }
-        x = new_x;
-    }
-
-    Some(x)
+    invert_monotone_cdf(p, |x| gamma_p(alpha, x / beta), alpha * beta)
 }
 
 /* ─────────────────────────── AVERAGEA ──────────────────────────── */
@@ -11231,4 +11271,222 @@ mod tests_selection_vs_sort_oracle {
             "quickselect should beat a full sort on 100k values"
         );
     }
+}
+
+#[cfg(test)]
+mod tests_excel_fidelity {
+    //! Regressions found by comparing against real Excel (see tools/formula_batches).
+    use super::*;
+    use crate::test_workbook::TestWorkbook;
+    use crate::traits::ArgumentHandle;
+    use formualizer_common::{ExcelErrorKind, LiteralValue};
+    use formualizer_parse::parser::{ASTNode, ASTNodeType};
+    use std::sync::Arc;
+
+    fn lit(v: LiteralValue) -> ASTNode {
+        ASTNode::new(ASTNodeType::Literal(v), None)
+    }
+    fn num(n: f64) -> ASTNode {
+        lit(LiteralValue::Number(n))
+    }
+    fn grid(rows: &[&[f64]]) -> ASTNode {
+        lit(LiteralValue::Array(
+            rows.iter()
+                .map(|r| r.iter().map(|v| LiteralValue::Number(*v)).collect())
+                .collect(),
+        ))
+    }
+    fn call(name: &str, f: Arc<dyn crate::function::Function>, nodes: &[ASTNode]) -> LiteralValue {
+        let wb = TestWorkbook::new().with_function(f);
+        let ctx = wb.interpreter();
+        let args: Vec<_> = nodes.iter().map(|n| ArgumentHandle::new(n, &ctx)).collect();
+        let func = ctx.context.get_function("", name).unwrap();
+        func.dispatch(&args, &ctx.function_context(None))
+            .unwrap()
+            .into_literal()
+    }
+    fn close(v: LiteralValue, expected: f64, tol: f64) {
+        match v {
+            LiteralValue::Number(n) => assert!((n - expected).abs() <= tol, "{n} vs {expected}"),
+            other => panic!("expected number {expected}, got {other:?}"),
+        }
+    }
+    fn is_err(v: LiteralValue, kind: ExcelErrorKind) {
+        match v {
+            LiteralValue::Error(e) => assert_eq!(e.kind, kind),
+            other => panic!("expected {kind:?}, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn gamma_inv_matches_excel_and_round_trips() {
+        // Excel: GAMMA.INV(0.068094,9,2) = 10.0000111914372
+        close(
+            call(
+                "GAMMA.INV",
+                Arc::new(GammaInvFn),
+                &[num(0.068094), num(9.0), num(2.0)],
+            ),
+            10.0000111914372,
+            1e-8,
+        );
+        for &a in &[0.5, 1.0, 2.5, 9.0, 20.0, 50.0] {
+            for &p in &[1e-6, 0.001, 0.01, 0.068094, 0.3, 0.5, 0.9, 0.99, 0.999] {
+                let x = gamma_inv_helper(p, a, 2.0).unwrap();
+                let back = gamma_p(a, x / 2.0);
+                assert!((back - p).abs() < 1e-9, "a={a} p={p}: x={x} back={back}");
+            }
+        }
+    }
+
+    #[test]
+    fn f_inv_matches_excel_and_round_trips() {
+        // Excel: F.INV(0.01,6,4) = 0.109309914124579
+        close(
+            call(
+                "F.INV",
+                Arc::new(FInvFn),
+                &[num(0.01), num(6.0), num(4.0)],
+            ),
+            0.109309914124579,
+            1e-9,
+        );
+        for &(d1, d2) in &[(1.0, 1.0), (6.0, 4.0), (4.0, 30.0), (50.0, 3.0)] {
+            for &p in &[0.001, 0.01, 0.1, 0.5, 0.9, 0.99] {
+                let x = f_inv(p, d1, d2).unwrap();
+                assert!((f_cdf(x, d1, d2) - p).abs() < 1e-9, "d1={d1} d2={d2} p={p}");
+            }
+        }
+    }
+
+    #[test]
+    fn chisq_inv_round_trips() {
+        for &df in &[1.0, 2.0, 5.0, 30.0, 100.0] {
+            for &p in &[0.001, 0.05, 0.5, 0.95, 0.999] {
+                let x = chisq_inv(p, df).unwrap();
+                assert!((chisq_cdf(x, df) - p).abs() < 1e-9, "df={df} p={p}");
+            }
+        }
+    }
+
+    #[test]
+    fn chisq_test_uses_table_degrees_of_freedom() {
+        // 3x2 table: df = (3-1)*(2-1) = 2. Excel: 0.000308192017008309
+        let actual = grid(&[&[58.0, 35.0], &[11.0, 25.0], &[10.0, 23.0]]);
+        let expected = grid(&[&[45.35, 47.65], &[17.56, 18.44], &[16.09, 16.91]]);
+        close(
+            call("CHISQ.TEST", Arc::new(ChisqTestFn), &[actual, expected]),
+            0.000308192017008309,
+            1e-12,
+        );
+        // Single row keeps n-1 degrees of freedom.
+        close(
+            call(
+                "CHISQ.TEST",
+                Arc::new(ChisqTestFn),
+                &[grid(&[&[18.0, 22.0]]), grid(&[&[20.0, 20.0]])],
+            ),
+            1.0 - chisq_cdf(0.2 + 0.2, 1.0), // (18-20)^2/20 + (22-20)^2/20, df = n-1
+            1e-12,
+        );
+        // Different shapes with the same cell count are #N/A.
+        is_err(
+            call(
+                "CHISQ.TEST",
+                Arc::new(ChisqTestFn),
+                &[grid(&[&[1.0, 2.0, 3.0, 4.0]]), grid(&[&[1.0, 2.0], &[3.0, 4.0]])],
+            ),
+            ExcelErrorKind::Na,
+        );
+    }
+
+    #[test]
+    fn z_test_default_sigma_is_sample_stdev() {
+        let data = grid(&[&[3.0, 6.0, 7.0, 8.0, 6.0, 5.0, 4.0, 2.0, 1.0, 9.0]]);
+        close(
+            call("Z.TEST", Arc::new(ZTestFn), &[data.clone(), num(4.0)]),
+            0.0905741968513638,
+            1e-12,
+        );
+        close(
+            call("Z.TEST", Arc::new(ZTestFn), &[data, num(6.0), num(3.0)]),
+            0.828609144426044, // Excel
+            1e-12,
+        );
+    }
+
+    #[test]
+    fn t_inv_2t_accepts_probabilities_up_to_two_like_excel() {
+        // Excel evaluates T.INV(1 - p/2, df) for 0 < p < 2 (oracle values).
+        close(call("T.INV.2T", Arc::new(TInv2TFn), &[num(1.0), num(10.0)]), 0.0, 1e-12);
+        close(call("T.INV.2T", Arc::new(TInv2TFn), &[num(1.5), num(10.0)]), -0.699812061312432, 1e-9);
+        close(call("T.INV.2T", Arc::new(TInv2TFn), &[num(1.99), num(10.0)]), -3.16927267261695, 1e-9);
+        for p in [0.0, 2.0, 2.5, -0.1] {
+            is_err(call("T.INV.2T", Arc::new(TInv2TFn), &[num(p), num(10.0)]), ExcelErrorKind::Num);
+        }
+    }
+
+    #[test]
+    fn confidence_t_size_one_is_div0() {
+        is_err(
+            call(
+                "CONFIDENCE.T",
+                Arc::new(ConfidenceTFn),
+                &[num(0.05), num(1.0), num(1.0)],
+            ),
+            ExcelErrorKind::Div,
+        );
+        is_err(
+            call(
+                "CONFIDENCE.T",
+                Arc::new(ConfidenceTFn),
+                &[num(0.05), num(1.0), num(0.0)],
+            ),
+            ExcelErrorKind::Num,
+        );
+        is_err(
+            call(
+                "CONFIDENCE.T",
+                Arc::new(ConfidenceTFn),
+                &[num(0.0), num(1.0), num(5.0)],
+            ),
+            ExcelErrorKind::Num,
+        );
+    }
+
+    #[test]
+    fn avedev_direct_text_is_value_error() {
+        is_err(
+            call(
+                "AVEDEV",
+                Arc::new(AvedevFn),
+                &[lit(LiteralValue::Text("x".into()))],
+            ),
+            ExcelErrorKind::Value,
+        );
+        close(
+            call("AVEDEV", Arc::new(AvedevFn), &[num(2.0), num(4.0), num(6.0)]),
+            4.0 / 3.0 * 1.0 + 0.0,
+            1e-12,
+        );
+        // Text inside an array/range is still skipped.
+        close(
+            call(
+                "AVEDEV",
+                Arc::new(AvedevFn),
+                &[lit(LiteralValue::Array(vec![vec![
+                    LiteralValue::Number(2.0),
+                    LiteralValue::Text("x".into()),
+                    LiteralValue::Number(4.0),
+                ]]))],
+            ),
+            1.0,
+            1e-12,
+        );
+    }
+
+    // MINIFS/MAXIFS reject a criteria range of a different size with #VALUE!. That
+    // rule is exercised end to end through real references by the Excel-verified
+    // corpus case b04-minifs-4 (array literals here are not references, which the
+    // bounded-reference guard deliberately skips).
 }

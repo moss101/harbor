@@ -349,24 +349,26 @@ impl Function for BitLShiftFn {
             other => coerce_num(&other)? as i32,
         };
 
+        // Excel rejects any shift magnitude above 53 with #NUM! (in both directions),
+        // before looking at the value being shifted.
+        if shift.unsigned_abs() > 53 {
+            return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
+                ExcelError::new_num(),
+            )));
+        }
+
         // Negative shift means right shift
         let result = if shift >= 0 {
-            if shift >= 48 {
-                return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
-                    ExcelError::new_num(),
-                )));
-            }
-            let shifted = n << shift;
-            // Check if result exceeds 48-bit limit
+            // i128 so `n << 53` cannot wrap before the 2^48 overflow check.
+            let shifted = (n as i128) << shift;
             if shifted >= 281474976710656 {
                 return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
                     ExcelError::new_num(),
                 )));
             }
-            shifted
+            shifted as i64
         } else {
-            let rshift = (-shift) as u32;
-            if rshift >= 48 { 0 } else { n >> rshift }
+            n >> (-shift) as u32
         };
 
         Ok(crate::traits::CalcValue::Scalar(LiteralValue::Number(
@@ -383,7 +385,7 @@ impl Function for BitLShiftFn {
 ///
 /// # Remarks
 /// - `number` must be a whole number in `[0, 2^48)`.
-/// - Shift values are numerically coerced; large right shifts return `0`.
+/// - Shift values are numerically coerced; right shifts of 48 to 53 bits return `0` and any shift magnitude above 53 returns `#NUM!`.
 /// - Negative shifts that overflow the 48-bit limit return `#NUM!`.
 ///
 /// # Examples
@@ -451,24 +453,26 @@ impl Function for BitRShiftFn {
             other => coerce_num(&other)? as i32,
         };
 
+        // Excel rejects any shift magnitude above 53 with #NUM! (BITRSHIFT(4,54) is
+        // #NUM!, not 0); right shifts of 48..=53 still just shift every bit out.
+        if shift.unsigned_abs() > 53 {
+            return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
+                ExcelError::new_num(),
+            )));
+        }
+
         // Negative shift means left shift
         let result = if shift >= 0 {
-            if shift >= 48 { 0 } else { n >> shift }
+            n >> shift
         } else {
-            let lshift = (-shift) as u32;
-            if lshift >= 48 {
-                return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
-                    ExcelError::new_num(),
-                )));
-            }
-            let shifted = n << lshift;
+            let shifted = (n as i128) << (-shift) as u32;
             // Check if result exceeds 48-bit limit
             if shifted >= 281474976710656 {
                 return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
                     ExcelError::new_num(),
                 )));
             }
-            shifted
+            shifted as i64
         };
 
         Ok(crate::traits::CalcValue::Scalar(LiteralValue::Number(
@@ -2846,6 +2850,45 @@ fn clean_float(val: f64) -> f64 {
     }
 }
 
+/// Render one real/imaginary coefficient the way Excel's IM* functions do: 15
+/// significant digits, trailing zeros trimmed, and `E+nn` / `E-nn` (at least two
+/// exponent digits) once the decimal exponent is below -4 or at least 15 -- the
+/// same switch Excel makes when converting a number to text. Rust's `{}` would
+/// print the 17 digits needed for an exact round trip instead.
+fn fmt_num15(x: f64) -> String {
+    if x == 0.0 || !x.is_finite() {
+        return format!("{}", x);
+    }
+    let sci = format!("{:.14e}", x.abs());
+    let (mant, exp) = sci.split_once('e').unwrap_or((sci.as_str(), "0"));
+    let exp10: i32 = exp.parse().unwrap_or(0);
+    let mut digits: String = mant.chars().filter(|c| *c != '.').collect();
+    while digits.len() > 1 && digits.ends_with('0') {
+        digits.pop();
+    }
+    let sign = if x < 0.0 { "-" } else { "" };
+    if !(-4..15).contains(&exp10) {
+        let m = if digits.len() > 1 {
+            format!("{}.{}", &digits[..1], &digits[1..])
+        } else {
+            digits
+        };
+        let esign = if exp10 < 0 { '-' } else { '+' };
+        return format!("{sign}{m}E{esign}{:02}", exp10.abs());
+    }
+    if exp10 < 0 {
+        let zeros = "0".repeat((-exp10 - 1) as usize);
+        return format!("{sign}0.{zeros}{digits}");
+    }
+    let int_len = exp10 as usize + 1;
+    if digits.len() <= int_len {
+        let zeros = "0".repeat(int_len - digits.len());
+        format!("{sign}{digits}{zeros}")
+    } else {
+        format!("{sign}{}.{}", &digits[..int_len], &digits[int_len..])
+    }
+}
+
 /// Format a complex number as a string
 fn format_complex(real: f64, imag: f64, suffix: char) -> String {
     // Clean up floating point noise
@@ -2865,7 +2908,7 @@ fn format_complex(real: f64, imag: f64, suffix: char) -> String {
         if real == real.trunc() && real.abs() < 1e15 {
             return format!("{}", real as i64);
         }
-        return format!("{}", real);
+        return fmt_num15(real);
     }
 
     if real_is_zero {
@@ -2879,14 +2922,14 @@ fn format_complex(real: f64, imag: f64, suffix: char) -> String {
         if imag == imag.trunc() && imag.abs() < 1e15 {
             return format!("{}{}", imag as i64, suffix);
         }
-        return format!("{}{}", imag, suffix);
+        return format!("{}{}", fmt_num15(imag), suffix);
     }
 
     // Both parts are non-zero
     let real_str = if real == real.trunc() && real.abs() < 1e15 {
         format!("{}", real as i64)
     } else {
-        format!("{}", real)
+        fmt_num15(real)
     };
 
     let imag_str = if (imag - 1.0).abs() < 1e-15 {
@@ -2897,12 +2940,12 @@ fn format_complex(real: f64, imag: f64, suffix: char) -> String {
         if imag == imag.trunc() && imag.abs() < 1e15 {
             format!("+{}{}", imag as i64, suffix)
         } else {
-            format!("+{}{}", imag, suffix)
+            format!("+{}{}", fmt_num15(imag), suffix)
         }
     } else if imag == imag.trunc() && imag.abs() < 1e15 {
         format!("{}{}", imag as i64, suffix)
     } else {
-        format!("{}{}", imag, suffix)
+        format!("{}{}", fmt_num15(imag), suffix)
     };
 
     format!("{}{}", real_str, imag_str)
@@ -3428,17 +3471,24 @@ impl Function for ImConjugateFn {
     }
 }
 
-/// Helper to check if two complex numbers have compatible suffixes
-fn check_suffix_compatibility(s1: char, s2: char) -> Result<char, ExcelError> {
-    // If both have the same suffix, use it
-    // If one is from a purely real number (default 'i'), use the other's suffix
-    // Excel doesn't allow mixing 'i' and 'j' when both are explicit
-    if s1 == s2 {
-        Ok(s1)
-    } else {
-        // For simplicity, treat 'i' as the default and allow mixed
-        // In strict Excel mode, this would error
-        Ok(s1)
+/// The imaginary-unit suffix actually written in `s`, if any. A purely real
+/// input such as "2" carries no suffix (parse_complex reports a default 'i').
+fn explicit_suffix(s: &str) -> Option<char> {
+    match s.trim().chars().last() {
+        Some('i') | Some('I') => Some('i'),
+        Some('j') | Some('J') => Some('j'),
+        _ => None,
+    }
+}
+
+/// Combine the suffix accumulated so far with the next operand's explicit suffix.
+/// Excel rejects mixing "i" and "j" operands with #VALUE!; a purely real operand
+/// has no suffix and is compatible with either.
+fn merge_suffix(acc: Option<char>, next: Option<char>) -> Result<Option<char>, ExcelError> {
+    match (acc, next) {
+        (Some(a), Some(b)) if a != b => Err(ExcelError::new_value()),
+        (Some(a), _) => Ok(Some(a)),
+        (None, b) => Ok(b),
     }
 }
 
@@ -3505,8 +3555,7 @@ impl Function for ImSumFn {
     ) -> Result<crate::traits::CalcValue<'b>, ExcelError> {
         let mut sum_real = 0.0;
         let mut sum_imag = 0.0;
-        let mut result_suffix = 'i';
-        let mut first = true;
+        let mut result_suffix: Option<char> = None;
 
         for arg in args {
             let inumber = match arg.value()?.into_literal() {
@@ -3519,23 +3568,22 @@ impl Function for ImSumFn {
                 },
             };
 
-            let (real, imag, suffix) = match parse_complex(&inumber) {
+            let (real, imag, _) = match parse_complex(&inumber) {
                 Ok(c) => c,
                 Err(e) => return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(e))),
             };
 
-            if first {
-                result_suffix = suffix;
-                first = false;
-            } else {
-                result_suffix = check_suffix_compatibility(result_suffix, suffix)?;
-            }
+            // Mixed i/j operands are #VALUE! in Excel.
+            result_suffix = match merge_suffix(result_suffix, explicit_suffix(&inumber)) {
+                Ok(s) => s,
+                Err(e) => return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(e))),
+            };
 
             sum_real += real;
             sum_imag += imag;
         }
 
-        let result = format_complex(sum_real, sum_imag, result_suffix);
+        let result = format_complex(sum_real, sum_imag, result_suffix.unwrap_or('i'));
         Ok(crate::traits::CalcValue::Scalar(LiteralValue::Text(result)))
     }
 }
@@ -3628,7 +3676,11 @@ impl Function for ImSubFn {
             Err(e) => return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(e))),
         };
 
-        let result_suffix = check_suffix_compatibility(suffix1, suffix2)?;
+        let _ = (suffix1, suffix2);
+        let result_suffix = match merge_suffix(explicit_suffix(&inumber1), explicit_suffix(&inumber2)) {
+            Ok(s) => s.unwrap_or('i'),
+            Err(e) => return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(e))),
+        };
         let result = format_complex(real1 - real2, imag1 - imag2, result_suffix);
         Ok(crate::traits::CalcValue::Scalar(LiteralValue::Text(result)))
     }
@@ -3697,7 +3749,7 @@ impl Function for ImProductFn {
     ) -> Result<crate::traits::CalcValue<'b>, ExcelError> {
         let mut prod_real = 1.0;
         let mut prod_imag = 0.0;
-        let mut result_suffix = 'i';
+        let mut seen_suffix: Option<char> = None;
         let mut first = true;
 
         for arg in args {
@@ -3711,18 +3763,22 @@ impl Function for ImProductFn {
                 },
             };
 
-            let (real, imag, suffix) = match parse_complex(&inumber) {
+            let (real, imag, _) = match parse_complex(&inumber) {
                 Ok(c) => c,
                 Err(e) => return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(e))),
             };
 
+            // Mixed i/j operands are #VALUE! in Excel.
+            seen_suffix = match merge_suffix(seen_suffix, explicit_suffix(&inumber)) {
+                Ok(s) => s,
+                Err(e) => return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(e))),
+            };
+
             if first {
-                result_suffix = suffix;
                 prod_real = real;
                 prod_imag = imag;
                 first = false;
             } else {
-                result_suffix = check_suffix_compatibility(result_suffix, suffix)?;
                 // (a + bi) * (c + di) = (ac - bd) + (ad + bc)i
                 let new_real = prod_real * real - prod_imag * imag;
                 let new_imag = prod_real * imag + prod_imag * real;
@@ -3731,7 +3787,7 @@ impl Function for ImProductFn {
             }
         }
 
-        let result = format_complex(prod_real, prod_imag, result_suffix);
+        let result = format_complex(prod_real, prod_imag, seen_suffix.unwrap_or('i'));
         Ok(crate::traits::CalcValue::Scalar(LiteralValue::Text(result)))
     }
 }
@@ -3742,7 +3798,7 @@ impl Function for ImProductFn {
 ///
 /// # Remarks
 /// - Inputs are coerced to complex-number text before parsing.
-/// - Returns `#DIV/0!` when the divisor is `0+0i`.
+/// - Returns `#NUM!` when the divisor is `0+0i` (as Excel does).
 /// - Invalid complex text returns `#NUM!`.
 ///
 /// # Examples
@@ -3755,7 +3811,7 @@ impl Function for ImProductFn {
 /// ```yaml,sandbox
 /// title: "Division by zero complex"
 /// formula: "=IMDIV(\"2+i\",\"0\")"
-/// expected: "#DIV/0!"
+/// expected: "#NUM!"
 /// ```
 /// ```yaml,docs
 /// related:
@@ -3763,8 +3819,8 @@ impl Function for ImProductFn {
 ///   - IMSUB
 ///   - IMCONJUGATE
 /// faq:
-///   - q: "When does `IMDIV` return `#DIV/0!`?"
-///     a: "If the divisor is `0+0i` (denominator magnitude near zero), division is undefined and returns `#DIV/0!`."
+///   - q: "When does `IMDIV` return `#NUM!`?"
+///     a: "If the divisor is `0+0i` (denominator magnitude near zero), division is undefined and returns `#NUM!`."
 /// ```
 #[derive(Debug)]
 pub struct ImDivFn;
@@ -3824,15 +3880,20 @@ impl Function for ImDivFn {
             Err(e) => return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(e))),
         };
 
-        // Division by zero check - returns #DIV/0! for Excel compatibility
+        let _ = (suffix1, suffix2);
+        // Mixed i/j operands are #VALUE! in Excel (checked before the zero divisor).
+        let result_suffix = match merge_suffix(explicit_suffix(&inumber1), explicit_suffix(&inumber2)) {
+            Ok(s) => s.unwrap_or('i'),
+            Err(e) => return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(e))),
+        };
+
+        // Excel returns #NUM! (not #DIV/0!) when dividing a complex number by zero.
         let denom = c * c + d * d;
         if denom.abs() < 1e-15 {
             return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
-                ExcelError::new_div(),
+                ExcelError::new_num(),
             )));
         }
-
-        let result_suffix = check_suffix_compatibility(suffix1, suffix2)?;
 
         // (a + bi) / (c + di) = ((ac + bd) + (bc - ad)i) / (c^2 + d^2)
         let real = (a * c + b * d) / denom;
@@ -4985,6 +5046,14 @@ impl Function for ImTanFn {
         _ctx: &dyn FunctionContext<'b>,
     ) -> Result<crate::traits::CalcValue<'b>, ExcelError> {
         eval_complex_unary(args, |a, b, suffix| {
+            // tan(a+bi) = (sin 2a + i sinh 2b) / (cos 2a + cosh 2b). This double-angle
+            // form avoids the cancellation of the tan/tanh product form, which
+            // loses the low digits of a tiny real part (Excel's 15 digits show them).
+            let denom = (2.0 * a).cos() + (2.0 * b).cosh();
+            if denom.is_finite() {
+                return Ok(((2.0 * a).sin() / denom, (2.0 * b).sinh() / denom, suffix));
+            }
+            // |b| so large that cosh overflows: fall back to the saturating form.
             let tan_a = a.tan();
             let tanh_b = b.tanh();
             let denom = 1.0 + tan_a * tan_a * tanh_b * tanh_b;
@@ -5051,6 +5120,12 @@ impl Function for ImCotFn {
             }
             if b == 0.0 {
                 return Ok((1.0 / a.tan(), 0.0, suffix));
+            }
+            // cot(a+bi) = (sin 2a - i sinh 2b) / (cosh 2b - cos 2a); same
+            // cancellation-free reasoning as IMTAN.
+            let denom = (2.0 * b).cosh() - (2.0 * a).cos();
+            if denom.is_finite() && denom != 0.0 {
+                return Ok(((2.0 * a).sin() / denom, -(2.0 * b).sinh() / denom, suffix));
             }
             let cot_a = 1.0 / a.tan();
             let coth_b = 1.0 / b.tanh();
@@ -5416,6 +5491,12 @@ mod tests {
             .with_function(Arc::new(ImSechFn))
             .with_function(Arc::new(ImSinhFn))
             .with_function(Arc::new(ImTanFn))
+            .with_function(Arc::new(ImDivFn))
+            .with_function(Arc::new(ImSumFn))
+            .with_function(Arc::new(ImSubFn))
+            .with_function(Arc::new(ImProductFn))
+            .with_function(Arc::new(BitLShiftFn))
+            .with_function(Arc::new(BitRShiftFn))
             .with_function(Arc::new(ValueFn));
         let interp = wb.interpreter();
         let ast = parse(formula).expect("parse");
@@ -5520,5 +5601,82 @@ mod tests {
         }
         let pole = eval("=IMCSC(\"0\")");
         assert!(matches!(pole, LiteralValue::Error(e) if e.kind == ExcelErrorKind::Num));
+    }
+
+    #[test]
+    fn complex_parts_format_with_fifteen_significant_digits() {
+        // Excel prints each part with 15 significant digits, trailing zeros trimmed.
+        assert_eq!(fmt_num15(-13.128783081462158), "-13.1287830814622");
+        assert_eq!(fmt_num15(0.1), "0.1");
+        assert_eq!(fmt_num15(2.5), "2.5");
+        assert_eq!(fmt_num15(100.0), "100");
+        assert_eq!(fmt_num15(-0.000187587737983659), "-0.000187587737983659");
+        // Exponent form with two-digit exponent, as Excel writes it.
+        assert_eq!(fmt_num15(1.2246467991473532e-16), "1.22464679914735E-16");
+        assert_eq!(fmt_num15(0.00001), "1E-05");
+        assert_eq!(fmt_num15(1e15), "1E+15");
+        assert_eq!(fmt_num15(1.5e20), "1.5E+20");
+        assert_eq!(fmt_num15(123456789012345.0), "123456789012345");
+        assert_eq!(
+            format_complex(-13.128783081462158, -15.20078446306795, 'i'),
+            "-13.1287830814622-15.200784463068i"
+        );
+        assert_eq!(format_complex(3.0, 4.0, 'i'), "3+4i");
+        assert_eq!(format_complex(0.5, -1.0, 'j'), "0.5-j");
+    }
+
+    #[test]
+    fn imtan_imcot_keep_tiny_real_part_digits() {
+        assert_eq!(
+            eval("=IMTAN(\"3+4i\")"),
+            LiteralValue::Text("-0.000187346204629478+0.999355987381473i".into())
+        );
+        assert_eq!(
+            eval("=IMCOT(\"3+4i\")"),
+            LiteralValue::Text("-0.000187587737983659-1.00064439247156i".into())
+        );
+    }
+
+    #[test]
+    fn imdiv_by_zero_is_num_and_mixed_suffixes_are_value() {
+        assert!(
+            matches!(eval("=IMDIV(\"1+i\",\"0\")"), LiteralValue::Error(e) if e.kind == ExcelErrorKind::Num)
+        );
+        assert_eq!(
+            eval("=IMDIV(\"1+i\",\"2\")"),
+            LiteralValue::Text("0.5+0.5i".into())
+        );
+        assert!(
+            matches!(eval("=IMSUM(\"1+i\",\"2\",\"3j\")"), LiteralValue::Error(e) if e.kind == ExcelErrorKind::Value)
+        );
+        assert!(
+            matches!(eval("=IMSUB(\"1+i\",\"2j\")"), LiteralValue::Error(e) if e.kind == ExcelErrorKind::Value)
+        );
+        assert!(
+            matches!(eval("=IMPRODUCT(\"1+i\",\"2j\")"), LiteralValue::Error(e) if e.kind == ExcelErrorKind::Value)
+        );
+        assert!(
+            matches!(eval("=IMDIV(\"1+i\",\"2j\")"), LiteralValue::Error(e) if e.kind == ExcelErrorKind::Value)
+        );
+        // A purely real operand is compatible with either suffix and does not force "i".
+        assert_eq!(eval("=IMSUM(\"1\",\"2j\")"), LiteralValue::Text("1+2j".into()));
+        assert_eq!(
+            eval("=IMSUM(\"3+4i\",\"5-3i\")"),
+            LiteralValue::Text("8+i".into())
+        );
+    }
+
+    #[test]
+    fn bit_shifts_reject_magnitude_above_53() {
+        let num = |f: &str| matches!(eval(f), LiteralValue::Error(e) if e.kind == ExcelErrorKind::Num);
+        assert!(num("=BITRSHIFT(4,54)"));
+        assert!(num("=BITRSHIFT(4,-54)"));
+        assert!(num("=BITLSHIFT(4,54)"));
+        assert!(num("=BITLSHIFT(4,-54)"));
+        assert_eq!(eval("=BITRSHIFT(4,53)"), LiteralValue::Number(0.0));
+        assert_eq!(eval("=BITRSHIFT(13,2)"), LiteralValue::Number(3.0));
+        assert_eq!(eval("=BITLSHIFT(4,2)"), LiteralValue::Number(16.0));
+        assert_eq!(eval("=BITLSHIFT(1024,-10)"), LiteralValue::Number(1.0));
+        assert!(num("=BITLSHIFT(1,48)"));
     }
 }

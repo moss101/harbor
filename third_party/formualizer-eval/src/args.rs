@@ -95,6 +95,12 @@ pub struct ValidationOptions {
 
 // Legacy adapter removed in clean break.
 
+/// Parse the numeric part of a criterion. Rust's `f64::from_str` also accepts "inf"/"NaN"; those
+/// are text in Excel, so only finite values count.
+fn finite_number(s: &str) -> Option<f64> {
+    s.parse::<f64>().ok().filter(|n| n.is_finite())
+}
+
 pub fn parse_criteria(v: &LiteralValue) -> Result<CriteriaPredicate, ExcelError> {
     match v {
         LiteralValue::Text(s) => {
@@ -115,7 +121,7 @@ pub fn parse_criteria(v: &LiteralValue) -> Result<CriteriaPredicate, ExcelError>
                 if let Some(rhs) = s_trim.strip_prefix(op) {
                     let rhs_trim = rhs.trim();
                     // Try numeric parse for comparisons
-                    if let Ok(n) = rhs_trim.parse::<f64>() {
+                    if let Some(n) = finite_number(rhs_trim) {
                         return Ok(match *op {
                             ">=" => CriteriaPredicate::Ge(n),
                             "<=" => CriteriaPredicate::Le(n),
@@ -142,6 +148,15 @@ pub fn parse_criteria(v: &LiteralValue) -> Result<CriteriaPredicate, ExcelError>
 
             let plain = unquote(s_trim);
 
+            // A bare numeric criterion ("3") is the same as "=3" in Excel: it matches number
+            // cells equal to 3 AND text cells reading as 3. Unquoted only: a quoted \"3\" stays
+            // textual. Non-finite spellings ("inf", "NaN") are ordinary text.
+            if plain.len() == s_trim.len()
+                && let Some(n) = finite_number(&plain)
+            {
+                return Ok(CriteriaPredicate::Eq(LiteralValue::Number(n)));
+            }
+
             // Wildcards * or ? => TextLike
             if plain.contains('*') || plain.contains('?') {
                 return Ok(CriteriaPredicate::TextLike {
@@ -159,7 +174,10 @@ pub fn parse_criteria(v: &LiteralValue) -> Result<CriteriaPredicate, ExcelError>
             // Plain text equality
             Ok(CriteriaPredicate::Eq(LiteralValue::Text(plain)))
         }
-        LiteralValue::Empty => Ok(CriteriaPredicate::IsBlank),
+        // A criterion that comes from an empty cell is the number 0 in Excel
+        // (COUNTIF(r, blank_cell) counts the zeros, not the blanks); `""` / `"="`
+        // are the spellings that match blanks.
+        LiteralValue::Empty => Ok(CriteriaPredicate::Eq(LiteralValue::Number(0.0))),
         LiteralValue::Number(n) => Ok(CriteriaPredicate::Eq(LiteralValue::Number(*n))),
         // Normalize integer criteria to Number for Excel-style numeric coercions
         // (e.g. blank == 0, numeric text == number, etc.)
@@ -358,4 +376,32 @@ pub fn validate_and_prepare<'a, 'b>(
     }
 
     Ok(PreparedArgs { items })
+}
+
+#[cfg(test)]
+mod parse_criteria_tests {
+    use super::*;
+
+    fn p(s: &str) -> CriteriaPredicate {
+        parse_criteria(&LiteralValue::Text(s.into())).unwrap()
+    }
+
+    #[test]
+    fn bare_number_is_numeric_equality_like_equals_form() {
+        // Excel: "3" and "=3" are the same criterion (matches number 3 and text "3").
+        assert!(matches!(p("3"), CriteriaPredicate::Eq(LiteralValue::Number(n)) if n == 3.0));
+        assert!(matches!(p("=3"), CriteriaPredicate::Eq(LiteralValue::Number(n)) if n == 3.0));
+        assert!(matches!(p("-2.5"), CriteriaPredicate::Eq(LiteralValue::Number(n)) if n == -2.5));
+        assert!(matches!(p("<>3"), CriteriaPredicate::Ne(LiteralValue::Number(n)) if n == 3.0));
+    }
+
+    #[test]
+    fn non_numeric_bare_criteria_stay_text() {
+        assert!(matches!(p("x"), CriteriaPredicate::Eq(LiteralValue::Text(ref t)) if t == "x"));
+        assert!(matches!(p("inf"), CriteriaPredicate::Eq(LiteralValue::Text(_))));
+        assert!(matches!(p("NaN"), CriteriaPredicate::Eq(LiteralValue::Text(_))));
+        assert!(matches!(p(""), CriteriaPredicate::Eq(LiteralValue::Text(ref t)) if t.is_empty()));
+        assert!(matches!(p("="), CriteriaPredicate::Eq(LiteralValue::Text(ref t)) if t.is_empty()));
+        assert!(matches!(p("*"), CriteriaPredicate::TextLike { .. }));
+    }
 }

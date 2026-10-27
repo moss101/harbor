@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:harbor_native/harbor_ffi.dart' as ffi;
+import 'package:harbor_ui/deck_designer.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -15,6 +16,7 @@ import '../services/open_intake.dart';
 import '../services/preferences.dart' show RecentFile;
 import 'work/deck_view.dart';
 import 'work/document_view.dart';
+import 'work/deck_designer_labels.dart';
 import 'work/pdf_view.dart';
 import 'save_destination.dart';
 import 'work/workbook_view.dart';
@@ -66,8 +68,7 @@ class _WorkSurfaceState extends State<WorkSurface> {
     // A document delivered by the platform waits until the core is up
     // (a cold "Open in…" arrives before bootstrap finishes).
     final request = state.pendingOpen;
-    if (request != null &&
-        HarborServiceProvider.of(context).notifier != null) {
+    if (request != null && HarborServiceProvider.of(context).notifier != null) {
       state.pendingOpen = null;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _openDelivered(request);
@@ -103,7 +104,8 @@ class _WorkSurfaceState extends State<WorkSurface> {
     try {
       bytes = await File(path).readAsBytes();
     } catch (_) {
-      messenger.showSnackBar(SnackBar(content: Text(l10n.workRecentFailed(name))));
+      messenger
+          .showSnackBar(SnackBar(content: Text(l10n.workRecentFailed(name))));
       return;
     }
     setState(() => _showParts = false);
@@ -159,12 +161,10 @@ class _WorkSurfaceState extends State<WorkSurface> {
         asDeckExt = asDeck ? 'pptx' : 'docx';
         bytes = asDeck
             ? await service.markdownToPptx(await file.readAsString())
-            : await service.convertMarkdownToDocx(
-                await file.readAsString(),
+            : await service.convertMarkdownToDocx(await file.readAsString(),
                 title: baseName);
       }
-      final targetExt =
-          lower.endsWith('.pdf') ? 'docx' : (asDeckExt ?? 'docx');
+      final targetExt = lower.endsWith('.pdf') ? 'docx' : (asDeckExt ?? 'docx');
       await service.loadPreviewFromBytes(bytes, name: '$baseName.$targetExt');
       final dest = await _saveConvertedCopy('$baseName.$targetExt', bytes);
       if (mounted && dest != null) {
@@ -199,9 +199,7 @@ class _WorkSurfaceState extends State<WorkSurface> {
   Future<void> _newWorkbook() async {
     final l10n = AppLocalizations.of(context)!;
     await _createAndOffer(
-      bytes: await HarborServiceProvider.of(context)
-          .notifier!
-          .createWorkbook(),
+      bytes: await HarborServiceProvider.of(context).notifier!.createWorkbook(),
       name: '${l10n.workUntitledSheet}.xlsx',
       previewName: l10n.workUntitledSheet,
     );
@@ -217,6 +215,28 @@ class _WorkSurfaceState extends State<WorkSurface> {
           .createDocument(title: name),
       name: '$name.docx',
       previewName: name,
+    );
+  }
+
+  /// New presentation: the designer sheet (purpose, design, palette,
+  /// motion, language) builds a starter deck through the core; the deck is
+  /// previewed and a save location is offered like any new file.
+  Future<void> _newPresentation() async {
+    final service = HarborServiceProvider.of(context).notifier;
+    if (service == null) return;
+    final state = AppStateScope.maybeOf(context);
+    final result = await NewPresentationSheet.show(
+      context,
+      designer: service,
+      labels: deckDesignerLabels(AppLocalizations.of(context)!),
+      initial: state?.deckDesign ?? const DeckDesignPrefs(),
+      onRemember: state?.setDeckDesign,
+    );
+    if (result == null || !mounted) return;
+    await _createAndOffer(
+      bytes: result.bytes,
+      name: result.fileName,
+      previewName: result.fileName,
     );
   }
 
@@ -279,8 +299,8 @@ class _WorkSurfaceState extends State<WorkSurface> {
       }
       if (!mounted) return;
       if (!sent) {
-        messenger.showSnackBar(
-            SnackBar(content: Text(l10n.workPrintUnavailable)));
+        messenger
+            .showSnackBar(SnackBar(content: Text(l10n.workPrintUnavailable)));
       }
     } on ffi.HarborCoreException catch (e) {
       if (mounted) {
@@ -305,8 +325,8 @@ class _WorkSurfaceState extends State<WorkSurface> {
       final dest = await _saveConvertedCopy('$base.pdf', bytes);
       if (mounted && dest != null) {
         messenger.showSnackBar(SnackBar(
-            content:
-                Text(l10n.workExportedPdf(dest.split(Platform.pathSeparator).last))));
+            content: Text(l10n
+                .workExportedPdf(dest.split(Platform.pathSeparator).last))));
       }
     } on ffi.HarborCoreException catch (e) {
       if (mounted) {
@@ -334,8 +354,8 @@ class _WorkSurfaceState extends State<WorkSurface> {
       final dest = await _saveConvertedCopy('$base.pdf', bytes);
       if (mounted && dest != null) {
         messenger.showSnackBar(SnackBar(
-            content:
-                Text(l10n.workExportedPdf(dest.split(Platform.pathSeparator).last))));
+            content: Text(l10n
+                .workExportedPdf(dest.split(Platform.pathSeparator).last))));
       }
     } on ffi.HarborCoreException catch (e) {
       if (mounted) {
@@ -360,8 +380,9 @@ class _WorkSurfaceState extends State<WorkSurface> {
       if (dest != null) {
         _recordRecent(name, dest);
         await service.markSaved();
-        messenger.showSnackBar(
-            SnackBar(content: Text(l10n.workSavedCopy(dest.split(Platform.pathSeparator).last))));
+        messenger.showSnackBar(SnackBar(
+            content: Text(
+                l10n.workSavedCopy(dest.split(Platform.pathSeparator).last))));
       }
     } on ffi.HarborCoreException catch (e) {
       if (mounted) {
@@ -377,12 +398,14 @@ class _WorkSurfaceState extends State<WorkSurface> {
         ? 'workbook'
         : name.toLowerCase().endsWith('.pdf')
             ? 'pdf'
-            : 'docx';
+            : name.toLowerCase().endsWith('.pptx')
+                ? 'deck'
+                : 'docx';
     final now = DateTime.now();
     final at =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-    AppStateScope.of(context).addRecentFile(
-        RecentFile(name: name, path: path, kind: kind, at: at));
+    AppStateScope.of(context)
+        .addRecentFile(RecentFile(name: name, path: path, kind: kind, at: at));
   }
 
   /// Reopen a recent file: bytes are read honestly (a path the system no
@@ -500,11 +523,19 @@ class _WorkSurfaceState extends State<WorkSurface> {
             // The empty state carries the primary "Open file" call to
             // action; the header offers it once a file is open.
             if (service != null && !sp.failed && preview != null)
-              OutlinedButton.icon(
-                onPressed: service.previewLoading ? null : _openFile,
-                icon: const Icon(Icons.folder_open_outlined, size: 16),
-                label: Text(l10n.openFile),
-              ),
+              compact
+                  // A labelled button does not fit beside the other header
+                  // actions on a phone and pushes the close button off screen.
+                  ? IconButton(
+                      tooltip: l10n.openFile,
+                      onPressed: service.previewLoading ? null : _openFile,
+                      icon: const Icon(Icons.folder_open_outlined, size: 18),
+                    )
+                  : OutlinedButton.icon(
+                      onPressed: service.previewLoading ? null : _openFile,
+                      icon: const Icon(Icons.folder_open_outlined, size: 16),
+                      label: Text(l10n.openFile),
+                    ),
             if (preview != null)
               IconButton(
                 tooltip: l10n.workCloseFile,
@@ -522,36 +553,48 @@ class _WorkSurfaceState extends State<WorkSurface> {
         if (preview != null && preserved.isNotEmpty)
           Padding(
             padding: EdgeInsets.fromLTRB(gutter, 0, gutter, HarborSpace.s3),
-            child: HarborBanner(
-              tone: HarborBannerTone.warning,
-              dense: true,
-              title: l10n.workCompatibilityTitle,
-              body: l10n.workCompatibilityBody(preserved.length),
-              action: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextButton(
-                    onPressed: () => setState(() => _showParts = !_showParts),
-                    child: Text(_showParts
-                        ? l10n.workCompatibilityHide
-                        : l10n.workCompatibilityShow),
-                  ),
-                  if (_showParts)
-                    Wrap(
-                      spacing: HarborSpace.s2,
-                      runSpacing: HarborSpace.s1,
+            // On a phone the stacked notice would push the document below
+            // the fold: one line until opened.
+            child: (compact && !_showParts)
+                ? HarborBanner(
+                    tone: HarborBannerTone.warning,
+                    oneLine: true,
+                    title: l10n.workCompatibilityTitle,
+                    body: l10n.workCompatibilityBody(preserved.length),
+                    actionLabel: l10n.workCompatibilityShow,
+                    onAction: () => setState(() => _showParts = true),
+                  )
+                : HarborBanner(
+                    tone: HarborBannerTone.warning,
+                    dense: true,
+                    title: l10n.workCompatibilityTitle,
+                    body: l10n.workCompatibilityBody(preserved.length),
+                    action: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        for (final p in preserved)
-                          Tooltip(
-                            message: p.$2,
-                            child: HarborPill(p.$1,
-                                icon: Icons.inventory_2_outlined),
+                        TextButton(
+                          onPressed: () =>
+                              setState(() => _showParts = !_showParts),
+                          child: Text(_showParts
+                              ? l10n.workCompatibilityHide
+                              : l10n.workCompatibilityShow),
+                        ),
+                        if (_showParts)
+                          Wrap(
+                            spacing: HarborSpace.s2,
+                            runSpacing: HarborSpace.s1,
+                            children: [
+                              for (final p in preserved)
+                                Tooltip(
+                                  message: p.$2,
+                                  child: HarborPill(p.$1,
+                                      icon: Icons.inventory_2_outlined),
+                                ),
+                            ],
                           ),
                       ],
                     ),
-                ],
-              ),
-            ),
+                  ),
           ),
         Expanded(
           child: Builder(builder: (context) {
@@ -598,6 +641,12 @@ class _WorkSurfaceState extends State<WorkSurface> {
                         icon: const Icon(Icons.description_outlined, size: 18),
                         label: Text(l10n.workNewDocument),
                       ),
+                      OutlinedButton.icon(
+                        key: const ValueKey('work-new-presentation'),
+                        onPressed: _newPresentation,
+                        icon: const Icon(Icons.slideshow_outlined, size: 18),
+                        label: Text(l10n.workNewPresentation),
+                      ),
                     ],
                   ),
                   if (AppStateScope.of(context).recentFiles.isNotEmpty) ...[
@@ -624,7 +673,9 @@ class _WorkSurfaceState extends State<WorkSurface> {
                                 ? Icons.table_chart_outlined
                                 : r.kind == 'pdf'
                                     ? Icons.picture_as_pdf_outlined
-                                    : Icons.description_outlined,
+                                    : r.kind == 'deck'
+                                        ? Icons.slideshow_outlined
+                                        : Icons.description_outlined,
                             size: 20),
                         onTap: () => _openRecent(r),
                       ),
@@ -663,17 +714,26 @@ class _WorkSurfaceState extends State<WorkSurface> {
               'pdf' => PdfView(preview: map),
               _ => DeckView(preview: map),
             };
-            if (service.draftRestored) {
-              return Column(children: [
-                HarborBanner(
-                  tone: HarborBannerTone.info,
-                  icon: Icons.history,
-                  title: l10n.workDraftRestored(service.draftName ?? ''),
-                ),
-                Expanded(child: body),
-              ]);
-            }
-            return body;
+            // One fixed shape whether or not the banner shows: the document
+            // below keeps GlobalKeys, and moving it between a bare body and
+            // a Column re-parents it mid-rebuild (a framework assertion in
+            // debug builds right after the first edit).
+            return Column(children: [
+              if (service.draftRestored)
+                Padding(
+                  padding:
+                      EdgeInsets.fromLTRB(gutter, 0, gutter, HarborSpace.s2),
+                  child: HarborBanner(
+                    tone: HarborBannerTone.info,
+                    dense: true,
+                    icon: Icons.history,
+                    title: l10n.workDraftRestored(service.draftName ?? ''),
+                  ),
+                )
+              else
+                const SizedBox.shrink(),
+              Expanded(child: body),
+            ]);
           }),
         ),
       ],

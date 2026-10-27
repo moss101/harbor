@@ -2,7 +2,7 @@
   "schema": "harbor.graph/v1",
   "id": "presentation-builder",
   "version": 1,
-  "description": "Turn notes into a new slide deck. The model writes the outline — one message per slide, short bullets, speaker notes; deck.verify_outline checks the slide count, one distinct title per slide, bullet counts and lengths, template text and that every number comes from the notes, and a failed check goes back to the model once with the problems listed. deck.build lays out the cover and content slides and proposes the file as a creation batch over the empty base; nothing is saved until the user approves. Improving an existing deck is Deck Review & QA.",
+  "description": "Turn notes into a new slide deck. The model writes the outline — one message per slide, short bullets, speaker notes; deck.verify_outline checks the slide count, one distinct title per slide, bullet counts and lengths, template text and that every number comes from the notes, and a failed check goes back to the model once with the problems listed. deck.build designs the deck — a theme and motion that suit its purpose, and a layout for each slide's content (stats, cards, timeline, comparison, ...) — and proposes the file as a creation batch over the empty base; nothing is saved until the user approves. Improving an existing deck is Deck Review & QA.",
   "inputs": {
     "type": "object",
     "properties": {
@@ -21,6 +21,92 @@
         "minimum": 2,
         "maximum": 10,
         "description": "Optional exact number of content slides (the cover is added)."
+      },
+      "purpose": {
+        "type": "string",
+        "enum": [
+          "pitch_deck",
+          "investor_update",
+          "annual_report",
+          "board",
+          "project_report",
+          "status_update",
+          "product_launch",
+          "quarterly_review",
+          "client_proposal",
+          "strategy",
+          "marketing_plan",
+          "training",
+          "workshop",
+          "case_study",
+          "all_hands",
+          "keynote",
+          "technical_review",
+          "impact_report",
+          "research",
+          "general"
+        ],
+        "description": "What the deck is for; sets the storyline, theme and motion."
+      },
+      "theme": {
+        "type": "string",
+        "enum": [
+          "harbor",
+          "aurora",
+          "ivory",
+          "slate",
+          "sunrise",
+          "obsidian",
+          "ocean",
+          "forest",
+          "midnight_gold",
+          "playground",
+          "mono",
+          "terracotta",
+          "royal",
+          "blueprint"
+        ],
+        "description": "Design: layout, shapes and typography (colour is the palette). The purpose picks one when omitted."
+      },
+      "motion": {
+        "type": "string",
+        "enum": [
+          "none",
+          "subtle",
+          "dynamic",
+          "cinematic"
+        ],
+        "description": "Slide transitions and animations; the purpose picks one when omitted."
+      },
+      "rtl": {
+        "type": "boolean",
+        "description": "Right-to-left deck (Arabic, Hebrew): mirrored layouts."
+      },
+      "palette": {
+        "type": "string",
+        "enum": [
+          "harbor",
+          "aurora",
+          "ivory",
+          "slate",
+          "sunrise",
+          "obsidian",
+          "ocean",
+          "forest",
+          "midnight",
+          "playground",
+          "mono",
+          "terracotta",
+          "royal",
+          "blueprint",
+          "graphite",
+          "rose",
+          "mint",
+          "sand",
+          "indigo",
+          "ember"
+        ],
+        "description": "Colour palette; any palette suits any theme. The theme's own colours are used when omitted."
       }
     },
     "required": [
@@ -28,19 +114,37 @@
     ],
     "additionalProperties": false
   },
-  "entry": "draft",
+  "entry": "brief",
   "budgets": {
-    "max_steps": 12,
-    "max_tool_calls": 4,
+    "max_steps": 13,
+    "max_tool_calls": 5,
     "max_context_tokens": 26000
   },
   "nodes": [
+    {
+      "id": "brief",
+      "kind": "tool.call",
+      "tool": "deck.brief",
+      "args": {
+        "purpose": {
+          "$state": "/input/purpose"
+        }
+      },
+      "out": "/brief",
+      "next": "draft"
+    },
     {
       "id": "draft",
       "kind": "model.structured",
       "description": "Outline only; the layout is not the model's.",
       "instructions": "Turn the notes into a slide outline for the audience given. One message per slide: a short title that states the point (under 10 words), then two to four short bullets taken from the notes (under 20 words each), and speaker notes with the detail a presenter needs, or null. Every number, name and date must come from the notes; do not add facts, figures or sources the notes do not contain. Do not write a title slide or an agenda: Harbor adds the cover from the deck title and subtitle. When a slide count is given write exactly that many slides, otherwise two to eight. The deck title names the topic; the subtitle may name the audience or the date if the notes give them, otherwise null.",
       "context": [
+        {
+          "label": "The storyline this kind of deck usually follows (use it as a guide; keep to the notes' facts)",
+          "from": "/brief/storyline",
+          "optional": true,
+          "max_chars": 1600
+        },
         {
           "label": "Audience",
           "from": "/input/audience",
@@ -177,6 +281,23 @@
       "args": {
         "outline": {
           "$state": "/outline"
+        },
+        "design": {
+          "purpose": {
+            "$state": "/input/purpose"
+          },
+          "theme": {
+            "$state": "/input/theme"
+          },
+          "motion": {
+            "$state": "/input/motion"
+          },
+          "rtl": {
+            "$state": "/input/rtl"
+          },
+          "palette": {
+            "$state": "/input/palette"
+          }
         }
       },
       "out": "/proposal",

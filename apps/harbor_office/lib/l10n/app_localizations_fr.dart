@@ -1682,4 +1682,224 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get workPrintUnavailable =>
       'Impression indisponible ici — utilisez Exporter en PDF.';
+
+  @override
+  String get deckPresent => 'Présenter';
+
+  @override
+  String get deckPresentFromStart => 'Depuis le début';
+
+  @override
+  String get deckPreviewMotion => 'Aperçu du mouvement';
+
+  @override
+  String get deckStopPreview => 'Arrêter l\'aperçu';
+
+  @override
+  String deckUnsupportedNote(String items) {
+    return 'Une partie du contenu de cette diapositive ne peut pas être prévisualisée : $items';
+  }
+
+  @override
+  String get deckFilmstrip => 'Navigateur de diapositives';
+
+  @override
+  String presentSlideOf(int index, int count) {
+    return 'Diapositive $index sur $count';
+  }
+
+  @override
+  String get presentExit => 'Quitter la présentation';
+
+  @override
+  String get presentNext => 'Suivant';
+
+  @override
+  String get presentPrevious => 'Précédent';
+
+  @override
+  String get presentShowNotes => 'Afficher les notes du présentateur';
+
+  @override
+  String get presentHideNotes => 'Masquer les notes du présentateur';
+
+  @override
+  String get presentNoNotes => 'Aucune note pour cette diapositive';
+
+  @override
+  String presentElapsed(String time) {
+    return 'Temps écoulé $time';
+  }
+
+  @override
+  String get presentBlackScreen => 'Écran noir';
+
+  @override
+  String get presentWhiteScreen => 'Écran blanc';
+
+  @override
+  String get presentProgress => 'Progression de la présentation';
+
+  @override
+  String get workNewPresentation => 'Nouvelle présentation';
+
+  @override
+  String get deckNewTitle => 'Nouvelle présentation';
+
+  @override
+  String get deckStepPurpose => 'Objectif';
+
+  @override
+  String get deckStepDesign => 'Design';
+
+  @override
+  String get deckStepStyle => 'Animation et langue';
+
+  @override
+  String deckStepOf(int step, int count) {
+    return 'Étape $step sur $count';
+  }
+
+  @override
+  String get deckPurposeHeading => 'À quoi sert cette présentation ?';
+
+  @override
+  String get deckPurposeHelp =>
+      'Chaque objectif est livré avec un déroulé prêt à l’emploi.';
+
+  @override
+  String get deckDesignHeading => 'Choisir un design';
+
+  @override
+  String get deckStyleHeading => 'Choisir l’animation et la langue';
+
+  @override
+  String get deckPaletteHeading => 'Couleurs';
+
+  @override
+  String get deckPaletteOwn => 'Couleurs propres au design';
+
+  @override
+  String get deckMotionHeading => 'Animation';
+
+  @override
+  String get deckMotionNone => 'Aucune';
+
+  @override
+  String get deckMotionSubtle => 'Discrète';
+
+  @override
+  String get deckMotionDynamic => 'Dynamique';
+
+  @override
+  String get deckMotionCinematic => 'Cinématographique';
+
+  @override
+  String get deckMotionNoneDesc => 'Aucune animation';
+
+  @override
+  String get deckMotionSubtleDesc => 'Fondus doux';
+
+  @override
+  String get deckMotionDynamicDesc => 'Poussées, flottements et zooms';
+
+  @override
+  String get deckMotionCinematicDesc =>
+      'Ondulations, tourbillons et apparitions par étapes';
+
+  @override
+  String get deckLanguageHeading => 'Langue';
+
+  @override
+  String get deckLanguageLtr => 'Anglais (de gauche à droite)';
+
+  @override
+  String get deckLanguageRtl => 'Arabe (de droite à gauche)';
+
+  @override
+  String get deckDarkLabel => 'Sombre';
+
+  @override
+  String get deckLightLabel => 'Clair';
+
+  @override
+  String get deckSuggested => 'Suggéré';
+
+  @override
+  String get deckThumbUnavailable => 'Aucun aperçu';
+
+  @override
+  String get deckGalleryLabel => 'Designs';
+
+  @override
+  String get deckPaletteLabel => 'Palettes de couleurs';
+
+  @override
+  String get deckMotionLabel => 'Préréglages d’animation';
+
+  @override
+  String get deckPurposeLabel => 'Objectifs de la présentation';
+
+  @override
+  String get deckBack => 'Retour';
+
+  @override
+  String get deckNext => 'Suivant';
+
+  @override
+  String get deckCreate => 'Créer la présentation';
+
+  @override
+  String get deckCreating => 'Création de votre présentation…';
+
+  @override
+  String get deckCreateFailed => 'Impossible de créer la présentation';
+
+  @override
+  String get deckRetry => 'Réessayer';
+
+  @override
+  String get deckCatalogFailed => 'Impossible de charger les designs';
+
+  @override
+  String get deckCatalogLoading => 'Chargement des designs…';
+
+  @override
+  String get deckPreviewHeading => 'Aperçu';
+
+  @override
+  String deckPreviewOf(String name) {
+    return 'Aperçu de $name';
+  }
+
+  @override
+  String get deckPreviewUnavailable => 'Aperçu indisponible';
+
+  @override
+  String get deckChangeDesign => 'Design';
+
+  @override
+  String get deckChangeDesignDisabled =>
+      'Cette présentation a été enregistrée par une autre application ; son design ne peut pas être modifié ici.';
+
+  @override
+  String get deckChangeDesignTitle => 'Changer de design';
+
+  @override
+  String deckCurrentDesign(String name) {
+    return 'Design actuel : $name';
+  }
+
+  @override
+  String get deckApplyDesign => 'Appliquer le design';
+
+  @override
+  String get deckDesignApplied =>
+      'Design modifié. Enregistrez une copie pour le conserver.';
+
+  @override
+  String get deckDesignFailed => 'Impossible de changer le design';
+
+  @override
+  String get deckRestyling => 'Application du design…';
 }

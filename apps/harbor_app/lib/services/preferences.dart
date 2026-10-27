@@ -2,6 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:harbor_ui/deck_designer.dart' show DeckDesignPrefs;
+
+// The remembered New presentation choices live with the shared sheet.
+export 'package:harbor_ui/deck_designer.dart' show DeckDesignPrefs;
 
 /// Presentation preferences the shell owns (never policy): locale, theme,
 /// whether the Lens is docked on wide windows, the preferred chat model.
@@ -16,6 +20,7 @@ class HarborPreferences {
     this.themeMode = ThemeMode.system,
     this.lensDocked = true,
     this.chatModel,
+    this.deckDesign,
   });
 
   final Locale locale;
@@ -23,18 +28,23 @@ class HarborPreferences {
   final bool lensDocked;
   final String? chatModel;
 
+  /// Last New presentation choices (null until the sheet was used).
+  final DeckDesignPrefs? deckDesign;
+
   HarborPreferences copyWith({
     Locale? locale,
     ThemeMode? themeMode,
     bool? lensDocked,
     String? chatModel,
     bool clearChatModel = false,
+    DeckDesignPrefs? deckDesign,
   }) {
     return HarborPreferences(
       locale: locale ?? this.locale,
       themeMode: themeMode ?? this.themeMode,
       lensDocked: lensDocked ?? this.lensDocked,
       chatModel: clearChatModel ? null : (chatModel ?? this.chatModel),
+      deckDesign: deckDesign ?? this.deckDesign,
     );
   }
 
@@ -43,6 +53,7 @@ class HarborPreferences {
         'theme': themeMode.name,
         'lens_docked': lensDocked,
         if (chatModel != null) 'chat_model': chatModel,
+        if (deckDesign != null) 'deck_design': deckDesign!.toJson(),
       };
 
   static HarborPreferences fromJson(Map<String, dynamic> json) {
@@ -60,6 +71,10 @@ class HarborPreferences {
           json['lens_docked'] is bool ? json['lens_docked'] as bool : true,
       chatModel:
           json['chat_model'] is String ? json['chat_model'] as String : null,
+      deckDesign: json['deck_design'] is Map
+          ? DeckDesignPrefs.fromJson(
+              (json['deck_design'] as Map).cast<String, dynamic>())
+          : null,
     );
   }
 
@@ -69,10 +84,12 @@ class HarborPreferences {
       other.locale == locale &&
       other.themeMode == themeMode &&
       other.lensDocked == lensDocked &&
-      other.chatModel == chatModel;
+      other.chatModel == chatModel &&
+      other.deckDesign == deckDesign;
 
   @override
-  int get hashCode => Object.hash(locale, themeMode, lensDocked, chatModel);
+  int get hashCode =>
+      Object.hash(locale, themeMode, lensDocked, chatModel, deckDesign);
 }
 
 /// Storage for [HarborPreferences]. The file store is used by the real

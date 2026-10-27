@@ -306,82 +306,117 @@ pub fn collapse_if_scalar(
 
 // ─────────────────────────────── Criteria helpers (shared by *IF* aggregators) ───────────────────────────────
 
-/// Match a value against a parsed `CriteriaPredicate` (see `crate::args::CriteriaPredicate`).
-/// Implements Excel-style semantics for equality (case-insensitive text, lenient numeric),
-/// inequality comparisons with numeric coercion, wildcard text matching, and type tests.
+/// Match a cell value against a parsed `CriteriaPredicate` (see `crate::args::CriteriaPredicate`).
+///
+/// This is the single source of truth for Excel's criteria typing rules; every *IF/*IFS/MAXIFS/
+/// MINIFS path (scalar, chunked, and cached Arrow masks) must agree with it. Observed Excel rules
+/// (checked against real Excel):
+/// - A numeric comparison (`<`, `<=`, `>`, `>=`) is satisfied only by NUMERIC cells (numbers and
+///   date/time serials). Blanks, text (even "3") and booleans never satisfy it; in particular a
+///   blank is not 0.
+/// - `=n` / `n` matches number cells equal to `n` AND text cells that read as the number `n`
+///   (the text "3" satisfies `=3`). Booleans and blanks never match a number.
+/// - `<>n` is the complement of *numeric-cell equality only*: blanks, text (including the text
+///   "3"), booleans and errors all satisfy it. (Excel is asymmetric here: `=3` counts the text "3"
+///   but `<>3` does not exclude it.)
+/// - Wildcard patterns (`*`, `?`) match TEXT cells only (including empty text for `*`), never
+///   numbers, booleans or blanks.
+/// - Text equality is case-insensitive; an empty text criterion (`""`, `"="`) matches blank cells
+///   and empty text; `<>` + empty text matches every non-blank cell.
 pub fn criteria_match(pred: &crate::args::CriteriaPredicate, v: &LiteralValue) -> bool {
     use crate::args::CriteriaPredicate as P;
     match pred {
-        P::Eq(t) => values_equal_invariant(t, v),
-        P::Ne(t) => !values_equal_invariant(t, v),
-        P::Gt(n) => value_to_number(v).map(|x| x > *n).unwrap_or(false),
-        P::Ge(n) => value_to_number(v).map(|x| x >= *n).unwrap_or(false),
-        P::Lt(n) => value_to_number(v).map(|x| x < *n).unwrap_or(false),
-        P::Le(n) => value_to_number(v).map(|x| x <= *n).unwrap_or(false),
+        P::Eq(t) => criteria_equals(t, v),
+        P::Ne(t) => !criteria_ne_excludes(t, v),
+        P::Gt(n) => cell_number(v).is_some_and(|x| x > *n),
+        P::Ge(n) => cell_number(v).is_some_and(|x| x >= *n),
+        P::Lt(n) => cell_number(v).is_some_and(|x| x < *n),
+        P::Le(n) => cell_number(v).is_some_and(|x| x <= *n),
         P::TextLike {
             pattern,
             case_insensitive,
         } => text_like_match(pattern, *case_insensitive, v),
         P::IsBlank => matches!(v, LiteralValue::Empty),
-        P::IsNumber => value_to_number(v).is_ok(),
+        P::IsNumber => crate::coercion::to_number_lenient(v).is_ok(),
         P::IsText => matches!(v, LiteralValue::Text(_)),
         P::IsLogical => matches!(v, LiteralValue::Boolean(_)),
     }
 }
 
-fn value_to_number(v: &LiteralValue) -> Result<f64, ExcelError> {
-    crate::coercion::to_number_lenient(v)
-}
-
-fn values_equal_invariant(a: &LiteralValue, b: &LiteralValue) -> bool {
-    match (a, b) {
-        (LiteralValue::Number(x), LiteralValue::Number(y)) => (x - y).abs() < 1e-12,
-        (LiteralValue::Int(x), LiteralValue::Int(y)) => x == y,
-        (LiteralValue::Boolean(x), LiteralValue::Boolean(y)) => x == y,
-        (LiteralValue::Text(x), LiteralValue::Text(y)) => x.to_lowercase() == y.to_lowercase(),
-        // Treat blank and empty text as equal (Excel semantics)
-        (LiteralValue::Text(x), LiteralValue::Empty) if x.is_empty() => true,
-        (LiteralValue::Empty, LiteralValue::Text(y)) if y.is_empty() => true,
-        (LiteralValue::Empty, LiteralValue::Empty) => true,
-        // Date/time/duration equality: compare by serial value.
-        // This matches criteria semantics (COUNTIF(S), SUMIF(S), database criteria, etc.) where
-        // date-like values participate in numeric comparisons.
-        (x, y) if x.as_serial_number().is_some() && y.as_serial_number().is_some() => x
-            .as_serial_number()
-            .zip(y.as_serial_number())
-            .map(|(sx, sy)| (sx - sy).abs() < 1e-12)
-            .unwrap_or(false),
-        (LiteralValue::Number(x), _) => value_to_number(b)
-            .map(|y| (x - y).abs() < 1e-12)
-            .unwrap_or(false),
-        (_, LiteralValue::Number(_)) => values_equal_invariant(b, a),
-        _ => false,
+/// The numeric value of a cell for criteria purposes: numbers and date/time serials only.
+/// Booleans, text, blanks and errors are NOT numeric here (a boolean never equals or compares
+/// against a number criterion, and text is never coerced for `<`/`>`).
+fn cell_number(v: &LiteralValue) -> Option<f64> {
+    match v {
+        LiteralValue::Boolean(_) => None,
+        other => other.as_serial_number(),
     }
 }
 
-fn text_like_match(pattern: &str, case_insensitive: bool, v: &LiteralValue) -> bool {
-    let s = match v {
-        LiteralValue::Text(t) => t.clone(),
-        LiteralValue::Number(n) => n.to_string(),
-        LiteralValue::Int(i) => i.to_string(),
-        LiteralValue::Boolean(b) => {
-            if *b {
-                "TRUE".into()
-            } else {
-                "FALSE".into()
-            }
+/// A text cell that reads as a finite number ("3", " 3.5 ", "1e3"). Blank/whitespace-only text is
+/// not a number.
+fn text_cell_number(s: &str) -> Option<f64> {
+    if s.trim().is_empty() {
+        return None;
+    }
+    crate::locale::Locale::invariant()
+        .parse_number_invariant(s)
+        .filter(|n| n.is_finite())
+}
+
+fn numbers_equal(x: f64, y: f64) -> bool {
+    (x - y).abs() < 1e-12
+}
+
+/// Does the cell satisfy an equality criterion `t`? (`=t` or a bare `t`.)
+fn criteria_equals(t: &LiteralValue, v: &LiteralValue) -> bool {
+    match t {
+        LiteralValue::Boolean(b) => matches!(v, LiteralValue::Boolean(x) if x == b),
+        LiteralValue::Text(s) => match v {
+            LiteralValue::Text(c) => c.to_lowercase() == s.to_lowercase(),
+            // Excel: an empty text criterion matches blank cells as well as empty text.
+            LiteralValue::Empty => s.is_empty(),
+            _ => false,
+        },
+        LiteralValue::Empty => matches!(v, LiteralValue::Empty),
+        // Numbers and date/time criteria compare by serial value.
+        other => match other.as_serial_number() {
+            Some(tn) => match v {
+                // The text "3" satisfies `=3` (but see `criteria_ne_excludes`).
+                LiteralValue::Text(s) => text_cell_number(s).is_some_and(|n| numbers_equal(n, tn)),
+                _ => cell_number(v).is_some_and(|n| numbers_equal(n, tn)),
+            },
+            None => false,
+        },
+    }
+}
+
+/// For `<>t`: is the cell one that the criterion EXCLUDES (i.e. equal to `t`)?
+/// Differs from `criteria_equals` only for numeric `t`, where text that merely reads as the
+/// number is NOT excluded (Excel: COUNTIF over 1,2,3,"x",,,"3",TRUE with "<>3" is 7, not 6).
+fn criteria_ne_excludes(t: &LiteralValue, v: &LiteralValue) -> bool {
+    match t.as_serial_number() {
+        Some(tn) if !matches!(t, LiteralValue::Boolean(_)) => {
+            cell_number(v).is_some_and(|n| numbers_equal(n, tn))
         }
-        LiteralValue::Empty => String::new(),
-        _ => return false,
+        _ => criteria_equals(t, v),
+    }
+}
+
+/// Wildcard criteria only ever match TEXT cells: `"*"` does not match numbers, booleans or
+/// blanks, and `"?"` matches one-character text only.
+fn text_like_match(pattern: &str, case_insensitive: bool, v: &LiteralValue) -> bool {
+    let LiteralValue::Text(s) = v else {
+        return false;
     };
     let (pat, text) = if case_insensitive {
         (pattern.to_lowercase(), s.to_lowercase())
     } else {
-        (pattern.to_string(), s)
+        (pattern.to_string(), s.clone())
     };
 
     // Fast-path for anchored patterns without '?' or escape sequences
-    if !pat.contains('?') && !pat.contains("~*") && !pat.contains("~?") {
+    if !pat.contains('?') && !pat.contains('~') {
         // Pattern like "text*" - starts with
         if pat.ends_with('*') && !pat[..pat.len() - 1].contains('*') {
             return text.starts_with(&pat[..pat.len() - 1]);
@@ -404,38 +439,25 @@ fn text_like_match(pattern: &str, case_insensitive: bool, v: &LiteralValue) -> b
     wildcard_match(&pat, &text)
 }
 
+/// Excel wildcard matcher: `*` any run, `?` exactly one character, `~` escapes `*`, `?`, `~`.
+/// Works on characters (not bytes) so `?` consumes one whole character.
 fn wildcard_match(pat: &str, text: &str) -> bool {
-    // Simple glob-like matcher for * and ? (non-greedy backtracking).
-    fn helper(p: &[u8], t: &[u8]) -> bool {
-        if p.is_empty() {
+    fn helper(p: &[char], t: &[char]) -> bool {
+        let Some(&c) = p.first() else {
             return t.is_empty();
-        }
-        match p[0] {
-            b'*' => {
-                for i in 0..=t.len() {
-                    if helper(&p[1..], &t[i..]) {
-                        return true;
-                    }
-                }
-                false
+        };
+        match c {
+            '*' => (0..=t.len()).any(|i| helper(&p[1..], &t[i..])),
+            '?' => !t.is_empty() && helper(&p[1..], &t[1..]),
+            '~' if matches!(p.get(1), Some('*' | '?' | '~')) => {
+                t.first() == Some(&p[1]) && helper(&p[2..], &t[1..])
             }
-            b'?' => {
-                if t.is_empty() {
-                    false
-                } else {
-                    helper(&p[1..], &t[1..])
-                }
-            }
-            ch => {
-                if t.first().copied() == Some(ch) {
-                    helper(&p[1..], &t[1..])
-                } else {
-                    false
-                }
-            }
+            ch => t.first() == Some(&ch) && helper(&p[1..], &t[1..]),
         }
     }
-    helper(pat.as_bytes(), text.as_bytes())
+    let p: Vec<char> = pat.chars().collect();
+    let t: Vec<char> = text.chars().collect();
+    helper(&p, &t)
 }
 
 // ─────────────────────────────── ArgSchema presets ───────────────────────────────
@@ -472,3 +494,111 @@ pub static ARG_RANGE_NUM_LENIENT_ONE: LazyLock<Vec<ArgSchema>> = LazyLock::new(|
         s
     }]
 });
+
+/// True when every range argument of a multi-criteria *IFS call is a plain,
+/// fully bounded reference (no whole-column/row or open-ended range, no 3D
+/// reference, nothing computed). `count_form` is COUNTIFS (ranges at even
+/// positions) versus SUMIFS-style (target first, then range/criteria pairs).
+pub(crate) fn ifs_ranges_bounded(args: &[crate::traits::ArgumentHandle<'_, '_>], count_form: bool) -> bool {
+    use formualizer_parse::parser::ReferenceType;
+    let start = if count_form { 0 } else { 1 };
+    let mut idx: Vec<usize> = (start..args.len()).step_by(2).collect();
+    if !count_form {
+        idx.push(0);
+    }
+    idx.into_iter().all(|i| match args[i].as_reference() {
+        Ok(ReferenceType::Cell { .. }) => true,
+        Ok(ReferenceType::Range {
+            start_row: Some(_),
+            start_col: Some(_),
+            end_row: Some(_),
+            end_col: Some(_),
+            ..
+        }) => true,
+        _ => false,
+    })
+}
+
+#[cfg(test)]
+mod criteria_match_tests {
+    use super::criteria_match;
+    use crate::args::parse_criteria;
+    use formualizer_common::LiteralValue as V;
+
+    fn m(criterion: &str, cell: &V) -> bool {
+        criteria_match(&parse_criteria(&V::Text(criterion.into())).unwrap(), cell)
+    }
+    fn t(s: &str) -> V {
+        V::Text(s.into())
+    }
+
+    #[test]
+    fn numeric_comparisons_only_match_numeric_cells() {
+        // Excel: blanks are not 0, text is not coerced (even "3"), TRUE is not 1.
+        for c in ["<9", "<=2", ">=2", ">1", ">-5", "<=0"] {
+            for cell in [V::Empty, t("3"), t("x"), V::Boolean(true), V::Boolean(false)] {
+                assert!(!m(c, &cell), "{c} must not match {cell:?}");
+            }
+        }
+        assert!(m("<9", &V::Number(3.0)) && m(">1", &V::Int(2)) && m("<=2", &V::Number(2.0)));
+        assert!(!m(">1", &V::Number(1.0)));
+    }
+
+    #[test]
+    fn equality_matches_number_and_numeric_text_but_never_booleans_or_blanks() {
+        for c in ["=3", "3"] {
+            assert!(m(c, &V::Number(3.0)) && m(c, &V::Int(3)) && m(c, &t("3")), "{c}");
+            assert!(m(c, &t(" 3 ")), "numeric text is trimmed");
+            for cell in [V::Empty, t(""), t("x"), t("4"), V::Boolean(true), V::Number(4.0)] {
+                assert!(!m(c, &cell), "{c} must not match {cell:?}");
+            }
+        }
+        // 1 is not TRUE and 0 is not blank / FALSE.
+        assert!(!m("=1", &V::Boolean(true)) && !m("=0", &V::Boolean(false)) && !m("=0", &V::Empty));
+        // A boolean criterion matches booleans only.
+        assert!(m("TRUE", &V::Boolean(true)) && !m("TRUE", &V::Number(1.0)) && !m("TRUE", &t("TRUE")));
+    }
+
+    #[test]
+    fn not_equal_numeric_excludes_only_numeric_cells_equal_to_it() {
+        assert!(!m("<>3", &V::Number(3.0)));
+        // Excel quirk: "<>3" still counts the TEXT "3" (7 of the 8 oracle cells).
+        for cell in [V::Empty, t("3"), t("x"), V::Boolean(true), V::Number(4.0)] {
+            assert!(m("<>3", &cell), "<>3 must match {cell:?}");
+        }
+        assert!(m("<>0", &V::Empty), "a blank is not equal to 0, so <>0 matches it");
+    }
+
+    #[test]
+    fn text_equality_is_case_insensitive_and_empty_text_means_blank() {
+        assert!(m("x", &t("X")) && m("X", &t("x")) && !m("x", &t("xy")));
+        assert!(!m("x", &V::Number(1.0)) && !m("x", &V::Empty));
+        assert!(m("", &V::Empty) && m("=", &V::Empty) && m("", &t("")));
+        assert!(!m("", &V::Number(0.0)) && !m("", &t("x")));
+        // "<>" = non-blank: numbers, text and booleans match, blanks do not.
+        assert!(m("<>", &V::Number(1.0)) && m("<>", &t("x")) && m("<>", &V::Boolean(true)));
+        assert!(!m("<>", &V::Empty));
+        assert!(m("<>x", &V::Empty) && m("<>x", &V::Number(1.0)) && !m("<>x", &t("X")));
+    }
+
+    #[test]
+    fn wildcards_match_text_cells_only() {
+        assert!(m("*", &t("x")) && m("*", &t("3")) && m("*", &t("")));
+        assert!(m("?", &t("x")) && m("?", &t("3")) && !m("?", &t("")) && !m("?", &t("xy")));
+        for c in ["*", "?", "1*", "*1", "?1"] {
+            for cell in [V::Empty, V::Number(1.0), V::Number(11.0), V::Boolean(true)] {
+                assert!(!m(c, &cell), "{c} must not match {cell:?}");
+            }
+        }
+        assert!(m("a*c", &t("ABBC")) && m("a?c", &t("abc")) && !m("a?c", &t("ac")));
+        // ~ escapes the wildcard characters; `?` consumes one whole (multi-byte) character.
+        assert!(m("a~*", &t("a*")) && !m("a~*", &t("ab")) && m("a~?", &t("a?")));
+        assert!(m("?", &t("é")));
+    }
+
+    #[test]
+    fn non_finite_spellings_are_text_criteria() {
+        assert!(m("inf", &t("INF")) && !m("inf", &V::Number(f64::MAX)));
+        assert!(m("nan", &t("NaN")));
+    }
+}

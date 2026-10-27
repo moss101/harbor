@@ -2073,4 +2073,315 @@ class AppLocalizationsEn extends AppLocalizations {
   String askGroundedInCollection(String name) {
     return 'Answered only from the collection $name';
   }
+
+  @override
+  String get askDeleteConversation => 'Delete conversation';
+
+  @override
+  String get workSaveCopy => 'Save a copy';
+
+  @override
+  String workSavedCopy(String name) {
+    return 'Saved $name';
+  }
+
+  @override
+  String get workSaveFailed => 'Couldn\'t save the copy';
+
+  @override
+  String get askNewConversation => 'New conversation';
+
+  @override
+  String get askConversationsTooltip => 'Conversation history';
+
+  @override
+  String get askConversationsTitle => 'Conversations';
+
+  @override
+  String get askConversationsEmpty =>
+      'No saved conversations yet. Questions you ask are kept on this device, encrypted, so you can come back to them.';
+
+  @override
+  String get askConversationUntitled => 'Untitled conversation';
+
+  @override
+  String askConversationQuestions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count questions',
+      one: '1 question',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get askDeleteConversationTitle => 'Delete this conversation?';
+
+  @override
+  String get askDeleteConversationBody =>
+      'Its questions and answers are permanently removed from this device.';
+
+  @override
+  String get askDeleteConversationConfirm => 'Delete';
+
+  @override
+  String get askRenameConversation => 'Rename conversation';
+
+  @override
+  String get askRenameHint => 'Conversation title';
+
+  @override
+  String get askRenameSave => 'Save';
+
+  @override
+  String knowledgePurgeOption(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Also delete the $count conversation turns derived from this source',
+      one: 'Also delete the 1 conversation turn derived from this source',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get knowledgePurgeHeading => 'Conversations affected';
+
+  @override
+  String get knowledgePurgeWholeThread => 'the whole conversation is deleted';
+
+  @override
+  String get knowledgePurgeKeepNote =>
+      'Left unticked, past answers stay in your conversations as history; their citations show this source as removed.';
+
+  @override
+  String knowledgeRemovedAndPurged(String title, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count conversation turns',
+      one: '1 conversation turn',
+    );
+    return 'Removed $title and $_temp0';
+  }
+
+  @override
+  String get deckPresent => 'Present';
+
+  @override
+  String get deckPresentFromStart => 'From beginning';
+
+  @override
+  String get deckPreviewMotion => 'Preview motion';
+
+  @override
+  String get deckStopPreview => 'Stop preview';
+
+  @override
+  String deckUnsupportedNote(String items) {
+    return 'Some content on this slide can\'t be previewed: $items';
+  }
+
+  @override
+  String get deckFilmstrip => 'Slide navigator';
+
+  @override
+  String presentSlideOf(int index, int count) {
+    return 'Slide $index of $count';
+  }
+
+  @override
+  String get presentExit => 'Exit presentation';
+
+  @override
+  String get presentNext => 'Next';
+
+  @override
+  String get presentPrevious => 'Previous';
+
+  @override
+  String get presentShowNotes => 'Show speaker notes';
+
+  @override
+  String get presentHideNotes => 'Hide speaker notes';
+
+  @override
+  String get presentNoNotes => 'No notes for this slide';
+
+  @override
+  String presentElapsed(String time) {
+    return 'Elapsed $time';
+  }
+
+  @override
+  String get presentBlackScreen => 'Black screen';
+
+  @override
+  String get presentWhiteScreen => 'White screen';
+
+  @override
+  String get presentProgress => 'Presentation progress';
+
+  @override
+  String get workNewPresentation => 'New presentation';
+
+  @override
+  String get deckNewTitle => 'New presentation';
+
+  @override
+  String get deckStepPurpose => 'Purpose';
+
+  @override
+  String get deckStepDesign => 'Design';
+
+  @override
+  String get deckStepStyle => 'Motion and language';
+
+  @override
+  String deckStepOf(int step, int count) {
+    return 'Step $step of $count';
+  }
+
+  @override
+  String get deckPurposeHeading => 'What is this presentation for?';
+
+  @override
+  String get deckPurposeHelp =>
+      'Each purpose comes with a ready-made storyline.';
+
+  @override
+  String get deckDesignHeading => 'Choose a design';
+
+  @override
+  String get deckStyleHeading => 'Choose motion and language';
+
+  @override
+  String get deckPaletteHeading => 'Colours';
+
+  @override
+  String get deckPaletteOwn => 'Design\'s own';
+
+  @override
+  String get deckMotionHeading => 'Motion';
+
+  @override
+  String get deckMotionNone => 'None';
+
+  @override
+  String get deckMotionSubtle => 'Subtle';
+
+  @override
+  String get deckMotionDynamic => 'Dynamic';
+
+  @override
+  String get deckMotionCinematic => 'Cinematic';
+
+  @override
+  String get deckMotionNoneDesc => 'No motion';
+
+  @override
+  String get deckMotionSubtleDesc => 'Gentle fades';
+
+  @override
+  String get deckMotionDynamicDesc => 'Pushes, floats and zooms';
+
+  @override
+  String get deckMotionCinematicDesc => 'Ripples, vortex and staged builds';
+
+  @override
+  String get deckLanguageHeading => 'Language';
+
+  @override
+  String get deckLanguageLtr => 'English (left to right)';
+
+  @override
+  String get deckLanguageRtl => 'Arabic (right to left)';
+
+  @override
+  String get deckDarkLabel => 'Dark';
+
+  @override
+  String get deckLightLabel => 'Light';
+
+  @override
+  String get deckSuggested => 'Suggested';
+
+  @override
+  String get deckThumbUnavailable => 'No preview';
+
+  @override
+  String get deckGalleryLabel => 'Designs';
+
+  @override
+  String get deckPaletteLabel => 'Colour palettes';
+
+  @override
+  String get deckMotionLabel => 'Motion presets';
+
+  @override
+  String get deckPurposeLabel => 'Presentation purposes';
+
+  @override
+  String get deckBack => 'Back';
+
+  @override
+  String get deckNext => 'Next';
+
+  @override
+  String get deckCreate => 'Create presentation';
+
+  @override
+  String get deckCreating => 'Creating your presentation…';
+
+  @override
+  String get deckCreateFailed => 'Couldn\'t create the presentation';
+
+  @override
+  String get deckRetry => 'Try again';
+
+  @override
+  String get deckCatalogFailed => 'Couldn\'t load the designs';
+
+  @override
+  String get deckCatalogLoading => 'Loading designs…';
+
+  @override
+  String get deckPreviewHeading => 'Preview';
+
+  @override
+  String deckPreviewOf(String name) {
+    return 'Preview of $name';
+  }
+
+  @override
+  String get deckPreviewUnavailable => 'Preview unavailable';
+
+  @override
+  String get deckChangeDesign => 'Design';
+
+  @override
+  String get deckChangeDesignDisabled =>
+      'This deck was saved by another app, so its design can\'t be changed here.';
+
+  @override
+  String get deckChangeDesignTitle => 'Change design';
+
+  @override
+  String deckCurrentDesign(String name) {
+    return 'Current design: $name';
+  }
+
+  @override
+  String get deckApplyDesign => 'Apply design';
+
+  @override
+  String get deckDesignApplied => 'Design changed. Save a copy to keep it.';
+
+  @override
+  String get deckDesignFailed => 'Couldn\'t change the design';
+
+  @override
+  String get deckRestyling => 'Applying the design…';
 }

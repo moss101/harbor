@@ -215,6 +215,9 @@ void main() {
   _appendFirstRunTests();
   _appendKnowledgeTest();
   _appendRagTest();
+  _appendAskThreadTests();
+  _appendAskThreadLayoutTest();
+  _appendThreadMaintenanceTests();
   _appendComposerTest();
   testWidgets('home shows work-first headline and quick actions',
       (tester) async {
@@ -840,6 +843,329 @@ void _appendRagTest() {
         isTrue,
       );
     });
+  });
+}
+
+void _appendAskThreadTests() {
+  testWidgets('ask threads: follow-ups remember, threads persist and reopen',
+      (tester) async {
+    if (!coreAvailable) return;
+    late HarborService service;
+    late String root;
+    await tester.runAsync(() async {
+      final dir = await Directory.systemTemp.createTemp('harbor-threads-');
+      root = dir.path;
+      service = await HarborService.open(
+          libraryPath: dylibPath,
+          dataRoot: root,
+          workspaceId: 'ws-threads',
+          deviceRootHex:
+              '57ebfb10cdada18503fb8d0195b9055ffc3dab57cfb888620aca640dd5aa056c');
+      await service.installModelFromPath(
+          packageId: 'stories260k',
+          path: '$repoRoot/fixtures/models/stories260K.gguf');
+      await service.installModelFromPath(
+          packageId: 'bge-small-en-v1.5',
+          path: '$repoRoot/fixtures/models/bge-small-en-v1.5-q8_0.gguf');
+      expect(await service.openKnowledge(), isTrue);
+      await service.ingestSources([
+        {
+          'id': 'contract',
+          'title': 'Master Services Agreement',
+          'text': 'The contract value is 5000 USD. The agreement ends on '
+              '2026-12-31.',
+        }
+      ]);
+    });
+    addTearDown(() => service.close());
+
+    late String threadId;
+    await tester.runAsync(() async {
+      threadId = (await service.createThread())!['thread_id'] as String;
+      final first = await service.generateAnswer('What is the contract value?',
+          chatPackage: 'stories260k', maxTokens: 16, threadId: threadId);
+      expect(first['history_turns'], 0);
+      final second = await service.generateAnswer('and the end date?',
+          chatPackage: 'stories260k', maxTokens: 16, threadId: threadId);
+      // The follow-up reached the model with the first turn as memory.
+      expect(second['history_turns'], 1);
+      expect(second['thread_error'], isNull);
+
+      final got = await service.getThread(threadId);
+      final messages = (got!['messages'] as List).cast<Map>();
+      expect(messages.map((m) => m['role']),
+          ['user', 'assistant', 'user', 'assistant']);
+      expect(got['thread']['title'], 'What is the contract value?');
+      expect(messages[1]['text'], first['answer']);
+      final listed = await service.listThreads();
+      expect(listed.single['thread_id'], threadId);
+      expect(listed.single['turns'], 2);
+    });
+
+    // A cancelled/failed question never lands in the thread: asking
+    // into a thread that does not exist is refused before it starts.
+    await tester.runAsync(() async {
+      await expectLater(
+        service.generateAnswer('q',
+            chatPackage: 'stories260k', maxTokens: 8, threadId: 'thr-nope'),
+        throwsA(isA<Exception>()),
+      );
+      expect((await service.getThread(threadId))!['messages'], hasLength(4));
+    });
+
+    // Restart: the conversation is still there, sealed on disk.
+    await tester.runAsync(() async {
+      await service.close();
+      service = await HarborService.open(
+          libraryPath: dylibPath,
+          dataRoot: root,
+          workspaceId: 'ws-threads',
+          deviceRootHex:
+              '57ebfb10cdada18503fb8d0195b9055ffc3dab57cfb888620aca640dd5aa056c');
+      final listed = await service.listThreads();
+      expect(listed.single['thread_id'], threadId);
+      expect(listed.single['turns'], 2);
+    });
+  });
+
+  testWidgets('ask surface restores the latest thread, switches and deletes',
+      (tester) async {
+    if (!coreAvailable) return;
+    await pumpApp(tester);
+    final sp = HarborServiceProvider.of(
+        tester.element(find.text('What do you want to get done?')));
+    final service = sp.notifier!;
+    await tester.runAsync(() async {
+      for (final q in ['older thread question', 'latest thread question']) {
+        final id = (await service.createThread())!['thread_id'] as String;
+        await service.appendSearchTurn(id, q, [
+          {
+            'source_id': 's1',
+            'title': 'Master Services Agreement',
+            'chunk_id': 's1-0',
+            'score': 0.8,
+            'state': 'Current',
+            'content_hash': 'h',
+          }
+        ]);
+        // Distinct updated_at: the latest is the last one written.
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+    });
+
+    // Home is already open (its automatic restore ran before these threads
+    // existed): History lists both, newest first, and picking one opens it.
+    await tester.tap(find.byTooltip('Conversation history'));
+    await settleUntil(tester, find.text('Conversations'),
+        budget: const Duration(seconds: 30));
+    expect(find.text('Conversations'), findsOneWidget);
+    expect(find.text('latest thread question'), findsWidgets);
+    await tester.tap(find.text('latest thread question').last);
+    await tester.pump();
+    await settleUntil(tester, find.text('latest thread question'),
+        budget: const Duration(seconds: 30));
+    // The conversation is shown with its evidence.
+    expect(find.text('older thread question'), findsNothing);
+    expect(find.text('Master Services Agreement'), findsWidgets);
+
+    // Switching to the older one replaces the view.
+    await tester.tap(find.byTooltip('Conversation history'));
+    await settleUntil(tester, find.text('Conversations'),
+        budget: const Duration(seconds: 30));
+    await tester.tap(find.text('older thread question').last);
+    await tester.pump();
+    await settleUntil(tester, find.text('older thread question'),
+        budget: const Duration(seconds: 30));
+    expect(find.text('latest thread question'), findsNothing);
+
+    // New conversation starts empty and keeps the saved ones.
+    await tester.tap(find.text('New conversation'));
+    await tester.pump();
+    expect(find.text('older thread question'), findsNothing);
+    expect(find.text('What do you want to get done?'), findsOneWidget);
+    expect(find.text('New conversation'), findsNothing);
+
+    // Deleting asks first, then removes the thread for good.
+    await tester.tap(find.byTooltip('Conversation history'));
+    await settleUntil(tester, find.text('Conversations'),
+        budget: const Duration(seconds: 30));
+    await tester.tap(find.byTooltip('Delete conversation').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Delete this conversation?'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect((await tester.runAsync(service.listThreads))!, hasLength(2),
+        reason: 'cancelling the confirmation must delete nothing');
+    await tester.tap(find.byTooltip('Delete conversation').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Delete').last);
+    await tester.pump();
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect((await tester.runAsync(service.listThreads))!, hasLength(1));
+  });
+}
+
+void _appendAskThreadLayoutTest() {
+  testWidgets('home conversation header fits a phone with history and new',
+      (tester) async {
+    if (!coreAvailable) return;
+    await pumpApp(tester, width: 360, height: 740);
+    final sp = HarborServiceProvider.of(
+        tester.element(find.text('What do you want to get done?')));
+    final service = sp.notifier!;
+    await tester.runAsync(() async {
+      await service.installModelFromPath(
+          packageId: 'stories260k',
+          path: '$repoRoot/fixtures/models/stories260K.gguf');
+      final id = (await service.createThread())!['thread_id'] as String;
+      await service.appendSearchTurn(
+          id, 'a question long enough to wrap on a narrow phone screen', []);
+    });
+    await tester.tap(find.byTooltip('Conversation history'));
+    await settleUntil(tester, find.text('Conversations'),
+        budget: const Duration(seconds: 30));
+    await tester.tap(find
+        .text('a question long enough to wrap on a narrow phone screen')
+        .last);
+    await tester.pump();
+    await settleUntil(tester,
+        find.text('a question long enough to wrap on a narrow phone screen'),
+        budget: const Duration(seconds: 30));
+    expect(find.byTooltip('Conversation history'), findsOneWidget);
+    expect(find.text('New conversation'), findsOneWidget);
+    // A RenderFlex overflow would surface as a pending exception.
+    expect(tester.takeException(), isNull);
+  });
+}
+
+void _appendThreadMaintenanceTests() {
+  testWidgets('a conversation can be renamed from the history dialog',
+      (tester) async {
+    if (!coreAvailable) return;
+    await pumpApp(tester);
+    final service = HarborServiceProvider.of(
+            tester.element(find.text('What do you want to get done?')))
+        .notifier!;
+    late String id;
+    await tester.runAsync(() async {
+      id = (await service.createThread())!['thread_id'] as String;
+      await service.appendSearchTurn(id, 'original first question', []);
+    });
+    await tester.tap(find.byTooltip('Conversation history'));
+    await settleUntil(tester, find.text('Conversations'),
+        budget: const Duration(seconds: 30));
+    await tester.tap(find.byTooltip('Rename conversation'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.enterText(find.byType(TextField).last, '  Board pack Q3  ');
+    await tester.tap(find.text('Save'));
+    await tester.pump();
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Board pack Q3'), findsOneWidget,
+        reason: 'the dialog list shows the new, trimmed title');
+    final got = await tester.runAsync(() => service.getThread(id));
+    expect(got!['thread']['title'], 'Board pack Q3');
+  });
+
+  testWidgets(
+      'removing a source previews derived chat and purges only when ticked',
+      (tester) async {
+    if (!coreAvailable) return;
+    await pumpApp(tester);
+    final service = HarborServiceProvider.of(
+            tester.element(find.text('What do you want to get done?')))
+        .notifier!;
+    late String cited, other;
+    await tester.runAsync(() async {
+      await service.installModelFromPath(
+          packageId: 'bge-small-en-v1.5',
+          path: '$repoRoot/fixtures/models/bge-small-en-v1.5-q8_0.gguf');
+      expect(await service.openKnowledge(), isTrue);
+      await service.ingestSources([
+        {
+          'id': 'contract',
+          'title': 'Master Services Agreement',
+          'text': 'The contract value is 5000 USD.',
+        }
+      ]);
+      Future<String> thread(String q, String source) async {
+        final id = (await service.createThread())!['thread_id'] as String;
+        await service.appendSearchTurn(id, q, [
+          {'source_id': source, 'title': source, 'content_hash': 'h'}
+        ]);
+        return id;
+      }
+
+      cited = await thread('question about the contract', 'contract');
+      other = await thread('question about something else', 'elsewhere');
+    });
+
+    await goTo(tester, 'Library');
+    await settleUntil(tester, find.text('Master Services Agreement'),
+        budget: const Duration(seconds: 30));
+
+    // Poll the core until [done] holds (the removal chain is real async
+    // on the worker isolate: remove, refresh, optional purge).
+    Future<void> until(Future<bool> Function() done, String what) async {
+      for (var i = 0; i < 100; i++) {
+        if (await tester.runAsync(done) == true) return;
+        await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 100)));
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      fail('timed out waiting for $what');
+    }
+
+    Future<bool> sourceGone() async =>
+        !service.knowledgeSources.any((s) => s['source_id'] == 'contract');
+
+    // 1. Remove WITHOUT ticking: chat is previewed, then left alone.
+    await tester.tap(find.byTooltip('Remove').first);
+    await settleUntil(tester, find.text('Conversations affected'),
+        budget: const Duration(seconds: 30));
+    expect(find.textContaining('question about the contract'), findsOneWidget);
+    expect(find.textContaining('question about something else'), findsNothing,
+        reason: 'only conversations derived from the source are listed');
+    expect(
+        find.textContaining('whole conversation is deleted'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Remove'));
+    await tester.pump();
+    await until(sourceGone, 'the source to be removed');
+    expect(await tester.runAsync(() => service.getThread(cited)), isNotNull,
+        reason: 'removing a source alone never purges chat');
+
+    // 2. The explicit purge removes the derived conversation, not others.
+    await tester.runAsync(() async {
+      await service.ingestSources([
+        {
+          'id': 'contract',
+          'title': 'Master Services Agreement',
+          'text': 'The contract value is 5000 USD.',
+        }
+      ]);
+    });
+    await settleUntil(tester, find.text('Master Services Agreement'),
+        budget: const Duration(seconds: 30));
+    await tester.tap(find.byTooltip('Remove').first);
+    await settleUntil(tester, find.text('Conversations affected'),
+        budget: const Duration(seconds: 30));
+    await tester.tap(find.byType(CheckboxListTile));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Remove'));
+    await tester.pump();
+    await until(() async => await service.getThread(cited) == null,
+        'the derived conversation to be purged');
+    expect(await tester.runAsync(() => service.getThread(other)), isNotNull,
+        reason: 'unrelated conversations are untouched');
+    await settleUntil(tester, find.textContaining('1 conversation turn'),
+        budget: const Duration(seconds: 30));
   });
 }
 

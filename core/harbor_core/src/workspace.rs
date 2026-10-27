@@ -223,6 +223,14 @@ impl Workspace {
         ))
     }
 
+    /// Key for sealing Ask conversations (threads + messages) at rest,
+    /// derived from the workspace key (domain-separated). Never persisted.
+    pub fn ask_thread_key(&self) -> Result<harbor_store::keys::KeyMaterial, HarborError> {
+        Ok(harbor_store::kcipher::ask_thread_key(
+            self.workspace_key.kek_material(),
+        ))
+    }
+
     /// Default egress session lifetime for explicit acquisition sessions.
     pub fn acquisition_session_ttl() -> Duration {
         Duration::minutes(10)

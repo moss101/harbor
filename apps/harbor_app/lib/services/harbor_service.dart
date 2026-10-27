@@ -8,6 +8,14 @@ import 'package:flutter/widgets.dart';
 import 'package:harbor_domain/harbor_domain.dart';
 import 'package:harbor_native/harbor_ffi.dart' as ffi;
 import 'package:harbor_native/harbor_worker.dart';
+import 'package:harbor_ui/deck_designer.dart'
+    show
+        DeckCatalog,
+        DeckDesignerApi,
+        DeckRestyleResult,
+        DeckStarterResult,
+        DeckStyleChoice;
+import 'package:harbor_ui/slides.dart' show DeckScene;
 
 import 'file_passages.dart';
 
@@ -21,7 +29,7 @@ export 'file_passages.dart' show FileDocument, FilePassage;
 /// work (model acquisition, knowledge ingestion, grounded generation)
 /// executes on native threads in the core and is surfaced here through
 /// [opProgress] snapshots the UI can render and cancel.
-class HarborService extends ChangeNotifier {
+class HarborService extends ChangeNotifier implements DeckDesignerApi {
   HarborService._(this._worker);
 
   /// A service with no core behind it: every core call fails with a typed
@@ -67,6 +75,12 @@ class HarborService extends ChangeNotifier {
   List<SkillSummary> _skills = [];
   Map<String, dynamic>? _preview;
   List<int>? _sourceBytes;
+
+  /// The bytes the open file had when it was opened or last saved as a
+  /// copy. The working copy ([_sourceBytes]) differs from it exactly when
+  /// there is something to save (compared by identity: every edit adopts
+  /// fresh bytes from the core).
+  List<int>? _savedBytes;
   String? _previewName;
   String? _previewPath;
   String? _previewError;
@@ -685,17 +699,23 @@ class HarborService extends ChangeNotifier {
   /// Throws [ffi.HarborCoreException] on failure or cancellation.
   /// With [collection], the answer is grounded ONLY on that collection's
   /// sources (no collection: the whole Library).
+  ///
+  /// With [threadId] the core supplies the thread's earlier turns to the
+  /// model as conversation memory and records this turn in the thread once
+  /// it completes (a cancelled or failed turn is never recorded).
   Future<Map<String, dynamic>> generateAnswer(String question,
       {required String chatPackage,
       int maxTokens = 256,
       String? runId,
-      String? collection}) async {
+      String? collection,
+      String? threadId}) async {
     final answer = await _runOp('op.start_generate', {
       'question': question,
       'chat_package': chatPackage,
       'max_tokens': maxTokens,
       if (runId != null) 'run_id': runId,
       if (collection != null) 'collection': collection,
+      if (threadId != null) 'thread_id': threadId,
     });
     if (runId != null) await refresh();
     return answer;
@@ -727,6 +747,97 @@ class HarborService extends ChangeNotifier {
     });
     if (runId != null) await refresh();
     return answer;
+  }
+
+  // --- Ask conversation threads (sealed at rest in the core) -------------
+
+  /// Newest-first conversation summaries; empty when the store is
+  /// unreachable (the Ask surface then simply starts a fresh thread).
+  Future<List<Map<String, dynamic>>> listThreads() async {
+    try {
+      return _mapList((await _call('thread.list'))['threads']);
+    } on ffi.HarborCoreException {
+      return const [];
+    }
+  }
+
+  /// Create an empty thread (its title comes from the first question).
+  /// Null when the core refused.
+  Future<Map<String, dynamic>?> createThread() async {
+    try {
+      return ((await _call('thread.create'))['thread'] as Map)
+          .cast<String, dynamic>();
+    } on ffi.HarborCoreException {
+      return null;
+    }
+  }
+
+  /// A thread with its messages in order; citations carry their CURRENT
+  /// state (a removed or changed source shows as such). Null when the
+  /// thread is gone.
+  Future<Map<String, dynamic>?> getThread(String threadId) async {
+    try {
+      return await _call('thread.get', {'thread_id': threadId});
+    } on ffi.HarborCoreException {
+      return null;
+    }
+  }
+
+  Future<bool> renameThread(String threadId, String title) async {
+    try {
+      await _call('thread.rename', {'thread_id': threadId, 'title': title});
+      return true;
+    } on ffi.HarborCoreException {
+      return false;
+    }
+  }
+
+  Future<bool> deleteThread(String threadId) async {
+    try {
+      await _call('thread.delete', {'thread_id': threadId});
+      return true;
+    } on ffi.HarborCoreException {
+      return false;
+    }
+  }
+
+  /// Preview of the purge-derived-content cascade: the conversations that
+  /// hold turns derived from [sourceId] (`turns`, `threads[]`). Null when
+  /// the core refused. Reads only.
+  Future<Map<String, dynamic>?> threadsDerivedFrom(String sourceId) async {
+    try {
+      return await _call('thread.derived_from_source', {'source_id': sourceId});
+    } on ffi.HarborCoreException {
+      return null;
+    }
+  }
+
+  /// Delete every conversation turn derived from [sourceId] (a
+  /// conversation left empty goes too). Explicit by design: removing a
+  /// source never calls this. Returns the turns removed, or null on
+  /// failure.
+  Future<int?> purgeSourceFromThreads(String sourceId) async {
+    try {
+      final r = await _call('thread.purge_source', {'source_id': sourceId});
+      return (r['turns_removed'] as num).toInt();
+    } on ffi.HarborCoreException {
+      return null;
+    }
+  }
+
+  /// Record a retrieval-only turn (citations without generation).
+  Future<bool> appendSearchTurn(
+      String threadId, String question, List<dynamic> citations) async {
+    try {
+      await _call('thread.append_search', {
+        'thread_id': threadId,
+        'question': question,
+        'citations': citations,
+      });
+      return true;
+    } on ffi.HarborCoreException {
+      return false;
+    }
   }
 
   /// Run a graph skill as a cancellable background op (decision 0006).
@@ -1123,12 +1234,14 @@ class HarborService extends ChangeNotifier {
       _previewName = name;
       _previewPath = path;
       _sourceBytes = bytes;
+      _savedBytes = bytes;
     } on ffi.HarborCoreException catch (e) {
       _preview = null;
       _previewName = name;
       _previewPath = null;
       _previewError = e.message;
       _sourceBytes = null;
+      _savedBytes = null;
     }
     _previewLoading = false;
     notifyListeners();
@@ -1171,6 +1284,143 @@ class HarborService extends ChangeNotifier {
     return result;
   }
 
+  /// The core reports decks as kind `deck` (older fixtures said `pptx`).
+  static bool _isDeck(Map<String, dynamic> preview) =>
+      preview['kind'] == 'deck' || preview['kind'] == 'pptx';
+
+  // ---- designed decks: catalogue, samples, starters, restyle ----
+
+  Future<DeckCatalog>? _deckCatalog;
+
+  /// Designs, palettes, purposes and motions from the core. Cached for the
+  /// life of the service; a failed load is not cached (retry works).
+  @override
+  Future<DeckCatalog> deckCatalog() {
+    return _deckCatalog ??= () async {
+      try {
+        return DeckCatalog.fromJson(await _call('deck.catalog'));
+      } catch (_) {
+        _deckCatalog = null;
+        rethrow;
+      }
+    }();
+  }
+
+  DeckScene _sceneOf(Object? raw, String what) {
+    if (raw is Map) {
+      final scene =
+          DeckScene.fromJson(raw.map((k, v) => MapEntry(k.toString(), v)));
+      if (scene.slides.isNotEmpty) return scene;
+    }
+    throw ffi.HarborCoreException('$what carried no slides to draw');
+  }
+
+  /// A small showcase deck in [style] as a scene (slide 1 is the cover).
+  /// An empty palette means the design's own colours.
+  @override
+  Future<DeckScene> deckSample(DeckStyleChoice style) async {
+    final r = await _call('deck.sample', {
+      'theme': style.design,
+      if (style.palette != null && style.palette!.isNotEmpty)
+        'palette': style.palette,
+      'motion': style.motion,
+      'rtl': style.rtl,
+    });
+    return _sceneOf(r['scene'], 'the sample deck');
+  }
+
+  /// A full starter deck for [purpose]. [style] null = the purpose's own
+  /// design, palette and motion.
+  @override
+  Future<DeckStarterResult> deckStarter({
+    required String purpose,
+    DeckStyleChoice? style,
+    String? title,
+  }) async {
+    final r = await _call('deck.starter', {
+      'purpose': purpose,
+      if (style != null) ...{
+        'theme': style.design,
+        if (style.palette != null && style.palette!.isNotEmpty)
+          'palette': style.palette,
+        'motion': style.motion,
+        'rtl': style.rtl,
+      },
+      if (title != null && title.trim().isNotEmpty) 'title': title.trim(),
+    });
+    final scene = r['scene'];
+    return DeckStarterResult(
+      bytes: base64Decode(r['data_b64'] as String).toList(growable: false),
+      fileName: r['file_name'] as String? ?? 'Presentation.pptx',
+      title: r['title'] as String? ?? '',
+      slides: (r['slides'] as num?)?.toInt() ?? 0,
+      theme: r['theme'] as String? ?? '',
+      motion: r['motion'] as String? ?? '',
+      scene: scene is Map ? _sceneOf(scene, 'the starter deck') : null,
+    );
+  }
+
+  /// Re-style [bytes] (a deck carrying Harbor's design source). Pure: the
+  /// open working copy is untouched. An empty palette returns to the
+  /// design's own colours.
+  Future<DeckRestyleResult> deckRestyle({
+    required List<int> bytes,
+    required DeckStyleChoice style,
+  }) async {
+    final r = await _call('deck.restyle', {
+      'data_b64': base64Encode(bytes),
+      'theme': style.design,
+      'palette': style.palette ?? '',
+      'motion': style.motion,
+      'rtl': style.rtl,
+    });
+    final scene = r['scene'];
+    return DeckRestyleResult(
+      bytes: base64Decode(r['data_b64'] as String).toList(growable: false),
+      scene: scene is Map ? _sceneOf(scene, 'the restyled deck') : null,
+    );
+  }
+
+  /// Re-style the open deck and adopt the result as the new, UNSAVED
+  /// working copy. The source file is never written. Throws
+  /// [ffi.HarborCoreException] when nothing restylable is open.
+  @override
+  Future<DeckRestyleResult> restyleOpenDeck(DeckStyleChoice style) async {
+    final source = _sourceBytes;
+    final current = _preview;
+    if (source == null || current == null) {
+      throw ffi.HarborCoreException('no deck open');
+    }
+    if (!_isDeck(current)) {
+      throw ffi.HarborCoreException('the open artifact is not a deck');
+    }
+    final result = await deckRestyle(bytes: source, style: style);
+    // Preview first: if it fails, the working copy and preview still
+    // describe the same (unchanged) deck.
+    final newPreview = await _call(
+        'artifact.preview', {'data_b64': base64Encode(result.bytes)});
+    _sourceBytes = result.bytes;
+    _preview = newPreview;
+    notifyListeners();
+    return result;
+  }
+
+  /// The current working copy (edits included), for Save-a-copy.
+  List<int>? currentWorkingBytes() => _sourceBytes;
+
+  /// True when the working copy was changed (a new design, a workbook edit)
+  /// since the file was opened or last saved as a copy: there is something
+  /// to keep. The opened file itself is never written.
+  bool get hasUnsavedChanges =>
+      _sourceBytes != null && !identical(_sourceBytes, _savedBytes);
+
+  /// The working copy was saved as a copy: nothing is pending any more.
+  void markSaved() {
+    if (_savedBytes == _sourceBytes) return;
+    _savedBytes = _sourceBytes;
+    notifyListeners();
+  }
+
   /// Close the open artifact (presentation state only).
   void clearPreview() {
     _preview = null;
@@ -1178,6 +1428,7 @@ class HarborService extends ChangeNotifier {
     _previewPath = null;
     _previewError = null;
     _sourceBytes = null;
+    _savedBytes = null;
     notifyListeners();
   }
 

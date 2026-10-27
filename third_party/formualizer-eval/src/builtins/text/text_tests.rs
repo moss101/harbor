@@ -595,7 +595,8 @@ mod tests {
         let ctx = wb.interpreter();
         let f = ctx.context.get_function("", "TEXT").unwrap();
 
-        // Percent format
+        // Percent format: 12.5% rounds half away from zero to 13% (Harbor's
+        // TEXT percent patch, decision 0001 addendum; upstream truncated to 12%).
         let num = lit(LiteralValue::Number(0.125));
         let fmt = lit(LiteralValue::Text("%".into()));
         assert_eq!(
@@ -607,7 +608,7 @@ mod tests {
                 &ctx.function_context(None)
             )
             .unwrap(),
-            LiteralValue::Text("12%".into()) // 0.125 * 100 = 12.5, rounds to 12
+            LiteralValue::Text("13%".into()) // 12.5 rounds half away from zero
         );
 
         // Two decimal places

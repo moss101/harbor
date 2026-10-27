@@ -199,7 +199,7 @@ void main() {
         size: const Size(390, 844), locale: const Locale('ar'));
     await send(tester, 'ما الذي قرره المجلس؟');
     expect(find.byKey(const ValueKey('home-conversation')), findsOneWidget);
-    expect(find.text('مسح المحادثة'), findsOneWidget);
+    expect(find.text('محادثة جديدة'), findsOneWidget);
     expect(
         Directionality.of(
             tester.element(find.byKey(const ValueKey('home-conversation')))),

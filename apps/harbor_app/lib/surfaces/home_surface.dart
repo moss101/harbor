@@ -18,6 +18,7 @@ import '../widgets/route_panel.dart';
 import '../widgets/trust.dart';
 import 'knowledge_ingest.dart';
 import 'skill_run.dart';
+import 'threads_dialog.dart';
 
 export '../widgets/composer.dart' show Composer, HarborComposer;
 
@@ -35,9 +36,14 @@ export '../widgets/composer.dart' show Composer, HarborComposer;
 ///
 /// The empty conversation is the dashboard: greeting, the first-run model
 /// banner, quick actions, background work, recent durable runs, the active
-/// model and the Library index — all live facts from the core. Turns are
-/// kept for the session (the surface stack preserves them); the durable
-/// truth stays in Activity.
+/// model and the Library index — all live facts from the core.
+///
+/// Library conversations persist as threads in the core (sealed at rest):
+/// the latest is restored on entry, follow-ups are answered with the
+/// thread's earlier turns as conversation memory, and the history dialog
+/// switches, renames or deletes threads. Only completed turns are recorded.
+/// Questions about an attached file and routed tasks are not part of a
+/// thread; the durable truth for every run stays in Activity.
 class HomeSurface extends StatefulWidget {
   const HomeSurface({super.key, required this.state});
   final AppState state;
@@ -88,6 +94,12 @@ class _HomeSurfaceState extends State<HomeSurface> {
   final List<_Attachment> _attachments = [];
   final List<_Entry> _entries = [];
 
+  /// The persisted thread the visible Library turns belong to (null until
+  /// the first completed question creates one).
+  String? _threadId;
+  List<Map<String, dynamic>> _threads = const [];
+  bool _restoreTried = false;
+
   /// What the next question is about (Everything or one collection). A
   /// file attached to the request overrides it ("This file").
   ComposerScope _scope = const ComposerScope.everything();
@@ -111,6 +123,17 @@ class _HomeSurfaceState extends State<HomeSurface> {
     super.initState();
     widget.state.addListener(_consumePending);
     _composer.addListener(_onComposerChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // The core may open after this surface first builds: restore the
+    // latest conversation once it is reachable.
+    if (!_restoreTried && HarborServiceProvider.of(context).notifier != null) {
+      _restoreTried = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _restoreLatest());
+    }
   }
 
   @override
@@ -287,6 +310,7 @@ class _HomeSurfaceState extends State<HomeSurface> {
       return;
     }
     final runId = chat == null ? null : HarborService.newRunId();
+    String? created;
     final turn =
         AnswerTurn(question, runId: runId, collection: entry.collection);
     setState(() => entry.turn = turn);
@@ -307,15 +331,37 @@ class _HomeSurfaceState extends State<HomeSurface> {
         }
       } else {
         await service.createRun(runId!);
+        var threadId = _threadId;
+        if (threadId == null) {
+          // A thread the core cannot create costs persistence, not the
+          // answer: the turn still runs, unrecorded.
+          created = threadId =
+              (await service.createThread())?['thread_id'] as String?;
+          if (mounted) _threadId = threadId;
+        }
         turn.answer = await service.generateAnswer(question,
-            chatPackage: chat, runId: runId, collection: entry.collection);
+            chatPackage: chat,
+            runId: runId,
+            collection: entry.collection,
+            threadId: threadId);
       }
     } on ffi.HarborCoreException catch (e) {
       turn.cancelled = e.message.toLowerCase().contains('cancel');
       turn.error = turn.cancelled ? null : e.message;
     }
+    // The core records only completed turns: a thread created for this
+    // attempt is still empty, so it is dropped rather than left behind.
+    if (turn.answer == null && created != null) {
+      await service.deleteThread(created);
+      if (mounted && _threadId == created) _threadId = null;
+    }
     if (!mounted) return;
     setState(() => turn.busy = false);
+    if (turn.answer != null && _threadId != null) await _refreshThreads();
+    if (turn.evidence != null && office == null) {
+      await _recordSearchTurn(service, question,
+          (turn.evidence!['citations'] as List?) ?? const []);
+    }
   }
 
   /// Retrieval-only: Library citations for the composer text, without
@@ -347,7 +393,136 @@ class _HomeSurfaceState extends State<HomeSurface> {
       turn.evidence = result ?? const {'citations': []};
       turn.busy = false;
     });
+    await _recordSearchTurn(
+        service, question, (turn.evidence!['citations'] as List?) ?? const []);
     _scrollToEnd();
+  }
+
+  /// A retrieval-only turn belongs to the thread too, so a restored
+  /// conversation shows what the person saw.
+  Future<void> _recordSearchTurn(
+      HarborService service, String question, List<dynamic> citations) async {
+    var threadId = _threadId;
+    String? created;
+    if (threadId == null) {
+      created =
+          threadId = (await service.createThread())?['thread_id'] as String?;
+      if (threadId == null) return;
+      if (mounted) _threadId = threadId;
+    }
+    // Source chunk text is evidence, not conversation: never sent on.
+    final slim = [
+      for (final c in citations.cast<Map>())
+        {...c.cast<String, dynamic>()}..remove('_text'),
+    ];
+    final ok = await service.appendSearchTurn(threadId, question, slim);
+    if (!ok && created != null) {
+      await service.deleteThread(created);
+      if (mounted && _threadId == created) _threadId = null;
+    }
+    if (mounted) await _refreshThreads();
+  }
+
+  Future<void> _refreshThreads() async {
+    final service = HarborServiceProvider.of(context).notifier;
+    if (service == null) return;
+    final all = await service.listThreads();
+    if (!mounted) return;
+    setState(() {
+      // A thread with no completed turn is not a conversation yet.
+      _threads = [
+        for (final t in all)
+          if (((t['turns'] as num?) ?? 0) > 0) t
+      ];
+    });
+  }
+
+  Future<void> _restoreLatest() async {
+    await _refreshThreads();
+    if (!mounted || _threads.isEmpty) return;
+    await _openThread(_threads.first['thread_id'] as String, onlyIfEmpty: true);
+  }
+
+  /// Load a persisted thread into the view. [onlyIfEmpty] keeps an
+  /// automatic restore from clobbering a question the person already began.
+  Future<void> _openThread(String id, {bool onlyIfEmpty = false}) async {
+    final service = HarborServiceProvider.of(context).notifier;
+    if (service == null) return;
+    final got = await service.getThread(id);
+    if (!mounted) return;
+    if (onlyIfEmpty && (_entries.isNotEmpty || _threadId != null)) return;
+    if (got == null) {
+      await _refreshThreads();
+      return;
+    }
+    setState(() {
+      _threadId = id;
+      _entries
+        ..clear()
+        ..addAll(_entriesFrom((got['messages'] as List).cast<Map>()));
+    });
+    _scrollToEnd();
+  }
+
+  /// Rebuild the visible entries from persisted messages: each question is
+  /// followed by its answer (or its retrieval-only evidence).
+  List<_Entry> _entriesFrom(List<Map> messages) {
+    final entries = <_Entry>[];
+    for (var i = 0; i < messages.length; i++) {
+      final m = messages[i];
+      if (m['role'] != 'user') continue;
+      final reply = i + 1 < messages.length ? messages[i + 1] : null;
+      final meta =
+          ((reply?['meta'] as Map?) ?? const {}).cast<String, dynamic>();
+      final turn = AnswerTurn(m['text'] as String,
+          runId: meta['run_id'] as String?)
+        ..busy = false;
+      final citations = (meta['citations'] as List?) ?? const [];
+      if (reply?['kind'] == 'answer') {
+        turn.answer = {
+          'answer': reply!['text'],
+          'used_citations': meta['used_citations'] == true,
+          'executed_on': meta['executed_on'] ?? '',
+          'execution': 'ON_DEVICE',
+          'usage': meta['usage'] ?? const {},
+          'citations': citations,
+        };
+      } else if (reply?['kind'] == 'search') {
+        turn.evidence = {'citations': citations};
+      }
+      entries.add(_Entry(m['text'] as String)
+        ..routing = false
+        ..turn = turn);
+    }
+    return entries;
+  }
+
+  Future<void> _showThreads() async {
+    final service = HarborServiceProvider.of(context).notifier;
+    if (service == null) return;
+    await _refreshThreads();
+    if (!mounted) return;
+    final picked = await showDialog<String>(
+      context: context,
+      builder: (_) => ThreadsDialog(
+        service: service,
+        threads: _threads,
+        currentId: _threadId,
+        onDeleted: (id) {
+          if (id == _threadId) {
+            setState(() {
+              _entries.clear();
+              _threadId = null;
+            });
+          }
+          _refreshThreads();
+        },
+        onRenamed: (_) => _refreshThreads(),
+      ),
+    );
+    if (picked != null && picked != _threadId && mounted) {
+      await _openThread(picked);
+    }
   }
 
   void _cancel() {
@@ -381,7 +556,11 @@ class _HomeSurfaceState extends State<HomeSurface> {
     );
   }
 
-  void _clearConversation() => setState(_entries.clear);
+  /// Start a fresh conversation; the current one stays in the history.
+  void _newConversation() => setState(() {
+        _entries.clear();
+        _threadId = null;
+      });
 
   String _greeting(AppLocalizations l10n) {
     final hour = DateTime.now().hour;
@@ -409,6 +588,13 @@ class _HomeSurfaceState extends State<HomeSurface> {
           spacing: HarborSpace.s1,
           runSpacing: HarborSpace.s1,
           children: [
+            if (service != null)
+              IconButton(
+                key: const ValueKey('home-conversations'),
+                tooltip: l10n.askConversationsTooltip,
+                onPressed: _busy ? null : _showThreads,
+                icon: const Icon(Icons.history),
+              ),
             IconButton(
               key: const ValueKey('home-search-only'),
               tooltip: l10n.askSearchOnly,
@@ -506,9 +692,9 @@ class _HomeSurfaceState extends State<HomeSurface> {
                 alignment: AlignmentDirectional.centerStart,
                 child: TextButton.icon(
                   key: const ValueKey('home-clear-conversation'),
-                  onPressed: _busy ? null : _clearConversation,
-                  icon: const Icon(Icons.delete_sweep_outlined, size: 18),
-                  label: Text(l10n.askClearConversation),
+                  onPressed: _busy ? null : _newConversation,
+                  icon: const Icon(Icons.add_comment_outlined, size: 18),
+                  label: Text(l10n.askNewConversation),
                 ),
               ),
             ),

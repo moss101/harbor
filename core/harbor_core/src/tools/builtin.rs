@@ -48,6 +48,7 @@ pub fn all() -> Vec<Arc<dyn Tool>> {
         Arc::new(super::create::DocxBuild::new()),
         Arc::new(super::authoring::WorkbookVerifySpec::new()),
         Arc::new(super::authoring::DeckVerifyOutline::new()),
+        Arc::new(super::authoring::DeckBrief::new()),
         Arc::new(super::authoring::DocumentVerifyDraft::new()),
         Arc::new(super::authoring::EmailVerifyDraft::new()),
         Arc::new(super::authoring::EmailRender::new()),
@@ -1542,6 +1543,9 @@ const FORMULA_COVERAGE_JSON: &str = include_str!("../../../../22_Formula_Coverag
 /// the file is opened elsewhere); a sheet name not in `known_sheets` is a
 /// dangling or foreign reference. `known_sheets` empty skips the sheet
 /// check (the caller had no workbook facts).
+/// Functions that are never allowed in model-written formulas (see the gate).
+const REACH_OUTSIDE_THE_WORKBOOK: &[&str] = &["HYPERLINK", "INDIRECT", "CELL", "INFO"];
+
 pub fn check_formula_allowed(formula: &str, known_sheets: &[String]) -> Result<(), String> {
     let body = formula.trim().trim_start_matches('=');
     if body.is_empty() {
@@ -1579,6 +1583,16 @@ pub fn check_formula_allowed(formula: &str, known_sheets: &[String]) -> Result<(
     let qualified = qualified_functions();
     for cap in fn_re.captures_iter(&stripped) {
         let name = cap[1].to_ascii_uppercase();
+        // Qualification says the engine calculates a function like Excel; it
+        // does not make the function safe to WRITE into a workbook. These can
+        // reach outside the sheet (a URL, a reference built from text that the
+        // static scan above cannot see, the file's own path), so a model may
+        // never put them in a formula whatever their qualification status.
+        if REACH_OUTSIDE_THE_WORKBOOK.contains(&name.as_str()) {
+            return Err(format!(
+                "function {name} can reach outside the workbook and is not allowed in generated formulas"
+            ));
+        }
         if !qualified.contains(&name) {
             return Err(format!("function {name} is not in the qualified set"));
         }
@@ -2509,9 +2523,18 @@ mod tests {
             assert!(q.contains(f), "{f}");
         }
         assert!(!q.contains("ARITHMETIC_OPERATORS"));
-        // 99 authority targets - 5 operator/reference pseudo-targets
-        // (tier-2 engine expansion grew the set; see 22_Formula_Coverage).
-        assert_eq!(q.len(), 94);
+        // 407 authority targets - 5 operator/reference pseudo-targets
+        // (the tier-2 and batch expansions grew the set; see 22_Formula_Coverage
+        // and docs/operations/formula-expansion.md).
+        assert_eq!(q.len(), 402);
+        // Qualified for calculation, yet never writable by a model.
+        for f in ["HYPERLINK", "INDIRECT", "CELL"] {
+            assert!(q.contains(f), "{f} is qualified");
+            assert!(
+                check_formula_allowed(&format!("={f}(A1)"), &[]).is_err(),
+                "{f} must stay blocked for generated formulas"
+            );
+        }
     }
 
     #[test]

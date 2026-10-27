@@ -199,6 +199,58 @@ fn add_months(date: &NaiveDate, months: i32) -> NaiveDate {
     }
 }
 
+/// Quasi-coupon date `k` periods (`k` may be negative) from `anchor`, stepping
+/// `step` months per period. Always computed from the anchor (not iteratively) and
+/// keeps end-of-month anchors on month-end, as Excel's coupon schedule does.
+fn quasi_coupon(anchor: &NaiveDate, k: i32, step: i32) -> NaiveDate {
+    let d = add_months(anchor, k * step);
+    if is_last_day_of_month(anchor) {
+        let first_next = if d.month() == 12 {
+            NaiveDate::from_ymd_opt(d.year() + 1, 1, 1).unwrap()
+        } else {
+            NaiveDate::from_ymd_opt(d.year(), d.month() + 1, 1).unwrap()
+        };
+        first_next - chrono::Duration::days(1)
+    } else {
+        d
+    }
+}
+
+/// Actual/actual accrual fraction for ACCRINT: sum over the quasi-coupon periods
+/// touched by [start, end] of `days_in_overlap / (period_days * frequency)`.
+fn accrint_act_act_fraction(
+    start: &NaiveDate,
+    end: &NaiveDate,
+    anchor: &NaiveDate,
+    frequency: i32,
+) -> f64 {
+    let step = 12 / frequency;
+    // Smallest k with quasi(k) <= start, scanning outward from the anchor.
+    let mut k = 0;
+    while quasi_coupon(anchor, k, step) > *start {
+        k -= 1;
+    }
+    while quasi_coupon(anchor, k + 1, step) <= *start {
+        k += 1;
+    }
+    let mut total = 0.0;
+    loop {
+        let p0 = quasi_coupon(anchor, k, step);
+        let p1 = quasi_coupon(anchor, k + 1, step);
+        let from = if p0 > *start { p0 } else { *start };
+        let to = if p1 < *end { p1 } else { *end };
+        let days = (to - from).num_days() as f64;
+        if days > 0.0 {
+            total += days / (((p1 - p0).num_days() as f64) * frequency as f64);
+        }
+        if p1 >= *end {
+            break;
+        }
+        k += 1;
+    }
+    total
+}
+
 /// Count the number of coupons remaining
 fn coupons_remaining(settlement: &NaiveDate, maturity: &NaiveDate, frequency: i32) -> i32 {
     let months_between_coupons = 12 / frequency;
@@ -347,7 +399,13 @@ impl Function for AccrintFn {
         // Calculate accrued interest
         // If calc_method is TRUE (or 1), calculate from issue to settlement
         // If calc_method is FALSE (or 0), calculate from last coupon to settlement
-        let accrued_interest = if calc_method != 0 {
+        let accrued_interest = if basis == DayCountBasis::ActualActual && calc_method != 0 {
+            // Excel's actual/actual ACCRINT is the documented par*rate*sum(A/(NL*freq)):
+            // each quasi-coupon period (anchored on first_interest) contributes its
+            // accrued days over (its own actual length * frequency). It is NOT a
+            // calendar-year proration (which is what year_fraction gives).
+            par * rate * accrint_act_act_fraction(&issue, &settlement, &first_interest, frequency)
+        } else if calc_method != 0 {
             // Calculate from issue date to settlement date
             // ACCRINT = par * rate * year_fraction(issue, settlement)
             let yf = year_fraction(&issue, &settlement, basis);
@@ -1300,5 +1358,16 @@ mod tests {
                 other => panic!("expected numeric ACCRINTM under {system:?}, got {other:?}"),
             }
         }
+    }
+
+    #[test]
+    fn accrint_actual_actual_uses_quasi_coupon_period_length() {
+        // Excel: ACCRINT(3/1/2026, 8/31/2026, 5/1/2026, 0.1, 1000, 4, 1) = 16.5760869565217
+        // = 1000*0.1 * 61 / (92*4): the period 2/28-5/31 is 92 days long.
+        let i = NaiveDate::from_ymd_opt(2026, 3, 1).unwrap();
+        let s = NaiveDate::from_ymd_opt(2026, 5, 1).unwrap();
+        let f = NaiveDate::from_ymd_opt(2026, 8, 31).unwrap();
+        let got = 1000.0 * 0.1 * accrint_act_act_fraction(&i, &s, &f, 4);
+        assert!((got - 16.5760869565217).abs() < 1e-9, "{got}");
     }
 }

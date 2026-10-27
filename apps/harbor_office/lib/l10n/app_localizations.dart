@@ -2817,6 +2817,414 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Printing is not available here — use Export PDF instead.'**
   String get workPrintUnavailable;
+
+  /// No description provided for @deckPresent.
+  ///
+  /// In en, this message translates to:
+  /// **'Present'**
+  String get deckPresent;
+
+  /// No description provided for @deckPresentFromStart.
+  ///
+  /// In en, this message translates to:
+  /// **'From beginning'**
+  String get deckPresentFromStart;
+
+  /// No description provided for @deckPreviewMotion.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview motion'**
+  String get deckPreviewMotion;
+
+  /// No description provided for @deckStopPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop preview'**
+  String get deckStopPreview;
+
+  /// No description provided for @deckUnsupportedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Some content on this slide can\'t be previewed: {items}'**
+  String deckUnsupportedNote(String items);
+
+  /// No description provided for @deckFilmstrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Slide navigator'**
+  String get deckFilmstrip;
+
+  /// No description provided for @presentSlideOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Slide {index} of {count}'**
+  String presentSlideOf(int index, int count);
+
+  /// No description provided for @presentExit.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit presentation'**
+  String get presentExit;
+
+  /// No description provided for @presentNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get presentNext;
+
+  /// No description provided for @presentPrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get presentPrevious;
+
+  /// No description provided for @presentShowNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Show speaker notes'**
+  String get presentShowNotes;
+
+  /// No description provided for @presentHideNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide speaker notes'**
+  String get presentHideNotes;
+
+  /// No description provided for @presentNoNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'No notes for this slide'**
+  String get presentNoNotes;
+
+  /// No description provided for @presentElapsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Elapsed {time}'**
+  String presentElapsed(String time);
+
+  /// No description provided for @presentBlackScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Black screen'**
+  String get presentBlackScreen;
+
+  /// No description provided for @presentWhiteScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'White screen'**
+  String get presentWhiteScreen;
+
+  /// No description provided for @presentProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Presentation progress'**
+  String get presentProgress;
+
+  /// No description provided for @workNewPresentation.
+  ///
+  /// In en, this message translates to:
+  /// **'New presentation'**
+  String get workNewPresentation;
+
+  /// No description provided for @deckNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New presentation'**
+  String get deckNewTitle;
+
+  /// No description provided for @deckStepPurpose.
+  ///
+  /// In en, this message translates to:
+  /// **'Purpose'**
+  String get deckStepPurpose;
+
+  /// No description provided for @deckStepDesign.
+  ///
+  /// In en, this message translates to:
+  /// **'Design'**
+  String get deckStepDesign;
+
+  /// No description provided for @deckStepStyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Motion and language'**
+  String get deckStepStyle;
+
+  /// No description provided for @deckStepOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {step} of {count}'**
+  String deckStepOf(int step, int count);
+
+  /// No description provided for @deckPurposeHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'What is this presentation for?'**
+  String get deckPurposeHeading;
+
+  /// No description provided for @deckPurposeHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Each purpose comes with a ready-made storyline.'**
+  String get deckPurposeHelp;
+
+  /// No description provided for @deckDesignHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a design'**
+  String get deckDesignHeading;
+
+  /// No description provided for @deckStyleHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose motion and language'**
+  String get deckStyleHeading;
+
+  /// No description provided for @deckPaletteHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Colours'**
+  String get deckPaletteHeading;
+
+  /// No description provided for @deckPaletteOwn.
+  ///
+  /// In en, this message translates to:
+  /// **'Design\'s own'**
+  String get deckPaletteOwn;
+
+  /// No description provided for @deckMotionHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Motion'**
+  String get deckMotionHeading;
+
+  /// No description provided for @deckMotionNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get deckMotionNone;
+
+  /// No description provided for @deckMotionSubtle.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtle'**
+  String get deckMotionSubtle;
+
+  /// No description provided for @deckMotionDynamic.
+  ///
+  /// In en, this message translates to:
+  /// **'Dynamic'**
+  String get deckMotionDynamic;
+
+  /// No description provided for @deckMotionCinematic.
+  ///
+  /// In en, this message translates to:
+  /// **'Cinematic'**
+  String get deckMotionCinematic;
+
+  /// No description provided for @deckMotionNoneDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'No motion'**
+  String get deckMotionNoneDesc;
+
+  /// No description provided for @deckMotionSubtleDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Gentle fades'**
+  String get deckMotionSubtleDesc;
+
+  /// No description provided for @deckMotionDynamicDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Pushes, floats and zooms'**
+  String get deckMotionDynamicDesc;
+
+  /// No description provided for @deckMotionCinematicDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Ripples, vortex and staged builds'**
+  String get deckMotionCinematicDesc;
+
+  /// No description provided for @deckLanguageHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get deckLanguageHeading;
+
+  /// No description provided for @deckLanguageLtr.
+  ///
+  /// In en, this message translates to:
+  /// **'English (left to right)'**
+  String get deckLanguageLtr;
+
+  /// No description provided for @deckLanguageRtl.
+  ///
+  /// In en, this message translates to:
+  /// **'Arabic (right to left)'**
+  String get deckLanguageRtl;
+
+  /// No description provided for @deckDarkLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get deckDarkLabel;
+
+  /// No description provided for @deckLightLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get deckLightLabel;
+
+  /// No description provided for @deckSuggested.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested'**
+  String get deckSuggested;
+
+  /// No description provided for @deckThumbUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No preview'**
+  String get deckThumbUnavailable;
+
+  /// No description provided for @deckGalleryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Designs'**
+  String get deckGalleryLabel;
+
+  /// No description provided for @deckPaletteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour palettes'**
+  String get deckPaletteLabel;
+
+  /// No description provided for @deckMotionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Motion presets'**
+  String get deckMotionLabel;
+
+  /// No description provided for @deckPurposeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Presentation purposes'**
+  String get deckPurposeLabel;
+
+  /// No description provided for @deckBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get deckBack;
+
+  /// No description provided for @deckNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get deckNext;
+
+  /// No description provided for @deckCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create presentation'**
+  String get deckCreate;
+
+  /// No description provided for @deckCreating.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating your presentation…'**
+  String get deckCreating;
+
+  /// No description provided for @deckCreateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t create the presentation'**
+  String get deckCreateFailed;
+
+  /// No description provided for @deckRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get deckRetry;
+
+  /// No description provided for @deckCatalogFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the designs'**
+  String get deckCatalogFailed;
+
+  /// No description provided for @deckCatalogLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading designs…'**
+  String get deckCatalogLoading;
+
+  /// No description provided for @deckPreviewHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get deckPreviewHeading;
+
+  /// No description provided for @deckPreviewOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview of {name}'**
+  String deckPreviewOf(String name);
+
+  /// No description provided for @deckPreviewUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview unavailable'**
+  String get deckPreviewUnavailable;
+
+  /// No description provided for @deckChangeDesign.
+  ///
+  /// In en, this message translates to:
+  /// **'Design'**
+  String get deckChangeDesign;
+
+  /// No description provided for @deckChangeDesignDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'This deck was saved by another app, so its design can\'t be changed here.'**
+  String get deckChangeDesignDisabled;
+
+  /// No description provided for @deckChangeDesignTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change design'**
+  String get deckChangeDesignTitle;
+
+  /// No description provided for @deckCurrentDesign.
+  ///
+  /// In en, this message translates to:
+  /// **'Current design: {name}'**
+  String deckCurrentDesign(String name);
+
+  /// No description provided for @deckApplyDesign.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply design'**
+  String get deckApplyDesign;
+
+  /// No description provided for @deckDesignApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Design changed. Save a copy to keep it.'**
+  String get deckDesignApplied;
+
+  /// No description provided for @deckDesignFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t change the design'**
+  String get deckDesignFailed;
+
+  /// No description provided for @deckRestyling.
+  ///
+  /// In en, this message translates to:
+  /// **'Applying the design…'**
+  String get deckRestyling;
 }
 
 class _AppLocalizationsDelegate

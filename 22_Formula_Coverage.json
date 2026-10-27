@@ -4,9 +4,9 @@
   "adapter": "harbor_formula",
   "selected_engine": {
     "family": "Formualizer",
-    "candidate_version": "0.9.3+harbor-textfix",
-    "production_source_revision": "crates.io/formualizer@0.9.3 + third_party/formualizer-eval (TEXT percent patch)",
-    "production_integrity_hash": "35c17c3bc2866282cdf492ab6c681ef157acbd2ff2c092b9311953da66599b9d",
+    "candidate_version": "0.9.3+harbor-excel-fidelity",
+    "production_source_revision": "crates.io/formualizer@0.9.3 + third_party/formualizer-eval (TEXT percent patch + Excel-fidelity patch set, decision 0001 addenda)",
+    "production_integrity_hash": "d7daffb7ed52e4ccbe663674dadc17c60c5732d5ce50b8283667dc9e02c5d333",
     "license_review": "APPROVED: MIT OR Apache-2.0, docs/decisions/0001-formula-engine-pin.md (incl. patch addendum)"
   },
   "verification_rule": "Only entries with qualification_status=PASS for the exact engine source revision, Harbor adapter revision, fixture corpus version and platform set are verified. Presence in this file is not itself evidence.",
@@ -485,6 +485,1354 @@
           "status": "REQUIRED_UNQUALIFIED"
         }
       ]
+    },
+    {
+      "group": "engine_expansion_b01",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "notes": "Formula expansion batch 01: Trigonometry, hyperbolics and angle helpers. Expected values taken from Microsoft Excel (not from the engine); a function is included only when every one of its cases agrees between Excel and the pinned engine.",
+      "functions": [
+        {
+          "name": "ACOS",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ACOSH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ACOT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ACOTH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ASIN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ASINH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ATAN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ATAN2",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ATANH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "COS",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "COSH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "COT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "COTH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CSC",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CSCH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SEC",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SECH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SIN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SINH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TAN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TANH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DEGREES",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "RADIANS",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "PI",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SQRTPI",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "engine_expansion_b02",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "notes": "Formula expansion batch 02: Rounding variants, combinatorics, number bases and sums of products. Expected values taken from Microsoft Excel (not from the engine); a function is included only when every one of its cases agrees between Excel and the pinned engine.",
+      "functions": [
+        {
+          "name": "ARABIC",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "BASE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CEILING.MATH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CEILING.PRECISE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "COMBIN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "COMBINA",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DECIMAL",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "EVEN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "FACT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "FACTDOUBLE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "FLOOR.MATH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "FLOOR.PRECISE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ISO.CEILING",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "LOG",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "MROUND",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "MULTINOMIAL",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ODD",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "PERMUT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ROMAN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SERIESSUM",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SUMPRODUCT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SUMSQ",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SUMX2MY2",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SUMX2PY2",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SUMXMY2",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "engine_expansion_b03",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "notes": "Formula expansion batch 03: Information, logical and reference helpers. Expected values taken from Microsoft Excel (not from the engine); a function is included only when every one of its cases agrees between Excel and the pinned engine.",
+      "functions": [
+        {
+          "name": "ERROR.TYPE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ISERR",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ISERROR",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ISEVEN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ISFORMULA",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ISLOGICAL",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ISNONTEXT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ISREF",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "N",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "NA",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "T",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TYPE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TRUE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "FALSE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "XOR",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ADDRESS",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "COLUMN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "COLUMNS",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ROW",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ROWS",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "LOOKUP",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "XMATCH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "FORMULATEXT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "HYPERLINK",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "engine_expansion_b04",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "notes": "Formula expansion batch 04: Descriptive statistics, correlation and regression. Expected values taken from Microsoft Excel (not from the engine); a function is included only when every one of its cases agrees between Excel and the pinned engine.",
+      "functions": [
+        {
+          "name": "AVEDEV",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "AVERAGEA",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DEVSQ",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "GEOMEAN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "HARMEAN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "KURT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SKEW",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SKEW.P",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "MAXA",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "MINA",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "MINIFS",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "STDEVA",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "STDEVPA",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "VARA",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "VARPA",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "MODE.SNGL",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TRIMMEAN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CORREL",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "PEARSON",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "COVARIANCE.P",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "COVARIANCE.S",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "RSQ",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SLOPE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "INTERCEPT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "STEYX",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "engine_expansion_b05",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "notes": "Formula expansion batch 05: Probability distributions: normal, lognormal, exponential, discrete and gamma. Expected values taken from Microsoft Excel (not from the engine); a function is included only when every one of its cases agrees between Excel and the pinned engine.",
+      "functions": [
+        {
+          "name": "FISHER",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "FISHERINV",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "STANDARDIZE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "GAUSS",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "PHI",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "NORM.DIST",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "NORM.INV",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "NORM.S.DIST",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "NORM.S.INV",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "LOGNORM.DIST",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "LOGNORM.INV",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "EXPON.DIST",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "POISSON.DIST",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "BINOM.DIST",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "BINOM.INV",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "BINOM.DIST.RANGE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "NEGBINOM.DIST",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "HYPGEOM.DIST",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "WEIBULL.DIST",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "GAMMA",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "GAMMALN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "GAMMALN.PRECISE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "GAMMA.DIST",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "GAMMA.INV",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "engine_expansion_b06",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "notes": "Formula expansion batch 06: Probability distributions part 2, hypothesis tests and order statistics. Expected values taken from Microsoft Excel (not from the engine); a function is included only when every one of its cases agrees between Excel and the pinned engine.",
+      "functions": [
+        {
+          "name": "BETA.DIST",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "BETA.INV",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CHISQ.DIST",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CHISQ.DIST.RT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CHISQ.INV",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CHISQ.INV.RT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CHISQ.TEST",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "F.DIST",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "F.DIST.RT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "F.INV",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "F.INV.RT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "F.TEST",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "T.DIST",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "T.DIST.2T",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "T.DIST.RT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "T.INV",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "T.INV.2T",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "T.TEST",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "Z.TEST",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CONFIDENCE.NORM",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CONFIDENCE.T",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "PERCENTILE.EXC",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "PERCENTRANK.EXC",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "PERCENTRANK.INC",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "QUARTILE.EXC",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "engine_expansion_b07",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "notes": "Formula expansion batch 07: Regression and ranking statistics; date and time functions. Expected values taken from Microsoft Excel (not from the engine); a function is included only when every one of its cases agrees between Excel and the pinned engine.",
+      "functions": [
+        {
+          "name": "FORECAST.LINEAR",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "QUARTILE.INC",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "RANK.AVG",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "FREQUENCY",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "GROWTH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "LINEST",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "LOGEST",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "MODE.MULT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TREND",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DATEDIF",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DATEVALUE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DAYS360",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "HOUR",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "MINUTE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SECOND",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ISOWEEKNUM",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "NETWORKDAYS.INTL",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TIME",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TIMEVALUE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "WEEKNUM",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "WORKDAY.INTL",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "YEARFRAC",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "engine_expansion_b08",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "notes": "Formula expansion batch 08: Engineering: base conversion, bit operations, error functions, COMPLEX and CONVERT. Expected values taken from Microsoft Excel (not from the engine); a function is included only when every one of its cases agrees between Excel and the pinned engine.",
+      "functions": [
+        {
+          "name": "BIN2DEC",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "BIN2HEX",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "BIN2OCT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DEC2BIN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DEC2HEX",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DEC2OCT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "HEX2BIN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "HEX2DEC",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "HEX2OCT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "OCT2BIN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "OCT2DEC",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "OCT2HEX",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "BITAND",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "BITLSHIFT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "BITOR",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "BITRSHIFT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "BITXOR",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DELTA",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "GESTEP",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ERF",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ERF.PRECISE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ERFC",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ERFC.PRECISE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "COMPLEX",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CONVERT",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "engine_expansion_b09",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "notes": "Formula expansion batch 09: Engineering: complex-number functions. Expected values taken from Microsoft Excel (not from the engine); a function is included only when every one of its cases agrees between Excel and the pinned engine.",
+      "functions": [
+        {
+          "name": "IMABS",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMAGINARY",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMARGUMENT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMCONJUGATE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMCOS",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMCOSH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMCOT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMCSC",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMCSCH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMDIV",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMEXP",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMLN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMLOG10",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMLOG2",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMPOWER",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMPRODUCT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMREAL",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMSEC",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMSECH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMSIN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMSINH",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMSQRT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMSUB",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMSUM",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IMTAN",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "engine_expansion_b10",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "notes": "Formula expansion batch 10: Bessel functions and core financial functions. Expected values taken from Microsoft Excel (not from the engine); a function is included only when every one of its cases agrees between Excel and the pinned engine.",
+      "functions": [
+        {
+          "name": "BESSELI",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "BESSELJ",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "BESSELK",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "BESSELY",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "FV",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "PV",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "PMT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "NPER",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "RATE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IPMT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "PPMT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ISPMT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "NPV",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "IRR",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "MIRR",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SLN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SYD",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DB",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DDB",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "EFFECT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "NOMINAL",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "PDURATION",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "RRI",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DOLLARDE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DOLLARFR",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "engine_expansion_b11",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "notes": "Formula expansion batch 11: Dated financial functions, text conversion and AGGREGATE. Expected values taken from Microsoft Excel (not from the engine); a function is included only when every one of its cases agrees between Excel and the pinned engine.",
+      "functions": [
+        {
+          "name": "ACCRINT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ACCRINTM",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CUMIPMT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CUMPRINC",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "PRICE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "YIELD",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TBILLEQ",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TBILLPRICE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TBILLYIELD",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "XIRR",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "XNPV",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CLEAN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CODE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DOLLAR",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "FIXED",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "NUMBERVALUE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TEXTAFTER",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TEXTBEFORE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "UNICHAR",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "UNICODE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "VALUETOTEXT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ARRAYTOTEXT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "ASC",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "AGGREGATE",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "engine_expansion_b12",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "notes": "Formula expansion batch 12: Database functions, CELL, INDIRECT and OFFSET. Expected values taken from Microsoft Excel (not from the engine); a function is included only when every one of its cases agrees between Excel and the pinned engine.",
+      "functions": [
+        {
+          "name": "DAVERAGE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DCOUNT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DCOUNTA",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DGET",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DMAX",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DMIN",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DPRODUCT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DSTDEV",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DSTDEVP",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DSUM",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DVAR",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DVARP",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CELL",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "INDIRECT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "OFFSET",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "engine_expansion_b13",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "notes": "Formula expansion batch 13: Dynamic-array functions (values) and byte-oriented text functions. Expected values taken from Microsoft Excel (not from the engine); a function is included only when every one of its cases agrees between Excel and the pinned engine.",
+      "functions": [
+        {
+          "name": "CHOOSECOLS",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "CHOOSEROWS",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "DROP",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "FILTER",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "HSTACK",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SEQUENCE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SORT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SORTBY",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TAKE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TOCOL",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TOROW",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TRANSPOSE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "UNIQUE",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "VSTACK",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "TEXTSPLIT",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "FINDB",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "LEFTB",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "LENB",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "MIDB",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "REPLACEB",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "RIGHTB",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "SEARCHB",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "engine_expansion_b14",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "notes": "Formula expansion batch 14: LET and LAMBDA. Expected values taken from Microsoft Excel (not from the engine); a function is included only when every one of its cases agrees between Excel and the pinned engine.",
+      "functions": [
+        {
+          "name": "LET",
+          "status": "REQUIRED_UNQUALIFIED"
+        },
+        {
+          "name": "LAMBDA",
+          "status": "REQUIRED_UNQUALIFIED"
+        }
+      ]
+    },
+    {
+      "group": "engine_expansion_b15",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "notes": "Formula expansion batch 15: Regression cases: criteria-range sizes, whole-column references, CHISQ.TEST. Expected values taken from Microsoft Excel (not from the engine); a function is included only when every one of its cases agrees between Excel and the pinned engine.",
+      "functions": []
+    },
+    {
+      "group": "engine_expansion_b17",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "notes": "Formula expansion batch 17: Criteria edge cases. Expected values taken from Microsoft Excel (not from the engine); a function is included only when every one of its cases agrees between Excel and the pinned engine.",
+      "functions": []
+    },
+    {
+      "group": "engine_expansion_b16",
+      "qualification_status": "REQUIRED_UNQUALIFIED",
+      "notes": "Formula expansion batch 16: Criteria semantics matrix for the IF/IFS family. Expected values taken from Microsoft Excel (not from the engine); a function is included only when every one of its cases agrees between Excel and the pinned engine.",
+      "functions": []
     }
   ],
   "preserve_only_until_separately_qualified": [
@@ -530,7 +1878,8 @@
       "targets_total": 99,
       "known_deviations": [],
       "evidence_path": "evidence/formula_evals/macos-arm64-93ad692.json",
-      "evidence_sha256": "0dfa3966b0dd8a2cf92fa94aeb0de561f02ee2846338d236e859571930fa851e"
+      "evidence_sha256": "0dfa3966b0dd8a2cf92fa94aeb0de561f02ee2846338d236e859571930fa851e",
+      "superseded": "Historical record. Bound to engine 0.9.3+harbor-textfix and fixture bundle e1fc88a3\u2026; the engine was patched and the corpus grew on 2026-10-04 (decision 0001 addendum 2), so this tier must be re-run before it counts for the current engine and bundle."
     },
     {
       "result_type": "platform_tier",
@@ -550,7 +1899,8 @@
       "known_deviations": [],
       "evidence_path": "evidence/formula_evals/ios-sim-arm64-93ad692.json",
       "evidence_sha256": "6e042896619be6c4c42380d74589de575803ac92a8873b656297eb788f817cea",
-      "binding_note": "commit bound by the clean host tree that cross-built the binary; in-container git probe empty by design."
+      "binding_note": "commit bound by the clean host tree that cross-built the binary; in-container git probe empty by design.",
+      "superseded": "Historical record. Bound to engine 0.9.3+harbor-textfix and fixture bundle e1fc88a3\u2026; the engine was patched and the corpus grew on 2026-10-04 (decision 0001 addendum 2), so this tier must be re-run before it counts for the current engine and bundle."
     },
     {
       "result_type": "platform_tier",
@@ -570,7 +1920,182 @@
       "known_deviations": [],
       "evidence_path": "evidence/formula_evals/android-emulator-arm64-93ad692.json",
       "evidence_sha256": "5d446e51d93a5823d2c9c932d1703308de492eb8b34a2d86f3dc9e16302e873c",
-      "binding_note": "commit bound by the clean host tree that cross-built the binary (NDK 28.2 clang, API 35)."
+      "binding_note": "commit bound by the clean host tree that cross-built the binary (NDK 28.2 clang, API 35).",
+      "superseded": "Historical record. Bound to engine 0.9.3+harbor-textfix and fixture bundle e1fc88a3\u2026; the engine was patched and the corpus grew on 2026-10-04 (decision 0001 addendum 2), so this tier must be re-run before it counts for the current engine and bundle."
+    },
+    {
+      "result_type": "platform_tier",
+      "tier_note": "macOS arm64 tier of the qualified platform set on engine 0.9.3+harbor-excel-fidelity and the 398-target corpus; NOT target PASS (five-platform rule).",
+      "engine_source_revision": "crates.io/formualizer@0.9.3 + third_party/formualizer-eval (TEXT percent patch + Excel-fidelity patch set, decision 0001 addenda)",
+      "engine_sha256": "7e47672f757f2827b26c081de3586d179e409772b35e66d7652f1d8b31e21388",
+      "adapter_revision": "harbor_formula/1",
+      "fixture_bundle_sha256": "1c5a832e2be36c6e7aace7bb775300d2ead3ab7c8e2fd63011bf83d8113f100b",
+      "platform_architecture_set": [
+        "macos/aarch64"
+      ],
+      "commit": "9e32a51",
+      "cases_passed": 1220,
+      "cases_failed": 0,
+      "targets_all_pass": 398,
+      "targets_total": 398,
+      "known_deviations": [],
+      "evidence_path": "evidence/formula_evals/macos-arm64-9e32a51.json",
+      "evidence_sha256": "e304e0b60f1abfbf5df427d9c6e369f10dde784488df2f6045aa008c1ef2d02a",
+      "binding_note": "commit recorded by the run itself (clean tree).",
+      "superseded": "Historical record on commit 9e32a51. The engine gained further fixes (immediate LAMBDA calls, T.INV.2T, empty-array #CALC!) and the corpus grew to 407 targets / 1261 cases afterwards (decision 0001 addendum 3), so this tier was re-run on the next commit."
+    },
+    {
+      "result_type": "platform_tier",
+      "tier_note": "iOS SIMULATOR arm64 (iPhone 17, iOS 26.5) on engine 0.9.3+harbor-excel-fidelity and the 398-target corpus; the physical iOS/iPadOS arm64 entry still requires a device (operator-bound).",
+      "engine_source_revision": "crates.io/formualizer@0.9.3 + third_party/formualizer-eval (TEXT percent patch + Excel-fidelity patch set, decision 0001 addenda)",
+      "engine_sha256": "7e47672f757f2827b26c081de3586d179e409772b35e66d7652f1d8b31e21388",
+      "adapter_revision": "harbor_formula/1",
+      "fixture_bundle_sha256": "1c5a832e2be36c6e7aace7bb775300d2ead3ab7c8e2fd63011bf83d8113f100b",
+      "platform_architecture_set": [
+        "ios-simulator/aarch64"
+      ],
+      "commit": "9e32a51",
+      "cases_passed": 1220,
+      "cases_failed": 0,
+      "targets_all_pass": 398,
+      "targets_total": 398,
+      "known_deviations": [],
+      "evidence_path": "evidence/formula_evals/ios-sim-arm64-9e32a51.json",
+      "evidence_sha256": "528790b8b0143592451515131758d4d96eb137b225cd2bcd55ff21b02997a136",
+      "binding_note": "commit bound by the clean host tree that cross-built the binary (device runs carry no git).",
+      "superseded": "Historical record on commit 9e32a51. The engine gained further fixes (immediate LAMBDA calls, T.INV.2T, empty-array #CALC!) and the corpus grew to 407 targets / 1261 cases afterwards (decision 0001 addendum 3), so this tier was re-run on the next commit."
+    },
+    {
+      "result_type": "platform_tier",
+      "tier_note": "Android EMULATOR arm64-v8a (AVD cvbase_test) on engine 0.9.3+harbor-excel-fidelity and the 398-target corpus (NDK 27.1 clang, API 24 linker); 396/398 targets pass here \u2014 IMCOSH and IMSECH differ in the last digit of their text result because of the platform libm. The physical Android arm64-v8a entry still requires a device; Windows tiers require a Windows host (operator-bound).",
+      "engine_source_revision": "crates.io/formualizer@0.9.3 + third_party/formualizer-eval (TEXT percent patch + Excel-fidelity patch set, decision 0001 addenda)",
+      "engine_sha256": "7e47672f757f2827b26c081de3586d179e409772b35e66d7652f1d8b31e21388",
+      "adapter_revision": "harbor_formula/1",
+      "fixture_bundle_sha256": "1c5a832e2be36c6e7aace7bb775300d2ead3ab7c8e2fd63011bf83d8113f100b",
+      "platform_architecture_set": [
+        "android-emulator/aarch64"
+      ],
+      "commit": "9e32a51",
+      "cases_passed": 1218,
+      "cases_failed": 2,
+      "targets_all_pass": 396,
+      "targets_total": 398,
+      "known_deviations": [
+        {
+          "case_id": "b09-imcosh-1",
+          "target": "IMCOSH",
+          "detail": "Platform math-library difference in the last (15th) significant digit of the complex-number text result; macOS and iOS Simulator produce Excel's digit, Android's libm rounds this transcendental result differently. expected \"-6.58066304055116-7.58155274274655i\", got -6.58066304055116-7.58155274274654i"
+        },
+        {
+          "case_id": "b09-imsech-1",
+          "target": "IMSECH",
+          "detail": "Platform math-library difference in the last (15th) significant digit of the complex-number text result; macOS and iOS Simulator produce Excel's digit, Android's libm rounds this transcendental result differently. expected \"-0.065294027857947+0.0752249603027732i\", got -0.0652940278579471+0.0752249603027732i"
+        }
+      ],
+      "evidence_path": "evidence/formula_evals/android-emulator-arm64-9e32a51.json",
+      "evidence_sha256": "02d076e67e5b84f213058c86d51808632c8e5a9b6c7bb3370315f87c93c188f1",
+      "binding_note": "commit bound by the clean host tree that cross-built the binary (device runs carry no git).",
+      "superseded": "Historical record on commit 9e32a51. The engine gained further fixes (immediate LAMBDA calls, T.INV.2T, empty-array #CALC!) and the corpus grew to 407 targets / 1261 cases afterwards (decision 0001 addendum 3), so this tier was re-run on the next commit."
+    },
+    {
+      "result_type": "platform_tier",
+      "tier_note": "macOS arm64 tier on engine 0.9.3+harbor-excel-fidelity, 407-target corpus; NOT target PASS (five-platform rule).",
+      "engine_source_revision": "crates.io/formualizer@0.9.3 + third_party/formualizer-eval (TEXT percent patch + Excel-fidelity patch set, decision 0001 addenda)",
+      "engine_sha256": "d7daffb7ed52e4ccbe663674dadc17c60c5732d5ce50b8283667dc9e02c5d333",
+      "adapter_revision": "harbor_formula/1",
+      "fixture_bundle_sha256": "31d30c111d10c1ae9717cd57dd27b567ac83f23f9957f7c0cf8bb42f4ab1aa94",
+      "platform_architecture_set": [
+        "macos/aarch64"
+      ],
+      "commit": "59a9269",
+      "cases_passed": 1261,
+      "cases_failed": 0,
+      "targets_all_pass": 407,
+      "targets_total": 407,
+      "known_deviations": [],
+      "evidence_path": "evidence/formula_evals/macos-arm64-59a9269.json",
+      "evidence_sha256": "eb6b3bd0322fdc22c08aef2a681481a7f91accad693f875cb00c7201617ad151",
+      "binding_note": "commit recorded by the run itself (clean tree)."
+    },
+    {
+      "result_type": "platform_tier",
+      "tier_note": "iOS SIMULATOR arm64 (iPhone 17, iOS 26.5), same engine and corpus; the physical iOS/iPadOS arm64 entry still requires a device (operator-bound).",
+      "engine_source_revision": "crates.io/formualizer@0.9.3 + third_party/formualizer-eval (TEXT percent patch + Excel-fidelity patch set, decision 0001 addenda)",
+      "engine_sha256": "d7daffb7ed52e4ccbe663674dadc17c60c5732d5ce50b8283667dc9e02c5d333",
+      "adapter_revision": "harbor_formula/1",
+      "fixture_bundle_sha256": "31d30c111d10c1ae9717cd57dd27b567ac83f23f9957f7c0cf8bb42f4ab1aa94",
+      "platform_architecture_set": [
+        "ios-simulator/aarch64"
+      ],
+      "commit": "59a9269",
+      "cases_passed": 1261,
+      "cases_failed": 0,
+      "targets_all_pass": 407,
+      "targets_total": 407,
+      "known_deviations": [],
+      "evidence_path": "evidence/formula_evals/ios-sim-arm64-59a9269.json",
+      "evidence_sha256": "44d5028f59c533c0e1ef8c31527a3a63fbb4a95b646f446f065cc2466c96099c",
+      "binding_note": "commit bound by the clean host tree that cross-built the binary (device runs carry no git)."
+    },
+    {
+      "result_type": "platform_tier",
+      "tier_note": "Android EMULATOR arm64-v8a (AVD cvbase_test), same engine and corpus; the physical Android arm64-v8a entry still requires a device; Windows tiers require a Windows host (operator-bound).",
+      "engine_source_revision": "crates.io/formualizer@0.9.3 + third_party/formualizer-eval (TEXT percent patch + Excel-fidelity patch set, decision 0001 addenda)",
+      "engine_sha256": "d7daffb7ed52e4ccbe663674dadc17c60c5732d5ce50b8283667dc9e02c5d333",
+      "adapter_revision": "harbor_formula/1",
+      "fixture_bundle_sha256": "31d30c111d10c1ae9717cd57dd27b567ac83f23f9957f7c0cf8bb42f4ab1aa94",
+      "platform_architecture_set": [
+        "android-emulator/aarch64"
+      ],
+      "commit": "59a9269",
+      "cases_passed": 1261,
+      "cases_failed": 0,
+      "targets_all_pass": 407,
+      "targets_total": 407,
+      "known_deviations": [],
+      "evidence_path": "evidence/formula_evals/android-emulator-arm64-59a9269.json",
+      "evidence_sha256": "e340aa12eb6c15bfb6ef87aeb738230adfcabb1ec80b0a386bc4be332173bff1",
+      "binding_note": "commit bound by the clean host tree that cross-built the binary (device runs carry no git)."
+    },
+    {
+      "result_type": "platform_tier",
+      "tier_note": "PHYSICAL iOS arm64 device (iPhone 17 Pro Max, iOS 27.0) on engine 0.9.3+harbor-excel-fidelity and the 407-target corpus, run by the signed qualification app in tools/qualify_ios. NOT target PASS until the five-platform rule is met (Android device, Windows x64 and arm64 are operator-bound).",
+      "engine_source_revision": "crates.io/formualizer@0.9.3 + third_party/formualizer-eval (TEXT percent patch + Excel-fidelity patch set, decision 0001 addenda)",
+      "engine_sha256": "d7daffb7ed52e4ccbe663674dadc17c60c5732d5ce50b8283667dc9e02c5d333",
+      "adapter_revision": "harbor_formula/1",
+      "fixture_bundle_sha256": "31d30c111d10c1ae9717cd57dd27b567ac83f23f9957f7c0cf8bb42f4ab1aa94",
+      "platform_architecture_set": [
+        "ios/aarch64"
+      ],
+      "commit": "59a9269",
+      "cases_passed": 1261,
+      "cases_failed": 0,
+      "targets_all_pass": 407,
+      "targets_total": 407,
+      "known_deviations": [],
+      "evidence_path": "evidence/formula_evals/ios-device-arm64-59a9269.json",
+      "evidence_sha256": "c135a97e166aa442c58ac43fd2df6d1952a766dd50b50f74d64afb58bdf4464b",
+      "binding_note": "commit bound by the clean host tree the static library was built from (the app carries no git); a first run linked the unpatched upstream engine by mistake and was discarded, see tools/qualify_ios/README.md."
+    },
+    {
+      "result_type": "platform_tier",
+      "tier_note": "PHYSICAL Android arm64-v8a device (OnePlus CPH2767, Android 16) on engine 0.9.3+harbor-excel-fidelity and the 407-target corpus. NOT target PASS until the five-platform rule is met (Windows x64 and arm64 are operator-bound).",
+      "engine_source_revision": "crates.io/formualizer@0.9.3 + third_party/formualizer-eval (TEXT percent patch + Excel-fidelity patch set, decision 0001 addenda)",
+      "engine_sha256": "d7daffb7ed52e4ccbe663674dadc17c60c5732d5ce50b8283667dc9e02c5d333",
+      "adapter_revision": "harbor_formula/1",
+      "fixture_bundle_sha256": "31d30c111d10c1ae9717cd57dd27b567ac83f23f9957f7c0cf8bb42f4ab1aa94",
+      "platform_architecture_set": [
+        "android/aarch64"
+      ],
+      "commit": "2d2614c",
+      "cases_passed": 1261,
+      "cases_failed": 0,
+      "targets_all_pass": 407,
+      "targets_total": 407,
+      "known_deviations": [],
+      "evidence_path": "evidence/formula_evals/android-device-arm64-2d2614c.json",
+      "evidence_sha256": "c99d25c3480d155af0868b93ef3e48fb1341db4bf24fdc026514e35078761c25",
+      "binding_note": "commit bound by the clean host tree that cross-built the binary (NDK 27.1 clang, API 24 linker); the engine sources are unchanged since 59a9269 (only evidence and docs changed in between)."
     }
   ]
 }

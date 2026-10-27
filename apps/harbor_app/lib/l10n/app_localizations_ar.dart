@@ -2127,4 +2127,325 @@ class AppLocalizationsAr extends AppLocalizations {
   String askGroundedInCollection(String name) {
     return 'الإجابة من المجموعة «$name» فقط';
   }
+
+  @override
+  String get askDeleteConversation => 'حذف المحادثة';
+
+  @override
+  String get workSaveCopy => 'حفظ نسخة';
+
+  @override
+  String workSavedCopy(String name) {
+    return 'حُفظ $name';
+  }
+
+  @override
+  String get workSaveFailed => 'تعذّر حفظ النسخة';
+
+  @override
+  String get askNewConversation => 'محادثة جديدة';
+
+  @override
+  String get askConversationsTooltip => 'سجل المحادثات';
+
+  @override
+  String get askConversationsTitle => 'المحادثات';
+
+  @override
+  String get askConversationsEmpty =>
+      'لا توجد محادثات محفوظة بعد. تُحفظ الأسئلة التي تطرحها على هذا الجهاز مشفّرةً لتعود إليها.';
+
+  @override
+  String get askConversationUntitled => 'محادثة بلا عنوان';
+
+  @override
+  String askConversationQuestions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count سؤال',
+      many: '$count سؤالاً',
+      few: '$count أسئلة',
+      two: 'سؤالان',
+      one: 'سؤال واحد',
+      zero: 'لا أسئلة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get askDeleteConversationTitle => 'حذف هذه المحادثة؟';
+
+  @override
+  String get askDeleteConversationBody =>
+      'ستُحذف أسئلتها وأجوبتها نهائيًا من هذا الجهاز.';
+
+  @override
+  String get askDeleteConversationConfirm => 'حذف';
+
+  @override
+  String get askRenameConversation => 'إعادة تسمية المحادثة';
+
+  @override
+  String get askRenameHint => 'عنوان المحادثة';
+
+  @override
+  String get askRenameSave => 'حفظ';
+
+  @override
+  String knowledgePurgeOption(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'احذف أيضًا $count دورة محادثة مشتقة من هذا المصدر',
+      many: 'احذف أيضًا $count دورة محادثة مشتقة من هذا المصدر',
+      few: 'احذف أيضًا $count دورات محادثة مشتقة من هذا المصدر',
+      two: 'احذف أيضًا دورتَي المحادثة المشتقتين من هذا المصدر',
+      one: 'احذف أيضًا دورة المحادثة الواحدة المشتقة من هذا المصدر',
+      zero: '',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get knowledgePurgeHeading => 'المحادثات المتأثرة';
+
+  @override
+  String get knowledgePurgeWholeThread => 'تُحذف المحادثة بأكملها';
+
+  @override
+  String get knowledgePurgeKeepNote =>
+      'إن تركته دون تحديد، تبقى الإجابات السابقة في محادثاتك كسجل، وتُظهر اقتباساتها أن هذا المصدر أُزيل.';
+
+  @override
+  String knowledgeRemovedAndPurged(String title, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count دورة محادثة',
+      many: '$count دورة محادثة',
+      few: '$count دورات محادثة',
+      two: 'دورتا محادثة',
+      one: 'دورة محادثة واحدة',
+      zero: 'لا دورات محادثة',
+    );
+    return 'أُزيل $title و$_temp0';
+  }
+
+  @override
+  String get deckPresent => 'عرض';
+
+  @override
+  String get deckPresentFromStart => 'من البداية';
+
+  @override
+  String get deckPreviewMotion => 'معاينة الحركة';
+
+  @override
+  String get deckStopPreview => 'إيقاف المعاينة';
+
+  @override
+  String deckUnsupportedNote(String items) {
+    return 'لا يمكن معاينة بعض محتوى هذه الشريحة: $items';
+  }
+
+  @override
+  String get deckFilmstrip => 'متصفح الشرائح';
+
+  @override
+  String presentSlideOf(int index, int count) {
+    return 'الشريحة $index من $count';
+  }
+
+  @override
+  String get presentExit => 'إنهاء العرض';
+
+  @override
+  String get presentNext => 'التالي';
+
+  @override
+  String get presentPrevious => 'السابق';
+
+  @override
+  String get presentShowNotes => 'إظهار ملاحظات المتحدث';
+
+  @override
+  String get presentHideNotes => 'إخفاء ملاحظات المتحدث';
+
+  @override
+  String get presentNoNotes => 'لا توجد ملاحظات لهذه الشريحة';
+
+  @override
+  String presentElapsed(String time) {
+    return 'الزمن المنقضي $time';
+  }
+
+  @override
+  String get presentBlackScreen => 'شاشة سوداء';
+
+  @override
+  String get presentWhiteScreen => 'شاشة بيضاء';
+
+  @override
+  String get presentProgress => 'تقدّم العرض';
+
+  @override
+  String get workNewPresentation => 'عرض تقديمي جديد';
+
+  @override
+  String get deckNewTitle => 'عرض تقديمي جديد';
+
+  @override
+  String get deckStepPurpose => 'الغرض';
+
+  @override
+  String get deckStepDesign => 'التصميم';
+
+  @override
+  String get deckStepStyle => 'الحركة واللغة';
+
+  @override
+  String deckStepOf(int step, int count) {
+    return 'الخطوة $step من $count';
+  }
+
+  @override
+  String get deckPurposeHeading => 'ما الغرض من هذا العرض التقديمي؟';
+
+  @override
+  String get deckPurposeHelp => 'لكل غرض مسار جاهز للعرض.';
+
+  @override
+  String get deckDesignHeading => 'اختر تصميمًا';
+
+  @override
+  String get deckStyleHeading => 'اختر الحركة واللغة';
+
+  @override
+  String get deckPaletteHeading => 'الألوان';
+
+  @override
+  String get deckPaletteOwn => 'ألوان التصميم نفسه';
+
+  @override
+  String get deckMotionHeading => 'الحركة';
+
+  @override
+  String get deckMotionNone => 'بدون';
+
+  @override
+  String get deckMotionSubtle => 'خفيفة';
+
+  @override
+  String get deckMotionDynamic => 'ديناميكية';
+
+  @override
+  String get deckMotionCinematic => 'سينمائية';
+
+  @override
+  String get deckMotionNoneDesc => 'بلا حركة';
+
+  @override
+  String get deckMotionSubtleDesc => 'انتقالات تلاشٍ هادئة';
+
+  @override
+  String get deckMotionDynamicDesc => 'دفع وطفو وتكبير';
+
+  @override
+  String get deckMotionCinematicDesc => 'تموّجات ودوّامة وظهور على مراحل';
+
+  @override
+  String get deckLanguageHeading => 'اللغة';
+
+  @override
+  String get deckLanguageLtr => 'الإنجليزية (من اليسار إلى اليمين)';
+
+  @override
+  String get deckLanguageRtl => 'العربية (من اليمين إلى اليسار)';
+
+  @override
+  String get deckDarkLabel => 'داكن';
+
+  @override
+  String get deckLightLabel => 'فاتح';
+
+  @override
+  String get deckSuggested => 'مقترح';
+
+  @override
+  String get deckThumbUnavailable => 'لا توجد معاينة';
+
+  @override
+  String get deckGalleryLabel => 'التصاميم';
+
+  @override
+  String get deckPaletteLabel => 'لوحات الألوان';
+
+  @override
+  String get deckMotionLabel => 'أنماط الحركة';
+
+  @override
+  String get deckPurposeLabel => 'أغراض العروض التقديمية';
+
+  @override
+  String get deckBack => 'رجوع';
+
+  @override
+  String get deckNext => 'التالي';
+
+  @override
+  String get deckCreate => 'إنشاء العرض التقديمي';
+
+  @override
+  String get deckCreating => 'جارٍ إنشاء عرضك التقديمي…';
+
+  @override
+  String get deckCreateFailed => 'تعذّر إنشاء العرض التقديمي';
+
+  @override
+  String get deckRetry => 'حاول مرة أخرى';
+
+  @override
+  String get deckCatalogFailed => 'تعذّر تحميل التصاميم';
+
+  @override
+  String get deckCatalogLoading => 'جارٍ تحميل التصاميم…';
+
+  @override
+  String get deckPreviewHeading => 'معاينة';
+
+  @override
+  String deckPreviewOf(String name) {
+    return 'معاينة $name';
+  }
+
+  @override
+  String get deckPreviewUnavailable => 'المعاينة غير متاحة';
+
+  @override
+  String get deckChangeDesign => 'التصميم';
+
+  @override
+  String get deckChangeDesignDisabled =>
+      'حُفظ هذا العرض بواسطة تطبيق آخر، لذا لا يمكن تغيير تصميمه هنا.';
+
+  @override
+  String get deckChangeDesignTitle => 'تغيير التصميم';
+
+  @override
+  String deckCurrentDesign(String name) {
+    return 'التصميم الحالي: $name';
+  }
+
+  @override
+  String get deckApplyDesign => 'تطبيق التصميم';
+
+  @override
+  String get deckDesignApplied => 'تم تغيير التصميم. احفظ نسخة للاحتفاظ به.';
+
+  @override
+  String get deckDesignFailed => 'تعذّر تغيير التصميم';
+
+  @override
+  String get deckRestyling => 'جارٍ تطبيق التصميم…';
 }

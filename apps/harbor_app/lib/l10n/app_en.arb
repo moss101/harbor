@@ -957,17 +957,41 @@
   "captureReviewVoiceTitle": "Review the transcript",
   "captureReviewBody": "Check it against the original before you use it. Nothing leaves this device.",
   "captureEngine": "Engine: {engine}",
-  "@captureEngine": {"placeholders": {"engine": {"type": "String"}}},
+  "@captureEngine": {
+    "placeholders": {
+      "engine": {
+        "type": "String"
+      }
+    }
+  },
   "captureCheckPages": "Pages to check by eye: {pages}",
-  "@captureCheckPages": {"placeholders": {"pages": {"type": "String"}}},
+  "@captureCheckPages": {
+    "placeholders": {
+      "pages": {
+        "type": "String"
+      }
+    }
+  },
   "captureSuggestion": "This looks like: {kind}",
-  "@captureSuggestion": {"placeholders": {"kind": {"type": "String"}}},
+  "@captureSuggestion": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
   "captureUseAsInput": "Use as input",
   "captureDiscard": "Discard",
   "captureRecording": "Recording…",
   "captureStop": "Stop and transcribe",
   "captureFailed": "Could not read this: {message}",
-  "@captureFailed": {"placeholders": {"message": {"type": "String"}}},
+  "@captureFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "captureMicDenied": "Microphone access is off. Allow it in system settings to record.",
   "captureEmptyResult": "Nothing was recognised in this file.",
   "intentRunSkill": "Do a task on your files",
@@ -980,13 +1004,25 @@
   "intentGeneralChat": "Ask or discuss",
   "modelsUseForScanning": "Use for scanning",
   "modelsScanningActive": "Reading scans ({backend})",
-  "@modelsScanningActive": {"placeholders": {"backend": {"type": "String"}}},
+  "@modelsScanningActive": {
+    "placeholders": {
+      "backend": {
+        "type": "String"
+      }
+    }
+  },
   "modelsScanningStop": "Stop using for scans",
   "modelsScanBackendGpu": "GPU",
   "modelsScanBackendCpu": "CPU - this device's GPU read wrongly",
   "modelsScanningLoading": "Loading and checking the model…",
   "modelsScanningFailed": "This model cannot read scans: {message}",
-  "@modelsScanningFailed": {"placeholders": {"message": {"type": "String"}}},
+  "@modelsScanningFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "modelsScanningNote": "Pages read by a model are always listed for you to check.",
   "fileGroupScans": "Scans and photos",
   "fileGroupAudio": "Audio recordings",
@@ -1126,5 +1162,173 @@
         "type": "String"
       }
     }
-  }
+  },
+  "askDeleteConversation": "Delete conversation",
+  "workSaveCopy": "Save a copy",
+  "workSavedCopy": "Saved {name}",
+  "@workSavedCopy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "workSaveFailed": "Couldn't save the copy",
+  "askNewConversation": "New conversation",
+  "askConversationsTooltip": "Conversation history",
+  "askConversationsTitle": "Conversations",
+  "askConversationsEmpty": "No saved conversations yet. Questions you ask are kept on this device, encrypted, so you can come back to them.",
+  "askConversationUntitled": "Untitled conversation",
+  "askConversationQuestions": "{count, plural, one{1 question} other{{count} questions}}",
+  "@askConversationQuestions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "askDeleteConversationTitle": "Delete this conversation?",
+  "askDeleteConversationBody": "Its questions and answers are permanently removed from this device.",
+  "askDeleteConversationConfirm": "Delete",
+  "askRenameConversation": "Rename conversation",
+  "askRenameHint": "Conversation title",
+  "askRenameSave": "Save",
+  "knowledgePurgeOption": "{count, plural, one{Also delete the 1 conversation turn derived from this source} other{Also delete the {count} conversation turns derived from this source}}",
+  "@knowledgePurgeOption": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "knowledgePurgeHeading": "Conversations affected",
+  "knowledgePurgeWholeThread": "the whole conversation is deleted",
+  "knowledgePurgeKeepNote": "Left unticked, past answers stay in your conversations as history; their citations show this source as removed.",
+  "knowledgeRemovedAndPurged": "Removed {title} and {count, plural, one{1 conversation turn} other{{count} conversation turns}}",
+  "@knowledgeRemovedAndPurged": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deckPresent": "Present",
+  "deckPresentFromStart": "From beginning",
+  "deckPreviewMotion": "Preview motion",
+  "deckStopPreview": "Stop preview",
+  "deckUnsupportedNote": "Some content on this slide can't be previewed: {items}",
+  "@deckUnsupportedNote": {
+    "placeholders": {
+      "items": {
+        "type": "String"
+      }
+    }
+  },
+  "deckFilmstrip": "Slide navigator",
+  "presentSlideOf": "Slide {index} of {count}",
+  "@presentSlideOf": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "presentExit": "Exit presentation",
+  "presentNext": "Next",
+  "presentPrevious": "Previous",
+  "presentShowNotes": "Show speaker notes",
+  "presentHideNotes": "Hide speaker notes",
+  "presentNoNotes": "No notes for this slide",
+  "presentElapsed": "Elapsed {time}",
+  "@presentElapsed": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "presentBlackScreen": "Black screen",
+  "presentWhiteScreen": "White screen",
+  "presentProgress": "Presentation progress",
+  "workNewPresentation": "New presentation",
+  "deckNewTitle": "New presentation",
+  "deckStepPurpose": "Purpose",
+  "deckStepDesign": "Design",
+  "deckStepStyle": "Motion and language",
+  "deckStepOf": "Step {step} of {count}",
+  "@deckStepOf": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deckPurposeHeading": "What is this presentation for?",
+  "deckPurposeHelp": "Each purpose comes with a ready-made storyline.",
+  "deckDesignHeading": "Choose a design",
+  "deckStyleHeading": "Choose motion and language",
+  "deckPaletteHeading": "Colours",
+  "deckPaletteOwn": "Design's own",
+  "deckMotionHeading": "Motion",
+  "deckMotionNone": "None",
+  "deckMotionSubtle": "Subtle",
+  "deckMotionDynamic": "Dynamic",
+  "deckMotionCinematic": "Cinematic",
+  "deckMotionNoneDesc": "No motion",
+  "deckMotionSubtleDesc": "Gentle fades",
+  "deckMotionDynamicDesc": "Pushes, floats and zooms",
+  "deckMotionCinematicDesc": "Ripples, vortex and staged builds",
+  "deckLanguageHeading": "Language",
+  "deckLanguageLtr": "English (left to right)",
+  "deckLanguageRtl": "Arabic (right to left)",
+  "deckDarkLabel": "Dark",
+  "deckLightLabel": "Light",
+  "deckSuggested": "Suggested",
+  "deckThumbUnavailable": "No preview",
+  "deckGalleryLabel": "Designs",
+  "deckPaletteLabel": "Colour palettes",
+  "deckMotionLabel": "Motion presets",
+  "deckPurposeLabel": "Presentation purposes",
+  "deckBack": "Back",
+  "deckNext": "Next",
+  "deckCreate": "Create presentation",
+  "deckCreating": "Creating your presentation…",
+  "deckCreateFailed": "Couldn't create the presentation",
+  "deckRetry": "Try again",
+  "deckCatalogFailed": "Couldn't load the designs",
+  "deckCatalogLoading": "Loading designs…",
+  "deckPreviewHeading": "Preview",
+  "deckPreviewOf": "Preview of {name}",
+  "@deckPreviewOf": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deckPreviewUnavailable": "Preview unavailable",
+  "deckChangeDesign": "Design",
+  "deckChangeDesignDisabled": "This deck was saved by another app, so its design can't be changed here.",
+  "deckChangeDesignTitle": "Change design",
+  "deckCurrentDesign": "Current design: {name}",
+  "@deckCurrentDesign": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deckApplyDesign": "Apply design",
+  "deckDesignApplied": "Design changed. Save a copy to keep it.",
+  "deckDesignFailed": "Couldn't change the design",
+  "deckRestyling": "Applying the design…"
 }

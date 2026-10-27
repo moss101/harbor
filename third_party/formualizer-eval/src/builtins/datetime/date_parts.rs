@@ -62,11 +62,23 @@ fn days_360_between(start: NaiveDate, end: NaiveDate, european: bool) -> i64 {
             ed = 30;
         }
     } else {
-        if sd == 31 || is_last_day_of_month(start) {
+        // US (NASD) method as Excel implements it. Only the last day of FEBRUARY is
+        // special (other month-ends of 28-30 days are NOT bumped to 30):
+        //  - start on last day of Feb -> day 30; when the end is ALSO the last day of
+        //    Feb, the end becomes 30 as well (checked first, before sd changes);
+        //  - start day 31 -> 30;
+        //  - end day 31 -> 30 only if the (adjusted) start day is 30 or more,
+        //    otherwise it counts as the 1st of the next month.
+        let start_feb_end = start.month() == 2 && is_last_day_of_month(start);
+        let end_feb_end = end.month() == 2 && is_last_day_of_month(end);
+        if start_feb_end && end_feb_end {
+            ed = 30;
+        }
+        if sd == 31 || start_feb_end {
             sd = 30;
         }
 
-        if ed == 31 || is_last_day_of_month(end) {
+        if ed == 31 {
             if sd < 30 {
                 let (ny, nm) = next_month(ey, em);
                 ey = ny;
@@ -776,6 +788,13 @@ impl Function for HourFn {
     ) -> Result<crate::traits::CalcValue<'b>, ExcelError> {
         let serial = coerce_to_serial(&args[0], ctx.date_system())?;
 
+        // Excel: a negative serial is #NUM! for HOUR (MINUTE/SECOND tolerate it).
+        if serial < 0.0 {
+            return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
+                ExcelError::new_num(),
+            )));
+        }
+
         // For time values < 1, we just use the fractional part
         let time_fraction = if serial < 1.0 { serial } else { serial.fract() };
 
@@ -1160,7 +1179,9 @@ mod tests {
             )
             .unwrap()
             .into_literal();
-        assert_eq!(us, LiteralValue::Number(30.0));
+        // Excel's US method leaves an end date on Feb 28 as day 28 unless the start is
+        // also a Feb month-end (pure NASD would give 30 here).
+        assert_eq!(us, LiteralValue::Number(28.0));
         assert_eq!(eu, LiteralValue::Number(28.0));
     }
 
@@ -1260,5 +1281,53 @@ mod tests {
                 "DAY({serial}) under {system:?}"
             );
         }
+    }
+
+    #[test]
+    fn days360_us_method_only_special_cases_february_month_end() {
+        let d = |y, m, dd| chrono::NaiveDate::from_ymd_opt(y, m, dd).unwrap();
+        // Start is not a Feb month-end: a 28th-of-February end is a plain day 28 (Excel 28).
+        assert_eq!(days_360_between(d(2026, 1, 30), d(2026, 2, 28), false), 28);
+        // Start on the last day of Feb becomes 30.
+        assert_eq!(days_360_between(d(2026, 2, 28), d(2026, 3, 15), false), 15);
+        // Both on the last day of Feb: end becomes 30 too (2026-02-28 -> 2027-02-28 = 360).
+        assert_eq!(days_360_between(d(2026, 2, 28), d(2027, 2, 28), false), 360);
+        // Start day 31 -> 30, then end 31 -> 30.
+        assert_eq!(days_360_between(d(2026, 1, 31), d(2026, 3, 31), false), 60);
+        // End 31 with start before the 30th counts as the 1st of the next month.
+        assert_eq!(days_360_between(d(2026, 1, 15), d(2026, 3, 31), false), 76);
+        // Non-February month-ends of 30 days are not bumped.
+        assert_eq!(days_360_between(d(2026, 4, 30), d(2026, 5, 31), false), 30);
+        // European method unchanged: end of Feb stays 28.
+        assert_eq!(days_360_between(d(2026, 1, 30), d(2026, 2, 28), true), 28);
+        assert_eq!(days_360_between(d(2011, 1, 31), d(2011, 2, 28), true), 28);
+    }
+
+    #[test]
+    fn hour_of_negative_serial_is_num_but_minute_second_tolerate_it() {
+        let wb = TestWorkbook::new()
+            .with_function(Arc::new(HourFn))
+            .with_function(Arc::new(MinuteFn))
+            .with_function(Arc::new(SecondFn));
+        let ctx = wb.interpreter();
+        let neg = lit(LiteralValue::Number(-1.0));
+        let hour_fn = ctx.context.get_function("", "HOUR").unwrap();
+        let res = match hour_fn.dispatch(
+            &[ArgumentHandle::new(&neg, &ctx)],
+            &ctx.function_context(None),
+        ) {
+            Ok(v) => v.into_literal(),
+            Err(e) => LiteralValue::Error(e),
+        };
+        assert!(matches!(res, LiteralValue::Error(e) if e.kind == ExcelErrorKind::Num));
+        let half = lit(LiteralValue::Number(0.5));
+        let res = hour_fn
+            .dispatch(
+                &[ArgumentHandle::new(&half, &ctx)],
+                &ctx.function_context(None),
+            )
+            .unwrap()
+            .into_literal();
+        assert_eq!(res, LiteralValue::Int(12));
     }
 }

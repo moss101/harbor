@@ -14,6 +14,25 @@ use crate::keys::{aead_open, aead_seal, KeyMaterial};
 /// workspace key (never stored; re-derived on every open).
 pub const KNOWLEDGE_CHUNK_KEY_DOMAIN: &str = "harbor.knowledge.chunk/v1";
 
+/// Domain separator for the Ask conversation key (threads and messages).
+pub const ASK_THREAD_KEY_DOMAIN: &str = "harbor.ask.thread/v1";
+
+/// Derive the Ask conversation key from workspace key material.
+pub fn ask_thread_key(workspace_kek: &KeyMaterial) -> KeyMaterial {
+    KeyMaterial::derive_subkey(workspace_kek, ASK_THREAD_KEY_DOMAIN)
+}
+
+/// Seal an arbitrary value under [key] with caller-supplied AAD (the
+/// caller binds the value to its row identity and field).
+pub fn seal_bound(key: &KeyMaterial, aad: &[u8], plaintext: &[u8]) -> Result<Vec<u8>> {
+    seal_value(key, aad, plaintext)
+}
+
+/// Open a value sealed with [seal_bound]; fails on any AAD or key mismatch.
+pub fn open_bound(key: &KeyMaterial, aad: &[u8], sealed: &[u8]) -> Result<Vec<u8>> {
+    open_value(key, aad, sealed)
+}
+
 /// Derive the knowledge chunk key from workspace key material.
 pub fn knowledge_chunk_key(workspace_kek: &KeyMaterial) -> KeyMaterial {
     KeyMaterial::derive_subkey(workspace_kek, KNOWLEDGE_CHUNK_KEY_DOMAIN)

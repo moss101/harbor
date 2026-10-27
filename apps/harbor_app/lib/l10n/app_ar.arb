@@ -889,5 +889,149 @@
   "knowledgeCollectionFailed": "تعذّر تغيير المجموعة. يصل طول الاسم إلى 64 حرفاً.",
   "knowledgeCollectionEmpty": "لا توجد مصادر في هذه المجموعة بعد.",
   "composerScopeMenuTooltip": "اختر موضوع سؤالك",
-  "askGroundedInCollection": "الإجابة من المجموعة «{name}» فقط"
+  "askGroundedInCollection": "الإجابة من المجموعة «{name}» فقط",
+  "askDeleteConversation": "حذف المحادثة",
+  "workSaveCopy": "حفظ نسخة",
+  "workSavedCopy": "حُفظ {name}",
+  "@workSavedCopy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "workSaveFailed": "تعذّر حفظ النسخة",
+  "askNewConversation": "محادثة جديدة",
+  "askConversationsTooltip": "سجل المحادثات",
+  "askConversationsTitle": "المحادثات",
+  "askConversationsEmpty": "لا توجد محادثات محفوظة بعد. تُحفظ الأسئلة التي تطرحها على هذا الجهاز مشفّرةً لتعود إليها.",
+  "askConversationUntitled": "محادثة بلا عنوان",
+  "askConversationQuestions": "{count, plural, zero{لا أسئلة} one{سؤال واحد} two{سؤالان} few{{count} أسئلة} many{{count} سؤالاً} other{{count} سؤال}}",
+  "@askConversationQuestions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "askDeleteConversationTitle": "حذف هذه المحادثة؟",
+  "askDeleteConversationBody": "ستُحذف أسئلتها وأجوبتها نهائيًا من هذا الجهاز.",
+  "askDeleteConversationConfirm": "حذف",
+  "askRenameConversation": "إعادة تسمية المحادثة",
+  "askRenameHint": "عنوان المحادثة",
+  "askRenameSave": "حفظ",
+  "knowledgePurgeOption": "{count, plural, zero{} one{احذف أيضًا دورة المحادثة الواحدة المشتقة من هذا المصدر} two{احذف أيضًا دورتَي المحادثة المشتقتين من هذا المصدر} few{احذف أيضًا {count} دورات محادثة مشتقة من هذا المصدر} many{احذف أيضًا {count} دورة محادثة مشتقة من هذا المصدر} other{احذف أيضًا {count} دورة محادثة مشتقة من هذا المصدر}}",
+  "@knowledgePurgeOption": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "knowledgePurgeHeading": "المحادثات المتأثرة",
+  "knowledgePurgeWholeThread": "تُحذف المحادثة بأكملها",
+  "knowledgePurgeKeepNote": "إن تركته دون تحديد، تبقى الإجابات السابقة في محادثاتك كسجل، وتُظهر اقتباساتها أن هذا المصدر أُزيل.",
+  "knowledgeRemovedAndPurged": "أُزيل {title} و{count, plural, zero{لا دورات محادثة} one{دورة محادثة واحدة} two{دورتا محادثة} few{{count} دورات محادثة} many{{count} دورة محادثة} other{{count} دورة محادثة}}",
+  "@knowledgeRemovedAndPurged": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deckPresent": "عرض",
+  "deckPresentFromStart": "من البداية",
+  "deckPreviewMotion": "معاينة الحركة",
+  "deckStopPreview": "إيقاف المعاينة",
+  "deckUnsupportedNote": "لا يمكن معاينة بعض محتوى هذه الشريحة: {items}",
+  "deckFilmstrip": "متصفح الشرائح",
+  "presentSlideOf": "الشريحة {index} من {count}",
+  "presentExit": "إنهاء العرض",
+  "presentNext": "التالي",
+  "presentPrevious": "السابق",
+  "presentShowNotes": "إظهار ملاحظات المتحدث",
+  "presentHideNotes": "إخفاء ملاحظات المتحدث",
+  "presentNoNotes": "لا توجد ملاحظات لهذه الشريحة",
+  "presentElapsed": "الزمن المنقضي {time}",
+  "presentBlackScreen": "شاشة سوداء",
+  "presentWhiteScreen": "شاشة بيضاء",
+  "presentProgress": "تقدّم العرض",
+  "workNewPresentation": "عرض تقديمي جديد",
+  "deckNewTitle": "عرض تقديمي جديد",
+  "deckStepPurpose": "الغرض",
+  "deckStepDesign": "التصميم",
+  "deckStepStyle": "الحركة واللغة",
+  "deckStepOf": "الخطوة {step} من {count}",
+  "@deckStepOf": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deckPurposeHeading": "ما الغرض من هذا العرض التقديمي؟",
+  "deckPurposeHelp": "لكل غرض مسار جاهز للعرض.",
+  "deckDesignHeading": "اختر تصميمًا",
+  "deckStyleHeading": "اختر الحركة واللغة",
+  "deckPaletteHeading": "الألوان",
+  "deckPaletteOwn": "ألوان التصميم نفسه",
+  "deckMotionHeading": "الحركة",
+  "deckMotionNone": "بدون",
+  "deckMotionSubtle": "خفيفة",
+  "deckMotionDynamic": "ديناميكية",
+  "deckMotionCinematic": "سينمائية",
+  "deckMotionNoneDesc": "بلا حركة",
+  "deckMotionSubtleDesc": "انتقالات تلاشٍ هادئة",
+  "deckMotionDynamicDesc": "دفع وطفو وتكبير",
+  "deckMotionCinematicDesc": "تموّجات ودوّامة وظهور على مراحل",
+  "deckLanguageHeading": "اللغة",
+  "deckLanguageLtr": "الإنجليزية (من اليسار إلى اليمين)",
+  "deckLanguageRtl": "العربية (من اليمين إلى اليسار)",
+  "deckDarkLabel": "داكن",
+  "deckLightLabel": "فاتح",
+  "deckSuggested": "مقترح",
+  "deckThumbUnavailable": "لا توجد معاينة",
+  "deckGalleryLabel": "التصاميم",
+  "deckPaletteLabel": "لوحات الألوان",
+  "deckMotionLabel": "أنماط الحركة",
+  "deckPurposeLabel": "أغراض العروض التقديمية",
+  "deckBack": "رجوع",
+  "deckNext": "التالي",
+  "deckCreate": "إنشاء العرض التقديمي",
+  "deckCreating": "جارٍ إنشاء عرضك التقديمي…",
+  "deckCreateFailed": "تعذّر إنشاء العرض التقديمي",
+  "deckRetry": "حاول مرة أخرى",
+  "deckCatalogFailed": "تعذّر تحميل التصاميم",
+  "deckCatalogLoading": "جارٍ تحميل التصاميم…",
+  "deckPreviewHeading": "معاينة",
+  "deckPreviewOf": "معاينة {name}",
+  "@deckPreviewOf": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deckPreviewUnavailable": "المعاينة غير متاحة",
+  "deckChangeDesign": "التصميم",
+  "deckChangeDesignDisabled": "حُفظ هذا العرض بواسطة تطبيق آخر، لذا لا يمكن تغيير تصميمه هنا.",
+  "deckChangeDesignTitle": "تغيير التصميم",
+  "deckCurrentDesign": "التصميم الحالي: {name}",
+  "@deckCurrentDesign": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deckApplyDesign": "تطبيق التصميم",
+  "deckDesignApplied": "تم تغيير التصميم. احفظ نسخة للاحتفاظ به.",
+  "deckDesignFailed": "تعذّر تغيير التصميم",
+  "deckRestyling": "جارٍ تطبيق التصميم…"
 }

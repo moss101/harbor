@@ -23,7 +23,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       const w = 390.0;
-      final button = find.byType(OutlinedButton);
+      // On a phone the Open-file action is an icon (a labelled button pushed
+      // the close button off screen).
+      final button = find.byIcon(Icons.folder_open_outlined);
       expect(button, findsWidgets);
       final close = find.byIcon(Icons.close);
       for (final f in [button.first, close.first]) {

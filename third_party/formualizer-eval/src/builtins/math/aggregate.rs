@@ -6,7 +6,9 @@ use crate::function::Function;
 use crate::function_contract::FunctionDependencyContract;
 use crate::traits::{ArgumentHandle, FunctionContext};
 use arrow_array::Array;
-use formualizer_common::{ExcelError, ExcelErrorKind, LiteralValue};
+use formualizer_common::{ExcelError, LiteralValue};
+#[cfg(test)]
+use formualizer_common::ExcelErrorKind;
 use formualizer_macros::func_caps;
 
 /* ─────────────────────────── SUM() ──────────────────────────── */
@@ -1731,6 +1733,123 @@ impl Function for SubtotalFn {
     }
 }
 
+/// Array form of AGGREGATE (function numbers 12..=19): MEDIAN, MODE.SNGL, LARGE,
+/// SMALL, PERCENTILE.INC, QUARTILE.INC, PERCENTILE.EXC, QUARTILE.EXC.
+/// The second data argument (`k` / `quart`) is required for 14..=19.
+fn aggregate_array_form<'a, 'b>(
+    function_num: i32,
+    args: &[ArgumentHandle<'a, 'b>],
+    ctx: &dyn FunctionContext<'b>,
+    visibility: VisibilityPolicy,
+    error_policy: ErrorPolicy,
+) -> LiteralValue {
+    let err = |e: ExcelError| LiteralValue::Error(e);
+    let mut values = match AggregateCollector::collect_args(
+        &args[..3],
+        2,
+        ctx,
+        AggregateOp::Sum,
+        visibility,
+        error_policy,
+    ) {
+        Ok(c) => c.numeric_values,
+        Err(e) => return err(e),
+    };
+    let original = values.clone();
+    values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let n = values.len();
+
+    // 12 MEDIAN and 13 MODE.SNGL take no k argument.
+    if function_num == 12 {
+        if n == 0 {
+            return err(ExcelError::new_num());
+        }
+        let m = if n % 2 == 1 {
+            values[n / 2]
+        } else {
+            (values[n / 2 - 1] + values[n / 2]) / 2.0
+        };
+        return LiteralValue::Number(m);
+    }
+    if function_num == 13 {
+        // First-occurrence order of the original data breaks frequency ties, as Excel does.
+        let mut best: Option<(f64, usize)> = None;
+        for v in &original {
+            let count = original.iter().filter(|x| *x == v).count();
+            if count > 1 && best.is_none_or(|(_, c)| count > c) {
+                best = Some((*v, count));
+            }
+        }
+        return match best {
+            Some((v, _)) => LiteralValue::Number(v),
+            None => err(ExcelError::new_na()),
+        };
+    }
+
+    // 14..=19 need `k` (a missing one is #VALUE!, as in Excel).
+    let Some(k_arg) = args.get(3) else {
+        return err(ExcelError::new_value());
+    };
+    let k = match k_arg.value().map(|v| v.into_literal()) {
+        Ok(LiteralValue::Error(e)) => return err(e),
+        Ok(v) => match coerce_num(&v) {
+            Ok(k) => k,
+            Err(e) => return err(e),
+        },
+        Err(e) => return err(e),
+    };
+    if n == 0 {
+        return err(ExcelError::new_num());
+    }
+    let nf = n as f64;
+
+    // Linear interpolation on a 0-based fractional rank, shared by the
+    // PERCENTILE/QUARTILE variants.
+    let interpolate = |rank: f64| -> f64 {
+        let lo = rank.floor() as usize;
+        let hi = (lo + 1).min(n - 1);
+        values[lo] + (rank - lo as f64) * (values[hi] - values[lo])
+    };
+
+    match function_num {
+        14 | 15 => {
+            // LARGE / SMALL: k is truncated to an integer in 1..=n.
+            let kk = k.ceil();
+            if kk < 1.0 || kk > nf {
+                return err(ExcelError::new_num());
+            }
+            let idx = kk as usize - 1;
+            LiteralValue::Number(if function_num == 14 {
+                values[n - 1 - idx]
+            } else {
+                values[idx]
+            })
+        }
+        16 | 17 => {
+            let p = if function_num == 16 { k } else { k.trunc() / 4.0 };
+            if function_num == 17 && !(0.0..=4.0).contains(&k.trunc()) {
+                return err(ExcelError::new_num());
+            }
+            if !(0.0..=1.0).contains(&p) {
+                return err(ExcelError::new_num());
+            }
+            LiteralValue::Number(interpolate(p * (nf - 1.0)))
+        }
+        _ => {
+            // 18 / 19: exclusive percentile, rank = p*(n+1) (1-based).
+            let p = if function_num == 18 { k } else { k.trunc() / 4.0 };
+            if function_num == 19 && !(1.0..=3.0).contains(&k.trunc()) {
+                return err(ExcelError::new_num());
+            }
+            let rank = p * (nf + 1.0);
+            if rank < 1.0 || rank > nf {
+                return err(ExcelError::new_num());
+            }
+            LiteralValue::Number(interpolate(rank - 1.0))
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct AggregateFn;
 
@@ -1779,13 +1898,15 @@ impl Function for AggregateFn {
             Err(e) => return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(e))),
         };
 
+        // 1..=11 are the reference form (any number of ranges); 12..=19 are the
+        // array form (one array plus an optional `k`). Anything else is #VALUE!.
         let op = if (1..=11).contains(&function_num) {
-            aggregate_op_from_function_num(function_num)
-                .expect("validated AGGREGATE function_num maps to operation")
+            Some(
+                aggregate_op_from_function_num(function_num)
+                    .expect("validated AGGREGATE function_num maps to operation"),
+            )
         } else if (12..=19).contains(&function_num) {
-            return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
-                ExcelError::new(ExcelErrorKind::NImpl),
-            )));
+            None
         } else {
             return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
                 ExcelError::new_value(),
@@ -1797,27 +1918,37 @@ impl Function for AggregateFn {
             Err(e) => return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(e))),
         };
 
+        // Excel option codes: bit 0 (odd) = also skip nested SUBTOTAL/AGGREGATE
+        // (nested exclusion is deferred in this engine, see collect_range_arg);
+        // 0/1/2/3 = nothing / hidden rows / errors / hidden+errors, and 4/5/6/7
+        // are the same four behaviours that additionally ignore nested results.
+        // 2, 3, 6 and 7 ignore errors; 1, 3, 5, 7 skip hidden rows.
         let (visibility, error_policy) = match options {
-            0 => (VisibilityPolicy::IncludeAll, ErrorPolicy::Propagate),
-            1 => (
+            0 | 4 => (VisibilityPolicy::IncludeAll, ErrorPolicy::Propagate),
+            1 | 5 => (
                 VisibilityPolicy::ExcludeManualOrFilterHidden,
                 ErrorPolicy::Propagate,
             ),
-            2 => (VisibilityPolicy::IncludeAll, ErrorPolicy::Ignore),
-            3 => (
+            2 | 6 => (VisibilityPolicy::IncludeAll, ErrorPolicy::Ignore),
+            3 | 7 => (
                 VisibilityPolicy::ExcludeManualOrFilterHidden,
                 ErrorPolicy::Ignore,
             ),
-            4..=7 => {
-                return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
-                    ExcelError::new(ExcelErrorKind::NImpl),
-                )));
-            }
             _ => {
                 return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
                     ExcelError::new_value(),
                 )));
             }
+        };
+
+        let Some(op) = op else {
+            return Ok(crate::traits::CalcValue::Scalar(aggregate_array_form(
+                function_num,
+                args,
+                ctx,
+                visibility,
+                error_policy,
+            )));
         };
 
         let collected =
@@ -2033,38 +2164,75 @@ mod tests_subtotal_aggregate {
         assert_num_close(out, 2.0);
     }
 
-    #[test]
-    fn aggregate_unsupported_option_returns_nimpl() {
+    fn arr(vals: &[LiteralValue]) -> LiteralValue {
+        LiteralValue::Array(vec![vals.to_vec()])
+    }
+
+    fn agg(f: i64, opt: i64, data: LiteralValue, k: Option<i64>) -> LiteralValue {
         let wb = TestWorkbook::new().with_function(std::sync::Arc::new(AggregateFn));
         let ctx = interp(&wb);
+        let mut nodes = vec![
+            lit(LiteralValue::Int(f)),
+            lit(LiteralValue::Int(opt)),
+            lit(data),
+        ];
+        if let Some(k) = k {
+            nodes.push(lit(LiteralValue::Int(k)));
+        }
+        dispatch(&ctx, "AGGREGATE", &nodes)
+    }
 
-        let out = dispatch(
-            &ctx,
-            "AGGREGATE",
-            &[
-                lit(LiteralValue::Int(9)),
-                lit(LiteralValue::Int(4)),
-                lit(LiteralValue::Array(vec![vec![LiteralValue::Int(1)]])),
-            ],
-        );
-        assert_error_kind(out, ExcelErrorKind::NImpl);
+    fn with_error() -> LiteralValue {
+        // 3, 10, #DIV/0!, 7, 13 -> sum 33 ignoring the error
+        arr(&[
+            LiteralValue::Int(3),
+            LiteralValue::Int(10),
+            LiteralValue::Error(ExcelError::new_div()),
+            LiteralValue::Int(7),
+            LiteralValue::Int(13),
+        ])
     }
 
     #[test]
-    fn aggregate_unsupported_function_num_returns_nimpl() {
-        let wb = TestWorkbook::new().with_function(std::sync::Arc::new(AggregateFn));
-        let ctx = interp(&wb);
+    fn aggregate_options_4_to_7_are_accepted() {
+        // Options 2/3/6/7 ignore errors; 0/1/4/5 propagate them.
+        for opt in [2, 3, 6, 7] {
+            assert_num_close(agg(9, opt, with_error(), None), 33.0);
+            assert_num_close(agg(4, opt, with_error(), None), 13.0);
+        }
+        for opt in [0, 1, 4, 5] {
+            assert_error_kind(agg(9, opt, with_error(), None), ExcelErrorKind::Div);
+        }
+        assert_error_kind(agg(9, 8, with_error(), None), ExcelErrorKind::Value);
+    }
 
-        let out = dispatch(
-            &ctx,
-            "AGGREGATE",
-            &[
-                lit(LiteralValue::Int(12)),
-                lit(LiteralValue::Int(0)),
-                lit(LiteralValue::Array(vec![vec![LiteralValue::Int(1)]])),
-            ],
-        );
-        assert_error_kind(out, ExcelErrorKind::NImpl);
+    #[test]
+    fn aggregate_array_form_functions() {
+        // 14 LARGE, 15 SMALL ignoring the error (data 3,10,7,13).
+        assert_num_close(agg(14, 6, with_error(), Some(2)), 10.0);
+        assert_num_close(agg(15, 6, with_error(), Some(1)), 3.0);
+        assert_num_close(agg(12, 6, with_error(), None), 8.5);
+        assert_num_close(agg(16, 6, with_error(), Some(0)), 3.0);
+        assert_num_close(agg(17, 6, with_error(), Some(2)), 8.5);
+        // 19 QUARTILE.EXC q=2 is the median; 18 needs k inside (1/(n+1), n/(n+1)).
+        assert_num_close(agg(19, 6, with_error(), Some(2)), 8.5);
+        assert_error_kind(agg(18, 6, with_error(), Some(0)), ExcelErrorKind::Num);
+    }
+
+    #[test]
+    fn aggregate_array_form_errors() {
+        assert_error_kind(agg(14, 6, with_error(), Some(9)), ExcelErrorKind::Num);
+        assert_error_kind(agg(14, 6, with_error(), None), ExcelErrorKind::Value);
+        assert_error_kind(agg(14, 0, with_error(), Some(1)), ExcelErrorKind::Div);
+        assert_error_kind(agg(99, 6, with_error(), None), ExcelErrorKind::Value);
+        let dup = arr(&[
+            LiteralValue::Int(1),
+            LiteralValue::Int(2),
+            LiteralValue::Int(2),
+        ]);
+        assert_num_close(agg(13, 0, dup, None), 2.0);
+        let uniq = arr(&[LiteralValue::Int(1), LiteralValue::Int(2)]);
+        assert_error_kind(agg(13, 0, uniq, None), ExcelErrorKind::Na);
     }
 }
 

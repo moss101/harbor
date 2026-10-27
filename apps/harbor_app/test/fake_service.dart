@@ -116,12 +116,14 @@ class FakeHarborService extends HarborService {
       {required String chatPackage,
       int maxTokens = 256,
       String? runId,
-      String? collection}) async {
+      String? collection,
+      String? threadId}) async {
     calls.add('generateAnswer');
     generateArgs.add({
       'question': question,
       'chat_package': chatPackage,
       'collection': collection,
+      'thread_id': threadId,
     });
     generateRunIds.add(runId);
     final gate = generateGate;

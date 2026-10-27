@@ -134,6 +134,9 @@ class AppState extends ChangeNotifier {
   String? get chatModel => _prefs.chatModel;
   HarborSurface get surface => HarborSurface.values[surfaceIndex];
 
+  /// The last New presentation choices (null until the sheet was used).
+  DeckDesignPrefs? get deckDesign => _prefs.deckDesign;
+
   Future<void> load() async {
     _prefs = await _store.load();
     notifyListeners();
@@ -155,6 +158,9 @@ class AppState extends ChangeNotifier {
 
   void setChatModel(String? id) =>
       _update(_prefs.copyWith(chatModel: id, clearChatModel: id == null));
+
+  void setDeckDesign(DeckDesignPrefs d) =>
+      _update(_prefs.copyWith(deckDesign: d));
 
   void selectSurface(int i) {
     if (i == surfaceIndex) return;

@@ -52,17 +52,25 @@ class _DocumentViewState extends State<DocumentView> {
               ),
               const SizedBox(height: HarborSpace.s3),
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 initialValue: styleChoice,
-                decoration: InputDecoration(
-                    labelText: l10n.workStyle, isDense: true),
+                decoration:
+                    InputDecoration(labelText: l10n.workStyle, isDense: true),
                 items: [
-                  DropdownMenuItem(value: null, child: Text(l10n.workStyleKeep)),
-                  DropdownMenuItem(value: 'heading1', child: Text(l10n.workStyleH1)),
-                  DropdownMenuItem(value: 'heading2', child: Text(l10n.workStyleH2)),
-                  DropdownMenuItem(value: 'heading3', child: Text(l10n.workStyleH3)),
-                  DropdownMenuItem(value: 'bullet', child: Text(l10n.workStyleBullet)),
-                  DropdownMenuItem(value: 'numbered', child: Text(l10n.workStyleNumbered)),
-                  DropdownMenuItem(value: 'paragraph', child: Text(l10n.workStyleNormal)),
+                  DropdownMenuItem(
+                      value: null, child: Text(l10n.workStyleKeep)),
+                  DropdownMenuItem(
+                      value: 'heading1', child: Text(l10n.workStyleH1)),
+                  DropdownMenuItem(
+                      value: 'heading2', child: Text(l10n.workStyleH2)),
+                  DropdownMenuItem(
+                      value: 'heading3', child: Text(l10n.workStyleH3)),
+                  DropdownMenuItem(
+                      value: 'bullet', child: Text(l10n.workStyleBullet)),
+                  DropdownMenuItem(
+                      value: 'numbered', child: Text(l10n.workStyleNumbered)),
+                  DropdownMenuItem(
+                      value: 'paragraph', child: Text(l10n.workStyleNormal)),
                 ],
                 onChanged: (v) => setDialog(() => styleChoice = v),
               ),
@@ -82,14 +90,18 @@ class _DocumentViewState extends State<DocumentView> {
       ),
     );
     final newText = controller.text;
-    controller.dispose();
+    // Not yet: the dialog is still animating out and its TextField keeps
+    // listening to the controller until the route is gone (disposing here
+    // threw "used after being disposed" on Android).
+    Future<void>.delayed(const Duration(milliseconds: 500), controller.dispose);
     if (saved != true || !mounted) return;
     if (newText == current && styleChoice == null) return;
     setState(() => _savingEdit = true);
     try {
       final ops = <Map<String, dynamic>>[
         {'kind': 'paragraph', 'index': index, 'text': newText},
-        if (styleChoice != null) {'kind': 'style', 'index': index, 'style': styleChoice},
+        if (styleChoice != null)
+          {'kind': 'style', 'index': index, 'style': styleChoice},
       ];
       await service.editDocumentOps(ops);
     } on ffi.HarborCoreException catch (e) {
@@ -179,8 +191,13 @@ class _DocumentViewState extends State<DocumentView> {
                       key: _anchors.putIfAbsent(
                           (p['index'] as num).toInt(), GlobalKey.new),
                       paragraph: p,
-                      onLongPress:
-                          _savingEdit ? null : () => _editParagraph(p),
+                      onLongPress: _savingEdit ? null : () => _editParagraph(p),
+                      // A long-press starts text selection on a touch screen,
+                      // so phones get a visible edit button instead.
+                      editTooltip: HarborBreakpoints.isCompact(wc)
+                          ? l10n.workEditParagraphTitle(
+                              (p['index'] as num).toInt())
+                          : null,
                     ),
                 ],
               ),
@@ -255,9 +272,13 @@ class _Outline extends StatelessWidget {
 }
 
 class _Paragraph extends StatelessWidget {
-  const _Paragraph({super.key, required this.paragraph, this.onLongPress});
+  const _Paragraph(
+      {super.key, required this.paragraph, this.onLongPress, this.editTooltip});
   final Map paragraph;
   final VoidCallback? onLongPress;
+
+  /// When set (touch layouts) a trailing edit button runs [onLongPress].
+  final String? editTooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -289,10 +310,21 @@ class _Paragraph extends StatelessWidget {
       padding = const EdgeInsets.only(bottom: HarborSpace.s3);
     }
     if (text.trim().isEmpty) return const SizedBox(height: HarborSpace.s3);
-    final body = GestureDetector(
+    final selectable = GestureDetector(
       onLongPress: onLongPress,
       child: SelectableText(text, style: ts),
     );
+    final body = editTooltip == null || onLongPress == null
+        ? selectable
+        : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: selectable),
+            IconButton(
+              tooltip: editTooltip,
+              onPressed: onLongPress,
+              constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+              icon: const Icon(Icons.edit_outlined, size: 18),
+            ),
+          ]);
     if (_DocumentViewState.isList(style) && level == null) {
       return Padding(
         padding: padding,

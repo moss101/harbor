@@ -200,6 +200,14 @@ fn classify_pptx_part(
             "slides, shapes, images, themes, speaker notes (rows 17-18)",
         );
     }
+    // The design source Harbor embeds in decks it makes (matrix row 24):
+    // other apps ignore it, so it is never an unknown part.
+    if p == "harbor/deck.json" {
+        return class_reason(
+            MatrixClass::RequiredUnqualified,
+            "Harbor design source in a Harbor-authored deck (row 24)",
+        );
+    }
     if p.starts_with("ppt/charts/") || p.starts_with("ppt/embeddings/") {
         return class_reason(
             MatrixClass::RequiredUnqualified,

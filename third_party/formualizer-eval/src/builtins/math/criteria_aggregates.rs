@@ -334,6 +334,34 @@ fn eval_if_family<'a, 'b>(
         }
     }
 
+    // Excel: for the multi-criteria forms (SUMIFS/AVERAGEIFS/COUNTIFS) every
+    // criteria range must have exactly the same shape as the target range (or as
+    // each other for COUNTIFS), otherwise the result is #VALUE!. The single-
+    // criterion SUMIF/AVERAGEIF family legitimately resizes, so only check `multi`.
+    //
+    // The comparison uses the materialised view sizes, which for whole-column /
+    // whole-row / open-ended references are trimmed to each range's used region
+    // and so legitimately differ. The check therefore only runs when every range
+    // argument is a fully bounded A1 reference (declared sizes are then exact).
+    if multi && super::super::utils::ifs_ranges_bounded(args, agg_type == AggregationType::Count) {
+        let mut reference = sum_view.as_ref().map(|v| v.dims());
+        for (rv, _, _) in &crit_specs {
+            if let Some(v) = rv {
+                let d = v.dims();
+                match reference {
+                    None => reference = Some(d),
+                    Some(r) if r != d => {
+                        return Ok(crate::traits::CalcValue::Scalar(LiteralValue::Error(
+                            ExcelError::new_value()
+                                .with_message("criteria ranges must match the target range size"),
+                        )));
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
     // Determine union dimensions
     let mut dims = (1usize, 1usize);
     if let Some(ref sv) = sum_view {
@@ -1903,9 +1931,10 @@ mod tests {
     }
 
     #[test]
-    fn sumif_numeric_zero_matches_blank_in_text_column() {
-        // Regression test: if the criteria range is text-typed (no numeric fast-path column),
-        // numeric criteria should still match blanks (Excel semantics: blank coerces to 0).
+    fn sumif_numeric_zero_does_not_match_blank_in_text_column() {
+        // A numeric criterion matches number cells (and numeric text) only: a blank is not 0 in
+        // criteria matching (Excel: COUNTIF(range,0) does not count empty cells), here in a
+        // text-typed criteria range with no numeric fast-path column.
         let wb = TestWorkbook::new().with_function(std::sync::Arc::new(SumIfFn));
         let ctx = interp(&wb);
 
@@ -1930,7 +1959,7 @@ mod tests {
             f.dispatch(&args, &ctx.function_context(None))
                 .unwrap()
                 .into_literal(),
-            LiteralValue::Number(5.0)
+            LiteralValue::Number(0.0)
         );
     }
 

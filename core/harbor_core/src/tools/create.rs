@@ -1429,6 +1429,172 @@ pub fn deck_batch(
 }
 
 // ---------------------------------------------------------------------------
+// Deck design (themes, layouts, motion)
+
+/// What the caller chose about how the deck looks and moves; every field
+/// optional (a `null` from an unbound graph input means "no preference").
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct DeckDesignArgs {
+    pub purpose: Option<String>,
+    pub theme: Option<String>,
+    /// Recolours the theme's design (any palette suits any design).
+    pub palette: Option<String>,
+    pub motion: Option<String>,
+    pub rtl: bool,
+    pub footer: Option<String>,
+}
+
+impl DeckDesignArgs {
+    /// Parse and VALIDATE the `design` argument: an unknown theme, purpose
+    /// or motion preset is refused with the list of valid ids, never
+    /// silently replaced.
+    pub fn from_value(v: &Value) -> Result<DeckDesignArgs, String> {
+        let text = |k: &str| {
+            v.get(k)
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+                .map(str::to_string)
+        };
+        let d = DeckDesignArgs {
+            purpose: text("purpose"),
+            theme: text("theme"),
+            palette: text("palette"),
+            motion: text("motion"),
+            rtl: v.get("rtl").and_then(Value::as_bool).unwrap_or(false),
+            footer: text("footer"),
+        };
+        if let Some(p) = &d.purpose {
+            if harbor_artifacts::deck::purpose::purpose(p).is_none() {
+                let ids: Vec<_> = harbor_artifacts::deck::purpose::PURPOSES.iter().map(|p| p.id).collect();
+                return Err(format!("unknown deck purpose {p:?}; use one of {}", ids.join(", ")));
+            }
+        }
+        if let Some(t) = &d.theme {
+            if harbor_artifacts::deck::theme_by_id(t).is_none() {
+                let ids: Vec<_> = harbor_artifacts::deck::THEMES.iter().map(|t| t.id).collect();
+                return Err(format!("unknown deck theme {t:?}; use one of {}", ids.join(", ")));
+            }
+        }
+        if let Some(pal) = &d.palette {
+            if harbor_artifacts::deck::palette::palette(pal).is_none() {
+                let ids: Vec<_> = harbor_artifacts::deck::palette::PALETTES.iter().map(|p| p.id).collect();
+                return Err(format!("unknown deck palette {pal:?}; use one of {}", ids.join(", ")));
+            }
+        }
+        if let Some(m) = &d.motion {
+            if harbor_artifacts::MotionPreset::parse(m).is_none() {
+                return Err(format!("unknown motion preset {m:?}; use none, subtle, dynamic or cinematic"));
+            }
+        }
+        if d.footer.as_ref().map_or(false, |f| f.chars().count() > 120) {
+            return Err("the deck footer is too long (120 characters at most)".into());
+        }
+        Ok(d)
+    }
+}
+
+/// A designed deck's batch: the same outline, plus the design decisions
+/// RECORDED in the batch (theme, motion, resolved layout per slide, kickers)
+/// so the approved output bytes are re-derivable from the batch alone.
+pub fn deck_batch_designed(
+    outline: &DeckOutline,
+    unit_label: &str,
+    sentences: Option<&SentenceTable>,
+    args: &DeckDesignArgs,
+) -> ArtifactBatch {
+    use harbor_artifacts::{deck::purpose, Design, DesignedDeck, DesignedSlide};
+    let mut deck = DesignedDeck {
+        title: outline.title.clone(),
+        subtitle: outline.subtitle.clone(),
+        slides: Vec::new(),
+        design: Design::default(),
+    };
+    // Cover: the title, with the subtitle as its supporting line.
+    deck.slides.push(DesignedSlide {
+        title: outline.title.clone(),
+        bullets: outline.subtitle.iter().cloned().collect(),
+        ..Default::default()
+    });
+    for s in &outline.slides {
+        deck.slides.push(DesignedSlide {
+            title: s.title.clone(),
+            bullets: s.bullets.iter().map(|b| b.text.clone()).collect(),
+            notes: slide_notes(s, unit_label, sentences),
+            ..Default::default()
+        });
+    }
+    if let Some(t) = &args.theme {
+        deck.design.theme = t.clone();
+    }
+    deck.design.palette = args.palette.clone();
+    if let Some(m) = args.motion.as_deref().and_then(harbor_artifacts::MotionPreset::parse) {
+        deck.design.motion = m;
+    }
+    deck.design.rtl = args.rtl;
+    deck.design.footer = args.footer.clone();
+    let purpose_id = args.purpose.as_deref().unwrap_or("general");
+    purpose::apply(&mut deck, purpose_id, args.theme.is_some(), args.motion.is_some());
+    let kinds = deck.resolved_layouts();
+
+    let mut ops = Ops::new();
+    ops.push(
+        OpKind::MetadataSet,
+        "meta:title".into(),
+        JsonValue::object([("key", js("title")), ("value", js(outline.title.clone()))]),
+    );
+    let mut design = vec![
+        ("theme", js(deck.design.theme.clone())),
+        ("motion", js(deck.design.motion.id())),
+        ("rtl", JsonValue::Bool(deck.design.rtl)),
+        ("progressive", JsonValue::Bool(deck.design.progressive_bullets)),
+        ("purpose", js(purpose_id)),
+    ];
+    if let Some(f) = &deck.design.footer {
+        design.push(("footer", js(f.clone())));
+    }
+    if let Some(p) = &deck.design.palette {
+        design.push(("palette", js(p.clone())));
+    }
+    ops.push(
+        OpKind::MetadataSet,
+        "meta:design".into(),
+        JsonValue::object([("key", js("design")), ("value", JsonValue::object(design))]),
+    );
+    for (i, (s, kind)) in deck.slides.iter().zip(kinds.iter()).enumerate() {
+        let slide_id = format!("sl{}", i + 1);
+        ops.push(
+            OpKind::SlideInsert,
+            format!("slide:{slide_id}"),
+            JsonValue::object([
+                ("slide_id", js(slide_id.clone())),
+                ("index", ji(i as i64)),
+                ("layout_id", js(kind.id())),
+            ]),
+        );
+        let mut elements = vec![JsonValue::object([("kind", js("title")), ("text", js(s.title.clone()))])];
+        if let Some(k) = &s.kicker {
+            elements.push(JsonValue::object([("kind", js("kicker")), ("text", js(k.clone()))]));
+        }
+        if !s.bullets.is_empty() {
+            elements.push(JsonValue::object([
+                ("kind", js("bullets")),
+                ("items", JsonValue::Array(s.bullets.iter().map(|b| js(b.clone())).collect())),
+            ]));
+        }
+        if let Some(n) = &s.notes {
+            elements.push(JsonValue::object([("kind", js("notes")), ("text", js(n.clone()))]));
+        }
+        ops.push(
+            OpKind::SlideUpdate,
+            format!("slide:{slide_id}"),
+            JsonValue::object([("slide_id", js(slide_id)), ("elements", JsonValue::Array(elements))]),
+        );
+    }
+    ops.into_batch(CreatedKind::Pptx)
+}
+
+// ---------------------------------------------------------------------------
 // Document outline
 
 #[derive(Debug, Clone, PartialEq)]
@@ -1922,25 +2088,57 @@ fn render_xlsx(batch: &ArtifactBatch) -> Result<Vec<u8>, String> {
 }
 
 fn render_pptx(batch: &ArtifactBatch) -> Result<Vec<u8>, String> {
+    use harbor_artifacts::{Block as DBlock, Design, DesignedDeck, DesignedSlide, LayoutKind, MotionPreset};
     let mut title = String::new();
+    let mut design: Option<Design> = None;
     let mut order: Vec<(i64, String, String)> = Vec::new();
+    #[derive(Default)]
+    struct Extras {
+        kicker: Option<String>,
+        attribution: Option<String>,
+        blocks: Vec<DBlock>,
+    }
     let mut content: BTreeMap<String, SlideContent> = BTreeMap::new();
+    let mut extras: BTreeMap<String, Extras> = BTreeMap::new();
     for op in &batch.operations {
         match op.kind {
             OpKind::MetadataSet => {
                 let (key, value) = metadata(op)?;
-                if key != "title" {
-                    return Err(format!(
-                        "op {}: a deck does not carry metadata {key}",
-                        op.op_id
-                    ));
+                match key.as_str() {
+                    "title" => title = value.as_str().unwrap_or("").to_string(),
+                    "design" => {
+                        let text = |k: &str| value.get(k).and_then(|v| v.as_str()).map(str::to_string);
+                        let mut d = Design::default();
+                        if let Some(t) = text("theme") {
+                            if harbor_artifacts::deck::theme_by_id(&t).is_none() {
+                                return Err(format!("op {}: unknown theme {t}", op.op_id));
+                            }
+                            d.theme = t;
+                        }
+                        if let Some(m) = text("motion") {
+                            d.motion = MotionPreset::parse(&m)
+                                .ok_or_else(|| format!("op {}: unknown motion {m}", op.op_id))?;
+                        }
+                        if let Some(pal) = text("palette") {
+                            if harbor_artifacts::deck::palette::palette(&pal).is_none() {
+                                return Err(format!("op {}: unknown palette {pal}", op.op_id));
+                            }
+                            d.palette = Some(pal);
+                        }
+                        d.rtl = value.get("rtl").and_then(|v| v.as_bool()).unwrap_or(false);
+                        d.progressive_bullets = value.get("progressive").and_then(|v| v.as_bool()).unwrap_or(false);
+                        d.footer = text("footer");
+                        design = Some(d);
+                    }
+                    other => {
+                        return Err(format!("op {}: a deck does not carry metadata {other}", op.op_id))
+                    }
                 }
-                title = value.as_str().unwrap_or("").to_string();
             }
             OpKind::SlideInsert => {
                 let id = arg_str(op, "slide_id")?.to_string();
                 let layout = arg_str(op, "layout_id")?.to_string();
-                if !matches!(layout.as_str(), "title" | "content") {
+                if !matches!(layout.as_str(), "title" | "content") && LayoutKind::parse(&layout).is_none() {
                     return Err(format!("op {}: unknown layout {layout}", op.op_id));
                 }
                 if order.iter().any(|(_, s, _)| *s == id) {
@@ -1957,35 +2155,40 @@ fn render_pptx(batch: &ArtifactBatch) -> Result<Vec<u8>, String> {
                     chart: None,
                     image: None,
                 };
+                let mut ex = Extras::default();
                 for el in arg(op, "elements")?
                     .as_array()
                     .ok_or_else(|| format!("op {}: elements must be a list", op.op_id))?
                 {
                     let kind = el.get("kind").and_then(|k| k.as_str()).unwrap_or("");
+                    let text_of = |key: &str| el.get(key).and_then(|t| t.as_str()).map(str::to_string);
                     match kind {
-                        "title" => {
-                            slide.title = el
-                                .get("text")
-                                .and_then(|t| t.as_str())
-                                .unwrap_or("")
-                                .to_string()
-                        }
+                        "title" => slide.title = text_of("text").unwrap_or_default(),
                         "bullets" => {
                             slide.bullets = el
                                 .get("items")
                                 .and_then(|i| i.as_array())
-                                .map(|a| {
-                                    a.iter()
-                                        .filter_map(|x| x.as_str().map(str::to_string))
-                                        .collect()
-                                })
+                                .map(|a| a.iter().filter_map(|x| x.as_str().map(str::to_string)).collect())
                                 .unwrap_or_default()
                         }
-                        "notes" => {
-                            slide.notes =
-                                el.get("text").and_then(|t| t.as_str()).map(str::to_string)
-                        }
+                        "notes" => slide.notes = text_of("text"),
                         "chart" => slide.chart = Some(chart_from_element(el, &op.op_id)?),
+                        "kicker" => ex.kicker = text_of("text"),
+                        "attribution" => ex.attribution = text_of("text"),
+                        "blocks" => {
+                            for b in el.get("items").and_then(|i| i.as_array()).unwrap_or_default() {
+                                ex.blocks.push(DBlock {
+                                    heading: b.get("heading").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                                    text: b
+                                        .get("text")
+                                        .and_then(|v| v.as_array())
+                                        .map(|a| a.iter().filter_map(|x| x.as_str().map(str::to_string)).collect())
+                                        .unwrap_or_default(),
+                                    value: b.get("value").and_then(|v| v.as_str()).map(str::to_string),
+                                    label: b.get("label").and_then(|v| v.as_str()).map(str::to_string),
+                                });
+                            }
+                        }
                         other => {
                             return Err(format!("op {}: unknown slide element {other:?}", op.op_id))
                         }
@@ -1994,11 +2197,55 @@ fn render_pptx(batch: &ArtifactBatch) -> Result<Vec<u8>, String> {
                 if content.insert(id.clone(), slide).is_some() {
                     return Err(format!("op {}: slide {id} is updated twice", op.op_id));
                 }
+                extras.insert(id, ex);
             }
             _ => {}
         }
     }
     order.sort();
+
+    // Designed deck: the batch carries a design, so the whole deck is laid
+    // out by the design engine from what the batch recorded.
+    if let Some(design) = design {
+        let mut slides = Vec::new();
+        for (pos, (_, id, layout)) in order.iter().enumerate() {
+            let c = content.remove(id).ok_or_else(|| format!("slide {id} has no content"))?;
+            let ex = extras.remove(id).unwrap_or_default();
+            let kind = match layout.as_str() {
+                "title" => {
+                    if pos != 0 {
+                        return Err(format!("slide {id}: only the first slide can use the title layout"));
+                    }
+                    Some(LayoutKind::Cover)
+                }
+                "content" => None,
+                other => LayoutKind::parse(other),
+            };
+            slides.push(DesignedSlide {
+                title: c.title,
+                kicker: ex.kicker,
+                layout: kind,
+                bullets: c.bullets,
+                blocks: ex.blocks,
+                notes: c.notes,
+                chart: c.chart,
+                image: None,
+                attribution: ex.attribution,
+            });
+        }
+        if let Some(stray) = content.keys().next() {
+            return Err(format!("slide {stray} is updated but never inserted"));
+        }
+        return DesignedDeck {
+            title,
+            subtitle: None,
+            slides,
+            design,
+        }
+        .to_pptx_bytes()
+        .map_err(|e| e.to_string());
+    }
+
     let mut slides = Vec::new();
     let mut cover = false;
     for (pos, (_, id, layout)) in order.iter().enumerate() {
@@ -2009,6 +2256,10 @@ fn render_pptx(batch: &ArtifactBatch) -> Result<Vec<u8>, String> {
                 ));
             }
             cover = true;
+        } else if layout != "content" {
+            return Err(format!(
+                "slide {id}: layout {layout} needs the batch to carry a design"
+            ));
         }
         slides.push(
             content
@@ -2511,14 +2762,15 @@ impl DeckBuild {
         DeckBuild {
             spec: ToolSpec {
                 id: "deck.build".into(),
-                description: "Propose a NEW slide deck from an outline (title, optional subtitle, slides with titles, bullets and notes; bullets may cite a source unit and quote). The tool lays out a cover slide and one content slide per outline slide, carries cited sources into the speaker notes, and returns a creation batch over the empty base with the hash of the file it would write. Nothing is saved.".into(),
+                description: "Propose a NEW slide deck from an outline (title, optional subtitle, slides with titles, bullets and notes; bullets may cite a source unit and quote). With a `design` ({purpose, theme, motion, rtl, footer}, each optional) the deck is designed: a themed master and layouts, a layout chosen for each slide's content and role (stats, cards, timeline, comparison, ...), and authored transitions and entrance animations. The tool lays out a cover slide and one content slide per outline slide, carries cited sources into the speaker notes, and returns a creation batch over the empty base with the hash of the file it would write. Nothing is saved.".into(),
                 args_schema: json!({
                     "type": "object",
                     "properties": {
                         "outline": {"type": "object"},
                         "file_name": {"type": "string", "maxLength": 160},
                         "unit_label": {"enum": ["page", "paragraph", "slide", "line"]},
-                        "sentences": {"type": "object"}
+                        "sentences": {"type": "object"},
+                        "design": {"type": "object"}
                     },
                     "required": ["outline"],
                     "additionalProperties": false
@@ -2559,7 +2811,17 @@ impl Tool for DeckBuild {
             Some("line") => "Line",
             _ => "p.",
         };
-        let batch = deck_batch(&outline, label, sentences.as_ref());
+        // A `design` argument (even an all-null one from unbound graph
+        // inputs) makes a designed deck; without it the deck keeps the
+        // plain layout, so existing callers and approved batches are
+        // untouched.
+        let batch = match args.get("design").filter(|d| d.is_object()) {
+            Some(d) => {
+                let design = DeckDesignArgs::from_value(d).map_err(|e| ToolError::failed(&tool, e))?;
+                deck_batch_designed(&outline, label, sentences.as_ref(), &design)
+            }
+            None => deck_batch(&outline, label, sentences.as_ref()),
+        };
         batch
             .validate()
             .map_err(|e| ToolError::failed(&tool, e.to_string()))?;
@@ -2888,6 +3150,143 @@ mod tests {
         // A sign-off in the middle of a paragraph is prose, not furniture.
         let prose = "Regards,\nthe committee asked us to wait for the survey before we decide anything about it.";
         assert_eq!(strip_letter_furniture(prose), prose);
+    }
+
+    fn sample_outline() -> DeckOutline {
+        DeckOutline::from_value(&json!({
+            "title": "Harbor 1.1",
+            "subtitle": "Series A",
+            "slides": [
+                {"title": "Offices lose control of their files", "bullets": ["One"], "notes": null},
+                {"title": "Three promises", "bullets": ["Local first", "Verified math", "One quiet app"], "notes": "Say it slowly"},
+                {"title": "A market that is ready", "bullets": ["$4.2B market", "38% growth", "12M teams"], "notes": null},
+                {"title": "Thank you", "bullets": ["hello@harbor.dev"], "notes": null}
+            ]
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn a_designed_deck_records_its_design_and_is_reproducible_from_the_batch() {
+        let args = DeckDesignArgs::from_value(&json!({"purpose": "pitch_deck", "theme": null, "motion": null, "rtl": null, "footer": null}))
+            .unwrap();
+        let batch = deck_batch_designed(&sample_outline(), "p.", None, &args);
+        batch.validate().expect("a designed batch is a valid batch");
+        // The purpose chose the theme and motion; the batch RECORDS them.
+        let design = batch
+            .operations
+            .iter()
+            .find(|o| o.args.get("key").and_then(|k| k.as_str()) == Some("design"))
+            .expect("design metadata op");
+        let value = design.args.get("value").unwrap();
+        assert_eq!(value.get("theme").and_then(|v| v.as_str()), Some("aurora"));
+        assert_eq!(value.get("motion").and_then(|v| v.as_str()), Some("cinematic"));
+        // Layouts are RESOLVED into the ops, not left to the renderer.
+        let layouts: Vec<String> = batch
+            .operations
+            .iter()
+            .filter(|o| o.kind == OpKind::SlideInsert)
+            .map(|o| o.args.get("layout_id").and_then(|l| l.as_str()).unwrap().to_string())
+            .collect();
+        assert_eq!(layouts[0], "cover");
+        assert_eq!(layouts[3], "stats", "figure bullets become stat tiles: {layouts:?}");
+        assert_eq!(layouts[4], "closing", "an email on the last slide closes the deck: {layouts:?}");
+
+        let bytes = render_creation(&batch).unwrap();
+        assert_eq!(bytes, render_creation(&batch).unwrap(), "deterministic");
+        let again = deck_batch_designed(&sample_outline(), "p.", None, &args);
+        assert_eq!(batch.canonical_hash(), again.canonical_hash());
+        assert_eq!(bytes, render_creation(&again).unwrap(), "re-derivable from the batch");
+
+        // It is still a deck any reader understands.
+        let back = PptxDeck::from_pptx_bytes(&bytes).unwrap();
+        assert_eq!(back.slides.len(), 5);
+        assert_eq!(back.slides[0].title, "Harbor 1.1");
+        let theme = zip_part(&bytes, "ppt/theme/theme1.xml");
+        assert!(theme.contains("7C5CFF"), "Aurora's palette is in the theme part");
+        let slide2 = zip_part(&bytes, "ppt/slides/slide2.xml");
+        assert!(slide2.contains("<p:timing>"), "cinematic motion is authored");
+    }
+
+    #[test]
+    fn caller_choices_beat_the_purpose_and_bad_ones_are_refused_with_the_valid_ids() {
+        let args = DeckDesignArgs::from_value(&json!({"purpose": "pitch_deck", "theme": "mono", "motion": "none"})).unwrap();
+        let bytes = render_creation(&deck_batch_designed(&sample_outline(), "p.", None, &args)).unwrap();
+        assert!(zip_part(&bytes, "ppt/theme/theme1.xml").contains("E11D48"), "the chosen theme wins");
+        assert!(!zip_part(&bytes, "ppt/slides/slide2.xml").contains("<p:timing>"));
+        assert!(!zip_part(&bytes, "ppt/slides/slide2.xml").contains("<p:transition"));
+        for (bad, needle) in [
+            (json!({"theme": "neon"}), "aurora"),
+            (json!({"purpose": "party"}), "pitch_deck"),
+            (json!({"motion": "wild"}), "cinematic"),
+        ] {
+            let e = DeckDesignArgs::from_value(&bad).unwrap_err();
+            assert!(e.contains(needle), "{e}");
+        }
+        assert!(DeckDesignArgs::from_value(&json!({})).is_ok(), "all-null design means defaults");
+    }
+
+    #[test]
+    fn right_to_left_decks_are_marked_and_the_old_layout_still_works_without_a_design() {
+        let args = DeckDesignArgs::from_value(&json!({"rtl": true})).unwrap();
+        let bytes = render_creation(&deck_batch_designed(&sample_outline(), "p.", None, &args)).unwrap();
+        assert!(zip_part(&bytes, "ppt/presentation.xml").contains("rtl=\"1\""));
+        // No design: the plain two-layout deck, as before.
+        let plain = render_creation(&deck_batch(&sample_outline(), "p.", None)).unwrap();
+        let mut ar = zip::ZipArchive::new(std::io::Cursor::new(&plain)).unwrap();
+        assert!(ar.by_name("ppt/slideLayouts/slideLayout2.xml").is_ok());
+        assert!(ar.by_name("ppt/slideLayouts/slideLayout3.xml").is_err(), "the plain deck keeps its two layouts");
+        assert_eq!(PptxDeck::from_pptx_bytes(&plain).unwrap().slides.len(), 5);
+        assert!(!zip_part(&plain, "ppt/slides/slide2.xml").contains("<p:timing>"));
+    }
+
+    /// The skill inputs list themes, purposes and motions as enums; they
+    /// must be exactly the design engine's catalogue, or a valid choice
+    /// could be unselectable (or a selectable one refused).
+    #[test]
+    fn deck_graph_enums_match_the_design_catalogue() {
+        for graph in [
+            include_str!("../graphs/presentation-builder.json"),
+            include_str!("../graphs/report-to-slides.json"),
+        ] {
+            let g: Value = serde_json::from_str(graph).unwrap();
+            let enum_of = |name: &str| -> Vec<String> {
+                g.pointer(&format!("/inputs/properties/{name}/enum"))
+                    .and_then(Value::as_array)
+                    .unwrap_or_else(|| panic!("input {name} must be an enum"))
+                    .iter()
+                    .map(|v| v.as_str().unwrap().to_string())
+                    .collect()
+            };
+            let mut themes: Vec<String> = harbor_artifacts::deck::THEMES.iter().map(|t| t.id.to_string()).collect();
+            let mut got = enum_of("theme");
+            themes.sort();
+            got.sort();
+            assert_eq!(got, themes);
+            let mut purposes: Vec<String> = harbor_artifacts::deck::purpose::PURPOSES.iter().map(|p| p.id.to_string()).collect();
+            let mut got = enum_of("purpose");
+            purposes.sort();
+            got.sort();
+            assert_eq!(got, purposes);
+            let mut palettes: Vec<String> = harbor_artifacts::deck::palette::PALETTES.iter().map(|p| p.id.to_string()).collect();
+            let mut got = enum_of("palette");
+            palettes.sort();
+            got.sort();
+            assert_eq!(got, palettes);
+            let mut motions: Vec<String> = harbor_artifacts::MotionPreset::ALL.iter().map(|m| m.id().to_string()).collect();
+            let mut got = enum_of("motion");
+            motions.sort();
+            got.sort();
+            assert_eq!(got, motions);
+        }
+    }
+
+    fn zip_part(bytes: &[u8], name: &str) -> String {
+        let mut ar = zip::ZipArchive::new(std::io::Cursor::new(bytes)).unwrap();
+        let mut f = ar.by_name(name).unwrap_or_else(|_| panic!("missing part {name}"));
+        let mut s = String::new();
+        std::io::Read::read_to_string(&mut f, &mut s).unwrap();
+        s
     }
 
     #[test]

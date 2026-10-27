@@ -109,8 +109,7 @@ void main() {
       final pkg = (installed['models'] as List)
           .cast<Map>()
           .firstWhere((m) => m['id'] == 'vision-test-pkg');
-      expect(pkg['roles'], contains('weights'));
-      expect(pkg['roles'], contains('mmproj'));
+      expect(pkg['has_projector'], isTrue);
     });
 
     test('ocr.open refuses a missing package with a typed error', () async {
