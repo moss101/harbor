@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "c6157ddf926bf0e0b0f59c71a9e772bdc7afccc77ad3fcf5ef1d0e18f44d4cd5",
+  "input_manifest_sha256": "6f63e21762b350cbbff05a53337ddfe4284379034ba7491b8da7146b5076bee2",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -1018,6 +1018,11 @@
       "path": "apps/harbor_app/test/video_frames_test.dart",
       "bytes": 1928,
       "sha256": "8c4dcf7501f35d768f83c72edd76d51a2d5957f102fb8fdaa5ec9e729ceff4c7"
+    },
+    {
+      "path": "apps/harbor_app/test/vision_ocr_test.dart",
+      "bytes": 9528,
+      "sha256": "2eeba4da37dcd9e26aa3bb529cecaec55e41c0d7c0e3f1aab46172ec8747c2b2"
     },
     {
       "path": "apps/harbor_app/test/work_command_bar_test.dart",
@@ -3205,6 +3210,11 @@
       "sha256": "d7ef946ba298cb95937073625a0f3ea8d68861e2796540e5351429b3ec8a101c"
     },
     {
+      "path": "docs/UPGRADE_PLAN_2026-10-28.md",
+      "bytes": 53425,
+      "sha256": "d5841372506173e3605c5ab0d868f03a5fa2952d6b4d1e3e8979d6f15e15ec51"
+    },
+    {
       "path": "docs/decisions/0001-formula-engine-pin.md",
       "bytes": 2857,
       "sha256": "e32eaf9e5b8586da8a8f6ce7aff394c7f952249dc7c4a373e5d6ccd453c6373e"
@@ -3488,6 +3498,11 @@
       "path": "docs/verification_2026-10-10.md",
       "bytes": 21266,
       "sha256": "ba03e9f183e235a1100066ac43c105090dbccfb6f405eba4402a558b56b7c3ea"
+    },
+    {
+      "path": "docs/verification_2026-10-11.md",
+      "bytes": 9568,
+      "sha256": "34f3e2a202182927845c0ad1cf55f6841077581ff5d7d165db688b3831a73669"
     },
     {
       "path": "evals/ar/corpus.json",
