@@ -5543,6 +5543,7 @@ fn optional_collection(args: &serde_json::Value) -> Result<Option<String>, Harbo
     }
 }
 
+#[cfg(feature = "gguf")]
 fn parse_sources(
     args: &serde_json::Value,
 ) -> Result<Vec<crate::knowledge::SourceInput>, HarborError> {

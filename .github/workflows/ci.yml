@@ -107,6 +107,20 @@ jobs:
       - name: Formula qualification report
         run: cargo test -p harbor_formula full_qualification -- --nocapture
 
+  lean-core:
+    # The Office-only core (no llama.cpp) is what harbor_office ships. It
+    # silently stopped compiling once because nothing built it.
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: core }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: core }
+      - name: Check the lean harbor_ffi build
+        run: cargo check -p harbor_ffi --no-default-features
+
   windows-core:
     # Compile-gates the Windows-specific core paths (DPAPI keystore
     # adapter, harbor_ffi cdylib) that cannot be built on the macOS
