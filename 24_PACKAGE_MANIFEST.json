@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "b29a605063524d5e59ecdd7efe91dcf86e0bdb8b86032e0fe27c353b92461408",
+  "input_manifest_sha256": "ed4950f2ba8585fbe6f4b7c404787dbb6547db4759fde82035e650e177feb58e",
   "file_count_excluding_manifest": 2631,
   "files": [
     {
@@ -125,12 +125,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 519290,
-      "sha256": "b76a0b573ba2c942b6f6e11290ac5a59b687018e07edf8c336377b6500c953b2"
+      "sha256": "367ff94cf841067f40ee7ea5b33f257c3634437550074ed0f5f1e3e31f43e124"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1375,
-      "sha256": "ce0b0ff8ffcd5015c13302f359351f88839499e16ea248118671b19995bfd670"
+      "sha256": "344fb1ba08ff035070c17f398a98aa5647a64e633e95577400dabb77e487f933"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -1859,8 +1859,8 @@
     },
     {
       "path": "core/.cargo/audit.toml",
-      "bytes": 1090,
-      "sha256": "4ba9ba4f45671648d93534fe15ab9f3bca7894e76f3604cf2804bdf6ff2e3cee"
+      "bytes": 1205,
+      "sha256": "4fa1242afa37d6193fcfefdd3f96645558469d41ec1027dfca29175566b1f828"
     },
     {
       "path": "core/.cargo/config.toml",
@@ -1869,8 +1869,8 @@
     },
     {
       "path": "core/Cargo.lock",
-      "bytes": 99501,
-      "sha256": "d10a1d275a3e355b8651823d956270f14a2e6938cb59f1ce10b5a393e23d4a9b"
+      "bytes": 99503,
+      "sha256": "f5d2e6d050d01d9cfefad7eade45d1a70c658ba0080e40a4f2fc1abb7a0f4fea"
     },
     {
       "path": "core/Cargo.toml",
@@ -1879,8 +1879,8 @@
     },
     {
       "path": "core/deny.toml",
-      "bytes": 6450,
-      "sha256": "cfa16f245c7730eac67f110ab1d23a679fa43d493336d0d8a9ae134836aad7d1"
+      "bytes": 7173,
+      "sha256": "02e053a7ba8b3b852839f0147b81688afdb21e94a9f0f8098350bda6e9145b53"
     },
     {
       "path": "core/fuzz/.gitignore",
