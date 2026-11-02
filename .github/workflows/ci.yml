@@ -97,6 +97,14 @@ jobs:
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Test all crates (offline)
         run: cargo test --workspace
+      # The inference worker tests drive the real launcher and core library
+      # (decision 0022 phase 3). `cargo test --workspace` rebuilds harbor_ffi
+      # as a test harness, so build the cdylib + launcher after it and run
+      # the worker tests on their own.
+      - name: Inference worker (real launcher + core library)
+        run: |
+          cargo build -p harbor_ffi -p harbor_worker
+          cargo test -p harbor_ffi --test inference_worker
       # The real-network tier (#[ignore] tests: real HF acquisition,
       # network-capture qualification) is a QUALIFICATION-MACHINE
       # activity — HF's edge resets/throttles shared runner IPs, so
@@ -106,6 +114,33 @@ jobs:
       # docs/STATUS.md "Reproduce the evidence".
       - name: Formula qualification report
         run: cargo test -p harbor_formula full_qualification -- --nocapture
+
+  numerics:
+    # Decision 0022 phase 5: the production embedder's numerics canary on
+    # the runner's GPU (Metal) and on the true CPU path, plus the media
+    # retrieval test. Fixtures come from Hugging Face at pinned revisions,
+    # checked by sha256 and cached; a throttled download fails the job
+    # loudly (HARBOR_REQUIRE_FIXTURES=1) rather than skipping.
+    runs-on: macos-14
+    defaults:
+      run: { working-directory: core }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: core }
+      - uses: actions/cache@v4
+        with:
+          path: fixtures/models
+          key: numerics-fixtures-embeddinggemma2-bfcd2987-stories260k
+      - name: Fetch pinned fixtures
+        run: python3 -I ../tools/fetch_numerics_fixtures.py ../fixtures/models
+      - name: Canary on the default backend (Metal) and the CPU path
+        env: { HARBOR_REQUIRE_FIXTURES: "1" }
+        run: cargo test -p harbor_inference --features multimodal --test numerics_canary --test multimodal_live -- --nocapture
+      - name: Same tests with the GPU switched off
+        env: { HARBOR_REQUIRE_FIXTURES: "1", HARBOR_GGUF_CPU_ONLY: "1" }
+        run: cargo test -p harbor_inference --features multimodal --test numerics_canary --test multimodal_live -- --nocapture
 
   lean-core:
     # The Office-only core (no llama.cpp) is what harbor_office ships. It

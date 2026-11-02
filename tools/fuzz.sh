@@ -46,7 +46,7 @@ seconds="${1:-60}"
 shift || true
 targets=("$@")
 if [[ ${#targets[@]} -eq 0 ]]; then
-  targets=(ffi_dispatch jsonschema batch_from_value graph_from_value)
+  targets=(ffi_dispatch jsonschema batch_from_value graph_from_value gguf_header)
 fi
 cd "$(dirname "$0")/../core/fuzz"
 # `cargo +nightly` needs the rustup shim, not a Homebrew cargo that may

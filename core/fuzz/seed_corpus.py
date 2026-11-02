@@ -9,10 +9,12 @@ so re-run this after minimising to restore the named seeds.
 import glob
 import json
 import pathlib
+import struct
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 C = HERE / "corpus"
+TARGETS = ("ffi_dispatch", "jsonschema", "batch_from_value", "graph_from_value", "gguf_header")
 
 # ffi_dispatch: first byte selects the method (index into the target's
 # METHODS table); the rest is the args JSON.
@@ -28,8 +30,77 @@ SEEDS = [
 ]
 
 
+# gguf_header: little-endian GGUF v2/v3 files built from scratch (the real
+# model fixtures are gitignored and far too large). Layout per the vendored
+# ggml/src/gguf.cpp: magic, version, n_tensors, n_kv, KVs, tensor infos,
+# padding to general.alignment, tensor data.
+GGUF_U32, GGUF_STR, GGUF_ARR, GGUF_U64, GGUF_I32 = 4, 8, 9, 10, 5
+
+
+def _gs(b: bytes) -> bytes:
+    return struct.pack("<Q", len(b)) + b
+
+
+def _kv(key: str, ty: int, payload: bytes) -> bytes:
+    return _gs(key.encode()) + struct.pack("<I", ty) + payload
+
+
+def gguf(kvs, tensors, version=3, align=32) -> bytes:
+    """tensors: [(name, dims, ggml_type, nbytes[, forced_offset])], laid out
+    contiguously unless an offset is forced."""
+    head = b"GGUF" + struct.pack("<IQQ", version, len(tensors), len(kvs)) + b"".join(kvs)
+    off, infos = 0, b""
+    for name, dims, ty, nbytes, *forced in tensors:
+        at = forced[0] if forced else off
+        infos += _gs(name.encode()) + struct.pack("<I", len(dims))
+        infos += b"".join(struct.pack("<q", d) for d in dims) + struct.pack("<IQ", ty, at)
+        off = (max(off, at + nbytes) + align - 1) // align * align
+    out = head + infos
+    if tensors:
+        out += b"\0" * (-len(out) % align)
+    return out + b"\0" * off
+
+
+def gguf_seeds() -> dict:
+    llama = [
+        _kv("general.architecture", GGUF_STR, _gs(b"llama")),
+        _kv("llama.context_length", GGUF_U32, struct.pack("<I", 2048)),
+        _kv("llama.embedding_length", GGUF_U32, struct.pack("<I", 64)),
+        _kv("llama.block_count", GGUF_U32, struct.pack("<I", 2)),
+        _kv("llama.attention.head_count", GGUF_U32, struct.pack("<I", 4)),
+        _kv("llama.attention.head_count_kv", GGUF_U32, struct.pack("<I", 2)),
+        _kv("tokenizer.ggml.tokens", GGUF_ARR,
+            struct.pack("<IQ", GGUF_STR, 3) + _gs(b"<s>") + _gs(b"</s>") + _gs(b"hi")),
+    ]
+    tensors = [("token_embd.weight", [64, 3], 0, 64 * 3 * 4),     # f32
+               ("blk.0.attn_q.weight", [256, 2], 12, 2 * 144),    # q4_K
+               ("blk.0.ffn_up.weight", [32, 4], 8, 4 * 34)]       # q8_0
+    seeds = {
+        "valid_llama_v3": gguf(llama, tensors),
+        "valid_llama_v2": gguf(llama, tensors, version=2),
+        "valid_no_tensors": gguf(llama[:1], []),
+        "valid_clip_align64": gguf(
+            [_kv("general.architecture", GGUF_STR, _gs(b"clip")),
+             _kv("general.alignment", GGUF_U32, struct.pack("<I", 64))],
+            [("v.patch_embd.weight", [16, 16, 3, 8], 1, 16 * 16 * 3 * 8 * 2)], align=64),
+        "valid_per_layer_heads": gguf(
+            [_kv("general.architecture", GGUF_STR, _gs(b"openelm")),
+             _kv("openelm.attention.head_count", GGUF_ARR,
+                 struct.pack("<IQiii", GGUF_I32, 3, 4, 8, 2))], []),
+        "bad_nested_array": gguf(
+            llama[:1] + [_kv("x.nested", GGUF_ARR, struct.pack("<IQ", GGUF_ARR, 1))], []),
+        "bad_offset_overlap": gguf(llama, tensors + [("output.weight", [32], 0, 128, 0)]),
+        "bad_removed_type": gguf(llama, [("x", [256], 31, 0)]),
+    }
+    full = seeds["valid_llama_v3"]
+    # len - 100 cuts into the last tensor's data (only padding follows it).
+    for cut in (4, 8, 24, 60, len(full) // 2, len(full) - 100):
+        seeds[f"truncated_{cut}"] = full[:cut]
+    return seeds
+
+
 def main() -> None:
-    for d in ("ffi_dispatch", "jsonschema", "batch_from_value", "graph_from_value"):
+    for d in TARGETS:
         (C / d).mkdir(parents=True, exist_ok=True)
     for i, (m, a) in enumerate(SEEDS):
         (C / "ffi_dispatch" / f"seed{i:02d}").write_bytes(bytes([m]) + json.dumps(a).encode())
@@ -78,7 +149,9 @@ def main() -> None:
     reg2 = ROOT / "core/harbor_artifacts/tests/regressions/unclosed_attribute.xlsx"
     (C / "batch_from_value" / "regression_unclosed_attribute").write_bytes(
         json.dumps(batch2).encode() + b"\0" + reg2.read_bytes())
-    print("seeded", {d: len(list((C / d).glob("*"))) for d in ("ffi_dispatch", "jsonschema", "batch_from_value", "graph_from_value")})
+    for name, data in gguf_seeds().items():
+        (C / "gguf_header" / name).write_bytes(data)
+    print("seeded", {d: len(list((C / d).glob("*"))) for d in TARGETS})
 
 
 if __name__ == "__main__":

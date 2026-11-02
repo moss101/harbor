@@ -5,7 +5,7 @@
 //! (`harbor_store::kcipher`): at rest the database holds no chunk text
 //! and no vectors, matching the run event log and blob store guarantees
 //! (policy 13). The in-memory index rebuilds on open. Embeddings come
-//! from the pinned GGUF runtime (`harbor_inference::GgufLlamaCppProvider`)
+//! from the pinned GGUF runtime (`harbor_inference::GgufRuntime`)
 //! with an installed embedding package — the index identity records the
 //! actual model revision and dimension, and incompatible identities never
 //! merge.
@@ -20,8 +20,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 
 use harbor_canonical::JsonValue;
-use harbor_inference::gguf::GgufLlamaCppProvider;
 use harbor_inference::provider::{Capabilities, ModelProvider, ModelRef};
+use harbor_inference::worker::GgufRuntime;
 use harbor_knowledge::chunk::{Chunker, ChunkerConfig};
 use harbor_knowledge::identity::{
     embed_model_identity, ChunkerConfig as CC, IndexIdentity, Normalization,
@@ -462,7 +462,7 @@ impl KnowledgeStore {
 /// purpose — every supported embedder (multilingual or not) handles it —
 /// and cheap enough to run on each open. Policy prefixes apply, so a
 /// prefixed model is checked the way it is used.
-fn embedding_canary_ok(provider: &GgufLlamaCppProvider, model: &ModelRef, package: &str) -> bool {
+fn embedding_canary_ok(provider: &GgufRuntime, model: &ModelRef, package: &str) -> bool {
     let policy = InstructionPolicy::for_package(package);
     let inputs: Vec<String> = [
         "The cat is sitting on the mat.",
@@ -492,18 +492,21 @@ pub struct KnowledgeService {
     /// Media towers (image / audio), opened lazily and dropped on
     /// [`release`](Self::release) so a memory warning frees them too.
     #[cfg(feature = "multimodal")]
-    media: Mutex<Option<std::sync::Arc<harbor_inference::multimodal::MediaEmbedder>>>,
+    media: Mutex<Option<std::sync::Arc<dyn harbor_inference::multimodal::MediaEmbed>>>,
     /// Media sources dropped by the identity rebuild at open (their
     /// vectors cannot be re-derived from sealed text).
     dropped_media: Vec<String>,
-    /// "gpu" (canary passed on the default backend), "cpu_fallback" (the
-    /// GPU path failed the canary; running on CPU, canary passed) or
-    /// "cpu_unverified" (even the CPU canary failed — surfaced, not hidden).
+    /// "gpu" (canary passed on the GPU), "cpu" (no GPU path on this device
+    /// or build), "cpu_pinned" (the qualification store keeps this model off
+    /// a GPU that crashed or failed the canary before — decision 0022),
+    /// "cpu_fallback" (the GPU path failed the canary now; running on CPU,
+    /// canary passed) or "cpu_unverified" (the CPU canary failed — surfaced,
+    /// not hidden).
     backend_state: &'static str,
     /// Matryoshka truncation (EmbeddingGemma 2): None = native dimension.
     truncate_to: Option<usize>,
     index: Mutex<KnowledgeIndex>,
-    provider: GgufLlamaCppProvider,
+    provider: GgufRuntime,
     embedding_package: String,
     /// Instruction policy for the embedding package (decision 0011):
     /// applied to every document/query embed so production matches the
@@ -548,20 +551,17 @@ impl KnowledgeService {
     #[cfg(feature = "multimodal")]
     fn media_embedder(
         &self,
-    ) -> Result<std::sync::Arc<harbor_inference::multimodal::MediaEmbedder>, KnowledgeFfiError>
+    ) -> Result<std::sync::Arc<dyn harbor_inference::multimodal::MediaEmbed>, KnowledgeFfiError>
     {
         self.ensure_loaded()?;
         let mut slot = self.media.lock().unwrap();
         if let Some(m) = slot.as_ref() {
             return Ok(m.clone());
         }
-        let m = std::sync::Arc::new(
-            harbor_inference::multimodal::MediaEmbedder::open(
-                &self.provider,
-                &self.embedding_package,
-            )
-            .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?,
-        );
+        let m = self
+            .provider
+            .open_media(&self.embedding_package)
+            .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?;
         *slot = Some(m.clone());
         Ok(m)
     }
@@ -699,7 +699,7 @@ impl KnowledgeService {
         dimension: Option<u32>,
     ) -> Result<Self, KnowledgeFfiError> {
         let db_path = data_root.join("db").join("knowledge.db");
-        let provider = GgufLlamaCppProvider::new(data_root.join("models"))
+        let provider = GgufRuntime::open(data_root.join("models"))
             .map_err(|e| KnowledgeFfiError::Provider(e.to_string()))?;
         let model_ref = ModelRef::InstalledPackage {
             package_id: embedding_package.into(),
@@ -711,8 +711,13 @@ impl KnowledgeService {
         // Numerics canary: a GPU path can load fine and still embed wrongly
         // (no bfloat, software GPUs). Verify before any vector is stored;
         // on failure pin the model to the CPU backend and re-verify.
-        let mut backend = "gpu";
-        if !embedding_canary_ok(&provider, &model_ref, embedding_package) {
+        // Where the model loaded: "gpu", or "cpu_pinned" when the
+        // qualification store remembers this device's GPU crashing or failing
+        // the canary for this model and runtime (decision 0022), or "cpu".
+        let mut backend = provider.backend_of(embedding_package).unwrap_or("cpu");
+        if embedding_canary_ok(&provider, &model_ref, embedding_package) {
+            provider.mark_qualified(embedding_package);
+        } else if backend == "gpu" {
             provider.force_cpu(embedding_package);
             provider.load(&model_ref).map_err(|e| {
                 KnowledgeFfiError::NoEmbeddingModel(format!("{embedding_package}: {e}"))
@@ -721,6 +726,8 @@ impl KnowledgeService {
             if !embedding_canary_ok(&provider, &model_ref, embedding_package) {
                 backend = "cpu_unverified";
             }
+        } else {
+            backend = "cpu_unverified";
         }
         // Identity from the REAL model: embed a probe to learn the dimension.
         let probe = provider
@@ -1207,7 +1214,7 @@ impl KnowledgeService {
 
     /// The embedding provider (skill routing shares the loaded model
     /// instead of building a second provider instance).
-    pub fn provider(&self) -> &GgufLlamaCppProvider {
+    pub fn provider(&self) -> &GgufRuntime {
         &self.provider
     }
 
@@ -1218,7 +1225,7 @@ impl KnowledgeService {
 
 /// Chat-side handle for RAG generation over an installed GGUF chat model.
 pub struct ChatHandle {
-    provider: GgufLlamaCppProvider,
+    provider: GgufRuntime,
     loaded: std::sync::Mutex<std::collections::BTreeMap<String, ()>>,
 }
 
@@ -1234,7 +1241,7 @@ pub struct RagAnswer {
 impl ChatHandle {
     /// The underlying provider (skill graph executors call the provider
     /// contract directly; grounded Ask keeps using the RAG path).
-    pub fn provider(&self) -> &GgufLlamaCppProvider {
+    pub fn provider(&self) -> &GgufRuntime {
         &self.provider
     }
 
@@ -1269,7 +1276,7 @@ impl ChatHandle {
 
     pub fn new(models_root: &Path) -> Self {
         ChatHandle {
-            provider: GgufLlamaCppProvider::new(models_root).expect("chat provider init"),
+            provider: GgufRuntime::open(models_root).expect("chat provider init"),
             loaded: std::sync::Mutex::new(Default::default()),
         }
     }

@@ -1484,6 +1484,7 @@ dependencies = [
  "harbor_canonical",
  "harbor_core",
  "harbor_ffi",
+ "harbor_inference",
  "libfuzzer-sys",
  "serde_json",
  "tempfile",
@@ -1510,6 +1511,7 @@ dependencies = [
 name = "harbor_artifacts"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "chrono",
  "formualizer",
  "harbor_canonical",
@@ -1686,13 +1688,18 @@ dependencies = [
 name = "harbor_render"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
+ "flate2",
  "harbor_artifacts",
  "harbor_canonical",
  "harbor_formula",
+ "lopdf",
  "pdf-extract",
+ "roxmltree",
  "serde",
  "serde_json",
  "thiserror 2.0.20",
+ "zip 4.6.1",
 ]
 
 [[package]]

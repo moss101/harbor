@@ -135,6 +135,11 @@ class SettingsSurface extends StatelessWidget {
               body: l10n.settingsEnginesBody,
             ),
             section(
+              l10n.settingsGpu,
+              GpuQualificationCard(service: service),
+              body: l10n.settingsGpuBody,
+            ),
+            section(
               l10n.settingsDiagnostics,
               DiagnosticsCard(service: service),
               body: l10n.settingsDiagnosticsBody,
@@ -285,6 +290,106 @@ class _EnginesCardState extends State<EnginesCard> {
                   label: l10n.settingsEngineVoice,
                   value: value('speech'),
                   identifier: true),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// The core's GPU qualification store (decision 0022): which model runs on
+/// this device's GPU, and which one the core keeps on the CPU because the GPU
+/// crashed or computed wrongly with it. Pinned entries can be re-tested.
+class GpuQualificationCard extends StatefulWidget {
+  const GpuQualificationCard({super.key, required this.service});
+  final HarborService? service;
+
+  @override
+  State<GpuQualificationCard> createState() => _GpuQualificationCardState();
+}
+
+class _GpuQualificationCardState extends State<GpuQualificationCard> {
+  Future<Map<String, dynamic>>? _status;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _status = widget.service?.runtimeQualification();
+  }
+
+  Future<void> _reset() async {
+    final service = widget.service;
+    if (service == null) return;
+    setState(() => _busy = true);
+    try {
+      await service.resetRuntimeQualification();
+    } catch (_) {
+      // The list below shows what the core still holds.
+    }
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _status = service.runtimeQualification();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final t = HarborTheme.of(context);
+    String stateLabel(String? state) => switch (state) {
+          'qualified' => l10n.settingsGpuQualified,
+          'ok' => l10n.settingsGpuOk,
+          'verifying' => l10n.settingsGpuVerifying,
+          'canary_failed' => l10n.settingsGpuCanaryFailed,
+          'crashed' => l10n.settingsGpuCrashed,
+          _ => state ?? '',
+        };
+    return HarborCard(
+      child: FutureBuilder<Map<String, dynamic>>(
+        future: _status,
+        builder: (context, snap) {
+          if (snap.connectionState != ConnectionState.done && _status != null) {
+            return Text(l10n.appStarting,
+                style: t.text.smallOf(t.colors.inkMuted));
+          }
+          final data = snap.data ?? const <String, dynamic>{};
+          final records = (data['records'] as List? ?? const [])
+              .whereType<Map>()
+              .map((m) => m.cast<String, dynamic>())
+              .toList();
+          final anyPinned = records.any((r) => r['pins_cpu'] == true);
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (data['gpu_backend'] != true)
+                Text(l10n.settingsGpuNone,
+                    style: t.text.smallOf(t.colors.inkMuted))
+              else if (records.isEmpty)
+                Text(l10n.settingsGpuEmpty,
+                    style: t.text.smallOf(t.colors.inkMuted)),
+              for (final r in records)
+                HarborKeyValue(
+                  label: '${r['device'] ?? ''} · '
+                      '${(r['model_sha256'] ?? '').toString().padRight(12).substring(0, 12)}',
+                  value: [
+                    stateLabel(r['state'] as String?),
+                    if ((r['note'] ?? '').toString().isNotEmpty) r['note'],
+                  ].join(' — '),
+                ),
+              if (anyPinned) ...[
+                const SizedBox(height: HarborSpace.s2),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: FilledButton.tonalIcon(
+                    onPressed: _busy || widget.service == null ? null : _reset,
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: Text(l10n.settingsGpuRetest),
+                  ),
+                ),
+              ],
             ],
           );
         },

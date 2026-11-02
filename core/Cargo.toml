@@ -16,6 +16,7 @@ members = [
     "harbor_render",
     "harbor_core",
     "harbor_ffi",
+    "harbor_worker",
     "harbor_integration",
 ]
 

@@ -4,13 +4,13 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "b29a605063524d5e59ecdd7efe91dcf86e0bdb8b86032e0fe27c353b92461408",
-  "file_count_excluding_manifest": 2631,
+  "input_manifest_sha256": "dec37bdfd4952ecc9db91bfe6755398cc9cc17dd94be022e12454372a5291980",
+  "file_count_excluding_manifest": 2665,
   "files": [
     {
       "path": ".github/workflows/ci.yml",
-      "bytes": 7090,
-      "sha256": "483ef0b3911d3d04d275b86fdfaa1aaa5b3c9681ece2c6ae719fdc0050e0cf99"
+      "bytes": 8906,
+      "sha256": "76ebfd35ec951413d8a5c2a607a2134dcb06f0e963e136111a5782dd10c2a196"
     },
     {
       "path": ".github/workflows/release.yml",
@@ -124,13 +124,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 519290,
-      "sha256": "b76a0b573ba2c942b6f6e11290ac5a59b687018e07edf8c336377b6500c953b2"
+      "bytes": 525293,
+      "sha256": "7df23a179ec0e213c285da7ce06c995525375657150d415fed24bfcb353ab06d"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1375,
-      "sha256": "ce0b0ff8ffcd5015c13302f359351f88839499e16ea248118671b19995bfd670"
+      "sha256": "7084873f72d2fb4a10f897378ec36c1a65aeeca52080697288111b31d6fc06cb"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -209,8 +209,8 @@
     },
     {
       "path": "apps/harbor_app/android/app/build.gradle.kts",
-      "bytes": 4223,
-      "sha256": "846695e4d9c8182b9b8695eb34c3833d9e51238193b42353de429679c25c81f9"
+      "bytes": 4622,
+      "sha256": "dfaa9fe01778519c5f3cc0e05dff5a158d1fe0fa85a25b56cf264e98839f6704"
     },
     {
       "path": "apps/harbor_app/android/app/src/debug/AndroidManifest.xml",
@@ -544,28 +544,28 @@
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_ar.arb",
-      "bytes": 56671,
-      "sha256": "99af427420837f80dbd88470e7900f53c5f137b06b300926a7ac119709882cf9"
+      "bytes": 58312,
+      "sha256": "5e9229361ce97758e80b773e38d1e55ffe4cde52fc03c5243b45af8fca189860"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_en.arb",
-      "bytes": 47688,
-      "sha256": "9f6bc12b3f8fd5e97c505019d3a5131f390eb5e68462d28a069a0281d46fd775"
+      "bytes": 48554,
+      "sha256": "5c618424eee0b6eed40d1913935ef6aab1bcf6fd08bfc8ad2f3c8e78546d19cd"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations.dart",
-      "bytes": 120102,
-      "sha256": "24c4673a489f15c045fcecc1196bb6aa48048144ea497eff59aac78caafe533b"
+      "bytes": 122418,
+      "sha256": "32e4374ad16240e248b6754db4062d662fa27fd6fb1554b9a49eb527dd1b8113"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations_ar.dart",
-      "bytes": 72451,
-      "sha256": "55e2703372ce07249b2a7ea07fb07ae35006a4a1f2ef7b6171936894affffb39"
+      "bytes": 74410,
+      "sha256": "458a3028b88d759faa838b59e18f2dc0a1a66be1318c211a7471da2c296b4e60"
     },
     {
       "path": "apps/harbor_app/lib/l10n/app_localizations_en.dart",
-      "bytes": 58071,
-      "sha256": "bf01bc3dee6735f00a244f72b33539ce72a7cac7516c0b2ecdd0299cb606083f"
+      "bytes": 59245,
+      "sha256": "563751587593fcfc465ac2779996edf1ba30da7fd057e990ea53b9d75a5b935c"
     },
     {
       "path": "apps/harbor_app/lib/main.dart",
@@ -599,8 +599,8 @@
     },
     {
       "path": "apps/harbor_app/lib/services/harbor_service.dart",
-      "bytes": 55542,
-      "sha256": "7003c68b6c7e8e5acaff630b3859f8cb0fdd3a61d95e7829b7c3118e815c8fa4"
+      "bytes": 56495,
+      "sha256": "72597e06bf1b7f44e31bc3fecf9e538bd74fa3b8d712577d3806064b5617c2e6"
     },
     {
       "path": "apps/harbor_app/lib/services/native_adapters.dart",
@@ -674,8 +674,8 @@
     },
     {
       "path": "apps/harbor_app/lib/surfaces/knowledge_surface.dart",
-      "bytes": 25994,
-      "sha256": "fed423c9da7e50f3d8fe291c7af68ee5ff988639f140fc2bdc9a45258bd41cb8"
+      "bytes": 26121,
+      "sha256": "6b16c52ee7289282f33e65b91aa6c69f6b128b959ad58bba1d1e49c0ae73f89e"
     },
     {
       "path": "apps/harbor_app/lib/surfaces/memory_panel.dart",
@@ -689,8 +689,8 @@
     },
     {
       "path": "apps/harbor_app/lib/surfaces/settings_surface.dart",
-      "bytes": 17656,
-      "sha256": "95718c1702e3aea4dccacd8ebc754d2881a139688404ce15c24d5c75a5ca9c8d"
+      "bytes": 21444,
+      "sha256": "5c20fed4124c1ba21ab79f9726692987be15ea65cb299b39cbf7570737600733"
     },
     {
       "path": "apps/harbor_app/lib/surfaces/skill_run.dart",
@@ -898,6 +898,11 @@
       "sha256": "b0f9769c94b34f765d8df0b0d3b69f351d046b5e80b05683cf03884a86293f9f"
     },
     {
+      "path": "apps/harbor_app/macos/Runner/WorkerHelper.entitlements",
+      "bytes": 549,
+      "sha256": "56a84aa696dcffdff71660632700d5c022e5490d768666c30b636067b6637d12"
+    },
+    {
       "path": "apps/harbor_app/macos/Runner.xcodeproj/project.pbxproj",
       "bytes": 29830,
       "sha256": "083070bef355d96bd008e5f39e0202040b88764562388604fd9e711f4ddc0c57"
@@ -1041,6 +1046,11 @@
       "path": "apps/harbor_app/test/request_router_test.dart",
       "bytes": 7222,
       "sha256": "d5caba3a3cd871bc58c57e464b94f0e89bdeaae29010ad14ab7b95d3d42cf82f"
+    },
+    {
+      "path": "apps/harbor_app/test/runtime_qualification_test.dart",
+      "bytes": 4874,
+      "sha256": "ff86bb7be89682dccbc81bcbfbddac90fe81f93fac45332ac842c9af4301f311"
     },
     {
       "path": "apps/harbor_app/test/shell_test.dart",
@@ -1869,13 +1879,13 @@
     },
     {
       "path": "core/Cargo.lock",
-      "bytes": 99501,
-      "sha256": "d10a1d275a3e355b8651823d956270f14a2e6938cb59f1ce10b5a393e23d4a9b"
+      "bytes": 99555,
+      "sha256": "daf52e677680241b15a2401bbb1f97619d411a83334729661c91663ec8351ebf"
     },
     {
       "path": "core/Cargo.toml",
-      "bytes": 2935,
-      "sha256": "8fbd9ae38b070e008e70a3c66cabd48604d2fa6fa9a9ebaaa95eaf0f8293dadd"
+      "bytes": 2956,
+      "sha256": "ab09cc7321c330663866a1e7100df5f4752139b9676bfc7c0924719b8366a819"
     },
     {
       "path": "core/deny.toml",
@@ -1889,13 +1899,13 @@
     },
     {
       "path": "core/fuzz/Cargo.lock",
-      "bytes": 98802,
-      "sha256": "3467d8edfcc9dbb2748bfebdd1e14463ca2ef4cdc270b07cc8cb68b4b5fd5daf"
+      "bytes": 98908,
+      "sha256": "b36fd626ca35d8c7aeff08553e5dedf969e327c318bde2b4c6def4c2bb13f6f4"
     },
     {
       "path": "core/fuzz/Cargo.toml",
-      "bytes": 1625,
-      "sha256": "5db7f8070377fb0daaaaac56035638db1d4e22805c92196b32cac7e4ed804b59"
+      "bytes": 2002,
+      "sha256": "3d2756b232c1861d350761a77d37d83b9ddbc9a83f120a2f320494b3203478cc"
     },
     {
       "path": "core/fuzz/corpus/batch_from_value/crash-92b3025ecb55a42824f0ca23637d20c4bd4f9879",
@@ -2016,6 +2026,76 @@
       "path": "core/fuzz/corpus/ffi_dispatch/seed15",
       "bytes": 3,
       "sha256": "b0195a6b918e7b6262524913b5e0e0945b1e6589420b9f094690c2247b8ed12f"
+    },
+    {
+      "path": "core/fuzz/corpus/gguf_header/bad_nested_array",
+      "bytes": 101,
+      "sha256": "6e116d7988a19e7a132c54d12a9bc3d4a92dab151000def5f0f5a4965f20c4a9"
+    },
+    {
+      "path": "core/fuzz/corpus/gguf_header/bad_offset_overlap",
+      "bytes": 1792,
+      "sha256": "0ae8d976374c2914aafb2e9bc5dc47e24e7e79457034ec612adec4c6802628ad"
+    },
+    {
+      "path": "core/fuzz/corpus/gguf_header/bad_removed_type",
+      "bytes": 384,
+      "sha256": "0bfc1f91611fe9f2b04b38524fff0570eaac16b2c4a3548051da121102b55158"
+    },
+    {
+      "path": "core/fuzz/corpus/gguf_header/truncated_1660",
+      "bytes": 1660,
+      "sha256": "7846ff7a6295aa68dd3fd456ccefc94b65eec5698c63c657fe29832d285c5031"
+    },
+    {
+      "path": "core/fuzz/corpus/gguf_header/truncated_24",
+      "bytes": 24,
+      "sha256": "910fc8a629231c3b34cf5c69edec8bbe5a4e7f3a67acc13e9de7f2ef50f862bc"
+    },
+    {
+      "path": "core/fuzz/corpus/gguf_header/truncated_4",
+      "bytes": 4,
+      "sha256": "b83633aa785344791618f2fddf131b010ea04912a60430760b070bad293f65bd"
+    },
+    {
+      "path": "core/fuzz/corpus/gguf_header/truncated_60",
+      "bytes": 60,
+      "sha256": "7f8de678e0c06182c29bab08c53a586889181571c78e855bc7bd77c794b93222"
+    },
+    {
+      "path": "core/fuzz/corpus/gguf_header/truncated_8",
+      "bytes": 8,
+      "sha256": "527ee9a8eac07fc69af277c264ea5bf5c0f037c442b5c3336c18aa10d2096bd6"
+    },
+    {
+      "path": "core/fuzz/corpus/gguf_header/truncated_880",
+      "bytes": 880,
+      "sha256": "23fcd511ef589dafce9a7e2e985c5ae8e0fd0f04109ff7a4c7f773d032eff5b0"
+    },
+    {
+      "path": "core/fuzz/corpus/gguf_header/valid_clip_align64",
+      "bytes": 12480,
+      "sha256": "2262478297e185024a46d5b886ade7ae6277ad53724d16faa45430d77737d72e"
+    },
+    {
+      "path": "core/fuzz/corpus/gguf_header/valid_llama_v2",
+      "bytes": 1760,
+      "sha256": "d1c48d9d286132b5faa3d8f12fd3c571f4089d0b5d35ca1bde69695db79505dc"
+    },
+    {
+      "path": "core/fuzz/corpus/gguf_header/valid_llama_v3",
+      "bytes": 1760,
+      "sha256": "8779d50b8030a505236be8761febb58da707c2c9eb506a5954c1364ff365ee8a"
+    },
+    {
+      "path": "core/fuzz/corpus/gguf_header/valid_no_tensors",
+      "bytes": 69,
+      "sha256": "cf76e0dbe671a1e63b53fdb51dd86a92600a0dd794aa05fbc2905cedaf3f41a1"
+    },
+    {
+      "path": "core/fuzz/corpus/gguf_header/valid_per_layer_heads",
+      "bytes": 135,
+      "sha256": "fde5c2667baa76592ce3cf86639ea7491d9752cb0674cf6af040c8c696d5dabe"
     },
     {
       "path": "core/fuzz/corpus/graph_from_value/cycle",
@@ -2158,6 +2238,11 @@
       "sha256": "c4ea6c0949e31db1a73484b239a555b530e6acceec0087d7d0155bbba557daf8"
     },
     {
+      "path": "core/fuzz/fuzz_targets/gguf_header.rs",
+      "bytes": 595,
+      "sha256": "1c46fa6415e4dbf5ab776112c8f6ef91541ec6f4f03b8880a9066ffaa469269f"
+    },
+    {
       "path": "core/fuzz/fuzz_targets/graph_from_value.rs",
       "bytes": 597,
       "sha256": "b0a7f57311726b6e06ae51b98a9ee7843a0b8999c79dad1577688e63ba7f7166"
@@ -2169,8 +2254,8 @@
     },
     {
       "path": "core/fuzz/seed_corpus.py",
-      "bytes": 5014,
-      "sha256": "ed797c9c42188335b86a313dccf475907331f60ae8c6daca23aead79d381963a"
+      "bytes": 8368,
+      "sha256": "24a1651f20341254c4a3248313e5b802982a0a5353d0b2044d78528e15782ec2"
     },
     {
       "path": "core/harbor_agent/Cargo.toml",
@@ -2769,13 +2854,13 @@
     },
     {
       "path": "core/harbor_ffi/src/knowledge.rs",
-      "bytes": 60422,
-      "sha256": "fe990519a5eff6e40cc297fda1704914b9980d2e0ea6917c1f035139a395035e"
+      "bytes": 60844,
+      "sha256": "b8ed24350283be645804b2c5aaa39aff1879014defd673f39fe9ee546dbf4195"
     },
     {
       "path": "core/harbor_ffi/src/lib.rs",
-      "bytes": 265835,
-      "sha256": "b0cec8e9507e00f53c9c618abb6e60e65903e65d1b1435fafc8b716b72fc0a39"
+      "bytes": 269370,
+      "sha256": "c107d72584d9cf1fd16b26d3cf26e61734cfe6d594e1b3dddb180bbdbd2e5aa5"
     },
     {
       "path": "core/harbor_ffi/src/threads.rs",
@@ -2831,6 +2916,11 @@
       "path": "core/harbor_ffi/tests/goals_flow.rs",
       "bytes": 7829,
       "sha256": "99c38527b5fec75aa05e33f768e6b56f7caa67fe7628cca390427615238185d8"
+    },
+    {
+      "path": "core/harbor_ffi/tests/inference_worker.rs",
+      "bytes": 10705,
+      "sha256": "71fc0e2467ae8022b9103e4231cdba5900b33b2be5390439a2b3b2ef745af445"
     },
     {
       "path": "core/harbor_ffi/tests/install_extra_files.rs",
@@ -2994,13 +3084,23 @@
     },
     {
       "path": "core/harbor_inference/src/gguf.rs",
-      "bytes": 23545,
-      "sha256": "f8effb3a332340657c64045ec1cd005401ed4a7c494d431c37cae56dd4b56ab2"
+      "bytes": 31252,
+      "sha256": "647327c36838e3b529b8cc9bef0283ccbf0dcaac121cb9cea79a53436c20c7be"
+    },
+    {
+      "path": "core/harbor_inference/src/gguf_check.rs",
+      "bytes": 71415,
+      "sha256": "87b14544f719498db43d210fe315d6ba97944532eaaa546d6f0f937a9d34e918"
     },
     {
       "path": "core/harbor_inference/src/lib.rs",
-      "bytes": 1723,
-      "sha256": "e570c1cbc60d63d0e1c08497105e981e6d41c41ed518b76428e0b12e48b05ce6"
+      "bytes": 1802,
+      "sha256": "934ea1bec5cbb84ee7ae6eefa3358ebd1bf6324e9a9df6412c7aaa09b9e8d3a7"
+    },
+    {
+      "path": "core/harbor_inference/src/memory_budget.rs",
+      "bytes": 11374,
+      "sha256": "4bd8643f7ac7bcc3478b6ffb8ad53e55a3286af374bb613ae5869e6f7d61775f"
     },
     {
       "path": "core/harbor_inference/src/mrl.rs",
@@ -3009,8 +3109,8 @@
     },
     {
       "path": "core/harbor_inference/src/multimodal.rs",
-      "bytes": 20305,
-      "sha256": "4565ce74d67398c6f56fe2580ecbc8a672def1fdac86304e5069c863251fed9e"
+      "bytes": 21507,
+      "sha256": "8af853e470cbe90af45a416052d320981a3ff4c92b9e5bb81b3cdb3a87453641"
     },
     {
       "path": "core/harbor_inference/src/ocr.rs",
@@ -3019,8 +3119,13 @@
     },
     {
       "path": "core/harbor_inference/src/provider.rs",
-      "bytes": 4211,
-      "sha256": "28865189ac60acfc46b477a7c10edd02ca98efd1645cf7d4ac4f7b4c1d001f78"
+      "bytes": 4428,
+      "sha256": "a3fd44211cd92ce1002e4344f94b00563ee7ccb7a6130f415fe22e9e61d21653"
+    },
+    {
+      "path": "core/harbor_inference/src/resilience.rs",
+      "bytes": 31574,
+      "sha256": "fb27a96ecf9bf0497c08d1a5cf5b224c072a7f69690d60cbfaf17b329d43084d"
     },
     {
       "path": "core/harbor_inference/src/router.rs",
@@ -3034,13 +3139,38 @@
     },
     {
       "path": "core/harbor_inference/src/vision_ocr.rs",
-      "bytes": 13899,
-      "sha256": "eaf225ebaff9e2a5fc708e1c40b2aabf6cfed55482a196e03393f02f605e9c10"
+      "bytes": 14544,
+      "sha256": "f9e566c7b876abe1da65bc4ec0fca7502dee815a732705e8793259f5c5493e60"
+    },
+    {
+      "path": "core/harbor_inference/src/worker/client.rs",
+      "bytes": 8616,
+      "sha256": "8e0319bba5feb8454536cddc22623487bb34d707fd67b9101b19887041a90a45"
+    },
+    {
+      "path": "core/harbor_inference/src/worker/mod.rs",
+      "bytes": 10421,
+      "sha256": "ffa70a4174c7dad24a45c9d7af54222f741c365b73a9c9119eeec31223ed9bba"
+    },
+    {
+      "path": "core/harbor_inference/src/worker/protocol.rs",
+      "bytes": 7498,
+      "sha256": "fb74743011a613ad9bf08dcfa356d8788ee992c11f9207586e35851365af9cfd"
+    },
+    {
+      "path": "core/harbor_inference/src/worker/server.rs",
+      "bytes": 15928,
+      "sha256": "895e386031c4f3643fdb3ba0c164065e62a00e3009888d415e5053427e1a6187"
+    },
+    {
+      "path": "core/harbor_inference/src/worker/supervisor.rs",
+      "bytes": 31858,
+      "sha256": "d3d1819d3b1e229aa4da00edbeca11d0f986778611bba501319aa0ce61aba8d6"
     },
     {
       "path": "core/harbor_inference/tests/gguf_provider.rs",
-      "bytes": 28906,
-      "sha256": "39918e0290980ffcc6eaefd84539b76a7c43e5ca3da95eab9785c8f54d7ff678"
+      "bytes": 32973,
+      "sha256": "0bb0ac947909f5a618093e47f98be8587a947fab5bff3c4d8f03e7d55cffd9b9"
     },
     {
       "path": "core/harbor_inference/tests/multimodal_benchmark.rs",
@@ -3051,6 +3181,11 @@
       "path": "core/harbor_inference/tests/multimodal_live.rs",
       "bytes": 6370,
       "sha256": "8f13b0f01d70b353c7487c3d44411c4e2fdb0104935176abd991656ca55de90a"
+    },
+    {
+      "path": "core/harbor_inference/tests/numerics_canary.rs",
+      "bytes": 5620,
+      "sha256": "86e3931840b9ccb69a62b6944971015e6b2a3f9b7adfe9e9c0ed35a32f7960ce"
     },
     {
       "path": "core/harbor_inference/tests/ocr_release.rs",
@@ -3503,6 +3638,16 @@
       "sha256": "21b7a86a5927bb0a376d4465b985dd0f3e637c36a8b6e7e585ef5dc089d14eaa"
     },
     {
+      "path": "core/harbor_worker/Cargo.toml",
+      "bytes": 498,
+      "sha256": "18251bf8bd603a5175f5791c37ae3d6a44abbe3022743c3c8527adeec9606e77"
+    },
+    {
+      "path": "core/harbor_worker/src/main.rs",
+      "bytes": 2909,
+      "sha256": "979292623acee73906f3a5c75cbfed5009f274a39bdfa88c5c8036496ddaa9f4"
+    },
+    {
       "path": "docs/HANDOFF_2026-10-10.md",
       "bytes": 20321,
       "sha256": "d7666ded7cec5e97303d998d444b44cede8bfad79a4ecd2374e7cfc3ebf49714"
@@ -3826,6 +3971,21 @@
       "path": "docs/release_checklist_status.md",
       "bytes": 5808,
       "sha256": "5ec4626411b03d4844b09da560824a83f7aa53cb7eefac41f673242b0a4c85d5"
+    },
+    {
+      "path": "docs/upstream/README.md",
+      "bytes": 1198,
+      "sha256": "3aa8fdd170842814f6a59cbf7d7a62bfa224bad4d100825047eb9ae57b0412d7"
+    },
+    {
+      "path": "docs/upstream/llama-cpp-adreno-vulkan-embeddinggemma2.md",
+      "bytes": 2175,
+      "sha256": "79c9e97803d2e4a59335acdaae488b0c48dafe80a34b3bc358bd8e97958beafe"
+    },
+    {
+      "path": "docs/upstream/llama-cpp-vk-disable-f16-segfault.md",
+      "bytes": 1110,
+      "sha256": "095f861d383b6267b593990d67a5aff6c4d8a982d1dde320536fc7871a6d0938"
     },
     {
       "path": "docs/verification_2026-10-10.md",
@@ -4843,24 +5003,29 @@
       "sha256": "815a69972b3886717bf7b85c296ae7b541b6453054857f4bead0b28227a8c01d"
     },
     {
+      "path": "scripts/build_android_core.sh",
+      "bytes": 2555,
+      "sha256": "ef620d1cb1387be022e5e812d87d4c998362e6fd3c6a69fc9a3e2a16deef4c0c"
+    },
+    {
       "path": "scripts/build_android_vulkan.sh",
       "bytes": 2901,
       "sha256": "c0c16bad2f4acf2f227b5835cd2c430d640edc6197ecb8103d3cda6500677c43"
     },
     {
       "path": "scripts/build_windows.ps1",
-      "bytes": 4526,
-      "sha256": "4bcab17a0ced94db8885eb6732218476ffb5380e6cc7a04078728b5b9456a5d7"
+      "bytes": 5138,
+      "sha256": "3076f4e1200087bd4c883a286569e1d22b7c1565231d3c3647a2e2b46ebf8838"
     },
     {
       "path": "scripts/package_android.sh",
-      "bytes": 4238,
-      "sha256": "082d2ca0e6831b3d43767e4977c7cd3a92d44a1373c8751dfd03be6996eb291b"
+      "bytes": 4766,
+      "sha256": "5f3ec69a80c77c415113800fd02a989f433e5e76e975faaa60646dd869b3771b"
     },
     {
       "path": "scripts/package_apple.sh",
-      "bytes": 6730,
-      "sha256": "65ba284b98f0b46372541bcf3c59ffed8fdcf164ff62728f930dbe2f4ca01498"
+      "bytes": 8157,
+      "sha256": "0b21a1b39222f35f989b782e8a2befd9cb75823bd3af01ce0a9497255ee80046"
     },
     {
       "path": "third_party/formualizer-eval/.cargo-ok",
@@ -12978,6 +13143,11 @@
       "sha256": "00c7b2b0d2e175901e65dbb3cbcff587fb204546d95e231f06febb25a91fd86e"
     },
     {
+      "path": "tools/fetch_numerics_fixtures.py",
+      "bytes": 2150,
+      "sha256": "d45a772d162e83feb24a0b193f58e199f0b89de1e444142fc8559706ef1a66a0"
+    },
+    {
       "path": "tools/formula_batch.py",
       "bytes": 21179,
       "sha256": "d87fe2afb7dfa84f9eaa872d3f8160bcb700677c4f14dc73c7a2f15edce657da"
@@ -13074,8 +13244,8 @@
     },
     {
       "path": "tools/fuzz.sh",
-      "bytes": 3284,
-      "sha256": "f62049da4625a02aace5eca2ea51be7cba27be506f2f335530a0d79bb3bb619b"
+      "bytes": 3296,
+      "sha256": "45740bec6e1a1ffed6e934ff68e2b37f1eac4ed7f3371cff63c3f1b36b4675a8"
     },
     {
       "path": "tools/generate_changelog.py",

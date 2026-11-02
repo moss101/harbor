@@ -1804,6 +1804,47 @@ class AppLocalizationsAr extends AppLocalizations {
       'فهرسة الفيديو تتطلب FFmpeg على هذا الحاسوب. ثبّت FFmpeg (أو عيّن HARBOR_FFMPEG إلى موقعه) ثم أعد المحاولة.';
 
   @override
+  String get knowledgeBackendCpu =>
+      'المعالج المركزي — لا يوجد مسار للمعالج الرسومي على هذا الجهاز';
+
+  @override
+  String get knowledgeBackendCpuPinned =>
+      'المعالج المركزي — فشل المعالج الرسومي لهذا الجهاز مع هذا النموذج من قبل؛ أعد اختباره من الإعدادات';
+
+  @override
+  String get settingsGpu => 'تسريع المعالج الرسومي';
+
+  @override
+  String get settingsGpuBody =>
+      'تعمل النماذج على المعالج الرسومي لهذا الجهاز فقط بعد أن يثبت عمله معها. إذا تعطّل المعالج الرسومي أو أعطى نتائج خاطئة مع نموذج، يبقي Harbor ذلك النموذج على المعالج المركزي حتى تعيد اختباره أو يتحدّث النظام أو Harbor.';
+
+  @override
+  String get settingsGpuNone =>
+      'لا يوجد مسار للمعالج الرسومي على هذا الجهاز أو هذا الإصدار؛ تعمل النماذج على المعالج المركزي.';
+
+  @override
+  String get settingsGpuEmpty => 'لم يعمل أي نموذج على المعالج الرسومي بعد.';
+
+  @override
+  String get settingsGpuQualified => 'المعالج الرسومي، تم التحقق';
+
+  @override
+  String get settingsGpuOk => 'المعالج الرسومي';
+
+  @override
+  String get settingsGpuVerifying => 'المعالج الرسومي، التشغيل الأول';
+
+  @override
+  String get settingsGpuCanaryFailed =>
+      'المعالج المركزي — أعطى المعالج الرسومي نتائج خاطئة';
+
+  @override
+  String get settingsGpuCrashed => 'المعالج المركزي — تعطّل المعالج الرسومي';
+
+  @override
+  String get settingsGpuRetest => 'أعد اختبار المعالج الرسومي';
+
+  @override
   String get settingsEngines => 'المحرّكات على الجهاز';
 
   @override

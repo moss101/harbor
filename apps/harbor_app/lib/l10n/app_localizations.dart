@@ -2894,6 +2894,78 @@ abstract class AppLocalizations {
   /// **'Indexing video needs FFmpeg on this computer. Install FFmpeg (or set HARBOR_FFMPEG to its location) and try again.'**
   String get knowledgeVideoNeedsFfmpeg;
 
+  /// No description provided for @knowledgeBackendCpu.
+  ///
+  /// In en, this message translates to:
+  /// **'CPU — no GPU path on this device'**
+  String get knowledgeBackendCpu;
+
+  /// No description provided for @knowledgeBackendCpuPinned.
+  ///
+  /// In en, this message translates to:
+  /// **'CPU — this device\'s GPU failed with this model before; re-test it in Settings'**
+  String get knowledgeBackendCpuPinned;
+
+  /// No description provided for @settingsGpu.
+  ///
+  /// In en, this message translates to:
+  /// **'GPU acceleration'**
+  String get settingsGpu;
+
+  /// No description provided for @settingsGpuBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Models run on this device\'s GPU only after it has worked with them. If the GPU crashes or gives wrong results with a model, Harbor keeps that model on the CPU until you re-test it or the system or Harbor updates.'**
+  String get settingsGpuBody;
+
+  /// No description provided for @settingsGpuNone.
+  ///
+  /// In en, this message translates to:
+  /// **'This device or build has no GPU path; models run on the CPU.'**
+  String get settingsGpuNone;
+
+  /// No description provided for @settingsGpuEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No model has run on the GPU yet.'**
+  String get settingsGpuEmpty;
+
+  /// No description provided for @settingsGpuQualified.
+  ///
+  /// In en, this message translates to:
+  /// **'GPU, checked'**
+  String get settingsGpuQualified;
+
+  /// No description provided for @settingsGpuOk.
+  ///
+  /// In en, this message translates to:
+  /// **'GPU'**
+  String get settingsGpuOk;
+
+  /// No description provided for @settingsGpuVerifying.
+  ///
+  /// In en, this message translates to:
+  /// **'GPU, first run'**
+  String get settingsGpuVerifying;
+
+  /// No description provided for @settingsGpuCanaryFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'CPU — the GPU gave wrong results'**
+  String get settingsGpuCanaryFailed;
+
+  /// No description provided for @settingsGpuCrashed.
+  ///
+  /// In en, this message translates to:
+  /// **'CPU — the GPU crashed'**
+  String get settingsGpuCrashed;
+
+  /// No description provided for @settingsGpuRetest.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-test the GPU'**
+  String get settingsGpuRetest;
+
   /// No description provided for @settingsEngines.
   ///
   /// In en, this message translates to:

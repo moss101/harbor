@@ -61,6 +61,12 @@ android {
     // release workflow asserts the packaged ABI list after the build.
     packaging {
         jniLibs {
+            // Extract native libraries at install (decision 0022 phase 3):
+            // the inference worker launcher ships as lib/arm64-v8a/
+            // libharbor_worker.so and is EXECUTED from the native library
+            // directory, which only exists on disk when libraries are
+            // extracted. Without it the core runs models in-process.
+            useLegacyPackaging = true
             excludes += listOf(
                 "lib/armeabi-v7a/**", "lib/armeabi/**",
                 "lib/x86/**", "lib/x86_64/**",

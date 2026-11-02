@@ -99,6 +99,10 @@ pub enum ProviderError {
     Backend(String),
     #[error("policy violation: {0}")]
     Policy(String),
+    /// The inference worker process died (decision 0022 phase 3). The
+    /// request did not complete; the next call starts a fresh worker.
+    #[error("inference runtime stopped: {0}")]
+    RuntimeCrashed(String),
 }
 
 /// A model provider. `capabilities` is the declaration; every call checks
