@@ -14,10 +14,11 @@ thiserror = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }
-# Pinned llama.cpp bindings. The llama.cpp source snapshot is vendored
-# inside llama-cpp-sys-2 (see the include list of its Cargo.toml), so the
-# crate version pins the exact runtime revision.
-llama-cpp-2 = { version = "=0.1.156", optional = true }
+# Harbor-owned llama.cpp bindings (decision 0022, phase 4): harbor_llama over
+# harbor_llama_sys, built from the pinned tree in third_party/llama.cpp
+# (HARBOR_PIN.json). Imported under the dependency name `llama-cpp-2` so the
+# `llama_cpp_2::` paths in this crate are unchanged.
+llama-cpp-2 = { package = "harbor_llama", path = "../harbor_llama", optional = true }
 encoding_rs = { version = "0.8", optional = true }
 
 [features]

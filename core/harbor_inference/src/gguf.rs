@@ -1,10 +1,10 @@
 //! GGUF backend over the pinned llama.cpp runtime.
 //!
-//! The llama.cpp source snapshot is vendored inside `llama-cpp-sys-2`
-//! (pinned `=0.1.156`), so the crate lockfile pins the exact runtime
-//! revision; `runtime_revision()` reports it and the integrity hash of the
-//! packed `.crate` archive is recorded by `tools/pin_engine.py` (same
-//! mechanism as the formula engine).
+//! llama.cpp is vendored unmodified at one upstream commit in
+//! `third_party/llama.cpp` (pinned and tree-hashed by
+//! `tools/vendor_llama_cpp.py`, `HARBOR_PIN.json`) and bound by Harbor's own
+//! `harbor_llama_sys` / `harbor_llama` crates (decision 0022, phase 4);
+//! `runtime_revision()` reports that tag and commit.
 //!
 //! Implementation notes (honest scope):
 //! - Prompt assembly prefers the model-native chat template carried in
@@ -34,9 +34,11 @@ use crate::provider::{
     Capabilities, ChatRequest, ChatResponse, ModelProvider, ModelRef, ProviderError, Usage,
 };
 
-/// The pinned runtime identity (crate pin -> llama.cpp snapshot).
+/// The pinned runtime identity: `llama.cpp@<tag>+<commit[..10]>`, e.g.
+/// `llama.cpp@v0.8.0+8642541b25`, generated from
+/// `third_party/llama.cpp/HARBOR_PIN.json` at build time.
 pub fn runtime_revision() -> &'static str {
-    "llama.cpp/llama-cpp-sys-2@0.1.156"
+    llama_cpp_2::RUNTIME_REVISION
 }
 
 pub struct GgufLlamaCppProvider {

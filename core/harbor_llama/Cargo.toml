@@ -1,0 +1,33 @@
+[package]
+name = "harbor_llama"
+version = "0.8.0"
+edition = "2021"
+description = "Safe wrapper over the pinned llama.cpp, trimmed to what Harbor uses (decision 0022)"
+# Derived from llama-cpp-2 0.1.156 (MIT OR Apache-2.0); see NOTICE and HARBOR.md.
+license = "MIT OR Apache-2.0"
+publish = false
+
+[lib]
+name = "harbor_llama"
+path = "src/lib.rs"
+
+[features]
+# Same defaults harbor_inference got from llama-cpp-2 0.1.156.
+default = ["openmp", "android-shared-stdcxx", "common"]
+common = ["harbor_llama_sys/common"]
+mtmd = ["harbor_llama_sys/mtmd"]
+metal = ["harbor_llama_sys/metal"]
+vulkan = ["harbor_llama_sys/vulkan"]
+openmp = ["harbor_llama_sys/openmp"]
+static-openmp = ["harbor_llama_sys/static-openmp"]
+android-shared-stdcxx = ["harbor_llama_sys/shared-stdcxx"]
+android-static-stdcxx = ["harbor_llama_sys/static-stdcxx"]
+
+[dependencies]
+harbor_llama_sys = { path = "../harbor_llama_sys" }
+encoding_rs = "0.8.35"
+thiserror = "2"
+tracing = "0.1"
+
+[target.'cfg(all(target_os = "macos", any(target_arch = "aarch64", target_arch = "arm64")))'.dependencies]
+harbor_llama_sys = { path = "../harbor_llama_sys", features = ["metal"] }
