@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Generate a CycloneDX 1.5 SBOM for Harbor's Rust and Dart dependencies.
 
-Sources: core/Cargo.lock (Rust) and every pubspec.lock under packages/ and
-apps/ (Dart). Components carry name, version and purl. Deterministic:
+Sources: core/Cargo.lock (Rust), third_party/llama.cpp/HARBOR_PIN.json
+(vendored llama.cpp) and every pubspec.lock under packages/ and apps/ (Dart).
+Components carry name, version and purl. Deterministic:
 same locks -> byte-identical SBOM (sorted, stable serialization).
 
 Usage: python3 tools/generate_sbom.py [--write]
@@ -37,6 +38,28 @@ def cargo_components() -> list:
                 "purl": f"pkg:cargo/{name}@{version}",
             })
     return out
+
+
+def vendored_components() -> list:
+    """Native sources vendored outside any lockfile: llama.cpp, pinned by
+    third_party/llama.cpp/HARBOR_PIN.json (decision 0022)."""
+    pin_path = ROOT / "third_party" / "llama.cpp" / "HARBOR_PIN.json"
+    if not pin_path.is_file():
+        return []
+    pin = json.loads(pin_path.read_text())
+    return [{
+        "type": "library",
+        "bom-ref": f"github:ggml-org/llama.cpp@{pin['commit']}",
+        "name": "llama.cpp",
+        "version": pin["tag"],
+        "purl": f"pkg:github/ggml-org/llama.cpp@{pin['commit']}",
+        "licenses": [{"license": {"id": "MIT"}}],
+        "properties": [
+            {"name": "harbor:vendoredAt", "value": "third_party/llama.cpp"},
+            {"name": "harbor:tarballSha256", "value": pin["tarball_sha256"]},
+            {"name": "harbor:treeSha256", "value": pin["tree_sha256"]},
+        ],
+    }]
 
 
 def dart_components() -> list:
@@ -97,7 +120,7 @@ def git_commit() -> str:
 
 
 def main() -> None:
-    components = cargo_components() + dart_components()
+    components = cargo_components() + vendored_components() + dart_components()
     seen = set()
     unique = []
     for c in components:
