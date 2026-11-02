@@ -31,7 +31,12 @@ pub(crate) enum FillSpec {
 }
 
 pub(crate) const FILL_TAGS: [&str; 6] = [
-    "noFill", "solidFill", "gradFill", "blipFill", "pattFill", "grpFill",
+    "noFill",
+    "solidFill",
+    "gradFill",
+    "blipFill",
+    "pattFill",
+    "grpFill",
 ];
 
 /// The fill child of a property container, if it states one.
@@ -142,10 +147,7 @@ pub(crate) fn resolve_fill(spec: &FillSpec, ctx: &ColorCtx, ph: Option<&Rgba>) -
                 })
                 .collect();
             match angle {
-                Some(a) => Paint::Linear {
-                    angle: *a,
-                    stops,
-                },
+                Some(a) => Paint::Linear { angle: *a, stops },
                 None => Paint::Radial {
                     cx: center.0,
                     cy: center.1,
@@ -210,7 +212,11 @@ fn arrow(n: Node) -> Option<String> {
 }
 
 /// Resolve to a drawable line; `None` when there is no visible stroke.
-pub(crate) fn resolve_line(spec: &LineSpec, ctx: &ColorCtx, ph: Option<&Rgba>) -> Option<LineStyle> {
+pub(crate) fn resolve_line(
+    spec: &LineSpec,
+    ctx: &ColorCtx,
+    ph: Option<&Rgba>,
+) -> Option<LineStyle> {
     let fill = spec.fill.as_ref()?;
     let paint = resolve_fill(fill, ctx, ph);
     if matches!(paint, Paint::None) {
@@ -245,9 +251,19 @@ pub(crate) fn parse_effects(list: Node) -> EffectSpec {
         .descendants()
         .find(|c| c.is_element() && c.tag_name().name() == "outerShdw")
         .map(|s| ShadowSpec {
-            blur: s.attribute("blurRad").and_then(|v| v.parse().ok()).unwrap_or(0.0),
-            dist: s.attribute("dist").and_then(|v| v.parse().ok()).unwrap_or(0.0),
-            dir: s.attribute("dir").and_then(|v| v.parse::<f64>().ok()).unwrap_or(0.0) / 60000.0,
+            blur: s
+                .attribute("blurRad")
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(0.0),
+            dist: s
+                .attribute("dist")
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(0.0),
+            dir: s
+                .attribute("dir")
+                .and_then(|v| v.parse::<f64>().ok())
+                .unwrap_or(0.0)
+                / 60000.0,
             color: color_child(s).unwrap_or_else(|| ColorSpec::rgb([0, 0, 0])),
         });
     EffectSpec { shadow }
@@ -304,7 +320,10 @@ pub(crate) fn parse_theme(xml: &str) -> Theme {
                     scheme: &ctx_scheme,
                     map: &map,
                 };
-                m.insert(slot.tag_name().name().to_string(), ctx.resolve(&spec, None).rgb);
+                m.insert(
+                    slot.tag_name().name().to_string(),
+                    ctx.resolve(&spec, None).rgb,
+                );
             }
         }
         theme.scheme = SchemeColors(m);

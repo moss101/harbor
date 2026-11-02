@@ -36,14 +36,14 @@ pub fn build(kind: LayoutKind, s: &DesignedSlide, cx: &Ctx) -> Built {
 
 #[cfg(test)]
 mod tests {
-    use crate::deck::theme::{theme, THEMES};
-    use super::*;
     use super::kit::*;
+    use super::*;
     use crate::deck::grid::*;
-    use crate::deck::model::*;
-    use crate::deck::xml::*;
-    use crate::deck::theme::*;
     use crate::deck::look::*;
+    use crate::deck::model::*;
+    use crate::deck::theme::*;
+    use crate::deck::theme::{theme, THEMES};
+    use crate::deck::xml::*;
 
     fn ctx<'a>(t: &'a ThemeSpec, deck: &'a str) -> Ctx<'a> {
         Ctx {
@@ -61,11 +61,24 @@ mod tests {
     fn rich_slide() -> DesignedSlide {
         DesignedSlide::new("Why customers choose Harbor over a stack of tools")
             .kicker("Why us")
-            .bullets(["38% faster close", "2.1x pipeline coverage", "$4.2M ARR added"])
+            .bullets([
+                "38% faster close",
+                "2.1x pipeline coverage",
+                "$4.2M ARR added",
+            ])
             .blocks(vec![
-                Block::card("Local first", "Documents never leave the device unless you say so."),
-                Block::card("Verified formulas", "Only functions proven against Excel are marked verified."),
-                Block::card("One quiet app", "Documents, sheets, decks and PDF in one place."),
+                Block::card(
+                    "Local first",
+                    "Documents never leave the device unless you say so.",
+                ),
+                Block::card(
+                    "Verified formulas",
+                    "Only functions proven against Excel are marked verified.",
+                ),
+                Block::card(
+                    "One quiet app",
+                    "Documents, sheets, decks and PDF in one place.",
+                ),
             ])
             .notes("n")
     }
@@ -77,10 +90,18 @@ mod tests {
                 let mut s = rich_slide();
                 s.layout = Some(kind);
                 if kind == LayoutKind::Stats {
-                    s.blocks = vec![Block::stat("38%", "faster close"), Block::stat("2.1x", "pipeline"), Block::stat("$4.2M", "ARR")];
+                    s.blocks = vec![
+                        Block::stat("38%", "faster close"),
+                        Block::stat("2.1x", "pipeline"),
+                        Block::stat("$4.2M", "ARR"),
+                    ];
                 }
                 if kind == LayoutKind::Timeline {
-                    s.blocks = vec![Block::step("Q1", "Beta", "Ten design partners"), Block::step("Q2", "Launch", "Public"), Block::step("Q3", "Scale", "EMEA")];
+                    s.blocks = vec![
+                        Block::step("Q1", "Beta", "Ten design partners"),
+                        Block::step("Q2", "Launch", "Public"),
+                        Block::step("Q3", "Scale", "EMEA"),
+                    ];
                 }
                 if kind == LayoutKind::Chart {
                     s.chart = Some(crate::pptx::ChartSpec {
@@ -95,11 +116,23 @@ mod tests {
                 for it in &built.items {
                     if let El::Sp(sh) = &it.el {
                         if let Some(r) = sh.rect {
-                            assert!(r.w >= 0 && r.h >= 0, "{} {kind:?} {}: negative size {r:?}", t.id, sh.name);
+                            assert!(
+                                r.w >= 0 && r.h >= 0,
+                                "{} {kind:?} {}: negative size {r:?}",
+                                t.id,
+                                sh.name
+                            );
                             // Content stays on the slide (ornaments may bleed).
                             if !sh.decorative {
-                                assert!(r.x >= 0 && r.y >= 0 && r.right() <= SLIDE_W && r.bottom() <= SLIDE_H,
-                                    "{} {kind:?} {}: off slide {r:?}", t.id, sh.name);
+                                assert!(
+                                    r.x >= 0
+                                        && r.y >= 0
+                                        && r.right() <= SLIDE_W
+                                        && r.bottom() <= SLIDE_H,
+                                    "{} {kind:?} {}: off slide {r:?}",
+                                    t.id,
+                                    sh.name
+                                );
                             }
                         }
                     }
@@ -139,9 +172,19 @@ mod tests {
     #[test]
     fn stats_derive_from_bullets_and_cap_at_four() {
         let t = theme("harbor").unwrap();
-        let s = DesignedSlide::new("Growth").bullets(["38% faster", "2.1x pipeline", "$4.2M ARR", "9 new logos", "extra 5"]);
+        let s = DesignedSlide::new("Growth").bullets([
+            "38% faster",
+            "2.1x pipeline",
+            "$4.2M ARR",
+            "9 new logos",
+            "extra 5",
+        ]);
         let built = super::stats::stats(&s, &ctx(t, "D"));
-        let ticks = built.items.iter().filter(|i| matches!(&i.el, El::Sp(s) if s.name.starts_with("Stat tick"))).count();
+        let ticks = built
+            .items
+            .iter()
+            .filter(|i| matches!(&i.el, El::Sp(s) if s.name.starts_with("Stat tick")))
+            .count();
         assert_eq!(ticks, 4);
     }
 
@@ -149,8 +192,14 @@ mod tests {
     fn initials_and_comparison_titles() {
         assert_eq!(initials("Layla Hassan"), "LH");
         assert_eq!(initials("Plato"), "P");
-        assert_eq!(super::compare::comparison_titles("Build vs buy"), ("Build".into(), "buy".into()));
-        assert_eq!(super::compare::comparison_titles("Pricing"), ("Option A".into(), "Option B".into()));
+        assert_eq!(
+            super::compare::comparison_titles("Build vs buy"),
+            ("Build".into(), "buy".into())
+        );
+        assert_eq!(
+            super::compare::comparison_titles("Pricing"),
+            ("Option A".into(), "Option B".into())
+        );
     }
 
     // ---- the generic quality gates every layout variant must pass ----------
@@ -166,8 +215,20 @@ mod tests {
         let mut need = 0.0f64;
         for p in &text.paras {
             let s: String = p.runs.iter().map(|r| r.text.as_str()).collect();
-            let pt = p.runs.iter().filter_map(|r| r.size).fold(0.0, f64::max).max(if p.runs.iter().any(|r| r.size.is_some()) { 0.0 } else { 18.0 });
-            let major = p.runs.first().map_or(false, |r| r.font == Some(FontRef::Major));
+            let pt = p
+                .runs
+                .iter()
+                .filter_map(|r| r.size)
+                .fold(0.0, f64::max)
+                .max(if p.runs.iter().any(|r| r.size.is_some()) {
+                    0.0
+                } else {
+                    18.0
+                });
+            let major = p
+                .runs
+                .first()
+                .is_some_and(|r| r.font == Some(FontRef::Major));
             let factor = glyph_factor(if major { t.fonts.major } else { t.fonts.minor });
             let w = base_w - p.margin.map_or(0, |(m, _)| m.max(0));
             let lines = line_count(&s, pt, w.max(1), factor) as f64;
@@ -178,7 +239,8 @@ mod tests {
     }
 
     fn dense_slide(kind: LayoutKind) -> DesignedSlide {
-        let mut s = DesignedSlide::new("Why customers choose Harbor over a stack of tools").kicker("Why us");
+        let mut s = DesignedSlide::new("Why customers choose Harbor over a stack of tools")
+            .kicker("Why us");
         s.layout = Some(kind);
         s.bullets = vec![
             "38% faster close".into(),
@@ -243,23 +305,118 @@ mod tests {
         let mut failures: Vec<String> = Vec::new();
         for base in THEMES {
             for header in headers {
-                for stats in [StatsStyle::Tiles, StatsStyle::Rows, StatsStyle::Hero, StatsStyle::Columns] {
-                    for cards in [CardsStyle::Grid, CardsStyle::Rows, CardsStyle::Columns, CardsStyle::Stickers, CardsStyle::Bento] {
+                for stats in [
+                    StatsStyle::Tiles,
+                    StatsStyle::Rows,
+                    StatsStyle::Hero,
+                    StatsStyle::Columns,
+                ] {
+                    for cards in [
+                        CardsStyle::Grid,
+                        CardsStyle::Rows,
+                        CardsStyle::Columns,
+                        CardsStyle::Stickers,
+                        CardsStyle::Bento,
+                    ] {
                         // One axis varied at a time keeps this tractable while
                         // still crossing every variant with every header.
                         for (axis, look) in [
-                            ("stats", Look { header, stats, ..base.look }),
-                            ("cards", Look { header, cards, ..base.look }),
-                            ("timeline", Look { header, timeline: TimelineStyle::Chevrons, ..base.look }),
-                            ("timeline", Look { header, timeline: TimelineStyle::Vertical, ..base.look }),
-                            ("timeline", Look { header, timeline: TimelineStyle::Spine, ..base.look }),
-                            ("compare", Look { header, compare: CompareStyle::Rows, ..base.look }),
-                            ("compare", Look { header, compare: CompareStyle::Fields, ..base.look }),
-                            ("compare", Look { header, compare: CompareStyle::Panels, ..base.look }),
-                            ("agenda", Look { header, agenda: AgendaStyle::Grid, ..base.look }),
-                            ("agenda", Look { header, agenda: AgendaStyle::Rows, ..base.look }),
-                            ("team", Look { header, team: TeamStyle::Inline, ..base.look }),
-                            ("team", Look { header, team: TeamStyle::Cards, ..base.look }),
+                            (
+                                "stats",
+                                Look {
+                                    header,
+                                    stats,
+                                    ..base.look
+                                },
+                            ),
+                            (
+                                "cards",
+                                Look {
+                                    header,
+                                    cards,
+                                    ..base.look
+                                },
+                            ),
+                            (
+                                "timeline",
+                                Look {
+                                    header,
+                                    timeline: TimelineStyle::Chevrons,
+                                    ..base.look
+                                },
+                            ),
+                            (
+                                "timeline",
+                                Look {
+                                    header,
+                                    timeline: TimelineStyle::Vertical,
+                                    ..base.look
+                                },
+                            ),
+                            (
+                                "timeline",
+                                Look {
+                                    header,
+                                    timeline: TimelineStyle::Spine,
+                                    ..base.look
+                                },
+                            ),
+                            (
+                                "compare",
+                                Look {
+                                    header,
+                                    compare: CompareStyle::Rows,
+                                    ..base.look
+                                },
+                            ),
+                            (
+                                "compare",
+                                Look {
+                                    header,
+                                    compare: CompareStyle::Fields,
+                                    ..base.look
+                                },
+                            ),
+                            (
+                                "compare",
+                                Look {
+                                    header,
+                                    compare: CompareStyle::Panels,
+                                    ..base.look
+                                },
+                            ),
+                            (
+                                "agenda",
+                                Look {
+                                    header,
+                                    agenda: AgendaStyle::Grid,
+                                    ..base.look
+                                },
+                            ),
+                            (
+                                "agenda",
+                                Look {
+                                    header,
+                                    agenda: AgendaStyle::Rows,
+                                    ..base.look
+                                },
+                            ),
+                            (
+                                "team",
+                                Look {
+                                    header,
+                                    team: TeamStyle::Inline,
+                                    ..base.look
+                                },
+                            ),
+                            (
+                                "team",
+                                Look {
+                                    header,
+                                    team: TeamStyle::Cards,
+                                    ..base.look
+                                },
+                            ),
                         ] {
                             let t = ThemeSpec { look, ..*base };
                             for kind in kinds {
@@ -276,10 +433,16 @@ mod tests {
                                 let built = build(kind, &dense_slide(kind), &cx);
                                 for it in &built.items {
                                     let El::Sp(sh) = &it.el else { continue };
-                                    let who = format!("{} {header:?} {axis} {kind:?} '{}'", base.id, sh.name);
+                                    let who = format!(
+                                        "{} {header:?} {axis} {kind:?} '{}'",
+                                        base.id, sh.name
+                                    );
                                     if let Some(r) = sh.rect {
                                         if !sh.decorative
-                                            && (r.x < 0 || r.y < 0 || r.right() > SLIDE_W || r.bottom() > SLIDE_H)
+                                            && (r.x < 0
+                                                || r.y < 0
+                                                || r.right() > SLIDE_W
+                                                || r.bottom() > SLIDE_H)
                                         {
                                             failures.push(format!("{who}: off page {r:?}"));
                                         }
@@ -289,7 +452,9 @@ mod tests {
                                     }
                                     if let Some((need, have)) = text_need(&t, sh) {
                                         if need as f64 > have as f64 * 1.06 + 25_000.0 {
-                                            failures.push(format!("{who}: text needs {need} but box has {have}"));
+                                            failures.push(format!(
+                                                "{who}: text needs {need} but box has {have}"
+                                            ));
                                         }
                                     }
                                 }
@@ -305,7 +470,12 @@ mod tests {
             failures.is_empty(),
             "{} overflow(s); first few:\n{}",
             failures.len(),
-            failures.iter().take(25).cloned().collect::<Vec<_>>().join("\n")
+            failures
+                .iter()
+                .take(25)
+                .cloned()
+                .collect::<Vec<_>>()
+                .join("\n")
         );
     }
 }

@@ -134,7 +134,10 @@ impl Clr {
         if inner.is_empty() {
             format!("<a:schemeClr val=\"{}\"/>", self.slot.name())
         } else {
-            format!("<a:schemeClr val=\"{}\">{inner}</a:schemeClr>", self.slot.name())
+            format!(
+                "<a:schemeClr val=\"{}\">{inner}</a:schemeClr>",
+                self.slot.name()
+            )
         }
     }
 }
@@ -408,7 +411,9 @@ impl Run {
         }
         // Tracking breaks the joins of connected scripts (Arabic): never
         // letter-space a run that contains them.
-        let connected = self.text.chars().any(|c| ('\u{0600}'..='\u{06FF}').contains(&c) || ('\u{0750}'..='\u{077F}').contains(&c));
+        let connected = self.text.chars().any(|c| {
+            ('\u{0600}'..='\u{06FF}').contains(&c) || ('\u{0750}'..='\u{077F}').contains(&c)
+        });
         if let Some(sp) = self.spacing.filter(|_| !connected) {
             let _ = write!(attrs, " spc=\"{}\"", (sp * 100.0).round() as i64);
         }
@@ -422,7 +427,10 @@ impl Run {
                 FontRef::Major => "+mj",
                 FontRef::Minor => "+mn",
             };
-            let _ = write!(inner, "<a:latin typeface=\"{tag}-lt\"/><a:cs typeface=\"{tag}-cs\"/>");
+            let _ = write!(
+                inner,
+                "<a:latin typeface=\"{tag}-lt\"/><a:cs typeface=\"{tag}-cs\"/>"
+            );
         }
         if self.slide_number {
             return format!(
@@ -846,8 +854,14 @@ mod tests {
 
     #[test]
     fn connected_scripts_are_never_letter_spaced() {
-        assert!(Run::new("PITCH").spacing(1.6).xml(false).contains("spc=\"160\""));
-        assert!(!Run::new("\u{0627}\u{0644}\u{0639}\u{0631}\u{0636}").spacing(1.6).xml(true).contains("spc="));
+        assert!(Run::new("PITCH")
+            .spacing(1.6)
+            .xml(false)
+            .contains("spc=\"160\""));
+        assert!(!Run::new("\u{0627}\u{0644}\u{0639}\u{0631}\u{0636}")
+            .spacing(1.6)
+            .xml(true)
+            .contains("spc="));
     }
 
     #[test]
@@ -862,19 +876,35 @@ mod tests {
     #[test]
     fn text_is_escaped_and_rtl_flips_alignment() {
         let p = Para::new("R&D <2026> \"plan\"").align(Align::Left);
-        assert!(p.xml(false).contains("R&amp;D &lt;2026&gt; &quot;plan&quot;"));
-        assert!(p.xml(false).contains("algn=\"l\""), "an explicit alignment is always written");
-        assert!(!Para::new("x").xml(false).contains("algn"), "no alignment stated, none written");
+        assert!(p
+            .xml(false)
+            .contains("R&amp;D &lt;2026&gt; &quot;plan&quot;"));
+        assert!(
+            p.xml(false).contains("algn=\"l\""),
+            "an explicit alignment is always written"
+        );
+        assert!(
+            !Para::new("x").xml(false).contains("algn"),
+            "no alignment stated, none written"
+        );
         let x = p.xml(true);
         assert!(x.contains("algn=\"r\"") && x.contains("rtl=\"1\""), "{x}");
-        assert!(Para::new("x").align(Align::Center).xml(true).contains("algn=\"ctr\""));
+        assert!(Para::new("x")
+            .align(Align::Center)
+            .xml(true)
+            .contains("algn=\"ctr\""));
         // Illegal control characters never reach the XML.
         assert!(!Para::new("a\u{0}b\u{1b}c").xml(false).contains('\u{0}'));
     }
 
     #[test]
     fn shapes_are_well_formed_and_decorations_are_marked() {
-        let s = Shape::deco("Orb", Geom::Ellipse, R::new(0, 0, 100, 100), Fill::Solid(Clr::accent(1).alpha(30)));
+        let s = Shape::deco(
+            "Orb",
+            Geom::Ellipse,
+            R::new(0, 0, 100, 100),
+            Fill::Solid(Clr::accent(1).alpha(30)),
+        );
         let xml = format!(
             "<p:spTree xmlns:p=\"p\" xmlns:a=\"a\">{}</p:spTree>",
             s.xml(5, false)
@@ -882,7 +912,14 @@ mod tests {
         roxmltree::Document::parse(&xml).unwrap();
         assert!(xml.contains("decorative"));
         assert!(xml.contains("<a:ln><a:noFill/></a:ln>"));
-        let ph = Shape::placeholder("Title 1", Ph { ty: "title", idx: None }, Text::one(Para::new("Hi")));
+        let ph = Shape::placeholder(
+            "Title 1",
+            Ph {
+                ty: "title",
+                idx: None,
+            },
+            Text::one(Para::new("Hi")),
+        );
         let px = ph.xml(2, false);
         assert!(px.contains("<p:ph type=\"title\"/>"));
         assert!(!px.contains("<a:xfrm"), "placeholders inherit geometry");

@@ -14,6 +14,6 @@ pub mod scene;
 pub mod scene_chart;
 pub mod slides;
 
-pub use slides::{deck_scene, SceneError};
 pub use pdf::{PdfError, PdfPage, PdfPreview};
 pub use preview::{DeckPreview, DocxParagraphPreview, DocxPreview, SlidePreview, WorkbookPreview};
+pub use slides::{deck_scene, SceneError};

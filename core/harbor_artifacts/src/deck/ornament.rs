@@ -46,7 +46,12 @@ pub(crate) fn sp_list(shapes: &[Shape], first_id: u32, rtl: bool) -> String {
 
 /// A filled disc centred on (`cx`, `cy`).
 pub(crate) fn disc(name: &str, cx: i64, cy: i64, d: i64, fill: Fill) -> Shape {
-    Shape::deco(name, Geom::Ellipse, R::new(cx - d / 2, cy - d / 2, d, d), fill)
+    Shape::deco(
+        name,
+        Geom::Ellipse,
+        R::new(cx - d / 2, cy - d / 2, d, d),
+        fill,
+    )
 }
 
 /// A flat rectangle.
@@ -62,7 +67,14 @@ pub(crate) fn tile(name: &str, r: R, radius: i64, fill: Fill) -> Shape {
 }
 
 /// A small square turned 45 degrees (a diamond), centred on (`cx`, `cy`).
-pub(crate) fn diamond(name: &str, cx: i64, cy: i64, d: i64, fill: Fill, outline: Option<Line>) -> Shape {
+pub(crate) fn diamond(
+    name: &str,
+    cx: i64,
+    cy: i64,
+    d: i64,
+    fill: Fill,
+    outline: Option<Line>,
+) -> Shape {
     let mut s = Shape::deco(name, Geom::Rect, R::new(cx - d / 2, cy - d / 2, d, d), fill).rot(45.0);
     s.line = outline;
     s

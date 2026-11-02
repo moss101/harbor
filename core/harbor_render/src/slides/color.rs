@@ -63,7 +63,12 @@ impl Rgba {
 pub(crate) struct SchemeColors(pub HashMap<String, [u8; 3]>);
 
 pub(crate) const COLOR_TAGS: [&str; 6] = [
-    "srgbClr", "schemeClr", "sysClr", "prstClr", "hslClr", "scrgbClr",
+    "srgbClr",
+    "schemeClr",
+    "sysClr",
+    "prstClr",
+    "hslClr",
+    "scrgbClr",
 ];
 
 /// The colour child of `parent` (`solidFill`, a gradient `gs`, `ln`'s fill,
@@ -167,15 +172,10 @@ impl ColorCtx<'_> {
     pub fn resolve(&self, spec: &ColorSpec, ph: Option<&Rgba>) -> Rgba {
         let (mut rgb, mut alpha) = match &spec.base {
             ColorBase::Rgb(c) => (*c, 1.0),
-            ColorBase::PhClr => ph
-                .map(|p| (p.rgb, p.a))
-                .unwrap_or(([0, 0, 0], 1.0)),
+            ColorBase::PhClr => ph.map(|p| (p.rgb, p.a)).unwrap_or(([0, 0, 0], 1.0)),
             ColorBase::Scheme(name) => {
                 let mapped = self.map.get(name).map(String::as_str).unwrap_or(name);
-                (
-                    self.scheme.0.get(mapped).copied().unwrap_or([0, 0, 0]),
-                    1.0,
-                )
+                (self.scheme.0.get(mapped).copied().unwrap_or([0, 0, 0]), 1.0)
             }
         };
         for (name, v) in &spec.xf {
@@ -273,7 +273,11 @@ pub(crate) fn hsl_to_rgb(h: f64, s: f64, l: f64) -> [u8; 3] {
         let v = (l * 255.0).round() as u8;
         return [v, v, v];
     }
-    let q = if l < 0.5 { l * (1.0 + s) } else { l + s - l * s };
+    let q = if l < 0.5 {
+        l * (1.0 + s)
+    } else {
+        l + s - l * s
+    };
     let p = 2.0 * l - q;
     let hue = |mut t: f64| {
         if t < 0.0 {

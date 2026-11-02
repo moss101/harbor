@@ -33,7 +33,11 @@ impl Block {
             ..Default::default()
         }
     }
-    pub fn step(when: impl Into<String>, heading: impl Into<String>, detail: impl Into<String>) -> Self {
+    pub fn step(
+        when: impl Into<String>,
+        heading: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Self {
         Block {
             heading: heading.into(),
             text: vec![detail.into()],
@@ -182,8 +186,16 @@ pub fn split_stat(s: &str) -> Option<(String, String)> {
         return None;
     }
     let mut it = t.splitn(2, char::is_whitespace);
-    let value = it.next()?.trim_end_matches([':', ',', '—', '-']).to_string();
-    let rest = it.next().unwrap_or("").trim().trim_start_matches(['—', '-', ':']).trim();
+    let value = it
+        .next()?
+        .trim_end_matches([':', ',', '—', '-'])
+        .to_string();
+    let rest = it
+        .next()
+        .unwrap_or("")
+        .trim()
+        .trim_start_matches(['—', '-', ':'])
+        .trim();
     if value.chars().count() > 12 {
         return None;
     }
@@ -198,15 +210,28 @@ fn word_count(s: &str) -> usize {
 /// shape of a closing slide whatever its position.
 pub fn closing_like(s: &DesignedSlide) -> bool {
     let t = s.title.to_lowercase();
-    let title = ["thank you", "thanks", "questions", "contact", "get in touch", "let's talk", "let\u{2019}s talk"]
-        .iter()
-        .any(|w| t.contains(w));
+    let title = [
+        "thank you",
+        "thanks",
+        "questions",
+        "contact",
+        "get in touch",
+        "let's talk",
+        "let\u{2019}s talk",
+    ]
+    .iter()
+    .any(|w| t.contains(w));
     let contact = !s.bullets.is_empty()
         && s.bullets.len() <= 4
         && s.bullets.iter().all(|b| word_count(b) <= 6)
         && s.bullets.iter().any(|b| {
             let l = b.to_lowercase();
-            l.contains('@') || l.contains("http") || l.contains("www.") || l.contains(".com") || l.contains(".dev") || l.contains(".org")
+            l.contains('@')
+                || l.contains("http")
+                || l.contains("www.")
+                || l.contains(".com")
+                || l.contains(".dev")
+                || l.contains(".org")
         });
     title || contact
 }
@@ -242,7 +267,9 @@ pub fn infer_layout(s: &DesignedSlide, index: usize, total: usize) -> LayoutKind
     if index + 1 == total && closing_like(s) {
         return LayoutKind::Closing;
     }
-    if s.bullets.len() == 1 && (s.bullets[0].starts_with('"') || s.bullets[0].starts_with('\u{201c}')) {
+    if s.bullets.len() == 1
+        && (s.bullets[0].starts_with('"') || s.bullets[0].starts_with('\u{201c}'))
+    {
         return LayoutKind::Quote;
     }
     if s.bullets.is_empty() {
@@ -256,7 +283,9 @@ pub fn infer_layout(s: &DesignedSlide, index: usize, total: usize) -> LayoutKind
     if stats.len() == s.bullets.len() && (2..=4).contains(&stats.len()) {
         return LayoutKind::Stats;
     }
-    if (t.contains(" vs ") || t.contains(" versus ") || t.contains("compar")) && s.bullets.len() >= 2 {
+    if (t.contains(" vs ") || t.contains(" versus ") || t.contains("compar"))
+        && s.bullets.len() >= 2
+    {
         return LayoutKind::Comparison;
     }
     let dated = s
@@ -264,7 +293,7 @@ pub fn infer_layout(s: &DesignedSlide, index: usize, total: usize) -> LayoutKind
         .iter()
         .filter(|b| {
             let head: String = b.chars().take(12).collect::<String>().to_lowercase();
-            head.starts_with('q') && head.chars().nth(1).map_or(false, |c| c.is_ascii_digit())
+            head.starts_with('q') && head.chars().nth(1).is_some_and(|c| c.is_ascii_digit())
                 || head.starts_with("week ")
                 || head.starts_with("phase ")
                 || head.starts_with("20") && head.chars().take(4).all(|c| c.is_ascii_digit())
@@ -273,7 +302,11 @@ pub fn infer_layout(s: &DesignedSlide, index: usize, total: usize) -> LayoutKind
     if dated >= 3 && dated == s.bullets.len() && s.bullets.len() <= 6 {
         return LayoutKind::Timeline;
     }
-    if t.contains("agenda") || t.contains("overview") && s.bullets.len() >= 3 && s.bullets.iter().all(|b| word_count(b) <= 6) {
+    if t.contains("agenda")
+        || t.contains("overview")
+            && s.bullets.len() >= 3
+            && s.bullets.iter().all(|b| word_count(b) <= 6)
+    {
         return LayoutKind::Agenda;
     }
     if (3..=4).contains(&s.bullets.len()) && s.bullets.iter().all(|b| word_count(b) <= 14) {
@@ -339,19 +372,42 @@ mod tests {
         let total = 8;
         assert_eq!(infer_layout(&s("Deck", &[]), 0, total), Cover);
         assert_eq!(
-            infer_layout(&s("Growth", &["38% faster", "2.1x pipeline", "$4.2M ARR"]), 2, total),
+            infer_layout(
+                &s("Growth", &["38% faster", "2.1x pipeline", "$4.2M ARR"]),
+                2,
+                total
+            ),
             Stats
         );
         assert_eq!(
-            infer_layout(&s("Plan", &["Q1 2026 launch beta", "Q2 2026 go to market", "Q3 2026 scale"]), 3, total),
+            infer_layout(
+                &s(
+                    "Plan",
+                    &[
+                        "Q1 2026 launch beta",
+                        "Q2 2026 go to market",
+                        "Q3 2026 scale"
+                    ]
+                ),
+                3,
+                total
+            ),
             Timeline
         );
         assert_eq!(
-            infer_layout(&s("Build vs buy", &["Faster start", "More control"]), 3, total),
+            infer_layout(
+                &s("Build vs buy", &["Faster start", "More control"]),
+                3,
+                total
+            ),
             Comparison
         );
         assert_eq!(
-            infer_layout(&s("Why us", &["Fast delivery", "Fair pricing", "Local team"]), 3, total),
+            infer_layout(
+                &s("Why us", &["Fast delivery", "Fair pricing", "Local team"]),
+                3,
+                total
+            ),
             Cards
         );
         assert_eq!(
@@ -364,31 +420,64 @@ mod tests {
         );
         assert_eq!(infer_layout(&s("Market", &[]), 3, total), Section);
         assert_eq!(
-            infer_layout(&s("We exist to make every office document trustworthy and local", &[]), 3, total),
+            infer_layout(
+                &s(
+                    "We exist to make every office document trustworthy and local",
+                    &[]
+                ),
+                3,
+                total
+            ),
             Statement
         );
-        let long: Vec<String> = (0..8).map(|i| format!("Point number {i} with some words to read")).collect();
+        let long: Vec<String> = (0..8)
+            .map(|i| format!("Point number {i} with some words to read"))
+            .collect();
         let long_refs: Vec<&str> = long.iter().map(String::as_str).collect();
         assert_eq!(infer_layout(&s("Notes", &long_refs), 3, total), TwoColumn);
         assert_eq!(
             infer_layout(
-                &s("Findings", &["The pipeline slowed in the second half of the year because deals stalled", "Churn improved but only in the enterprise segment of the base"]),
+                &s(
+                    "Findings",
+                    &[
+                        "The pipeline slowed in the second half of the year because deals stalled",
+                        "Churn improved but only in the enterprise segment of the base"
+                    ]
+                ),
                 3,
                 total
             ),
             Bullets
         );
         // An explicit layout always wins.
-        assert_eq!(s("Anything", &["a", "b", "c"]).layout(Timeline).resolved_layout(3, total), Timeline);
+        assert_eq!(
+            s("Anything", &["a", "b", "c"])
+                .layout(Timeline)
+                .resolved_layout(3, total),
+            Timeline
+        );
     }
 
     #[test]
     fn stat_splitting_handles_currency_percent_and_junk() {
-        assert_eq!(split_stat("38% churn reduction"), Some(("38%".into(), "churn reduction".into())));
-        assert_eq!(split_stat("$4.2M ARR"), Some(("$4.2M".into(), "ARR".into())));
-        assert_eq!(split_stat("2.1x — pipeline"), Some(("2.1x".into(), "pipeline".into())));
+        assert_eq!(
+            split_stat("38% churn reduction"),
+            Some(("38%".into(), "churn reduction".into()))
+        );
+        assert_eq!(
+            split_stat("$4.2M ARR"),
+            Some(("$4.2M".into(), "ARR".into()))
+        );
+        assert_eq!(
+            split_stat("2.1x — pipeline"),
+            Some(("2.1x".into(), "pipeline".into()))
+        );
         assert_eq!(split_stat("Revenue grew"), None);
-        assert_eq!(split_stat("1234567890123456 something"), None, "a figure that long is not a headline");
+        assert_eq!(
+            split_stat("1234567890123456 something"),
+            None,
+            "a figure that long is not a headline"
+        );
     }
 
     #[test]

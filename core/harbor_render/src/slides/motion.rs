@@ -135,9 +135,7 @@ pub(crate) fn parse_animations(slide_root: Node) -> Vec<Animation> {
     };
     // The main sequence: the `cTn` marked nodeType="mainSeq".
     let Some(main) = timing.descendants().find(|n| {
-        n.is_element()
-            && n.tag_name().name() == "cTn"
-            && n.attribute("nodeType") == Some("mainSeq")
+        n.is_element() && n.tag_name().name() == "cTn" && n.attribute("nodeType") == Some("mainSeq")
     }) else {
         return out;
     };
@@ -150,9 +148,7 @@ pub(crate) fn parse_animations(slide_root: Node) -> Vec<Animation> {
     {
         // click_group > cTn > childTnLst > par (time slot) > cTn > childTnLst > par (effect) > cTn
         for effect_ctn in click_group.descendants().filter(|n| {
-            n.is_element()
-                && n.tag_name().name() == "cTn"
-                && n.attribute("presetClass").is_some()
+            n.is_element() && n.tag_name().name() == "cTn" && n.attribute("presetClass").is_some()
         }) {
             if let Some(a) = animation_from(effect_ctn) {
                 out.push(a);
@@ -261,7 +257,10 @@ fn animation_from(ctn: Node) -> Option<Animation> {
             _ => {}
         }
     }
-    let by_preset = match ctn.attribute("presetID").and_then(|v| v.parse::<u32>().ok()) {
+    let by_preset = match ctn
+        .attribute("presetID")
+        .and_then(|v| v.parse::<u32>().ok())
+    {
         Some(1) => Some("appear"),
         Some(2) => Some("fly"),
         Some(10) => Some("fade"),
@@ -327,12 +326,18 @@ mod tests {
     #[test]
     fn plain_transitions_and_speeds() {
         for (inner, spd, kind, dur) in [
-            ("<p:fade thruBlk=\"1\"/>", "slow", "fade_through_black", 1000),
+            (
+                "<p:fade thruBlk=\"1\"/>",
+                "slow",
+                "fade_through_black",
+                1000,
+            ),
             ("<p:push dir=\"u\"/>", "fast", "push", 500),
             ("<p:pull dir=\"l\"/>", "med", "uncover", 750),
             ("<p:wheel spokes=\"4\"/>", "med", "other", 750),
         ] {
-            let xml = format!(r#"<p:sld {P}><p:transition spd="{spd}">{inner}</p:transition></p:sld>"#);
+            let xml =
+                format!(r#"<p:sld {P}><p:transition spd="{spd}">{inner}</p:transition></p:sld>"#);
             let d = roxmltree::Document::parse(&xml).unwrap();
             let t = parse_transition(d.root_element()).unwrap();
             assert_eq!((t.kind.as_str(), t.dur_ms), (kind, dur), "{inner}");
@@ -397,7 +402,11 @@ mod tests {
         let d = roxmltree::Document::parse(&xml).unwrap();
         let a = parse_animations(d.root_element());
         assert_eq!(a[0].effect, "wipe");
-        assert_eq!(a[0].dir.as_deref(), Some("l"), "wipe(left) → the contract's `l`");
+        assert_eq!(
+            a[0].dir.as_deref(),
+            Some("l"),
+            "wipe(left) → the contract's `l`"
+        );
         assert_eq!(a[0].para, Some([1, 2]));
         assert_eq!(a[1].effect, "float", "fade + vertical move is a float-in");
         assert_eq!(a[1].trigger, "with_prev");
@@ -412,6 +421,9 @@ mod tests {
             r#"<p:par><p:cTn id="3"><p:childTnLst><p:par><p:cTn id="4" presetClass="entr"/></p:par></p:childTnLst></p:cTn></p:par>"#,
         );
         let weird = roxmltree::Document::parse(&weird_xml).unwrap();
-        assert!(parse_animations(weird.root_element()).is_empty(), "no target shape");
+        assert!(
+            parse_animations(weird.root_element()).is_empty(),
+            "no target shape"
+        );
     }
 }
