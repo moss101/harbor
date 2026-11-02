@@ -150,9 +150,10 @@ fn library_file_exists(search_dirs: &[PathBuf], lib_name: &str, target_os: &Targ
 
     search_dirs.iter().any(|dir| {
         prefixes.iter().any(|prefix| {
-            extensions
-                .iter()
-                .any(|extension| dir.join(format!("{prefix}{lib_name}.{extension}")).is_file())
+            extensions.iter().any(|extension| {
+                dir.join(format!("{prefix}{lib_name}.{extension}"))
+                    .is_file()
+            })
         })
     })
 }
@@ -361,7 +362,9 @@ fn pin_field(pin: &str, key: &str) -> String {
     let rest = rest
         .strip_prefix('"')
         .unwrap_or_else(|| panic!("HARBOR_PIN.json `{key}` is not a string"));
-    let end = rest.find('"').expect("unterminated string in HARBOR_PIN.json");
+    let end = rest
+        .find('"')
+        .expect("unterminated string in HARBOR_PIN.json");
     rest[..end].to_string()
 }
 
@@ -383,8 +386,12 @@ fn main() {
     // Pin -> constants.
     let pin_path = llama_src.join("HARBOR_PIN.json");
     println!("cargo:rerun-if-changed={}", pin_path.display());
-    let pin = std::fs::read_to_string(&pin_path)
-        .unwrap_or_else(|e| panic!("{}: {e} (run tools/vendor_llama_cpp.py)", pin_path.display()));
+    let pin = std::fs::read_to_string(&pin_path).unwrap_or_else(|e| {
+        panic!(
+            "{}: {e} (run tools/vendor_llama_cpp.py)",
+            pin_path.display()
+        )
+    });
     let tag = pin_field(&pin, "tag");
     let commit = pin_field(&pin, "commit");
     assert!(
@@ -422,7 +429,14 @@ fn main() {
     // The vendored tree is immutable and hashed by the pin; a change to the
     // pin file is the rebuild trigger for it. Also watch the CMake inputs so
     // a hand edit during development still rebuilds.
-    for dir in ["src", "ggml/src", "common", "tools/mtmd", "include", "ggml/include"] {
+    for dir in [
+        "src",
+        "ggml/src",
+        "common",
+        "tools/mtmd",
+        "include",
+        "ggml/include",
+    ] {
         println!("cargo:rerun-if-changed={}", llama_src.join(dir).display());
     }
 
@@ -519,7 +533,10 @@ fn main() {
             .clang_arg("stdint.h");
 
         if env::var("CARGO_SUBCOMMAND").as_deref() == Ok("ndk") {
-            std::env::set_var("BINDGEN_EXTRA_CLANG_ARGS", format!("--target={target_triple}"));
+            std::env::set_var(
+                "BINDGEN_EXTRA_CLANG_ARGS",
+                format!("--target={target_triple}"),
+            );
         }
     }
 
@@ -593,7 +610,10 @@ fn main() {
         }
 
         if matches!(target_os, TargetOs::Windows(WindowsVariant::Msvc)) {
-            common_build.flag("/std:c++17").flag("/utf-8").flag("/bigobj");
+            common_build
+                .flag("/std:c++17")
+                .flag("/utf-8")
+                .flag("/bigobj");
         }
 
         // When static-stdcxx is enabled on Android, suppress the cc crate's automatic
@@ -887,7 +907,10 @@ fn main() {
 
     // Search paths
     println!("cargo:rustc-link-search={}", out_dir.join("lib").display());
-    println!("cargo:rustc-link-search={}", out_dir.join("lib64").display());
+    println!(
+        "cargo:rustc-link-search={}",
+        out_dir.join("lib64").display()
+    );
     println!("cargo:rustc-link-search={}", build_dir.display());
 
     let llama_libs = extract_lib_names(&out_dir, &target_os);

@@ -361,7 +361,9 @@ pub fn list_llama_ggml_backend_devices() -> Vec<LlamaBackendDevice> {
             harbor_llama_sys::GGML_BACKEND_DEVICE_TYPE_CPU => LlamaBackendDeviceType::Cpu,
             harbor_llama_sys::GGML_BACKEND_DEVICE_TYPE_ACCEL => LlamaBackendDeviceType::Accelerator,
             harbor_llama_sys::GGML_BACKEND_DEVICE_TYPE_GPU => LlamaBackendDeviceType::Gpu,
-            harbor_llama_sys::GGML_BACKEND_DEVICE_TYPE_IGPU => LlamaBackendDeviceType::IntegratedGpu,
+            harbor_llama_sys::GGML_BACKEND_DEVICE_TYPE_IGPU => {
+                LlamaBackendDeviceType::IntegratedGpu
+            }
             _ => LlamaBackendDeviceType::Unknown,
         };
         devices.push(LlamaBackendDevice {

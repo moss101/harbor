@@ -50,7 +50,10 @@ fn converter_does_not_enforce_unanchored_patterns_or_pattern_with_length() {
     }
     // Control: an anchored pattern IS compiled into its own rule.
     let anchored = r#"{"type":"object","properties":{"a":{"type":"string","pattern":"^[a-f0-9]{64}$"}},"required":["a"]}"#;
-    assert!(!pattern_not_enforced(anchored), "anchored pattern was dropped");
+    assert!(
+        !pattern_not_enforced(anchored),
+        "anchored pattern was dropped"
+    );
 }
 
 #[test]
