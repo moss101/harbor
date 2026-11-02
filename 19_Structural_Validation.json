@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "e23e05d0481257c73370574c458cd1a05099c38e245466712da99ccddac60207",
+  "input_manifest_sha256": "b29a605063524d5e59ecdd7efe91dcf86e0bdb8b86032e0fe27c353b92461408",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -3608,6 +3608,11 @@
       "path": "docs/decisions/0021-designed-decks-and-authored-motion.md",
       "bytes": 5029,
       "sha256": "de737b63645e947f14fa8ee11f81140c8743062b9af7897644796efd0678cac5"
+    },
+    {
+      "path": "docs/decisions/0022-inference-runtime-resilience.md",
+      "bytes": 8484,
+      "sha256": "45a541a67e1a189a3866a4187b64f60ac170f67742048fa614e71c81c80a83b6"
     },
     {
       "path": "docs/embeddinggemma2_gains.md",
