@@ -62,7 +62,7 @@ pub const MAX_EMBEDDING_LENGTH: u64 = 1 << 20;
 /// `0 < n_layer <= LLAMA_MAX_LAYERS`, so exceeding it aborts the process.
 pub const MAX_BLOCK_COUNT: u64 = 512;
 /// `LLAMA_MAX_EXPERTS` (src/llama-hparams.h), also GGML_ASSERTed.
-pub const MAX_EXPERT_COUNT: u64 = 512;
+pub const MAX_EXPERT_COUNT: u64 = 1024;
 pub const MAX_HEAD_COUNT: u64 = 1 << 14;
 pub const MAX_HEAD_DIM: u64 = 1 << 16;
 
@@ -184,13 +184,18 @@ pub const KNOWN_ARCHITECTURES: &[&str] = &[
     "qwen2",
     "qwen2moe",
     "qwen2vl",
+    "sensenova_u1",
     "qwen3",
+    "flint",
     "qwen3moe",
     "qwen3next",
     "qwen3vl",
     "qwen3vlmoe",
     "qwen35",
     "qwen35moe",
+    "clef",
+    "vllm-decision2",
+    "qwen4exp",
     "phi2",
     "phi3",
     "phimoe",
@@ -213,6 +218,7 @@ pub const KNOWN_ARCHITECTURES: &[&str] = &[
     "starcoder2",
     "mamba",
     "mamba2",
+    "maple",
     "jamba",
     "falcon-h1",
     "xverse",
@@ -224,6 +230,7 @@ pub const KNOWN_ARCHITECTURES: &[&str] = &[
     "olmo2",
     "olmoe",
     "muse-glimmer",
+    "muse-spark",
     "openelm",
     "arctic",
     "deepseek",
@@ -231,6 +238,7 @@ pub const KNOWN_ARCHITECTURES: &[&str] = &[
     "deepseek2-ocr",
     "deepseek32",
     "deepseek4",
+    "deepseek41",
     "chatglm",
     "glm4",
     "glm4moe",
@@ -254,12 +262,15 @@ pub const KNOWN_ARCHITECTURES: &[&str] = &[
     "granitemoe",
     "granitehybrid",
     "graniteswitch",
+    "granite_swa",
     "chameleon",
     "wavtokenizer-dec",
     "plm",
     "bailingmoe",
     "bailingmoe2",
+    "bailingmoe3",
     "dots1",
+    "dots3note",
     "arcee",
     "afmoe",
     "laguna",
@@ -269,10 +280,12 @@ pub const KNOWN_ARCHITECTURES: &[&str] = &[
     "hunyuan-dense",
     "hunyuan_vl",
     "hy_v3",
+    "hy_v4",
     "smollm3",
     "gpt-oss",
     "lfm2",
     "lfm2moe",
+    "lfm3",
     "dream",
     "smallthinker",
     "llada",
@@ -280,6 +293,8 @@ pub const KNOWN_ARCHITECTURES: &[&str] = &[
     "seed_oss",
     "grovemoe",
     "apertus",
+    "minimax-01",
+    "hrm_text",
     "minimax-m2",
     "minimax-m3",
     "cogvlm",
@@ -292,14 +307,21 @@ pub const KNOWN_ARCHITECTURES: &[&str] = &[
     "paddleocr",
     "mimo2",
     "step35",
+    "spark2_5",
     "llama-embed",
     "maincoder",
+    "maion-coder",
     "kimi-linear",
+    "kimi-k3",
+    "glm5-next",
     "talkie",
     "mellum",
     "nanbeige",
     "qwen3tts",
     "pockettts",
+    "k2-horizon",
+    "beam",
+    "kolibri1",
 ];
 
 /// What the check learned about a file that passed.
@@ -1664,7 +1686,7 @@ pub(crate) mod tests {
             .kv_u32("qwen3moe.expert_used_count", 2);
         assert_eq!(ok(&b), Ok(Some(8)));
         let mut b = base();
-        b.kv_u32("qwen3moe.expert_count", 513);
+        b.kv_u32("qwen3moe.expert_count", MAX_EXPERT_COUNT as u32 + 1);
         assert!(matches!(check(&b), Err(GgufCheckError::OutOfRange { .. })));
         let cases: &[&[(&str, u32)]] = &[
             &[("expert_count", 8), ("expert_used_count", 9)],
@@ -1751,7 +1773,7 @@ pub(crate) mod tests {
 
     fn vendored(rel: &str) -> String {
         let p = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../third_party/llama-cpp-sys-2/llama.cpp")
+            .join("../../third_party/llama.cpp")
             .join(rel);
         std::fs::read_to_string(&p).unwrap_or_else(|e| panic!("read {}: {e}", p.display()))
     }

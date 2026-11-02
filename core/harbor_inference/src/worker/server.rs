@@ -135,6 +135,21 @@ fn handle(state: &State, frame: &Frame, cancel: &AtomicBool, out: &Out, id: u64)
             state.provider()?.mark_qualified(&package(frame)?);
             ok(serde_json::json!({}))
         }
+        "qualification" => {
+            let q = state.provider()?.qualification(&package(frame)?);
+            ok(serde_json::json!({ "state": q.map(|s| s.as_str()) }))
+        }
+        "cpu_reference_embed" => {
+            let texts: Vec<String> = serde_json::from_value(j["texts"].clone())
+                .map_err(|e| ProviderError::Backend(format!("worker: texts: {e}")))?;
+            let v = state
+                .provider()?
+                .cpu_reference_embed(&package(frame)?, &texts)?;
+            Ok((
+                serde_json::json!({ "count": v.len() }),
+                v.iter().map(|x| protocol::f32s_to_bytes(x)).collect(),
+            ))
+        }
         "backend_of" => {
             let b = state.provider()?.backend_of(&package(frame)?);
             ok(serde_json::json!({ "backend": b }))

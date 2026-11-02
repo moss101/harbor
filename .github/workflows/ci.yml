@@ -33,6 +33,8 @@ jobs:
         run: |
           cargo fetch --manifest-path core/Cargo.toml
           python3 tools/pin_engine.py --check
+      - name: llama.cpp vendor pin (third_party/llama.cpp vs HARBOR_PIN.json)
+        run: python3 -I tools/vendor_llama_cpp.py --check
 
   supply-chain:
     # Dependency hygiene for the core workspace: RustSec advisories

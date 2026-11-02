@@ -21,6 +21,7 @@ use std::sync::Mutex;
 
 use harbor_canonical::JsonValue;
 use harbor_inference::provider::{Capabilities, ModelProvider, ModelRef};
+use harbor_inference::resilience::QualState;
 use harbor_inference::worker::GgufRuntime;
 use harbor_knowledge::chunk::{Chunker, ChunkerConfig};
 use harbor_knowledge::identity::{
@@ -461,18 +462,10 @@ impl KnowledgeStore {
 /// unrelated sentences and every vector must be finite. English-only on
 /// purpose — every supported embedder (multilingual or not) handles it —
 /// and cheap enough to run on each open. Policy prefixes apply, so a
-/// prefixed model is checked the way it is used.
+/// prefixed model is checked the way it is used. On a GPU key that is not
+/// yet qualified the vectors must also match a CPU reference.
 fn embedding_canary_ok(provider: &GgufRuntime, model: &ModelRef, package: &str) -> bool {
-    let policy = InstructionPolicy::for_package(package);
-    let inputs: Vec<String> = [
-        "The cat is sitting on the mat.",
-        "A cat sits on a mat.",
-        "Quarterly revenue increased by ten percent.",
-        "The stock market closed higher on Friday.",
-    ]
-    .iter()
-    .map(|t| policy.format_document("", t))
-    .collect();
+    let inputs = canary_inputs(package);
     let Ok(v) = provider.embed(model, &inputs) else {
         return false;
     };
@@ -485,7 +478,46 @@ fn embedding_canary_ok(provider: &GgufRuntime, model: &ModelRef, package: &str) 
     let near = harbor_knowledge::index::cosine(&v[0], &v[1]);
     let far_a = harbor_knowledge::index::cosine(&v[0], &v[2]);
     let far_b = harbor_knowledge::index::cosine(&v[0], &v[3]);
-    near > far_a + 0.02 && near > far_b + 0.02
+    if !(near > far_a + 0.02 && near > far_b + 0.02) {
+        return false;
+    }
+    // A GPU key not yet qualified must also MATCH the CPU path: a GPU can
+    // keep the canary's ranking while computing degraded vectors (the iOS
+    // simulator GPU: ranking intact, cosine 0.79 against the CPU). This runs
+    // once per device + model + runtime; the qualification store remembers
+    // the verdict (decision 0022).
+    if provider.backend_of(package) == Some("gpu")
+        && provider.qualification(package) != Some(QualState::Qualified)
+    {
+        let Ok(reference) = provider.cpu_reference_embed(package, &inputs) else {
+            return false;
+        };
+        return reference.len() == v.len()
+            && v.iter()
+                .zip(&reference)
+                .all(|(g, c)| harbor_knowledge::index::cosine(g, c) >= GPU_REFERENCE_MIN_COSINE);
+    }
+    true
+}
+
+/// Minimum per-text cosine between a GPU embedding and the CPU reference.
+/// Metal measures >= 0.9998 on EmbeddingGemma 2; a wrong GPU path is far
+/// below (0.79 on the iOS simulator).
+const GPU_REFERENCE_MIN_COSINE: f32 = 0.99;
+
+/// The canary sentences, formatted by the package's instruction policy so
+/// a prefixed model is checked the way it is used.
+fn canary_inputs(package: &str) -> Vec<String> {
+    let policy = InstructionPolicy::for_package(package);
+    [
+        "The cat is sitting on the mat.",
+        "A cat sits on a mat.",
+        "Quarterly revenue increased by ten percent.",
+        "The stock market closed higher on Friday.",
+    ]
+    .iter()
+    .map(|t| policy.format_document("", t))
+    .collect()
 }
 
 pub struct KnowledgeService {

@@ -1,0 +1,12 @@
+harbor_llama_sys is derived from llama-cpp-sys-2 0.1.156
+(https://github.com/utilityai/llama-cpp-rs, MIT OR Apache-2.0, Dial AI).
+build.rs and the wrapper_* shim files are adapted from that crate and remain
+available under its licence terms (LICENSE-MIT, LICENSE-APACHE); Harbor's
+modifications are offered under the same dual licence.
+
+It builds llama.cpp (https://github.com/ggml-org/llama.cpp, MIT,
+Copyright (c) 2023-2026 The ggml authors) from the pinned, unmodified tree in
+third_party/llama.cpp (see third_party/llama.cpp/HARBOR_PIN.json and
+third_party/llama.cpp/LICENSE). common_shim.cpp holds three helper
+functions copied verbatim from llama.cpp common/common.cpp (MIT, same
+copyright). See core/harbor_llama/HARBOR.md.

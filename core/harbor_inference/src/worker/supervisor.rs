@@ -373,6 +373,43 @@ impl WorkerProvider {
         );
     }
 
+    /// See [`crate::gguf::GgufLlamaCppProvider::qualification`].
+    pub fn qualification(&self, package_id: &str) -> Option<crate::resilience::QualState> {
+        use crate::resilience::QualState as Q;
+        let f = self
+            .inner
+            .call_loaded(
+                package_id,
+                &serde_json::json!({"op": "qualification", "package": package_id}),
+                &[],
+                None,
+                None,
+            )
+            .ok()?;
+        Some(match f.json["ok"]["state"].as_str()? {
+            "verifying" => Q::Verifying,
+            "ok" => Q::Ok,
+            "qualified" => Q::Qualified,
+            "canary_failed" => Q::CanaryFailed,
+            _ => Q::Crashed,
+        })
+    }
+
+    /// See [`crate::gguf::GgufLlamaCppProvider::cpu_reference_embed`].
+    pub fn cpu_reference_embed(
+        &self,
+        package_id: &str,
+        texts: &[String],
+    ) -> Result<Vec<Vec<f32>>, ProviderError> {
+        let f = self.inner.call(
+            &serde_json::json!({"op": "cpu_reference_embed", "package": package_id, "texts": texts}),
+            &[],
+            None,
+            None,
+        )?;
+        f.blobs.iter().map(|b| protocol::bytes_to_f32s(b)).collect()
+    }
+
     /// See [`crate::gguf::GgufLlamaCppProvider::backend_of`].
     pub fn backend_of(&self, package_id: &str) -> Option<&'static str> {
         let conn = self.inner.conn.lock().unwrap().clone()?;
@@ -515,7 +552,22 @@ impl Inner {
     }
 
     fn spawn(&self) -> Result<Conn, ProviderError> {
-        let mut child = Command::new(&self.config.launcher)
+        let mut cmd = Command::new(&self.config.launcher);
+        // Android (and Linux bundles): a standalone process does not search
+        // the app's native library directory, so the core's own NEEDED
+        // libraries (libc++_shared.so) are not found without this. Found on
+        // an installed APK, where the launcher exited with "library
+        // libc++_shared.so not found".
+        #[cfg(any(target_os = "android", target_os = "linux"))]
+        if let Some(dir) = self.config.library.parent() {
+            let mut path = std::ffi::OsString::from(dir);
+            if let Some(old) = std::env::var_os("LD_LIBRARY_PATH") {
+                path.push(":");
+                path.push(old);
+            }
+            cmd.env("LD_LIBRARY_PATH", path);
+        }
+        let mut child = cmd
             .arg(&self.config.library)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())

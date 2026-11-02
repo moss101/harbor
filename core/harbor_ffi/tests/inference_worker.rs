@@ -24,7 +24,24 @@ fn repo_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
+/// `fixtures/models`, or `HARBOR_FIXTURES_DIR` on a device.
+fn fixtures_dir() -> PathBuf {
+    std::env::var_os("HARBOR_FIXTURES_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| repo_root().join("fixtures/models"))
+}
+
 fn config() -> WorkerConfig {
+    // On a device the launcher and library are pushed next to the test.
+    if let (Some(launcher), Some(library)) = (
+        std::env::var_os("HARBOR_WORKER_PATH"),
+        std::env::var_os("HARBOR_WORKER_LIB"),
+    ) {
+        return WorkerConfig {
+            launcher: launcher.into(),
+            library: library.into(),
+        };
+    }
     let target = std::env::var_os("CARGO_TARGET_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("../target"));
@@ -63,7 +80,7 @@ fn config() -> WorkerConfig {
 fn fixtures_present(names: &[&str]) -> bool {
     let missing: Vec<&&str> = names
         .iter()
-        .filter(|n| !repo_root().join("fixtures/models").join(n).exists())
+        .filter(|n| !fixtures_dir().join(n).exists())
         .collect();
     if missing.is_empty() {
         return true;
@@ -77,7 +94,7 @@ fn fixtures_present(names: &[&str]) -> bool {
 }
 
 fn install(root: &Path, id: &str, fixture: &str) -> ModelRef {
-    let bytes = std::fs::read(repo_root().join("fixtures/models").join(fixture))
+    let bytes = std::fs::read(fixtures_dir().join(fixture))
         .unwrap_or_else(|e| panic!("fixture {fixture}: {e}"));
     let installer = PackageInstaller::new(root);
     let file = PackageFile {

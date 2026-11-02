@@ -142,6 +142,24 @@ mod runtime {
             }
         }
 
+        pub fn qualification(&self, package_id: &str) -> Option<crate::resilience::QualState> {
+            match self {
+                GgufRuntime::InProcess(p) => p.qualification(package_id),
+                GgufRuntime::Worker(w) => w.qualification(package_id),
+            }
+        }
+
+        pub fn cpu_reference_embed(
+            &self,
+            package_id: &str,
+            texts: &[String],
+        ) -> Result<Vec<Vec<f32>>, ProviderError> {
+            match self {
+                GgufRuntime::InProcess(p) => p.cpu_reference_embed(package_id, texts),
+                GgufRuntime::Worker(w) => w.cpu_reference_embed(package_id, texts),
+            }
+        }
+
         pub fn mark_qualified(&self, package_id: &str) {
             match self {
                 GgufRuntime::InProcess(p) => p.mark_qualified(package_id),
