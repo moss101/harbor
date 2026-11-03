@@ -70,7 +70,7 @@ fn run(library: OsString) -> i32 {
             eprintln!("harbor_worker: cannot load {}", library.to_string_lossy());
             return 65;
         }
-        let sym = GetProcAddress(module, b"harbor_worker_main\0".as_ptr());
+        let sym = GetProcAddress(module, c"harbor_worker_main".as_ptr().cast());
         if sym.is_null() {
             eprintln!("harbor_worker: library has no harbor_worker_main");
             return 66;

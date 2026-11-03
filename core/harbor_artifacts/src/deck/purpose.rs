@@ -19,7 +19,11 @@ pub struct Beat {
 }
 
 const fn b(kicker: &'static str, layout: LayoutKind, says: &'static str) -> Beat {
-    Beat { kicker, layout, says }
+    Beat {
+        kicker,
+        layout,
+        says,
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -50,14 +54,42 @@ pub const PURPOSES: &[PurposeSpec] = &[
         progressive: false,
         beats: &[
             b("", L::Cover, "Company name and the one-line promise."),
-            b("Problem", L::Statement, "The pain, in one sentence the audience feels."),
-            b("Solution", L::Cards, "What you built, as three short ideas."),
-            b("Product", L::ImageSplit, "How it works; what the user sees."),
-            b("Market", L::Stats, "Market size and the wedge, as headline figures."),
-            b("Business model", L::Cards, "Who pays, how, and why it compounds."),
+            b(
+                "Problem",
+                L::Statement,
+                "The pain, in one sentence the audience feels.",
+            ),
+            b(
+                "Solution",
+                L::Cards,
+                "What you built, as three short ideas.",
+            ),
+            b(
+                "Product",
+                L::ImageSplit,
+                "How it works; what the user sees.",
+            ),
+            b(
+                "Market",
+                L::Stats,
+                "Market size and the wedge, as headline figures.",
+            ),
+            b(
+                "Business model",
+                L::Cards,
+                "Who pays, how, and why it compounds.",
+            ),
             b("Traction", L::Chart, "Growth that proves demand."),
-            b("Competition", L::Comparison, "Why you win against the alternative."),
-            b("Go to market", L::Timeline, "How customers find you, in order."),
+            b(
+                "Competition",
+                L::Comparison,
+                "Why you win against the alternative.",
+            ),
+            b(
+                "Go to market",
+                L::Timeline,
+                "How customers find you, in order.",
+            ),
             b("Team", L::Team, "Who you are and why you."),
             b("Financials", L::Stats, "Revenue, burn, runway."),
             b("The ask", L::Stats, "How much, and what it buys."),
@@ -74,13 +106,21 @@ pub const PURPOSES: &[PurposeSpec] = &[
         progressive: false,
         beats: &[
             b("", L::Cover, "Company, period and date."),
-            b("Highlights", L::Stats, "The four numbers that matter this period."),
+            b(
+                "Highlights",
+                L::Stats,
+                "The four numbers that matter this period.",
+            ),
             b("Metrics", L::Chart, "The trend behind the headline."),
             b("Product", L::Cards, "What shipped and what it unlocked."),
             b("Customers", L::Quote, "A customer voice that proves it."),
             b("Financials", L::Stats, "Cash, burn, runway."),
             b("Team", L::Team, "Hires and changes."),
-            b("Risks and asks", L::Comparison, "What worries you; where investors can help."),
+            b(
+                "Risks and asks",
+                L::Comparison,
+                "What worries you; where investors can help.",
+            ),
             b("Next quarter", L::Timeline, "The priorities, in order."),
             b("", L::Closing, "Thanks and contact."),
         ],
@@ -138,7 +178,11 @@ pub const PURPOSES: &[PurposeSpec] = &[
             b("Summary", L::Bullets, "Status in three sentences."),
             b("Scope", L::Cards, "Goals and what is in and out."),
             b("Milestones", L::Timeline, "Delivered, due, upcoming."),
-            b("Progress", L::Stats, "Percent complete, on-time, on-budget."),
+            b(
+                "Progress",
+                L::Stats,
+                "Percent complete, on-time, on-budget.",
+            ),
             b("Risks", L::Comparison, "Risks and issues, with mitigation."),
             b("Budget", L::Chart, "Spend against plan."),
             b("Next steps", L::Agenda, "What happens next, in order."),
@@ -172,10 +216,18 @@ pub const PURPOSES: &[PurposeSpec] = &[
         progressive: false,
         beats: &[
             b("", L::Cover, "The product name and its promise."),
-            b("Insight", L::Statement, "The truth about the customer that led here."),
+            b(
+                "Insight",
+                L::Statement,
+                "The truth about the customer that led here.",
+            ),
             b("Introducing", L::Section, "The reveal."),
             b("Features", L::Cards, "Three things it does best."),
-            b("How it works", L::Timeline, "Three steps from start to result."),
+            b(
+                "How it works",
+                L::Timeline,
+                "Three steps from start to result.",
+            ),
             b("See it", L::ImageSplit, "The product in use."),
             b("Pricing", L::Comparison, "Plans and what each includes."),
             b("Launch plan", L::Timeline, "Dates and channels."),
@@ -199,7 +251,11 @@ pub const PURPOSES: &[PurposeSpec] = &[
             b("Revenue", L::Chart, "Revenue and its drivers."),
             b("Segments", L::Chart, "Where growth came from."),
             b("Initiatives", L::Cards, "Progress on the big bets."),
-            b("Risks", L::Comparison, "What could derail the next quarter."),
+            b(
+                "Risks",
+                L::Comparison,
+                "What could derail the next quarter.",
+            ),
             b("Outlook", L::Timeline, "Priorities and milestones ahead."),
             b("", L::Closing, "Questions and contact."),
         ],
@@ -214,7 +270,11 @@ pub const PURPOSES: &[PurposeSpec] = &[
         progressive: false,
         beats: &[
             b("", L::Cover, "Client, project and date."),
-            b("Understanding", L::Bullets, "Their situation, in their words."),
+            b(
+                "Understanding",
+                L::Bullets,
+                "Their situation, in their words.",
+            ),
             b("Approach", L::Cards, "How you will solve it."),
             b("Deliverables", L::Cards, "What they receive."),
             b("Timeline", L::Timeline, "Phases and dates."),
@@ -241,7 +301,11 @@ pub const PURPOSES: &[PurposeSpec] = &[
             b("Priorities", L::Timeline, "What happens first."),
             b("Investment", L::Chart, "Where the money goes."),
             b("Risks", L::Comparison, "What could go wrong; how to hedge."),
-            b("Governance", L::Bullets, "Who decides and how it is tracked."),
+            b(
+                "Governance",
+                L::Bullets,
+                "Who decides and how it is tracked.",
+            ),
             b("", L::Closing, "Next step and owner."),
         ],
     },
@@ -369,7 +433,11 @@ pub const PURPOSES: &[PurposeSpec] = &[
             b("Context", L::Bullets, "The problem and constraints."),
             b("Goals", L::Comparison, "Goals and non-goals."),
             b("Architecture", L::ImageSplit, "The design, drawn."),
-            b("Trade-offs", L::Comparison, "Options considered and why this one."),
+            b(
+                "Trade-offs",
+                L::Comparison,
+                "Options considered and why this one.",
+            ),
             b("Risks", L::Cards, "What can fail and how we detect it."),
             b("Rollout", L::Timeline, "Phases and checkpoints."),
             b("Open questions", L::Bullets, "What needs a decision."),
@@ -407,7 +475,11 @@ pub const PURPOSES: &[PurposeSpec] = &[
             b("Question", L::Statement, "What we set out to learn."),
             b("Method", L::Cards, "How we studied it."),
             b("Findings", L::Chart, "What the data show."),
-            b("Discussion", L::Bullets, "What it means and what it does not."),
+            b(
+                "Discussion",
+                L::Bullets,
+                "What it means and what it does not.",
+            ),
             b("Conclusions", L::Cards, "The takeaways."),
             b("Next", L::Timeline, "Follow-up work."),
             b("", L::Closing, "Contact and references."),
@@ -436,7 +508,11 @@ pub fn purpose(id: &str) -> Option<&'static PurposeSpec> {
 /// Can `slide` honestly be shown with `kind`? A beat's preferred layout is
 /// only used when the content supports it; otherwise inference decides.
 fn supports(kind: LayoutKind, s: &DesignedSlide) -> bool {
-    let items = if s.blocks.is_empty() { s.bullets.len() } else { s.blocks.len() };
+    let items = if s.blocks.is_empty() {
+        s.bullets.len()
+    } else {
+        s.blocks.len()
+    };
     match kind {
         LayoutKind::Cover => true,
         // Only a slide that reads as a sign-off becomes the dark closing
@@ -466,7 +542,12 @@ fn supports(kind: LayoutKind, s: &DesignedSlide) -> bool {
 /// Dress a deck for a purpose: theme and motion (unless the caller set
 /// them), kickers from the storyline, and beat-driven layouts where the
 /// content supports them. Idempotent for already-styled slides.
-pub fn apply(deck: &mut DesignedDeck, purpose_id: &str, keep_theme: bool, keep_motion: bool) -> bool {
+pub fn apply(
+    deck: &mut DesignedDeck,
+    purpose_id: &str,
+    keep_theme: bool,
+    keep_motion: bool,
+) -> bool {
     let Some(p) = purpose(purpose_id) else {
         return false;
     };
@@ -502,7 +583,10 @@ pub fn apply(deck: &mut DesignedDeck, purpose_id: &str, keep_theme: bool, keep_m
             let inferred = s.resolved_layout(i, n);
             // Keep strong inferences (chart, image, explicit blocks); let
             // the beat steer the generic ones.
-            let generic = matches!(inferred, LayoutKind::Bullets | LayoutKind::Cards | LayoutKind::TwoColumn);
+            let generic = matches!(
+                inferred,
+                LayoutKind::Bullets | LayoutKind::Cards | LayoutKind::TwoColumn
+            );
             // A Bullets beat does not steer: it accepts whatever the content
             // itself suggests (three short points are cards, figures are
             // stats). Only a beat naming a specific layout can override.
@@ -566,7 +650,11 @@ mod tests {
             slides: vec![
                 DesignedSlide::new("Harbor"),
                 DesignedSlide::new("Offices lose control of their files").bullets(["One"]),
-                DesignedSlide::new("Three promises").bullets(["Local first", "Verified math", "One app"]),
+                DesignedSlide::new("Three promises").bullets([
+                    "Local first",
+                    "Verified math",
+                    "One app",
+                ]),
                 DesignedSlide::new("Opportunity").bullets(["$4B market", "38% CAGR", "12M teams"]),
                 DesignedSlide::new("Thanks").bullets(["hello@harbor.dev"]),
             ],
@@ -579,7 +667,11 @@ mod tests {
         assert!(deck.slides[1].kicker.is_some());
         let kinds = deck.resolved_layouts();
         assert_eq!(kinds[0], LayoutKind::Cover);
-        assert_eq!(kinds[4], LayoutKind::Closing, "the last slide takes the storyline's close");
+        assert_eq!(
+            kinds[4],
+            LayoutKind::Closing,
+            "the last slide takes the storyline's close"
+        );
         assert_eq!(kinds[3], LayoutKind::Stats);
         assert!(!apply(&mut deck, "no_such_purpose", false, false));
     }
@@ -587,7 +679,10 @@ mod tests {
     #[test]
     fn caller_choices_survive() {
         let mut deck = DesignedDeck {
-            slides: vec![DesignedSlide::new("A"), DesignedSlide::new("B").bullets(["x", "y", "z"])],
+            slides: vec![
+                DesignedSlide::new("A"),
+                DesignedSlide::new("B").bullets(["x", "y", "z"]),
+            ],
             ..Default::default()
         };
         deck.design.theme = "mono".into();
@@ -600,11 +695,16 @@ mod tests {
     #[test]
     fn beats_never_force_a_layout_the_content_cannot_fill() {
         // A Stats beat with prose bullets must not become a stats slide.
-        let prose = DesignedSlide::new("Financials").bullets(["Revenue is growing nicely", "Margins are healthy"]);
+        let prose = DesignedSlide::new("Financials")
+            .bullets(["Revenue is growing nicely", "Margins are healthy"]);
         assert!(!supports(LayoutKind::Stats, &prose));
-        let figures = DesignedSlide::new("Financials").bullets(["$4.2M revenue", "62% gross margin"]);
+        let figures =
+            DesignedSlide::new("Financials").bullets(["$4.2M revenue", "62% gross margin"]);
         assert!(supports(LayoutKind::Stats, &figures));
-        assert!(!supports(LayoutKind::Chart, &prose), "no chart data, no chart layout");
+        assert!(
+            !supports(LayoutKind::Chart, &prose),
+            "no chart data, no chart layout"
+        );
         let blocks = DesignedSlide::new("Team").blocks(vec![Block::card("Layla", "CEO")]);
         assert!(supports(LayoutKind::Team, &blocks));
     }

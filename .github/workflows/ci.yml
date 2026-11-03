@@ -104,6 +104,7 @@ jobs:
       # as a test harness, so build the cdylib + launcher after it and run
       # the worker tests on their own.
       - name: Inference worker (real launcher + core library)
+        env: { HARBOR_REQUIRE_WORKER: "1" }
         run: |
           cargo build -p harbor_ffi -p harbor_worker
           cargo test -p harbor_ffi --test inference_worker

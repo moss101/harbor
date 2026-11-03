@@ -32,8 +32,7 @@ class ThreadsDialogState extends State<ThreadsDialog> {
     final id = thread['thread_id'] as String;
     final title = await showDialog<String>(
       context: context,
-      builder: (_) =>
-          RenameDialog(initial: (thread['title'] as String?) ?? ''),
+      builder: (_) => RenameDialog(initial: (thread['title'] as String?) ?? ''),
     );
     // Blank titles are refused by the core; keep the old one.
     if (title == null || title.trim().isEmpty || !mounted) return;

@@ -40,9 +40,13 @@ pub(crate) fn agenda(s: &DesignedSlide, cx: &Ctx) -> Built {
 /// the accent when it reads on both, else the ink.
 fn accent_on_cards(t: &ThemeSpec, n: u8, min: f64) -> Clr {
     let hex = t.palette.accents[(n as usize - 1) % 6];
-    let ok = [page_hex(t).to_string(), t.resolve(&Clr::bg2()).0, t.resolve(&Clr::bg1()).0]
-        .iter()
-        .all(|bg| contrast(hex, bg) >= min);
+    let ok = [
+        page_hex(t).to_string(),
+        t.resolve(&Clr::bg2()).0,
+        t.resolve(&Clr::bg1()).0,
+    ]
+    .iter()
+    .all(|bg| contrast(hex, bg) >= min);
     if ok {
         Clr::accent(n)
     } else {
@@ -58,7 +62,18 @@ fn pt_emu(pt: f64) -> i64 {
 fn fit_each(t: &ThemeSpec, items: &[String], w: i64, h: i64, max: f64, min: f64) -> f64 {
     items
         .iter()
-        .map(|s| fit_pt(std::slice::from_ref(s), w, h, max, min, factor_minor(t), 1.05, 0.0))
+        .map(|s| {
+            fit_pt(
+                std::slice::from_ref(s),
+                w,
+                h,
+                max,
+                min,
+                factor_minor(t),
+                1.05,
+                0.0,
+            )
+        })
         .fold(max, f64::min)
 }
 
@@ -103,7 +118,11 @@ fn rows(b: &mut B, items: &[String]) {
         Numeral::Heavy => (1_250_000, 40.0),
         Numeral::Square | Numeral::Circle => (chip_d, 16.0),
     };
-    let gap = if matches!(kind, Numeral::Square | Numeral::Circle) { 260_000 } else { 120_000 };
+    let gap = if matches!(kind, Numeral::Square | Numeral::Circle) {
+        260_000
+    } else {
+        120_000
+    };
     let text_w = cols[0].w - num_w - gap;
     let cap = match kind {
         Numeral::Light => 26.0,
@@ -114,13 +133,22 @@ fn rows(b: &mut B, items: &[String]) {
     let top = vcentre(area, row_h * per_col as i64);
     if kind == Numeral::Heavy {
         for (c, col) in cols.iter().enumerate() {
-            let mut rule = Shape::deco(format!("Agenda top rule {}", c + 1), Geom::Line, R::new(col.x, top, col.w, 0), Fill::None);
+            let mut rule = Shape::deco(
+                format!("Agenda top rule {}", c + 1),
+                Geom::Line,
+                R::new(col.x, top, col.w, 0),
+                Fill::None,
+            );
             rule.line = Some(Line::new(Clr::tx1(), 3.0));
             b.sp(rule, Role::Deco);
         }
     }
     for (i, text) in items.iter().enumerate() {
-        let (c, r) = if two { (i / per_col, i % per_col) } else { (0, i) };
+        let (c, r) = if two {
+            (i / per_col, i % per_col)
+        } else {
+            (0, i)
+        };
         let col = cols[c.min(cols.len() - 1)];
         let y = top + r as i64 * row_h;
         let accent = match kind {
@@ -131,7 +159,11 @@ fn rows(b: &mut B, items: &[String]) {
         match kind {
             Numeral::Square | Numeral::Circle => {
                 let (fill, ink) = inked_fill(t, Clr::accent(accent), 100, 3.0);
-                let geom = if kind == Numeral::Circle { Geom::Ellipse } else { radius(t) };
+                let geom = if kind == Numeral::Circle {
+                    Geom::Ellipse
+                } else {
+                    radius(t)
+                };
                 let mut chip = Shape::new(
                     format!("Agenda number {}", i + 1),
                     geom,
@@ -141,9 +173,13 @@ fn rows(b: &mut B, items: &[String]) {
                 chip.decorative = true;
                 chip.text = Some(
                     Text::one(
-                        Para::from_runs(vec![Run::new(label).size(num_pt).bold().font(FontRef::Major).color(ink)])
-                            .align(Align::Center)
-                            .no_bullet(),
+                        Para::from_runs(vec![Run::new(label)
+                            .size(num_pt)
+                            .bold()
+                            .font(FontRef::Major)
+                            .color(ink)])
+                        .align(Align::Center)
+                        .no_bullet(),
                     )
                     .anchor(Anchor::Middle),
                 );
@@ -171,12 +207,21 @@ fn rows(b: &mut B, items: &[String]) {
             Shape::text_box(
                 format!("Agenda item {}", i + 1),
                 R::new(col.x + num_w + gap, y, text_w, row_h - 20_000),
-                Text::one(Para::from_runs(vec![Run::new(text.clone()).size(pt)]).no_bullet()).anchor(Anchor::Middle),
+                Text::one(Para::from_runs(vec![Run::new(text.clone()).size(pt)]).no_bullet())
+                    .anchor(Anchor::Middle),
             ),
             Role::Item(i),
         );
-        let mut rule = Shape::deco(format!("Agenda rule {}", i + 1), Geom::Line, R::new(col.x, y + row_h, col.w, 0), Fill::None);
-        rule.line = Some(Line::new(Clr::tx1().alpha(if kind == Numeral::Heavy { 30 } else { 16 }), 0.75));
+        let mut rule = Shape::deco(
+            format!("Agenda rule {}", i + 1),
+            Geom::Line,
+            R::new(col.x, y + row_h, col.w, 0),
+            Fill::None,
+        );
+        rule.line = Some(Line::new(
+            Clr::tx1().alpha(if kind == Numeral::Heavy { 30 } else { 16 }),
+            0.75,
+        ));
         b.sp(rule, Role::Item(i));
     }
 }
@@ -249,7 +294,11 @@ fn grid(b: &mut B, items: &[String]) {
     let bracket = hdr == Header::Banner && (cell == Cell::Open || open_sheet);
     let num_pt = if bracket { num_pt * 0.75 } else { num_pt };
     let pad = if cell == Cell::Tile { 200_000 } else { 0 };
-    let num_h = if cell == Cell::Sticker { disc_d } else { pt_emu(num_pt * 1.2) };
+    let num_h = if cell == Cell::Sticker {
+        disc_d
+    } else {
+        pt_emu(num_pt * 1.2)
+    };
     let fixed = match cell {
         Cell::Open => 150_000 + num_h + 90_000,
         Cell::Tile => 2 * pad + num_h + 80_000,
@@ -266,7 +315,18 @@ fn grid(b: &mut B, items: &[String]) {
     let wide = factor_minor(t) * 1.1;
     let pt = items
         .iter()
-        .map(|s| fit_pt(std::slice::from_ref(s), label_w, label_budget, cap, 13.0, wide, 1.05, 0.0))
+        .map(|s| {
+            fit_pt(
+                std::slice::from_ref(s),
+                label_w,
+                label_budget,
+                cap,
+                13.0,
+                wide,
+                1.05,
+                0.0,
+            )
+        })
         .fold(cap, f64::min);
     let label_need = items
         .iter()
@@ -281,8 +341,16 @@ fn grid(b: &mut B, items: &[String]) {
         let (r, c) = (i / ncols, i % ncols);
         let col = cols[c];
         let y = top + r as i64 * (cell_h + row_gap);
-        let accent = if cell == Cell::Open { 1 } else { 1 + (i as u8 % 4) };
-        let numeral = if bracket { format!("[{:02}]", i + 1) } else { format!("{:02}", i + 1) };
+        let accent = if cell == Cell::Open {
+            1
+        } else {
+            1 + (i as u8 % 4)
+        };
+        let numeral = if bracket {
+            format!("[{:02}]", i + 1)
+        } else {
+            format!("{:02}", i + 1)
+        };
         let (label_x, label_y) = match cell {
             Cell::Open => {
                 let mut hair = Shape::deco(
@@ -346,7 +414,9 @@ fn grid(b: &mut B, items: &[String]) {
                     Role::Item(i),
                 );
                 let (fill, ink) = inked_fill(t, Clr::accent(accent), 100, 3.0);
-                let mut disc = Shape::new(format!("Agenda number {}", i + 1), Geom::Ellipse, d_rect).fill(Fill::Solid(fill));
+                let mut disc =
+                    Shape::new(format!("Agenda number {}", i + 1), Geom::Ellipse, d_rect)
+                        .fill(Fill::Solid(fill));
                 disc.line = Some(Line::new(Clr::tx1(), 2.25));
                 disc.decorative = true;
                 disc.text = Some(
@@ -368,8 +438,15 @@ fn grid(b: &mut B, items: &[String]) {
         b.sp(
             Shape::text_box(
                 format!("Agenda item {}", i + 1),
-                R::new(label_x, label_y, label_w, (y + cell_h - label_y - pad).max(label_need)),
-                Text::one(al(Para::from_runs(vec![Run::new(text.clone()).size(pt)]).no_bullet())),
+                R::new(
+                    label_x,
+                    label_y,
+                    label_w,
+                    (y + cell_h - label_y - pad).max(label_need),
+                ),
+                Text::one(al(
+                    Para::from_runs(vec![Run::new(text.clone()).size(pt)]).no_bullet()
+                )),
             ),
             Role::Item(i),
         );
@@ -403,10 +480,18 @@ mod tests {
     fn every_agenda_variant_builds_for_two_to_eight_items_in_every_header() {
         for base in THEMES {
             for style in [AgendaStyle::Rows, AgendaStyle::Grid] {
-                for card in [CardStyle::Sticker, CardStyle::Bento, CardStyle::Outlined, CardStyle::Raised] {
+                for card in [
+                    CardStyle::Sticker,
+                    CardStyle::Bento,
+                    CardStyle::Outlined,
+                    CardStyle::Raised,
+                ] {
                     for (h, th) in all_looks(base) {
                         let th = ThemeSpec {
-                            look: Look { agenda: style, ..th.look },
+                            look: Look {
+                                agenda: style,
+                                ..th.look
+                            },
                             card,
                             ..th
                         };
@@ -433,7 +518,11 @@ mod tests {
     #[test]
     fn grids_balance_their_rows_and_never_squeeze_columns() {
         assert_eq!(grid_columns(4, 10_800_000, GUTTER), 4);
-        assert_eq!(grid_columns(4, 6_800_000, GUTTER), 2, "a narrow area makes a 2 x 2");
+        assert_eq!(
+            grid_columns(4, 6_800_000, GUTTER),
+            2,
+            "a narrow area makes a 2 x 2"
+        );
         assert_eq!(grid_columns(6, 10_800_000, GUTTER), 3);
         assert_eq!(grid_columns(5, 10_800_000, GUTTER), 3);
         assert_eq!(grid_columns(8, 10_800_000, GUTTER), 4);
@@ -442,7 +531,10 @@ mod tests {
             for w in [6_800_000, 8_000_000, 10_800_000] {
                 let c = grid_columns(n, w, GUTTER);
                 assert!((1..=4).contains(&c));
-                assert!((w - GUTTER * (c as i64 - 1)) / c as i64 >= 1_500_000 || c == 1, "n={n} w={w} c={c}");
+                assert!(
+                    (w - GUTTER * (c as i64 - 1)) / c as i64 >= 1_500_000 || c == 1,
+                    "n={n} w={w} c={c}"
+                );
             }
         }
     }
@@ -474,9 +566,17 @@ mod tests {
         for base in THEMES {
             for pal in palettes() {
                 for style in [AgendaStyle::Rows, AgendaStyle::Grid] {
-                    for card in [CardStyle::Sticker, CardStyle::Bento, CardStyle::Outlined, CardStyle::Filled] {
+                    for card in [
+                        CardStyle::Sticker,
+                        CardStyle::Bento,
+                        CardStyle::Outlined,
+                        CardStyle::Filled,
+                    ] {
                         let th = ThemeSpec {
-                            look: Look { agenda: style, ..base.look },
+                            look: Look {
+                                agenda: style,
+                                ..base.look
+                            },
                             card,
                             ..base.with_palette(pal)
                         };
@@ -494,11 +594,20 @@ mod tests {
                             match &sh.fill {
                                 Fill::Solid(f) => {
                                     let c = contrast_of(&th, f, &ink);
-                                    assert!(c >= 3.0 && r.bold == Some(true) && r.size.unwrap() >= 14.0, "{who}: chip {c:.2}");
+                                    assert!(
+                                        c >= 3.0 && r.bold == Some(true) && r.size.unwrap() >= 14.0,
+                                        "{who}: chip {c:.2}"
+                                    );
                                 }
                                 _ => {
                                     // Open text: on the page, or on a tile (bg2).
-                                    let on_tile = style == AgendaStyle::Grid && matches!(card, CardStyle::Bento | CardStyle::Raised | CardStyle::Filled);
+                                    let on_tile = style == AgendaStyle::Grid
+                                        && matches!(
+                                            card,
+                                            CardStyle::Bento
+                                                | CardStyle::Raised
+                                                | CardStyle::Filled
+                                        );
                                     let mut c = contrast(&th.resolve(&ink).0, page);
                                     if on_tile {
                                         c = c.min(contrast(&th.resolve(&ink).0, &tile_bg));

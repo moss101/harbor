@@ -79,27 +79,37 @@ pub(crate) fn bg_xml(fill: &Fill) -> String {
     format!("<p:bg><p:bgPr>{}<a:effectLst/></p:bgPr></p:bg>", fill.xml())
 }
 
-
-
-
-
-
-
-
-
-
 /// Footer and slide-number placeholders (positions and ink follow the
 /// header composition; slides decide whether to instantiate them).
 pub(crate) fn footer_phs(id0: u32, t: &ThemeSpec, rtl: bool) -> String {
     let f = frame(&t.look);
-    let (ftr, num) = if rtl { (f.ftr.mirrored(), f.num.mirrored()) } else { (f.ftr, f.num) };
+    let (ftr, num) = if rtl {
+        (f.ftr.mirrored(), f.num.mirrored())
+    } else {
+        (f.ftr, f.num)
+    };
     let (l, r) = if rtl { ("r", "l") } else { ("l", "r") };
     // Furniture sitting on a colour field is light; the rail and sidebar
     // carry a large slide number, everything else a quiet small one.
     let (ftr_clr, num_clr, num_sz, num_algn) = match t.look.header {
-        Header::Sidebar { .. } => ("<a:schemeClr val=\"lt1\"><a:alpha val=\"70000\"/></a:schemeClr>", "<a:schemeClr val=\"lt1\"/>", 2800, l),
-        Header::Rail => ("<a:schemeClr val=\"tx1\"><a:alpha val=\"62000\"/></a:schemeClr>", "<a:schemeClr val=\"accent1\"/>", 4400, l),
-        _ => ("<a:schemeClr val=\"tx1\"><a:alpha val=\"62000\"/></a:schemeClr>", "<a:schemeClr val=\"accent1\"/>", 1000, r),
+        Header::Sidebar { .. } => (
+            "<a:schemeClr val=\"lt1\"><a:alpha val=\"70000\"/></a:schemeClr>",
+            "<a:schemeClr val=\"lt1\"/>",
+            2800,
+            l,
+        ),
+        Header::Rail => (
+            "<a:schemeClr val=\"tx1\"><a:alpha val=\"62000\"/></a:schemeClr>",
+            "<a:schemeClr val=\"accent1\"/>",
+            4400,
+            l,
+        ),
+        _ => (
+            "<a:schemeClr val=\"tx1\"><a:alpha val=\"62000\"/></a:schemeClr>",
+            "<a:schemeClr val=\"accent1\"/>",
+            1000,
+            r,
+        ),
     };
     format!(
         "<p:sp><p:nvSpPr><p:cNvPr id=\"{a}\" name=\"Footer Placeholder\"/><p:cNvSpPr><a:spLocks noGrp=\"1\"/></p:cNvSpPr><p:nvPr><p:ph type=\"ftr\" sz=\"quarter\" idx=\"11\"/></p:nvPr></p:nvSpPr><p:spPr><a:xfrm><a:off x=\"{}\" y=\"{}\"/><a:ext cx=\"{}\" cy=\"{}\"/></a:xfrm></p:spPr><p:txBody><a:bodyPr lIns=\"0\" tIns=\"0\" rIns=\"0\" bIns=\"0\" anchor=\"ctr\"/><a:lstStyle><a:lvl1pPr algn=\"{l}\"><a:defRPr sz=\"1000\" b=\"0\" spc=\"20\"><a:solidFill>{ftr_clr}</a:solidFill></a:defRPr></a:lvl1pPr></a:lstStyle><a:p><a:endParaRPr lang=\"en-US\"/></a:p></p:txBody></p:sp>\
@@ -118,7 +128,11 @@ pub fn master_xml(t: &ThemeSpec, rtl: bool) -> String {
         _ => "&#8226;",
     };
     // Titles sitting on a colour field (banner, sidebar) are light.
-    let title_ink = if f.on_field { "<a:schemeClr val=\"lt1\"/>" } else { "<a:schemeClr val=\"tx1\"/>" };
+    let title_ink = if f.on_field {
+        "<a:schemeClr val=\"lt1\"/>"
+    } else {
+        "<a:schemeClr val=\"tx1\"/>"
+    };
     let title_algn = match (f.title_align, rtl) {
         (Align::Center, _) => "ctr",
         (_, true) => "r",
@@ -204,30 +218,47 @@ pub(crate) fn layout_shell(
 <p:sldLayout {NS} type="{ty}" preserve="1"{show}>
 <p:cSld name="{name}">{bg}<p:spTree>{GROUP}{shapes}</p:spTree></p:cSld>{ovr}
 </p:sldLayout>"#,
-        show = if show_master { "" } else { " showMasterSp=\"0\"" },
+        show = if show_master {
+            ""
+        } else {
+            " showMasterSp=\"0\""
+        },
         bg = bg.map(bg_xml).unwrap_or_default(),
         ovr = if inverse { OVR_DARK } else { OVR_MASTER },
     )
 }
 
-pub(crate) fn ph_title(id: u32, ty: &str, name: &str, rect: R, lst: &str, anchor: &str, prompt: &str) -> String {
+pub(crate) fn ph_title(
+    id: u32,
+    ty: &str,
+    name: &str,
+    rect: R,
+    lst: &str,
+    anchor: &str,
+    prompt: &str,
+) -> String {
     format!(
         "<p:sp><p:nvSpPr><p:cNvPr id=\"{id}\" name=\"{name}\"/><p:cNvSpPr><a:spLocks noGrp=\"1\"/></p:cNvSpPr><p:nvPr><p:ph type=\"{ty}\"/></p:nvPr></p:nvSpPr><p:spPr><a:xfrm><a:off x=\"{}\" y=\"{}\"/><a:ext cx=\"{}\" cy=\"{}\"/></a:xfrm></p:spPr><p:txBody><a:bodyPr lIns=\"0\" tIns=\"0\" rIns=\"0\" bIns=\"0\" anchor=\"{anchor}\"><a:normAutofit/></a:bodyPr>{lst}<a:p><a:r><a:rPr lang=\"en-US\"/><a:t>{prompt}</a:t></a:r></a:p></p:txBody></p:sp>",
         rect.x, rect.y, rect.w, rect.h
     )
 }
 
-pub(crate) fn ph_body(id: u32, ty: &str, idx: u32, name: &str, rect: R, lst: &str, anchor: &str, prompt: &str) -> String {
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn ph_body(
+    id: u32,
+    ty: &str,
+    idx: u32,
+    name: &str,
+    rect: R,
+    lst: &str,
+    anchor: &str,
+    prompt: &str,
+) -> String {
     format!(
         "<p:sp><p:nvSpPr><p:cNvPr id=\"{id}\" name=\"{name}\"/><p:cNvSpPr><a:spLocks noGrp=\"1\"/></p:cNvSpPr><p:nvPr><p:ph type=\"{ty}\" idx=\"{idx}\"/></p:nvPr></p:nvSpPr><p:spPr><a:xfrm><a:off x=\"{}\" y=\"{}\"/><a:ext cx=\"{}\" cy=\"{}\"/></a:xfrm></p:spPr><p:txBody><a:bodyPr lIns=\"0\" tIns=\"0\" rIns=\"0\" bIns=\"0\" anchor=\"{anchor}\"><a:normAutofit/></a:bodyPr>{lst}<a:p><a:pPr lvl=\"0\"/><a:r><a:rPr lang=\"en-US\"/><a:t>{prompt}</a:t></a:r></a:p></p:txBody></p:sp>",
         rect.x, rect.y, rect.w, rect.h
     )
 }
-
-
-
-
-
 
 fn content_layout(t: &ThemeSpec, name: &str, ty: &str, two: bool, rtl: bool) -> String {
     let f = frame(&t.look);
@@ -246,11 +277,42 @@ fn content_layout(t: &ThemeSpec, name: &str, ty: &str, two: bool, rtl: bool) -> 
     if ty != "titleOnly" {
         if two {
             let cols = columns(f.body, 2, GUTTER * 2);
-            let cols: Vec<R> = if rtl { cols.into_iter().map(|c| c.mirrored()).collect() } else { cols };
-            shapes.push_str(&ph_body(3, "body", 1, "Content Placeholder 2", cols[0], "<a:lstStyle/>", "t", "Click to edit Master text styles"));
-            shapes.push_str(&ph_body(4, "body", 2, "Content Placeholder 3", cols[1], "<a:lstStyle/>", "t", "Click to edit Master text styles"));
+            let cols: Vec<R> = if rtl {
+                cols.into_iter().map(|c| c.mirrored()).collect()
+            } else {
+                cols
+            };
+            shapes.push_str(&ph_body(
+                3,
+                "body",
+                1,
+                "Content Placeholder 2",
+                cols[0],
+                "<a:lstStyle/>",
+                "t",
+                "Click to edit Master text styles",
+            ));
+            shapes.push_str(&ph_body(
+                4,
+                "body",
+                2,
+                "Content Placeholder 3",
+                cols[1],
+                "<a:lstStyle/>",
+                "t",
+                "Click to edit Master text styles",
+            ));
         } else {
-            shapes.push_str(&ph_body(3, "body", 1, "Content Placeholder 2", br, "<a:lstStyle/>", "t", "Click to edit Master text styles"));
+            shapes.push_str(&ph_body(
+                3,
+                "body",
+                1,
+                "Content Placeholder 2",
+                br,
+                "<a:lstStyle/>",
+                "t",
+                "Click to edit Master text styles",
+            ));
         }
     }
     shapes.push_str(&footer_phs(30, t, rtl));
@@ -302,10 +364,23 @@ fn quote_layout(t: &ThemeSpec, rtl: bool) -> String {
             R::new(MARGIN_X, 5_400_000, CONTENT_W, 600_000),
         )
     } else {
-        (R::new(1_300_000, 1_500_000, 9_600_000, 3_000_000), R::new(1_300_000, 4_800_000, 9_600_000, 800_000))
+        (
+            R::new(1_300_000, 1_500_000, 9_600_000, 3_000_000),
+            R::new(1_300_000, 4_800_000, 9_600_000, 800_000),
+        )
     };
-    let (tr, ar) = if rtl { (tr.mirrored(), ar.mirrored()) } else { (tr, ar) };
-    let algn = if centered { "ctr" } else if rtl { "r" } else { "l" };
+    let (tr, ar) = if rtl {
+        (tr.mirrored(), ar.mirrored())
+    } else {
+        (tr, ar)
+    };
+    let algn = if centered {
+        "ctr"
+    } else if rtl {
+        "r"
+    } else {
+        "l"
+    };
     let (size, italic, bold) = if poster { (4000, 0, 1) } else { (3600, 1, 0) };
     let title_lst = format!(
         "<a:lstStyle><a:lvl1pPr algn=\"{algn}\" rtl=\"{}\"><a:lnSpc><a:spcPct val=\"100000\"/></a:lnSpc><a:buNone/><a:defRPr sz=\"{size}\" b=\"{bold}\" i=\"{italic}\"><a:solidFill><a:schemeClr val=\"tx1\"/></a:solidFill><a:latin typeface=\"+mj-lt\"/><a:cs typeface=\"+mj-cs\"/></a:defRPr></a:lvl1pPr></a:lstStyle>",
@@ -315,8 +390,25 @@ fn quote_layout(t: &ThemeSpec, rtl: bool) -> String {
         "<a:lstStyle><a:lvl1pPr marL=\"0\" indent=\"0\" algn=\"{algn}\" rtl=\"{}\"><a:buNone/><a:defRPr sz=\"1800\" b=\"1\"><a:solidFill><a:schemeClr val=\"accent1\"/></a:solidFill></a:defRPr></a:lvl1pPr></a:lstStyle>",
         if rtl { 1 } else { 0 }
     );
-    shapes.push_str(&ph_title(2, "title", "Title 1", tr, &title_lst, if poster { "b" } else { "ctr" }, "Quote"));
-    shapes.push_str(&ph_body(3, "body", 1, "Attribution", ar, &by_lst, "t", "Attribution"));
+    shapes.push_str(&ph_title(
+        2,
+        "title",
+        "Title 1",
+        tr,
+        &title_lst,
+        if poster { "b" } else { "ctr" },
+        "Quote",
+    ));
+    shapes.push_str(&ph_body(
+        3,
+        "body",
+        1,
+        "Attribution",
+        ar,
+        &by_lst,
+        "t",
+        "Attribution",
+    ));
     shapes.push_str(&footer_phs(30, t, rtl));
     // Headers whose furniture assumes the title lives in the header (band,
     // sidebar, rail) do not draw it behind a free-standing quote.
@@ -345,7 +437,8 @@ mod tests {
     fn every_part_of_every_theme_is_well_formed_xml() {
         for t in THEMES {
             for rtl in [false, true] {
-                roxmltree::Document::parse(&theme_xml(t)).unwrap_or_else(|e| panic!("{} theme: {e}", t.id));
+                roxmltree::Document::parse(&theme_xml(t))
+                    .unwrap_or_else(|e| panic!("{} theme: {e}", t.id));
                 roxmltree::Document::parse(&master_xml(t, rtl))
                     .unwrap_or_else(|e| panic!("{} master rtl={rtl}: {e}", t.id));
                 for l in LAYOUTS {

@@ -31,16 +31,14 @@ fn fixtures_dir() -> PathBuf {
         .unwrap_or_else(|| repo_root().join("fixtures/models"))
 }
 
-fn config() -> WorkerConfig {
+/// The launcher and core library the worker runs, without checking them.
+fn artifacts() -> (PathBuf, PathBuf) {
     // On a device the launcher and library are pushed next to the test.
     if let (Some(launcher), Some(library)) = (
         std::env::var_os("HARBOR_WORKER_PATH"),
         std::env::var_os("HARBOR_WORKER_LIB"),
     ) {
-        return WorkerConfig {
-            launcher: launcher.into(),
-            library: library.into(),
-        };
+        return (launcher.into(), library.into());
     }
     let target = std::env::var_os("CARGO_TARGET_DIR")
         .map(PathBuf::from)
@@ -63,16 +61,34 @@ fn config() -> WorkerConfig {
     } else {
         "harbor_worker"
     });
+    (launcher, lib)
+}
+
+/// True when the launcher and core library are built. `cargo test
+/// --workspace` runs before they are (CI builds them in the next step, as
+/// a test harness build does not leave the cdylib behind), so they skip
+/// there — unless `HARBOR_REQUIRE_WORKER=1`, where absence fails.
+fn worker_built() -> bool {
+    let (launcher, lib) = artifacts();
+    if lib.is_file() && launcher.is_file() {
+        return true;
+    }
     assert!(
-        lib.is_file() && launcher.is_file(),
+        std::env::var("HARBOR_REQUIRE_WORKER").as_deref() != Ok("1"),
         "build the core library and launcher first: cargo build -p harbor_ffi -p harbor_worker ({} / {})",
         lib.display(),
         launcher.display()
     );
-    WorkerConfig {
-        launcher,
-        library: lib,
-    }
+    eprintln!(
+        "SKIP: worker launcher/library not built ({})",
+        lib.display()
+    );
+    false
+}
+
+fn config() -> WorkerConfig {
+    let (launcher, library) = artifacts();
+    WorkerConfig { launcher, library }
 }
 
 /// The gitignored model fixtures, or None (skip) when absent — unless
@@ -143,7 +159,7 @@ fn story(model: &ModelRef, max_tokens: u32) -> ChatRequest {
 #[test]
 fn worker_generates_and_embeds_like_the_in_process_runtime() {
     let _g = ENV.lock().unwrap_or_else(|e| e.into_inner());
-    if !fixtures_present(&["stories260K.gguf", "bge-small-en-v1.5-q8_0.gguf"]) {
+    if !fixtures_present(&["stories260K.gguf", "bge-small-en-v1.5-q8_0.gguf"]) || !worker_built() {
         return;
     }
     let dir = tempfile::tempdir().unwrap();
@@ -190,7 +206,7 @@ fn worker_generates_and_embeds_like_the_in_process_runtime() {
 #[test]
 fn a_worker_crash_is_a_typed_error_and_the_next_call_restarts_it() {
     let _g = ENV.lock().unwrap_or_else(|e| e.into_inner());
-    if !fixtures_present(&["stories260K.gguf"]) {
+    if !fixtures_present(&["stories260K.gguf"]) || !worker_built() {
         return;
     }
     let dir = tempfile::tempdir().unwrap();
@@ -215,7 +231,7 @@ fn a_worker_crash_is_a_typed_error_and_the_next_call_restarts_it() {
 #[test]
 fn an_idle_worker_killed_by_the_os_is_replaced_silently_and_not_counted() {
     let _g = ENV.lock().unwrap_or_else(|e| e.into_inner());
-    if !fixtures_present(&["stories260K.gguf"]) {
+    if !fixtures_present(&["stories260K.gguf"]) || !worker_built() {
         return;
     }
     let dir = tempfile::tempdir().unwrap();
@@ -247,7 +263,7 @@ fn an_idle_worker_killed_by_the_os_is_replaced_silently_and_not_counted() {
 #[test]
 fn a_gpu_crash_in_the_worker_pins_cpu_and_the_call_succeeds_on_retry() {
     let _g = ENV.lock().unwrap_or_else(|e| e.into_inner());
-    if !fixtures_present(&["stories260K.gguf"]) {
+    if !fixtures_present(&["stories260K.gguf"]) || !worker_built() {
         return;
     }
     if !harbor_inference::gguf::gpu_backend_present()
@@ -275,7 +291,7 @@ fn a_gpu_crash_in_the_worker_pins_cpu_and_the_call_succeeds_on_retry() {
 #[test]
 fn cancellation_crosses_the_process_boundary() {
     let _g = ENV.lock().unwrap_or_else(|e| e.into_inner());
-    if !fixtures_present(&["stories260K.gguf"]) {
+    if !fixtures_present(&["stories260K.gguf"]) || !worker_built() {
         return;
     }
     let dir = tempfile::tempdir().unwrap();

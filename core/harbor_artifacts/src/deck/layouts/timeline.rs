@@ -50,7 +50,10 @@ fn steps_of(s: &DesignedSlide) -> Vec<Step> {
             .take(6)
             .map(|x| {
                 // "Q2 2026: launch beta" -> when + heading.
-                let (w, h) = x.split_once(": ").or_else(|| x.split_once(" \u{2014} ")).unwrap_or(("", x));
+                let (w, h) = x
+                    .split_once(": ")
+                    .or_else(|| x.split_once(" \u{2014} "))
+                    .unwrap_or(("", x));
                 Step {
                     when: w.to_string(),
                     head: h.to_string(),
@@ -134,8 +137,14 @@ fn fit_cells(t: &ThemeSpec, steps: &[Step], w: i64, h: i64, caps: Z, with_when: 
                 head: half_pt((caps.head * k).max(MIN_Z.head)),
                 body: half_pt((caps.body * k).max(MIN_Z.body)),
             };
-            let need = steps.iter().map(|s| cell_height(t, s, z, w, with_when)).max().unwrap_or(0);
-            let one_line = steps.iter().all(|s| line_count(&s.head, z.head, w, factor_major(t) * SAFE) <= 1);
+            let need = steps
+                .iter()
+                .map(|s| cell_height(t, s, z, w, with_when))
+                .max()
+                .unwrap_or(0);
+            let one_line = steps
+                .iter()
+                .all(|s| line_count(&s.head, z.head, w, factor_major(t) * SAFE) <= 1);
             let floor = if single { 16.0 } else { MIN_Z.head };
             if need <= h && (!single || one_line) {
                 return z;
@@ -149,7 +158,14 @@ fn fit_cells(t: &ThemeSpec, steps: &[Step], w: i64, h: i64, caps: Z, with_when: 
     MIN_Z
 }
 
-fn step_paras(t: &ThemeSpec, st: &Step, z: Z, accent: u8, centred: bool, with_when: bool) -> Vec<Para> {
+fn step_paras(
+    t: &ThemeSpec,
+    st: &Step,
+    z: Z,
+    accent: u8,
+    centred: bool,
+    with_when: bool,
+) -> Vec<Para> {
     let al = |p: Para| if centred { p.align(Align::Center) } else { p };
     let mut v: Vec<Para> = Vec::new();
     if with_when && !st.when.is_empty() {
@@ -174,7 +190,10 @@ fn step_paras(t: &ThemeSpec, st: &Step, z: Z, accent: u8, centred: bool, with_wh
         v.push(al(p));
     }
     if !st.body.is_empty() {
-        let mut p = Para::from_runs(vec![Run::new(st.body.clone()).size(z.body).color(muted(75))]).no_bullet();
+        let mut p = Para::from_runs(vec![Run::new(st.body.clone())
+            .size(z.body)
+            .color(muted(75))])
+        .no_bullet();
         if !v.is_empty() {
             p = p.before(BODY_BEFORE);
         }
@@ -243,23 +262,50 @@ fn spine(b: &mut B, steps: &[Step]) {
     let n_gap = 140_000;
     let has_when = steps.iter().any(|s| !s.when.is_empty());
     let caps = match per {
-        0..=3 => Z { when: 18.0, head: 26.0, body: 18.0 },
-        4 => Z { when: 16.0, head: 22.0, body: 16.0 },
-        _ => Z { when: 14.0, head: 19.0, body: 14.0 },
+        0..=3 => Z {
+            when: 18.0,
+            head: 26.0,
+            body: 18.0,
+        },
+        4 => Z {
+            when: 16.0,
+            head: 22.0,
+            body: 16.0,
+        },
+        _ => Z {
+            when: 14.0,
+            head: 19.0,
+            body: 14.0,
+        },
     };
     // The date sits on one line above the spine.
     let labels: Vec<String> = steps.iter().map(|s| s.when.clone()).collect();
     let when_pt = if has_when {
         let one_line = pt_emu(caps.when * 1.25);
-        fit_each(&labels, text_w, one_line, caps.when, MIN_Z.when, factor_minor(t) * 1.25)
+        fit_each(
+            &labels,
+            text_w,
+            one_line,
+            caps.when,
+            MIN_Z.when,
+            factor_minor(t) * 1.25,
+        )
     } else {
         0.0
     };
-    let when_h = if has_when { pt_emu(when_pt * 1.2) + n_gap } else { 0 };
+    let when_h = if has_when {
+        pt_emu(when_pt * 1.2) + n_gap
+    } else {
+        0
+    };
     let budget = row_h - when_h - node_d - n_gap - 30_000;
     let mut z = fit_cells(t, steps, text_w, budget, caps, false);
     z.when = when_pt;
-    let below_h = steps.iter().map(|s| cell_height(t, s, z, text_w, false)).max().unwrap_or(0);
+    let below_h = steps
+        .iter()
+        .map(|s| cell_height(t, s, z, text_w, false))
+        .max()
+        .unwrap_or(0);
     let block_h = when_h + node_d + n_gap + below_h;
     let total = block_h * nrows as i64 + row_gap * (nrows as i64 - 1);
     let top = vcentre(area, total);
@@ -267,7 +313,11 @@ fn spine(b: &mut B, steps: &[Step]) {
     for (r, &cnt) in rows.iter().enumerate() {
         let row_top = top + r as i64 * (block_h + row_gap);
         let line_y = row_top + when_h + node_d / 2;
-        let shift = if centred { (per - cnt) as i64 * (col_w + gap) / 2 } else { 0 };
+        let shift = if centred {
+            (per - cnt) as i64 * (col_w + gap) / 2
+        } else {
+            0
+        };
         let fill = match hdr {
             Header::Poster => Fill::Solid(Clr::tx1()),
             Header::Rail => Fill::Solid(Clr::tx1().alpha(38)),
@@ -277,7 +327,12 @@ fn spine(b: &mut B, steps: &[Step]) {
             },
         };
         b.sp(
-            Shape::deco("Spine", Geom::Rect, R::new(area.x, line_y - line_h / 2, area.w, line_h), fill),
+            Shape::deco(
+                "Spine",
+                Geom::Rect,
+                R::new(area.x, line_y - line_h / 2, area.w, line_h),
+                fill,
+            ),
             Role::Deco,
         );
         for (k, col) in cols.iter().take(cnt).enumerate() {
@@ -369,13 +424,29 @@ fn chevrons(b: &mut B, steps: &[Step]) {
     let pad = if bento { 150_000 } else { 0 };
     let text_w = pitch - 110_000 - 2 * pad;
     let caps = match per {
-        0..=3 => Z { when: 0.0, head: 24.0, body: 17.0 },
-        4 => Z { when: 0.0, head: 20.0, body: 15.0 },
-        _ => Z { when: 0.0, head: 17.0, body: 14.0 },
+        0..=3 => Z {
+            when: 0.0,
+            head: 24.0,
+            body: 17.0,
+        },
+        4 => Z {
+            when: 0.0,
+            head: 20.0,
+            body: 15.0,
+        },
+        _ => Z {
+            when: 0.0,
+            head: 17.0,
+            body: 14.0,
+        },
     };
     let budget = row_h - ch_h - text_gap - 2 * pad - 20_000;
     let z = fit_cells(t, steps, text_w, budget, caps, false);
-    let below_h = steps.iter().map(|s| cell_height(t, s, z, text_w, false)).max().unwrap_or(0);
+    let below_h = steps
+        .iter()
+        .map(|s| cell_height(t, s, z, text_w, false))
+        .max()
+        .unwrap_or(0);
     let block_h = ch_h + text_gap + below_h + 2 * pad;
     let total = block_h * nrows as i64 + row_gap * (nrows as i64 - 1);
     let top = vcentre(area, total);
@@ -384,18 +455,39 @@ fn chevrons(b: &mut B, steps: &[Step]) {
     let labels: Vec<String> = steps
         .iter()
         .enumerate()
-        .map(|(i, s)| if s.when.is_empty() { format!("{:02}", i + 1) } else { s.when.clone() })
+        .map(|(i, s)| {
+            if s.when.is_empty() {
+                format!("{:02}", i + 1)
+            } else {
+                s.when.clone()
+            }
+        })
         .collect();
     let label_w = pitch - depth * 7 / 10 - depth - 80_000;
     let label_pt = labels
         .iter()
-        .map(|l| fit_pt(std::slice::from_ref(l), label_w, ch_h * 9 / 10, 20.0, 11.0, factor_major(t), 1.0, 0.0))
+        .map(|l| {
+            fit_pt(
+                std::slice::from_ref(l),
+                label_w,
+                ch_h * 9 / 10,
+                20.0,
+                11.0,
+                factor_major(t),
+                1.0,
+                0.0,
+            )
+        })
         .fold(20.0, f64::min);
 
     let mut base = 0usize;
     for (r, &cnt) in rows.iter().enumerate() {
         let row_top = top + r as i64 * (block_h + row_gap);
-        let shift = if centred { (per - cnt) as i64 * pitch / 2 } else { 0 };
+        let shift = if centred {
+            (per - cnt) as i64 * pitch / 2
+        } else {
+            0
+        };
         for k in 0..cnt {
             let i = base + k;
             let st = &steps[i];
@@ -408,7 +500,12 @@ fn chevrons(b: &mut B, steps: &[Step]) {
             } else {
                 (Geom::Chevron, (depth + 40_000, 0, depth * 7 / 10, 0))
             };
-            let mut sh = Shape::new(format!("Chevron {}", i + 1), geom, R::new(x, row_top, sh_w, ch_h)).fill(Fill::Solid(fill));
+            let mut sh = Shape::new(
+                format!("Chevron {}", i + 1),
+                geom,
+                R::new(x, row_top, sh_w, ch_h),
+            )
+            .fill(Fill::Solid(fill));
             if sticker {
                 sh.line = Some(Line::new(Clr::tx1(), 2.25));
             }
@@ -471,12 +568,28 @@ fn vertical(b: &mut B, steps: &[Step]) {
     let hairlines = t.card == CardStyle::Rule;
     let has_when = steps.iter().any(|s| !s.when.is_empty());
     let caps = match n {
-        0..=3 => Z { when: 24.0, head: 24.0, body: 18.0 },
-        4 => Z { when: 22.0, head: 21.0, body: 16.0 },
-        _ => Z { when: 20.0, head: 18.0, body: 14.0 },
+        0..=3 => Z {
+            when: 24.0,
+            head: 24.0,
+            body: 18.0,
+        },
+        4 => Z {
+            when: 22.0,
+            head: 21.0,
+            body: 16.0,
+        },
+        _ => Z {
+            when: 20.0,
+            head: 18.0,
+            body: 14.0,
+        },
     };
     let node_d = 170_000;
-    let when_w = if has_when { (area.w * 24 / 100).min(2_300_000) } else { 0 };
+    let when_w = if has_when {
+        (area.w * 24 / 100).min(2_300_000)
+    } else {
+        0
+    };
     let row_h = (area.h / n as i64).min(1_050_000);
     let rail_x = area.x + when_w + if has_when { 170_000 } else { 0 } + node_d / 2;
     let text_x = rail_x + node_d / 2 + 280_000;
@@ -486,10 +599,23 @@ fn vertical(b: &mut B, steps: &[Step]) {
     // The date shares the heading's size so the two baselines meet.
     let labels: Vec<String> = steps
         .iter()
-        .map(|s| if bracket && !s.when.is_empty() { format!("[{}]", s.when) } else { s.when.clone() })
+        .map(|s| {
+            if bracket && !s.when.is_empty() {
+                format!("[{}]", s.when)
+            } else {
+                s.when.clone()
+            }
+        })
         .collect();
     let when_pt = if has_when {
-        fit_each(&labels, when_w, pt_emu(z.head * 1.3), caps.when.min(z.head + 4.0), MIN_Z.when, factor_major(t))
+        fit_each(
+            &labels,
+            when_w,
+            pt_emu(z.head * 1.3),
+            caps.when.min(z.head + 4.0),
+            MIN_Z.when,
+            factor_major(t),
+        )
     } else {
         0.0
     };
@@ -499,7 +625,12 @@ fn vertical(b: &mut B, steps: &[Step]) {
     if let Some(sh) = sheet(
         t,
         "Timeline sheet",
-        R::new(area.x - 160_000, top - 140_000, area.w + 320_000, row_h * n as i64 + 280_000),
+        R::new(
+            area.x - 160_000,
+            top - 140_000,
+            area.w + 320_000,
+            row_h * n as i64 + 280_000,
+        ),
     ) {
         b.sp(sh, Role::Deco);
     }
@@ -516,7 +647,12 @@ fn vertical(b: &mut B, steps: &[Step]) {
     for (i, st) in steps.iter().enumerate() {
         let y = top + i as i64 * row_h;
         if hairlines && i > 0 {
-            let mut rule = Shape::deco(format!("Row rule {}", i + 1), Geom::Line, R::new(text_x, y, text_w, 0), Fill::None);
+            let mut rule = Shape::deco(
+                format!("Row rule {}", i + 1),
+                Geom::Line,
+                R::new(text_x, y, text_w, 0),
+                Fill::None,
+            );
             rule.line = Some(Line::new(Clr::tx1().alpha(16), 0.75));
             b.sp(rule, Role::Item(i));
         }
@@ -611,8 +747,15 @@ pub(crate) mod support {
                 .iter()
                 .filter_map(|r| r.size)
                 .fold(0.0, f64::max)
-                .max(if p.runs.iter().any(|r| r.size.is_some()) { 0.0 } else { 18.0 });
-            let major = p.runs.first().is_some_and(|r| r.font == Some(FontRef::Major));
+                .max(if p.runs.iter().any(|r| r.size.is_some()) {
+                    0.0
+                } else {
+                    18.0
+                });
+            let major = p
+                .runs
+                .first()
+                .is_some_and(|r| r.font == Some(FontRef::Major));
             let factor = glyph_factor(if major { t.fonts.major } else { t.fonts.minor });
             let w = base_w - p.margin.map_or(0, |(m, _)| m.max(0));
             let lines = line_count(&s, pt, w.max(1), factor) as f64;
@@ -661,14 +804,31 @@ pub(crate) mod support {
 
     pub fn assert_reading_order(built: &Built, count: usize, who: &str) {
         let order = item_order(built);
-        assert!(order.windows(2).all(|w| w[0] <= w[1]), "{who}: items out of order {order:?}");
+        assert!(
+            order.windows(2).all(|w| w[0] <= w[1]),
+            "{who}: items out of order {order:?}"
+        );
         let mut seen: Vec<usize> = order.clone();
         seen.dedup();
         assert_eq!(seen, (0..count).collect::<Vec<_>>(), "{who}: item tags");
     }
 
     pub fn all_looks(base: &ThemeSpec) -> Vec<(Header, ThemeSpec)> {
-        headers().into_iter().map(|h| (h, ThemeSpec { look: Look { header: h, ..base.look }, ..*base })).collect()
+        headers()
+            .into_iter()
+            .map(|h| {
+                (
+                    h,
+                    ThemeSpec {
+                        look: Look {
+                            header: h,
+                            ..base.look
+                        },
+                        ..*base
+                    },
+                )
+            })
+            .collect()
     }
 
     pub fn palettes() -> &'static [crate::deck::palette::PaletteSpec] {
@@ -688,13 +848,21 @@ mod tests {
     use crate::deck::theme::THEMES;
 
     fn slide(n: usize) -> DesignedSlide {
-        let mut s = DesignedSlide::new("From beta to scale in four quarters").kicker("Go to market");
+        let mut s =
+            DesignedSlide::new("From beta to scale in four quarters").kicker("Go to market");
         s.layout = Some(LayoutKind::Timeline);
         s.blocks = (0..n)
             .map(|i| {
                 Block::step(
                     format!("Q{} 2026", i + 1),
-                    ["Private beta", "Public launch", "Teams and sync", "EMEA expansion", "Marketplace", "Open platform"][i % 6],
+                    [
+                        "Private beta",
+                        "Public launch",
+                        "Teams and sync",
+                        "EMEA expansion",
+                        "Marketplace",
+                        "Open platform",
+                    ][i % 6],
                     "Ten design partners, shared workspaces and Arabic first-class",
                 )
             })
@@ -705,9 +873,19 @@ mod tests {
     #[test]
     fn every_timeline_variant_builds_for_two_to_six_steps_in_every_header() {
         for base in THEMES {
-            for style in [TimelineStyle::Spine, TimelineStyle::Chevrons, TimelineStyle::Vertical] {
+            for style in [
+                TimelineStyle::Spine,
+                TimelineStyle::Chevrons,
+                TimelineStyle::Vertical,
+            ] {
                 for (h, th) in all_looks(base) {
-                    let th = ThemeSpec { look: Look { timeline: style, ..th.look }, ..th };
+                    let th = ThemeSpec {
+                        look: Look {
+                            timeline: style,
+                            ..th.look
+                        },
+                        ..th
+                    };
                     for n in 2..=6 {
                         let who = format!("{} {h:?} {style:?} n={n}", base.id);
                         let built = timeline(&slide(n), &ctx(&th));
@@ -722,9 +900,23 @@ mod tests {
     #[test]
     fn timelines_without_dates_or_details_still_build() {
         let th = *crate::deck::theme::theme("harbor").unwrap();
-        for style in [TimelineStyle::Spine, TimelineStyle::Chevrons, TimelineStyle::Vertical] {
-            let th = ThemeSpec { look: Look { timeline: style, ..th.look }, ..th };
-            let mut s = DesignedSlide::new("Plan").bullets(["Discover", "Build the beta", "Launch in EMEA"]);
+        for style in [
+            TimelineStyle::Spine,
+            TimelineStyle::Chevrons,
+            TimelineStyle::Vertical,
+        ] {
+            let th = ThemeSpec {
+                look: Look {
+                    timeline: style,
+                    ..th.look
+                },
+                ..th
+            };
+            let mut s = DesignedSlide::new("Plan").bullets([
+                "Discover",
+                "Build the beta",
+                "Launch in EMEA",
+            ]);
             s.layout = Some(LayoutKind::Timeline);
             check_built(&th, &timeline(&s, &ctx(&th)), "bullets");
             s.bullets.clear();
@@ -736,20 +928,35 @@ mod tests {
     fn narrow_areas_split_horizontal_timelines_over_two_rows_instead_of_squeezing() {
         let th = *crate::deck::theme::theme("terracotta").unwrap();
         for style in [TimelineStyle::Spine, TimelineStyle::Chevrons] {
-            let th = ThemeSpec { look: Look { timeline: style, ..th.look }, ..th };
+            let th = ThemeSpec {
+                look: Look {
+                    timeline: style,
+                    ..th.look
+                },
+                ..th
+            };
             let built = timeline(&slide(6), &ctx(&th));
             let mut ys: Vec<i64> = built
                 .items
                 .iter()
                 .filter_map(|i| match &i.el {
-                    El::Sp(s) if s.name.starts_with("Milestone ") && s.name[10..].chars().all(|c| c.is_ascii_digit()) => s.rect.map(|r| r.y),
+                    El::Sp(s)
+                        if s.name.starts_with("Milestone ")
+                            && s.name[10..].chars().all(|c| c.is_ascii_digit()) =>
+                    {
+                        s.rect.map(|r| r.y)
+                    }
                     El::Sp(s) if s.name.starts_with("Chevron") => s.rect.map(|r| r.y),
                     _ => None,
                 })
                 .collect();
             ys.sort();
             ys.dedup();
-            assert_eq!(ys.len(), 2, "{style:?}: six steps in a narrow area use two rows, got {ys:?}");
+            assert_eq!(
+                ys.len(),
+                2,
+                "{style:?}: six steps in a narrow area use two rows, got {ys:?}"
+            );
         }
     }
 
@@ -757,7 +964,13 @@ mod tests {
     fn chevron_labels_read_on_their_fill_in_every_theme_and_palette() {
         for base in THEMES {
             for pal in palettes() {
-                let th = ThemeSpec { look: Look { timeline: TimelineStyle::Chevrons, ..base.look }, ..base.with_palette(pal) };
+                let th = ThemeSpec {
+                    look: Look {
+                        timeline: TimelineStyle::Chevrons,
+                        ..base.look
+                    },
+                    ..base.with_palette(pal)
+                };
                 for n in [3usize, 6] {
                     let built = timeline(&slide(n), &ctx(&th));
                     let mut seen = 0;
@@ -766,7 +979,9 @@ mod tests {
                         if !sh.name.starts_with("Chevron") {
                             continue;
                         }
-                        let Fill::Solid(fill) = &sh.fill else { panic!("chevron without a solid fill") };
+                        let Fill::Solid(fill) = &sh.fill else {
+                            panic!("chevron without a solid fill")
+                        };
                         for p in &sh.text.as_ref().unwrap().paras {
                             for r in &p.runs {
                                 let c = contrast_of(&th, fill, r.color.as_ref().unwrap());
@@ -793,7 +1008,13 @@ mod tests {
             for pal in palettes() {
                 let th = base.with_palette(pal);
                 for style in [TimelineStyle::Spine, TimelineStyle::Vertical] {
-                    let th = ThemeSpec { look: Look { timeline: style, ..th.look }, ..th };
+                    let th = ThemeSpec {
+                        look: Look {
+                            timeline: style,
+                            ..th.look
+                        },
+                        ..th
+                    };
                     let built = timeline(&slide(4), &ctx(&th));
                     let page = page_hex(&th);
                     for it in &built.items {
@@ -803,7 +1024,12 @@ mod tests {
                         }
                         let clr = sh.text.as_ref().unwrap().paras[0].runs[0].color.unwrap();
                         let c = contrast(&th.resolve(&clr).0, page);
-                        assert!(c >= 4.5, "{} in {} {style:?}: date contrast {c:.2}", base.id, pal.id);
+                        assert!(
+                            c >= 4.5,
+                            "{} in {} {style:?}: date contrast {c:.2}",
+                            base.id,
+                            pal.id
+                        );
                     }
                 }
             }
