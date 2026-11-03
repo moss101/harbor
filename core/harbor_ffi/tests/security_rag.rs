@@ -342,3 +342,42 @@ fn earlier_assistant_text_is_context_not_evidence() {
     assert!(last.contains("Answer using ONLY the evidence below."));
     assert!(!last.contains("reveal secrets"));
 }
+
+/// An unscoped question with no retrieved evidence (an empty Library, or
+/// a general question the router kept away from retrieval) is answered as
+/// plain chat: no "ONLY the evidence" instruction that would force the
+/// model to abstain on "what is your name?", and never marked grounded.
+#[test]
+fn open_question_without_evidence_is_plain_chat() {
+    use harbor_ffi::knowledge::{compose_ask_messages, Grounding};
+    let (messages, used) = compose_ask_messages("what is your name?", &[], &[], Grounding::Open);
+    assert!(
+        !used,
+        "no evidence: the answer must not be labelled grounded"
+    );
+    let (role, last) = messages.last().unwrap();
+    assert_eq!(role, "user");
+    assert_eq!(last, "what is your name?");
+    for (_, text) in &messages {
+        assert!(!text.contains("INSUFFICIENT_EVIDENCE"), "{text}");
+        assert!(!text.contains("ONLY the evidence"), "{text}");
+    }
+    assert!(messages[0].1.contains("never claim a source"));
+}
+
+/// Scoped questions keep abstention: with nothing retrieved from the
+/// chosen collection or file, the grounded composition (and its escape
+/// hatch) is used unchanged. Retrieved evidence always wins over Open.
+#[test]
+fn required_grounding_and_evidence_keep_the_grounded_prompt() {
+    use harbor_ffi::knowledge::{compose_ask_messages, compose_rag_messages, Grounding};
+    let (scoped, used) = compose_ask_messages("q", &[], &[], Grounding::Required);
+    assert!(!used);
+    assert_eq!(scoped, compose_rag_messages("q", &[], &[]).0);
+    assert!(scoped.last().unwrap().1.contains("INSUFFICIENT_EVIDENCE"));
+
+    let citations = vec![serde_json::json!({"title": "t", "_text": "Value is 5000 USD."})];
+    let (open, used) = compose_ask_messages("q", &citations, &[], Grounding::Open);
+    assert!(used);
+    assert_eq!(open, compose_rag_messages("q", &citations, &[]).0);
+}

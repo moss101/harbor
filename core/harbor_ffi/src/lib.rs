@@ -4849,6 +4849,7 @@ fn dispatch(
                         question,
                         citations.as_array().cloned().unwrap_or_default(),
                         &history,
+                        crate::knowledge::Grounding::Open,
                         max_tokens,
                         &never,
                         None,
@@ -5109,6 +5110,13 @@ fn dispatch(
                 // set): retrieve ONLY from that collection's sources. An
                 // unknown collection grounds on nothing (abstention).
                 let collection = optional_collection(args)?;
+                // Optional `general: true` (the router named the request
+                // general chat): an unscoped question skips Library
+                // retrieval, so unrelated passages cannot force an
+                // abstention. Ignored with a file or collection scope.
+                let general = args.get("general").and_then(|v| v.as_bool()) == Some(true)
+                    && document.is_none()
+                    && collection.is_none();
                 refuse_embedder_as_chat(&ws.data_root, &chat_package)?;
                 let thread_id = args
                     .get("thread_id")
@@ -5156,6 +5164,7 @@ fn dispatch(
                     //    rank when an index model is open, else lexical).
                     let mut scope = None;
                     let citations = match &document {
+                        None if general => serde_json::json!([]),
                         None => {
                             let found = knowledge
                                 .as_ref()
@@ -5231,11 +5240,19 @@ fn dispatch(
                     }
                     // 3. Generate on-device (cooperatively cancellable).
                     let never = AtomicBool::new(false);
+                    // Only an unscoped question may answer without evidence;
+                    // a file or collection scope abstains instead.
+                    let grounding = if document.is_none() && collection.is_none() {
+                        crate::knowledge::Grounding::Open
+                    } else {
+                        crate::knowledge::Grounding::Required
+                    };
                     let result = chat.generate_rag_with_history(
                         &chat_package,
                         &question,
                         citations.as_array().cloned().unwrap_or_default(),
                         &history,
+                        grounding,
                         max_tokens,
                         &never,
                         Some(&progress),

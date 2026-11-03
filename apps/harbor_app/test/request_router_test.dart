@@ -35,7 +35,22 @@ void main() {
     final r = await RequestRouter(s).route('revenue last quarter');
     expect(r, isA<RouteAsk>());
     expect((r as RouteAsk).fromCore, isTrue);
+    expect(r.general, isFalse);
     expect(s.calls, ['openKnowledge', 'suggestIntent']);
+  });
+
+  test('general chat is an Ask that skips Library retrieval', () async {
+    final s = FakeHarborService(skillList: [
+      tidySkill
+    ], intent: {
+      'abstained': false,
+      'ranked': [
+        {'id': 'general_chat', 'score': 0.9}
+      ]
+    });
+    final r = await RequestRouter(s).route('what is your name');
+    expect(r, isA<RouteAsk>());
+    expect((r as RouteAsk).general, isTrue);
   });
 
   test('run_skill goes to the skill router even when phrased as a question',

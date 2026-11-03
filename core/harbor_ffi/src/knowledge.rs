@@ -1329,6 +1329,7 @@ impl ChatHandle {
             question,
             citations,
             &[],
+            Grounding::Required,
             max_tokens,
             cancel,
             progress,
@@ -1348,6 +1349,7 @@ impl ChatHandle {
         question: &str,
         citations: Vec<serde_json::Value>,
         history: &[HistoryTurn],
+        grounding: Grounding,
         max_tokens: u32,
         cancel: &AtomicBool,
         progress: Option<&harbor_modelhub::progress::AcquireProgress>,
@@ -1356,7 +1358,7 @@ impl ChatHandle {
         loop {
             let window = &history[history.len() - keep..];
             match self.generate_rag_once(
-                package_id, question, &citations, window, max_tokens, cancel, progress,
+                package_id, question, &citations, window, grounding, max_tokens, cancel, progress,
             ) {
                 Err(e) if keep > 0 && e.contains("exceeds the model context") => {
                     keep -= 1;
@@ -1373,6 +1375,7 @@ impl ChatHandle {
         question: &str,
         citations: &[serde_json::Value],
         history: &[HistoryTurn],
+        grounding: Grounding,
         max_tokens: u32,
         cancel: &AtomicBool,
         progress: Option<&harbor_modelhub::progress::AcquireProgress>,
@@ -1399,7 +1402,7 @@ impl ChatHandle {
         // composition lives in [`compose_rag_context`] so the untrusted
         // tagging SEC-006 requires is executable and testable, not a
         // comment.
-        let (messages, used) = compose_rag_messages(question, citations, history);
+        let (messages, used) = compose_ask_messages(question, citations, history, grounding);
         if let Some(p) = progress {
             p.set_phase("generating");
             p.set_detail(question);
@@ -1511,6 +1514,51 @@ pub fn compose_rag_messages(
     }
     messages.push(("user".to_string(), context));
     (messages, used)
+}
+
+/// Whether an answer must come from evidence. A scoped question (one
+/// file, one collection) is `Required`: with nothing to quote it abstains
+/// with `INSUFFICIENT_EVIDENCE`. An unscoped question is `Open`: when no
+/// evidence was retrieved (an empty Library, or a general question the
+/// caller chose not to search for) the model answers as a plain
+/// assistant, and `used_citations` stays false so the UI labels the
+/// answer not grounded.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Grounding {
+    Required,
+    Open,
+}
+
+/// The chat messages for one turn under `grounding`: the grounded
+/// composition whenever evidence was retrieved (or is required), else a
+/// plain conversational turn that claims no sources.
+pub fn compose_ask_messages(
+    question: &str,
+    citations: &[serde_json::Value],
+    history: &[HistoryTurn],
+    grounding: Grounding,
+) -> (Vec<(String, String)>, bool) {
+    let has_evidence = citations
+        .iter()
+        .any(|c| c.get("_text").and_then(|v| v.as_str()).is_some());
+    if has_evidence || grounding == Grounding::Required {
+        return compose_rag_messages(question, citations, history);
+    }
+    let mut messages = Vec::with_capacity(history.len() * 2 + 2);
+    messages.push((
+        "system".to_string(),
+        "You are Harbor LM, an assistant that runs entirely on this device. \
+         Answer helpfully and concisely. No documents were consulted for \
+         this question: answer from general knowledge and never claim a \
+         source or citation."
+            .to_string(),
+    ));
+    for t in bound_history(history) {
+        messages.push(("user".to_string(), t.question));
+        messages.push(("assistant".to_string(), t.answer));
+    }
+    messages.push(("user".to_string(), question.to_string()));
+    (messages, false)
 }
 
 /// `knowledge.search` as the tool layer sees it: the same citation shape

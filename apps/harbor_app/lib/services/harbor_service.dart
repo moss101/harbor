@@ -710,7 +710,8 @@ class HarborService extends ChangeNotifier implements DeckDesignerApi {
       int maxTokens = 256,
       String? runId,
       String? collection,
-      String? threadId}) async {
+      String? threadId,
+      bool general = false}) async {
     final answer = await _runOp('op.start_generate', {
       'question': question,
       'chat_package': chatPackage,
@@ -718,6 +719,7 @@ class HarborService extends ChangeNotifier implements DeckDesignerApi {
       if (runId != null) 'run_id': runId,
       if (collection != null) 'collection': collection,
       if (threadId != null) 'thread_id': threadId,
+      if (general) 'general': true,
     });
     if (runId != null) await refresh();
     return answer;

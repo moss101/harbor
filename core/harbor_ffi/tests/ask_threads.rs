@@ -241,6 +241,7 @@ fn multi_turn_ask_remembers_persists_and_reflects_removed_sources() {
                 "What is the contract value?",
                 vec![serde_json::json!({"title": "t", "_text": "The contract value is 5000 USD."})],
                 &history,
+                harbor_ffi::knowledge::Grounding::Required,
                 16,
                 &std::sync::atomic::AtomicBool::new(false),
                 None,

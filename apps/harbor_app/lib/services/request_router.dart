@@ -21,11 +21,16 @@ sealed class RouteDecision {
 
 /// A question about content: answer it, grounded and cited.
 final class RouteAsk extends RouteDecision {
-  const RouteAsk({required this.fromCore});
+  const RouteAsk({required this.fromCore, this.general = false});
 
   /// True when the core's decision layer chose it; false for the local
   /// fallback heuristic or a mode the person picked.
   final bool fromCore;
+
+  /// The core named it `general_chat`: a question that needs no files, so
+  /// an unscoped answer skips Library retrieval (unrelated passages would
+  /// otherwise make the model abstain).
+  final bool general;
 }
 
 /// A task: open [skill]'s run sheet. [alternatives] are the other skills
@@ -102,7 +107,7 @@ class RequestRouter {
       final intent = await service.suggestIntent(request);
       final kind = _topKind(intent);
       if (kind != null && askKinds.contains(kind)) {
-        return const RouteAsk(fromCore: true);
+        return RouteAsk(fromCore: true, general: kind == 'general_chat');
       }
       if (kind != 'run_skill' && looksLikeQuestion(request)) {
         return const RouteAsk(fromCore: false);

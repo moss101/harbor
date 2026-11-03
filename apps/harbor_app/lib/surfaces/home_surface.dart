@@ -285,8 +285,8 @@ class _HomeSurfaceState extends State<HomeSurface> {
     if (!mounted) return;
     setState(() => entry.routing = false);
     switch (decision) {
-      case RouteAsk():
-        await _ask(service, entry);
+      case RouteAsk(:final general):
+        await _ask(service, entry, general: general);
       case RouteSkill(:final skill):
         setState(() => entry.route = decision);
         await _openSkill(service, entry, skill);
@@ -299,7 +299,8 @@ class _HomeSurfaceState extends State<HomeSurface> {
   /// A grounded answer, inline: from the attached Office file when there is
   /// one, else from the Library. Without a chat model, Library evidence
   /// alone (retrieval-only).
-  Future<void> _ask(HarborService service, _Entry entry) async {
+  Future<void> _ask(HarborService service, _Entry entry,
+      {bool general = false}) async {
     final l10n = AppLocalizations.of(context)!;
     final question = entry.request;
     final office = entry.office;
@@ -343,7 +344,8 @@ class _HomeSurfaceState extends State<HomeSurface> {
             chatPackage: chat,
             runId: runId,
             collection: entry.collection,
-            threadId: threadId);
+            threadId: threadId,
+            general: general);
       }
     } on ffi.HarborCoreException catch (e) {
       turn.cancelled = e.message.toLowerCase().contains('cancel');
