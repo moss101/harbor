@@ -9,6 +9,7 @@ in its upstream source repository and vendored sources.
 
 ## Rust crates (Harbor workspace members)
 
+- **formualizer-eval 0.9.3** — MIT OR Apache-2.0
 - **harbor_agent 0.1.0** — Apache-2.0
 - **harbor_artifacts 0.1.0** — Apache-2.0
 - **harbor_canonical 0.1.0** — Apache-2.0
@@ -18,6 +19,8 @@ in its upstream source repository and vendored sources.
 - **harbor_inference 0.1.0** — Apache-2.0
 - **harbor_integration 0.1.0** — Apache-2.0
 - **harbor_knowledge 0.1.0** — Apache-2.0
+- **harbor_llama 0.8.0** — MIT OR Apache-2.0
+- **harbor_llama_sys 0.8.0** — MIT OR Apache-2.0
 - **harbor_modelhub 0.1.0** — Apache-2.0
 - **harbor_net 0.1.0** — Apache-2.0
 - **harbor_render 0.1.0** — Apache-2.0
@@ -138,8 +141,6 @@ in its upstream source repository and vendored sources.
 - **ed25519-dalek 2.2.0** — BSD-3-Clause — <https://github.com/dalek-cryptography/curve25519-dalek/tree/main/ed25519-dalek>
 - **either 1.18.0** — MIT OR Apache-2.0 — <https://github.com/rayon-rs/either>
 - **encoding_rs 0.8.41** — (Apache-2.0 OR MIT) AND BSD-3-Clause — <https://github.com/hsivonen/encoding_rs>
-- **enumflags2 0.7.12** — MIT OR Apache-2.0 — <https://github.com/meithecatte/enumflags2>
-- **enumflags2_derive 0.7.12** — MIT OR Apache-2.0 — <https://github.com/meithecatte/enumflags2>
 - **equivalent 1.0.2** — Apache-2.0 OR MIT — <https://github.com/indexmap-rs/equivalent>
 - **errno 0.3.14** — MIT OR Apache-2.0 — <https://github.com/lambda-fairy/rust-errno>
 - **euclid 0.20.14** — MIT / Apache-2.0 — <https://github.com/servo/euclid>
@@ -151,7 +152,6 @@ in its upstream source repository and vendored sources.
 - **fastrand 2.5.0** — Apache-2.0 OR MIT — <https://github.com/smol-rs/fastrand>
 - **fiat-crypto 0.2.9** — MIT OR Apache-2.0 OR BSD-1-Clause — <https://github.com/mit-plv/fiat-crypto>
 - **find-msvc-tools 0.1.12** — MIT OR Apache-2.0 — <https://github.com/rust-lang/cc-rs>
-- **find_cuda_helper 0.2.0** — MIT OR Apache-2.0 — <https://github.com/Rust-GPU/Rust-CUDA>
 - **flatbuffers 25.12.19** — Apache-2.0 — <https://github.com/google/flatbuffers>
 - **flate2 1.1.10** — MIT OR Apache-2.0 — <https://github.com/rust-lang/flate2-rs>
 - **fnv 1.0.7** — Apache-2.0 / MIT — <https://github.com/servo/rust-fnv>
@@ -159,7 +159,6 @@ in its upstream source repository and vendored sources.
 - **form_urlencoded 1.2.2** — MIT OR Apache-2.0 — <https://github.com/servo/rust-url>
 - **formualizer 0.9.3** — MIT OR Apache-2.0 — <https://github.com/psu3d0/formualizer>
 - **formualizer-common 3.1.2** — MIT OR Apache-2.0 — <https://github.com/psu3d0/formualizer>
-- **formualizer-eval 0.9.3** — MIT OR Apache-2.0 — <https://github.com/psu3d0/formualizer>
 - **formualizer-macros 0.9.3** — MIT OR Apache-2.0 — <https://github.com/psu3d0/formualizer>
 - **formualizer-parse 3.1.2** — MIT OR Apache-2.0 — <https://github.com/psu3d0/formualizer>
 - **formualizer-sheetport 0.9.3** — MIT OR Apache-2.0 — <https://github.com/psu3d0/formualizer>
@@ -221,8 +220,6 @@ in its upstream source repository and vendored sources.
 - **libsqlite3-sys 0.35.0** — MIT — <https://github.com/rusqlite/rusqlite>
 - **linux-raw-sys 0.12.1** — Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT — <https://github.com/sunfishcode/linux-raw-sys>
 - **litemap 0.8.3** — Unicode-3.0 — <https://github.com/unicode-org/icu4x>
-- **llama-cpp-2 0.1.156** — MIT OR Apache-2.0 — <https://github.com/utilityai/llama-cpp-rs>
-- **llama-cpp-sys-2 0.1.156** — MIT OR Apache-2.0 — <https://github.com/utilityai/llama-cpp-rs>
 - **lock_api 0.4.14** — MIT OR Apache-2.0 — <https://github.com/Amanieu/parking_lot>
 - **log 0.4.34** — MIT OR Apache-2.0 — <https://github.com/rust-lang/log>
 - **lopdf 0.42.0** — MIT — <https://github.com/J-F-Liu/lopdf.git>
@@ -296,12 +293,11 @@ in its upstream source repository and vendored sources.
 - **rustc-hash 2.1.3** — Apache-2.0 OR MIT — <https://github.com/rust-lang/rustc-hash>
 - **rustc_version 0.4.1** — MIT OR Apache-2.0 — <https://github.com/djc/rustc-version-rs>
 - **rustix 1.1.4** — Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT — <https://github.com/bytecodealliance/rustix>
-- **rustls 0.23.45** — Apache-2.0 OR ISC OR MIT — <https://github.com/rustls/rustls>
+- **rustls 0.23.46** — Apache-2.0 OR ISC OR MIT — <https://github.com/rustls/rustls>
 - **rustls-pki-types 1.15.1** — MIT OR Apache-2.0 — <https://github.com/rustls/pki-types>
 - **rustls-webpki 0.103.15** — ISC — <https://github.com/rustls/webpki>
 - **rustversion 1.0.23** — MIT OR Apache-2.0 — <https://github.com/dtolnay/rustversion>
 - **ryu 1.0.23** — Apache-2.0 OR BSL-1.0 — <https://github.com/dtolnay/ryu>
-- **same-file 1.0.6** — Unlicense/MIT — <https://github.com/BurntSushi/same-file>
 - **schemars 1.2.2** — MIT — <https://github.com/GREsau/schemars>
 - **schemars_derive 1.2.2** — MIT — <https://github.com/GREsau/schemars>
 - **scopeguard 1.2.0** — MIT OR Apache-2.0 — <https://github.com/bluss/scopeguard>
@@ -367,10 +363,8 @@ in its upstream source repository and vendored sources.
 - **utf8_iter 1.0.4** — Apache-2.0 OR MIT — <https://github.com/hsivonen/utf8_iter>
 - **utf8parse 0.2.2** — Apache-2.0 OR MIT — <https://github.com/alacritty/vte>
 - **uuid 1.26.1** — Apache-2.0 OR MIT — <https://github.com/uuid-rs/uuid>
-- **valuable 0.1.1** — MIT — <https://github.com/tokio-rs/valuable>
 - **vcpkg 0.2.15** — MIT/Apache-2.0 — <https://github.com/mcgoo/vcpkg-rs>
 - **version_check 0.9.5** — MIT/Apache-2.0 — <https://github.com/SergioBenitez/version_check>
-- **walkdir 2.5.0** — Unlicense/MIT — <https://github.com/BurntSushi/walkdir>
 - **wasi 0.11.1+wasi-snapshot-preview1** — Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT — <https://github.com/bytecodealliance/wasi>
 - **wasip2 1.0.4+wasi-0.2.12** — Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT — <https://github.com/bytecodealliance/wasi-rs>
 - **wasm-bindgen 0.2.128** — MIT OR Apache-2.0 — <https://github.com/wasm-bindgen/wasm-bindgen>
@@ -381,7 +375,6 @@ in its upstream source repository and vendored sources.
 - **webpki-roots 0.26.11** — CDLA-Permissive-2.0 — <https://github.com/rustls/webpki-roots>
 - **webpki-roots 1.0.9** — CDLA-Permissive-2.0 — <https://github.com/rustls/webpki-roots>
 - **weezl 0.1.12** — MIT OR Apache-2.0 — <https://github.com/image-rs/weezl>
-- **winapi-util 0.1.11** — Unlicense OR MIT — <https://github.com/BurntSushi/winapi-util>
 - **windows-core 0.62.2** — MIT OR Apache-2.0 — <https://github.com/microsoft/windows-rs>
 - **windows-implement 0.60.2** — MIT OR Apache-2.0 — <https://github.com/microsoft/windows-rs>
 - **windows-interface 0.59.3** — MIT OR Apache-2.0 — <https://github.com/microsoft/windows-rs>
@@ -422,8 +415,15 @@ in its upstream source repository and vendored sources.
 
 ## Vendored native components
 
-- llama.cpp (vendored snapshot via llama-cpp-2 0.1.156) — MIT — https://github.com/ggerganov/llama.cpp. Used for on-device GGUF inference.
-- ggml (vendored within llama.cpp) — MIT — https://github.com/ggerganov/ggml.
+- llama.cpp v0.8.0 (commit 8642541b255bfb5dc39cd351a178be09013a55d6, unmodified, vendored in third_party/llama.cpp and pinned by HARBOR_PIN.json; bound by core/harbor_llama_sys + core/harbor_llama) — MIT — © 2023-2026 The ggml authors — https://github.com/ggml-org/llama.cpp. Used for on-device GGUF inference and the mtmd image/audio projectors.
+- ggml (vendored within llama.cpp) — MIT — https://github.com/ggml-org/ggml.
+- xxHash 0.8.3 (vendored within llama.cpp, vendor/hash; media hashing in mtmd) — BSD-2-Clause — © 2012-2021 Yann Collet — https://github.com/Cyan4973/xxHash.
+- SHA-1 in C by Steve Reid and Crypto/Sha256.c by Igor Pavlov (vendored within llama.cpp, vendor/hash) — public domain.
+- rotate-bits (vendored within llama.cpp, vendor/hash) — MIT — © 2021 William Casarin.
+- nlohmann/json 3.12.0 (vendored within llama.cpp; JSON Schema parsing for structured output) — MIT — © 2013-2025 Niels Lohmann — https://github.com/nlohmann/json.
+- stb_image 2.30 (vendored within llama.cpp; image decoding in mtmd) — public domain or MIT — Sean Barrett — https://github.com/nothings/stb.
+- miniaudio 0.11.25 (vendored within llama.cpp; audio decoding in mtmd) — public domain or MIT-0 — David Reid — https://github.com/mackron/miniaudio.
+- harbor_llama / harbor_llama_sys (core/) are derived from llama-cpp-2 / llama-cpp-sys-2 0.1.156 — MIT OR Apache-2.0 — © Dial AI and the utilityai/llama-cpp-rs contributors — https://github.com/utilityai/llama-cpp-rs.
 
 ## Flutter / Dart components
 

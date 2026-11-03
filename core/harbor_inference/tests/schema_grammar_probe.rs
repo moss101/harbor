@@ -1,9 +1,21 @@
 //! Contract of the pinned llama.cpp JSON-Schema → grammar converter that
 //! `harbor_core::graph` enforces at validation time so structured nodes
-//! never fail at run time: patterns must be fully anchored and may not be
-//! combined with length keywords.
+//! never fail (or silently lose a constraint) at run time: patterns must be
+//! fully anchored and may not be combined with length keywords.
 fn ok(schema: &str) -> bool {
     llama_cpp_2::json_schema_to_grammar(schema).is_ok()
+}
+
+/// The pattern constraint on property `a` did NOT make it into the grammar:
+/// either the converter refused the schema (the llama.cpp snapshot in
+/// llama-cpp-sys-2 0.1.156) or it degraded `a` to an unconstrained string
+/// with a stderr warning (llama.cpp v0.8.0). Either way the constraint is
+/// not enforced at decode time, which is why the graph validator rejects it.
+fn pattern_not_enforced(schema: &str) -> bool {
+    match llama_cpp_2::json_schema_to_grammar(schema) {
+        Err(_) => true,
+        Ok(gbnf) => gbnf.lines().any(|l| l.trim() == "a ::= string"),
+    }
 }
 
 #[test]
@@ -25,14 +37,23 @@ fn converter_accepts_the_constructs_graphs_rely_on() {
 }
 
 #[test]
-fn converter_rejects_unanchored_patterns_and_pattern_with_length() {
+fn converter_does_not_enforce_unanchored_patterns_or_pattern_with_length() {
     for schema in [
         r#"{"type":"object","properties":{"a":{"type":"string","pattern":"^=.+"}},"required":["a"]}"#,
         r#"{"type":"object","properties":{"a":{"type":"string","pattern":"^x","maxLength":300}},"required":["a"]}"#,
         r#"{"type":"object","properties":{"a":{"type":"string","pattern":"^=[ -~]+"}},"required":["a"]}"#,
     ] {
-        assert!(!ok(schema), "converter unexpectedly accepted {schema}");
+        assert!(
+            pattern_not_enforced(schema),
+            "converter unexpectedly enforced {schema}; harbor_core::graph's anchoring rule may be relaxable"
+        );
     }
+    // Control: an anchored pattern IS compiled into its own rule.
+    let anchored = r#"{"type":"object","properties":{"a":{"type":"string","pattern":"^[a-f0-9]{64}$"}},"required":["a"]}"#;
+    assert!(
+        !pattern_not_enforced(anchored),
+        "anchored pattern was dropped"
+    );
 }
 
 #[test]

@@ -15,8 +15,7 @@ import 'work_focus.dart';
 /// inline motion preview; without one they fall back to the slide titles and
 /// bullets as text.
 class DeckView extends StatefulWidget {
-  const DeckView(
-      {super.key, required this.preview, this.focus, this.designer});
+  const DeckView({super.key, required this.preview, this.focus, this.designer});
   final Map preview;
 
   /// A cited slide to select.

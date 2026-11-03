@@ -75,7 +75,10 @@ fn legacy_deck_resolves_size_geometry_styles_and_notes() {
     assert_eq!(first_run(t).sz, 36.0);
     assert_eq!(first_run(t).c, "#07111D");
     assert_eq!(first_run(t).font, "Calibri");
-    let body = st.iter().find(|s| first_run(s).t == "EMEA led growth").unwrap();
+    let body = st
+        .iter()
+        .find(|s| first_run(s).t == "EMEA led growth")
+        .unwrap();
     let p = &body.text.as_ref().unwrap().paras[0];
     assert_eq!(first_run(body).sz, 24.0);
     assert_eq!(p.bullet.as_ref().unwrap().ch, "\u{2022}");
@@ -113,27 +116,71 @@ fn handmade(slide_body: &str, layout_extra: &str, slide_extra: &str) -> Vec<u8> 
         zip.write_all(body.as_bytes()).unwrap();
     };
     let rels = |items: &[(&str, &str, &str)]| {
-        let mut s = String::from(r#"<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">"#);
+        let mut s = String::from(
+            r#"<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">"#,
+        );
         for (id, ty, target) in items {
             s.push_str(&format!(r#"<Relationship Id="{id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/{ty}" Target="{target}"/>"#));
         }
         s.push_str("</Relationships>");
         s
     };
-    put("[Content_Types].xml", r#"<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>"#);
-    put("ppt/presentation.xml", r#"<?xml version="1.0"?><p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst><p:sldIdLst><p:sldId id="256" r:id="rId2"/></p:sldIdLst><p:sldSz cx="9144000" cy="5143500"/></p:presentation>"#);
-    put("ppt/_rels/presentation.xml.rels", &rels(&[("rId1", "slideMaster", "slideMasters/slideMaster1.xml"), ("rId2", "slide", "slides/slide1.xml")]));
-    put("ppt/slides/_rels/slide1.xml.rels", &rels(&[("rId1", "slideLayout", "../slideLayouts/slideLayout1.xml")]));
-    put("ppt/slideLayouts/_rels/slideLayout1.xml.rels", &rels(&[("rId1", "slideMaster", "../slideMasters/slideMaster1.xml")]));
-    put("ppt/slideMasters/_rels/slideMaster1.xml.rels", &rels(&[("rId1", "slideLayout", "../slideLayouts/slideLayout1.xml"), ("rId2", "theme", "../theme/theme1.xml")]));
-    put("ppt/theme/theme1.xml", r#"<?xml version="1.0"?><a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:themeElements><a:clrScheme name="t"><a:dk1><a:srgbClr val="101820"/></a:dk1><a:lt1><a:srgbClr val="FAFAFA"/></a:lt1><a:dk2><a:srgbClr val="223344"/></a:dk2><a:lt2><a:srgbClr val="EEEEEE"/></a:lt2><a:accent1><a:srgbClr val="0066CC"/></a:accent1><a:accent2><a:srgbClr val="CC6600"/></a:accent2></a:clrScheme><a:fontScheme name="f"><a:majorFont><a:latin typeface="Georgia"/></a:majorFont><a:minorFont><a:latin typeface="Arial"/></a:minorFont></a:fontScheme><a:fmtScheme name="s"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst><a:lnStyleLst><a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst></a:fmtScheme></a:themeElements></a:theme>"#);
-    put("ppt/slideMasters/slideMaster1.xml", r#"<?xml version="1.0"?><p:sldMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:bg><p:bgRef idx="1001"><a:schemeClr val="bg1"/></p:bgRef></p:bg><p:spTree/></p:cSld><p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent1" accent4="accent1" accent5="accent1" accent6="accent1" hlink="accent1" folHlink="accent1"/><p:txStyles><p:titleStyle/><p:bodyStyle/><p:otherStyle/></p:txStyles></p:sldMaster>"#);
-    put("ppt/slideLayouts/slideLayout1.xml", &format!(r#"<?xml version="1.0"?><p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree>{layout_extra}</p:spTree></p:cSld>{}</p:sldLayout>"#, ""));
-    put("ppt/slides/slide1.xml", &format!(r#"<?xml version="1.0"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>{slide_body}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>{slide_extra}</p:sld>"#));
+    put(
+        "[Content_Types].xml",
+        r#"<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>"#,
+    );
+    put(
+        "ppt/presentation.xml",
+        r#"<?xml version="1.0"?><p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst><p:sldIdLst><p:sldId id="256" r:id="rId2"/></p:sldIdLst><p:sldSz cx="9144000" cy="5143500"/></p:presentation>"#,
+    );
+    put(
+        "ppt/_rels/presentation.xml.rels",
+        &rels(&[
+            ("rId1", "slideMaster", "slideMasters/slideMaster1.xml"),
+            ("rId2", "slide", "slides/slide1.xml"),
+        ]),
+    );
+    put(
+        "ppt/slides/_rels/slide1.xml.rels",
+        &rels(&[("rId1", "slideLayout", "../slideLayouts/slideLayout1.xml")]),
+    );
+    put(
+        "ppt/slideLayouts/_rels/slideLayout1.xml.rels",
+        &rels(&[("rId1", "slideMaster", "../slideMasters/slideMaster1.xml")]),
+    );
+    put(
+        "ppt/slideMasters/_rels/slideMaster1.xml.rels",
+        &rels(&[
+            ("rId1", "slideLayout", "../slideLayouts/slideLayout1.xml"),
+            ("rId2", "theme", "../theme/theme1.xml"),
+        ]),
+    );
+    put(
+        "ppt/theme/theme1.xml",
+        r#"<?xml version="1.0"?><a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:themeElements><a:clrScheme name="t"><a:dk1><a:srgbClr val="101820"/></a:dk1><a:lt1><a:srgbClr val="FAFAFA"/></a:lt1><a:dk2><a:srgbClr val="223344"/></a:dk2><a:lt2><a:srgbClr val="EEEEEE"/></a:lt2><a:accent1><a:srgbClr val="0066CC"/></a:accent1><a:accent2><a:srgbClr val="CC6600"/></a:accent2></a:clrScheme><a:fontScheme name="f"><a:majorFont><a:latin typeface="Georgia"/></a:majorFont><a:minorFont><a:latin typeface="Arial"/></a:minorFont></a:fontScheme><a:fmtScheme name="s"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst><a:lnStyleLst><a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst></a:fmtScheme></a:themeElements></a:theme>"#,
+    );
+    put(
+        "ppt/slideMasters/slideMaster1.xml",
+        r#"<?xml version="1.0"?><p:sldMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:bg><p:bgRef idx="1001"><a:schemeClr val="bg1"/></p:bgRef></p:bg><p:spTree/></p:cSld><p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent1" accent4="accent1" accent5="accent1" accent6="accent1" hlink="accent1" folHlink="accent1"/><p:txStyles><p:titleStyle/><p:bodyStyle/><p:otherStyle/></p:txStyles></p:sldMaster>"#,
+    );
+    put(
+        "ppt/slideLayouts/slideLayout1.xml",
+        &format!(
+            r#"<?xml version="1.0"?><p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree>{layout_extra}</p:spTree></p:cSld>{}</p:sldLayout>"#,
+            ""
+        ),
+    );
+    put(
+        "ppt/slides/slide1.xml",
+        &format!(
+            r#"<?xml version="1.0"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>{slide_body}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>{slide_extra}</p:sld>"#
+        ),
+    );
     zip.finish().unwrap().into_inner()
 }
 
-const XFRM: &str = r#"<a:xfrm><a:off x="1000000" y="500000"/><a:ext cx="2000000" cy="1000000"/></a:xfrm>"#;
+const XFRM: &str =
+    r#"<a:xfrm><a:off x="1000000" y="500000"/><a:ext cx="2000000" cy="1000000"/></a:xfrm>"#;
 
 #[test]
 fn gradients_rotation_flips_shadows_and_style_refs() {
@@ -167,7 +214,13 @@ fn gradients_rotation_flips_shadows_and_style_refs() {
     }
     let line = card.line.as_ref().unwrap();
     assert_eq!((line.w, line.dash.as_str()), (19050.0, "dash"));
-    assert_eq!(line.paint, Paint::Solid { c: "#FAFAFA".into(), a: 1.0 });
+    assert_eq!(
+        line.paint,
+        Paint::Solid {
+            c: "#FAFAFA".into(),
+            a: 1.0
+        }
+    );
     let sh = card.shadow.as_ref().unwrap();
     assert_eq!(sh.blur, 76200.0);
     assert!((sh.dy - 25400.0).abs() < 1e-6 && sh.dx.abs() < 1e-6);
@@ -175,8 +228,20 @@ fn gradients_rotation_flips_shadows_and_style_refs() {
     // Style refs: fill from fillRef idx 1 with phClr = accent1; line from
     // lnRef with accent2; text colour from fontRef (lt1).
     let styled = shapes(s)[1];
-    assert_eq!(styled.fill, Paint::Solid { c: "#0066CC".into(), a: 1.0 });
-    assert_eq!(styled.line.as_ref().unwrap().paint, Paint::Solid { c: "#CC6600".into(), a: 1.0 });
+    assert_eq!(
+        styled.fill,
+        Paint::Solid {
+            c: "#0066CC".into(),
+            a: 1.0
+        }
+    );
+    assert_eq!(
+        styled.line.as_ref().unwrap().paint,
+        Paint::Solid {
+            c: "#CC6600".into(),
+            a: 1.0
+        }
+    );
     assert_eq!(first_run(styled).c, "#FAFAFA");
     assert_eq!(first_run(styled).font, "Arial", "minor font from the theme");
     assert_eq!(styled.text.as_ref().unwrap().anchor, "ctr");
@@ -189,7 +254,10 @@ fn groups_scale_and_rotate_children_and_nest() {
     let scene = deck_scene(&handmade(body, "", "")).unwrap();
     let r = shapes(&scene.slides[0])[0];
     // 2× scale and a (1000000,1000000) offset.
-    assert_eq!((r.frame.x, r.frame.y, r.frame.w, r.frame.h), (1200000.0, 1200000.0, 400000.0, 200000.0));
+    assert_eq!(
+        (r.frame.x, r.frame.y, r.frame.w, r.frame.h),
+        (1200000.0, 1200000.0, 400000.0, 200000.0)
+    );
 
     let rotated = r#"<p:grpSp><p:nvGrpSpPr><p:cNvPr id="2" name="G"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm rot="5400000"><a:off x="0" y="0"/><a:ext cx="1000000" cy="1000000"/><a:chOff x="0" y="0"/><a:chExt cx="1000000" cy="1000000"/></a:xfrm></p:grpSpPr>
         <p:sp><p:nvSpPr><p:cNvPr id="3" name="in"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="200000" cy="200000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill></p:spPr></p:sp></p:grpSp>"#;
@@ -198,7 +266,11 @@ fn groups_scale_and_rotate_children_and_nest() {
     // A 90° turn about the group centre moves the top-left square to the
     // top-right, and the child inherits the rotation.
     assert_eq!(r.frame.rot, 90.0);
-    assert!((r.frame.x - 800000.0).abs() < 1.0 && r.frame.y.abs() < 1.0, "{:?}", r.frame);
+    assert!(
+        (r.frame.x - 800000.0).abs() < 1.0 && r.frame.y.abs() < 1.0,
+        "{:?}",
+        r.frame
+    );
 }
 
 #[test]
@@ -226,17 +298,39 @@ fn dark_layout_override_flips_text_and_background_colours() {
             );
             data = s.into_bytes();
         }
-        zout.start_file(name, zip::write::SimpleFileOptions::default()).unwrap();
+        zout.start_file(name, zip::write::SimpleFileOptions::default())
+            .unwrap();
         zout.write_all(&data).unwrap();
     }
     let dark = zout.finish().unwrap().into_inner();
     let scene = deck_scene(&dark).unwrap();
     let s = &scene.slides[0];
-    assert_eq!(s.background, Paint::Solid { c: "#101820".into(), a: 1.0 }, "bg1 → dk1");
+    assert_eq!(
+        s.background,
+        Paint::Solid {
+            c: "#101820".into(),
+            a: 1.0
+        },
+        "bg1 → dk1"
+    );
     let band = shapes(s)[0];
-    assert_eq!(band.frame.id, 0, "layout shapes are not addressable by animations");
-    assert_eq!(band.fill, Paint::Solid { c: "#FAFAFA".into(), a: 1.0 }, "tx1 → lt1");
-    assert_eq!(first_run(shapes(s)[1]).c, "#FAFAFA", "slide text follows the layout's map");
+    assert_eq!(
+        band.frame.id, 0,
+        "layout shapes are not addressable by animations"
+    );
+    assert_eq!(
+        band.fill,
+        Paint::Solid {
+            c: "#FAFAFA".into(),
+            a: 1.0
+        },
+        "tx1 → lt1"
+    );
+    assert_eq!(
+        first_run(shapes(s)[1]).c,
+        "#FAFAFA",
+        "slide text follows the layout's map"
+    );
 }
 
 #[test]
@@ -260,8 +354,17 @@ fn custom_geometry_connectors_tables_and_unsupported_objects() {
         other => panic!("{other:?}"),
     }
     let line = shapes(s)[1];
-    assert_eq!(line.geom, Geom::Preset { name: "line".into(), adj: vec![] });
-    assert_eq!(line.line.as_ref().unwrap().tail.as_deref(), Some("triangle"));
+    assert_eq!(
+        line.geom,
+        Geom::Preset {
+            name: "line".into(),
+            adj: vec![]
+        }
+    );
+    assert_eq!(
+        line.line.as_ref().unwrap().tail.as_deref(),
+        Some("triangle")
+    );
     let table = s
         .items
         .iter()
@@ -274,12 +377,24 @@ fn custom_geometry_connectors_tables_and_unsupported_objects() {
     assert_eq!(table.rows.len(), 2);
     // Header cell: accent fill (default style), white bold text.
     let head = &table.rows[0].cells[0];
-    assert_eq!(head.fill, Paint::Solid { c: "#0066CC".into(), a: 1.0 });
+    assert_eq!(
+        head.fill,
+        Paint::Solid {
+            c: "#0066CC".into(),
+            a: 1.0
+        }
+    );
     let run = &head.text.paras[0].runs[0];
     assert!(run.b);
     assert_eq!(run.c, "#FFFFFF");
     // Explicit cell fill wins.
-    assert_eq!(table.rows[1].cells[0].fill, Paint::Solid { c: "#DDEEFF".into(), a: 1.0 });
+    assert_eq!(
+        table.rows[1].cells[0].fill,
+        Paint::Solid {
+            c: "#DDEEFF".into(),
+            a: 1.0
+        }
+    );
     assert!(
         s.unsupported.iter().any(|u| u.contains("diagram")),
         "SmartArt is named, not dropped: {:?}",
@@ -306,14 +421,17 @@ fn hostile_packages_are_refused_not_panicked_on() {
     // A package whose slide is malformed degrades to a noted slide.
     let bytes = handmade("<p:sp>", "", "");
     let scene = deck_scene(&bytes);
-    match scene {
-        Ok(s) => assert!(!s.slides[0].unsupported.is_empty()),
-        Err(_) => {}
+    if let Ok(s) = scene {
+        assert!(!s.slides[0].unsupported.is_empty());
     }
     // A slide list with no slides.
     use std::io::Write;
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
-    zip.start_file("ppt/presentation.xml", zip::write::SimpleFileOptions::default()).unwrap();
+    zip.start_file(
+        "ppt/presentation.xml",
+        zip::write::SimpleFileOptions::default(),
+    )
+    .unwrap();
     zip.write_all(b"<p:presentation xmlns:p=\"p\"/>").unwrap();
     let empty = zip.finish().unwrap().into_inner();
     assert!(deck_scene(&empty).is_err());
@@ -357,16 +475,11 @@ fn chart_slides_resolve_to_chart_items() {
 
 #[test]
 fn absurdly_nested_xml_is_refused_not_a_stack_overflow() {
-    let deep = format!(
-        "{}{}",
-        "<a:x>".repeat(5000),
-        "</a:x>".repeat(5000)
-    );
+    let deep = format!("{}{}", "<a:x>".repeat(5000), "</a:x>".repeat(5000));
     let body = format!("<p:sp>{deep}</p:sp>");
     // The slide part exceeds the depth budget: the deck is refused or the
     // slide is noted; either way the process lives.
-    match deck_scene(&handmade(&body, "", "")) {
-        Ok(s) => assert!(!s.slides[0].unsupported.is_empty()),
-        Err(_) => {}
+    if let Ok(s) = deck_scene(&handmade(&body, "", "")) {
+        assert!(!s.slides[0].unsupported.is_empty());
     }
 }

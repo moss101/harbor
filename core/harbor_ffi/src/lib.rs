@@ -583,6 +583,16 @@ fn str_from_ptr<'a>(p: *const c_char) -> Result<&'a str, HarborError> {
 /// 32-byte device root key generated and sealed by the embedding layer's
 /// OS keystore; when null the platform adapter is used (Keychain on
 /// Apple platforms, DPAPI on Windows).
+/// Entry point of the inference worker process (decision 0022 phase 3).
+/// The `harbor_worker` launcher loads this library and calls it; the
+/// process then serves model requests over stdin/stdout until stdin closes.
+/// Never called inside the app's own process.
+#[cfg(feature = "gguf")]
+#[no_mangle]
+pub extern "C" fn harbor_worker_main() -> i32 {
+    harbor_inference::worker::server::worker_main()
+}
+
 #[no_mangle]
 pub extern "C" fn harbor_core_open_ex(
     data_root: *const c_char,
@@ -2816,7 +2826,10 @@ fn dispatch(
         }
         "deck.sample" => {
             use harbor_artifacts::deck::{starter::sample_deck, theme_by_id};
-            let theme = args.get("theme").and_then(|v| v.as_str()).unwrap_or("harbor");
+            let theme = args
+                .get("theme")
+                .and_then(|v| v.as_str())
+                .unwrap_or("harbor");
             if theme_by_id(theme).is_none() {
                 return Err(HarborError::Other(format!("unknown theme {theme}")));
             }
@@ -2827,7 +2840,11 @@ fn dispatch(
                 .unwrap_or(harbor_artifacts::MotionPreset::Subtle);
             let rtl = args.get("rtl").and_then(|v| v.as_bool()).unwrap_or(false);
             let mut sample = sample_deck(theme, motion, rtl);
-            if let Some(p) = args.get("palette").and_then(|v| v.as_str()).filter(|p| !p.is_empty()) {
+            if let Some(p) = args
+                .get("palette")
+                .and_then(|v| v.as_str())
+                .filter(|p| !p.is_empty())
+            {
                 if harbor_artifacts::deck::palette::palette(p).is_none() {
                     return Err(HarborError::Other(format!("unknown palette {p}")));
                 }
@@ -2836,19 +2853,30 @@ fn dispatch(
             let bytes = sample
                 .to_pptx_bytes()
                 .map_err(|e| HarborError::Other(e.to_string()))?;
-            let scene = harbor_render::deck_scene(&bytes).map_err(|e| HarborError::Other(e.to_string()))?;
+            let scene =
+                harbor_render::deck_scene(&bytes).map_err(|e| HarborError::Other(e.to_string()))?;
             Ok(serde_json::json!({ "scene": scene }))
         }
         "deck.starter" => {
             use harbor_artifacts::deck::starter::starter_deck;
-            let purpose = args.get("purpose").and_then(|v| v.as_str()).unwrap_or("general");
-            let theme = args.get("theme").and_then(|v| v.as_str()).filter(|t| !t.is_empty());
+            let purpose = args
+                .get("purpose")
+                .and_then(|v| v.as_str())
+                .unwrap_or("general");
+            let theme = args
+                .get("theme")
+                .and_then(|v| v.as_str())
+                .filter(|t| !t.is_empty());
             if let Some(t) = theme {
                 if harbor_artifacts::deck::theme_by_id(t).is_none() {
                     return Err(HarborError::Other(format!("unknown theme {t}")));
                 }
             }
-            let motion = match args.get("motion").and_then(|v| v.as_str()).filter(|m| !m.is_empty()) {
+            let motion = match args
+                .get("motion")
+                .and_then(|v| v.as_str())
+                .filter(|m| !m.is_empty())
+            {
                 Some(m) => Some(
                     harbor_artifacts::MotionPreset::parse(m)
                         .ok_or_else(|| HarborError::Other(format!("unknown motion {m}")))?,
@@ -2863,19 +2891,32 @@ fn dispatch(
                 .filter(|t| !t.is_empty() && t.chars().count() <= 120);
             let mut deck = starter_deck(purpose, theme, motion, rtl, title)
                 .ok_or_else(|| HarborError::Other(format!("unknown deck purpose {purpose}")))?;
-            if let Some(p) = args.get("palette").and_then(|v| v.as_str()).filter(|p| !p.is_empty()) {
+            if let Some(p) = args
+                .get("palette")
+                .and_then(|v| v.as_str())
+                .filter(|p| !p.is_empty())
+            {
                 if harbor_artifacts::deck::palette::palette(p).is_none() {
                     return Err(HarborError::Other(format!("unknown palette {p}")));
                 }
                 deck.design.palette = Some(p.to_string());
             }
-            let bytes = deck.to_pptx_bytes().map_err(|e| HarborError::Other(e.to_string()))?;
-            let scene = harbor_render::deck_scene(&bytes).map_err(|e| HarborError::Other(e.to_string()))?;
+            let bytes = deck
+                .to_pptx_bytes()
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let scene =
+                harbor_render::deck_scene(&bytes).map_err(|e| HarborError::Other(e.to_string()))?;
             use base64::Engine as _;
             let stem: String = deck
                 .title
                 .chars()
-                .map(|c| if c.is_alphanumeric() || c == ' ' || c == '-' || c == '_' { c } else { ' ' })
+                .map(|c| {
+                    if c.is_alphanumeric() || c == ' ' || c == '-' || c == '_' {
+                        c
+                    } else {
+                        ' '
+                    }
+                })
                 .collect::<String>()
                 .split_whitespace()
                 .collect::<Vec<_>>()
@@ -2899,8 +2940,15 @@ fn dispatch(
             let bytes = base64::engine::general_purpose::STANDARD
                 .decode(data_b64)
                 .map_err(|e| HarborError::Other(format!("b64: {e}")))?;
-            let theme = args.get("theme").and_then(|v| v.as_str()).filter(|t| !t.is_empty());
-            let motion = match args.get("motion").and_then(|v| v.as_str()).filter(|m| !m.is_empty()) {
+            let theme = args
+                .get("theme")
+                .and_then(|v| v.as_str())
+                .filter(|t| !t.is_empty());
+            let motion = match args
+                .get("motion")
+                .and_then(|v| v.as_str())
+                .filter(|m| !m.is_empty())
+            {
                 Some(m) => Some(
                     harbor_artifacts::MotionPreset::parse(m)
                         .ok_or_else(|| HarborError::Other(format!("unknown motion {m}")))?,
@@ -2912,7 +2960,8 @@ fn dispatch(
             let palette = args.get("palette").and_then(|v| v.as_str());
             let out = harbor_artifacts::deck::source::restyle(&bytes, theme, palette, motion, rtl)
                 .map_err(HarborError::Other)?;
-            let scene = harbor_render::deck_scene(&out).map_err(|e| HarborError::Other(e.to_string()))?;
+            let scene =
+                harbor_render::deck_scene(&out).map_err(|e| HarborError::Other(e.to_string()))?;
             Ok(serde_json::json!({
                 "data_b64": base64::engine::general_purpose::STANDARD.encode(&out),
                 "scene": scene,
@@ -3141,23 +3190,17 @@ fn dispatch(
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| HarborError::Other("package_id is required".into()))?
                     .to_string();
-                let provider =
-                    harbor_inference::GgufLlamaCppProvider::new(ws.data_root.join("models"))
+                // In the inference worker where the platform allows one
+                // (decision 0022): a vision tower that crashes takes the
+                // worker down, not the app.
+                let runtime =
+                    harbor_inference::worker::GgufRuntime::open(ws.data_root.join("models"))
                         .map_err(|e| HarborError::Other(e.to_string()))?;
-                let model = harbor_inference::provider::ModelRef::InstalledPackage {
-                    package_id: package.clone(),
-                };
-                use harbor_inference::ModelProvider as _;
-                provider
-                    .load(&model)
+                let (engine, backend) = runtime
+                    .open_vision_ocr(&package)
                     .map_err(|e| HarborError::Other(e.to_string()))?;
-                let (engine, backend) = harbor_inference::vision_ocr::VisionOcr::open_verified(
-                    &provider, &model, &package,
-                )
-                .map_err(|e| HarborError::Other(e.to_string()))?;
-                use harbor_inference::ocr::OcrEngine as _;
                 let name = engine.name();
-                harbor_inference::ocr::register_ocr_engine(Arc::new(engine));
+                harbor_inference::ocr::register_ocr_engine(engine);
                 Ok(serde_json::json!({ "engine": name, "backend": backend }))
             }
         }
@@ -3172,6 +3215,62 @@ fn dispatch(
         "ocr.release" => {
             let fallback = harbor_inference::ocr::release_ocr_engine();
             Ok(serde_json::json!({ "released": true, "platform_engine_available": fallback }))
+        }
+        // The GPU qualification store (decision 0022): which device +
+        // model + runtime combinations run on the GPU, which are pinned to
+        // the CPU after a crash or a failed numerics canary, and why.
+        "runtime.qualification" => {
+            let state = harbor_inference::resilience::RuntimeState::open(
+                harbor_inference::resilience::runtime_dir_for(&ws.data_root.join("models")),
+            );
+            let recovered: Vec<String> = state.recovered().iter().map(|r| r.key.id()).collect();
+            let records: Vec<serde_json::Value> = state
+                .records()
+                .into_iter()
+                .map(|r| {
+                    serde_json::json!({
+                        "id": r.key.id(),
+                        "backend": r.key.backend,
+                        "device": r.key.device,
+                        "platform": r.key.platform,
+                        "model_sha256": r.key.model_sha256,
+                        "runtime": r.key.runtime,
+                        "state": r.state.as_str(),
+                        "pins_cpu": r.state.pins_cpu(),
+                        "note": r.note,
+                        "updated": r.updated,
+                        "recovered_this_launch": recovered.contains(&r.key.id()),
+                    })
+                })
+                .collect();
+            #[cfg(feature = "gguf")]
+            let gpu = harbor_inference::gguf::gpu_backend_present();
+            #[cfg(not(feature = "gguf"))]
+            let gpu = false;
+            // Where models run (decision 0022 phase 3): "worker" or
+            // "in_process", and the launcher or the reason for falling back.
+            #[cfg(feature = "gguf")]
+            let (mode, why) = harbor_inference::worker::last_runtime_choice()
+                .map(|(m, w)| (Some(m), Some(w)))
+                .unwrap_or((None, None));
+            #[cfg(not(feature = "gguf"))]
+            let (mode, why): (Option<&str>, Option<String>) = (None, None);
+            Ok(serde_json::json!({
+                "runtime": harbor_inference::runtime_identity(),
+                "gpu_backend": gpu,
+                "inference_mode": mode,
+                "inference_mode_detail": why,
+                "records": records,
+            }))
+        }
+        // Forget one key (`id`) or every key: the next load re-tests the GPU.
+        // Already-loaded models keep their placement until reloaded.
+        "runtime.qualification_reset" => {
+            let state = harbor_inference::resilience::RuntimeState::open(
+                harbor_inference::resilience::runtime_dir_for(&ws.data_root.join("models")),
+            );
+            let removed = state.reset(args.get("id").and_then(|v| v.as_str()));
+            Ok(serde_json::json!({ "removed": removed }))
         }
         "speech.status" => Ok(match harbor_inference::asr::asr_engine() {
             Ok(e) => serde_json::json!({ "available": true, "engine": e.name(),
@@ -5060,9 +5159,7 @@ fn dispatch(
                         None => {
                             let found = knowledge
                                 .as_ref()
-                                .and_then(|ks| {
-                                    ks.search_in(&query, 3, collection.as_deref()).ok()
-                                })
+                                .and_then(|ks| ks.search_in(&query, 3, collection.as_deref()).ok())
                                 .and_then(|v| v.get("citations").cloned())
                                 .unwrap_or_else(|| serde_json::json!([]));
                             if let Some(name) = &collection {

@@ -14,6 +14,8 @@ serde_json = "1"
 harbor_core = { path = "../harbor_core" }
 harbor_ffi = { path = "../harbor_ffi" }
 harbor_canonical = { path = "../harbor_canonical" }
+# No llama.cpp needed: gguf_check is pure Rust.
+harbor_inference = { path = "../harbor_inference", default-features = false }
 tempfile = "3"
 
 # The attack surface is the JSON that crosses the boundary (03 §3, SEC-005):
@@ -48,12 +50,18 @@ test = false
 doc = false
 bench = false
 
+# Untrusted model files (decision 0022 phase 2): the GGUF header, metadata
+# and tensor table are validated in Rust before llama.cpp loads them.
+[[bin]]
+name = "gguf_header"
+path = "fuzz_targets/gguf_header.rs"
+test = false
+doc = false
+bench = false
+
 # HARBOR PATCH: this manifest is its own workspace, so the [patch.crates-io]
 # entries that steer the core workspace (core/Cargo.toml) do NOT apply here.
-# Without them, cargo resolves llama-cpp-2 from crates.io and harbor_inference
-# fails to compile (the embedding-batch/mtmd accessors live only in the
-# vendored tree). Keep the three entries in sync with core/Cargo.toml.
+# Keep them in sync with core/Cargo.toml. (The llama.cpp bindings are path
+# crates, core/harbor_llama{,_sys}, and need no patch entry.)
 [patch.crates-io]
 formualizer-eval = { path = "../../third_party/formualizer-eval" }
-llama-cpp-sys-2 = { path = "../../third_party/llama-cpp-sys-2" }
-llama-cpp-2 = { path = "../../third_party/llama-cpp-2" }

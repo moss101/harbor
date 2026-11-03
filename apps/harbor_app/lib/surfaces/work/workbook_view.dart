@@ -84,8 +84,7 @@ class _WorkbookViewState extends State<WorkbookView> {
       // An edit reloads the preview of the same sheet: stay on the cell the
       // user was editing instead of jumping back to the first formula.
       _index(
-          keepSelection:
-              oldWidget.preview['sheet'] == widget.preview['sheet']);
+          keepSelection: oldWidget.preview['sheet'] == widget.preview['sheet']);
     }
     if (!identical(oldWidget.focus, widget.focus)) {
       oldWidget.focus?.removeListener(_onFocus);
@@ -543,7 +542,8 @@ class _FormulaBarState extends State<_FormulaBar> {
             const SizedBox(width: HarborSpace.s2),
             IconButton(
               tooltip: l10n.workEditCommit,
-              onPressed: widget.selection == null || widget.saving ? null : _commit,
+              onPressed:
+                  widget.selection == null || widget.saving ? null : _commit,
               icon: widget.saving
                   ? const SizedBox(
                       width: 16,

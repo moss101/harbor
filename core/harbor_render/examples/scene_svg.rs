@@ -94,9 +94,20 @@ fn preset_path(name: &str, adj: &[f64], w: f64, h: f64) -> String {
         }
         "triangle" => format!("M{},0 L{w},{h} L0,{h} Z", w / 2.0),
         "rtTriangle" => format!("M0,0 L{w},{h} L0,{h} Z"),
-        "diamond" => format!("M{},0 L{w},{} L{},{h} L0,{} Z", w / 2.0, h / 2.0, w / 2.0, h / 2.0),
+        "diamond" => format!(
+            "M{},0 L{w},{} L{},{h} L0,{} Z",
+            w / 2.0,
+            h / 2.0,
+            w / 2.0,
+            h / 2.0
+        ),
         "line" | "straightConnector1" => format!("M0,0 L{w},{h}"),
-        "homePlate" => format!("M0,0 H{} L{w},{} L{},{h} H0 Z", w - h / 2.0, h / 2.0, w - h / 2.0),
+        "homePlate" => format!(
+            "M0,0 H{} L{w},{} L{},{h} H0 Z",
+            w - h / 2.0,
+            h / 2.0,
+            w - h / 2.0
+        ),
         "chevron" => format!(
             "M0,0 H{} L{w},{} L{},{h} H0 L{},{} Z",
             w - h / 2.0,
@@ -123,7 +134,14 @@ fn geom_path(g: &Geom, w: f64, h: f64) -> String {
                     PathCmd::L { x, y } => {
                         let _ = write!(d, "L{:.2},{:.2} ", x * sx, y * sy);
                     }
-                    PathCmd::C { x1, y1, x2, y2, x, y } => {
+                    PathCmd::C {
+                        x1,
+                        y1,
+                        x2,
+                        y2,
+                        x,
+                        y,
+                    } => {
                         let _ = write!(
                             d,
                             "C{:.2},{:.2} {:.2},{:.2} {:.2},{:.2} ",
@@ -136,7 +154,14 @@ fn geom_path(g: &Geom, w: f64, h: f64) -> String {
                         );
                     }
                     PathCmd::Q { x1, y1, x, y } => {
-                        let _ = write!(d, "Q{:.2},{:.2} {:.2},{:.2} ", x1 * sx, y1 * sy, x * sx, y * sy);
+                        let _ = write!(
+                            d,
+                            "Q{:.2},{:.2} {:.2},{:.2} ",
+                            x1 * sx,
+                            y1 * sy,
+                            x * sx,
+                            y * sy
+                        );
                     }
                     PathCmd::Z => d.push_str("Z "),
                 }
@@ -166,12 +191,7 @@ fn text_svg(t: &TextBody, w: f64, h: f64, out: &mut String) {
         let marl = p.mar_l * PT;
         let first_indent = marl + p.indent * PT;
         let mut cur: Option<Line> = None;
-        let size0 = p
-            .runs
-            .first()
-            .map(|r| r.sz)
-            .unwrap_or(p.end_sz)
-            * scale;
+        let size0 = p.runs.first().map(|r| r.sz).unwrap_or(p.end_sz) * scale;
         let bullet = p.bullet.as_ref().map(|b| {
             if b.kind == "char" {
                 b.ch.clone()
@@ -180,13 +200,17 @@ fn text_svg(t: &TextBody, w: f64, h: f64, out: &mut String) {
             }
         });
         let mut first = true;
-        let mut new_line = |first: &mut bool, lines: &mut Vec<Line>, cur: &mut Option<Line>| {
+        let new_line = |first: &mut bool, lines: &mut Vec<Line>, cur: &mut Option<Line>| {
             if let Some(l) = cur.take() {
                 lines.push(l);
             }
             // A bulleted first line starts its TEXT at the paragraph margin
             // (the hanging indent) and puts the bullet at marL + indent.
-            let ind = if *first && bullet.is_none() { first_indent } else { marl };
+            let ind = if *first && bullet.is_none() {
+                first_indent
+            } else {
+                marl
+            };
             let l = Line {
                 runs: Vec::new(),
                 width: ind.max(0.0),
@@ -242,13 +266,24 @@ fn text_svg(t: &TextBody, w: f64, h: f64, out: &mut String) {
         let base = y - l.size * 0.25;
         let (x, anchor) = match (l.algn.as_str(), l.rtl) {
             ("ctr", _) => (il + avail_w / 2.0, "middle"),
-            ("r", _) => (il + avail_w - if l.rtl { l.indent.max(0.0) } else { 0.0 }, "end"),
+            ("r", _) => (
+                il + avail_w - if l.rtl { l.indent.max(0.0) } else { 0.0 },
+                "end",
+            ),
             (_, true) => (il + avail_w, "end"),
             _ => (il + l.indent.max(0.0), "start"),
         };
         if let Some(b) = &l.bullet {
-            let bx = if l.rtl { il + avail_w } else { il + l.bullet_x.max(0.0) };
-            let colr = l.runs.first().map(|r| r.1.c.clone()).unwrap_or("#000".into());
+            let bx = if l.rtl {
+                il + avail_w
+            } else {
+                il + l.bullet_x.max(0.0)
+            };
+            let colr = l
+                .runs
+                .first()
+                .map(|r| r.1.c.clone())
+                .unwrap_or("#000".into());
             let _ = write!(
                 out,
                 r##"<text x="{bx:.1}" y="{base:.1}" font-size="{:.1}" fill="{colr}" text-anchor="{}">{}</text>"##,
@@ -272,7 +307,7 @@ fn text_svg(t: &TextBody, w: f64, h: f64, out: &mut String) {
                 r.c,
                 r.a,
                 r.spc,
-                esc(if r.caps { s.as_str() } else { s.as_str() })
+                esc(s.as_str())
             );
         }
         out.push_str("</text>");
@@ -281,7 +316,10 @@ fn text_svg(t: &TextBody, w: f64, h: f64, out: &mut String) {
 
 fn slide_svg(deck: &DeckScene, s: &SlideScene) -> String {
     let (w, h) = (deck.width * PT, deck.height * PT);
-    let mut defs = Defs { out: String::new(), n: 0 };
+    let mut defs = Defs {
+        out: String::new(),
+        n: 0,
+    };
     let mut body = String::new();
     let bg = defs.paint(&s.background);
     let _ = write!(body, r#"<rect width="{w}" height="{h}" fill="{bg}"/>"#);
@@ -335,7 +373,11 @@ fn slide_svg(deck: &DeckScene, s: &SlideScene) -> String {
                         );
                     }
                 }
-                let _ = write!(body, r#"<path d="{}" {style}/>"#, geom_path(&sh.geom, fw, fh));
+                let _ = write!(
+                    body,
+                    r#"<path d="{}" {style}/>"#,
+                    geom_path(&sh.geom, fw, fh)
+                );
                 if let Some(t) = &sh.text {
                     // Clip to the frame.
                     let mut inner = String::new();
@@ -350,13 +392,21 @@ fn slide_svg(deck: &DeckScene, s: &SlideScene) -> String {
                     let _ = write!(
                         body,
                         r##"<rect x="{:.1}" y="{:.1}" width="{:.1}" height="{:.1}" fill="#cccccc"/>"##,
-                        f.x * PT, f.y * PT, f.w * PT, f.h * PT
+                        f.x * PT,
+                        f.y * PT,
+                        f.w * PT,
+                        f.h * PT
                     );
                 } else {
                     let _ = write!(
                         body,
                         r#"<image x="{:.1}" y="{:.1}" width="{:.1}" height="{:.1}" preserveAspectRatio="xMidYMid slice" href="data:{};base64,{}"/>"#,
-                        f.x * PT, f.y * PT, f.w * PT, f.h * PT, p.mime, p.data_b64
+                        f.x * PT,
+                        f.y * PT,
+                        f.w * PT,
+                        f.h * PT,
+                        p.mime,
+                        p.data_b64
                     );
                 }
             }
@@ -365,7 +415,13 @@ fn slide_svg(deck: &DeckScene, s: &SlideScene) -> String {
                 let _ = write!(
                     body,
                     r##"<rect x="{:.1}" y="{:.1}" width="{:.1}" height="{:.1}" fill="none" stroke="#888" stroke-dasharray="4 3"/><text x="{:.1}" y="{:.1}" font-size="12" fill="#666">chart: {}</text>"##,
-                    f.x * PT, f.y * PT, f.w * PT, f.h * PT, f.x * PT + 8.0, f.y * PT + 18.0, esc(&c.chart.kind)
+                    f.x * PT,
+                    f.y * PT,
+                    f.w * PT,
+                    f.h * PT,
+                    f.x * PT + 8.0,
+                    f.y * PT + 18.0,
+                    esc(&c.chart.kind)
                 );
             }
             Item::Table(t) => {

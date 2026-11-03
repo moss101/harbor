@@ -506,6 +506,8 @@ class _KnowledgeSurfaceState extends State<KnowledgeSurface> {
                     label: l10n.knowledgeBackendLabel,
                     value: switch (service.knowledgeBackend) {
                       'cpu_fallback' => l10n.knowledgeBackendCpuFallback,
+                      'cpu_pinned' => l10n.knowledgeBackendCpuPinned,
+                      'cpu' => l10n.knowledgeBackendCpu,
                       'cpu_unverified' => l10n.knowledgeBackendCpuUnverified,
                       _ => l10n.knowledgeBackendGpu,
                     }),

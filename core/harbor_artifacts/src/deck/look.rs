@@ -243,7 +243,11 @@ pub fn frame(look: &Look) -> Frame {
         },
         Header::Sidebar { right } => {
             let side = 3_900_000;
-            let (px, cx) = if right { (SLIDE_W - side, 0) } else { (0, side) };
+            let (px, cx) = if right {
+                (SLIDE_W - side, 0)
+            } else {
+                (0, side)
+            };
             let content_x = cx + 700_000;
             let content_w = SLIDE_W - side - 700_000 - MARGIN_X + 200_000;
             Frame {
@@ -339,11 +343,25 @@ mod tests {
     #[test]
     fn every_frame_keeps_its_regions_on_the_page_and_the_body_clear_of_the_title() {
         for h in all_headers() {
-            let look = Look { header: h, ..Look::GLASS };
+            let look = Look {
+                header: h,
+                ..Look::GLASS
+            };
             let f = frame(&look);
-            for (name, r) in [("kicker", f.kicker), ("title", f.title), ("body", f.body), ("ftr", f.ftr), ("num", f.num)] {
+            for (name, r) in [
+                ("kicker", f.kicker),
+                ("title", f.title),
+                ("body", f.body),
+                ("ftr", f.ftr),
+                ("num", f.num),
+            ] {
                 assert!(
-                    r.x >= 0 && r.y >= 0 && r.right() <= SLIDE_W && r.bottom() <= SLIDE_H && r.w > 0 && r.h > 0,
+                    r.x >= 0
+                        && r.y >= 0
+                        && r.right() <= SLIDE_W
+                        && r.bottom() <= SLIDE_H
+                        && r.w > 0
+                        && r.h > 0,
                     "{h:?} {name} {r:?}"
                 );
             }
@@ -351,14 +369,24 @@ mod tests {
             let overlap_x = f.body.x < f.title.right() && f.title.x < f.body.right();
             let overlap_y = f.body.y < f.title.bottom() && f.title.y < f.body.bottom();
             assert!(!(overlap_x && overlap_y), "{h:?}: body overlaps the title");
-            assert!(f.body.w >= 6_000_000 && f.body.h >= 3_400_000, "{h:?}: body too small {:?}", f.body);
+            assert!(
+                f.body.w >= 6_000_000 && f.body.h >= 3_400_000,
+                "{h:?}: body too small {:?}",
+                f.body
+            );
         }
     }
 
     #[test]
     fn a_right_sidebar_mirrors_the_left_one() {
-        let l = frame(&Look { header: Header::Sidebar { right: false }, ..Look::GLASS });
-        let r = frame(&Look { header: Header::Sidebar { right: true }, ..Look::GLASS });
+        let l = frame(&Look {
+            header: Header::Sidebar { right: false },
+            ..Look::GLASS
+        });
+        let r = frame(&Look {
+            header: Header::Sidebar { right: true },
+            ..Look::GLASS
+        });
         assert!(l.body.x > l.title.x && r.body.x < r.title.x);
         assert_eq!(l.side_w, r.side_w);
     }

@@ -149,23 +149,62 @@ pub struct Anim {
 
 /// Total time a plan keeps the slide busy.
 pub fn total_ms(plan: &[Anim]) -> u32 {
-    plan.iter().map(|a| a.delay_ms + a.dur_ms).max().unwrap_or(0)
+    plan.iter()
+        .map(|a| a.delay_ms + a.dur_ms)
+        .max()
+        .unwrap_or(0)
 }
 
 // ---------------------------------------------------------------------------
 // Planning
 
 /// Entrance animations for a slide, by preset. Deterministic.
-pub fn plan(preset: MotionPreset, layout: LayoutKind, targets: &[Target], progressive: bool) -> Vec<Anim> {
+pub fn plan(
+    preset: MotionPreset,
+    layout: LayoutKind,
+    targets: &[Target],
+    progressive: bool,
+) -> Vec<Anim> {
     if preset == MotionPreset::None {
         return Vec::new();
     }
-    let (title_fx, title_ms, item_fx, item_ms, stagger, para_fx, para_ms, para_stagger, chart_ms) = match preset {
-        MotionPreset::None => unreachable!(),
-        MotionPreset::Subtle => (Effect::Fade, 450, Effect::Fade, 450, 140, Effect::Fade, 380, 170, 700),
-        MotionPreset::Dynamic => (Effect::Float, 500, Effect::Float, 460, 130, Effect::Float, 420, 150, 800),
-        MotionPreset::Cinematic => (Effect::Float, 700, Effect::Zoom, 620, 180, Effect::Float, 560, 210, 1000),
-    };
+    let (title_fx, title_ms, item_fx, item_ms, stagger, para_fx, para_ms, para_stagger, chart_ms) =
+        match preset {
+            MotionPreset::None => unreachable!(),
+            MotionPreset::Subtle => (
+                Effect::Fade,
+                450,
+                Effect::Fade,
+                450,
+                140,
+                Effect::Fade,
+                380,
+                170,
+                700,
+            ),
+            MotionPreset::Dynamic => (
+                Effect::Float,
+                500,
+                Effect::Float,
+                460,
+                130,
+                Effect::Float,
+                420,
+                150,
+                800,
+            ),
+            MotionPreset::Cinematic => (
+                Effect::Float,
+                700,
+                Effect::Zoom,
+                620,
+                180,
+                Effect::Float,
+                560,
+                210,
+                1000,
+            ),
+        };
     let mut out: Vec<Anim> = Vec::new();
     let mut first = true;
     let mut push = |out: &mut Vec<Anim>, mut a: Anim| {
@@ -173,18 +212,24 @@ pub fn plan(preset: MotionPreset, layout: LayoutKind, targets: &[Target], progre
         first = false;
         out.push(a);
     };
-    let hero = matches!(layout, LayoutKind::Cover | LayoutKind::Closing | LayoutKind::Section);
+    let hero = matches!(
+        layout,
+        LayoutKind::Cover | LayoutKind::Closing | LayoutKind::Section
+    );
     let by = |role: Role| targets.iter().filter(move |t| t.role == role);
 
     for t in by(Role::Kicker) {
-        push(&mut out, Anim {
-            target: t.id,
-            para: None,
-            effect: Effect::Fade,
-            trigger: Trigger::WithPrev,
-            delay_ms: 0,
-            dur_ms: 400,
-        });
+        push(
+            &mut out,
+            Anim {
+                target: t.id,
+                para: None,
+                effect: Effect::Fade,
+                trigger: Trigger::WithPrev,
+                delay_ms: 0,
+                dur_ms: 400,
+            },
+        );
     }
     for t in by(Role::Title) {
         let effect = if hero && preset == MotionPreset::Cinematic {
@@ -192,37 +237,54 @@ pub fn plan(preset: MotionPreset, layout: LayoutKind, targets: &[Target], progre
         } else {
             title_fx
         };
-        push(&mut out, Anim {
-            target: t.id,
-            para: None,
-            effect,
-            trigger: Trigger::WithPrev,
-            delay_ms: 60,
-            dur_ms: title_ms,
-        });
+        push(
+            &mut out,
+            Anim {
+                target: t.id,
+                para: None,
+                effect,
+                trigger: Trigger::WithPrev,
+                delay_ms: 60,
+                dur_ms: title_ms,
+            },
+        );
     }
     for t in by(Role::Subtitle) {
-        push(&mut out, Anim {
-            target: t.id,
-            para: None,
-            effect: Effect::Fade,
-            trigger: Trigger::WithPrev,
-            delay_ms: title_ms / 2 + 200,
-            dur_ms: 500,
-        });
+        push(
+            &mut out,
+            Anim {
+                target: t.id,
+                para: None,
+                effect: Effect::Fade,
+                trigger: Trigger::WithPrev,
+                delay_ms: title_ms / 2 + 200,
+                dur_ms: 500,
+            },
+        );
     }
     // Body text: paragraph by paragraph.
     for t in by(Role::Body).filter(|t| t.kind == ElKind::Text) {
         let n = t.paras.max(1);
         for p in 0..n.min(10) {
-            push(&mut out, Anim {
-                target: t.id,
-                para: if n > 1 { Some(p) } else { None },
-                effect: para_fx,
-                trigger: if progressive { Trigger::Click } else { Trigger::WithPrev },
-                delay_ms: if progressive { 0 } else { 260 + p * para_stagger },
-                dur_ms: para_ms,
-            });
+            push(
+                &mut out,
+                Anim {
+                    target: t.id,
+                    para: if n > 1 { Some(p) } else { None },
+                    effect: para_fx,
+                    trigger: if progressive {
+                        Trigger::Click
+                    } else {
+                        Trigger::WithPrev
+                    },
+                    delay_ms: if progressive {
+                        0
+                    } else {
+                        260 + p * para_stagger
+                    },
+                    dur_ms: para_ms,
+                },
+            );
         }
     }
     // Cards, stats, milestones: each index reveals its elements together.
@@ -241,36 +303,49 @@ pub fn plan(preset: MotionPreset, layout: LayoutKind, targets: &[Target], progre
                     (ElKind::Picture, _) => Effect::Fade,
                     _ => item_fx,
                 };
-                push(&mut out, Anim {
-                    target: t.id,
-                    para: None,
-                    effect,
-                    trigger: Trigger::WithPrev,
-                    delay_ms: delay,
-                    dur_ms: item_ms,
-                });
+                push(
+                    &mut out,
+                    Anim {
+                        target: t.id,
+                        para: None,
+                        effect,
+                        trigger: Trigger::WithPrev,
+                        delay_ms: delay,
+                        dur_ms: item_ms,
+                    },
+                );
             }
         }
     }
     for t in by(Role::Chart) {
-        push(&mut out, Anim {
-            target: t.id,
-            para: None,
-            effect: Effect::Wipe(Dir::Left),
-            trigger: Trigger::WithPrev,
-            delay_ms: 300,
-            dur_ms: chart_ms,
-        });
+        push(
+            &mut out,
+            Anim {
+                target: t.id,
+                para: None,
+                effect: Effect::Wipe(Dir::Left),
+                trigger: Trigger::WithPrev,
+                delay_ms: 300,
+                dur_ms: chart_ms,
+            },
+        );
     }
     for t in by(Role::Image) {
-        push(&mut out, Anim {
-            target: t.id,
-            para: None,
-            effect: if preset == MotionPreset::Cinematic { Effect::Zoom } else { Effect::Fade },
-            trigger: Trigger::WithPrev,
-            delay_ms: 200,
-            dur_ms: 650,
-        });
+        push(
+            &mut out,
+            Anim {
+                target: t.id,
+                para: None,
+                effect: if preset == MotionPreset::Cinematic {
+                    Effect::Zoom
+                } else {
+                    Effect::Fade
+                },
+                trigger: Trigger::WithPrev,
+                delay_ms: 200,
+                dur_ms: 650,
+            },
+        );
     }
     out
 }
@@ -316,7 +391,11 @@ pub fn transition_xml(preset: MotionPreset, layout: LayoutKind, index: usize, rt
     match preset {
         MotionPreset::None => String::new(),
         MotionPreset::Subtle => plain(
-            if hero || layout == LayoutKind::Section { 900 } else { 600 },
+            if hero || layout == LayoutKind::Section {
+                900
+            } else {
+                600
+            },
             "<p:fade/>",
         ),
         MotionPreset::Dynamic => match layout {
@@ -324,13 +403,21 @@ pub fn transition_xml(preset: MotionPreset, layout: LayoutKind, index: usize, rt
             LayoutKind::Section => plain(750, "<p:zoom dir=\"in\"/>"),
             LayoutKind::Chart => plain(700, "<p:fade/>"),
             // Alternate push and wipe so a long deck does not feel mechanical.
-            _ if index % 2 == 0 => plain(650, &format!("<p:push dir=\"{travel}\"/>")),
-            _ => plain(650, &format!("<p:wipe dir=\"{}\"/>", if rtl { "l" } else { "r" })),
+            _ if index.is_multiple_of(2) => plain(650, &format!("<p:push dir=\"{travel}\"/>")),
+            _ => plain(
+                650,
+                &format!("<p:wipe dir=\"{}\"/>", if rtl { "l" } else { "r" }),
+            ),
         },
         MotionPreset::Cinematic => match layout {
             LayoutKind::Cover => extended("p14", P14, 1400, "<p14:ripple/>"),
             LayoutKind::Closing => extended("p14", P14, 1400, "<p14:reveal/>"),
-            LayoutKind::Section => extended("p14", P14, 1200, &format!("<p14:vortex dir=\"{}\"/>", if rtl { "l" } else { "r" })),
+            LayoutKind::Section => extended(
+                "p14",
+                P14,
+                1200,
+                &format!("<p14:vortex dir=\"{}\"/>", if rtl { "l" } else { "r" }),
+            ),
             LayoutKind::Chart => plain(800, "<p:fade/>"),
             _ => extended("p159", P159, 1000, "<p159:morph option=\"byObject\"/>"),
         },
@@ -469,12 +556,18 @@ pub fn timing_xml(plan: &[Anim], targets: &[Target]) -> String {
         };
         match t.kind {
             ElKind::Text => {
-                let by_para = plan.iter().any(|x| x.target == a.target && x.para.is_some());
+                let by_para = plan
+                    .iter()
+                    .any(|x| x.target == a.target && x.para.is_some());
                 let _ = write!(
                     bld,
                     "<p:bldP spid=\"{}\" grpId=\"0\"{}{}/>",
                     a.target,
-                    if matches!(t.role, Role::Item(_)) { " animBg=\"1\"" } else { "" },
+                    if matches!(t.role, Role::Item(_)) {
+                        " animBg=\"1\""
+                    } else {
+                        ""
+                    },
                     if by_para { " build=\"p\"" } else { "" }
                 );
             }
@@ -486,7 +579,11 @@ pub fn timing_xml(plan: &[Anim], targets: &[Target]) -> String {
                 );
             }
             ElKind::Plain => {
-                let _ = write!(bld, "<p:bldP spid=\"{}\" grpId=\"0\" animBg=\"1\"/>", a.target);
+                let _ = write!(
+                    bld,
+                    "<p:bldP spid=\"{}\" grpId=\"0\" animBg=\"1\"/>",
+                    a.target
+                );
             }
             ElKind::Picture => {}
         }
@@ -507,12 +604,42 @@ mod tests {
 
     fn targets() -> Vec<Target> {
         vec![
-            Target { id: 2, role: Role::Title, kind: ElKind::Text, paras: 1 },
-            Target { id: 3, role: Role::Body, kind: ElKind::Text, paras: 3 },
-            Target { id: 4, role: Role::Item(0), kind: ElKind::Plain, paras: 0 },
-            Target { id: 5, role: Role::Item(0), kind: ElKind::Text, paras: 2 },
-            Target { id: 6, role: Role::Item(1), kind: ElKind::Text, paras: 2 },
-            Target { id: 7, role: Role::Chart, kind: ElKind::Chart, paras: 0 },
+            Target {
+                id: 2,
+                role: Role::Title,
+                kind: ElKind::Text,
+                paras: 1,
+            },
+            Target {
+                id: 3,
+                role: Role::Body,
+                kind: ElKind::Text,
+                paras: 3,
+            },
+            Target {
+                id: 4,
+                role: Role::Item(0),
+                kind: ElKind::Plain,
+                paras: 0,
+            },
+            Target {
+                id: 5,
+                role: Role::Item(0),
+                kind: ElKind::Text,
+                paras: 2,
+            },
+            Target {
+                id: 6,
+                role: Role::Item(1),
+                kind: ElKind::Text,
+                paras: 2,
+            },
+            Target {
+                id: 7,
+                role: Role::Chart,
+                kind: ElKind::Chart,
+                paras: 0,
+            },
         ]
     }
 
@@ -520,10 +647,18 @@ mod tests {
     fn none_means_nothing_and_every_other_preset_starts_by_itself() {
         assert!(plan(MotionPreset::None, LayoutKind::Cards, &targets(), false).is_empty());
         assert_eq!(timing_xml(&[], &targets()), "");
-        for p in [MotionPreset::Subtle, MotionPreset::Dynamic, MotionPreset::Cinematic] {
+        for p in [
+            MotionPreset::Subtle,
+            MotionPreset::Dynamic,
+            MotionPreset::Cinematic,
+        ] {
             let plan = plan(p, LayoutKind::Cards, &targets(), false);
             assert!(!plan.is_empty());
-            assert_eq!(plan[0].trigger, Trigger::AfterPrev, "{p:?}: content shows without a click");
+            assert_eq!(
+                plan[0].trigger,
+                Trigger::AfterPrev,
+                "{p:?}: content shows without a click"
+            );
             assert!(
                 plan.iter().all(|a| a.trigger != Trigger::Click),
                 "{p:?}: nothing waits for a click unless progressive"
@@ -533,16 +668,32 @@ mod tests {
 
     #[test]
     fn motion_is_bounded() {
-        for p in [MotionPreset::Subtle, MotionPreset::Dynamic, MotionPreset::Cinematic] {
+        for p in [
+            MotionPreset::Subtle,
+            MotionPreset::Dynamic,
+            MotionPreset::Cinematic,
+        ] {
             for l in LayoutKind::ALL {
                 let t = plan(p, l, &targets(), false);
                 assert!(total_ms(&t) <= 3200, "{p:?} {l:?}: {} ms", total_ms(&t));
             }
         }
         // And a long bullet list stays inside the budget too (ten paragraphs).
-        let long = vec![Target { id: 3, role: Role::Body, kind: ElKind::Text, paras: 12 }];
-        for p in [MotionPreset::Subtle, MotionPreset::Dynamic, MotionPreset::Cinematic] {
-            assert!(total_ms(&plan(p, LayoutKind::Bullets, &long, false)) <= 3200, "{p:?}");
+        let long = vec![Target {
+            id: 3,
+            role: Role::Body,
+            kind: ElKind::Text,
+            paras: 12,
+        }];
+        for p in [
+            MotionPreset::Subtle,
+            MotionPreset::Dynamic,
+            MotionPreset::Cinematic,
+        ] {
+            assert!(
+                total_ms(&plan(p, LayoutKind::Bullets, &long, false)) <= 3200,
+                "{p:?}"
+            );
         }
     }
 
@@ -560,7 +711,10 @@ mod tests {
         let body: Vec<_> = p.iter().filter(|a| a.target == 3).collect();
         assert_eq!(body.len(), 3);
         assert!(body.iter().all(|a| a.trigger == Trigger::Click));
-        assert_eq!(body.iter().map(|a| a.para).collect::<Vec<_>>(), vec![Some(0), Some(1), Some(2)]);
+        assert_eq!(
+            body.iter().map(|a| a.para).collect::<Vec<_>>(),
+            vec![Some(0), Some(1), Some(2)]
+        );
         let xml = timing_xml(&p, &targets());
         assert_eq!(xml.matches("nodeType=\"clickEffect\"").count(), 3);
         assert!(xml.contains("build=\"p\""));
@@ -568,13 +722,18 @@ mod tests {
 
     #[test]
     fn timing_tree_is_well_formed_with_unique_increasing_ids() {
-        for p in [MotionPreset::Subtle, MotionPreset::Dynamic, MotionPreset::Cinematic] {
+        for p in [
+            MotionPreset::Subtle,
+            MotionPreset::Dynamic,
+            MotionPreset::Cinematic,
+        ] {
             let pl = plan(p, LayoutKind::Cards, &targets(), false);
             let xml = timing_xml(&pl, &targets());
             let doc = format!(
                 "<p:sld xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" xmlns:a=\"a\">{xml}</p:sld>"
             );
-            let parsed = roxmltree::Document::parse(&doc).unwrap_or_else(|e| panic!("{p:?}: {e}\n{xml}"));
+            let parsed =
+                roxmltree::Document::parse(&doc).unwrap_or_else(|e| panic!("{p:?}: {e}\n{xml}"));
             let ids: Vec<u32> = parsed
                 .descendants()
                 .filter(|n| n.has_tag_name("cTn"))
@@ -605,9 +764,13 @@ mod tests {
                     let doc = format!(
                         "<p:sld xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\">{x}</p:sld>"
                     );
-                    roxmltree::Document::parse(&doc).unwrap_or_else(|e| panic!("{preset:?} {layout:?}: {e}\n{x}"));
+                    roxmltree::Document::parse(&doc)
+                        .unwrap_or_else(|e| panic!("{preset:?} {layout:?}: {e}\n{x}"));
                     if x.contains("mc:Choice") {
-                        assert!(x.contains("<mc:Fallback><p:transition spd=\"") && x.contains("<p:fade/>"));
+                        assert!(
+                            x.contains("<mc:Fallback><p:transition spd=\"")
+                                && x.contains("<p:fade/>")
+                        );
                         assert!(x.contains("Requires=\"p14\"") || x.contains("Requires=\"p159\""));
                     }
                 }

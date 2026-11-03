@@ -13,6 +13,10 @@
 //!   initials circle with name, role and bio).
 
 #![allow(unused_imports)]
+use super::kit::*;
+use super::stats::{
+    accent_on, card_surface, chrome_card, field_reads, grid_backing, hex_of, hline, soft_ink, vline,
+};
 use crate::deck::grid::*;
 use crate::deck::look::*;
 use crate::deck::model::{split_stat, Block, DesignedSlide, LayoutKind};
@@ -21,8 +25,6 @@ use crate::deck::parts::LayoutPart;
 use crate::deck::theme::{contrast, ThemeSpec};
 use crate::deck::xml::*;
 use crate::pptx::{ChartSpec, SlideImage};
-use super::kit::*;
-use super::stats::{accent_on, card_surface, chrome_card, field_reads, grid_backing, hex_of, hline, soft_ink, vline};
 
 const PAD: i64 = 280_000;
 const BADGE: i64 = 440_000;
@@ -85,7 +87,12 @@ fn fit_texts(
     loop {
         let hpt = (hmax - step).max(hmin);
         let bpt = (bmax - step * 0.75).max(bmin);
-        let need = blocks.iter().map(|b| card_need(t, b, w, hpt, bpt)).max().unwrap_or(0) + lead;
+        let need = blocks
+            .iter()
+            .map(|b| card_need(t, b, w, hpt, bpt))
+            .max()
+            .unwrap_or(0)
+            + lead;
         if need <= avail || (hpt <= hmin && bpt <= bmin) {
             return (hpt, bpt, need);
         }
@@ -94,33 +101,63 @@ fn fit_texts(
 }
 
 /// The paragraphs of one card: optional lead line, heading, body lines.
-fn card_paras(blk: &Block, hpt: f64, bpt: f64, al: Align, hclr: Clr, bclr: Clr, lead: Option<Para>) -> Vec<Para> {
+fn card_paras(
+    blk: &Block,
+    hpt: f64,
+    bpt: f64,
+    al: Align,
+    hclr: Clr,
+    bclr: Clr,
+    lead: Option<Para>,
+) -> Vec<Para> {
     let mut v: Vec<Para> = Vec::new();
     if let Some(l) = lead {
         v.push(l.align(al));
     }
     if !blk.heading.is_empty() {
         v.push(
-            Para::from_runs(vec![Run::new(blk.heading.clone()).size(hpt).bold().font(FontRef::Major).color(hclr)])
-                .no_bullet()
-                .align(al),
+            Para::from_runs(vec![Run::new(blk.heading.clone())
+                .size(hpt)
+                .bold()
+                .font(FontRef::Major)
+                .color(hclr)])
+            .no_bullet()
+            .align(al),
         );
     }
     for (j, line) in blk.text.iter().enumerate() {
-        let mut p = Para::from_runs(vec![Run::new(line.clone()).size(bpt).color(bclr)]).no_bullet().align(al);
-        p = if j == 0 && !blk.heading.is_empty() { p.before(6.0) } else { p.before(4.0) };
+        let mut p = Para::from_runs(vec![Run::new(line.clone()).size(bpt).color(bclr)])
+            .no_bullet()
+            .align(al);
+        p = if j == 0 && !blk.heading.is_empty() {
+            p.before(6.0)
+        } else {
+            p.before(4.0)
+        };
         v.push(p);
     }
     v
 }
 
 /// A numeral/label run in the lead line of a card.
-fn lead_para(t: &ThemeSpec, text: &str, pt: f64, clr: Clr, after: f64, major: bool, spacing: Option<f64>) -> Para {
+fn lead_para(
+    t: &ThemeSpec,
+    text: &str,
+    pt: f64,
+    clr: Clr,
+    after: f64,
+    major: bool,
+    spacing: Option<f64>,
+) -> Para {
     let mut r = Run::new(text).size(pt).color(clr);
     if major {
         r = r.font(FontRef::Major);
     }
-    r = if t.bold_titles || !major { r.bold() } else { r.regular() };
+    r = if t.bold_titles || !major {
+        r.bold()
+    } else {
+        r.regular()
+    };
     if let Some(s) = spacing {
         r = r.spacing(s);
     }
@@ -145,7 +182,12 @@ fn rotate_about(mut s: Shape, c: (i64, i64), deg: f64, rtl: bool) -> Shape {
         let (dx, dy) = ((sx - c.0) as f64, (sy - c.1) as f64);
         let nx = c.0 as f64 + dx * th.cos() - dy * th.sin();
         let ny = c.1 as f64 + dx * th.sin() + dy * th.cos();
-        s.rect = Some(R::new(nx.round() as i64 - r.w / 2, ny.round() as i64 - r.h / 2, r.w, r.h));
+        s.rect = Some(R::new(
+            nx.round() as i64 - r.w / 2,
+            ny.round() as i64 - r.h / 2,
+            r.w,
+            r.h,
+        ));
         s.rot += if rtl { -deg } else { deg };
     }
     s
@@ -188,7 +230,13 @@ fn plan_grid(t: &ThemeSpec, blocks: &[Block], area: R, slack: i64) -> Plan {
     c
 }
 
-fn plan_grid_at(t: &ThemeSpec, blocks: &[Block], area: R, slack: i64, lo: (f64, f64)) -> (Plan, bool) {
+fn plan_grid_at(
+    t: &ThemeSpec,
+    blocks: &[Block],
+    area: R,
+    slack: i64,
+    lo: (f64, f64),
+) -> (Plan, bool) {
     let n = blocks.len();
     let cands: &[(usize, bool)] = match n {
         1 => &[(1, false)],
@@ -201,11 +249,20 @@ fn plan_grid_at(t: &ThemeSpec, blocks: &[Block], area: R, slack: i64, lo: (f64, 
     for &(per, horiz) in cands {
         let rows = n.div_ceil(per);
         let full_w = (area.w - GUTTER * (per as i64 - 1)) / per as i64;
-        let cell_w = if !horiz && n <= 2 { full_w.min(4_700_000) } else { full_w };
+        let cell_w = if !horiz && n <= 2 {
+            full_w.min(4_700_000)
+        } else {
+            full_w
+        };
         let avail_h = (area.h - 80_000 - GUTTER * (rows as i64 - 1)) / rows as i64;
         let (eff_w, eff_h) = (cell_w - slack, avail_h - slack);
         let (inner_w, inner_h, min_w, content_extra) = if horiz {
-            (eff_w - 2 * PAD - BADGE - 220_000, eff_h - 2 * PAD, 1_900_000, 2 * PAD)
+            (
+                eff_w - 2 * PAD - BADGE - 220_000,
+                eff_h - 2 * PAD,
+                1_900_000,
+                2 * PAD,
+            )
         } else {
             let extra = 280_000 + BADGE + 180_000 + bottom_pad(n);
             (eff_w - 2 * PAD, eff_h - extra, 1_650_000, extra)
@@ -216,8 +273,18 @@ fn plan_grid_at(t: &ThemeSpec, blocks: &[Block], area: R, slack: i64, lo: (f64, 
             fit_texts(t, blocks, inner_w, inner_h, (24.0, lo.0), (18.0, lo.1), 0)
         };
         let min_h = if horiz { 1_000_000 } else { 2_500_000 };
-        let rh = (content_extra + need + slack).max(min_h + slack).min(avail_h);
-        let plan = Plan { per, horiz, cell_w, rh, hpt, bpt, inner_w };
+        let rh = (content_extra + need + slack)
+            .max(min_h + slack)
+            .min(avail_h);
+        let plan = Plan {
+            per,
+            horiz,
+            cell_w,
+            rh,
+            hpt,
+            bpt,
+            inner_w,
+        };
         if inner_w >= min_w && need <= inner_h {
             return (plan, true);
         }
@@ -238,21 +305,47 @@ fn grid(b: &mut B, blocks: &[Block], sticker: bool) {
     let centred = is_centred(b);
     let surf = card_surface(t);
     // Stickers need room for the hard shadow and the tilt.
-    let slack = if !sticker { 0 } else if n >= 5 { 100_000 } else { 150_000 };
+    let slack = if !sticker {
+        0
+    } else if n >= 5 {
+        100_000
+    } else {
+        150_000
+    };
     let plan = plan_grid(t, blocks, area, slack);
     let rows = n.div_ceil(plan.per);
     let block_h = plan.rh * rows as i64 + GUTTER * (rows as i64 - 1);
     let top = vcentre(R::new(area.x, area.y, area.w, area.h - 100_000), block_h);
     let group_w = plan.per as i64 * plan.cell_w + GUTTER * (plan.per as i64 - 1);
-    let x0 = if centred { area.x + (area.w - group_w) / 2 } else { area.x };
+    let x0 = if centred {
+        area.x + (area.w - group_w) / 2
+    } else {
+        area.x
+    };
     let tilt = [-1.5, 1.1, -0.8, 1.4, -1.2, 0.9];
-    let drop: [i64; 6] = if slack >= 150_000 { [0, 90_000, 30_000, 70_000, 0, 60_000] } else { [0, 40_000, 15_000, 30_000, 0, 25_000] };
-    let al = if centred && !plan.horiz { Align::Center } else { Align::Left };
+    let drop: [i64; 6] = if slack >= 150_000 {
+        [0, 90_000, 30_000, 70_000, 0, 60_000]
+    } else {
+        [0, 40_000, 15_000, 30_000, 0, 25_000]
+    };
+    let al = if centred && !plan.horiz {
+        Align::Center
+    } else {
+        Align::Left
+    };
 
     for (i, blk) in blocks.iter().enumerate() {
         let (r, c) = (i / plan.per, i % plan.per);
-        let in_row = if r + 1 == rows { n - r * plan.per } else { plan.per };
-        let shift = if centred { (plan.per - in_row) as i64 * (plan.cell_w + GUTTER) / 2 } else { 0 };
+        let in_row = if r + 1 == rows {
+            n - r * plan.per
+        } else {
+            plan.per
+        };
+        let shift = if centred {
+            (plan.per - in_row) as i64 * (plan.cell_w + GUTTER) / 2
+        } else {
+            0
+        };
         let accent = 1 + (i as u8 % 6);
         let y_off = if sticker { drop[i % 6] } else { 0 };
         let rect = R::new(
@@ -265,27 +358,68 @@ fn grid(b: &mut B, blocks: &[Block], sticker: bool) {
         let (badge_rect, text_rect) = if plan.horiz {
             (
                 R::new(rect.x + PAD, rect.y + (rect.h - BADGE) / 2, BADGE, BADGE),
-                R::new(rect.x + PAD + BADGE + 220_000, rect.y + PAD, plan.inner_w, rect.h - 2 * PAD),
+                R::new(
+                    rect.x + PAD + BADGE + 220_000,
+                    rect.y + PAD,
+                    plan.inner_w,
+                    rect.h - 2 * PAD,
+                ),
             )
         } else {
-            let bx = if centred { rect.x + (rect.w - BADGE) / 2 } else { rect.x + PAD };
+            let bx = if centred {
+                rect.x + (rect.w - BADGE) / 2
+            } else {
+                rect.x + PAD
+            };
             let ty = rect.y + 280_000 + BADGE + 180_000;
             (
                 R::new(bx, rect.y + 280_000, BADGE, BADGE),
-                R::new(rect.x + PAD, ty, plan.inner_w, rect.h - (ty - rect.y) - bottom_pad(n)),
+                R::new(
+                    rect.x + PAD,
+                    ty,
+                    plan.inner_w,
+                    rect.h - (ty - rect.y) - bottom_pad(n),
+                ),
             )
         };
-        let mut bd = badge(t, &format!("Number {}", i + 1), badge_rect, accent, &format!("{}", i + 1), 16.0);
+        let mut bd = badge(
+            t,
+            &format!("Number {}", i + 1),
+            badge_rect,
+            accent,
+            &format!("{}", i + 1),
+            16.0,
+        );
         if sticker {
             bd.line = Some(Line::new(Clr::tx1(), 1.75));
         }
         shapes.push(bd);
-        let paras = card_paras(blk, plan.hpt, plan.bpt, al, Clr::tx1(), soft_ink(t, 78, &surf), None);
-        let anchor = if plan.horiz { Anchor::Middle } else { Anchor::Top };
-        shapes.push(Shape::text_box(format!("Card text {}", i + 1), text_rect, Text::new(paras).anchor(anchor)));
+        let paras = card_paras(
+            blk,
+            plan.hpt,
+            plan.bpt,
+            al,
+            Clr::tx1(),
+            soft_ink(t, 78, &surf),
+            None,
+        );
+        let anchor = if plan.horiz {
+            Anchor::Middle
+        } else {
+            Anchor::Top
+        };
+        shapes.push(Shape::text_box(
+            format!("Card text {}", i + 1),
+            text_rect,
+            Text::new(paras).anchor(anchor),
+        ));
         let centre = (rect.x + rect.w / 2, rect.y + rect.h / 2);
         for sh in shapes {
-            let sh = if sticker { rotate_about(sh, centre, tilt[i % 6], cx.rtl) } else { sh };
+            let sh = if sticker {
+                rotate_about(sh, centre, tilt[i % 6], cx.rtl)
+            } else {
+                sh
+            };
             b.sp(sh, Role::Item(i));
         }
     }
@@ -325,11 +459,29 @@ fn numbered_rows(b: &mut B, blocks: &[Block]) {
         let mut bp = 18.0f64;
         for blk in blocks {
             if !blk.heading.is_empty() {
-                h = h.min(fit_pt(std::slice::from_ref(&blk.heading), hw - 120_000, inner_h, 24.0, 16.0, factor_major(t) * 1.08, 1.0, 0.0));
+                h = h.min(fit_pt(
+                    std::slice::from_ref(&blk.heading),
+                    hw - 120_000,
+                    inner_h,
+                    24.0,
+                    16.0,
+                    factor_major(t) * 1.08,
+                    1.0,
+                    0.0,
+                ));
             }
             if !blk.text.is_empty() {
                 let w = if blk.heading.is_empty() { hw + bw } else { bw };
-                bp = bp.min(fit_pt(&blk.text, w, inner_h, 18.0, 12.0, factor_minor(t), 1.1, 4.0));
+                bp = bp.min(fit_pt(
+                    &blk.text,
+                    w,
+                    inner_h,
+                    18.0,
+                    12.0,
+                    factor_minor(t),
+                    1.1,
+                    4.0,
+                ));
             }
         }
         (h, bp)
@@ -341,7 +493,10 @@ fn numbered_rows(b: &mut B, blocks: &[Block]) {
     for (i, blk) in blocks.iter().enumerate() {
         let y = top + i as i64 * rh;
         if i == 0 {
-            b.sp(hline("Rule top", area.x, y, area.w, Clr::tx1().alpha(70), 1.5), Role::Item(0));
+            b.sp(
+                hline("Rule top", area.x, y, area.w, Clr::tx1().alpha(70), 1.5),
+                Role::Item(0),
+            );
         }
         b.sp(
             Shape::text_box(
@@ -349,7 +504,10 @@ fn numbered_rows(b: &mut B, blocks: &[Block]) {
                 R::new(area.x, y + pad_y, num_w, inner_h),
                 Text::one(
                     Para::from_runs(vec![{
-                        let r = Run::new(format!("{:02}", i + 1)).size(npt).font(FontRef::Major).color(num_clr);
+                        let r = Run::new(format!("{:02}", i + 1))
+                            .size(npt)
+                            .font(FontRef::Major)
+                            .color(num_clr);
                         if t.bold_titles {
                             r.bold()
                         } else {
@@ -369,8 +527,12 @@ fn numbered_rows(b: &mut B, blocks: &[Block]) {
                         format!("Card heading {}", i + 1),
                         R::new(area.x + num_w, y + pad_y, hw - 120_000, inner_h),
                         Text::one(
-                            Para::from_runs(vec![Run::new(blk.heading.clone()).size(hpt).bold().font(FontRef::Major).color(Clr::tx1())])
-                                .no_bullet(),
+                            Para::from_runs(vec![Run::new(blk.heading.clone())
+                                .size(hpt)
+                                .bold()
+                                .font(FontRef::Major)
+                                .color(Clr::tx1())])
+                            .no_bullet(),
                         )
                         .anchor(Anchor::Middle),
                     ),
@@ -378,13 +540,19 @@ fn numbered_rows(b: &mut B, blocks: &[Block]) {
                 );
             }
             if !blk.text.is_empty() {
-                let (bx, w) = if blk.heading.is_empty() { (area.x + num_w, hw + bw) } else { (area.x + num_w + hw + 120_000, bw) };
+                let (bx, w) = if blk.heading.is_empty() {
+                    (area.x + num_w, hw + bw)
+                } else {
+                    (area.x + num_w + hw + 120_000, bw)
+                };
                 let paras: Vec<Para> = blk
                     .text
                     .iter()
                     .enumerate()
                     .map(|(j, l)| {
-                        let p = Para::from_runs(vec![Run::new(l.clone()).size(bpt).color(body_clr)]).no_bullet();
+                        let p =
+                            Para::from_runs(vec![Run::new(l.clone()).size(bpt).color(body_clr)])
+                                .no_bullet();
                         if j == 0 {
                             p
                         } else {
@@ -393,7 +561,11 @@ fn numbered_rows(b: &mut B, blocks: &[Block]) {
                     })
                     .collect();
                 b.sp(
-                    Shape::text_box(format!("Card text {}", i + 1), R::new(bx, y + pad_y, w, inner_h), Text::new(paras).anchor(Anchor::Middle)),
+                    Shape::text_box(
+                        format!("Card text {}", i + 1),
+                        R::new(bx, y + pad_y, w, inner_h),
+                        Text::new(paras).anchor(Anchor::Middle),
+                    ),
                     Role::Item(i),
                 );
             }
@@ -410,7 +582,14 @@ fn numbered_rows(b: &mut B, blocks: &[Block]) {
         }
         let last = i + 1 == n;
         b.sp(
-            hline(&format!("Rule {}", i + 1), area.x, y + rh, area.w, Clr::tx1().alpha(if last { 70 } else { 28 }), if last { 1.5 } else { 0.75 }),
+            hline(
+                &format!("Rule {}", i + 1),
+                area.x,
+                y + rh,
+                area.w,
+                Clr::tx1().alpha(if last { 70 } else { 28 }),
+                if last { 1.5 } else { 0.75 },
+            ),
             Role::Item(i),
         );
     }
@@ -451,7 +630,11 @@ fn open_columns(b: &mut B, blocks: &[Block]) {
         Header::Banner => (Head::Bracket, Some(Some("dash"))),
         Header::Sidebar { .. } => (Head::Numeral(26.0), Some(None)),
     };
-    let (pad_l, pad_r) = if centred { (150_000, 150_000) } else { (260_000, 180_000) };
+    let (pad_l, pad_r) = if centred {
+        (150_000, 150_000)
+    } else {
+        (260_000, 180_000)
+    };
     let mut per = if n <= 4 { n } else { 3 };
     if n > 2 && area.w / per as i64 - pad_l - pad_r < 1_550_000 {
         per = n.div_ceil(2);
@@ -475,27 +658,68 @@ fn open_columns(b: &mut B, blocks: &[Block]) {
         _ => None,
     };
     let inline_h = inline.map_or(0, |(pt, a)| lead_h(pt, a));
-    let (hpt, bpt, need) = fit_texts(t, blocks, min_inner, row_avail - shape_lead, (22.0, 15.0), (16.0, 12.0), inline_h);
+    let (hpt, bpt, need) = fit_texts(
+        t,
+        blocks,
+        min_inner,
+        row_avail - shape_lead,
+        (22.0, 15.0),
+        (16.0, 12.0),
+        inline_h,
+    );
     let rh = (need + shape_lead + 200_000).min(row_avail);
     let block_h = rh * rows as i64 + row_gap * (rows as i64 - 1);
     let top = vcentre(area, block_h);
     let body_clr = soft_ink(t, 78, &page);
-    grid_backing(b, R::new(area.x - 220_000, top - 160_000, area.w + 440_000, block_h + 320_000));
+    grid_backing(
+        b,
+        R::new(
+            area.x - 220_000,
+            top - 160_000,
+            area.w + 440_000,
+            block_h + 320_000,
+        ),
+    );
 
     for (i, blk) in blocks.iter().enumerate() {
         let (r, c) = (i / per, i % per);
         let in_row = if r + 1 == rows { n - r * per } else { per };
-        let shift = if centred { (per - in_row) as i64 * cw / 2 } else { 0 };
+        let shift = if centred {
+            (per - in_row) as i64 * cw / 2
+        } else {
+            0
+        };
         let x = area.x + shift + c as i64 * cw;
         let y = top + r as i64 * (rh + row_gap);
         let accent = 1 + (i as u8 % 4);
         if c > 0 {
             if let Some(dash) = rules {
-                b.sp(vline(&format!("Rule {}", i + 1), x, y, rh, Clr::tx1().alpha(30), 0.75, dash), Role::Item(i));
+                b.sp(
+                    vline(
+                        &format!("Rule {}", i + 1),
+                        x,
+                        y,
+                        rh,
+                        Clr::tx1().alpha(30),
+                        0.75,
+                        dash,
+                    ),
+                    Role::Item(i),
+                );
             }
         }
         if r > 0 && c == 0 && rules.is_some() {
-            b.sp(hline(&format!("Rule row {}", r + 1), area.x, y - row_gap / 2, area.w, Clr::tx1().alpha(22), 0.75), Role::Item(i));
+            b.sp(
+                hline(
+                    &format!("Rule row {}", r + 1),
+                    area.x,
+                    y - row_gap / 2,
+                    area.w,
+                    Clr::tx1().alpha(22),
+                    0.75,
+                ),
+                Role::Item(i),
+            );
         }
         let tx = if c == 0 && !centred { x } else { x + pad_l };
         let tw = cw - pad_r - (tx - x);
@@ -503,13 +727,22 @@ fn open_columns(b: &mut B, blocks: &[Block]) {
         match head {
             Head::Bar => {
                 b.sp(
-                    Shape::deco(format!("Bar {}", i + 1), Geom::Rect, R::new(tx, y + 20_000, 520_000, 56_000), Fill::Solid(Clr::accent(accent))),
+                    Shape::deco(
+                        format!("Bar {}", i + 1),
+                        Geom::Rect,
+                        R::new(tx, y + 20_000, 520_000, 56_000),
+                        Fill::Solid(Clr::accent(accent)),
+                    ),
                     Role::Item(i),
                 );
             }
             Head::Ring => {
                 let rx = if centred { x + (cw - BADGE) / 2 } else { tx };
-                let mut ring = Shape::new(format!("Number {}", i + 1), Geom::Ellipse, R::new(rx, y + 20_000, BADGE, BADGE));
+                let mut ring = Shape::new(
+                    format!("Number {}", i + 1),
+                    Geom::Ellipse,
+                    R::new(rx, y + 20_000, BADGE, BADGE),
+                );
                 ring.decorative = true;
                 ring.line = Some(Line::new(Clr::accent(accent), 1.5));
                 ring.text = Some(
@@ -529,9 +762,33 @@ fn open_columns(b: &mut B, blocks: &[Block]) {
             _ => {}
         }
         let lead = match head {
-            Head::Numeral(pt) => Some(lead_para(t, &num, pt, accent_on(t, 1, 3.0, &page), 4.0, true, None)),
-            Head::Giant(pt) => Some(lead_para(t, &num, pt * 0.9, accent_on(t, 1, 3.0, &page), 2.0, true, None)),
-            Head::Bracket => Some(lead_para(t, &format!("[{num}]"), 12.0, accent_on(t, 1, 4.5, &page), 6.0, false, Some(1.2))),
+            Head::Numeral(pt) => Some(lead_para(
+                t,
+                &num,
+                pt,
+                accent_on(t, 1, 3.0, &page),
+                4.0,
+                true,
+                None,
+            )),
+            Head::Giant(pt) => Some(lead_para(
+                t,
+                &num,
+                pt * 0.9,
+                accent_on(t, 1, 3.0, &page),
+                2.0,
+                true,
+                None,
+            )),
+            Head::Bracket => Some(lead_para(
+                t,
+                &format!("[{num}]"),
+                12.0,
+                accent_on(t, 1, 4.5, &page),
+                6.0,
+                false,
+                Some(1.2),
+            )),
             _ => None,
         };
         let paras = card_paras(blk, hpt, bpt, al, Clr::tx1(), body_clr, lead);
@@ -608,7 +865,14 @@ fn bento_rects(n: usize, area: R, narrow: bool) -> Vec<R> {
 }
 
 /// Heading/body sizes for a bento tile with `lead` EMU of numeral above.
-fn tile_fit(t: &ThemeSpec, blk: &Block, inner: R, hs: (f64, f64), bs: (f64, f64), lead: i64) -> (f64, f64, bool) {
+fn tile_fit(
+    t: &ThemeSpec,
+    blk: &Block,
+    inner: R,
+    hs: (f64, f64),
+    bs: (f64, f64),
+    lead: i64,
+) -> (f64, f64, bool) {
     let (hp, bp, need) = fit_texts(t, std::slice::from_ref(blk), inner.w, inner.h, hs, bs, lead);
     (hp, bp, need <= inner.h)
 }
@@ -619,7 +883,11 @@ fn bento(b: &mut B, blocks: &[Block]) {
     let n = blocks.len();
     let full = cx.frame.body;
     let narrow = full.w < 7_400_000;
-    let h = if narrow { full.h - 100_000 } else { (full.h - 100_000).min(4_300_000) };
+    let h = if narrow {
+        full.h - 100_000
+    } else {
+        (full.h - 100_000).min(4_300_000)
+    };
     let area = R::new(full.x, vcentre(full, h), full.w, h);
     let rects = bento_rects(n, area, narrow);
     let surf = card_surface(t);
@@ -651,7 +919,14 @@ fn bento(b: &mut B, blocks: &[Block]) {
         let inner = inner_of(&rects[i]);
         let mut found = false;
         for npt in [44.0, 36.0, 30.0, 24.0, 18.0] {
-            let (hp, bp, ok) = tile_fit(t, &blocks[i], inner, (30.0, 18.0), (19.0, 13.0), lead_h(npt, 6.0));
+            let (hp, bp, ok) = tile_fit(
+                t,
+                &blocks[i],
+                inner,
+                (30.0, 18.0),
+                (19.0, 13.0),
+                lead_h(npt, 6.0),
+            );
             if ok {
                 big_fit = (big_fit.0.min(hp), big_fit.1.min(bp), big_fit.2.min(npt));
                 found = true;
@@ -671,11 +946,20 @@ fn bento(b: &mut B, blocks: &[Block]) {
         let (hclr, bclr, nclr) = if on_field {
             (on_accent(t, 1), on_accent(t, 1), on_accent(t, 1))
         } else {
-            (Clr::tx1(), soft_ink(t, 78, &surf), accent_on(t, 1 + (i as u8 % 4), 4.5, &surf))
+            (
+                Clr::tx1(),
+                soft_ink(t, 78, &surf),
+                accent_on(t, 1 + (i as u8 % 4), 4.5, &surf),
+            )
         };
         if on_field {
             b.sp(
-                Shape::deco(format!("Card {}", i + 1), Geom::Round(t.radius.max(14)), *r, Fill::Solid(Clr::accent(1))),
+                Shape::deco(
+                    format!("Card {}", i + 1),
+                    Geom::Round(t.radius.max(14)),
+                    *r,
+                    Fill::Solid(Clr::accent(1)),
+                ),
                 Role::Item(i),
             );
         } else {
@@ -684,14 +968,36 @@ fn bento(b: &mut B, blocks: &[Block]) {
         let inner = inner_of(r);
         let (lead, hpt, bpt, anchor) = if big {
             let (hp, bp, npt) = big_fit;
-            let nc = if on_field { nclr } else { accent_on(t, 1, 3.0, &surf) };
-            (lead_para(t, &num, npt, nc, 6.0, true, None), hp, bp, if n == 1 { Anchor::Middle } else { Anchor::Bottom })
+            let nc = if on_field {
+                nclr
+            } else {
+                accent_on(t, 1, 3.0, &surf)
+            };
+            (
+                lead_para(t, &num, npt, nc, 6.0, true, None),
+                hp,
+                bp,
+                if n == 1 {
+                    Anchor::Middle
+                } else {
+                    Anchor::Bottom
+                },
+            )
         } else {
-            (lead_para(t, &num, 12.0, nclr, 4.0, false, Some(1.2)), sh, sb, Anchor::Top)
+            (
+                lead_para(t, &num, 12.0, nclr, 4.0, false, Some(1.2)),
+                sh,
+                sb,
+                Anchor::Top,
+            )
         };
         let paras = card_paras(blk, hpt, bpt, Align::Left, hclr, bclr, Some(lead));
         b.sp(
-            Shape::text_box(format!("Card text {}", i + 1), inner, Text::new(paras).anchor(anchor)),
+            Shape::text_box(
+                format!("Card text {}", i + 1),
+                inner,
+                Text::new(paras).anchor(anchor),
+            ),
             Role::Item(i),
         );
     }
@@ -717,16 +1023,33 @@ fn people(blocks: &[Block]) -> Vec<Person> {
             } else {
                 (
                     blk.text.first().cloned().unwrap_or_default(),
-                    if blk.text.len() > 1 { blk.text[1..].join(" ") } else { String::new() },
+                    if blk.text.len() > 1 {
+                        blk.text[1..].join(" ")
+                    } else {
+                        String::new()
+                    },
                 )
             };
-            Person { initials: initials(&name), name, role, bio }
+            Person {
+                initials: initials(&name),
+                name,
+                role,
+                bio,
+            }
         })
         .collect()
 }
 
 /// An initials avatar: a filled disc, or a ring on outlined themes.
-fn avatar(t: &ThemeSpec, name: &str, rect: R, accent: u8, initials: &str, ring: bool, surface: &str) -> Shape {
+fn avatar(
+    t: &ThemeSpec,
+    name: &str,
+    rect: R,
+    accent: u8,
+    initials: &str,
+    ring: bool,
+    surface: &str,
+) -> Shape {
     let pt = (rect.w as f64 / EMU_PER_PT * 0.34).clamp(14.0, 32.0);
     if !ring {
         let mut s = badge(t, name, rect, accent, initials, pt);
@@ -761,41 +1084,96 @@ struct PersonFit {
     need: i64,
 }
 
-fn fit_people(t: &ThemeSpec, ps: &[Person], w: i64, caps: (f64, f64, f64), bio_h: i64) -> PersonFit {
+fn fit_people(
+    t: &ThemeSpec,
+    ps: &[Person],
+    w: i64,
+    caps: (f64, f64, f64),
+    bio_h: i64,
+) -> PersonFit {
     let (mut npt, mut rpt, mut bpt) = caps;
     for p in ps {
-        npt = npt.min(fit_pt(std::slice::from_ref(&p.name), w, 640_000, caps.0, 13.0, factor_major(t) * 1.08, 1.0, 0.0));
+        npt = npt.min(fit_pt(
+            std::slice::from_ref(&p.name),
+            w,
+            640_000,
+            caps.0,
+            13.0,
+            factor_major(t) * 1.08,
+            1.0,
+            0.0,
+        ));
         if !p.role.is_empty() {
-            rpt = rpt.min(fit_pt(std::slice::from_ref(&p.role), w, 440_000, caps.1, 11.0, factor_minor(t), 1.0, 0.0));
+            rpt = rpt.min(fit_pt(
+                std::slice::from_ref(&p.role),
+                w,
+                440_000,
+                caps.1,
+                11.0,
+                factor_minor(t),
+                1.0,
+                0.0,
+            ));
         }
         if !p.bio.is_empty() {
-            bpt = bpt.min(fit_pt(std::slice::from_ref(&p.bio), w, bio_h, caps.2, 10.0, factor_minor(t), 1.1, 0.0));
+            bpt = bpt.min(fit_pt(
+                std::slice::from_ref(&p.bio),
+                w,
+                bio_h,
+                caps.2,
+                10.0,
+                factor_minor(t),
+                1.1,
+                0.0,
+            ));
         }
     }
     let mut need = 0;
     for p in ps {
-        let mut h = (line_count(&p.name, npt, w, factor_major(t) * 1.08) as f64 * npt * 1.2 * EMU_PER_PT) as i64;
+        let mut h =
+            (line_count(&p.name, npt, w, factor_major(t) * 1.08) as f64 * npt * 1.2 * EMU_PER_PT)
+                as i64;
         if !p.role.is_empty() {
-            h += (line_count(&p.role, rpt, w, factor_minor(t)) as f64 * rpt * 1.2 * EMU_PER_PT) as i64 + (3.0 * EMU_PER_PT) as i64;
+            h += (line_count(&p.role, rpt, w, factor_minor(t)) as f64 * rpt * 1.2 * EMU_PER_PT)
+                as i64
+                + (3.0 * EMU_PER_PT) as i64;
         }
         if !p.bio.is_empty() {
-            h += stack_height(std::slice::from_ref(&p.bio), bpt, w, factor_minor(t), 1.1, 0.0) + (6.0 * EMU_PER_PT) as i64;
+            h += stack_height(
+                std::slice::from_ref(&p.bio),
+                bpt,
+                w,
+                factor_minor(t),
+                1.1,
+                0.0,
+            ) + (6.0 * EMU_PER_PT) as i64;
         }
         need = need.max(h);
     }
-    PersonFit { npt, rpt, bpt, need }
+    PersonFit {
+        npt,
+        rpt,
+        bpt,
+        need,
+    }
 }
 
 fn person_paras(p: &Person, f: &PersonFit, al: Align, role_clr: Clr, bio_clr: Clr) -> Vec<Para> {
-    let mut v = vec![Para::from_runs(vec![Run::new(p.name.clone()).size(f.npt).bold().font(FontRef::Major)])
-        .align(al)
-        .no_bullet()];
+    let mut v = vec![Para::from_runs(vec![Run::new(p.name.clone())
+        .size(f.npt)
+        .bold()
+        .font(FontRef::Major)])
+    .align(al)
+    .no_bullet()];
     if !p.role.is_empty() {
         v.push(
-            Para::from_runs(vec![Run::new(p.role.clone()).size(f.rpt).bold().color(role_clr)])
-                .align(al)
-                .no_bullet()
-                .before(3.0),
+            Para::from_runs(vec![Run::new(p.role.clone())
+                .size(f.rpt)
+                .bold()
+                .color(role_clr)])
+            .align(al)
+            .no_bullet()
+            .before(3.0),
         );
     }
     if !p.bio.is_empty() {
@@ -854,45 +1232,113 @@ fn team_cards(b: &mut B, ps: &[Person]) {
         (n, if n <= 2 { col_w.min(3_900_000) } else { col_w })
     };
     let rows = n.div_ceil(per);
-    let d: i64 = if horiz { 720_000 } else { 860_000.min(cell_w - 400_000) };
-    let inner_w = if horiz { cell_w - 2 * 240_000 - d - 220_000 } else { cell_w - 400_000 };
-    let fit = fit_people(t, ps, inner_w, (20.0, 15.0, 13.0), if horiz { 700_000 } else { 1_250_000 });
+    let d: i64 = if horiz {
+        720_000
+    } else {
+        860_000.min(cell_w - 400_000)
+    };
+    let inner_w = if horiz {
+        cell_w - 2 * 240_000 - d - 220_000
+    } else {
+        cell_w - 400_000
+    };
+    let fit = fit_people(
+        t,
+        ps,
+        inner_w,
+        (20.0, 15.0, 13.0),
+        if horiz { 700_000 } else { 1_250_000 },
+    );
     let avail_h = (area.h - 100_000 - GUTTER * (rows as i64 - 1)) / rows as i64;
     let card_h = if horiz {
         (fit.need.max(d) + 2 * 240_000).max(1_300_000).min(avail_h)
     } else {
-        (300_000 + d + 200_000 + fit.need + 280_000).max(2_600_000).min(avail_h)
+        (300_000 + d + 200_000 + fit.need + 280_000)
+            .max(2_600_000)
+            .min(avail_h)
     };
     let block_h = card_h * rows as i64 + GUTTER * (rows as i64 - 1);
     let top = vcentre(R::new(area.x, area.y, area.w, area.h - 100_000), block_h);
     let group_w = per as i64 * cell_w + GUTTER * (per as i64 - 1);
-    let x0 = if centred { area.x + (area.w - group_w) / 2 } else { area.x };
-    let al = if centred && !horiz { Align::Center } else { Align::Left };
+    let x0 = if centred {
+        area.x + (area.w - group_w) / 2
+    } else {
+        area.x
+    };
+    let al = if centred && !horiz {
+        Align::Center
+    } else {
+        Align::Left
+    };
 
     for (i, p) in ps.iter().enumerate() {
         let (r, c) = (i / per, i % per);
         let in_row = if r + 1 == rows { n - r * per } else { per };
-        let shift = if centred { (per - in_row) as i64 * (cell_w + GUTTER) / 2 } else { 0 };
-        let rect = R::new(x0 + shift + c as i64 * (cell_w + GUTTER), top + r as i64 * (card_h + GUTTER), cell_w, card_h);
+        let shift = if centred {
+            (per - in_row) as i64 * (cell_w + GUTTER) / 2
+        } else {
+            0
+        };
+        let rect = R::new(
+            x0 + shift + c as i64 * (cell_w + GUTTER),
+            top + r as i64 * (card_h + GUTTER),
+            cell_w,
+            card_h,
+        );
         let accent = 1 + (i as u8 % 6);
         chrome_card(b, &format!("Person card {}", i + 1), rect, Role::Item(i));
         let (av, text) = if horiz {
             (
                 R::new(rect.x + 240_000, rect.y + (card_h - d) / 2, d, d),
-                R::new(rect.x + 240_000 + d + 220_000, rect.y + 240_000, inner_w, card_h - 480_000),
+                R::new(
+                    rect.x + 240_000 + d + 220_000,
+                    rect.y + 240_000,
+                    inner_w,
+                    card_h - 480_000,
+                ),
             )
         } else {
-            let ax = if al == Align::Center { rect.x + (rect.w - d) / 2 } else { rect.x + 200_000 };
+            let ax = if al == Align::Center {
+                rect.x + (rect.w - d) / 2
+            } else {
+                rect.x + 200_000
+            };
             (
                 R::new(ax, rect.y + 300_000, d, d),
-                R::new(rect.x + 200_000, rect.y + 300_000 + d + 200_000, inner_w, card_h - d - 580_000),
+                R::new(
+                    rect.x + 200_000,
+                    rect.y + 300_000 + d + 200_000,
+                    inner_w,
+                    card_h - d - 580_000,
+                ),
             )
         };
-        b.sp(avatar(t, &format!("Avatar {}", i + 1), av, accent, &p.initials, ring, &surf), Role::Item(i));
-        let paras = person_paras(p, &fit, al, accent_on(t, accent, 4.5, &surf), soft_ink(t, 74, &surf));
+        b.sp(
+            avatar(
+                t,
+                &format!("Avatar {}", i + 1),
+                av,
+                accent,
+                &p.initials,
+                ring,
+                &surf,
+            ),
+            Role::Item(i),
+        );
+        let paras = person_paras(
+            p,
+            &fit,
+            al,
+            accent_on(t, accent, 4.5, &surf),
+            soft_ink(t, 74, &surf),
+        );
         let anchor = if horiz { Anchor::Middle } else { Anchor::Top };
         b.sp(
-            Shape::text_box(format!("Person {}", i + 1), text, Text::new(paras).anchor(anchor)),
+            Shape::text_box(
+                format!("Person {}", i + 1),
+                text,
+                Text::new(paras).anchor(anchor),
+            ),
             Role::Item(i),
         );
     }
@@ -909,30 +1355,71 @@ fn team_open_columns(b: &mut B, ps: &[Person]) {
     let al = if centred { Align::Center } else { Align::Left };
     let ring = matches!(t.card, CardStyle::Outlined | CardStyle::Rule);
     let cw = area.w / n as i64;
-    let (pad_l, pad_r) = if centred { (160_000, 160_000) } else { (260_000, 160_000) };
+    let (pad_l, pad_r) = if centred {
+        (160_000, 160_000)
+    } else {
+        (260_000, 160_000)
+    };
     let min_inner = cw - pad_l - pad_r;
     let d: i64 = 1_000_000.min(min_inner);
     let fit = fit_people(t, ps, min_inner, (22.0, 15.0, 14.0), 1_300_000);
     let h = d + 220_000 + fit.need + 120_000;
     let h = h.min(area.h - 100_000);
     let top = vcentre(area, h);
-    grid_backing(b, R::new(area.x - 220_000, top - 160_000, area.w + 440_000, h + 320_000));
+    grid_backing(
+        b,
+        R::new(
+            area.x - 220_000,
+            top - 160_000,
+            area.w + 440_000,
+            h + 320_000,
+        ),
+    );
     for (i, p) in ps.iter().enumerate() {
         let x = area.x + i as i64 * cw;
         let accent = 1 + (i as u8 % 6);
         if i > 0 {
-            b.sp(vline(&format!("Rule {}", i + 1), x, top, h, Clr::tx1().alpha(30), 0.75, None), Role::Item(i));
+            b.sp(
+                vline(
+                    &format!("Rule {}", i + 1),
+                    x,
+                    top,
+                    h,
+                    Clr::tx1().alpha(30),
+                    0.75,
+                    None,
+                ),
+                Role::Item(i),
+            );
         }
         let tx = if i == 0 && !centred { x } else { x + pad_l };
         let tw = cw - pad_r - (tx - x);
         let ax = if centred { x + (cw - d) / 2 } else { tx };
         b.sp(
-            avatar(t, &format!("Avatar {}", i + 1), R::new(ax, top, d, d), accent, &p.initials, ring, &page),
+            avatar(
+                t,
+                &format!("Avatar {}", i + 1),
+                R::new(ax, top, d, d),
+                accent,
+                &p.initials,
+                ring,
+                &page,
+            ),
             Role::Item(i),
         );
-        let paras = person_paras(p, &fit, al, accent_on(t, accent, 4.5, &page), soft_ink(t, 74, &page));
+        let paras = person_paras(
+            p,
+            &fit,
+            al,
+            accent_on(t, accent, 4.5, &page),
+            soft_ink(t, 74, &page),
+        );
         b.sp(
-            Shape::text_box(format!("Person {}", i + 1), R::new(tx, top + d + 220_000, tw, h - d - 220_000), Text::new(paras)),
+            Shape::text_box(
+                format!("Person {}", i + 1),
+                R::new(tx, top + d + 220_000, tw, h - d - 220_000),
+                Text::new(paras),
+            ),
             Role::Item(i),
         );
     }
@@ -947,7 +1434,11 @@ fn team_roster(b: &mut B, ps: &[Person], boxed: bool) {
     let area = cx.frame.body;
     let n = ps.len();
     let ring = !boxed && matches!(t.card, CardStyle::Outlined | CardStyle::Rule);
-    let surf = if boxed { card_surface(t) } else { page_hex(t).to_string() };
+    let surf = if boxed {
+        card_surface(t)
+    } else {
+        page_hex(t).to_string()
+    };
     let gap_y: i64 = if boxed { 137_000 } else { 0 };
     let ix: i64 = if boxed { 240_000 } else { 0 };
     let wide = area.w - 2 * ix >= 7_000_000;
@@ -957,39 +1448,84 @@ fn team_roster(b: &mut B, ps: &[Person], boxed: bool) {
     let gap = 280_000;
     let cw = area.w - 2 * ix;
     // Wide: name and role in one column, the bio in another; narrow: all stacked.
-    let name_w = if wide { (cw - d - gap) * 38 / 100 } else { cw - d - gap };
+    let name_w = if wide {
+        (cw - d - gap) * 38 / 100
+    } else {
+        cw - d - gap
+    };
     let bio_x_off = d + gap + name_w + 240_000;
     let bio_w = cw - bio_x_off;
     let (fit, bio_pt) = if wide {
         let heads: Vec<Person> = ps
             .iter()
-            .map(|p| Person { name: p.name.clone(), role: p.role.clone(), bio: String::new(), initials: String::new() })
+            .map(|p| Person {
+                name: p.name.clone(),
+                role: p.role.clone(),
+                bio: String::new(),
+                initials: String::new(),
+            })
             .collect();
         let f = fit_people(t, &heads, name_w, (22.0, 15.0, 14.0), 0);
         let mut bp = 16.0f64;
         for p in ps {
             if !p.bio.is_empty() {
-                bp = bp.min(fit_pt(std::slice::from_ref(&p.bio), bio_w, rh - 160_000, 16.0, 11.0, factor_minor(t), 1.1, 0.0));
+                bp = bp.min(fit_pt(
+                    std::slice::from_ref(&p.bio),
+                    bio_w,
+                    rh - 160_000,
+                    16.0,
+                    11.0,
+                    factor_minor(t),
+                    1.1,
+                    0.0,
+                ));
             }
         }
         (f, bp)
     } else {
-        (fit_people(t, ps, name_w, (20.0, 14.0, 13.0), (rh - 160_000) / 2), 0.0)
+        (
+            fit_people(t, ps, name_w, (20.0, 14.0, 13.0), (rh - 160_000) / 2),
+            0.0,
+        )
     };
 
     if !boxed {
-        grid_backing(b, R::new(area.x - 220_000, top - 160_000, area.w + 440_000, rh * n as i64 + 320_000));
+        grid_backing(
+            b,
+            R::new(
+                area.x - 220_000,
+                top - 160_000,
+                area.w + 440_000,
+                rh * n as i64 + 320_000,
+            ),
+        );
     }
     for (i, p) in ps.iter().enumerate() {
         let y = top + i as i64 * (rh + gap_y);
         let accent = 1 + (i as u8 % 6);
         if boxed {
-            chrome_card(b, &format!("Person card {}", i + 1), R::new(area.x, y, area.w, rh), Role::Item(i));
+            chrome_card(
+                b,
+                &format!("Person card {}", i + 1),
+                R::new(area.x, y, area.w, rh),
+                Role::Item(i),
+            );
         } else if i == 0 {
-            b.sp(hline("Rule top", area.x, y, area.w, Clr::tx1().alpha(70), 1.5), Role::Item(0));
+            b.sp(
+                hline("Rule top", area.x, y, area.w, Clr::tx1().alpha(70), 1.5),
+                Role::Item(0),
+            );
         }
         b.sp(
-            avatar(t, &format!("Avatar {}", i + 1), R::new(area.x + ix, y + (rh - d) / 2, d, d), accent, &p.initials, ring, &surf),
+            avatar(
+                t,
+                &format!("Avatar {}", i + 1),
+                R::new(area.x + ix, y + (rh - d) / 2, d, d),
+                accent,
+                &p.initials,
+                ring,
+                &surf,
+            ),
             Role::Item(i),
         );
         let who = Person {
@@ -998,7 +1534,13 @@ fn team_roster(b: &mut B, ps: &[Person], boxed: bool) {
             bio: if wide { String::new() } else { p.bio.clone() },
             initials: String::new(),
         };
-        let paras = person_paras(&who, &fit, Align::Left, accent_on(t, accent, 4.5, &surf), soft_ink(t, 74, &surf));
+        let paras = person_paras(
+            &who,
+            &fit,
+            Align::Left,
+            accent_on(t, accent, 4.5, &surf),
+            soft_ink(t, 74, &surf),
+        );
         b.sp(
             Shape::text_box(
                 format!("Person {}", i + 1),
@@ -1012,8 +1554,13 @@ fn team_roster(b: &mut B, ps: &[Person], boxed: bool) {
                 Shape::text_box(
                     format!("Person bio {}", i + 1),
                     R::new(area.x + ix + bio_x_off, y + 60_000, bio_w, rh - 120_000),
-                    Text::one(Para::from_runs(vec![Run::new(p.bio.clone()).size(bio_pt).color(soft_ink(t, 76, &surf))]).no_bullet())
-                        .anchor(Anchor::Middle),
+                    Text::one(
+                        Para::from_runs(vec![Run::new(p.bio.clone())
+                            .size(bio_pt)
+                            .color(soft_ink(t, 76, &surf))])
+                        .no_bullet(),
+                    )
+                    .anchor(Anchor::Middle),
                 ),
                 Role::Item(i),
             );
@@ -1021,7 +1568,14 @@ fn team_roster(b: &mut B, ps: &[Person], boxed: bool) {
         if !boxed {
             let last = i + 1 == n;
             b.sp(
-                hline(&format!("Rule {}", i + 1), area.x, y + rh, area.w, Clr::tx1().alpha(if last { 70 } else { 28 }), if last { 1.5 } else { 0.75 }),
+                hline(
+                    &format!("Rule {}", i + 1),
+                    area.x,
+                    y + rh,
+                    area.w,
+                    Clr::tx1().alpha(if last { 70 } else { 28 }),
+                    if last { 1.5 } else { 0.75 },
+                ),
                 Role::Item(i),
             );
         }
@@ -1038,15 +1592,32 @@ mod tests {
     use crate::deck::palette::PALETTES;
     use crate::deck::theme::{ThemeSpec, THEMES};
 
-    const ALL_CARDS: [CardsStyle; 5] =
-        [CardsStyle::Grid, CardsStyle::Rows, CardsStyle::Columns, CardsStyle::Stickers, CardsStyle::Bento];
+    const ALL_CARDS: [CardsStyle; 5] = [
+        CardsStyle::Grid,
+        CardsStyle::Rows,
+        CardsStyle::Columns,
+        CardsStyle::Stickers,
+        CardsStyle::Bento,
+    ];
 
     fn card_slide(n: usize) -> DesignedSlide {
-        let heads = ["Local first", "Verified formulas", "One quiet app", "Open formats", "Private AI", "Fast on any Mac"];
+        let heads = [
+            "Local first",
+            "Verified formulas",
+            "One quiet app",
+            "Open formats",
+            "Private AI",
+            "Fast on any Mac",
+        ];
         let mut s = DesignedSlide::new("Three ideas, one quiet app").kicker("Solution");
         s.layout = Some(LayoutKind::Cards);
         s.blocks = (0..n)
-            .map(|i| Block::card(heads[i], "Documents never leave the device unless you say so, and that stays true."))
+            .map(|i| {
+                Block::card(
+                    heads[i],
+                    "Documents never leave the device unless you say so, and that stays true.",
+                )
+            })
             .collect();
         s
     }
@@ -1056,8 +1627,18 @@ mod tests {
         s.layout = Some(LayoutKind::Team);
         s.blocks = (0..n)
             .map(|i| Block {
-                heading: ["Layla Hassan", "Omar Saleh", "Mina Costa", "Noor Aziz", "Sam Rivera"][i].into(),
-                text: vec!["Chief executive".into(), "Ex-Office product lead who shipped three suites".into()],
+                heading: [
+                    "Layla Hassan",
+                    "Omar Saleh",
+                    "Mina Costa",
+                    "Noor Aziz",
+                    "Sam Rivera",
+                ][i]
+                    .into(),
+                text: vec![
+                    "Chief executive".into(),
+                    "Ex-Office product lead who shipped three suites".into(),
+                ],
                 ..Default::default()
             })
             .collect();
@@ -1102,18 +1683,43 @@ mod tests {
         let base = crate::deck::theme::theme("obsidian").unwrap();
         for header in HEADERS {
             for style in ALL_CARDS {
-                for card in [CardStyle::Filled, CardStyle::Rule, CardStyle::Bento, CardStyle::Sticker, CardStyle::Glass] {
+                for card in [
+                    CardStyle::Filled,
+                    CardStyle::Rule,
+                    CardStyle::Bento,
+                    CardStyle::Sticker,
+                    CardStyle::Glass,
+                ] {
                     for n in 1..=6usize {
-                        let t = ThemeSpec { look: Look { header, cards: style, ..base.look }, card, ..*base };
+                        let t = ThemeSpec {
+                            look: Look {
+                                header,
+                                cards: style,
+                                ..base.look
+                            },
+                            card,
+                            ..*base
+                        };
                         let built = cards(&card_slide(n), &ctx_for(&t));
                         let who = format!("{header:?} {style:?} {card:?} n={n}");
                         check_items(&built, n, &who);
                         for (sh, role) in sps(&built) {
                             let txt = text_of(sh);
                             for i in 0..n {
-                                let head = ["Local first", "Verified formulas", "One quiet app", "Open formats", "Private AI", "Fast on any Mac"][i];
+                                let head = [
+                                    "Local first",
+                                    "Verified formulas",
+                                    "One quiet app",
+                                    "Open formats",
+                                    "Private AI",
+                                    "Fast on any Mac",
+                                ][i];
                                 if txt.contains(head) {
-                                    assert_eq!(role, Role::Item(i), "{who}: '{head}' tagged {role:?}");
+                                    assert_eq!(
+                                        role,
+                                        Role::Item(i),
+                                        "{who}: '{head}' tagged {role:?}"
+                                    );
                                 }
                             }
                         }
@@ -1130,15 +1736,37 @@ mod tests {
             for style in [TeamStyle::Cards, TeamStyle::Inline] {
                 for card in [CardStyle::Filled, CardStyle::Rule, CardStyle::Sticker] {
                     for n in 1..=5usize {
-                        let t = ThemeSpec { look: Look { header, team: style, ..base.look }, card, ..*base };
+                        let t = ThemeSpec {
+                            look: Look {
+                                header,
+                                team: style,
+                                ..base.look
+                            },
+                            card,
+                            ..*base
+                        };
                         let built = team(&team_slide(n), &ctx_for(&t));
                         let who = format!("{header:?} {style:?} {card:?} n={n}");
                         check_items(&built, n, &who);
                         for (sh, role) in sps(&built) {
                             let txt = text_of(sh);
-                            for (i, name) in ["Layla Hassan", "Omar Saleh", "Mina Costa", "Noor Aziz", "Sam Rivera"].iter().take(n).enumerate() {
+                            for (i, name) in [
+                                "Layla Hassan",
+                                "Omar Saleh",
+                                "Mina Costa",
+                                "Noor Aziz",
+                                "Sam Rivera",
+                            ]
+                            .iter()
+                            .take(n)
+                            .enumerate()
+                            {
                                 if txt.contains(name) {
-                                    assert_eq!(role, Role::Item(i), "{who}: '{name}' tagged {role:?}");
+                                    assert_eq!(
+                                        role,
+                                        Role::Item(i),
+                                        "{who}: '{name}' tagged {role:?}"
+                                    );
                                 }
                             }
                         }
@@ -1155,7 +1783,14 @@ mod tests {
             for header in HEADERS {
                 for style in ALL_CARDS {
                     for n in [4usize, 6] {
-                        let t = ThemeSpec { look: Look { header, cards: style, ..base.look }, ..*base };
+                        let t = ThemeSpec {
+                            look: Look {
+                                header,
+                                cards: style,
+                                ..base.look
+                            },
+                            ..*base
+                        };
                         for o in overflows(&t, &cards(&card_slide(n), &ctx_for(&t))) {
                             bad.push(format!("{} {header:?} {style:?} n={n} {o}", base.id));
                         }
@@ -1163,7 +1798,14 @@ mod tests {
                 }
                 for style in [TeamStyle::Cards, TeamStyle::Inline] {
                     for n in [4usize, 5] {
-                        let t = ThemeSpec { look: Look { header, team: style, ..base.look }, ..*base };
+                        let t = ThemeSpec {
+                            look: Look {
+                                header,
+                                team: style,
+                                ..base.look
+                            },
+                            ..*base
+                        };
                         for o in overflows(&t, &team(&team_slide(n), &ctx_for(&t))) {
                             bad.push(format!("{} {header:?} team {style:?} n={n} {o}", base.id));
                         }
@@ -1172,7 +1814,12 @@ mod tests {
             }
         }
         bad.dedup();
-        assert!(bad.is_empty(), "{} overflow(s):\n{}", bad.len(), bad.iter().take(40).cloned().collect::<Vec<_>>().join("\n"));
+        assert!(
+            bad.is_empty(),
+            "{} overflow(s):\n{}",
+            bad.len(),
+            bad.iter().take(40).cloned().collect::<Vec<_>>().join("\n")
+        );
     }
 
     #[test]
@@ -1183,14 +1830,22 @@ mod tests {
             let area = frame(&base.look).body;
             let mut tilts = 0;
             for (sh, _) in sps(&built) {
-                assert!(sh.rot.abs() <= 1.6, "{}: tilt {} too strong", sh.name, sh.rot);
+                assert!(
+                    sh.rot.abs() <= 1.6,
+                    "{}: tilt {} too strong",
+                    sh.name,
+                    sh.rot
+                );
                 if sh.rot != 0.0 {
                     tilts += 1;
                 }
                 if let Some(r) = sh.rect {
                     if sh.name.starts_with("Card") || sh.name.starts_with("Number") {
                         assert!(
-                            r.x >= area.x - 60_000 && r.right() <= area.right() + 60_000 && r.y >= area.y - 60_000 && r.bottom() <= area.bottom() + 60_000,
+                            r.x >= area.x - 60_000
+                                && r.right() <= area.right() + 60_000
+                                && r.y >= area.y - 60_000
+                                && r.bottom() <= area.bottom() + 60_000,
                             "n={n} {}: leaves the body area {r:?} vs {area:?}",
                             sh.name
                         );
@@ -1207,14 +1862,36 @@ mod tests {
         for header in HEADERS {
             for style in ALL_CARDS {
                 for n in 1..=6usize {
-                    let t = ThemeSpec { look: Look { header, cards: style, ..base.look }, ..*base };
-                    assert_min_chars(&cards(&card_slide(n), &ctx_for(&t)), 8, &format!("{header:?} {style:?} n={n}"));
+                    let t = ThemeSpec {
+                        look: Look {
+                            header,
+                            cards: style,
+                            ..base.look
+                        },
+                        ..*base
+                    };
+                    assert_min_chars(
+                        &cards(&card_slide(n), &ctx_for(&t)),
+                        8,
+                        &format!("{header:?} {style:?} n={n}"),
+                    );
                 }
             }
             for style in [TeamStyle::Cards, TeamStyle::Inline] {
                 for n in 1..=5usize {
-                    let t = ThemeSpec { look: Look { header, team: style, ..base.look }, ..*base };
-                    assert_min_chars(&team(&team_slide(n), &ctx_for(&t)), 8, &format!("{header:?} team {style:?} n={n}"));
+                    let t = ThemeSpec {
+                        look: Look {
+                            header,
+                            team: style,
+                            ..base.look
+                        },
+                        ..*base
+                    };
+                    assert_min_chars(
+                        &team(&team_slide(n), &ctx_for(&t)),
+                        8,
+                        &format!("{header:?} team {style:?} n={n}"),
+                    );
                 }
             }
         }
@@ -1226,13 +1903,33 @@ mod tests {
             for pal in PALETTES {
                 for style in ALL_CARDS {
                     for n in [3usize, 6] {
-                        let t = ThemeSpec { look: Look { cards: style, ..base.look }, ..base.with_palette(pal) };
-                        assert_text_contrast(&t, &cards(&card_slide(n), &ctx_for(&t)), &format!("{} in {} cards {style:?} n={n}", base.id, pal.id));
+                        let t = ThemeSpec {
+                            look: Look {
+                                cards: style,
+                                ..base.look
+                            },
+                            ..base.with_palette(pal)
+                        };
+                        assert_text_contrast(
+                            &t,
+                            &cards(&card_slide(n), &ctx_for(&t)),
+                            &format!("{} in {} cards {style:?} n={n}", base.id, pal.id),
+                        );
                     }
                 }
                 for style in [TeamStyle::Cards, TeamStyle::Inline] {
-                    let t = ThemeSpec { look: Look { team: style, ..base.look }, ..base.with_palette(pal) };
-                    assert_text_contrast(&t, &team(&team_slide(4), &ctx_for(&t)), &format!("{} in {} team {style:?}", base.id, pal.id));
+                    let t = ThemeSpec {
+                        look: Look {
+                            team: style,
+                            ..base.look
+                        },
+                        ..base.with_palette(pal)
+                    };
+                    assert_text_contrast(
+                        &t,
+                        &team(&team_slide(4), &ctx_for(&t)),
+                        &format!("{} in {} team {style:?}", base.id, pal.id),
+                    );
                 }
             }
         }
@@ -1243,13 +1940,28 @@ mod tests {
         let base = crate::deck::theme::theme("obsidian").unwrap();
         let mut layouts: Vec<Vec<R>> = Vec::new();
         for style in ALL_CARDS {
-            let t = ThemeSpec { look: Look { cards: style, ..base.look }, ..*base };
+            let t = ThemeSpec {
+                look: Look {
+                    cards: style,
+                    ..base.look
+                },
+                ..*base
+            };
             let built = cards(&card_slide(4), &ctx_for(&t));
-            layouts.push(sps(&built).iter().filter(|(s, _)| s.text.is_some() && s.name.starts_with("Card")).filter_map(|(s, _)| s.rect).collect());
+            layouts.push(
+                sps(&built)
+                    .iter()
+                    .filter(|(s, _)| s.text.is_some() && s.name.starts_with("Card"))
+                    .filter_map(|(s, _)| s.rect)
+                    .collect(),
+            );
         }
         for i in 0..layouts.len() {
             for j in i + 1..layouts.len() {
-                assert_ne!(layouts[i], layouts[j], "card styles {i} and {j} draw the same geometry");
+                assert_ne!(
+                    layouts[i], layouts[j],
+                    "card styles {i} and {j} draw the same geometry"
+                );
             }
         }
     }
@@ -1259,19 +1971,37 @@ mod tests {
         let area = R::new(0, 0, 10_000_000, 4_000_000);
         for n in 2..=6usize {
             for narrow in [false, true] {
-                let a = if narrow { R::new(0, 0, 6_800_000, 4_800_000) } else { area };
+                let a = if narrow {
+                    R::new(0, 0, 6_800_000, 4_800_000)
+                } else {
+                    area
+                };
                 let rs = bento_rects(n, a, narrow);
                 assert_eq!(rs.len(), n);
                 let big = rs[0].w * rs[0].h;
                 for r in &rs[1..] {
-                    assert!(r.w * r.h < big, "n={n} narrow={narrow}: a small tile is as big as the large one");
-                    assert!(r.x >= a.x && r.right() <= a.right() && r.y >= a.y && r.bottom() <= a.bottom());
+                    assert!(
+                        r.w * r.h < big,
+                        "n={n} narrow={narrow}: a small tile is as big as the large one"
+                    );
+                    assert!(
+                        r.x >= a.x
+                            && r.right() <= a.right()
+                            && r.y >= a.y
+                            && r.bottom() <= a.bottom()
+                    );
                 }
                 // No tile overlaps another.
                 for i in 0..rs.len() {
                     for j in i + 1..rs.len() {
                         let (p, q) = (rs[i], rs[j]);
-                        assert!(p.right() <= q.x || q.right() <= p.x || p.bottom() <= q.y || q.bottom() <= p.y, "tiles {i}/{j} overlap");
+                        assert!(
+                            p.right() <= q.x
+                                || q.right() <= p.x
+                                || p.bottom() <= q.y
+                                || q.bottom() <= p.y,
+                            "tiles {i}/{j} overlap"
+                        );
                     }
                 }
             }

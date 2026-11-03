@@ -139,8 +139,10 @@ class HarborService extends ChangeNotifier implements DeckDesignerApi {
   /// The open embedding model has image/audio towers (multimodal package).
   bool knowledgeMultimodal = false;
 
-  /// Which backend serves embeddings: `gpu`, `cpu_fallback` (the device's
-  /// GPU path failed the core's numerics canary) or `cpu_unverified`.
+  /// Which backend serves embeddings: `gpu`, `cpu` (no GPU path),
+  /// `cpu_pinned` (the GPU crashed or failed the canary on an earlier run and
+  /// stays off until re-tested), `cpu_fallback` (the device's GPU path failed
+  /// the core's numerics canary now) or `cpu_unverified`.
   String knowledgeBackend = 'gpu';
 
   /// Media items the last open had to drop because the embedding identity
@@ -1116,6 +1118,26 @@ class HarborService extends ChangeNotifier implements DeckDesignerApi {
       'ocr': await one('ocr.status'),
       'speech': await one('speech.status')
     };
+  }
+
+  /// The core's GPU qualification store (decision 0022): each device +
+  /// model + runtime combination, its state (`verifying`, `ok`,
+  /// `qualified`, `canary_failed`, `crashed`) and whether it is pinned to the
+  /// CPU. Never throws: an older core without the op reads as empty.
+  Future<Map<String, dynamic>> runtimeQualification() async {
+    try {
+      return await _call('runtime.qualification', {});
+    } catch (_) {
+      return {'records': <dynamic>[], 'gpu_backend': false};
+    }
+  }
+
+  /// Forget one combination ([id]) or all of them, so the next model load
+  /// tries the GPU again.
+  Future<int> resetRuntimeQualification({String? id}) async {
+    final r =
+        await _call('runtime.qualification_reset', {if (id != null) 'id': id});
+    return (r['removed'] as num?)?.toInt() ?? 0;
   }
 
   Future<Map<String, dynamic>> listDiagnostics({int limit = 50}) =>

@@ -1,10 +1,10 @@
 //! GGUF backend over the pinned llama.cpp runtime.
 //!
-//! The llama.cpp source snapshot is vendored inside `llama-cpp-sys-2`
-//! (pinned `=0.1.156`), so the crate lockfile pins the exact runtime
-//! revision; `runtime_revision()` reports it and the integrity hash of the
-//! packed `.crate` archive is recorded by `tools/pin_engine.py` (same
-//! mechanism as the formula engine).
+//! llama.cpp is vendored unmodified at one upstream commit in
+//! `third_party/llama.cpp` (pinned and tree-hashed by
+//! `tools/vendor_llama_cpp.py`, `HARBOR_PIN.json`) and bound by Harbor's own
+//! `harbor_llama_sys` / `harbor_llama` crates (decision 0022, phase 4);
+//! `runtime_revision()` reports that tag and commit.
 //!
 //! Implementation notes (honest scope):
 //! - Prompt assembly prefers the model-native chat template carried in
@@ -33,10 +33,13 @@ use harbor_modelhub::install::{PackageFile, PackageInstaller};
 use crate::provider::{
     Capabilities, ChatRequest, ChatResponse, ModelProvider, ModelRef, ProviderError, Usage,
 };
+use crate::resilience::{DeviceKey, RuntimeState, SentinelGuard, WorkTicket};
 
-/// The pinned runtime identity (crate pin -> llama.cpp snapshot).
+/// The pinned runtime identity: `llama.cpp@<tag>+<commit[..10]>`, e.g.
+/// `llama.cpp@v0.8.0+8642541b25`, generated from
+/// `third_party/llama.cpp/HARBOR_PIN.json` at build time.
 pub fn runtime_revision() -> &'static str {
-    "llama.cpp/llama-cpp-sys-2@0.1.156"
+    llama_cpp_2::RUNTIME_REVISION
 }
 
 pub struct GgufLlamaCppProvider {
@@ -49,9 +52,33 @@ pub struct GgufLlamaCppProvider {
     /// across unload/reload so a memory release never re-enables a GPU
     /// path already proven wrong on this device.
     cpu_only: Mutex<std::collections::BTreeSet<String>>,
+    /// Crash sentinels and the per-device qualification store (decision
+    /// 0022 phase 1), shared by every provider over the same data root.
+    runtime: Arc<RuntimeState>,
+    /// The GPU key each GPU-loaded package runs under. Absent = CPU.
+    gpu_keys: Mutex<BTreeMap<String, DeviceKey>>,
+    /// Packages the qualification store sent to the CPU at their last load.
+    store_pinned: Mutex<std::collections::BTreeSet<String>>,
     /// Context window used for generation contexts.
     context_tokens: u32,
 }
+
+/// The first GPU device ggml enumerates (backend name, description), or
+/// None when this build or device has no GPU backend.
+fn gpu_device() -> Option<(String, String)> {
+    use llama_cpp_2::LlamaBackendDeviceType as T;
+    llama_cpp_2::list_llama_ggml_backend_devices()
+        .into_iter()
+        .find(|d| matches!(d.device_type, T::Gpu | T::IntegratedGpu))
+        .map(|d| (d.backend, d.description))
+}
+
+/// Whether this build and device expose a GPU backend.
+pub fn gpu_backend_present() -> bool {
+    gpu_device().is_some()
+}
+
+pub use crate::resilience::runtime_dir_for;
 
 /// Threads for CPU compute. llama.cpp defaults to 4 whatever the device
 /// has; `HARBOR_GGUF_THREADS` overrides, otherwise [`default_threads`].
@@ -96,8 +123,109 @@ impl GgufLlamaCppProvider {
     /// simulator's GPU, or hardware without bfloat — EmbeddingGemma 2's
     /// activations overflow float16, which then degrades silently).
     pub fn force_cpu(&self, package_id: &str) {
+        if let Some(key) = self.gpu_keys.lock().unwrap().remove(package_id) {
+            self.runtime.record_canary(&key, false);
+        }
         self.cpu_only.lock().unwrap().insert(package_id.to_string());
         self.loaded.lock().unwrap().remove(package_id);
+    }
+
+    /// Record that `package_id` passed a numerics canary on its current
+    /// backend (a no-op on the CPU path, which needs no qualification).
+    pub fn mark_qualified(&self, package_id: &str) {
+        if let Some(key) = self.gpu_keys.lock().unwrap().get(package_id) {
+            self.runtime.record_canary(key, true);
+        }
+    }
+
+    /// The qualification state of the GPU key `package_id` is loaded under
+    /// (None when it runs on the CPU or is not loaded).
+    pub fn qualification(&self, package_id: &str) -> Option<crate::resilience::QualState> {
+        let key = self.gpu_keys.lock().unwrap().get(package_id).cloned()?;
+        self.runtime.state(&key)
+    }
+
+    /// Embed `texts` with `package_id` on the true CPU path, in a separate
+    /// short-lived model instance: the reference a GPU result is compared
+    /// against the first time a key runs on the GPU. Records nothing.
+    pub fn cpu_reference_embed(
+        &self,
+        package_id: &str,
+        texts: &[String],
+    ) -> Result<Vec<Vec<f32>>, ProviderError> {
+        let reference = GgufLlamaCppProvider::with_runtime_dir(
+            self.installed_root.clone(),
+            self.runtime.dir().to_path_buf(),
+        )?
+        .with_context_tokens(self.context_tokens);
+        // Pinned before the load, so no GPU key exists and nothing is recorded.
+        reference.force_cpu(package_id);
+        let model = ModelRef::InstalledPackage {
+            package_id: package_id.to_string(),
+        };
+        reference.load(&model)?;
+        reference.embed(&model, texts)
+    }
+
+    /// Where `package_id` is loaded now (None = not loaded): "gpu";
+    /// "cpu_pinned" when a GPU exists but this package is pinned off it (a
+    /// failed canary in this process, or a crash or failed canary the
+    /// qualification store remembers); "cpu" when there is no GPU path.
+    pub fn backend_of(&self, package_id: &str) -> Option<&'static str> {
+        if !self.loaded.lock().unwrap().contains_key(package_id) {
+            return None;
+        }
+        Some(if self.gpu_keys.lock().unwrap().contains_key(package_id) {
+            "gpu"
+        } else if self.store_pinned.lock().unwrap().contains(package_id)
+            || (self.cpu_only.lock().unwrap().contains(package_id) && gpu_device().is_some())
+        {
+            "cpu_pinned"
+        } else {
+            "cpu"
+        })
+    }
+
+    /// The qualification store this provider records into.
+    pub fn runtime_state(&self) -> &Arc<RuntimeState> {
+        &self.runtime
+    }
+
+    /// The GPU key of a GPU-loaded package, for engines that run their own
+    /// GPU work on its model (media embedder, vision OCR). None on the CPU.
+    pub fn work_ticket(&self, package_id: &str) -> Option<WorkTicket> {
+        self.gpu_keys
+            .lock()
+            .unwrap()
+            .get(package_id)
+            .map(|key| WorkTicket {
+                state: self.runtime.clone(),
+                key: key.clone(),
+            })
+    }
+
+    fn work_guard(&self, package_id: &str) -> Option<SentinelGuard> {
+        self.work_ticket(package_id).map(|t| t.arm())
+    }
+
+    /// The GPU key `package_id` would load under, or None when no GPU
+    /// backend is present (or the weights hash is unknown).
+    fn device_key(&self, package_id: &str) -> Option<DeviceKey> {
+        let (backend, device) = gpu_device()?;
+        let manifest = PackageInstaller::new(&self.installed_root)
+            .load_manifest(package_id)
+            .ok()?;
+        let weights = manifest
+            .files
+            .iter()
+            .find(|f| f.role == "weights" || f.role == "weights_shard")?;
+        Some(DeviceKey {
+            backend,
+            device,
+            platform: crate::resilience::platform_fingerprint(),
+            model_sha256: weights.sha256.clone(),
+            runtime: runtime_revision().to_string(),
+        })
     }
 
     /// Whether `package_id` is pinned to the CPU backend.
@@ -106,12 +234,25 @@ impl GgufLlamaCppProvider {
     }
 
     pub fn new(installed_root: impl Into<PathBuf>) -> Result<Self, ProviderError> {
+        let installed_root = installed_root.into();
+        let runtime_dir = runtime_dir_for(&installed_root);
+        Self::with_runtime_dir(installed_root, runtime_dir)
+    }
+
+    /// Like [`new`](Self::new) with an explicit runtime state directory.
+    pub fn with_runtime_dir(
+        installed_root: impl Into<PathBuf>,
+        runtime_dir: impl Into<PathBuf>,
+    ) -> Result<Self, ProviderError> {
         let backend = shared_backend()?;
         Ok(GgufLlamaCppProvider {
             backend,
             installed_root: installed_root.into(),
             loaded: Mutex::new(BTreeMap::new()),
             cpu_only: Mutex::new(Default::default()),
+            runtime: RuntimeState::open(runtime_dir),
+            gpu_keys: Mutex::new(BTreeMap::new()),
+            store_pinned: Mutex::new(Default::default()),
             context_tokens: 2048,
         })
     }
@@ -255,6 +396,7 @@ impl GgufLlamaCppProvider {
                 .ok_or_else(|| ProviderError::ModelNotFound(package.clone()))?
         };
 
+        let _work = self.work_guard(&package);
         let prompt = Self::build_prompt(&model, &req.messages)?;
         let tokens = model
             .str_to_token(&prompt, AddBos::Always)
@@ -364,6 +506,27 @@ impl GgufLlamaCppProvider {
             if let Some(counter) = tokens_generated {
                 counter.store(generated, Ordering::Relaxed);
             }
+            // Fault injection for the crash-sentinel tests (decision 0022):
+            // a "GPU crash" — only while a GPU workload is armed — in debug
+            // builds only, never compiled into a release.
+            // Debug builds only: slow decoding down so cancellation can be
+            // observed across the worker boundary in tests.
+            #[cfg(debug_assertions)]
+            if let Some(ms) = std::env::var("HARBOR_FAULT_SLOW_TOKEN_MS")
+                .ok()
+                .and_then(|v| v.parse::<u64>().ok())
+            {
+                std::thread::sleep(std::time::Duration::from_millis(ms));
+            }
+            #[cfg(debug_assertions)]
+            if _work.is_some()
+                && std::env::var("HARBOR_FAULT_ABORT_AT_TOKEN")
+                    .ok()
+                    .and_then(|v| v.parse::<u64>().ok())
+                    == Some(generated)
+            {
+                std::process::abort();
+            }
             // Feed the sampled token back.
             let mut step = LlamaBatch::new(1, 1);
             step.add(tok, next_pos, &[0], true)
@@ -410,6 +573,7 @@ impl GgufLlamaCppProvider {
                 .cloned()
                 .ok_or_else(|| ProviderError::ModelNotFound(package.clone()))?
         };
+        let _work = self.work_guard(&package);
         let n_ctx = self.context_tokens.max(512).min(model.n_ctx_train());
         let n_ctx =
             std::num::NonZeroU32::new(n_ctx).ok_or(ProviderError::Backend("n_ctx 0".into()))?;
@@ -498,6 +662,20 @@ impl ModelProvider for GgufLlamaCppProvider {
             }
         }
         let path = self.weights_path(package_id)?;
+        // Decision 0022 phase 2: validate the file and the memory budget
+        // before llama.cpp sees it. A malformed file or a model that cannot
+        // fit becomes a typed error here instead of an abort or an OOM kill.
+        let summary = crate::gguf_check::check_file(&path)
+            .map_err(|e| ProviderError::Backend(format!("model file rejected before load: {e}")))?;
+        let mut estimate = crate::memory_budget::estimate_load_bytes(&summary, self.context_tokens);
+        if let Ok(mmproj) = self.mmproj_file(package_id) {
+            let projector = crate::gguf_check::check_file(&mmproj).map_err(|e| {
+                ProviderError::Backend(format!("projector file rejected before load: {e}"))
+            })?;
+            estimate = estimate.saturating_add(projector.tensor_bytes);
+        }
+        crate::memory_budget::check_budget(estimate)
+            .map_err(|e| ProviderError::Backend(format!("model {package_id} does not fit: {e}")))?;
         // HARBOR_GGUF_CPU_ONLY=1 keeps every layer on the CPU.
         //
         // A diagnostic escape hatch, not a feature. The iOS simulator
@@ -508,9 +686,19 @@ impl ModelProvider for GgufLlamaCppProvider {
         // separable by taking the GPU out of the loop. It doubles as a
         // way to keep a device usable if its GPU kernels are broken.
         let mut params = llama_cpp_2::model::params::LlamaModelParams::default();
-        if std::env::var("HARBOR_GGUF_CPU_ONLY").as_deref() == Ok("1")
-            || self.cpu_only.lock().unwrap().contains(package_id)
-        {
+        // The GPU key, unless this load is CPU-only anyway. A key the
+        // qualification store has pinned (a crash or a failed canary on this
+        // device, driver and runtime) loads on the CPU like an explicit pin.
+        let explicit_cpu = std::env::var("HARBOR_GGUF_CPU_ONLY").as_deref() == Ok("1")
+            || self.cpu_only.lock().unwrap().contains(package_id);
+        let gpu_key = if explicit_cpu {
+            None
+        } else {
+            self.device_key(package_id)
+        };
+        let store_pinned = gpu_key.as_ref().is_some_and(|k| self.runtime.pins_cpu(k));
+        let gpu_key = gpu_key.filter(|_| !store_pinned);
+        if explicit_cpu || store_pinned {
             // Zero GPU layers is NOT enough when a GPU backend is compiled
             // in: ggml's scheduler still offloads heavy host-weight ops to
             // the device. An empty device list is the real CPU-only switch
@@ -521,8 +709,22 @@ impl ModelProvider for GgufLlamaCppProvider {
                 .with_devices(&[])
                 .map_err(|e| ProviderError::Backend(format!("cpu-only devices: {e}")))?;
         }
-        let model = LlamaModel::load_from_file(self.backend, path, &params)
-            .map_err(|e| ProviderError::Backend(format!("model load: {e}")))?;
+        let model = {
+            // Armed across the GPU load: a crash here pins the key on the
+            // next launch (decision 0022 phase 1).
+            let _init = gpu_key.as_ref().map(|k| self.runtime.arm_load(k));
+            LlamaModel::load_from_file(self.backend, path, &params)
+                .map_err(|e| ProviderError::Backend(format!("model load: {e}")))?
+        };
+        match gpu_key {
+            Some(k) => self.gpu_keys.lock().unwrap().insert(package_id.clone(), k),
+            None => self.gpu_keys.lock().unwrap().remove(package_id),
+        };
+        if store_pinned {
+            self.store_pinned.lock().unwrap().insert(package_id.clone());
+        } else {
+            self.store_pinned.lock().unwrap().remove(package_id);
+        }
         self.loaded
             .lock()
             .unwrap()
@@ -533,6 +735,7 @@ impl ModelProvider for GgufLlamaCppProvider {
     fn unload(&self, model: &ModelRef) -> Result<(), ProviderError> {
         if let ModelRef::InstalledPackage { package_id } = model {
             self.loaded.lock().unwrap().remove(package_id);
+            self.gpu_keys.lock().unwrap().remove(package_id);
         }
         Ok(())
     }

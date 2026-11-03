@@ -21,6 +21,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
+
+
+def llama_cpp_pin():
+    """The vendored llama.cpp pin (third_party/llama.cpp/HARBOR_PIN.json, decision 0022)."""
+    pin = json.loads((REPO / "third_party" / "llama.cpp" / "HARBOR_PIN.json").read_text())
+    return "llama.cpp {} ({}, tree sha256 {}; third_party/llama.cpp, decision 0022)".format(
+        pin["tag"], pin["commit"][:10], pin["tree_sha256"])
+
+
 EV = REPO / "evidence"
 
 
@@ -350,7 +359,7 @@ def main():
         )
         if k in prod
     }
-    binding_keys["runtime_pin"] = profiles.get("runtime_pin") or "llama-cpp-2 0.1.156 (vendored llama.cpp snapshot, decision 0002)"
+    binding_keys["runtime_pin"] = profiles.get("runtime_pin") or llama_cpp_pin()
 
     gates = []
 

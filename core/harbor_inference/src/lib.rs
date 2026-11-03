@@ -17,15 +17,19 @@ pub mod backend;
 pub mod cassette;
 #[cfg(feature = "gguf-backend")]
 pub mod gguf;
+pub mod gguf_check;
+pub mod memory_budget;
 pub mod mrl;
 #[cfg(feature = "multimodal")]
 pub mod multimodal;
 pub mod ocr;
 pub mod provider;
+pub mod resilience;
 pub mod router;
 pub mod system;
 #[cfg(feature = "multimodal")]
 pub mod vision_ocr;
+pub mod worker;
 
 pub use backend::TestBackend;
 pub use cassette::{Cassette, CassetteMode, RecordReplayProvider};

@@ -1751,6 +1751,45 @@ class AppLocalizationsEn extends AppLocalizations {
       'Indexing video needs FFmpeg on this computer. Install FFmpeg (or set HARBOR_FFMPEG to its location) and try again.';
 
   @override
+  String get knowledgeBackendCpu => 'CPU — no GPU path on this device';
+
+  @override
+  String get knowledgeBackendCpuPinned =>
+      'CPU — this device\'s GPU failed with this model before; re-test it in Settings';
+
+  @override
+  String get settingsGpu => 'GPU acceleration';
+
+  @override
+  String get settingsGpuBody =>
+      'Models run on this device\'s GPU only after it has worked with them. If the GPU crashes or gives wrong results with a model, Harbor keeps that model on the CPU until you re-test it or the system or Harbor updates.';
+
+  @override
+  String get settingsGpuNone =>
+      'This device or build has no GPU path; models run on the CPU.';
+
+  @override
+  String get settingsGpuEmpty => 'No model has run on the GPU yet.';
+
+  @override
+  String get settingsGpuQualified => 'GPU, checked';
+
+  @override
+  String get settingsGpuOk => 'GPU';
+
+  @override
+  String get settingsGpuVerifying => 'GPU, first run';
+
+  @override
+  String get settingsGpuCanaryFailed => 'CPU — the GPU gave wrong results';
+
+  @override
+  String get settingsGpuCrashed => 'CPU — the GPU crashed';
+
+  @override
+  String get settingsGpuRetest => 'Re-test the GPU';
+
+  @override
   String get settingsEngines => 'On-device engines';
 
   @override

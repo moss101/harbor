@@ -56,7 +56,10 @@ fn check(name: &str, deck: &[u8]) {
     }
     let stored = std::fs::read_to_string(&path)
         .unwrap_or_else(|_| panic!("missing {name}; run with HARBOR_UPDATE_FIXTURES=1"));
-    assert_eq!(stored, json, "{name} drifted; rerun with HARBOR_UPDATE_FIXTURES=1");
+    assert_eq!(
+        stored, json,
+        "{name} drifted; rerun with HARBOR_UPDATE_FIXTURES=1"
+    );
 }
 
 #[test]
