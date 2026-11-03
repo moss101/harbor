@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "38e467e4edd4d948442e0ada68ad328605488f800e49a781a36b66529b08b2e7",
+  "input_manifest_sha256": "7859757f08bc5fe6b518925dcea1ac5bac47f55d8f19d46b0332dbb10603324b",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -3376,8 +3376,8 @@
     },
     {
       "path": "core/harbor_llama_sys/build.rs",
-      "bytes": 36530,
-      "sha256": "8624ce19185044f5852675d9d2bd08597bab00cd0f750fb2c2e054fb306fa307"
+      "bytes": 36999,
+      "sha256": "5ba75297036418f0f41bc4e704ebddf57d2c341d865b02f2e5d0945ddde356f9"
     },
     {
       "path": "core/harbor_llama_sys/common_shim.cpp",

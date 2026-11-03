@@ -368,6 +368,19 @@ fn pin_field(pin: &str, key: &str) -> String {
     rest[..end].to_string()
 }
 
+/// `canonicalize` on Windows returns a verbatim `\\?\C:\...` path, which
+/// MSVC `cl.exe` and CMake cannot open. Back to the plain form.
+fn strip_verbatim(p: PathBuf) -> PathBuf {
+    let s = p.to_string_lossy();
+    if let Some(rest) = s.strip_prefix(r"\\?\UNC\") {
+        PathBuf::from(format!(r"\\{rest}"))
+    } else if let Some(rest) = s.strip_prefix(r"\\?\") {
+        PathBuf::from(rest)
+    } else {
+        p
+    }
+}
+
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
 
@@ -378,9 +391,11 @@ fn main() {
     let llama_src = env::var("HARBOR_LLAMA_CPP_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|_| manifest_dir.join("../../third_party/llama.cpp"));
-    let llama_src = llama_src
-        .canonicalize()
-        .unwrap_or_else(|e| panic!("llama.cpp source tree {}: {e}", llama_src.display()));
+    let llama_src = strip_verbatim(
+        llama_src
+            .canonicalize()
+            .unwrap_or_else(|e| panic!("llama.cpp source tree {}: {e}", llama_src.display())),
+    );
     println!("cargo:rerun-if-env-changed=HARBOR_LLAMA_CPP_DIR");
 
     // Pin -> constants.
