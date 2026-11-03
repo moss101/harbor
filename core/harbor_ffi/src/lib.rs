@@ -2816,7 +2816,10 @@ fn dispatch(
         }
         "deck.sample" => {
             use harbor_artifacts::deck::{starter::sample_deck, theme_by_id};
-            let theme = args.get("theme").and_then(|v| v.as_str()).unwrap_or("harbor");
+            let theme = args
+                .get("theme")
+                .and_then(|v| v.as_str())
+                .unwrap_or("harbor");
             if theme_by_id(theme).is_none() {
                 return Err(HarborError::Other(format!("unknown theme {theme}")));
             }
@@ -2827,7 +2830,11 @@ fn dispatch(
                 .unwrap_or(harbor_artifacts::MotionPreset::Subtle);
             let rtl = args.get("rtl").and_then(|v| v.as_bool()).unwrap_or(false);
             let mut sample = sample_deck(theme, motion, rtl);
-            if let Some(p) = args.get("palette").and_then(|v| v.as_str()).filter(|p| !p.is_empty()) {
+            if let Some(p) = args
+                .get("palette")
+                .and_then(|v| v.as_str())
+                .filter(|p| !p.is_empty())
+            {
                 if harbor_artifacts::deck::palette::palette(p).is_none() {
                     return Err(HarborError::Other(format!("unknown palette {p}")));
                 }
@@ -2836,19 +2843,30 @@ fn dispatch(
             let bytes = sample
                 .to_pptx_bytes()
                 .map_err(|e| HarborError::Other(e.to_string()))?;
-            let scene = harbor_render::deck_scene(&bytes).map_err(|e| HarborError::Other(e.to_string()))?;
+            let scene =
+                harbor_render::deck_scene(&bytes).map_err(|e| HarborError::Other(e.to_string()))?;
             Ok(serde_json::json!({ "scene": scene }))
         }
         "deck.starter" => {
             use harbor_artifacts::deck::starter::starter_deck;
-            let purpose = args.get("purpose").and_then(|v| v.as_str()).unwrap_or("general");
-            let theme = args.get("theme").and_then(|v| v.as_str()).filter(|t| !t.is_empty());
+            let purpose = args
+                .get("purpose")
+                .and_then(|v| v.as_str())
+                .unwrap_or("general");
+            let theme = args
+                .get("theme")
+                .and_then(|v| v.as_str())
+                .filter(|t| !t.is_empty());
             if let Some(t) = theme {
                 if harbor_artifacts::deck::theme_by_id(t).is_none() {
                     return Err(HarborError::Other(format!("unknown theme {t}")));
                 }
             }
-            let motion = match args.get("motion").and_then(|v| v.as_str()).filter(|m| !m.is_empty()) {
+            let motion = match args
+                .get("motion")
+                .and_then(|v| v.as_str())
+                .filter(|m| !m.is_empty())
+            {
                 Some(m) => Some(
                     harbor_artifacts::MotionPreset::parse(m)
                         .ok_or_else(|| HarborError::Other(format!("unknown motion {m}")))?,
@@ -2863,19 +2881,32 @@ fn dispatch(
                 .filter(|t| !t.is_empty() && t.chars().count() <= 120);
             let mut deck = starter_deck(purpose, theme, motion, rtl, title)
                 .ok_or_else(|| HarborError::Other(format!("unknown deck purpose {purpose}")))?;
-            if let Some(p) = args.get("palette").and_then(|v| v.as_str()).filter(|p| !p.is_empty()) {
+            if let Some(p) = args
+                .get("palette")
+                .and_then(|v| v.as_str())
+                .filter(|p| !p.is_empty())
+            {
                 if harbor_artifacts::deck::palette::palette(p).is_none() {
                     return Err(HarborError::Other(format!("unknown palette {p}")));
                 }
                 deck.design.palette = Some(p.to_string());
             }
-            let bytes = deck.to_pptx_bytes().map_err(|e| HarborError::Other(e.to_string()))?;
-            let scene = harbor_render::deck_scene(&bytes).map_err(|e| HarborError::Other(e.to_string()))?;
+            let bytes = deck
+                .to_pptx_bytes()
+                .map_err(|e| HarborError::Other(e.to_string()))?;
+            let scene =
+                harbor_render::deck_scene(&bytes).map_err(|e| HarborError::Other(e.to_string()))?;
             use base64::Engine as _;
             let stem: String = deck
                 .title
                 .chars()
-                .map(|c| if c.is_alphanumeric() || c == ' ' || c == '-' || c == '_' { c } else { ' ' })
+                .map(|c| {
+                    if c.is_alphanumeric() || c == ' ' || c == '-' || c == '_' {
+                        c
+                    } else {
+                        ' '
+                    }
+                })
                 .collect::<String>()
                 .split_whitespace()
                 .collect::<Vec<_>>()
@@ -2899,8 +2930,15 @@ fn dispatch(
             let bytes = base64::engine::general_purpose::STANDARD
                 .decode(data_b64)
                 .map_err(|e| HarborError::Other(format!("b64: {e}")))?;
-            let theme = args.get("theme").and_then(|v| v.as_str()).filter(|t| !t.is_empty());
-            let motion = match args.get("motion").and_then(|v| v.as_str()).filter(|m| !m.is_empty()) {
+            let theme = args
+                .get("theme")
+                .and_then(|v| v.as_str())
+                .filter(|t| !t.is_empty());
+            let motion = match args
+                .get("motion")
+                .and_then(|v| v.as_str())
+                .filter(|m| !m.is_empty())
+            {
                 Some(m) => Some(
                     harbor_artifacts::MotionPreset::parse(m)
                         .ok_or_else(|| HarborError::Other(format!("unknown motion {m}")))?,
@@ -2912,7 +2950,8 @@ fn dispatch(
             let palette = args.get("palette").and_then(|v| v.as_str());
             let out = harbor_artifacts::deck::source::restyle(&bytes, theme, palette, motion, rtl)
                 .map_err(HarborError::Other)?;
-            let scene = harbor_render::deck_scene(&out).map_err(|e| HarborError::Other(e.to_string()))?;
+            let scene =
+                harbor_render::deck_scene(&out).map_err(|e| HarborError::Other(e.to_string()))?;
             Ok(serde_json::json!({
                 "data_b64": base64::engine::general_purpose::STANDARD.encode(&out),
                 "scene": scene,
@@ -5060,9 +5099,7 @@ fn dispatch(
                         None => {
                             let found = knowledge
                                 .as_ref()
-                                .and_then(|ks| {
-                                    ks.search_in(&query, 3, collection.as_deref()).ok()
-                                })
+                                .and_then(|ks| ks.search_in(&query, 3, collection.as_deref()).ok())
                                 .and_then(|v| v.get("citations").cloned())
                                 .unwrap_or_else(|| serde_json::json!([]));
                             if let Some(name) = &collection {

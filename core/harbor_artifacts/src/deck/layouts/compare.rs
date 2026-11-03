@@ -25,8 +25,12 @@ pub(crate) fn comparison_titles(title: &str) -> (String, String) {
     for sep in [" vs. ", " vs ", " versus ", " or "] {
         if let Some(i) = lower.find(sep) {
             let l = title[..i].trim().to_string();
-            let r = title[i + sep.len()..].trim().trim_end_matches('?').to_string();
-            if !l.is_empty() && !r.is_empty() && l.chars().count() <= 24 && r.chars().count() <= 24 {
+            let r = title[i + sep.len()..]
+                .trim()
+                .trim_end_matches('?')
+                .to_string();
+            if !l.is_empty() && !r.is_empty() && l.chars().count() <= 24 && r.chars().count() <= 24
+            {
                 return (l, r);
             }
         }
@@ -55,7 +59,11 @@ pub(crate) fn inked_fill(t: &ThemeSpec, base: Clr, start_mod: u32, min: f64) -> 
         };
         let (hex, _) = t.resolve(&c);
         let (cl, cd) = (contrast(&hex, lt), contrast(&hex, dk));
-        let (ink, got) = if cl >= cd { (Clr::lt1(), cl) } else { (Clr::dk1(), cd) };
+        let (ink, got) = if cl >= cd {
+            (Clr::lt1(), cl)
+        } else {
+            (Clr::dk1(), cd)
+        };
         best = (c, ink);
         if got >= min {
             return best;
@@ -151,10 +159,20 @@ fn points_height(t: &ThemeSpec, lines: &[String], pt: f64, w: i64, before: f64) 
 
 /// Heading size: the largest at which every heading holds one line (down to
 /// `one_line_floor`); otherwise the largest at which each fits two lines.
-fn fit_heading(t: &ThemeSpec, sides: &[Side], w: i64, max: f64, one_line_floor: f64, min: f64) -> f64 {
+fn fit_heading(
+    t: &ThemeSpec,
+    sides: &[Side],
+    w: i64,
+    max: f64,
+    one_line_floor: f64,
+    min: f64,
+) -> f64 {
     let mut pt = max;
     while pt >= one_line_floor {
-        if sides.iter().all(|s| line_count(&s.head, pt, w, factor_major(t) * HEAD_SAFE) <= 1) {
+        if sides
+            .iter()
+            .all(|s| line_count(&s.head, pt, w, factor_major(t) * HEAD_SAFE) <= 1)
+        {
             return pt;
         }
         pt -= 0.5;
@@ -162,7 +180,10 @@ fn fit_heading(t: &ThemeSpec, sides: &[Side], w: i64, max: f64, one_line_floor: 
     // Two lines at most: start at the one-line floor and shrink.
     let mut pt = one_line_floor;
     while pt > min {
-        if sides.iter().all(|s| line_count(&s.head, pt, w, factor_major(t) * HEAD_SAFE) <= 2) {
+        if sides
+            .iter()
+            .all(|s| line_count(&s.head, pt, w, factor_major(t) * HEAD_SAFE) <= 2)
+        {
             return pt;
         }
         pt -= 0.5;
@@ -171,10 +192,21 @@ fn fit_heading(t: &ThemeSpec, sides: &[Side], w: i64, max: f64, one_line_floor: 
 }
 
 /// The largest size at which both sides' points fit `h`.
-fn fit_points(t: &ThemeSpec, sides: &[Side], w: i64, h: i64, max: f64, min: f64, before: f64) -> f64 {
+fn fit_points(
+    t: &ThemeSpec,
+    sides: &[Side],
+    w: i64,
+    h: i64,
+    max: f64,
+    min: f64,
+    before: f64,
+) -> f64 {
     let mut pt = max;
     while pt > min {
-        if sides.iter().all(|s| points_height(t, &s.points, pt, w, before) <= h) {
+        if sides
+            .iter()
+            .all(|s| points_height(t, &s.points, pt, w, before) <= h)
+        {
             return pt;
         }
         pt -= 0.5;
@@ -234,12 +266,32 @@ fn panels(b: &mut B, sides: &[Side]) {
         Flavor::Edge => fit_heading(t, sides, head_w, head_max, 18.0, head_min),
         _ => sides
             .iter()
-            .map(|s| fit_pt(std::slice::from_ref(&s.head), head_w, head_box_h, head_max, head_min, factor_major(t), 1.0, 0.0))
+            .map(|s| {
+                fit_pt(
+                    std::slice::from_ref(&s.head),
+                    head_w,
+                    head_box_h,
+                    head_max,
+                    head_min,
+                    factor_major(t),
+                    1.0,
+                    0.0,
+                )
+            })
             .fold(head_max, f64::min),
     };
     let edge_head_h = sides
         .iter()
-        .map(|s| stack_height(std::slice::from_ref(&s.head), head_pt, head_w, factor_major(t) * HEAD_SAFE, 1.0, 0.0))
+        .map(|s| {
+            stack_height(
+                std::slice::from_ref(&s.head),
+                head_pt,
+                head_w,
+                factor_major(t) * HEAD_SAFE,
+                1.0,
+                0.0,
+            )
+        })
         .max()
         .unwrap_or(0);
     let offset = match flavor {
@@ -250,7 +302,11 @@ fn panels(b: &mut B, sides: &[Side]) {
     let max_h = area.h - 100_000;
     let avail = max_h - offset - pad_b;
     let pt = fit_points(t, sides, inner_w - ind, avail, 22.0, 13.0, 10.0);
-    let need = sides.iter().map(|s| points_height(t, &s.points, pt, inner_w - ind, 10.0)).max().unwrap_or(0);
+    let need = sides
+        .iter()
+        .map(|s| points_height(t, &s.points, pt, inner_w - ind, 10.0))
+        .max()
+        .unwrap_or(0);
     let panel_h = (offset + need + pad_b).clamp(2_900_000, max_h);
     let top = vcentre(R::new(area.x, area.y, area.w, max_h), panel_h);
     let cols = columns(R::new(area.x, top, area.w, panel_h), 2, gap);
@@ -276,9 +332,13 @@ fn panels(b: &mut B, sides: &[Side]) {
                     .color(chip_ink)])
                 .no_bullet();
                 chip.text = Some(
-                    Text::one(if centred { para.align(Align::Center) } else { para })
-                        .anchor(Anchor::Middle)
-                        .insets(200_000, 0, 200_000, 0),
+                    Text::one(if centred {
+                        para.align(Align::Center)
+                    } else {
+                        para
+                    })
+                    .anchor(Anchor::Middle)
+                    .insets(200_000, 0, 200_000, 0),
                 );
                 b.sp(chip, Role::Item(i));
             }
@@ -309,7 +369,12 @@ fn panels(b: &mut B, sides: &[Side]) {
                 );
             }
             Flavor::Pill => {
-                let est = (side.head.chars().count() as f64 * head_pt * factor_major(t) * 1.08 * EMU_PER_PT) as i64 + 440_000;
+                let est = (side.head.chars().count() as f64
+                    * head_pt
+                    * factor_major(t)
+                    * 1.08
+                    * EMU_PER_PT) as i64
+                    + 440_000;
                 let w = est.min(inner_w);
                 let mut pill = Shape::new(
                     format!("Header {}", i + 1),
@@ -338,7 +403,10 @@ fn panels(b: &mut B, sides: &[Side]) {
             .map(|l| {
                 let run = Run::new(l.clone()).size(pt);
                 if centred {
-                    Para::from_runs(vec![run]).no_bullet().align(Align::Center).before(10.0)
+                    Para::from_runs(vec![run])
+                        .no_bullet()
+                        .align(Align::Center)
+                        .before(10.0)
                 } else {
                     Para::from_runs(vec![run])
                         .bullet("\u{2022}", Clr::accent(accent))
@@ -351,7 +419,12 @@ fn panels(b: &mut B, sides: &[Side]) {
             b.sp(
                 Shape::text_box(
                     format!("Points {}", i + 1),
-                    R::new(col.x + pad, col.y + offset, inner_w, panel_h - offset - pad_b),
+                    R::new(
+                        col.x + pad,
+                        col.y + offset,
+                        inner_w,
+                        panel_h - offset - pad_b,
+                    ),
                     Text::new(paras),
                 ),
                 Role::Item(i),
@@ -386,9 +459,12 @@ fn panels(b: &mut B, sides: &[Side]) {
     vs.decorative = true;
     vs.text = Some(
         Text::one(
-            Para::from_runs(vec![Run::new("VS").size(if narrow { 12.0 } else { 14.0 }).bold().color(Clr::tx1())])
-                .align(Align::Center)
-                .no_bullet(),
+            Para::from_runs(vec![Run::new("VS")
+                .size(if narrow { 12.0 } else { 14.0 })
+                .bold()
+                .color(Clr::tx1())])
+            .align(Align::Center)
+            .no_bullet(),
         )
         .anchor(Anchor::Middle),
     );
@@ -405,13 +481,26 @@ fn table(b: &mut B, sides: &[Side]) {
     let narrow = area.w < 8_000_000;
     let gap = if narrow { 380_000 } else { 600_000 };
     // Blueprint-style bracketed row labels need the room.
-    let idx_w = if t.look.header == Header::Banner && area.w >= 9_000_000 { 560_000 } else { 0 };
+    let idx_w = if t.look.header == Header::Banner && area.w >= 9_000_000 {
+        560_000
+    } else {
+        0
+    };
     let col_w = (area.w - gap) / 2;
     let cell_w = col_w - idx_w;
     let head_pt = fit_heading(t, sides, col_w, 26.0, 18.0, 16.0);
     let head_h = sides
         .iter()
-        .map(|s| stack_height(std::slice::from_ref(&s.head), head_pt, col_w, factor_major(t) * HEAD_SAFE, 1.0, 0.0))
+        .map(|s| {
+            stack_height(
+                std::slice::from_ref(&s.head),
+                head_pt,
+                col_w,
+                factor_major(t) * HEAD_SAFE,
+                1.0,
+                0.0,
+            )
+        })
         .max()
         .unwrap_or(0);
     let rule_gap = 110_000;
@@ -424,7 +513,16 @@ fn table(b: &mut B, sides: &[Side]) {
             .map(|s| {
                 s.points
                     .iter()
-                    .map(|p| stack_height(std::slice::from_ref(p), pt, cell_w, factor_minor(t), 1.04, 0.0) + 2 * row_pad)
+                    .map(|p| {
+                        stack_height(
+                            std::slice::from_ref(p),
+                            pt,
+                            cell_w,
+                            factor_minor(t),
+                            1.04,
+                            0.0,
+                        ) + 2 * row_pad
+                    })
                     .collect()
             })
             .collect();
@@ -439,17 +537,36 @@ fn table(b: &mut B, sides: &[Side]) {
     let max_h = area.h - 100_000;
     let mut pt = head_pt.min(22.0);
     while pt > 14.0 {
-        let total = head_block + heights(pt).iter().map(|c| c.iter().sum::<i64>()).max().unwrap_or(0);
+        let total = head_block
+            + heights(pt)
+                .iter()
+                .map(|c| c.iter().sum::<i64>())
+                .max()
+                .unwrap_or(0);
         if total <= max_h {
             break;
         }
         pt -= 0.5;
     }
     let rows = heights(pt);
-    let total = head_block + rows.iter().map(|c| c.iter().sum::<i64>()).max().unwrap_or(0);
+    let total = head_block
+        + rows
+            .iter()
+            .map(|c| c.iter().sum::<i64>())
+            .max()
+            .unwrap_or(0);
     let top = vcentre(R::new(area.x, area.y, area.w, max_h), total.min(max_h));
     let cols = columns(R::new(area.x, top, area.w, total), 2, gap);
-    if let Some(sh) = sheet(t, "Table sheet", R::new(area.x - 160_000, top - 140_000, area.w + 320_000, total + 280_000)) {
+    if let Some(sh) = sheet(
+        t,
+        "Table sheet",
+        R::new(
+            area.x - 160_000,
+            top - 140_000,
+            area.w + 320_000,
+            total + 280_000,
+        ),
+    ) {
         b.sp(sh, Role::Deco);
     }
     for (i, (col, side)) in cols.iter().zip(sides.iter()).enumerate() {
@@ -461,9 +578,13 @@ fn table(b: &mut B, sides: &[Side]) {
                     "Versus",
                     R::new(area.x + col_w, top, gap, head_h),
                     Text::one(
-                        Para::from_runs(vec![Run::new("vs").size(14.0).italic().font(FontRef::Major).color(muted(60))])
-                            .align(Align::Center)
-                            .no_bullet(),
+                        Para::from_runs(vec![Run::new("vs")
+                            .size(14.0)
+                            .italic()
+                            .font(FontRef::Major)
+                            .color(muted(60))])
+                        .align(Align::Center)
+                        .no_bullet(),
                     )
                     .anchor(Anchor::Bottom),
                 ),
@@ -519,7 +640,8 @@ fn table(b: &mut B, sides: &[Side]) {
                 Shape::text_box(
                     format!("Point {}.{}", i + 1, r + 1),
                     R::new(col.x + idx_w, y + row_pad, cell_w, h - 2 * row_pad),
-                    Text::one(Para::from_runs(vec![Run::new(point.clone()).size(pt)]).no_bullet()).anchor(Anchor::Middle),
+                    Text::one(Para::from_runs(vec![Run::new(point.clone()).size(pt)]).no_bullet())
+                        .anchor(Anchor::Middle),
                 ),
                 Role::Item(i),
             );
@@ -599,7 +721,16 @@ fn fields(b: &mut B, sides: &[Side]) {
     let head_pt = fit_heading(t, sides, inner_w, 38.0, 24.0, 20.0);
     let head_h = sides
         .iter()
-        .map(|s| stack_height(std::slice::from_ref(&s.head), head_pt, inner_w, factor_major(t) * HEAD_SAFE, 1.0, 0.0))
+        .map(|s| {
+            stack_height(
+                std::slice::from_ref(&s.head),
+                head_pt,
+                inner_w,
+                factor_major(t) * HEAD_SAFE,
+                1.0,
+                0.0,
+            )
+        })
         .max()
         .unwrap_or(0);
     let rule_y = pad_t + head_h + 150_000;
@@ -607,8 +738,20 @@ fn fields(b: &mut B, sides: &[Side]) {
     let ind = 285_750;
     let h = area.h - 40_000;
     let avail = h - pts_y - pad_b;
-    let pt = fit_points(t, sides, inner_w - ind, avail, (if narrow { 20.0 } else { 24.0f64 }).min(head_pt), 13.0, 9.0);
-    let pts_h = sides.iter().map(|s| points_height(t, &s.points, pt, inner_w - ind, 9.0)).max().unwrap_or(0);
+    let pt = fit_points(
+        t,
+        sides,
+        inner_w - ind,
+        avail,
+        (if narrow { 20.0 } else { 24.0f64 }).min(head_pt),
+        13.0,
+        9.0,
+    );
+    let pts_h = sides
+        .iter()
+        .map(|s| points_height(t, &s.points, pt, inner_w - ind, 9.0))
+        .max()
+        .unwrap_or(0);
     let colours = field_colours(t);
     for (i, side) in sides.iter().enumerate() {
         let (fill, ink) = colours[i];
@@ -625,7 +768,12 @@ fn fields(b: &mut B, sides: &[Side]) {
                 Role::Item(i),
             );
         }
-        let mut field = Shape::deco(format!("Field {}", i + 1), geom.clone(), rect, Fill::Solid(fill));
+        let mut field = Shape::deco(
+            format!("Field {}", i + 1),
+            geom.clone(),
+            rect,
+            Fill::Solid(fill),
+        );
         if sticker {
             field.line = Some(Line::new(Clr::tx1(), 2.25));
         }
@@ -718,9 +866,19 @@ mod tests {
     #[test]
     fn every_comparison_variant_builds_for_one_to_five_points_per_side_in_every_header() {
         for base in THEMES {
-            for style in [CompareStyle::Panels, CompareStyle::Rows, CompareStyle::Fields] {
+            for style in [
+                CompareStyle::Panels,
+                CompareStyle::Rows,
+                CompareStyle::Fields,
+            ] {
                 for (h, th) in all_looks(base) {
-                    let th = ThemeSpec { look: Look { compare: style, ..th.look }, ..th };
+                    let th = ThemeSpec {
+                        look: Look {
+                            compare: style,
+                            ..th.look
+                        },
+                        ..th
+                    };
                     for (l, r) in [(1, 1), (2, 2), (3, 3), (5, 5), (3, 5), (5, 2), (4, 4)] {
                         let who = format!("{} {h:?} {style:?} {l}/{r}", base.id);
                         let built = comparison(&slide(l, r), &ctx(&th));
@@ -735,9 +893,24 @@ mod tests {
     #[test]
     fn a_comparison_from_bullets_splits_into_two_sides() {
         let th = *crate::deck::theme::theme("slate").unwrap();
-        for style in [CompareStyle::Panels, CompareStyle::Rows, CompareStyle::Fields] {
-            let th = ThemeSpec { look: Look { compare: style, ..th.look }, ..th };
-            let mut s = DesignedSlide::new("Build vs buy").bullets(["Own the roadmap", "Slower start", "Ready tomorrow", "Vendor lock-in"]);
+        for style in [
+            CompareStyle::Panels,
+            CompareStyle::Rows,
+            CompareStyle::Fields,
+        ] {
+            let th = ThemeSpec {
+                look: Look {
+                    compare: style,
+                    ..th.look
+                },
+                ..th
+            };
+            let mut s = DesignedSlide::new("Build vs buy").bullets([
+                "Own the roadmap",
+                "Slower start",
+                "Ready tomorrow",
+                "Vendor lock-in",
+            ]);
             s.layout = Some(LayoutKind::Comparison);
             let built = comparison(&s, &ctx(&th));
             check_built(&th, &built, "bullets");
@@ -762,7 +935,11 @@ mod tests {
                 .unwrap_or_else(|| panic!("no {name}"))
         };
         for r in 1..=3 {
-            assert_eq!(y(&format!("Point 1.{r}")), y(&format!("Point 2.{r}")), "row {r} is shared");
+            assert_eq!(
+                y(&format!("Point 1.{r}")),
+                y(&format!("Point 2.{r}")),
+                "row {r} is shared"
+            );
         }
     }
 
@@ -770,7 +947,13 @@ mod tests {
     fn field_text_reads_on_the_field_in_every_theme_and_palette() {
         for base in THEMES {
             for pal in palettes() {
-                let th = ThemeSpec { look: Look { compare: CompareStyle::Fields, ..base.look }, ..base.with_palette(pal) };
+                let th = ThemeSpec {
+                    look: Look {
+                        compare: CompareStyle::Fields,
+                        ..base.look
+                    },
+                    ..base.with_palette(pal)
+                };
                 let built = comparison(&slide(3, 3), &ctx(&th));
                 let fill_of = |n: usize| -> Clr {
                     built
@@ -807,7 +990,12 @@ mod tests {
                             for r in &p.runs {
                                 let c = contrast_of(&th, &fill, r.color.as_ref().unwrap());
                                 if heading {
-                                    assert!(r.bold == Some(true) && r.size.unwrap() >= 18.0 && c >= 3.0, "{} in {}: heading {c:.2}", base.id, pal.id);
+                                    assert!(
+                                        r.bold == Some(true) && r.size.unwrap() >= 18.0 && c >= 3.0,
+                                        "{} in {}: heading {c:.2}",
+                                        base.id,
+                                        pal.id
+                                    );
                                 } else {
                                     assert!(c >= 4.5, "{} in {}: points {c:.2}", base.id, pal.id);
                                 }
@@ -825,18 +1013,31 @@ mod tests {
     fn chip_text_reads_on_panel_headers_in_every_palette() {
         for base in THEMES {
             for pal in palettes() {
-                let th = ThemeSpec { look: Look { compare: CompareStyle::Panels, ..base.look }, ..base.with_palette(pal) };
+                let th = ThemeSpec {
+                    look: Look {
+                        compare: CompareStyle::Panels,
+                        ..base.look
+                    },
+                    ..base.with_palette(pal)
+                };
                 let built = comparison(&slide(2, 2), &ctx(&th));
                 for it in &built.items {
                     let El::Sp(sh) = &it.el else { continue };
                     if !sh.name.starts_with("Header ") || sh.text.is_none() {
                         continue;
                     }
-                    let Fill::Solid(fill) = &sh.fill else { continue };
+                    let Fill::Solid(fill) = &sh.fill else {
+                        continue;
+                    };
                     for p in &sh.text.as_ref().unwrap().paras {
                         for r in &p.runs {
                             let c = contrast_of(&th, fill, r.color.as_ref().unwrap());
-                            assert!(c >= 3.0 && r.bold == Some(true) && r.size.unwrap() >= 14.0, "{} in {}: chip {c:.2}", base.id, pal.id);
+                            assert!(
+                                c >= 3.0 && r.bold == Some(true) && r.size.unwrap() >= 14.0,
+                                "{} in {}: chip {c:.2}",
+                                base.id,
+                                pal.id
+                            );
                         }
                     }
                 }
@@ -846,7 +1047,13 @@ mod tests {
 
     #[test]
     fn comparison_titles_still_parse() {
-        assert_eq!(comparison_titles("Build vs buy"), ("Build".into(), "buy".into()));
-        assert_eq!(comparison_titles("Pricing"), ("Option A".into(), "Option B".into()));
+        assert_eq!(
+            comparison_titles("Build vs buy"),
+            ("Build".into(), "buy".into())
+        );
+        assert_eq!(
+            comparison_titles("Pricing"),
+            ("Option A".into(), "Option B".into())
+        );
     }
 }

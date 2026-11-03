@@ -66,6 +66,14 @@ ignore = [
   { id = "RUSTSEC-2026-0367", reason = "zip extract() SUID/SGID; Harbor never extracts to disk (in-memory reads only); patched zip >= 9 pending upstream pins" },
   { id = "RUSTSEC-2026-0368", reason = "zip extract() symlink escape; Harbor never extracts to disk (in-memory reads only); patched zip >= 9 pending upstream pins" },
   { id = "RUSTSEC-2026-0369", reason = "zip extract() perms through symlinks; Harbor never extracts to disk (in-memory reads only); patched zip >= 9 pending upstream pins" },
+  # RUSTSEC-2026-0429: `ZipArchive::extract` aborts the process on a symlink
+  # entry with a large declared size. Same shape as the three above: only
+  # `extract()` is affected, patched only in zip >= 9.0.0, and every locked zip
+  # (4.6.1 in Harbor's own crates, 2.4.2 / 7.2.0 via formualizer-workbook 0.9.3,
+  # 8.6.0 via calamine 0.36.1 and umya-spreadsheet 3.1.0) is reached only by
+  # in-memory reads; no Harbor source calls `.extract(`. Bumping calamine alone
+  # would not clear it while formualizer 0.9.3 and umya 3.1 pin zip < 9.
+  { id = "RUSTSEC-2026-0429", reason = "zip extract() abort on large symlink entry; Harbor never extracts to disk (in-memory reads only); patched zip >= 9 pending upstream pins" },
 ]
 
 # ---------------------------------------------------------------------------

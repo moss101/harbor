@@ -149,8 +149,11 @@ mod depth_tests {
         // A package carrying such a part is rejected by the shared probe, so
         // every reader that probes first (pptx, docx, xlsx) is covered.
         let mut zip = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
-        zip.start_file("ppt/slides/slide1.xml", zip::write::SimpleFileOptions::default())
-            .unwrap();
+        zip.start_file(
+            "ppt/slides/slide1.xml",
+            zip::write::SimpleFileOptions::default(),
+        )
+        .unwrap();
         std::io::Write::write_all(&mut zip, deep.as_bytes()).unwrap();
         let bytes = zip.finish().unwrap().into_inner();
         let mut archive = zip::ZipArchive::new(std::io::Cursor::new(bytes)).unwrap();

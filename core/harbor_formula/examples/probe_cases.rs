@@ -11,7 +11,9 @@ use harbor_formula::{CellValue, HarborWorkbook};
 use serde_json::{json, Value};
 
 fn fixture_value(v: &Value) -> CellValue {
-    let Some(o) = v.as_object() else { return CellValue::Blank };
+    let Some(o) = v.as_object() else {
+        return CellValue::Blank;
+    };
     if let Some(n) = o.get("n").and_then(|x| x.as_f64()) {
         CellValue::Number(n)
     } else if let Some(s) = o.get("t").and_then(|x| x.as_str()) {
@@ -19,7 +21,9 @@ fn fixture_value(v: &Value) -> CellValue {
     } else if let Some(b) = o.get("b").and_then(|x| x.as_bool()) {
         CellValue::Bool(b)
     } else if let Some(e) = o.get("e").and_then(|x| x.as_str()) {
-        CellValue::Error(harbor_formula::CellError::from_code(e).unwrap_or(harbor_formula::CellError::Value))
+        CellValue::Error(
+            harbor_formula::CellError::from_code(e).unwrap_or(harbor_formula::CellError::Value),
+        )
     } else {
         CellValue::Blank
     }

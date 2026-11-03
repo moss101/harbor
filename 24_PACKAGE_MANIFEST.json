@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "b29a605063524d5e59ecdd7efe91dcf86e0bdb8b86032e0fe27c353b92461408",
+  "input_manifest_sha256": "370e0b52fd47b4af2bfac1211608bf8f57e0bef6dfe519ab13bbe3869b53508e",
   "file_count_excluding_manifest": 2631,
   "files": [
     {
@@ -124,13 +124,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 519290,
-      "sha256": "b76a0b573ba2c942b6f6e11290ac5a59b687018e07edf8c336377b6500c953b2"
+      "bytes": 519291,
+      "sha256": "76be72352d094de078bba20b02b25c2adedad99fa595f59cb1ea03fc3958a7ad"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1375,
-      "sha256": "ce0b0ff8ffcd5015c13302f359351f88839499e16ea248118671b19995bfd670"
+      "sha256": "eecedc0dbacd82d6d329614a276ce71a7e2128ba2db0198e9979ecd94e3049bc"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -664,8 +664,8 @@
     },
     {
       "path": "apps/harbor_app/lib/surfaces/home_surface.dart",
-      "bytes": 41659,
-      "sha256": "4b676141f769e2c4f4b687a9251d28f06faf917a4242ae87e9f1f15a3e842051"
+      "bytes": 41663,
+      "sha256": "17324c75a6925e233acc193ed53916a7013688c685a89d155dd152aec7662475"
     },
     {
       "path": "apps/harbor_app/lib/surfaces/knowledge_ingest.dart",
@@ -714,8 +714,8 @@
     },
     {
       "path": "apps/harbor_app/lib/surfaces/threads_dialog.dart",
-      "bytes": 6561,
-      "sha256": "1c48c755e8e671d12407a0cfefcb32c465624f113dac3ce1daa5e1c122c462b5"
+      "bytes": 6551,
+      "sha256": "22e4db7458869b55b5318b80d00adb3884c55c08ba5078036e68a41c889b423b"
     },
     {
       "path": "apps/harbor_app/lib/surfaces/work/command_bar.dart",
@@ -729,8 +729,8 @@
     },
     {
       "path": "apps/harbor_app/lib/surfaces/work/deck_view.dart",
-      "bytes": 27862,
-      "sha256": "8eebd2a5c94bc0414027e24d424b05479106bc075745c56d94b9466ac37e8d54"
+      "bytes": 27855,
+      "sha256": "64f7df1cf916a2a25adc2dc01dd88e7f3df16d304363e9de64ed698b39e71412"
     },
     {
       "path": "apps/harbor_app/lib/surfaces/work/document_view.dart",
@@ -749,8 +749,8 @@
     },
     {
       "path": "apps/harbor_app/lib/surfaces/work/workbook_view.dart",
-      "bytes": 27710,
-      "sha256": "b086e881d1b71f83b973dac30428aa366a9a6ef16ecefa93c9fccc050bd1a0b4"
+      "bytes": 27714,
+      "sha256": "fa5db8c8e270bb5cf0a078f4dbeeebcf881bee87f24cc9f0bcbe76e2393912c0"
     },
     {
       "path": "apps/harbor_app/lib/surfaces/work_surface.dart",
@@ -1069,8 +1069,8 @@
     },
     {
       "path": "apps/harbor_app/test/vision_ocr_test.dart",
-      "bytes": 9475,
-      "sha256": "07b2346c1c2a205b2a3393db451ea8de3d0e9c01a03c82b3348133301437f153"
+      "bytes": 9420,
+      "sha256": "6330e26c559983dcff149dab3897f44142b5ce1f0eb0f41be412c0e97bc08450"
     },
     {
       "path": "apps/harbor_app/test/work_command_bar_test.dart",
@@ -1859,8 +1859,8 @@
     },
     {
       "path": "core/.cargo/audit.toml",
-      "bytes": 1090,
-      "sha256": "4ba9ba4f45671648d93534fe15ab9f3bca7894e76f3604cf2804bdf6ff2e3cee"
+      "bytes": 1205,
+      "sha256": "4fa1242afa37d6193fcfefdd3f96645558469d41ec1027dfca29175566b1f828"
     },
     {
       "path": "core/.cargo/config.toml",
@@ -1869,8 +1869,8 @@
     },
     {
       "path": "core/Cargo.lock",
-      "bytes": 99501,
-      "sha256": "d10a1d275a3e355b8651823d956270f14a2e6938cb59f1ce10b5a393e23d4a9b"
+      "bytes": 99503,
+      "sha256": "f5d2e6d050d01d9cfefad7eade45d1a70c658ba0080e40a4f2fc1abb7a0f4fea"
     },
     {
       "path": "core/Cargo.toml",
@@ -1879,8 +1879,8 @@
     },
     {
       "path": "core/deny.toml",
-      "bytes": 6450,
-      "sha256": "cfa16f245c7730eac67f110ab1d23a679fa43d493336d0d8a9ae134836aad7d1"
+      "bytes": 7173,
+      "sha256": "02e053a7ba8b3b852839f0147b81688afdb21e94a9f0f8098350bda6e9145b53"
     },
     {
       "path": "core/fuzz/.gitignore",
@@ -2244,13 +2244,13 @@
     },
     {
       "path": "core/harbor_artifacts/examples/baseline_deck.rs",
-      "bytes": 677,
-      "sha256": "77b6d60ce56c7bc311a00d8ea734b0a312f4218e00e2fe3b52bff4c10bab40ab"
+      "bytes": 1034,
+      "sha256": "e6e1c25732f8dde24888d882908d92d5ef05f7c1636d4a3cdf20c290d4835392"
     },
     {
       "path": "core/harbor_artifacts/examples/deck_gallery.rs",
-      "bytes": 7704,
-      "sha256": "041e0a13f8db670d88a849b78e91ed0aefaa48769cc50c1bb1165a574ec1e2a3"
+      "bytes": 9816,
+      "sha256": "b0b497ff7510af9bf46af89463c6b1a39dfe5277ee0a9d1822ca7a203bc31790"
     },
     {
       "path": "core/harbor_artifacts/examples/gen_docx_fixture.rs",
@@ -2279,118 +2279,118 @@
     },
     {
       "path": "core/harbor_artifacts/src/deck/cover.rs",
-      "bytes": 57823,
-      "sha256": "dd8f15da8eb6ac90e04cc94c7c037b6fcea6426ddbf191589cccaa71e8aebd68"
+      "bytes": 66326,
+      "sha256": "01aaf790b56448cab5961573f89a08edf092efe5b68bfde761342639b6f07046"
     },
     {
       "path": "core/harbor_artifacts/src/deck/grid.rs",
-      "bytes": 5827,
-      "sha256": "427c773cb38274c8c321e3192bf464dfb868abc0c91c225e9a98f72b7b6ccb55"
+      "bytes": 6104,
+      "sha256": "bc033755bbc7063e9250ac0412476a918a5854eb54ebce27941b17dc4342fc43"
     },
     {
       "path": "core/harbor_artifacts/src/deck/header.rs",
-      "bytes": 6766,
-      "sha256": "c91945afd7960188ed2e13d8943e60ef645bbb6f5be27d2192ad19ea9322e1e9"
+      "bytes": 7308,
+      "sha256": "9836e668483734f58da8cf29f89e83999f741280474e85407ac70c9d56459b70"
     },
     {
       "path": "core/harbor_artifacts/src/deck/layouts/agenda.rs",
-      "bytes": 20897,
-      "sha256": "47cd3e70c2f5b901318c38c87aed04f40016de597aeff9e489b27d7c448e97ab"
+      "bytes": 22868,
+      "sha256": "4642249ca30be2c1f87d5a24327c6c6aea229ec31119d73763400d164a04a91f"
     },
     {
       "path": "core/harbor_artifacts/src/deck/layouts/bullets.rs",
-      "bytes": 8031,
-      "sha256": "2d8cc3a74f60a4c740b480b6f234528f072498e0af6867a38fcca2fc45f77f6e"
+      "bytes": 8860,
+      "sha256": "24f9b1bf15ad4434e2afe6f22b546dcb9bf2768000fd9c6c1009307e1759e60d"
     },
     {
       "path": "core/harbor_artifacts/src/deck/layouts/cards.rs",
-      "bytes": 52211,
-      "sha256": "7b7e7a9d313d45bbf039ffff719bfdb6af13cb3ffaa63897ae0fe9211b1e5a63"
+      "bytes": 64063,
+      "sha256": "45e32b064bdc877727bc50fa2a98afd8fca63f3673745f16d0415496ac67cf14"
     },
     {
       "path": "core/harbor_artifacts/src/deck/layouts/compare.rs",
-      "bytes": 32033,
-      "sha256": "5067cefab5cf1e0c0cb243134e26d53e22e88c8a3c9b771dd3be894a3034b0e0"
+      "bytes": 35369,
+      "sha256": "9d10b491b59633a5338bc28fae0cd5b3bf1ce5d14a5dc1cfc29c44c0fb2d8032"
     },
     {
       "path": "core/harbor_artifacts/src/deck/layouts/kit.rs",
-      "bytes": 11576,
-      "sha256": "fdc6eda908b23d1110d5e4adcf8bd5888c7e8de46861c661d8496c29db7c6f71"
+      "bytes": 12314,
+      "sha256": "b8cd6bc7b09da72c99ada39a1c57e37a76d71c08f4f0e25b4a038acfdc5bd060"
     },
     {
       "path": "core/harbor_artifacts/src/deck/layouts/mod.rs",
-      "bytes": 14349,
-      "sha256": "bb215a012deede368312cfbe00d3971b2747d68b5581afa82f8e3a811e57ecab"
+      "bytes": 19112,
+      "sha256": "93bec0fa2d58dc4ae7688c6f6f74adb56ab0f373c69977a5c17c4bdbad8fb5ac"
     },
     {
       "path": "core/harbor_artifacts/src/deck/layouts/stats.rs",
-      "bytes": 43593,
-      "sha256": "fc12db4726d0c29cb30263f0a059262d95bd9f04d9ca1ffc71534b54db50852c"
+      "bytes": 50291,
+      "sha256": "75b11aff0287bac19888b9f39b6d08efd2aa7b33a68fe1af6fb0b855c6a99ddc"
     },
     {
       "path": "core/harbor_artifacts/src/deck/layouts/timeline.rs",
-      "bytes": 30833,
-      "sha256": "8ef38267ef5d09a67c0e7929d67b01c0c885ae2c6228ae4a3952afc6e74f9bd0"
+      "bytes": 34229,
+      "sha256": "3879cbe4592681a8ce3fe0a157b0a083d03a718bd292391cdaf91684b0008e80"
     },
     {
       "path": "core/harbor_artifacts/src/deck/look.rs",
-      "bytes": 12452,
-      "sha256": "aa052e06b476c1a39cc396043509235e284d019419846b414cba0e382a9202d3"
+      "bytes": 12893,
+      "sha256": "9f6514763b54838e28dbf632b80f96bbe5e496016f8673e7ab38f03592ec3f83"
     },
     {
       "path": "core/harbor_artifacts/src/deck/mod.rs",
-      "bytes": 23120,
-      "sha256": "5b7b99f3e9e38ac2757dd427eee41f72fa4a5d3d73025206b7f938a33ffcec7f"
+      "bytes": 24489,
+      "sha256": "f2b581f682782107bad81392191f891240b2e52cb52805caabeff960d5007c15"
     },
     {
       "path": "core/harbor_artifacts/src/deck/model.rs",
-      "bytes": 13664,
-      "sha256": "85448a67348c4d0ef995dacf58a640e99b7e034713557b2db230c587b28c2a81"
+      "bytes": 14850,
+      "sha256": "a6b404245c7176a2e3d44e9897ac6067a7c17e01b9820714a672cdf60d5f8a05"
     },
     {
       "path": "core/harbor_artifacts/src/deck/motion.rs",
-      "bytes": 23969,
-      "sha256": "2ee3175f198f7218eada3ecfdef1a596f7c5a508603d85633bd640a83024d9e2"
+      "bytes": 26642,
+      "sha256": "a47f5ed9a2c641d2d9e0d5bf0a7ebc655d969673dcfc4a5c2767c32dfb294260"
     },
     {
       "path": "core/harbor_artifacts/src/deck/ornament.rs",
-      "bytes": 2225,
-      "sha256": "3b97eb0692e9642a58ce600aedfa23a4d6bb55d6e67938521e5d1065a70f1aeb"
+      "bytes": 2291,
+      "sha256": "9d91dcea2ea13d04e96572dc3fd3650e7b776ea2e3cacec8a705e055c135559b"
     },
     {
       "path": "core/harbor_artifacts/src/deck/palette.rs",
-      "bytes": 7669,
-      "sha256": "c09a20311c935e3658daa045061a5825fc66bdd7694e6d10a04a750c7fa6f0b7"
+      "bytes": 8009,
+      "sha256": "b8110286c2f90beed4924f5869342bcda894afcbfff18cf79795f36866df963a"
     },
     {
       "path": "core/harbor_artifacts/src/deck/parts.rs",
-      "bytes": 20902,
-      "sha256": "5dbd9ba2e9cd95b467035d460f7dc1b70eb9eec95bd4a6d56a24918f6c4e61ee"
+      "bytes": 21991,
+      "sha256": "2586bf9b0d7ad9ad84c5e44b74f12d08182f3f6775c5e92331b25c663722ef4e"
     },
     {
       "path": "core/harbor_artifacts/src/deck/purpose.rs",
-      "bytes": 26397,
-      "sha256": "c42023380b34178d9006cdd9685d78b2fdc8dfcdafa7b586a74510d09dc8757c"
+      "bytes": 27817,
+      "sha256": "e788ee5cfd8a88e10b7819f2458551503e31617e287f12a3e4496718cf89bd42"
     },
     {
       "path": "core/harbor_artifacts/src/deck/source.rs",
-      "bytes": 15014,
-      "sha256": "fad58a817d8d3232bb5d35584852a3b2eabb46e2af097ca6dfa1c4e9b943bf94"
+      "bytes": 16095,
+      "sha256": "2cfe9310c49a298b495f59e15925df6541f0f87e8a4c1705f58bd2cea487ce73"
     },
     {
       "path": "core/harbor_artifacts/src/deck/starter.rs",
-      "bytes": 14045,
-      "sha256": "a70ea98347a0232a6026874dbc68e26e58210c1a7b2e6613a1bd7178c29343c6"
+      "bytes": 14945,
+      "sha256": "b0e3b645e91e48d2a32c9ff3417993dd71b128f2a6892e4ce65777825741b82e"
     },
     {
       "path": "core/harbor_artifacts/src/deck/theme.rs",
-      "bytes": 23380,
-      "sha256": "2d325d86104d2ba057b0366e4d4b7237457e1e959e7e11cc83bdb473c26696f5"
+      "bytes": 24855,
+      "sha256": "708fd07bea8060511ee773739c2bfdc4fc3c5d7e0f040a048421e6b956947a88"
     },
     {
       "path": "core/harbor_artifacts/src/deck/xml.rs",
-      "bytes": 27675,
-      "sha256": "7bd8e9115b7ae9d424c84b64c99c3082495517be340e995a27878b62a0fd5157"
+      "bytes": 28153,
+      "sha256": "be636a9df6fe431c21100dea11aae722204b30e278c99394709276c5aeec7930"
     },
     {
       "path": "core/harbor_artifacts/src/diff.rs",
@@ -2404,8 +2404,8 @@
     },
     {
       "path": "core/harbor_artifacts/src/lib.rs",
-      "bytes": 6632,
-      "sha256": "f238230c3ff092c12ee71447375818e904f7e8c9f234c82572d0865bdef23110"
+      "bytes": 6663,
+      "sha256": "a86beded158529ae86c29d7acb6a335be5aac2086d646fcb2cda897ada405ac3"
     },
     {
       "path": "core/harbor_artifacts/src/office_matrix.rs",
@@ -2419,8 +2419,8 @@
     },
     {
       "path": "core/harbor_artifacts/src/pptx.rs",
-      "bytes": 73390,
-      "sha256": "9feaa91f80035b025e2a5a305295ede8bb984c6830b7da058b5b07481a265c9f"
+      "bytes": 73482,
+      "sha256": "df35b64fb084b6290920084485609298139b1a3939ca1777b33dc514a34fd7bd"
     },
     {
       "path": "core/harbor_artifacts/src/workbook.rs",
@@ -2629,8 +2629,8 @@
     },
     {
       "path": "core/harbor_core/src/tools/authoring.rs",
-      "bytes": 95503,
-      "sha256": "4bd2f81bbd03a4d4e11bb9a5b33546cadb8f8e75cc52557c0ed1f4e3dadb4535"
+      "bytes": 95575,
+      "sha256": "c41e5fab8f3cabf42f1bb950cc8e153acf9b28f4e478154af0bda21d39cf8e48"
     },
     {
       "path": "core/harbor_core/src/tools/builtin.rs",
@@ -2639,8 +2639,8 @@
     },
     {
       "path": "core/harbor_core/src/tools/create.rs",
-      "bytes": 131611,
-      "sha256": "3092e6d6d1015d968c8d974f7e21dcd73b6fa729bfd6abcd14461af2042dd048"
+      "bytes": 134327,
+      "sha256": "5f0aae4fffe1affb9abbe90311bc42204233cbb4647950460947c823a7d1df6f"
     },
     {
       "path": "core/harbor_core/src/tools/invoices.rs",
@@ -2774,8 +2774,8 @@
     },
     {
       "path": "core/harbor_ffi/src/lib.rs",
-      "bytes": 265835,
-      "sha256": "b0cec8e9507e00f53c9c618abb6e60e65903e65d1b1435fafc8b716b72fc0a39"
+      "bytes": 266429,
+      "sha256": "dc7c6359b0b8fefdc4666c6acf8acca0e6ca3966d869307827da0750c360c3c9"
     },
     {
       "path": "core/harbor_ffi/src/threads.rs",
@@ -2784,8 +2784,8 @@
     },
     {
       "path": "core/harbor_ffi/tests/ask_threads.rs",
-      "bytes": 16340,
-      "sha256": "ebf3dcb5ecd6c97122a53806efcdc63fd5133c423739f08ab1dbaa44a7e2cde5"
+      "bytes": 16683,
+      "sha256": "be461164a17944a2d733256be843f8dbdb2c8412e4697cdc46be3ad9dfb9de78"
     },
     {
       "path": "core/harbor_ffi/tests/catalog_first_run.rs",
@@ -2924,8 +2924,8 @@
     },
     {
       "path": "core/harbor_formula/examples/probe_cases.rs",
-      "bytes": 2868,
-      "sha256": "6bd5de95a4b91f7579d6920527821739cc24f3b13efcd48d215c2bc656e97137"
+      "bytes": 2904,
+      "sha256": "bc662086501765d5b40ad77bb3e73d77ba8551101d7496a2077bc4ce737863ee"
     },
     {
       "path": "core/harbor_formula/examples/qualify_dump.rs",
@@ -3274,13 +3274,13 @@
     },
     {
       "path": "core/harbor_render/examples/scene_svg.rs",
-      "bytes": 16341,
-      "sha256": "e6c5c1a9a594edb1faf87fb9c6dd9913ac81f378a6282aea71fd2d08a121902d"
+      "bytes": 17355,
+      "sha256": "52c4f592294bd52254713f2dc2854e164b3ee8e8cc52100cb739985a0afe0a5c"
     },
     {
       "path": "core/harbor_render/src/lib.rs",
       "bytes": 690,
-      "sha256": "3015c9c49ed788660c0073dcac601c8400eb7668534909d61679e4436d57cfca"
+      "sha256": "27a75df41c6b54455587f6e7d5b48c1cc3535d0d6905e16b97f5b0668e1973a1"
     },
     {
       "path": "core/harbor_render/src/pdf.rs",
@@ -3304,8 +3304,8 @@
     },
     {
       "path": "core/harbor_render/src/scene.rs",
-      "bytes": 12849,
-      "sha256": "3957f44bbdd41b7bd28c71f016786a9a68018277eb26048e71717706f8c61e32"
+      "bytes": 12899,
+      "sha256": "84d6bda38ce90e9c90321f642d124fc4b27870ef78b84f0928db136faf9d9309"
     },
     {
       "path": "core/harbor_render/src/scene_chart.rs",
@@ -3314,33 +3314,33 @@
     },
     {
       "path": "core/harbor_render/src/slides/color.rs",
-      "bytes": 12942,
-      "sha256": "dacb39f70115a681b6df285dc216918c0784c6bf5f1a537abf1adfdb7df31e94"
+      "bytes": 12893,
+      "sha256": "e7a22ed960136e0a43c64582beed2bf0a10da000bfd134523e7372de5a23dfa4"
     },
     {
       "path": "core/harbor_render/src/slides/mod.rs",
-      "bytes": 49558,
-      "sha256": "a9cbbabf9f88bbcb585b5727f100b4c2164da8c7d2528496394110cf3dfe5343"
+      "bytes": 50334,
+      "sha256": "f3e421809170000f9711c2d22881efb798374ca67eb1877c13b1a7d5eae80cd7"
     },
     {
       "path": "core/harbor_render/src/slides/motion.rs",
-      "bytes": 16994,
-      "sha256": "968c0cbdccf3cae1e24e40b8f5a3c36e8da191c2b632d94ade5d195bb00483a8"
+      "bytes": 17135,
+      "sha256": "c45697e6be8aabe5a9234e0b1f55da48f1b3099dbd15c804a9bb42696624d9f9"
     },
     {
       "path": "core/harbor_render/src/slides/style.rs",
-      "bytes": 15204,
-      "sha256": "0bc40352cadc8ffb18cca2bbc5843e243a5a5df092420abaebb8bee86a65f62e"
+      "bytes": 15410,
+      "sha256": "47d7b722183f80f5acbb42a155cb11f8cfa4648c72b15a61f60711ebe4707dcb"
     },
     {
       "path": "core/harbor_render/src/slides/tests.rs",
-      "bytes": 22174,
-      "sha256": "331c658253047aa71c7059862cc22985b5dd0356bd133afcde45cd64f814496e"
+      "bytes": 23125,
+      "sha256": "ea113218b7df4dd036faf4d65e9a6945a4128e7cca8f1005c15b9d73857b006b"
     },
     {
       "path": "core/harbor_render/src/slides/text.rs",
-      "bytes": 23931,
-      "sha256": "a4ec6b46f6efb2b3d1d3eaf73899f266ebb0627525195a9b40ee240c837d51aa"
+      "bytes": 23945,
+      "sha256": "f2c7bc3d32e9cc9a48be9070e6960f2a261c409b08ca0601e12993721c27ab6a"
     },
     {
       "path": "core/harbor_render/tests/chart_roundtrip.rs",
@@ -3354,8 +3354,8 @@
     },
     {
       "path": "core/harbor_render/tests/scene_fixtures.rs",
-      "bytes": 2427,
-      "sha256": "7bed815ff252a974bc6eb69f2af16a9a022dbd06a430eb83218e157bd04d59ef"
+      "bytes": 2449,
+      "sha256": "8f9a0a9069da5c09db81b5e3983386ad2da7dda322138a8d9e9e530dbaa07948"
     },
     {
       "path": "core/harbor_security/Cargo.toml",

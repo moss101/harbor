@@ -67,16 +67,34 @@ const EN: Copy = Copy {
         ("Q4", "Scale", "Make it routine"),
     ],
     compare: [
-        ("Before", ["Slow and manual", "Hard to track", "Costly to change"]),
-        ("After", ["Fast and automatic", "Clear to everyone", "Easy to adapt"]),
+        (
+            "Before",
+            ["Slow and manual", "Hard to track", "Costly to change"],
+        ),
+        (
+            "After",
+            ["Fast and automatic", "Clear to everyone", "Easy to adapt"],
+        ),
     ],
     chart_title: "Growth over time",
     chart_series: "This year",
     chart_takeaways: ["Up and to the right", "The trend is accelerating"],
     people: [
-        ("Alex Morgan", "Role or title", "One line about what they bring"),
-        ("Sam Rivera", "Role or title", "One line about what they bring"),
-        ("Jo Carter", "Role or title", "One line about what they bring"),
+        (
+            "Alex Morgan",
+            "Role or title",
+            "One line about what they bring",
+        ),
+        (
+            "Sam Rivera",
+            "Role or title",
+            "One line about what they bring",
+        ),
+        (
+            "Jo Carter",
+            "Role or title",
+            "One line about what they bring",
+        ),
     ],
     quote: "\u{201c}A sentence in your customer's own words.\u{201d}",
     quote_by: "Name, role, company",
@@ -148,12 +166,16 @@ fn copy(rtl: bool) -> &'static Copy {
 pub fn sample_deck(theme: &str, motion: MotionPreset, rtl: bool) -> DesignedDeck {
     let c = copy(rtl);
     let mut slides = vec![
-        DesignedSlide::new(c.deck_title).bullets([c.deck_subtitle]).layout(LayoutKind::Cover),
+        DesignedSlide::new(c.deck_title)
+            .bullets([c.deck_subtitle])
+            .layout(LayoutKind::Cover),
         DesignedSlide::new(c.statement).layout(LayoutKind::Statement),
         cards_slide(c),
         stats_slide(c),
         timeline_slide(c),
-        DesignedSlide::new(c.close_title).bullets(c.contact).layout(LayoutKind::Closing),
+        DesignedSlide::new(c.close_title)
+            .bullets(c.contact)
+            .layout(LayoutKind::Closing),
     ];
     for s in &mut slides {
         s.notes = None;
@@ -186,7 +208,12 @@ fn stats_slide(c: &Copy) -> DesignedSlide {
 fn timeline_slide(c: &Copy) -> DesignedSlide {
     DesignedSlide::new(c.timeline_title)
         .layout(LayoutKind::Timeline)
-        .blocks(c.steps.iter().map(|(w, h, d)| Block::step(*w, *h, *d)).collect())
+        .blocks(
+            c.steps
+                .iter()
+                .map(|(w, h, d)| Block::step(*w, *h, *d))
+                .collect(),
+        )
 }
 
 /// Placeholder content for one storyline beat in the layout it usually takes.
@@ -202,12 +229,8 @@ fn beat_slide(beat: &Beat, c: &Copy, index: usize, last: bool) -> DesignedSlide 
         LayoutKind::Closing => DesignedSlide::new(c.close_title).bullets(c.contact),
         LayoutKind::Section => DesignedSlide::new(title).bullets([c.section_hint]),
         LayoutKind::Statement => DesignedSlide::new(beat.says),
-        LayoutKind::Cards => DesignedSlide::new(title).blocks(
-            c.cards
-                .iter()
-                .map(|(h, t)| Block::card(*h, *t))
-                .collect(),
-        ),
+        LayoutKind::Cards => DesignedSlide::new(title)
+            .blocks(c.cards.iter().map(|(h, t)| Block::card(*h, *t)).collect()),
         LayoutKind::Stats => DesignedSlide::new(title).blocks(
             c.stats
                 .iter()
@@ -216,7 +239,10 @@ fn beat_slide(beat: &Beat, c: &Copy, index: usize, last: bool) -> DesignedSlide 
                 .collect(),
         ),
         LayoutKind::Timeline => DesignedSlide::new(title).blocks(
-            c.steps.iter().map(|(w, h, d)| Block::step(*w, *h, *d)).collect(),
+            c.steps
+                .iter()
+                .map(|(w, h, d)| Block::step(*w, *h, *d))
+                .collect(),
         ),
         LayoutKind::Comparison => DesignedSlide::new(title).blocks(
             c.compare
@@ -242,22 +268,41 @@ fn beat_slide(beat: &Beat, c: &Copy, index: usize, last: bool) -> DesignedSlide 
             .bullets([c.quote])
             .attribution(c.quote_by),
         LayoutKind::Agenda => DesignedSlide::new(title).bullets(c.agenda),
-        LayoutKind::Chart => DesignedSlide::new(title)
-            .bullets(c.chart_takeaways)
-            .chart(ChartSpec {
-                kind: ChartKind::Bar,
-                title: c.chart_title.into(),
-                categories: ["Q1", "Q2", "Q3", "Q4"].iter().map(|q| q.to_string()).collect(),
-                series: vec![(c.chart_series.into(), vec![12.0, 18.0, 25.0, 34.0])],
-            }),
+        LayoutKind::Chart => {
+            DesignedSlide::new(title)
+                .bullets(c.chart_takeaways)
+                .chart(ChartSpec {
+                    kind: ChartKind::Bar,
+                    title: c.chart_title.into(),
+                    categories: ["Q1", "Q2", "Q3", "Q4"]
+                        .iter()
+                        .map(|q| q.to_string())
+                        .collect(),
+                    series: vec![(c.chart_series.into(), vec![12.0, 18.0, 25.0, 34.0])],
+                })
+        }
         LayoutKind::ImageSplit => DesignedSlide::new(title).bullets(c.image_bullets),
-        LayoutKind::Bullets | LayoutKind::TwoColumn => DesignedSlide::new(title).bullets([beat.says, c.replace_hint]),
+        LayoutKind::Bullets | LayoutKind::TwoColumn => {
+            DesignedSlide::new(title).bullets([beat.says, c.replace_hint])
+        }
     };
     s.kicker = kicker;
     s.layout = Some(beat.layout);
     // The storyline's guidance rides in the speaker notes, where the author
     // sees it without it ever appearing on a slide.
-    s.notes = Some(format!("{} {}", beat.says, if index == 0 || last { "" } else { c.replace_hint }).trim().to_string());
+    s.notes = Some(
+        format!(
+            "{} {}",
+            beat.says,
+            if index == 0 || last {
+                ""
+            } else {
+                c.replace_hint
+            }
+        )
+        .trim()
+        .to_string(),
+    );
     s
 }
 
@@ -308,10 +353,16 @@ mod tests {
             for rtl in [false, true] {
                 let deck = starter_deck(p.id, None, None, rtl, None).unwrap();
                 assert_eq!(deck.slides.len(), p.beats.len(), "{}", p.id);
-                let bytes = deck.to_pptx_bytes().unwrap_or_else(|e| panic!("{} rtl={rtl}: {e}", p.id));
+                let bytes = deck
+                    .to_pptx_bytes()
+                    .unwrap_or_else(|e| panic!("{} rtl={rtl}: {e}", p.id));
                 let back = crate::pptx::PptxDeck::from_pptx_bytes(&bytes).unwrap();
                 assert_eq!(back.slides.len(), p.beats.len());
-                assert!(back.slides.iter().all(|s| !s.title.trim().is_empty()), "{}: every slide has a title", p.id);
+                assert!(
+                    back.slides.iter().all(|s| !s.title.trim().is_empty()),
+                    "{}: every slide has a title",
+                    p.id
+                );
             }
         }
         assert!(starter_deck("nope", None, None, false, None).is_none());
@@ -322,7 +373,9 @@ mod tests {
         for t in THEMES {
             for rtl in [false, true] {
                 for m in MotionPreset::ALL {
-                    sample_deck(t.id, m, rtl).to_pptx_bytes().unwrap_or_else(|e| panic!("{} {m:?}: {e}", t.id));
+                    sample_deck(t.id, m, rtl)
+                        .to_pptx_bytes()
+                        .unwrap_or_else(|e| panic!("{} {m:?}: {e}", t.id));
                 }
             }
         }
@@ -330,7 +383,14 @@ mod tests {
 
     #[test]
     fn a_starter_follows_its_storyline_and_honours_choices() {
-        let d = starter_deck("pitch_deck", Some("mono"), Some(MotionPreset::None), false, Some("Acme")).unwrap();
+        let d = starter_deck(
+            "pitch_deck",
+            Some("mono"),
+            Some(MotionPreset::None),
+            false,
+            Some("Acme"),
+        )
+        .unwrap();
         assert_eq!(d.title, "Acme");
         assert_eq!(d.slides[0].title, "Acme");
         assert_eq!(d.design.theme, "mono");
@@ -344,6 +404,9 @@ mod tests {
         // The Arabic starter is a right-to-left deck in Arabic copy.
         let ar = starter_deck("project_report", None, None, true, None).unwrap();
         assert!(ar.design.rtl);
-        assert!(ar.slides[0].title.chars().any(|c| ('\u{0600}'..='\u{06ff}').contains(&c)));
+        assert!(ar.slides[0]
+            .title
+            .chars()
+            .any(|c| ('\u{0600}'..='\u{06ff}').contains(&c)));
     }
 }

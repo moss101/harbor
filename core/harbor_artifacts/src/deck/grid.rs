@@ -62,7 +62,9 @@ pub fn glyph_factor(font: &str) -> f64 {
 
 /// Number of wrapped lines `text` needs in `width_emu` at `pt`.
 pub fn line_count(text: &str, pt: f64, width_emu: i64, factor: f64) -> usize {
-    let per_line = ((width_emu as f64 / EMU_PER_PT) / (pt * factor)).floor().max(1.0) as usize;
+    let per_line = ((width_emu as f64 / EMU_PER_PT) / (pt * factor))
+        .floor()
+        .max(1.0) as usize;
     let mut lines = 0usize;
     for hard in text.split('\n') {
         let mut cur = 0usize;
@@ -111,6 +113,7 @@ pub fn stack_height(
 
 /// The largest size in `[min_pt, max_pt]` (0.5 pt steps) at which `paras`
 /// fit a box of `width_emu` x `height_emu`; `min_pt` when none does.
+#[allow(clippy::too_many_arguments)]
 pub fn fit_pt(
     paras: &[String],
     width_emu: i64,
@@ -161,9 +164,17 @@ mod tests {
     fn wrapping_estimate_is_monotonic_and_breaks_long_words() {
         let w = 3 * 914_400; // 3 in
         let short = line_count("Revenue grew", 20.0, w, 0.5);
-        let long = line_count(&"Revenue grew steadily across every region ".repeat(4), 20.0, w, 0.5);
+        let long = line_count(
+            &"Revenue grew steadily across every region ".repeat(4),
+            20.0,
+            w,
+            0.5,
+        );
         assert!(long > short);
-        assert!(line_count(&"x".repeat(200), 20.0, w, 0.5) > 5, "an unbroken word still wraps");
+        assert!(
+            line_count(&"x".repeat(200), 20.0, w, 0.5) > 5,
+            "an unbroken word still wraps"
+        );
         assert_eq!(line_count("", 20.0, w, 0.5), 1);
         assert_eq!(line_count("a\nb\nc", 20.0, w, 0.5), 3, "hard breaks count");
     }
@@ -174,9 +185,20 @@ mod tests {
         let roomy = fit_pt(&paras, 9_000_000, 3_000_000, 24.0, 12.0, 0.5, 1.0, 8.0);
         assert_eq!(roomy, 24.0);
         let tight = fit_pt(&paras, 3_000_000, 1_500_000, 24.0, 12.0, 0.5, 1.0, 8.0);
-        assert!(tight < 24.0 && tight >= 12.0);
-        assert!(stack_height(&paras, tight, 3_000_000, 0.5, 1.0, 8.0) <= 1_500_000 || tight == 12.0);
-        let hopeless = fit_pt(&["word ".repeat(500)], 1_000_000, 500_000, 24.0, 12.0, 0.5, 1.0, 8.0);
+        assert!((12.0..24.0).contains(&tight));
+        assert!(
+            stack_height(&paras, tight, 3_000_000, 0.5, 1.0, 8.0) <= 1_500_000 || tight == 12.0
+        );
+        let hopeless = fit_pt(
+            &["word ".repeat(500)],
+            1_000_000,
+            500_000,
+            24.0,
+            12.0,
+            0.5,
+            1.0,
+            8.0,
+        );
         assert_eq!(hopeless, 12.0);
     }
 }
