@@ -474,9 +474,9 @@ class _HomeSurfaceState extends State<HomeSurface> {
       final reply = i + 1 < messages.length ? messages[i + 1] : null;
       final meta =
           ((reply?['meta'] as Map?) ?? const {}).cast<String, dynamic>();
-      final turn = AnswerTurn(m['text'] as String,
-          runId: meta['run_id'] as String?)
-        ..busy = false;
+      final turn =
+          AnswerTurn(m['text'] as String, runId: meta['run_id'] as String?)
+            ..busy = false;
       final citations = (meta['citations'] as List?) ?? const [];
       if (reply?['kind'] == 'answer') {
         turn.answer = {

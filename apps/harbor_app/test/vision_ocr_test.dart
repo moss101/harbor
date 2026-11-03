@@ -153,11 +153,7 @@ void main() {
 
       await tester.tap(button);
       final settled = await _settle(
-          tester,
-          () => find
-              .text('Reading scans (GPU)')
-              .evaluate()
-              .isNotEmpty);
+          tester, () => find.text('Reading scans (GPU)').evaluate().isNotEmpty);
       expect(settled, isTrue);
       expect(find.text('Reading scans (GPU)'), findsOneWidget);
       expect(svc.submitCalls, 0,
