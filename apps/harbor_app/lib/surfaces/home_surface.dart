@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:harbor_domain/harbor_domain.dart';
 import 'package:harbor_native/harbor_ffi.dart' as ffi;
 import 'package:harbor_ui/harbor_ui.dart';
@@ -17,6 +18,7 @@ import '../widgets/answer.dart';
 import '../widgets/composer.dart';
 import '../widgets/ops.dart';
 import '../widgets/route_panel.dart';
+import '../widgets/skill_output.dart';
 import '../widgets/trust.dart';
 import 'knowledge_ingest.dart';
 import 'skill_run.dart';
@@ -92,6 +94,10 @@ class _Entry {
 
   /// The latest report of the run the task's sheet started.
   Map<String, dynamic>? report;
+
+  /// The skill whose sheet was opened for this request (the routed one,
+  /// or the one the person picked from the choices).
+  SkillSummary? skill;
 }
 
 class _HomeSurfaceState extends State<HomeSurface> {
@@ -571,6 +577,10 @@ class _HomeSurfaceState extends State<HomeSurface> {
   Future<void> _openSkill(
       HarborService service, _Entry entry, SkillSummary skill) async {
     if (skill.graph == null) return;
+    // The sheet takes the keyboard; closing it must not hand the keyboard
+    // back to the ask box over the result.
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() => entry.skill = skill);
     final office = entry.office;
     await SkillRunSheet.show(
       context,
@@ -650,18 +660,12 @@ class _HomeSurfaceState extends State<HomeSurface> {
           ],
           attachments: [
             for (final a in _attachments)
-              InputChip(
+              _FileCard(
                 key: ValueKey('home-attachment-${a.name}'),
-                avatar: Icon(
-                    a.isOffice
-                        ? Icons.description_outlined
-                        : Icons.insert_drive_file_outlined,
-                    size: 16,
-                    color: t.colors.brand),
-                // File names are data.
-                label: Text(a.name, overflow: TextOverflow.ellipsis),
-                deleteButtonTooltipMessage: l10n.homeAttachmentRemove(a.name),
-                onDeleted:
+                name: a.name,
+                office: a.isOffice,
+                removeTooltip: l10n.homeAttachmentRemove(a.name),
+                onRemove:
                     _busy ? null : () => setState(() => _attachments.remove(a)),
               ),
             if (_attachments.isNotEmpty)
@@ -702,27 +706,54 @@ class _HomeSurfaceState extends State<HomeSurface> {
       key: const ValueKey('home-conversation'),
       children: [
         Expanded(
-          child: Scrollbar(
-            controller: _thread,
-            child: ListView.builder(
+          child: Stack(children: [
+            Positioned.fill(
+                child: Scrollbar(
               controller: _thread,
-              padding: EdgeInsets.fromLTRB(
-                  gutter, HarborSpace.s3, gutter, HarborSpace.s4),
-              itemCount: _entries.length,
-              itemBuilder: (context, i) => Center(
-                child: ConstrainedBox(
-                  constraints: width,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (i > 0) Divider(height: 1, color: t.colors.border),
-                      _entryView(l10n, service, _entries[i]),
-                    ],
+              child: ListView.builder(
+                controller: _thread,
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: EdgeInsets.fromLTRB(
+                    gutter, HarborSpace.s3, gutter, HarborSpace.s4),
+                itemCount: _entries.length,
+                itemBuilder: (context, i) => Center(
+                  child: ConstrainedBox(
+                    constraints: width,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (i > 0) Divider(height: 1, color: t.colors.border),
+                        _entryView(l10n, service, _entries[i]),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            )),
+            // The follow-up box sits on the canvas; a soft fade lets the
+            // thread slide under it instead of being cut at a hard edge.
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: HarborSpace.s4,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        t.colors.canvas.withValues(alpha: 0),
+                        t.colors.canvas
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
+          ]),
         ),
         SafeArea(
           top: false,
@@ -754,14 +785,15 @@ class _HomeSurfaceState extends State<HomeSurface> {
     }
     final Widget? outcome;
     if (entry.routing) {
-      outcome = const LinearProgressIndicator(
-          key: ValueKey('home-routing'), minHeight: 2);
+      // Reading the request: a quiet placeholder where the reply will be.
+      outcome = HarborSkeleton.lines(2, key: const ValueKey('home-routing'));
     } else if (entry.notice case final notice?) {
       outcome = _noticeBanner(l10n, notice);
     } else if (entry.route case final route? when service != null) {
       outcome = _TaskCard(
         decision: route,
         report: entry.report,
+        skill: entry.skill,
         onPick: (skill) => _openSkill(service, entry, skill),
         onReopen: route is RouteSkill
             ? () => _openSkill(service, entry, route.skill)
@@ -837,9 +869,15 @@ class _HomeSurfaceState extends State<HomeSurface> {
           avatar: Icon(icon, size: 16, color: t.colors.inkMuted),
           label: Text(label, style: t.text.smallOf(t.colors.ink)),
           shape: const StadiumBorder(),
-          side: BorderSide(color: t.colors.border),
-          backgroundColor: t.colors.surface,
-          onPressed: () => _prefill(label),
+          side: BorderSide(color: t.colors.borderSubtle),
+          backgroundColor: t.colors.canvas,
+          visualDensity: VisualDensity.compact,
+          padding: const EdgeInsetsDirectional.fromSTEB(
+              HarborSpace.s2, 0, HarborSpace.s3, 0),
+          onPressed: () {
+            HapticFeedback.selectionClick();
+            _prefill(label);
+          },
         ),
     ];
 
@@ -858,16 +896,14 @@ class _HomeSurfaceState extends State<HomeSurface> {
         // model-backed action; say so once, plainly, with the Local Only
         // fact next to it, and take the user straight to Recommended.
         if (_needsFirstModel(context)) ...[
-          HarborBanner(
+          _FirstRunCard(
             key: const ValueKey('home-first-run'),
-            tone: HarborBannerTone.info,
-            icon: Icons.download_outlined,
             title: l10n.homeFirstRunTitle,
             body: l10n.homeFirstRunBody,
-            action: FilledButton.tonalIcon(
+            action: FilledButton.icon(
               key: const ValueKey('home-first-run-install'),
               onPressed: () => widget.state.openModels(ModelsTab.recommended),
-              icon: const Icon(Icons.recommend_outlined, size: 18),
+              icon: const Icon(Icons.download_rounded, size: 18),
               label: Text(l10n.homeFirstRunAction),
             ),
           ),
@@ -921,6 +957,7 @@ class _HomeSurfaceState extends State<HomeSurface> {
     return LayoutBuilder(
       builder: (context, box) => SingleChildScrollView(
         controller: _scroll,
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding:
             EdgeInsets.symmetric(horizontal: gutter, vertical: HarborSpace.s5),
         child: ConstrainedBox(
@@ -941,12 +978,14 @@ class _HomeSurfaceState extends State<HomeSurface> {
 }
 
 /// A routed task in the conversation: which skill's sheet was opened (or
-/// why none was picked, with choices), the run it started once it has one,
-/// and a way back into the sheet.
+/// why none was picked, with choices) and, once the sheet started a run,
+/// the run as a result card — the skill, its state, what it produced
+/// (readable, not JSON) and the way back into the sheet or to the run.
 class _TaskCard extends StatelessWidget {
   const _TaskCard({
     required this.decision,
     required this.report,
+    required this.skill,
     required this.onPick,
     required this.onReopen,
     required this.onBrowse,
@@ -954,6 +993,7 @@ class _TaskCard extends StatelessWidget {
   });
   final RouteDecision decision;
   final Map<String, dynamic>? report;
+  final SkillSummary? skill;
   final ValueChanged<SkillSummary> onPick;
   final VoidCallback? onReopen;
   final VoidCallback onBrowse;
@@ -962,38 +1002,98 @@ class _TaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final t = HarborTheme.of(context);
     final runId = report?['run_id'] as String?;
     final state = report?['state'] as String?;
+    final outputs = (report?['status'] as Map?)?['outputs'];
+    final picked = skill ??
+        (decision is RouteSkill ? (decision as RouteSkill).skill : null);
+    final reopen = onReopen ?? (picked == null ? null : () => onPick(picked));
+    // Once a run exists the choices are history: the run is the answer.
+    final showRoute = runId == null || decision is RouteSkill;
     return Column(
       key: const ValueKey('home-task'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        RoutePanel(decision: decision, onPick: onPick, onBrowse: onBrowse),
-        if (onReopen != null || runId != null) ...[
-          const SizedBox(height: HarborSpace.s2),
-          Wrap(
-            spacing: HarborSpace.s2,
-            runSpacing: HarborSpace.s2,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              if (runId != null) ...[
-                if (state != null) RunStateBadge(state: state),
-                HarborIdentifier(runId, size: 12),
-                TextButton.icon(
-                  key: const ValueKey('home-task-view-run'),
-                  onPressed: onViewRun,
-                  icon: const Icon(Icons.timeline_outlined, size: 16),
-                  label: Text(l10n.homeTaskViewRun),
+        if (showRoute)
+          RoutePanel(decision: decision, onPick: onPick, onBrowse: onBrowse),
+        if (runId != null) ...[
+          if (showRoute) const SizedBox(height: HarborSpace.s3),
+          HarborCard(
+            key: const ValueKey('home-task-result'),
+            padding: const EdgeInsets.all(HarborSpace.s4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: t.colors.brandSoft,
+                      borderRadius: BorderRadius.circular(HarborRadius.sm),
+                    ),
+                    child: Icon(Icons.account_tree_outlined,
+                        size: 18, color: t.colors.brand),
+                  ),
+                  const SizedBox(width: HarborSpace.s3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (picked != null)
+                          // Skill titles are data from the core (English).
+                          Text(picked.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: t.text.bodyStrongOf(t.colors.ink)),
+                        HarborIdentifier(runId,
+                            size: 11, color: t.colors.inkMuted),
+                      ],
+                    ),
+                  ),
+                  if (state != null) RunStateBadge(state: state),
+                ]),
+                if (outputs is Map && outputs.isNotEmpty) ...[
+                  const SizedBox(height: HarborSpace.s3),
+                  Divider(height: 1, color: t.colors.borderSubtle),
+                  const SizedBox(height: HarborSpace.s3),
+                  SkillOutputView(outputs: outputs, preview: true),
+                ],
+                const SizedBox(height: HarborSpace.s2),
+                Wrap(
+                  spacing: HarborSpace.s2,
+                  runSpacing: HarborSpace.s1,
+                  alignment: WrapAlignment.end,
+                  children: [
+                    TextButton.icon(
+                      key: const ValueKey('home-task-view-run'),
+                      onPressed: onViewRun,
+                      icon: const Icon(Icons.timeline_outlined, size: 16),
+                      label: Text(l10n.homeTaskViewRun),
+                    ),
+                    if (reopen != null)
+                      FilledButton.tonalIcon(
+                        key: const ValueKey('home-task-reopen'),
+                        onPressed: reopen,
+                        icon: const Icon(Icons.open_in_new, size: 16),
+                        label: Text(l10n.homeTaskReopen),
+                      ),
+                  ],
                 ),
               ],
-              if (onReopen != null)
-                TextButton.icon(
-                  key: const ValueKey('home-task-reopen'),
-                  onPressed: onReopen,
-                  icon: const Icon(Icons.open_in_new, size: 16),
-                  label: Text(l10n.homeTaskReopen),
-                ),
-            ],
+            ),
+          ),
+        ] else if (onReopen != null) ...[
+          const SizedBox(height: HarborSpace.s1),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              key: const ValueKey('home-task-reopen'),
+              onPressed: onReopen,
+              icon: const Icon(Icons.open_in_new, size: 16),
+              label: Text(l10n.homeTaskReopen),
+            ),
           ),
         ],
       ],
@@ -1026,10 +1126,12 @@ class _ModelPicker extends StatelessWidget {
         void toggle() =>
             controller.isOpen ? controller.close() : controller.open();
         if (compact) {
+          // Phones: a sheet from the bottom edge, not a menu squeezed
+          // against the screen edge.
           return IconButton(
             key: const ValueKey('home-model-picker'),
             tooltip: '${l10n.askModelPicker} · ${selected ?? ''}',
-            onPressed: toggle,
+            onPressed: () => _showSheet(context),
             icon: const Icon(Icons.memory_outlined),
           );
         }
@@ -1055,10 +1157,194 @@ class _ModelPicker extends StatelessWidget {
               size: 18,
               color: id == selected ? t.colors.brand : t.colors.inkMuted,
             ),
-            onPressed: () => onSelected(id),
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              onSelected(id);
+            },
             child: HarborIdentifier(id, size: 12),
           ),
       ],
+    );
+  }
+
+  Future<void> _showSheet(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final t = HarborTheme.of(context);
+    return showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (sheet) => SafeArea(
+        top: false,
+        child: Column(
+          key: const ValueKey('home-model-sheet'),
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  HarborSpace.s5, 0, HarborSpace.s5, HarborSpace.s1),
+              child:
+                  Text(l10n.askModelPicker, style: t.text.h2Of(t.colors.ink)),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  HarborSpace.s5, 0, HarborSpace.s5, HarborSpace.s2),
+              child:
+                  Text(runtimeLabel, style: t.text.smallOf(t.colors.inkMuted)),
+            ),
+            for (final id in models)
+              ListTile(
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: HarborSpace.s5),
+                minTileHeight: 52,
+                leading: Icon(
+                  id == selected
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_unchecked,
+                  color: id == selected ? t.colors.brand : t.colors.inkMuted,
+                ),
+                title: HarborIdentifier(id, size: 13),
+                selected: id == selected,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  onSelected(id);
+                  Navigator.of(sheet).pop();
+                },
+              ),
+            const SizedBox(height: HarborSpace.s3),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// First run: one calm card under the headline — what is missing, why,
+/// and the one action that fixes it. Not an alert: nothing is wrong yet.
+class _FirstRunCard extends StatelessWidget {
+  const _FirstRunCard(
+      {super.key,
+      required this.title,
+      required this.body,
+      required this.action});
+  final String title;
+  final String body;
+  final Widget action;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = HarborTheme.of(context);
+    return HarborCard(
+      padding: const EdgeInsets.all(HarborSpace.s4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: t.colors.brandSoft,
+                borderRadius: BorderRadius.circular(HarborRadius.sm),
+              ),
+              child:
+                  Icon(Icons.memory_outlined, size: 20, color: t.colors.brand),
+            ),
+            const SizedBox(width: HarborSpace.s3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: t.text.bodyStrongOf(t.colors.ink)),
+                  const SizedBox(height: HarborSpace.s1),
+                  Text(body,
+                      style: t.text
+                          .smallOf(t.colors.inkMuted)
+                          .copyWith(height: 1.45)),
+                ],
+              ),
+            ),
+          ]),
+          const SizedBox(height: HarborSpace.s3),
+          Align(alignment: AlignmentDirectional.centerEnd, child: action),
+        ],
+      ),
+    );
+  }
+}
+
+/// A file attached to the request: a small card with the file's type, its
+/// name (data, shown as is) and a remove action — the request's file at a
+/// glance, not a filter chip.
+class _FileCard extends StatelessWidget {
+  const _FileCard({
+    super.key,
+    required this.name,
+    required this.office,
+    required this.removeTooltip,
+    required this.onRemove,
+  });
+  final String name;
+  final bool office;
+  final String removeTooltip;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = HarborTheme.of(context);
+    final dot = name.lastIndexOf('.');
+    final ext = dot > 0 && dot < name.length - 1
+        ? name.substring(dot + 1).toUpperCase()
+        : '';
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 260, minHeight: 48),
+      padding: const EdgeInsetsDirectional.fromSTEB(
+          HarborSpace.s2, HarborSpace.s1, 0, HarborSpace.s1),
+      decoration: BoxDecoration(
+        color: t.colors.canvas,
+        borderRadius: BorderRadius.circular(HarborRadius.md),
+        border: Border.all(color: t.colors.border),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: t.colors.brandSoft,
+            borderRadius: BorderRadius.circular(HarborRadius.sm),
+          ),
+          child: Icon(
+              office
+                  ? Icons.description_outlined
+                  : Icons.insert_drive_file_outlined,
+              size: 18,
+              color: t.colors.brand),
+        ),
+        const SizedBox(width: HarborSpace.s2),
+        Flexible(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: t.text
+                      .smallOf(t.colors.ink)
+                      .copyWith(fontWeight: FontWeight.w600)),
+              if (ext.isNotEmpty)
+                Text(ext, style: t.text.captionOf(t.colors.inkMuted)),
+            ],
+          ),
+        ),
+        IconButton(
+          tooltip: removeTooltip,
+          onPressed: onRemove,
+          iconSize: 18,
+          icon: const Icon(Icons.close_rounded),
+        ),
+      ]),
     );
   }
 }

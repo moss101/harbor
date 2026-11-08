@@ -82,8 +82,7 @@ class _SaveAnswerPdfButtonState extends State<SaveAnswerPdfButton> {
     return IconButton(
       key: const ValueKey('answer-save-pdf'),
       tooltip: l10n.answerSavePdf,
-      iconSize: 18,
-      visualDensity: VisualDensity.compact,
+      iconSize: 20,
       onPressed: _busy ? null : _save,
       icon: const Icon(Icons.picture_as_pdf_outlined),
     );

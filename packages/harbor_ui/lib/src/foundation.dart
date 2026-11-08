@@ -124,6 +124,7 @@ class HarborSurfaceHeader extends StatelessWidget {
     this.leading,
     this.titleIsIdentifier = false,
     this.showTitleOnCompact = false,
+    this.maxWidth,
   });
 
   final String title;
@@ -138,8 +139,26 @@ class HarborSurfaceHeader extends StatelessWidget {
   /// the title is omitted unless it carries something else (a file name).
   final bool showTitleOnCompact;
 
+  /// Matches a page whose column is narrower than the canvas (a
+  /// [HarborPage] with the same maxWidth), so the title lines up with the
+  /// content under it instead of the canvas edge.
+  final double? maxWidth;
+
   @override
   Widget build(BuildContext context) {
+    final header = _build(context);
+    final max = maxWidth;
+    if (max == null) return header;
+    final gutter = HarborBreakpoints.gutter(HarborBreakpoints.of(context));
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: max + gutter * 2),
+          child: header),
+    );
+  }
+
+  Widget _build(BuildContext context) {
     final t = HarborTheme.of(context);
     final wc = HarborBreakpoints.of(context);
     final compact = HarborBreakpoints.isCompact(wc);

@@ -245,16 +245,18 @@ void main() {
     for (final label in ['Home', 'Work', 'Library', 'Recent']) {
       expect(find.text(label), findsOneWidget);
     }
-    await tester.tap(find.byKey(const ValueKey('shell-more')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    // The phone drawer lists More's surfaces as rows (a menu there opened
+    // past the drawer's edge).
     for (final label in ['Models', 'Skills', 'Activity', 'Settings']) {
-      expect(find.widgetWithText(MenuItemButton, label), findsOneWidget);
+      expect(
+          find.byWidgetPredicate(
+              (w) => w is HarborSidebarRow && w.label == label),
+          findsOneWidget);
     }
     for (final gone in ['Ask', 'Agents', 'Store', 'Knowledge']) {
       expect(find.text(gone), findsNothing);
     }
-    await tester.tap(find.widgetWithText(MenuItemButton, 'Activity'));
+    await tester.tap(find.byKey(const ValueKey('shell-more-activity')));
     for (var i = 0; i < 3; i++) {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));

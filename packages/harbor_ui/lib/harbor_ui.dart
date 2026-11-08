@@ -15,6 +15,7 @@ export 'src/navigation.dart';
 export 'src/progress.dart';
 export 'src/sheet.dart';
 export 'src/sidebar.dart';
+export 'src/skeleton.dart';
 export 'src/sources.dart';
 export 'src/states.dart';
 export 'src/status.dart';

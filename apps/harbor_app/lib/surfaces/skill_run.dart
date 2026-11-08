@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
@@ -15,6 +14,7 @@ import '../l10n/app_localizations.dart';
 import '../services/harbor_service.dart';
 import '../services/request_router.dart';
 import '../widgets/ops.dart';
+import '../widgets/skill_output.dart';
 
 /// Whether this platform's file picker hands back the user's actual file.
 ///
@@ -579,37 +579,46 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final t = HarborTheme.of(context);
-    return SafeArea(
-      top: false,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(HarborSpace.s5),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(l10n.skillsRunTitle(widget.skill.title),
-                style: t.text.h2Of(t.colors.ink)),
-            const SizedBox(height: HarborSpace.s2),
-            // English-only prose from builtin_skills.json, like the
-            // Skills surface: without its own direction the trailing
-            // full stop lands at the left edge in Arabic. The title
-            // above is deliberately NOT given one — it is interpolated
-            // into a localized Arabic template, where an embedded LTR
-            // run is exactly what bidi already handles.
-            Text(widget.skill.description,
-                textDirection: TextDirection.ltr,
-                style: t.text.bodyOf(t.colors.inkMuted)),
-            const SizedBox(height: HarborSpace.s4),
-            if (_report == null) ..._form(context, l10n, t),
-            if (_report != null) ..._result(context, l10n, t),
-            if (_error != null) ...[
-              const SizedBox(height: HarborSpace.s3),
-              HarborBanner(
-                  tone: HarborBannerTone.danger,
-                  title: l10n.skillsRunFailed,
-                  body: _error),
+    // The keyboard must never cover the field being typed in. A bottom
+    // sheet does not inset itself, so the sheet's viewport ends at the
+    // keyboard and the focused field scrolls into what is left.
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.only(bottom: keyboard),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(
+              HarborSpace.s5, HarborSpace.s2, HarborSpace.s5, HarborSpace.s5),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(l10n.skillsRunTitle(widget.skill.title),
+                  style: t.text.h2Of(t.colors.ink)),
+              const SizedBox(height: HarborSpace.s2),
+              // English-only prose from builtin_skills.json, like the
+              // Skills surface: without its own direction the trailing
+              // full stop lands at the left edge in Arabic. The title
+              // above is deliberately NOT given one — it is interpolated
+              // into a localized Arabic template, where an embedded LTR
+              // run is exactly what bidi already handles.
+              Text(widget.skill.description,
+                  textDirection: TextDirection.ltr,
+                  style: t.text.bodyOf(t.colors.inkMuted)),
+              const SizedBox(height: HarborSpace.s4),
+              if (_report == null) ..._form(context, l10n, t),
+              if (_report != null) ..._result(context, l10n, t),
+              if (_error != null) ...[
+                const SizedBox(height: HarborSpace.s3),
+                HarborBanner(
+                    tone: HarborBannerTone.danger,
+                    title: l10n.skillsRunFailed,
+                    body: _error),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -648,6 +657,7 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
           DropdownButtonFormField<String>(
             key: ValueKey('input-${e.key}'),
             initialValue: _choices[e.key],
+            style: t.text.bodyOf(t.colors.ink),
             decoration: InputDecoration(
               labelText: required.contains(e.key)
                   ? '${e.key} · ${l10n.skillsRequiredField}'
@@ -696,6 +706,8 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
           DropdownButtonFormField<String>(
             key: const ValueKey('skill-model'),
             initialValue: _chatPackage,
+            style: t.text.bodyOf(t.colors.ink),
+            isExpanded: true,
             decoration: InputDecoration(labelText: l10n.skillsModelLabel),
             items: [
               for (final m in chatModelsOf(widget.service))
@@ -768,7 +780,8 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
         StatusBadge(semantic: semantic, label: state, large: true),
         const SizedBox(width: HarborSpace.s3),
         Expanded(
-          child: HarborIdentifier(report['run_id'] as String? ?? ''),
+          child: HarborIdentifier(report['run_id'] as String? ?? '',
+              size: 12, color: t.colors.inkMuted),
         ),
       ]),
       const SizedBox(height: HarborSpace.s3),
@@ -800,34 +813,58 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
         Text(l10n.skillsOutputsHeading,
             style: t.text.captionOf(t.colors.inkMuted)),
         const SizedBox(height: HarborSpace.s2),
-        for (final e in (status['outputs'] as Map).entries)
-          _jsonBlock(t, e.key.toString(), e.value),
+        HarborCard(
+          padding: const EdgeInsets.all(HarborSpace.s4),
+          child: SkillOutputView(outputs: status['outputs'] as Map),
+        ),
       ],
       const SizedBox(height: HarborSpace.s3),
-      Text(l10n.skillsTrailHeading, style: t.text.captionOf(t.colors.inkMuted)),
-      const SizedBox(height: HarborSpace.s2),
-      for (final n in trail)
-        HarborListRow(
-          dense: true,
-          leading: Icon(_iconFor(n['kind'] as String? ?? ''),
-              size: 18, color: t.colors.brand),
-          title: Text('${n['node_id']} · ${n['kind']}',
-              style: t.text.bodyStrongOf(t.colors.ink)),
-          subtitle: Text(
-            [
-              if (n['tool'] != null) n['tool'],
-              if (n['executed_on'] != null)
-                l10n.skillsExecutedOn(n['executed_on'] as String),
-              if (n['structured_mode'] != null)
-                l10n.skillsStructuredMode(n['structured_mode'] as String),
-              if (n['decision'] != null) '→ ${n['decision']}',
-              '${n['elapsed_ms']} ms',
-            ].join(' · '),
-            style: t.text.smallOf(t.colors.inkMuted),
-          ),
+      // How it ran stays one tap away, not in the reading path.
+      Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          key: const ValueKey('skill-trail'),
+          tilePadding: EdgeInsets.zero,
+          childrenPadding: EdgeInsets.zero,
+          title: Text(l10n.skillsTrailHeading,
+              style: t.text.bodyStrongOf(t.colors.inkMuted)),
+          children: [
+            for (final n in trail) _trailRow(l10n, t, n),
+          ],
         ),
+      ),
+      const SizedBox(height: HarborSpace.s2),
+      Align(
+        alignment: AlignmentDirectional.centerEnd,
+        child: FilledButton(
+          key: const ValueKey('skill-done'),
+          onPressed: () => Navigator.of(context).maybePop(),
+          child: Text(l10n.closeAction),
+        ),
+      ),
     ];
   }
+
+  Widget _trailRow(AppLocalizations l10n, HarborTheme t, Map n) =>
+      HarborListRow(
+        dense: true,
+        leading: Icon(_iconFor(n['kind'] as String? ?? ''),
+            size: 18, color: t.colors.brand),
+        title: Text('${n['node_id']} · ${n['kind']}',
+            style: t.text.bodyStrongOf(t.colors.ink)),
+        subtitle: Text(
+          [
+            if (n['tool'] != null) n['tool'],
+            if (n['executed_on'] != null)
+              l10n.skillsExecutedOn(n['executed_on'] as String),
+            if (n['structured_mode'] != null)
+              l10n.skillsStructuredMode(n['structured_mode'] as String),
+            if (n['decision'] != null) '→ ${n['decision']}',
+            '${n['elapsed_ms']} ms',
+          ].join(' · '),
+          style: t.text.smallOf(t.colors.inkMuted),
+        ),
+      );
 
   List<Widget> _approval(
       AppLocalizations l10n, HarborTheme t, Map<String, dynamic> status) {
@@ -936,49 +973,6 @@ class _SkillRunSheetState extends State<SkillRunSheet> {
                     : null),
           ),
       ],
-    );
-  }
-
-  Widget _jsonBlock(HarborTheme t, String label, Object? value) {
-    final l10n = AppLocalizations.of(context)!;
-    final text = value is String
-        ? value
-        : const JsonEncoder.withIndent('  ').convert(value);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: HarborSpace.s2),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            Expanded(
-                child: Text(label, style: t.text.smallOf(t.colors.inkMuted))),
-            // Text results (a drafted email) are meant to be taken
-            // elsewhere: Harbor never sends them itself.
-            if (value is String)
-              TextButton.icon(
-                key: ValueKey('copy-$label'),
-                onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: text));
-                  if (!mounted) return;
-                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                      SnackBar(content: Text(l10n.skillsCopied)));
-                },
-                icon: const Icon(Icons.copy_outlined, size: 16),
-                label: Text(l10n.skillsCopy),
-              ),
-          ]),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(HarborSpace.s3),
-            decoration: BoxDecoration(
-              color: t.colors.surfaceRaised,
-              borderRadius: BorderRadius.circular(HarborRadius.sm),
-            ),
-            child: SelectableText(text,
-                style: t.text.monoOf(t.colors.ink, size: 12)),
-          ),
-        ],
-      ),
     );
   }
 

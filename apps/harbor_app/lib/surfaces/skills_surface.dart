@@ -401,21 +401,28 @@ class _SkillsSurfaceState extends State<SkillsSurface> {
                                       style: t.text.smallOf(t.colors.inkMuted)),
                                   const SizedBox(height: HarborSpace.s3),
                                   Row(children: [
-                                    HarborPill(l10n.toolsCount(s.tools.length),
-                                        icon: Icons.build_outlined),
-                                    const SizedBox(width: HarborSpace.s2),
-                                    Flexible(
-                                      child: HarborPill(
-                                        s.runnable
-                                            ? l10n.skillsRunnable
-                                            : l10n.skillsDeclaration,
-                                        icon: s.runnable
-                                            ? Icons.account_tree_outlined
-                                            : Icons.description_outlined,
-                                        brand: s.runnable,
-                                      ),
+                                    // The pills take the row; a Spacer
+                                    // beside a Flexible halved the room and
+                                    // clipped "Runnable graph".
+                                    Expanded(
+                                      child: Row(children: [
+                                        HarborPill(
+                                            l10n.toolsCount(s.tools.length),
+                                            icon: Icons.build_outlined),
+                                        const SizedBox(width: HarborSpace.s2),
+                                        Flexible(
+                                          child: HarborPill(
+                                            s.runnable
+                                                ? l10n.skillsRunnable
+                                                : l10n.skillsDeclaration,
+                                            icon: s.runnable
+                                                ? Icons.account_tree_outlined
+                                                : Icons.description_outlined,
+                                            brand: s.runnable,
+                                          ),
+                                        ),
+                                      ]),
                                     ),
-                                    const Spacer(),
                                     Icon(Icons.chevron_right,
                                         size: 18, color: t.colors.inkMuted),
                                   ]),

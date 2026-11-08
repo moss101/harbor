@@ -276,13 +276,13 @@ void main() {
     await tester.tap(find.byIcon(Icons.menu).first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
+    // Home · Work · Library and, listed in the drawer, More's four.
     final rows =
         find.byWidgetPredicate((w) => w is HarborSidebarRow && !w.dense);
-    expect(rows, findsNWidgets(3));
+    expect(rows, findsNWidgets(7));
     for (final f in [
       ...[for (final e in rows.evaluate()) find.byWidget(e.widget)],
       find.byKey(const ValueKey('shell-new-thread')),
-      find.byKey(const ValueKey('shell-more')),
     ]) {
       expect(tester.getSize(f.first).height, greaterThanOrEqualTo(44),
           reason: 'navigation target under 44px tall');

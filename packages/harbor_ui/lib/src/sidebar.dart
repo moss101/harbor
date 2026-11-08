@@ -264,7 +264,8 @@ class HarborSidebarRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: dense
-                      ? t.text.smallOf(selected ? c.ink : c.inkMuted)
+                      ? t.text.smallOf(selected ? c.ink : c.inkMuted).copyWith(
+                          fontWeight: selected ? FontWeight.w600 : null)
                       : (selected
                           ? t.text.bodyStrongOf(c.ink)
                           : t.text.bodyOf(c.ink))),
@@ -289,8 +290,12 @@ class HarborSidebarRow extends StatelessWidget {
           child: Tooltip(
             message: tooltip,
             waitDuration: const Duration(milliseconds: 500),
+            // A thread row marks the open thread with a neutral wash, so
+            // only the current destination carries the brand tint.
             child: Material(
-              color: selected ? c.brandSoft : Colors.transparent,
+              color: !selected
+                  ? Colors.transparent
+                  : (dense ? c.pressed : c.brandSoft),
               borderRadius: BorderRadius.circular(HarborRadius.sm),
               child: InkWell(
                 onTap: onTap,

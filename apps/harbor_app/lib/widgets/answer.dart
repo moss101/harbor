@@ -45,6 +45,26 @@ String? fileCitationLabel(Map citation, AppLocalizations l10n) {
   };
 }
 
+/// The direction of [text] by its first strong character (Arabic or
+/// Hebrew → RTL, a Latin letter → LTR), or [fallback] when it has none.
+/// Questions and answers are data: an English answer in the Arabic UI
+/// must still read left to right, or its full stops jump to the wrong end.
+TextDirection contentDirection(String text, TextDirection fallback) {
+  for (final r in text.runes) {
+    if ((r >= 0x0590 && r <= 0x08FF) ||
+        (r >= 0xFB1D && r <= 0xFDFF) ||
+        (r >= 0xFE70 && r <= 0xFEFF)) {
+      return TextDirection.rtl;
+    }
+    if ((r >= 0x41 && r <= 0x5A) ||
+        (r >= 0x61 && r <= 0x7A) ||
+        (r >= 0xC0 && r <= 0x024F)) {
+      return TextDirection.ltr;
+    }
+  }
+  return fallback;
+}
+
 /// One turn of the answer thread: the question as a heading, then what
 /// came back for it (sources, the answer and its actions, or a notice).
 class AnswerTurnView extends StatelessWidget {
@@ -84,34 +104,70 @@ class AnswerTurnView extends StatelessWidget {
             ),
           ],
           const SizedBox(height: HarborSpace.s4),
-          if (turn.busy)
-            GeneratingCard(progress: progress, onCancel: onCancel)
-          else if (turn.cancelled)
-            HarborBanner(
-              tone: HarborBannerTone.warning,
-              title: l10n.askCancelledTitle,
-              body: l10n.askCancelledBody,
-            )
-          else if (turn.error != null)
-            HarborBanner(
-              tone: HarborBannerTone.danger,
-              title: l10n.askErrorTitle,
-              body: turn.error,
-            )
-          else if (turn.answer != null)
-            GroundedAnswerView(
-              answer: turn.answer!,
-              question: turn.question,
-              onCitationTap: onCitationTap,
-              citationLabel: citationLabel,
-            )
-          else if (turn.evidence != null)
-            EvidenceView(
-                citations: ((turn.evidence!['citations'] as List?) ?? const [])
-                    .cast<Map>()),
+          // The skeleton gives way to the answer with a short fade, so the
+          // page settles instead of jumping.
+          AnimatedSwitcher(
+            duration: HarborMotion.of(context).slow,
+            switchInCurve: HarborMotion.easing,
+            switchOutCurve: HarborMotion.easing,
+            layoutBuilder: (current, previous) => Stack(
+              alignment: AlignmentDirectional.topStart,
+              children: [...previous, if (current != null) current],
+            ),
+            child: KeyedSubtree(
+              key: ValueKey(_phase),
+              child: _outcome(l10n),
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  String get _phase => turn.busy
+      ? 'busy'
+      : turn.cancelled
+          ? 'cancelled'
+          : turn.error != null
+              ? 'error'
+              : turn.answer != null
+                  ? 'answer'
+                  : 'evidence';
+
+  Widget _outcome(AppLocalizations l10n) {
+    if (turn.busy) {
+      return GeneratingCard(progress: progress, onCancel: onCancel);
+    }
+    if (turn.cancelled) {
+      return HarborBanner(
+        tone: HarborBannerTone.warning,
+        dense: true,
+        title: l10n.askCancelledTitle,
+        body: l10n.askCancelledBody,
+      );
+    }
+    if (turn.error != null) {
+      return HarborBanner(
+        tone: HarborBannerTone.danger,
+        dense: true,
+        title: l10n.askErrorTitle,
+        body: turn.error,
+      );
+    }
+    if (turn.answer != null) {
+      return GroundedAnswerView(
+        answer: turn.answer!,
+        question: turn.question,
+        onCitationTap: onCitationTap,
+        citationLabel: citationLabel,
+      );
+    }
+    if (turn.evidence != null) {
+      return EvidenceView(
+          citations:
+              ((turn.evidence!['citations'] as List?) ?? const []).cast<Map>());
+    }
+    return const SizedBox.shrink();
   }
 }
 
@@ -131,12 +187,18 @@ class QuestionHeading extends StatelessWidget {
     return Semantics(
       header: true,
       child: SelectableText(text,
-          key: const ValueKey('answer-question'), style: style),
+          key: const ValueKey('answer-question'),
+          textDirection: contentDirection(text, Directionality.of(context)),
+          style: style),
     );
   }
 }
 
-/// Live token progress of a grounded generation, with a real cancel.
+/// A generation in progress, shaped like the answer it will become: the
+/// Answer label with a live status line (real token count from the core)
+/// and a real cancel, over skeleton lines where the text will land. The
+/// core returns the answer whole, so the lines are a placeholder, never
+/// fake text.
 class GeneratingCard extends StatelessWidget {
   const GeneratingCard(
       {super.key, required this.progress, required this.onCancel});
@@ -146,13 +208,86 @@ class GeneratingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final t = HarborTheme.of(context);
     final tokens = (progress?['items_done'] as num?)?.toInt() ?? 0;
-    return HarborOpProgress(
-      icon: Icons.auto_awesome_outlined,
-      title: l10n.askGenerating,
-      progressLine: tokens > 0 ? l10n.askGenerationProgress(tokens) : null,
-      cancelLabel: l10n.cancelAction,
-      onCancel: onCancel,
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      child: Column(
+        key: const ValueKey('answer-generating'),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(children: [
+            const _Pulse(),
+            const SizedBox(width: HarborSpace.s2),
+            Expanded(
+              child: Text.rich(
+                TextSpan(children: [
+                  TextSpan(
+                      text: l10n.askGenerating,
+                      style: t.text.bodyStrongOf(t.colors.ink)),
+                  if (tokens > 0)
+                    TextSpan(
+                        text: '  ·  ${l10n.askGenerationProgress(tokens)}',
+                        style: t.text.smallOf(t.colors.inkMuted)),
+                ]),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            TextButton(
+              key: const ValueKey('answer-cancel'),
+              onPressed: onCancel,
+              child: Text(l10n.cancelAction),
+            ),
+          ]),
+          const SizedBox(height: HarborSpace.s3),
+          HarborSkeleton.lines(4, height: 12),
+        ],
+      ),
+    );
+  }
+}
+
+/// A small brand dot that breathes while a model works (still with
+/// reduced motion).
+class _Pulse extends StatefulWidget {
+  const _Pulse();
+  @override
+  State<_Pulse> createState() => _PulseState();
+}
+
+class _PulseState extends State<_Pulse> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 900));
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (HarborMotion.of(context).reduced) {
+      _c.value = 1;
+    } else if (!_c.isAnimating) {
+      _c.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = HarborTheme.of(context);
+    return SizedBox.square(
+      dimension: 20,
+      child: Center(
+        child: FadeTransition(
+          opacity: Tween(begin: 0.35, end: 1.0).animate(_c),
+          child: Icon(Icons.auto_awesome, size: 18, color: t.colors.brand),
+        ),
+      ),
     );
   }
 }
@@ -218,68 +353,161 @@ class GroundedAnswerView extends StatelessWidget {
             dense: true,
           )
         else
-          SelectableText(answerText,
-              style: t.text
-                  .bodyOf(t.colors.ink)
-                  .copyWith(fontSize: 16, height: 1.6)),
+          AnswerText(answerText),
         if (answer['truncated'] == true && !insufficient) ...[
           const SizedBox(height: HarborSpace.s2),
           Text(l10n.askTruncatedNote,
               key: const ValueKey('answer-truncated'),
               style: t.text.captionOf(t.colors.inkMuted)),
         ],
-        const SizedBox(height: HarborSpace.s3),
-        Wrap(
-          spacing: HarborSpace.s1,
-          runSpacing: HarborSpace.s1,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            if (hasText)
+        const SizedBox(height: HarborSpace.s2),
+        // The actions line up with the text edge (each keeps a full 44 pt
+        // target), then one quiet line says where the answer ran.
+        if (hasText)
+          Transform.translate(
+            offset: Offset(
+                Directionality.of(context) == TextDirection.rtl ? 10 : -10, 0),
+            child: Row(children: [
               IconButton(
                 key: const ValueKey('answer-copy'),
                 tooltip: l10n.answerCopy,
-                iconSize: 18,
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.copy_outlined),
+                iconSize: 20,
+                icon: const Icon(Icons.copy_rounded),
                 onPressed: () async {
+                  HapticFeedback.selectionClick();
                   await Clipboard.setData(ClipboardData(text: answerText));
                   if (!context.mounted) return;
                   ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                       SnackBar(content: Text(l10n.answerCopied)));
                 },
               ),
-            if (hasText) SaveAnswerPdfButton(text: answerText),
-            if (AuthScope.maybeOf(context) case final auth? when hasText)
-              IconButton(
-                key: const ValueKey('answer-report'),
-                tooltip: l10n.reportAction,
-                iconSize: 18,
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.flag_outlined),
-                onPressed: () => showReportSheet(
-                  context,
-                  auth: auth,
-                  answer: answerText,
-                  question: question,
-                  modelId: answer['executed_on'] as String?,
+              SaveAnswerPdfButton(text: answerText),
+              if (AuthScope.maybeOf(context) case final auth?)
+                IconButton(
+                  key: const ValueKey('answer-report'),
+                  tooltip: l10n.reportAction,
+                  iconSize: 20,
+                  icon: const Icon(Icons.flag_outlined),
+                  onPressed: () => showReportSheet(
+                    context,
+                    auth: auth,
+                    answer: answerText,
+                    question: question,
+                    modelId: answer['executed_on'] as String?,
+                  ),
                 ),
+            ]),
+          ),
+        Semantics(
+          label: ((answer['execution'] as String?) ?? 'ON_DEVICE')
+              .replaceAll('_', ' '),
+          child: Row(children: [
+            Icon(Icons.shield_outlined, size: 14, color: t.colors.local),
+            const SizedBox(width: HarborSpace.s1),
+            Expanded(
+              child: Text(
+                l10n.askExecutedOnLine(
+                  (answer['executed_on'] as String?) ?? '',
+                  ((answer['usage']?['completion_tokens'] as num?) ?? 0)
+                      .toInt(),
+                ),
+                key: const ValueKey('answer-executed-on'),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: t.text.captionOf(t.colors.inkMuted),
               ),
-            const SizedBox(width: HarborSpace.s2),
-            StatusBadge(
-              semantic: ExecutionSemantic.local,
-              label: ((answer['execution'] as String?) ?? 'ON_DEVICE')
-                  .replaceAll('_', ' '),
             ),
-            Text(
-              l10n.askExecutedOnLine(
-                (answer['executed_on'] as String?) ?? '',
-                ((answer['usage']?['completion_tokens'] as num?) ?? 0).toInt(),
-              ),
-              style: t.text.captionOf(t.colors.inkMuted),
-            ),
-          ],
+          ]),
         ),
       ],
+    );
+  }
+}
+
+/// A generated answer's text. Small models answer in light Markdown;
+/// headings, bullet and numbered lists, **bold** and `code` are shown as
+/// such (one selectable block, so a whole answer still copies at once).
+/// Plain prose stays plain text.
+class AnswerText extends StatelessWidget {
+  const AnswerText(this.text, {super.key});
+  final String text;
+
+  static final _list = RegExp(r'^(\s*)([-*•]|\d{1,3}[.)])\s+(.*)$');
+  static final _heading = RegExp(r'^(#{1,4})\s+(.*)$');
+  static final _inline = RegExp(r'\*\*(.+?)\*\*|__(.+?)__|`([^`]+)`');
+
+  static bool hasMarkup(String s) =>
+      s.contains('**') ||
+      s.contains('`') ||
+      s.split('\n').any((l) => _list.hasMatch(l) || _heading.hasMatch(l));
+
+  @override
+  Widget build(BuildContext context) {
+    final t = HarborTheme.of(context);
+    final body =
+        t.text.bodyOf(t.colors.ink).copyWith(fontSize: 16, height: 1.6);
+    final direction = contentDirection(text, Directionality.of(context));
+    if (!hasMarkup(text)) {
+      return SelectableText(text,
+          key: const ValueKey('answer-text'),
+          textDirection: direction,
+          style: body);
+    }
+    final strong = body.copyWith(fontWeight: FontWeight.w600);
+    final code = t.text.monoOf(t.colors.ink, size: 14).copyWith(
+        backgroundColor: t.colors.ink.withValues(alpha: 0.06), height: 1.6);
+    // A short line between blocks reads as paragraph spacing.
+    final gap = TextSpan(text: '\n', style: body.copyWith(height: 0.7));
+
+    List<InlineSpan> inline(String s, TextStyle base) {
+      final out = <InlineSpan>[];
+      var at = 0;
+      for (final m in _inline.allMatches(s)) {
+        if (m.start > at) out.add(TextSpan(text: s.substring(at, m.start)));
+        if (m.group(3) != null) {
+          out.add(TextSpan(text: m.group(3), style: code));
+        } else {
+          out.add(TextSpan(
+              text: m.group(1) ?? m.group(2),
+              style: base.copyWith(fontWeight: FontWeight.w600)));
+        }
+        at = m.end;
+      }
+      if (at < s.length) out.add(TextSpan(text: s.substring(at)));
+      return out;
+    }
+
+    final spans = <InlineSpan>[];
+    var blank = false;
+    for (final raw in text.split('\n')) {
+      final line = raw.trimRight();
+      if (line.trim().isEmpty) {
+        blank = spans.isNotEmpty;
+        continue;
+      }
+      if (spans.isNotEmpty) {
+        spans.add(const TextSpan(text: '\n'));
+        if (blank) spans.add(gap);
+      }
+      blank = false;
+      if (_heading.firstMatch(line) case final h?) {
+        final level = h.group(1)!.length;
+        final style = strong.copyWith(fontSize: level <= 2 ? 18 : 16);
+        spans.add(TextSpan(style: style, children: inline(h.group(2)!, style)));
+      } else if (_list.firstMatch(line) case final l?) {
+        final marker = l.group(2)!;
+        final bullet = RegExp(r'^\d').hasMatch(marker) ? '$marker ' : '•  ';
+        final indent = '   ' * ((l.group(1)!.length / 2).floor().clamp(0, 3));
+        spans.add(TextSpan(text: '$indent$bullet', style: strong));
+        spans.addAll(inline(l.group(3)!, body));
+      } else {
+        spans.addAll(inline(line, body));
+      }
+    }
+    return SelectableText.rich(
+      TextSpan(style: body, children: spans),
+      key: const ValueKey('answer-text'),
+      textDirection: direction,
     );
   }
 }

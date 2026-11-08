@@ -70,11 +70,8 @@ void main() {
     await tester.tap(find.byIcon(Icons.menu).first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    await tester.tap(find.byKey(const ValueKey('shell-more')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-    expect(find.widgetWithText(MenuItemButton, 'Store'), findsNothing);
-    await tester.tap(find.widgetWithText(MenuItemButton, 'Models'));
+    expect(find.byKey(const ValueKey('shell-more-store')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('shell-more-models')));
     for (var i = 0; i < 3; i++) {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));

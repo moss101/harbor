@@ -138,9 +138,9 @@ void main() {
     await settle(tester);
     final bar = tester.widget<HarborSidebar>(find.byType(HarborSidebar));
     expect(bar.destinations.map((d) => d.label), ['Home', 'Work', 'Library']);
-    await tester.tap(find.byKey(const ValueKey('shell-more')));
-    await settle(tester);
-    await tester.tap(find.text('Settings'));
+    // The drawer lists More's surfaces outright (no menu over its edge).
+    expect(find.byKey(const ValueKey('shell-more')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('shell-more-settings')));
     await settle(tester);
     expect(state.surface, HarborSurface.settings);
     final scaffold = tester.state<ScaffoldState>(find.byType(Scaffold).first);

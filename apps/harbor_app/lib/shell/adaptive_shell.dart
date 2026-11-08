@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
 import '../l10n/app_localizations.dart';
@@ -151,6 +152,7 @@ class ShellSidebar extends StatelessWidget {
     final desktop = harborHasKeyboardShortcuts && !inDrawer;
 
     void then(VoidCallback action) {
+      HapticFeedback.selectionClick();
       if (inDrawer) Scaffold.maybeOf(context)?.closeDrawer();
       action();
     }
@@ -159,6 +161,9 @@ class ShellSidebar extends StatelessWidget {
       state: state,
       collapsed: collapsed,
       failed: failed,
+      // The phone drawer has the room to list More's surfaces outright
+      // (a menu there opened past the drawer's edge).
+      inline: inDrawer,
       onLens: () => then(onLens),
       onPalette: desktop ? onPalette : null,
       onNavigate: (s) => then(() => state.goTo(s)),
@@ -274,10 +279,12 @@ class _SidebarFooter extends StatelessWidget {
     required this.onLens,
     required this.onPalette,
     required this.onNavigate,
+    this.inline = false,
   });
   final AppState state;
   final bool collapsed;
   final bool failed;
+  final bool inline;
   final VoidCallback onLens;
   final VoidCallback? onPalette;
   final ValueChanged<HarborSurface> onNavigate;
@@ -297,6 +304,30 @@ class _SidebarFooter extends StatelessWidget {
             onPressed: onPalette,
             icon: const Icon(Icons.keyboard_command_key, size: 20),
           );
+    if (inline) {
+      final all = harborDestinations(l10n);
+      final t = HarborTheme.of(context);
+      return Column(
+        key: const ValueKey('shell-more-inline'),
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Divider(height: HarborSpace.s3, color: t.colors.borderSubtle),
+          for (final s in HarborSurface.secondary)
+            HarborSidebarRow(
+              key: ValueKey('shell-more-${s.name}'),
+              icon: s == state.surface
+                  ? (all[s.index].selectedIcon ?? all[s.index].icon)
+                  : all[s.index].icon,
+              label: all[s.index].label,
+              selected: s == state.surface,
+              onTap: () => onNavigate(s),
+            ),
+          const SizedBox(height: HarborSpace.s2),
+          Align(alignment: AlignmentDirectional.centerStart, child: trust),
+        ],
+      );
+    }
     final more = ShellMoreMenu(state: state, onNavigate: onNavigate);
     if (collapsed) {
       return Column(mainAxisSize: MainAxisSize.min, children: [
@@ -409,12 +440,16 @@ class _PhoneShell extends StatelessWidget {
                     MediaQuery.textScalerOf(context).scale(10) > 15)
             : Text(destinations[current.index].label),
         actions: [
-          IconButton(
-            key: const ValueKey('shell-new-thread-bar'),
-            tooltip: l10n.shellNewThread,
-            onPressed: state.newThread,
-            icon: const Icon(Icons.add_comment_outlined),
-          ),
+          if (current == HarborSurface.home)
+            IconButton(
+              key: const ValueKey('shell-new-thread-bar'),
+              tooltip: l10n.shellNewThread,
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                state.newThread();
+              },
+              icon: const Icon(Icons.add_comment_outlined),
+            ),
           Padding(
             padding: const EdgeInsetsDirectional.only(end: HarborSpace.s3),
             child: TrustChipLive(onTap: onLens, failed: failed),

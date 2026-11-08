@@ -84,8 +84,11 @@ void main() {
     await pumpSurface(tester, s, (state) => HomeSurface(state: state));
     await send(tester, 'What did the board decide?');
     // While it generates: live progress in the turn, stop in the composer.
-    expect(find.text('Generating on-device…'), findsOneWidget);
-    expect(find.text('3 tokens generated'), findsOneWidget);
+    // One status line: what is happening and the core's token count.
+    expect(find.textContaining('Generating on-device…', findRichText: true),
+        findsOneWidget);
+    expect(find.textContaining('3 tokens generated', findRichText: true),
+        findsOneWidget);
     expect(find.byKey(const ValueKey('composer-cancel')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('composer-cancel')));
     for (var i = 0; i < 5; i++) {
