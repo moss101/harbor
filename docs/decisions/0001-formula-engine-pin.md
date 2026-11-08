@@ -108,3 +108,31 @@ rather than by relaxing the check:
   the Android emulator). Text formatting stays covered by the functions whose
   digits are stable (IMDIV, IMEXP, IMLN, IMLOG*, IMSUM, ...).
 - The corpus is 407 targets / 1261 cases; the three tier records are re-run.
+
+## Addendum 4 (2026-11-08): advisory fixes in the dependency set
+
+Two RustSec advisories published after 2026-11-02 hit the formula engine's
+dependencies. Both are fixed by changing dependencies; neither is accepted:
+
+- **RUSTSEC-2026-0436** (calamine < 0.38 panics or exhausts memory on malformed
+  .xls/.xlsb). Harbor never handed bytes to calamine: workbooks are read and
+  written through umya (`harbor_artifacts::workbook`), and `harbor_formula`
+  uses only the engine and an in-memory `Workbook`. calamine came in only
+  because `formualizer`'s default `xlsx-recalc` feature pulls in
+  `formualizer-workbook/calamine`. `core/Cargo.toml` now builds `formualizer`
+  with `default-features = false` and the features Harbor uses (`eval`,
+  `workbook`, `parse`, `common`, `umya`), plus `formualizer-eval/system-clock`
+  enabled directly (same NOW/TODAY behavior as before), so calamine is no
+  longer compiled into Harbor or listed in Cargo.lock.
+- **RUSTSEC-2026-0442** (arrow-data < 60 RunEndEncoded out-of-bounds reads).
+  `third_party/formualizer-eval` now depends on arrow 60.1 (Cargo.toml and
+  Cargo.toml.orig). This is a dependency bump only; the `src/` tree is
+  unchanged, so the `tools/pin_engine.py` integrity hash is unchanged. It
+  built and passed the workspace tests with no source changes.
+
+Side effect: with default features off, `formualizer`'s `sheetport` feature is
+also gone, so serde_yaml/unsafe-libyaml left the graph and Cargo.lock
+(`system-clock` is set on formualizer-eval rather than through formualizer,
+whose weak `formualizer-sheetport?/system-clock` would have kept them locked) and the accepted
+RUSTSEC-2024-0449 entry was removed from `core/deny.toml` and
+`core/.cargo/audit.toml` (cargo deny reported it as no longer encountered).

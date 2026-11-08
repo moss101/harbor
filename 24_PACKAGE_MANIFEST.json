@@ -4,7 +4,7 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "370e0b52fd47b4af2bfac1211608bf8f57e0bef6dfe519ab13bbe3869b53508e",
+  "input_manifest_sha256": "5418aaf06c6152218090caa12f421f675a2111d4c235a2b663bd70d43764bab3",
   "file_count_excluding_manifest": 2631,
   "files": [
     {
@@ -125,12 +125,12 @@
     {
       "path": "19_Structural_Validation.json",
       "bytes": 519291,
-      "sha256": "76be72352d094de078bba20b02b25c2adedad99fa595f59cb1ea03fc3958a7ad"
+      "sha256": "1586df91f42b22c95249c5e950f4254fa68be4fb4dcc1952dac2cea0cb053132"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1375,
-      "sha256": "eecedc0dbacd82d6d329614a276ce71a7e2128ba2db0198e9979ecd94e3049bc"
+      "sha256": "46db078c2dc727c2276d862193345286a3cc98cf718533fa6235dbdb39f25583"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -1859,8 +1859,8 @@
     },
     {
       "path": "core/.cargo/audit.toml",
-      "bytes": 1205,
-      "sha256": "4fa1242afa37d6193fcfefdd3f96645558469d41ec1027dfca29175566b1f828"
+      "bytes": 1103,
+      "sha256": "04107ffd8e4f4272f0e707c8657b2dc9c574f6f21c1b8d418ebf0678213cc8d9"
     },
     {
       "path": "core/.cargo/config.toml",
@@ -1869,18 +1869,18 @@
     },
     {
       "path": "core/Cargo.lock",
-      "bytes": 99503,
-      "sha256": "f5d2e6d050d01d9cfefad7eade45d1a70c658ba0080e40a4f2fc1abb7a0f4fea"
+      "bytes": 91957,
+      "sha256": "ca5cac4a6433dbda99115bf00d8b7e426a61b9b0659fd553a95cd442036c670c"
     },
     {
       "path": "core/Cargo.toml",
-      "bytes": 2935,
-      "sha256": "8fbd9ae38b070e008e70a3c66cabd48604d2fa6fa9a9ebaaa95eaf0f8293dadd"
+      "bytes": 3496,
+      "sha256": "6f2f6f13695ad59f7f2e72616509b8f32040e14e33dbeecad0c5cc293e9f1c57"
     },
     {
       "path": "core/deny.toml",
-      "bytes": 7173,
-      "sha256": "02e053a7ba8b3b852839f0147b81688afdb21e94a9f0f8098350bda6e9145b53"
+      "bytes": 6549,
+      "sha256": "325b155005887c235d33857ae4204adf5b71363e872455d5e5aca4b37718de42"
     },
     {
       "path": "core/fuzz/.gitignore",
@@ -1889,8 +1889,8 @@
     },
     {
       "path": "core/fuzz/Cargo.lock",
-      "bytes": 98802,
-      "sha256": "3467d8edfcc9dbb2748bfebdd1e14463ca2ef4cdc270b07cc8cb68b4b5fd5daf"
+      "bytes": 91341,
+      "sha256": "bababb241e606d02d97ad382dc6c20ac6fdc10382f2eab1314a568660fb4d058"
     },
     {
       "path": "core/fuzz/Cargo.toml",
@@ -2919,8 +2919,8 @@
     },
     {
       "path": "core/harbor_formula/Cargo.toml",
-      "bytes": 462,
-      "sha256": "bc8118b42aa5798de5a4627467f72184311f42750f92339f3e852476813f703f"
+      "bytes": 502,
+      "sha256": "a438dc372e480e45eb6b816fcc56010ef019a2ada5101c167694e1f3d634f0af"
     },
     {
       "path": "core/harbor_formula/examples/probe_cases.rs",
@@ -3524,8 +3524,8 @@
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
-      "bytes": 6423,
-      "sha256": "fffd453be652e4dd7be825c13e8b47506f4e881453b9375673bf0878f095b79e"
+      "bytes": 8191,
+      "sha256": "3ac87243f5b46080c1df284aee9d358c121276f15b5d7b75a1b996c25d9d4f7f"
     },
     {
       "path": "docs/decisions/0002-llama-cpp-runtime-pin.md",
@@ -3664,8 +3664,8 @@
     },
     {
       "path": "docs/release/THIRD_PARTY_NOTICES.md",
-      "bytes": 37627,
-      "sha256": "a1982da176cbc565888b24b8043efe88c9eaef93719d30498aa9f3fb8e6abeb3"
+      "bytes": 34725,
+      "sha256": "4dfff97ee0db716c2b7fb4cc117a32f5f8d6dfab6e48c44569448804417b9a29"
     },
     {
       "path": "docs/release/closeout_runbook.md",
@@ -4875,12 +4875,12 @@
     {
       "path": "third_party/formualizer-eval/Cargo.toml",
       "bytes": 4915,
-      "sha256": "f49cc1723920b00b81f6a713af9afd8383d2630138b9d3411cceb0d89d377ee1"
+      "sha256": "b6a582813e55431f7fd27ac3d47da2857ae39a4579684fa4386ae55cb4c8e935"
     },
     {
       "path": "third_party/formualizer-eval/Cargo.toml.orig",
       "bytes": 4882,
-      "sha256": "cc1f34ce5cf0c44ecd6fc574b8e9c63ce97838f67eec1ecd4fd45db5980c9f44"
+      "sha256": "864ff7d23c5d1ca2d503db916783377eddff7e377937d51f0f77ca31ecbc2ad6"
     },
     {
       "path": "third_party/formualizer-eval/LICENSE-APACHE",
