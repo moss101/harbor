@@ -9,6 +9,8 @@ import 'package:harbor_app/main.dart';
 import 'package:harbor_app/services/harbor_service.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
+import 'temp_data_root.dart';
+
 final repoRoot = Directory.current.parent.parent.path; // apps/harbor_app
 final dylibPath = '$repoRoot/core/target/debug/libharbor_ffi.dylib';
 final coreAvailable = File(dylibPath).existsSync();
@@ -49,7 +51,7 @@ Future<void> pumpApp(
   HarborService? service;
   if (coreAvailable) {
     await tester.runAsync(() async {
-      final dir = await Directory.systemTemp.createTemp('harbor-a11y-');
+      final dir = tempDataRoot('harbor-a11y-');
       final s = await HarborService.open(
           libraryPath: dylibPath,
           dataRoot: dir.path,

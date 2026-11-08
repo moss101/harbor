@@ -19,6 +19,8 @@ import 'package:harbor_app/surfaces/skill_run.dart';
 import 'package:harbor_app/surfaces/work_surface.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
+import 'temp_data_root.dart';
+
 final repoRoot = Directory.current.parent.parent.path; // apps/harbor_app
 final dylibPath = '$repoRoot/core/target/debug/libharbor_ffi.dylib';
 final coreAvailable = File(dylibPath).existsSync();
@@ -106,7 +108,7 @@ Future<void> pumpApp(
   if (coreAvailable) {
     // Real IO + FFI futures must run in a real zone inside testWidgets.
     await tester.runAsync(() async {
-      final dir = await Directory.systemTemp.createTemp('harbor-shell-test-');
+      final dir = tempDataRoot('harbor-shell-test-');
       final s = await HarborService.open(
           libraryPath: dylibPath,
           dataRoot: dir.path,
@@ -448,7 +450,7 @@ void _appendLiveTests() {
     if (!coreAvailable) return;
     HarborService? service;
     await tester.runAsync(() async {
-      final dir = await Directory.systemTemp.createTemp('harbor-activity-');
+      final dir = tempDataRoot('harbor-activity-');
       final s = await HarborService.open(
           libraryPath: dylibPath,
           dataRoot: dir.path,
@@ -489,7 +491,7 @@ void _appendPreviewTest() {
     HarborService? service;
     await tester.runAsync(() async {
       final bytes = await File(fixturePath).readAsBytes();
-      final dir = await Directory.systemTemp.createTemp('harbor-preview-');
+      final dir = tempDataRoot('harbor-preview-');
       final s = await HarborService.open(
           libraryPath: dylibPath,
           dataRoot: dir.path,
@@ -639,7 +641,7 @@ void _appendSkillRunTests() {
     Map<String, dynamic>? report;
     Map<String, dynamic>? decided;
     await tester.runAsync(() async {
-      final dir = await Directory.systemTemp.createTemp('harbor-skill-');
+      final dir = tempDataRoot('harbor-skill-');
       final s = await HarborService.open(
           libraryPath: dylibPath,
           dataRoot: dir.path,
@@ -685,7 +687,7 @@ void _appendKnowledgeTest() {
     HarborService? service;
     var opened = false;
     await tester.runAsync(() async {
-      final dir = await Directory.systemTemp.createTemp('harbor-knowledge-');
+      final dir = tempDataRoot('harbor-knowledge-');
       final s = await HarborService.open(
           libraryPath: dylibPath,
           dataRoot: dir.path,
@@ -772,7 +774,7 @@ void _appendRagTest() {
     HarborService? service;
     var opened = false;
     await tester.runAsync(() async {
-      final dir = await Directory.systemTemp.createTemp('harbor-rag-');
+      final dir = tempDataRoot('harbor-rag-');
       final s = await HarborService.open(
           libraryPath: dylibPath,
           dataRoot: dir.path,
@@ -853,7 +855,7 @@ void _appendAskThreadTests() {
     late HarborService service;
     late String root;
     await tester.runAsync(() async {
-      final dir = await Directory.systemTemp.createTemp('harbor-threads-');
+      final dir = tempDataRoot('harbor-threads-');
       root = dir.path;
       service = await HarborService.open(
           libraryPath: dylibPath,
@@ -1209,7 +1211,7 @@ void _appendSkillCommitTests() {
     HarborService? service;
     late Directory dir;
     await tester.runAsync(() async {
-      dir = await Directory.systemTemp.createTemp('harbor-commit-');
+      dir = tempDataRoot('harbor-commit-');
       final s = await HarborService.open(
           libraryPath: dylibPath,
           dataRoot: dir.path,
@@ -1346,7 +1348,7 @@ void _appendAuthoringFormTests() {
     addTearDown(tester.view.reset);
     HarborService? service;
     await tester.runAsync(() async {
-      final dir = await Directory.systemTemp.createTemp('harbor-forms-');
+      final dir = tempDataRoot('harbor-forms-');
       final s = await HarborService.open(
           libraryPath: dylibPath,
           dataRoot: dir.path,
@@ -1440,7 +1442,7 @@ void _appendDiagnosticsTests() {
     HarborService? service;
     late Directory dir;
     await tester.runAsync(() async {
-      dir = await Directory.systemTemp.createTemp('harbor-diag-');
+      dir = tempDataRoot('harbor-diag-');
       final s = await HarborService.open(
           libraryPath: dylibPath,
           dataRoot: dir.path,

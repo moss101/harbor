@@ -43,10 +43,12 @@ Future<void> pumpApp(WidgetTester tester, HarborService? service) async {
 
 void main() {
   late HarborService service;
+  Directory? dataRoot;
 
   setUpAll(() async {
     if (!coreAvailable) return;
-    final dir = await Directory.systemTemp.createTemp('harbor-ux-test-');
+    final dir =
+        dataRoot = await Directory.systemTemp.createTemp('harbor-ux-test-');
     service = await HarborService.open(
         libraryPath: dylibPath,
         dataRoot: dir.path,
@@ -76,6 +78,10 @@ void main() {
 
   tearDownAll(() async {
     if (coreAvailable) await service.close();
+    // Close first, then drop the data root so runs don't pile up in $TMPDIR.
+    if (dataRoot?.existsSync() ?? false) {
+      await dataRoot!.delete(recursive: true);
+    }
   });
 
   testWidgets(
