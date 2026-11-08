@@ -1306,6 +1306,41 @@ impl ChatHandle {
         harbor_core::router::disambiguate(&self.provider, &model, request, candidates)
     }
 
+    /// Route a task request to a skill with no embedder installed:
+    /// keywords first, then this chat model (see `harbor_core::router_lite`).
+    /// `package_id` None: keywords only.
+    pub fn route_skill_lite(
+        &self,
+        package_id: Option<&str>,
+        request: &str,
+        skills: &[harbor_core::skills::SkillManifest],
+        has_file: bool,
+    ) -> harbor_core::router_lite::LiteRoute {
+        let model = package_id.map(|p| ModelRef::InstalledPackage {
+            package_id: p.into(),
+        });
+        // Keywords settle most requests: load the chat model only when
+        // they do not.
+        let keyword_only = harbor_core::router_lite::route(None, request, skills, has_file);
+        if keyword_only.chosen.is_some() {
+            return keyword_only;
+        }
+        let Some(model) = model else {
+            return keyword_only;
+        };
+        if let Err(e) = self.provider.load(&model) {
+            let mut r = keyword_only;
+            r.llm = Some(harbor_core::router::Disambiguation::Unavailable(format!(
+                "chat model load: {e}"
+            )));
+            return r;
+        }
+        if let ModelRef::InstalledPackage { package_id } = &model {
+            self.loaded.lock().unwrap().insert(package_id.clone(), ());
+        }
+        harbor_core::router_lite::route(Some((&self.provider, &model)), request, skills, has_file)
+    }
+
     pub fn new(models_root: &Path) -> Self {
         ChatHandle {
             provider: GgufRuntime::open(models_root).expect("chat provider init"),

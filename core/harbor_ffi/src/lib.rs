@@ -3327,12 +3327,35 @@ fn dispatch(
                 if text.is_empty() {
                     return Err(HarborError::Other("text is required".into()));
                 }
+                let chat_arg = args.get("chat_package").and_then(|v| v.as_str());
+                // No embedder ready (none installed, as on a phone with only
+                // a chat model): keywords, then the chat model, choose.
+                let embedder_ready = ws
+                    .knowledge
+                    .as_ref()
+                    .is_some_and(|k| k.ensure_loaded().is_ok());
+                if !embedder_ready {
+                    let has_file = args
+                        .get("has_file")
+                        .and_then(|v| v.as_bool())
+                        .unwrap_or(false);
+                    let skills = harbor_core::skills::builtin_skills()
+                        .map_err(|e| HarborError::Other(e.to_string()))?;
+                    let chat = ws
+                        .chat
+                        .get_or_insert_with(|| {
+                            Arc::new(crate::knowledge::ChatHandle::new(
+                                &ws.data_root.join("models"),
+                            ))
+                        })
+                        .clone();
+                    let r = chat.route_skill_lite(chat_arg, &text, &skills, has_file);
+                    return Ok(lite_route_json(&r, chat_arg));
+                }
                 let ks = ws
                     .knowledge
                     .as_ref()
                     .ok_or_else(|| HarborError::Other("knowledge not open".into()))?;
-                ks.ensure_loaded()
-                    .map_err(|e| HarborError::Other(e.to_string()))?;
                 let package = ks.embedding_package().to_string();
                 // Truncation changes every vector: it is part of the cache key.
                 let cache_key = format!("{package}@{:?}", ks.truncation());
@@ -6109,4 +6132,45 @@ mod store_guard_tests {
         assert_eq!(throttled.throttle, std::time::Duration::from_millis(25));
         assert_eq!(throttled.min_free_after_bytes, 1);
     }
+}
+
+/// `skills.suggest` result for an embedder-free route, in the shape the
+/// semantic route uses (`abstained`, `reason`, `ranked`, `llm_choice`) plus
+/// `router`: "keywords" | "chat" | "undecided".
+#[cfg(feature = "gguf")]
+fn lite_route_json(
+    r: &harbor_core::router_lite::LiteRoute,
+    chat_package: Option<&str>,
+) -> serde_json::Value {
+    use harbor_core::router::Disambiguation;
+    let reason = if r.chosen.is_some() {
+        None
+    } else if r.none_fit {
+        Some("no_confident_match")
+    } else if r.ranked.len() >= 2 {
+        Some("ambiguous")
+    } else {
+        Some("no_confident_match")
+    };
+    let llm = r.llm.as_ref().map(|o| match o {
+        Disambiguation::Chose { skill_id } => serde_json::json!({
+            "status": "chose", "skill_id": skill_id, "chat_package": chat_package }),
+        Disambiguation::NoneFit => serde_json::json!({
+            "status": "none_fit", "chat_package": chat_package }),
+        Disambiguation::Unavailable(why) => serde_json::json!({
+            "status": "unavailable", "why": why, "chat_package": chat_package }),
+    });
+    serde_json::json!({
+        // Recommend-only, as the semantic route: a suggestion is never an
+        // authorization.
+        "abstained": r.chosen.is_none(),
+        "reason": reason,
+        "none_fit": r.none_fit,
+        "router": r.via.as_str(),
+        "ranked": r.ranked.iter().map(|h| serde_json::json!({
+            "skill_id": h.skill_id, "title": h.title, "score": h.score,
+        })).collect::<Vec<_>>(),
+        "embedding_package": serde_json::Value::Null,
+        "llm_choice": llm,
+    })
 }

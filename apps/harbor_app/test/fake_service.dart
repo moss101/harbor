@@ -93,10 +93,14 @@ class FakeHarborService extends HarborService {
 
   @override
   Future<Map<String, dynamic>?> suggestSkills(String text,
-      {String? chatPackage}) async {
+      {String? chatPackage, bool hasFile = false}) async {
     calls.add('suggestSkills');
-    return knowledgeOpen ? suggestion : null;
+    return knowledgeOpen ? suggestion : liteSuggestion;
   }
+
+  /// The core's embedder-free route (keywords, then the chat model), used
+  /// when no index is open. Null: the core refused.
+  Map<String, dynamic>? liteSuggestion;
 
   @override
   Future<Map<String, dynamic>?> createRun(String runId) async {

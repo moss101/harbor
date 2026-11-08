@@ -154,6 +154,57 @@ void main() {
       expect((none as RouteNone).reason, RouteNoneReason.noIndex);
     });
 
+    test('the core picks a skill without an index (keywords or chat model)',
+        () async {
+      final s = FakeHarborService(
+          indexOpens: false, skillList: [emailSkill, tidySkill])
+        ..liteSuggestion = {
+          'abstained': false,
+          'router': 'keywords',
+          'ranked': [
+            {'skill_id': 'email-drafting', 'title': 'Email', 'score': 0.0},
+          ],
+        };
+      final r = await RequestRouter(s)
+          .route('let Sara know the shipment is late', chatPackage: 'lfm');
+      expect(r, isA<RouteSkill>());
+      expect((r as RouteSkill).skill.id, 'email-drafting');
+    });
+
+    test("the chat model's none means the chat model answers", () async {
+      final s = FakeHarborService(indexOpens: false, skillList: [emailSkill])
+        ..liteSuggestion = {
+          'abstained': true,
+          'none_fit': true,
+          'router': 'chat',
+          'reason': 'no_confident_match',
+          'ranked': [
+            {'skill_id': 'email-drafting', 'title': 'Email', 'score': 0.0},
+          ],
+        };
+      final r = await RequestRouter(s).route('cheer me up', chatPackage: 'lfm');
+      expect(r, isA<RouteAsk>());
+      expect((r as RouteAsk).general, isTrue);
+    });
+
+    test('keyword ties the model could not settle are offered', () async {
+      final s = FakeHarborService(
+          indexOpens: false, skillList: [emailSkill, tidySkill])
+        ..liteSuggestion = {
+          'abstained': true,
+          'router': 'undecided',
+          'reason': 'ambiguous',
+          'ranked': [
+            {'skill_id': 'email-drafting', 'title': 'Email', 'score': 0.0},
+            {'skill_id': 'table-cleanup', 'title': 'Tidy', 'score': 0.0},
+          ],
+        };
+      final r = await RequestRouter(s).route('email the cleaned table');
+      expect(r, isA<RouteNone>());
+      expect((r as RouteNone).reason, RouteNoneReason.ambiguous);
+      expect(r.suggestions.map((s) => s.id), ['email-drafting']);
+    });
+
     test('openers that usually ask for an action are not questions', () {
       expect(RequestRouter.looksLikeQuestion('Can you shorten the intro'),
           isFalse);

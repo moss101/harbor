@@ -164,6 +164,7 @@ impl CalibrationEntry {
 }
 
 /// One ranked candidate in an evaluate() result.
+#[derive(Debug, Clone)]
 pub struct RouteHit {
     pub skill_id: String,
     pub title: String,
@@ -456,9 +457,25 @@ pub fn disambiguate(
     request: &str,
     candidates: &[RouteHit],
 ) -> Disambiguation {
-    use harbor_inference::provider::{Capabilities, ChatRequest};
     if candidates.len() < 2 {
         return Disambiguation::Unavailable("nothing to disambiguate".into());
+    }
+    choose(chat, chat_model, request, candidates)
+}
+
+/// Ask a chat model to pick one of `candidates` for `request`, or "none".
+/// [`disambiguate`] uses it for embedder ties; [`crate::router_lite`] uses
+/// it as the whole router when no embedder is installed. Same safety
+/// shape: constrained when the provider can, validated always, advisory.
+pub fn choose(
+    chat: &dyn ModelProvider,
+    chat_model: &ModelRef,
+    request: &str,
+    candidates: &[RouteHit],
+) -> Disambiguation {
+    use harbor_inference::provider::{Capabilities, ChatRequest};
+    if candidates.is_empty() {
+        return Disambiguation::Unavailable("no candidates".into());
     }
     if !chat.supports(chat_model, &Capabilities::Chat) {
         return Disambiguation::Unavailable("chat model does not support chat".into());
@@ -469,8 +486,11 @@ pub fn disambiguate(
         .map(|c| format!("- {}: {} — {}\n", c.skill_id, c.title, c.description))
         .collect();
     let prompt = format!(
-        "Pick the one skill that best fits the user's request, or \"none\" if \
-         none of them fits.\n\nSkills:\n{listing}\nRequest: {request}\n\n\
+        "Each skill below makes one kind of file or report. If the user wants \
+         that thing written, drafted, prepared or made, even without naming \
+         it, pick that skill. Answer \"none\" only for greetings, thanks, \
+         questions, jokes, poems, translations, calculations or advice.\n\n\
+         Skills:\n{listing}\nRequest: {request}\n\n\
          Answer with JSON only: {{\"skill_id\": \"<id or none>\"}}"
     );
     let mut options: Vec<&str> = ids.clone();

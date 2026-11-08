@@ -926,19 +926,23 @@ class HarborService extends ChangeNotifier implements DeckDesignerApi {
 
   /// Rank the built-in skills for a free-text request. Returns
   /// `{abstained, reason, ranked: [{skill_id, title, score}]}`, or null
-  /// when no embedding index is open or the core refuses. A suggestion
-  /// never starts or authorizes anything.
+  /// when the core refuses. A suggestion never starts or authorizes
+  /// anything.
   ///
-  /// [chatPackage] (the user's currently selected chat model, whichever it
-  /// is) is consulted ONLY to break a tie the embedder cannot; routing
-  /// itself never depends on it.
+  /// With an embedding index, [chatPackage] (the user's selected chat
+  /// model) only breaks ties the embedder cannot. Without one, the core
+  /// picks by keywords and then asks [chatPackage] to choose a skill or
+  /// `none_fit` (answer in chat). [hasFile]: a file is attached, so only
+  /// skills that take one are considered.
   Future<Map<String, dynamic>?> suggestSkills(String text,
-      {String? chatPackage}) async {
-    if (!knowledgeOpen) return null;
+      {String? chatPackage, bool hasFile = false}) async {
+    // No embedding index: the core routes by keywords, then by the chat
+    // model (`router` is "keywords" | "chat" | "undecided" in the result).
     try {
       return await _call('skills.suggest', {
         'text': text,
         if (chatPackage != null) 'chat_package': chatPackage,
+        'has_file': hasFile,
       });
     } on ffi.HarborCoreException {
       return null;

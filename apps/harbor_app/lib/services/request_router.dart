@@ -74,9 +74,11 @@ final class RouteNone extends RouteDecision {
 ///    names another kind, or no index is open, [looksLikeQuestion] decides.
 /// 3. A task is ranked by the core's skill router (`skills.suggest`). With
 ///    a file in context only skills that take a file qualify; without one,
-///    only skills that do not require one. Without an index, skills whose
-///    names share words with the request are offered as choices, never
-///    picked.
+///    only skills that do not require one. Without an index, the core
+///    picks by keywords ("slides", "CV", "spreadsheet"), then asks the
+///    chat model to choose a skill or none (none: the chat model answers).
+///    With neither, skills whose names share words with the request are
+///    offered as choices, never picked.
 ///
 /// The router never runs anything: it returns a [RouteDecision] for the
 /// caller to SHOW.
@@ -136,9 +138,27 @@ class RequestRouter {
       {RouteFile? file, String? chatPackage}) async {
     final hasFile = file != null;
     final byId = {for (final s in service.skills) s.id: s};
-    final result =
-        await service.suggestSkills(request, chatPackage: chatPackage);
-    if (result == null) {
+    final result = await service.suggestSkills(request,
+        chatPackage: chatPackage, hasFile: hasFile);
+    // Embedder-free route (`router` set): keywords or the chat model chose.
+    final lite = result?['router'] as String?;
+    if (lite != null && result!['abstained'] == true) {
+      // The chat model judged no skill fits: it answers instead.
+      if (result['none_fit'] == true && !hasFile && chatPackage != null) {
+        return const RouteAsk(fromCore: false, general: true);
+      }
+      final offered = [
+        for (final r
+            in ((result['ranked'] as List?) ?? const []).whereType<Map>())
+          if (byId[r['skill_id']] case final SkillSummary s)
+            if (fits(s, hasFile: hasFile)) s,
+      ];
+      // A few keyword hits the model could not separate: offer them.
+      if (result['reason'] == 'ambiguous' && offered.length <= 4) {
+        return RouteNone(RouteNoneReason.ambiguous, suggestions: offered);
+      }
+    }
+    if (result == null || (lite != null && result['abstained'] == true)) {
       final matches = lexicalMatches(request, service.skills, hasFile: hasFile);
       // No skill even names what was asked for: the chat model is a far
       // better answer ("write a cv" gets a drafted CV) than a list of
