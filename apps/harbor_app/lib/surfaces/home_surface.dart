@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:harbor_domain/harbor_domain.dart';
@@ -34,14 +36,20 @@ export '../widgets/composer.dart' show Composer, HarborComposer;
 /// composer, never "chat with model X". Attached files ride with the
 /// request; adding them to the Library is a separate, explicit action.
 ///
-/// The empty conversation is the dashboard: greeting, the first-run model
-/// banner, quick actions, background work, recent durable runs, the active
-/// model and the Library index — all live facts from the core.
+/// Answer-first: the empty conversation is one centred ask box under a
+/// single headline, with the first-run model banner when no model is
+/// installed, a few suggestions and any background work — nothing else.
+/// Asking turns the page into a thread: each question is a heading over
+/// its sources (compact chips) and answer, and the follow-up box stays
+/// pinned at the bottom. Models, recent runs and the Library index live
+/// in their own surfaces, out of the main path.
 ///
 /// Library conversations persist as threads in the core (sealed at rest):
 /// the latest is restored on entry, follow-ups are answered with the
-/// thread's earlier turns as conversation memory, and the history dialog
-/// switches, renames or deletes threads. Only completed turns are recorded.
+/// thread's earlier turns as conversation memory. The shell's sidebar
+/// lists them ([AppState.threads], published from here) and hands back
+/// open / new / manage requests, which this surface consumes. Only
+/// completed turns are recorded.
 /// Questions about an attached file and routed tasks are not part of a
 /// thread; the durable truth for every run stays in Activity.
 class HomeSurface extends StatefulWidget {
@@ -123,6 +131,9 @@ class _HomeSurfaceState extends State<HomeSurface> {
     super.initState();
     widget.state.addListener(_consumePending);
     _composer.addListener(_onComposerChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _consumePending();
+    });
   }
 
   @override
@@ -158,13 +169,32 @@ class _HomeSurfaceState extends State<HomeSurface> {
     return !sp.failed && service != null && service.needsFirstModel;
   }
 
-  /// Text handed over by the command palette ("Summarize document").
+  /// Requests handed over by the shell: text from the command palette
+  /// ("Summarize document") and the sidebar's open / new / manage thread.
   void _consumePending() {
-    final text = widget.state.pendingComposerText;
-    if (text == null) return;
-    widget.state.pendingComposerText = null;
-    _prefill(text);
+    final state = widget.state;
+    final text = state.pendingComposerText;
+    if (text != null) {
+      state.pendingComposerText = null;
+      _prefill(text);
+    }
+    final open = state.pendingThreadId;
+    if (open != null) {
+      state.pendingThreadId = null;
+      if (!_busy && open != _threadId) _openThread(open);
+    }
+    if (state.pendingNewThread) {
+      state.pendingNewThread = false;
+      if (!_busy) _newConversation();
+    }
+    if (state.pendingManageThreads) {
+      state.pendingManageThreads = false;
+      if (!_busy) _showThreads();
+    }
   }
+
+  /// Mirror the thread list and the current thread for the sidebar.
+  void _publishThreads() => widget.state.publishThreads(_threads, _threadId);
 
   void _prefill(String label) {
     _composer.text = label;
@@ -437,6 +467,7 @@ class _HomeSurfaceState extends State<HomeSurface> {
           if (((t['turns'] as num?) ?? 0) > 0) t
       ];
     });
+    _publishThreads();
   }
 
   Future<void> _restoreLatest() async {
@@ -463,6 +494,7 @@ class _HomeSurfaceState extends State<HomeSurface> {
         ..clear()
         ..addAll(_entriesFrom((got['messages'] as List).cast<Map>()));
     });
+    _publishThreads();
     _scrollToEnd();
   }
 
@@ -559,16 +591,13 @@ class _HomeSurfaceState extends State<HomeSurface> {
   }
 
   /// Start a fresh conversation; the current one stays in the history.
-  void _newConversation() => setState(() {
-        _entries.clear();
-        _threadId = null;
-      });
-
-  String _greeting(AppLocalizations l10n) {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return l10n.homeGreetingMorning;
-    if (hour < 18) return l10n.homeGreetingAfternoon;
-    return l10n.homeGreetingEvening;
+  void _newConversation() {
+    setState(() {
+      _entries.clear();
+      _threadId = null;
+    });
+    _publishThreads();
+    _composerFocus.requestFocus();
   }
 
   Widget _composerBlock(
@@ -582,42 +611,11 @@ class _HomeSurfaceState extends State<HomeSurface> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Ask's tools, kept on the one composer: Library-only search and
-        // the chat model answers run with.
-        Wrap(
-          alignment: WrapAlignment.end,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: HarborSpace.s1,
-          runSpacing: HarborSpace.s1,
-          children: [
-            if (service != null)
-              IconButton(
-                key: const ValueKey('home-conversations'),
-                tooltip: l10n.askConversationsTooltip,
-                onPressed: _busy ? null : _showThreads,
-                icon: const Icon(Icons.history),
-              ),
-            IconButton(
-              key: const ValueKey('home-search-only'),
-              tooltip: l10n.askSearchOnly,
-              onPressed: canSearch ? _searchOnly : null,
-              icon: const Icon(Icons.manage_search_outlined),
-            ),
-            if (models.isNotEmpty && service != null)
-              _ModelPicker(
-                models: models,
-                selected: _chatPackage(service),
-                runtimeLabel: runtimeLabelFor(service),
-                onSelected: widget.state.setChatModel,
-              ),
-          ],
-        ),
-        const SizedBox(height: HarborSpace.s1),
         HarborComposer(
-          hint: l10n.homeComposerHint,
+          hint: docked ? l10n.homeFollowUpHint : l10n.homeComposerHint,
           controller: _composer,
           focusNode: _composerFocus,
-          elevated: !docked,
+          elevated: true,
           onAttach: _attachFiles,
           onScan: () => _capture(showScanFlow),
           onRecord: () => _capture(showVoiceFlow),
@@ -633,6 +631,23 @@ class _HomeSurfaceState extends State<HomeSurface> {
                     ComposerScope.collection(c['name'] as String),
                 ],
           onScopeChanged: (s) => setState(() => _scope = s),
+          // Ask's tools live inside the one ask box: the chat model answers
+          // run with, and Library-only search.
+          tools: [
+            if (models.isNotEmpty && service != null)
+              _ModelPicker(
+                models: models,
+                selected: _chatPackage(service),
+                runtimeLabel: runtimeLabelFor(service),
+                onSelected: widget.state.setChatModel,
+              ),
+            IconButton(
+              key: const ValueKey('home-search-only'),
+              tooltip: l10n.askSearchOnly,
+              onPressed: canSearch ? _searchOnly : null,
+              icon: const Icon(Icons.manage_search_outlined),
+            ),
+          ],
           attachments: [
             for (final a in _attachments)
               InputChip(
@@ -676,44 +691,34 @@ class _HomeSurfaceState extends State<HomeSurface> {
     return _dashboard(l10n, t, service);
   }
 
-  /// The conversation: its turns above, the composer docked below.
+  /// The thread: its turns as a readable column, the follow-up box pinned
+  /// below.
   Widget _conversation(
       AppLocalizations l10n, HarborTheme t, HarborService? service) {
     final wc = HarborBreakpoints.of(context);
     final gutter = HarborBreakpoints.gutter(wc);
-    const width = BoxConstraints(maxWidth: HarborLayout.readingMax + 80);
+    const width = BoxConstraints(maxWidth: HarborLayout.askMax);
     return Column(
       key: const ValueKey('home-conversation'),
       children: [
-        Padding(
-          padding: EdgeInsets.fromLTRB(gutter, HarborSpace.s2, gutter, 0),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: width,
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: TextButton.icon(
-                  key: const ValueKey('home-clear-conversation'),
-                  onPressed: _busy ? null : _newConversation,
-                  icon: const Icon(Icons.add_comment_outlined, size: 18),
-                  label: Text(l10n.askNewConversation),
-                ),
-              ),
-            ),
-          ),
-        ),
         Expanded(
           child: Scrollbar(
             controller: _thread,
             child: ListView.builder(
               controller: _thread,
               padding: EdgeInsets.fromLTRB(
-                  gutter, HarborSpace.s2, gutter, HarborSpace.s4),
+                  gutter, HarborSpace.s3, gutter, HarborSpace.s4),
               itemCount: _entries.length,
               itemBuilder: (context, i) => Center(
                 child: ConstrainedBox(
                   constraints: width,
-                  child: _entryView(l10n, service, _entries[i]),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (i > 0) Divider(height: 1, color: t.colors.border),
+                      _entryView(l10n, service, _entries[i]),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -768,13 +773,13 @@ class _HomeSurfaceState extends State<HomeSurface> {
       outcome = null;
     }
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: HarborSpace.s3),
+      padding: const EdgeInsets.symmetric(vertical: HarborSpace.s4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          QuestionBubble(text: entry.request),
+          QuestionHeading(text: entry.request),
           if (outcome != null) ...[
-            const SizedBox(height: HarborSpace.s3),
+            const SizedBox(height: HarborSpace.s4),
             outcome,
           ],
         ],
@@ -807,11 +812,16 @@ class _HomeSurfaceState extends State<HomeSurface> {
     );
   }
 
-  /// The empty conversation: the work-first dashboard.
+  /// The empty conversation: one headline, the centred ask box, a few
+  /// suggestions — and, only when there is something to say, the first-run
+  /// banner, a core failure or work running in the background.
   Widget _dashboard(
       AppLocalizations l10n, HarborTheme t, HarborService? service) {
     final wc = HarborBreakpoints.of(context);
     final compact = HarborBreakpoints.isCompact(wc);
+    final gutter = HarborBreakpoints.gutter(wc);
+    final sp = HarborServiceProvider.of(context);
+    final ops = service?.activeOps ?? const [];
     final quick = [
       (l10n.quickSummarize, Icons.description_outlined),
       (l10n.quickAnalyze, Icons.table_chart_outlined),
@@ -824,23 +834,26 @@ class _HomeSurfaceState extends State<HomeSurface> {
     final chips = [
       for (final (label, icon) in quick)
         ActionChip(
-          avatar: Icon(icon, size: 16, color: t.colors.brand),
-          label: Text(label),
+          avatar: Icon(icon, size: 16, color: t.colors.inkMuted),
+          label: Text(label, style: t.text.smallOf(t.colors.ink)),
+          shape: const StadiumBorder(),
+          side: BorderSide(color: t.colors.border),
+          backgroundColor: t.colors.surface,
           onPressed: () => _prefill(label),
         ),
     ];
 
-    return HarborPage(
-      controller: _scroll,
+    final column = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(height: compact ? HarborSpace.s5 : HarborSpace.s10),
-        Text(_greeting(l10n), style: t.text.smallOf(t.colors.inkMuted)),
-        const SizedBox(height: HarborSpace.s1),
         Text(l10n.homeHeadline,
+            key: const ValueKey('home-headline'),
+            textAlign: TextAlign.center,
             style: compact
                 ? t.text.titleOf(t.colors.ink)
                 : t.text.displayOf(t.colors.ink)),
-        const SizedBox(height: HarborSpace.s5),
+        SizedBox(height: compact ? HarborSpace.s5 : HarborSpace.s6),
         // First run (production plan C2): a model install gates every
         // model-backed action; say so once, plainly, with the Local Only
         // fact next to it, and take the user straight to Recommended.
@@ -860,6 +873,18 @@ class _HomeSurfaceState extends State<HomeSurface> {
           ),
           const SizedBox(height: HarborSpace.s4),
         ],
+        if (sp.failed) ...[
+          HarborBanner(
+            key: const ValueKey('home-core-failed'),
+            tone: HarborBannerTone.danger,
+            title: l10n.coreDegradedTitle,
+            body: l10n.coreNotLoadedActivity,
+            action: sp.failureDetail == null
+                ? null
+                : HarborIdentifier(sp.failureDetail!, size: 11, maxLines: 6),
+          ),
+          const SizedBox(height: HarborSpace.s4),
+        ],
         _composerBlock(l10n, t, service, docked: false),
         const SizedBox(height: HarborSpace.s4),
         if (compact)
@@ -875,16 +900,42 @@ class _HomeSurfaceState extends State<HomeSurface> {
           )
         else
           Wrap(
+              alignment: WrapAlignment.center,
               spacing: HarborSpace.s2,
               runSpacing: HarborSpace.s2,
               children: chips),
-        SizedBox(height: compact ? HarborSpace.s6 : HarborSpace.s10),
-        HarborTwoColumn(
-          asideFirstWhenStacked: true,
-          main: _MainColumn(state: widget.state),
-          aside: _AsideColumn(state: widget.state),
-        ),
+        if (ops.isNotEmpty) ...[
+          const SizedBox(height: HarborSpace.s6),
+          HarborSectionHeader(title: l10n.homeSectionActive),
+          for (final op in ops)
+            Padding(
+              padding: const EdgeInsets.only(bottom: HarborSpace.s2),
+              child: OpProgressCard(progress: op, service: service),
+            ),
+        ],
       ],
+    );
+
+    // Centred in the free space; scrolls when the keyboard or large text
+    // leaves too little room.
+    return LayoutBuilder(
+      builder: (context, box) => SingleChildScrollView(
+        controller: _scroll,
+        padding:
+            EdgeInsets.symmetric(horizontal: gutter, vertical: HarborSpace.s5),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+              minHeight: math.max(0, box.maxHeight - HarborSpace.s5 * 2)),
+          child: Align(
+            // A little above centre reads as "the page", not a dialog.
+            alignment: const Alignment(0, -0.25),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: HarborLayout.askMax),
+              child: column,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -967,14 +1018,29 @@ class _ModelPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final t = HarborTheme.of(context);
+    // Phones keep the ask box to one row of tools: the model is an icon
+    // (its name in the tooltip and the menu).
+    final compact = HarborBreakpoints.isCompact(HarborBreakpoints.of(context));
     return MenuAnchor(
-      builder: (context, controller, _) => ModelDock.chip(
-        key: const ValueKey('home-model-picker'),
-        modelLabel: selected ?? l10n.askModelPicker,
-        runtimeLabel: runtimeLabel,
-        semantic: ExecutionSemantic.local,
-        onTap: () => controller.isOpen ? controller.close() : controller.open(),
-      ),
+      builder: (context, controller, _) {
+        void toggle() =>
+            controller.isOpen ? controller.close() : controller.open();
+        if (compact) {
+          return IconButton(
+            key: const ValueKey('home-model-picker'),
+            tooltip: '${l10n.askModelPicker} · ${selected ?? ''}',
+            onPressed: toggle,
+            icon: const Icon(Icons.memory_outlined),
+          );
+        }
+        return ModelDock.chip(
+          key: const ValueKey('home-model-picker'),
+          modelLabel: selected ?? l10n.askModelPicker,
+          runtimeLabel: runtimeLabel,
+          semantic: ExecutionSemantic.local,
+          onTap: toggle,
+        );
+      },
       menuChildren: [
         Padding(
           padding: const EdgeInsets.fromLTRB(
@@ -992,174 +1058,6 @@ class _ModelPicker extends StatelessWidget {
             onPressed: () => onSelected(id),
             child: HarborIdentifier(id, size: 12),
           ),
-      ],
-    );
-  }
-}
-
-class _MainColumn extends StatelessWidget {
-  const _MainColumn({required this.state});
-  final AppState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final t = HarborTheme.of(context);
-    final sp = HarborServiceProvider.of(context);
-    final service = sp.notifier;
-    final ops = service?.activeOps ?? const [];
-    final runs = service?.runs ?? const [];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (ops.isNotEmpty) ...[
-          HarborSectionHeader(title: l10n.homeSectionActive),
-          for (final op in ops)
-            Padding(
-              padding: const EdgeInsets.only(bottom: HarborSpace.s2),
-              child: OpProgressCard(progress: op, service: service),
-            ),
-          const SizedBox(height: HarborSpace.s5),
-        ],
-        HarborSectionHeader(
-          title: l10n.homeSectionRecent,
-          trailing: runs.isEmpty
-              ? null
-              : TextButton(
-                  onPressed: () => state.goTo(HarborSurface.activity),
-                  child: Text(l10n.viewAllAction),
-                ),
-        ),
-        if (sp.failed)
-          HarborBanner(
-            tone: HarborBannerTone.danger,
-            title: l10n.coreDegradedTitle,
-            body: l10n.coreNotLoadedActivity,
-            action: sp.failureDetail == null
-                ? null
-                : HarborIdentifier(sp.failureDetail!, size: 11, maxLines: 6),
-          )
-        else if (runs.isEmpty)
-          HarborCard(
-            raised: true,
-            child: Row(children: [
-              Icon(Icons.timeline_outlined, size: 18, color: t.colors.inkMuted),
-              const SizedBox(width: HarborSpace.s3),
-              Expanded(
-                child: Text(l10n.homeRecentEmpty,
-                    style: t.text.smallOf(t.colors.inkMuted)),
-              ),
-            ]),
-          )
-        else
-          HarborCard(
-            padding: const EdgeInsets.symmetric(vertical: HarborSpace.s1),
-            child: Column(children: [
-              for (final (i, r) in runs.take(5).indexed) ...[
-                if (i > 0) Divider(height: 1, color: t.colors.borderSubtle),
-                HarborListRow(
-                  titleIsIdentifier: true,
-                  title: HarborIdentifier(r['run_id'] as String, size: 12),
-                  subtitle: Text(l10n.runStateLine(
-                    r['state'] as String,
-                    r['active_compute_ms_total'] as int,
-                  )),
-                  trailing: RunStateBadge(state: r['state'] as String),
-                  onTap: () => state.goTo(HarborSurface.activity),
-                ),
-              ],
-            ]),
-          ),
-      ],
-    );
-  }
-}
-
-class _AsideColumn extends StatelessWidget {
-  const _AsideColumn({required this.state});
-  final AppState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final t = HarborTheme.of(context);
-    final sp = HarborServiceProvider.of(context);
-    final service = sp.notifier;
-    final models = chatModelsOf(service);
-    final chosen = state.chatModel;
-    final active = models.isEmpty
-        ? null
-        : models.firstWhere((m) => m['id'] == chosen,
-            orElse: () => models.first);
-    final Widget dock;
-    if (sp.failed || service == null) {
-      dock = ModelDock(
-        heading: l10n.homeModelHeading,
-        modelLabel: l10n.modelDockCoreUnavailable,
-        modelIsIdentifier: false,
-        runtimeLabel: 'OFFLINE',
-        semantic: ExecutionSemantic.danger,
-      );
-    } else if (active == null) {
-      dock = ModelDock(
-        heading: l10n.homeModelHeading,
-        modelLabel: l10n.modelDockEmpty,
-        modelIsIdentifier: false,
-        runtimeLabel: runtimeLabelFor(service),
-        semantic: ExecutionSemantic.local,
-        // The dock is a navigation affordance to Models.
-        onTap: () => state.goTo(HarborSurface.models),
-      );
-    } else {
-      dock = ModelDock(
-        heading: l10n.homeModelHeading,
-        modelLabel: active['id'] as String,
-        runtimeLabel: runtimeLabelFor(service),
-        semantic: ExecutionSemantic.local,
-        detail: active['runtime'] as String?,
-        onTap: () => state.goTo(HarborSurface.models),
-      );
-    }
-    final knowledgeOpen = service?.knowledgeOpen == true;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        dock,
-        const SizedBox(height: HarborSpace.s3),
-        HarborCard(
-          onTap: () => state.goTo(HarborSurface.knowledge),
-          semanticLabel: l10n.surfaceKnowledge,
-          child: Row(children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: t.colors.brandSoft,
-                borderRadius: BorderRadius.circular(HarborRadius.sm),
-              ),
-              child: Icon(Icons.library_books_outlined,
-                  size: 20, color: t.colors.brand),
-            ),
-            const SizedBox(width: HarborSpace.s3),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(l10n.lensSectionKnowledge,
-                      style: t.text.captionOf(t.colors.inkMuted)),
-                  Text(
-                    knowledgeOpen
-                        ? l10n.knowledgeSourcesCount(
-                            service!.knowledgeSources.length)
-                        : l10n.homeKnowledgeNotOpen,
-                    style: t.text.bodyStrongOf(t.colors.ink),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.chevron_right, color: t.colors.inkMuted),
-          ]),
-        ),
       ],
     );
   }

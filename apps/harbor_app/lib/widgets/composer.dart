@@ -69,6 +69,7 @@ class HarborComposer extends StatefulWidget {
     this.busy = false,
     this.onCancel,
     this.elevated = true,
+    this.tools = const [],
   });
   final String hint;
 
@@ -113,6 +114,10 @@ class HarborComposer extends StatefulWidget {
 
   /// A soft shadow (Home); docked bars sit flat on their surface.
   final bool elevated;
+
+  /// Extra controls at the end of the action row, before send (Home: the
+  /// Library-only search and the model picker).
+  final List<Widget> tools;
 
   @override
   State<HarborComposer> createState() => _HarborComposerState();
@@ -253,19 +258,12 @@ class _HarborComposerState extends State<HarborComposer> {
         onPressed: widget.onCancel,
         icon: const Icon(Icons.stop),
       );
-    } else if (compact) {
+    } else {
       sendButton = IconButton.filled(
         key: const ValueKey('composer-send'),
         tooltip: l10n.sendAction,
         onPressed: canSend ? _send : null,
         icon: const Icon(Icons.arrow_upward),
-      );
-    } else {
-      sendButton = FilledButton.icon(
-        key: const ValueKey('composer-send'),
-        onPressed: canSend ? _send : null,
-        icon: const Icon(Icons.arrow_forward, size: 16),
-        label: Text(l10n.sendAction),
       );
     }
     return Container(
@@ -274,7 +272,7 @@ class _HarborComposerState extends State<HarborComposer> {
       decoration: ShapeDecoration(
         color: t.colors.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(HarborRadius.lg),
+          borderRadius: BorderRadius.circular(HarborRadius.xl),
           side: BorderSide(color: t.colors.border),
         ),
         shadows: [
@@ -350,7 +348,19 @@ class _HarborComposerState extends State<HarborComposer> {
                   ),
                 ),
               ),
-            const Spacer(),
+            Expanded(
+              child: Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: Wrap(
+                  alignment: WrapAlignment.end,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: HarborSpace.s1,
+                  runSpacing: HarborSpace.s1,
+                  children: widget.tools,
+                ),
+              ),
+            ),
+            const SizedBox(width: HarborSpace.s1),
             sendButton,
           ]),
         ],

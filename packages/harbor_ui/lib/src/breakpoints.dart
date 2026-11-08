@@ -67,6 +67,11 @@ class HarborBreakpoints {
   /// Compact = phone-class: bottom navigation, sheets instead of panels.
   static bool isCompact(HarborWindowClass c) => c == HarborWindowClass.compact;
 
+  /// Answer-first shell: the sidebar starts open on desktop-class windows
+  /// and collapsed to icons on tablets (phones use a drawer instead).
+  static bool sidebarOpenByDefault(HarborWindowClass c) =>
+      c == HarborWindowClass.wideRail || c == HarborWindowClass.full;
+
   /// A side rail (compact or full) is present from 1024 up; the medium
   /// class uses the platform's compact side pattern (icon + label rail).
   static bool hasRail(HarborWindowClass c) => c != HarborWindowClass.compact;

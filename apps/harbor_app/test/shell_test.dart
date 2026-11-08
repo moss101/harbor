@@ -19,6 +19,8 @@ import 'package:harbor_app/surfaces/skill_run.dart';
 import 'package:harbor_app/surfaces/work_surface.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
+import 'support/shell_nav.dart';
+
 final repoRoot = Directory.current.parent.parent.path; // apps/harbor_app
 final dylibPath = '$repoRoot/core/target/debug/libharbor_ffi.dylib';
 final coreAvailable = File(dylibPath).existsSync();
@@ -139,33 +141,11 @@ Future<void> pumpApp(
   await tester.pump(const Duration(milliseconds: 100));
 }
 
-/// Navigate to a surface by its label. On compact widths the five-item
-/// bottom bar keeps Skills/Activity/Settings under "More", so the helper
-/// opens that sheet first when needed.
-Future<void> goTo(WidgetTester tester, String label,
-    {String more = 'More'}) async {
-  var target = find.text(label);
-  if (target.evaluate().isEmpty) {
-    final rail = find.byType(HarborRail);
-    if (rail.evaluate().isNotEmpty) {
-      // Short windows: the rail scrolls to reach later destinations.
-      await tester.scrollUntilVisible(find.text(label), 80,
-          scrollable:
-              find.descendant(of: rail, matching: find.byType(Scrollable)));
-    } else {
-      await tester.tap(find.text(more).first);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-    }
-    target = find.text(label);
-  }
-  await tester.tap(target.first);
-  await tester.pump();
-  await tester.pump(const Duration(milliseconds: 400));
-  // One more frame: the previous surface retires (goes offstage) after
-  // its fade completes.
-  await tester.pump();
-}
+/// Navigate to a surface by its label: a sidebar row (Home · Work ·
+/// Library) or the More menu (Models · Skills · Activity · Settings); on
+/// phones the drawer opens first. [more] is kept for older call sites.
+Future<void> goTo(WidgetTester tester, String label, {String more = 'More'}) =>
+    navigateTo(tester, label);
 
 Map<String, dynamic>? _result;
 
@@ -238,101 +218,111 @@ void main() {
     await tester.tap(find.text('العربية'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    final context = tester.element(find.byType(NavigationBar).first);
+    final context = tester.element(find.byType(AppBar).first);
     expect(Directionality.of(context), TextDirection.rtl);
-    expect(find.text('الرئيسية'), findsOneWidget);
+    // The phone top bar names the surface.
+    expect(find.text('الإعدادات'), findsWidgets);
     // Back on Home: work-first headline is localized.
     await goTo(tester, 'الرئيسية', more: 'المزيد');
     expect(find.text('ما الذي تريد إنجازه؟'), findsOneWidget);
   });
 
-  testWidgets('compact width uses a five-item bottom bar plus More',
+  testWidgets('compact width: a slim top bar and a drawer, no bottom bar',
       (tester) async {
     await pumpApp(tester, width: 390, height: 844);
-    expect(find.byType(NavigationBar), findsOneWidget);
-    expect(find.byType(HarborRail), findsNothing);
-    // Material guidance: 3–5 destinations. Primary surfaces are direct.
-    expect(find.byType(NavigationDestination), findsNWidgets(5));
-    for (final label in ['Home', 'Work', 'Library', 'Models', 'More']) {
-      expect(find.text(label), findsOneWidget);
-    }
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byType(HarborSidebar), findsNothing);
     // The Trust chip is visible on every compact surface (§1 "Local is
-    // visible") and opens the Lens sheet.
+    // visible") and opens the Lens sheet; New thread is one tap away.
     expect(find.text('LOCAL'), findsOneWidget);
-    // The secondary surfaces are one tap away under More — and only they:
-    // Ask is Home, Store is a Models tab, Agents is not a destination.
-    await tester.tap(find.text('More'));
+    expect(find.byKey(const ValueKey('shell-new-thread-bar')), findsOneWidget);
+    // The drawer holds the sidebar: Home · Work · Library, recent threads,
+    // and More for the rest — only they: Ask is Home, Store is a Models
+    // tab, Agents is not a destination.
+    await tester.tap(find.byIcon(Icons.menu).first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    for (final label in ['Skills', 'Activity', 'Settings']) {
+    for (final label in ['Home', 'Work', 'Library', 'Recent']) {
       expect(find.text(label), findsOneWidget);
+    }
+    await tester.tap(find.byKey(const ValueKey('shell-more')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    for (final label in ['Models', 'Skills', 'Activity', 'Settings']) {
+      expect(find.widgetWithText(MenuItemButton, label), findsOneWidget);
     }
     for (final gone in ['Ask', 'Agents', 'Store', 'Knowledge']) {
       expect(find.text(gone), findsNothing);
     }
-    await tester.tap(find.text('Activity'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.widgetWithText(MenuItemButton, 'Activity'));
+    for (var i = 0; i < 3; i++) {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+    }
     // The app bar names the secondary surface (the surface header does
-    // not repeat it on compact widths); More reads as selected.
-    expect(find.byType(NavigationDestination), findsNWidgets(5));
-    expect(find.text('Activity'), findsOneWidget);
+    // not repeat it on compact widths).
+    expect(
+        find.descendant(
+            of: find.byType(AppBar), matching: find.text('Activity')),
+        findsOneWidget);
     expect(find.textContaining('Durable runs and background'), findsOneWidget);
-    expect(find.text('More'), findsOneWidget);
-    final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
-    expect(bar.selectedIndex, 4);
   });
 
-  testWidgets('medium width shows compact rail, no persistent lens',
+  testWidgets('medium width: the sidebar starts collapsed, no persistent lens',
       (tester) async {
     await pumpApp(tester, width: 800, height: 600);
-    expect(find.byType(HarborRail), findsOneWidget);
+    final sidebar = find.byType(HarborSidebar);
+    expect(sidebar, findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
     expect(find.byType(TrustPulse), findsNothing);
-    // Medium rail: icon + caption for all seven surfaces; the rail
-    // scrolls to reach the later ones on short windows.
-    await tester.scrollUntilVisible(find.text('Settings'), 80,
-        scrollable: find.descendant(
-            of: find.byType(HarborRail), matching: find.byType(Scrollable)));
+    expect(tester.getSize(sidebar).width, HarborLayout.sidebarCollapsed);
+    // Collapsed: labels become tooltips (plus the ⌘ hint on desktop).
+    expect(find.text('Library'), findsNothing);
+    expect(find.byTooltip(RegExp(r'^Library')), findsOneWidget);
+    // It opens on request, with labels and recent threads.
+    await tester.tap(find.byKey(const ValueKey('sidebar-toggle')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(tester.getSize(sidebar).width, HarborLayout.sidebar);
     expect(find.text('Library'), findsOneWidget);
-    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Recent'), findsOneWidget);
   });
 
   testWidgets(
-      'wide width shows rail; at 1280 lens is persistent with '
-      'canvas >= 640', (tester) async {
+      'wide width: the sidebar is open; the Lens docks at 1280 only when '
+      'chosen, with canvas >= 640', (tester) async {
     await pumpApp(tester, width: 1280, height: 800);
-    final railFinder = find.byType(HarborRail);
-    expect(railFinder, findsOneWidget);
-    // Trust Pulse is present in the persistent (docked) Harbor Lens.
+    final sidebar = find.byType(HarborSidebar);
+    expect(tester.getSize(sidebar).width, HarborLayout.sidebar);
+    // Answer-first: no Lens on screen until asked for.
+    expect(find.byType(TrustPulse), findsNothing);
+    final state = AppStateScope.of(tester.element(sidebar));
+    state.setLensDocked(true);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.byType(TrustPulse), findsOneWidget);
     expect(find.text('Harbor Lens'), findsOneWidget);
-    // Rail (220) + lens (320) + canvas (>=640) <= 1280.
-    final railSize = tester.getSize(railFinder);
-    expect(railSize.width, HarborLayout.desktopRail);
-    expect(railSize.width, lessThanOrEqualTo(1280 - HarborLayout.desktopLens));
-    // The Lens can be undocked (and the choice is a preference).
-    await tester.tap(find.byIcon(Icons.view_sidebar));
+    // Sidebar (264) + lens (320) + canvas (>=640) <= 1280.
+    expect(1280 - HarborLayout.sidebar - HarborLayout.desktopLens,
+        greaterThanOrEqualTo(HarborLayout.workCanvasMin));
+    // The Trust chip undocks it again (the choice is a preference).
+    await tester.tap(find.byType(TrustChip).first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
+    expect(state.lensDocked, isFalse);
     expect(find.byType(TrustPulse), findsNothing);
-    await tester.tap(find.byIcon(Icons.view_sidebar_outlined));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-    expect(find.byType(TrustPulse), findsOneWidget);
   });
 
-  testWidgets('expanded width collapses the rail to 72px with a Lens drawer',
+  testWidgets('expanded width collapses the sidebar with a Lens drawer',
       (tester) async {
     await pumpApp(tester, width: 1100, height: 800);
-    expect(tester.getSize(find.byType(HarborRail)).width,
-        HarborLayout.desktopRailCollapsed);
+    expect(tester.getSize(find.byType(HarborSidebar)).width,
+        HarborLayout.sidebarCollapsed);
     // Collapsed: labels become tooltips; the canvas keeps >= 640.
     expect(find.text('Library'), findsNothing);
-    // Tooltip carries the label (plus the ⌘3 hint on desktop).
     expect(find.byTooltip(RegExp(r'^Library')), findsOneWidget);
     expect(find.byType(TrustPulse), findsNothing);
-    await tester.tap(find.byIcon(Icons.view_sidebar_outlined));
+    await tester.tap(find.byType(TrustChip).first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.byType(TrustPulse), findsOneWidget);
@@ -348,7 +338,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(store.current.themeMode, ThemeMode.dark);
-    expect(Theme.of(tester.element(find.byType(HarborRail))).brightness,
+    expect(Theme.of(tester.element(find.byType(HarborSidebar))).brightness,
         Brightness.dark);
     await tester.tap(find.text('العربية'));
     await tester.pump();
@@ -358,10 +348,10 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await pumpApp(tester, preferences: store);
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('الإعدادات'), findsWidgets);
-    expect(Theme.of(tester.element(find.byType(HarborRail))).brightness,
+    expect(find.text('المكتبة'), findsWidgets);
+    expect(Theme.of(tester.element(find.byType(HarborSidebar))).brightness,
         Brightness.dark);
-    expect(Directionality.of(tester.element(find.byType(HarborRail))),
+    expect(Directionality.of(tester.element(find.byType(HarborSidebar))),
         TextDirection.rtl);
   });
 
@@ -373,7 +363,7 @@ void main() {
     await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    // Library header (+ rail label, + the docked Lens link).
+    // Library header (+ the sidebar label).
     expect(find.text('Library'), findsAtLeastNWidgets(2));
     expect(find.textContaining('citation-backed'), findsOneWidget);
   });
@@ -405,7 +395,7 @@ void main() {
     expect(composer.controller!.text, 'Translate content');
   });
 
-  testWidgets('settings switches to Arabic and mirrors the rail',
+  testWidgets('settings switches to Arabic and mirrors the sidebar',
       (tester) async {
     await pumpApp(tester);
     await goTo(tester, 'Settings');
@@ -414,9 +404,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('الإعدادات'), findsWidgets);
     expect(find.text('اللغة'), findsOneWidget);
-    // Structural mirroring: the rail sits at the end (right) edge.
-    final rail = tester.getRect(find.byType(HarborRail));
-    expect(rail.left, greaterThan(1440 - HarborLayout.desktopRail - 1));
+    // Structural mirroring: the sidebar sits at the start (right) edge.
+    final rail = tester.getRect(find.byType(HarborSidebar));
+    expect(rail.left, greaterThan(1440 - HarborLayout.sidebar - 1));
     // Identifiers keep intrinsic LTR inside the RTL layout.
     final id = find.byType(HarborIdentifier).first;
     expect(
@@ -427,19 +417,19 @@ void main() {
 }
 
 void _appendLiveTests() {
-  testWidgets('home model dock reflects the live core state', (tester) async {
+  testWidgets('home states the live core facts, answer-first', (tester) async {
     await pumpApp(tester);
     if (!coreAvailable) {
       // Degraded-but-honest state when the native core is absent.
-      expect(find.text('Core unavailable — native runtime not loaded'),
-          findsOneWidget);
+      expect(find.byKey(const ValueKey('home-core-failed')), findsOneWidget);
       return;
     }
-    // With the real core loaded the dock shows LOCAL ONLY policy facts,
+    // With the real core loaded: the Local policy chip, and — with no
+    // model installed — the first-run install banner above the ask box;
     // never fake model names.
-    expect(find.text('LOCAL ONLY'), findsWidgets);
-    expect(find.text('No model installed — open Models to install one'),
-        findsOneWidget);
+    expect(find.text('LOCAL'), findsWidgets);
+    expect(find.byKey(const ValueKey('home-first-run')), findsOneWidget);
+    expect(find.byKey(const ValueKey('home-model-picker')), findsNothing);
   });
 
   testWidgets('activity lists durable runs created through the core',
@@ -473,11 +463,18 @@ void _appendLiveTests() {
     expect(find.text('run-visible-1'), findsWidgets);
     expect(find.textContaining('CREATED'), findsWidgets);
     expect(find.byType(RunStateBadge), findsWidgets);
-    // Home lists it under Recent runs AND the docked Harbor Lens (1440)
-    // shows the same real run — never sample data.
+    // The Harbor Lens (from the Trust chip) shows the same real run —
+    // never sample data. Home stays answer-first: no run list there.
     await goTo(tester, 'Home');
-    expect(find.text('run-visible-1'), findsNWidgets(2));
+    expect(find.text('run-visible-1'), findsNothing);
+    await tester.tap(find.byType(TrustChip).first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.byType(HarborLens), findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byType(HarborLens), matching: find.text('run-visible-1')),
+        findsOneWidget);
   });
 }
 
@@ -564,7 +561,10 @@ void _appendSkillsTest() {
     expect(find.text('Privacy Inspector'), findsOneWidget);
     // Filtering narrows the grid; the detail sheet lists real tools.
     await tester.enterText(find.byType(TextField).first, 'privacy');
-    await tester.pump();
+    // The shorter list settles back from the scrolled-to-the-end offset.
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     expect(find.text('Document Intelligence'), findsNothing);
     expect(find.text('Privacy Inspector'), findsOneWidget);
   });
@@ -954,39 +954,50 @@ void _appendAskThreadTests() {
     });
 
     // Home is already open (its automatic restore ran before these threads
-    // existed): History lists both, newest first, and picking one opens it.
-    await tester.tap(find.byTooltip('Conversation history'));
+    // existed): Manage threads lists both, newest first, and picking one
+    // opens it.
+    final conversation = find.byKey(const ValueKey('home-conversation'));
+    final sidebar = find.byType(HarborSidebar);
+    Finder inThread(String text) =>
+        find.descendant(of: conversation, matching: find.text(text));
+    await tester.tap(find.byKey(const ValueKey('shell-manage-threads')));
     await settleUntil(tester, find.text('Conversations'),
         budget: const Duration(seconds: 30));
     expect(find.text('Conversations'), findsOneWidget);
     expect(find.text('latest thread question'), findsWidgets);
     await tester.tap(find.text('latest thread question').last);
     await tester.pump();
-    await settleUntil(tester, find.text('latest thread question'),
+    await settleUntil(tester, inThread('latest thread question'),
         budget: const Duration(seconds: 30));
     // The conversation is shown with its evidence.
-    expect(find.text('older thread question'), findsNothing);
+    expect(inThread('older thread question'), findsNothing);
     expect(find.text('Master Services Agreement'), findsWidgets);
+    // The sidebar now lists both saved threads.
+    for (final q in ['latest thread question', 'older thread question']) {
+      expect(
+          find.descendant(of: sidebar, matching: find.text(q)), findsOneWidget);
+    }
 
-    // Switching to the older one replaces the view.
-    await tester.tap(find.byTooltip('Conversation history'));
-    await settleUntil(tester, find.text('Conversations'),
-        budget: const Duration(seconds: 30));
-    await tester.tap(find.text('older thread question').last);
+    // Switching to the older one from the sidebar replaces the view.
+    await tester.tap(find.descendant(
+        of: sidebar, matching: find.text('older thread question')));
     await tester.pump();
-    await settleUntil(tester, find.text('older thread question'),
+    await settleUntil(tester, inThread('older thread question'),
         budget: const Duration(seconds: 30));
-    expect(find.text('latest thread question'), findsNothing);
+    expect(inThread('latest thread question'), findsNothing);
 
-    // New conversation starts empty and keeps the saved ones.
-    await tester.tap(find.text('New conversation'));
+    // New thread starts empty and keeps the saved ones.
+    await tester.tap(find.byKey(const ValueKey('shell-new-thread')));
     await tester.pump();
-    expect(find.text('older thread question'), findsNothing);
+    expect(conversation, findsNothing);
     expect(find.text('What do you want to get done?'), findsOneWidget);
-    expect(find.text('New conversation'), findsNothing);
+    expect(
+        find.descendant(
+            of: sidebar, matching: find.text('older thread question')),
+        findsOneWidget);
 
     // Deleting asks first, then removes the thread for good.
-    await tester.tap(find.byTooltip('Conversation history'));
+    await tester.tap(find.byKey(const ValueKey('shell-manage-threads')));
     await settleUntil(tester, find.text('Conversations'),
         budget: const Duration(seconds: 30));
     await tester.tap(find.byTooltip('Delete conversation').first);
@@ -1011,7 +1022,7 @@ void _appendAskThreadTests() {
 }
 
 void _appendAskThreadLayoutTest() {
-  testWidgets('home conversation header fits a phone with history and new',
+  testWidgets('a saved thread fits a phone; new thread is in the top bar',
       (tester) async {
     if (!coreAvailable) return;
     await pumpApp(tester, width: 360, height: 740);
@@ -1026,18 +1037,26 @@ void _appendAskThreadLayoutTest() {
       await service.appendSearchTurn(
           id, 'a question long enough to wrap on a narrow phone screen', []);
     });
-    await tester.tap(find.byTooltip('Conversation history'));
+    // Threads live in the drawer on phones.
+    await tester.tap(find.byIcon(Icons.menu).first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.byKey(const ValueKey('shell-manage-threads')));
     await settleUntil(tester, find.text('Conversations'),
         budget: const Duration(seconds: 30));
     await tester.tap(find
         .text('a question long enough to wrap on a narrow phone screen')
         .last);
     await tester.pump();
-    await settleUntil(tester,
-        find.text('a question long enough to wrap on a narrow phone screen'),
+    await settleUntil(
+        tester,
+        find.descendant(
+            of: find.byKey(const ValueKey('home-conversation')),
+            matching: find.text(
+                'a question long enough to wrap on a narrow phone screen')),
         budget: const Duration(seconds: 30));
-    expect(find.byTooltip('Conversation history'), findsOneWidget);
-    expect(find.text('New conversation'), findsOneWidget);
+    expect(find.byKey(const ValueKey('shell-new-thread-bar')), findsOneWidget);
+    expect(find.text('Ask a follow-up…'), findsOneWidget);
     // A RenderFlex overflow would surface as a pending exception.
     expect(tester.takeException(), isNull);
   });
@@ -1056,7 +1075,7 @@ void _appendThreadMaintenanceTests() {
       id = (await service.createThread())!['thread_id'] as String;
       await service.appendSearchTurn(id, 'original first question', []);
     });
-    await tester.tap(find.byTooltip('Conversation history'));
+    await tester.tap(find.byKey(const ValueKey('shell-manage-threads')));
     await settleUntil(tester, find.text('Conversations'),
         budget: const Duration(seconds: 30));
     await tester.tap(find.byTooltip('Rename conversation'));
@@ -1068,8 +1087,15 @@ void _appendThreadMaintenanceTests() {
     await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 300)));
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('Board pack Q3'), findsOneWidget,
+    expect(
+        find.descendant(
+            of: find.byType(AlertDialog), matching: find.text('Board pack Q3')),
+        findsOneWidget,
         reason: 'the dialog list shows the new, trimmed title');
+    final inSidebar = find.descendant(
+        of: find.byType(HarborSidebar), matching: find.text('Board pack Q3'));
+    await settleUntil(tester, inSidebar, budget: const Duration(seconds: 30));
+    expect(inSidebar, findsOneWidget, reason: 'and so does the sidebar');
     final got = await tester.runAsync(() => service.getThread(id));
     expect(got!['thread']['title'], 'Board pack Q3');
   });
@@ -1177,8 +1203,8 @@ void _appendComposerTest() {
     await tester.enterText(
         find.byType(TextField).first, 'summarize the board pack');
     await tester.pump();
-    // The send action is the labeled FilledButton in the composer.
-    await tester.tap(find.text('Send'));
+    // The send action is the composer's labelled round button.
+    await tester.tap(find.byTooltip('Send'));
     // Routing asks the real core (index open, intent, skill ranking) on
     // the worker isolate. A fresh data root has no embedding model, so it
     // cannot rank skills and must say so rather than guess.

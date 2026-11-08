@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
 import '../l10n/app_localizations.dart';
@@ -44,7 +45,8 @@ String? fileCitationLabel(Map citation, AppLocalizations l10n) {
   };
 }
 
-/// A question bubble followed by its outcome.
+/// One turn of the answer thread: the question as a heading, then what
+/// came back for it (sources, the answer and its actions, or a notice).
 class AnswerTurnView extends StatelessWidget {
   const AnswerTurnView({
     super.key,
@@ -64,15 +66,15 @@ class AnswerTurnView extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: HarborSpace.s3),
+      padding: const EdgeInsets.symmetric(vertical: HarborSpace.s4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          QuestionBubble(text: turn.question),
+          QuestionHeading(text: turn.question),
           if (turn.collection != null) ...[
             const SizedBox(height: HarborSpace.s2),
             Align(
-              alignment: AlignmentDirectional.centerEnd,
+              alignment: AlignmentDirectional.centerStart,
               child: HarborPill(
                 // Collection names are data.
                 l10n.askGroundedInCollection(turn.collection!),
@@ -81,7 +83,7 @@ class AnswerTurnView extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: HarborSpace.s3),
+          const SizedBox(height: HarborSpace.s4),
           if (turn.busy)
             GeneratingCard(progress: progress, onCancel: onCancel)
           else if (turn.cancelled)
@@ -113,41 +115,23 @@ class AnswerTurnView extends StatelessWidget {
   }
 }
 
-/// What the person asked, as a bubble at the end edge.
-class QuestionBubble extends StatelessWidget {
-  const QuestionBubble({super.key, required this.text});
+/// What the person asked, as the heading of its turn (start-aligned, so
+/// it reads like a page title in either direction).
+class QuestionHeading extends StatelessWidget {
+  const QuestionHeading({super.key, required this.text});
   final String text;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final t = HarborTheme.of(context);
-    return Align(
-      alignment: AlignmentDirectional.centerEnd,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560),
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: HarborSpace.s4, vertical: HarborSpace.s3),
-          decoration: BoxDecoration(
-            color: t.colors.brandSoft,
-            borderRadius: const BorderRadiusDirectional.only(
-              topStart: Radius.circular(HarborRadius.lg),
-              topEnd: Radius.circular(HarborRadius.lg),
-              bottomStart: Radius.circular(HarborRadius.lg),
-              bottomEnd: Radius.circular(HarborRadius.sm / 2),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l10n.askYou, style: t.text.captionOf(t.colors.inkMuted)),
-              const SizedBox(height: 2),
-              SelectableText(text, style: t.text.bodyOf(t.colors.ink)),
-            ],
-          ),
-        ),
-      ),
+    final compact = HarborBreakpoints.isCompact(HarborBreakpoints.of(context));
+    final style = compact
+        ? t.text.h2Of(t.colors.ink).copyWith(fontSize: 19, height: 1.35)
+        : t.text.titleOf(t.colors.ink).copyWith(fontSize: 24, height: 1.3);
+    return Semantics(
+      header: true,
+      child: SelectableText(text,
+          key: const ValueKey('answer-question'), style: style),
     );
   }
 }
@@ -173,8 +157,10 @@ class GeneratingCard extends StatelessWidget {
   }
 }
 
-/// A generated answer with its grounding badge, abstention, execution
-/// facts and (when the model used them) its citations.
+/// A generated answer, read like a page: its sources first as compact
+/// chips (the full list with quotes and scores opens from them), then the
+/// answer with its grounding badge (or the abstention), then a quiet
+/// action row — copy, Save as PDF, Report — and the execution facts.
 class GroundedAnswerView extends StatelessWidget {
   const GroundedAnswerView({
     super.key,
@@ -198,102 +184,200 @@ class GroundedAnswerView extends StatelessWidget {
     final insufficient = answerText == 'INSUFFICIENT_EVIDENCE';
     final grounded = answer['used_citations'] == true && !insufficient;
     final citations = ((answer['citations'] as List?) ?? const []).cast<Map>();
+    final showSources =
+        answer['used_citations'] == true && citations.isNotEmpty;
+    final hasText = answerText.isNotEmpty && !insufficient;
     return Column(
+      key: const ValueKey('answer-view'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        HarborCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(children: [
-                Icon(Icons.auto_awesome_outlined,
-                    size: 16, color: t.colors.brand),
-                const SizedBox(width: HarborSpace.s2),
-                Expanded(
-                  child: Text(l10n.askAnswerHeading,
-                      style: t.text.bodyStrongOf(t.colors.ink)),
-                ),
-                StatusBadge(
-                  semantic: grounded
-                      ? ExecutionSemantic.local
-                      : ExecutionSemantic.hybrid,
-                  icon: grounded ? Icons.verified_outlined : Icons.help_outline,
-                  label: grounded
-                      ? l10n.askGroundedBadge
-                      : l10n.askUngroundedBadge,
-                ),
-              ]),
-              const SizedBox(height: HarborSpace.s3),
-              if (insufficient)
-                HarborBanner(
-                  tone: HarborBannerTone.warning,
-                  title: l10n.askAbstentionHeading,
-                  body: l10n.askInsufficientNote,
-                  dense: true,
-                )
-              else
-                SelectableText(answerText,
-                    style: t.text.bodyOf(t.colors.ink).copyWith(fontSize: 15)),
-              if (answer['truncated'] == true && !insufficient) ...[
-                const SizedBox(height: HarborSpace.s2),
-                Text(l10n.askTruncatedNote,
-                    key: const ValueKey('answer-truncated'),
-                    style: t.text.captionOf(t.colors.inkMuted)),
-              ],
-              const SizedBox(height: HarborSpace.s3),
-              Wrap(
-                spacing: HarborSpace.s2,
-                runSpacing: HarborSpace.s1,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  StatusBadge(
-                    semantic: ExecutionSemantic.local,
-                    label: ((answer['execution'] as String?) ?? 'ON_DEVICE')
-                        .replaceAll('_', ' '),
-                  ),
-                  Text(
-                    l10n.askExecutedOnLine(
-                      (answer['executed_on'] as String?) ?? '',
-                      ((answer['usage']?['completion_tokens'] as num?) ?? 0)
-                          .toInt(),
-                    ),
-                    style: t.text.captionOf(t.colors.inkMuted),
-                  ),
-                  if (answerText.isNotEmpty && !insufficient)
-                    SaveAnswerPdfButton(text: answerText),
-                  if (AuthScope.maybeOf(context) case final auth?
-                      when answerText.isNotEmpty && !insufficient)
-                    IconButton(
-                      key: const ValueKey('answer-report'),
-                      tooltip: l10n.reportAction,
-                      iconSize: 18,
-                      visualDensity: VisualDensity.compact,
-                      icon: const Icon(Icons.flag_outlined),
-                      onPressed: () => showReportSheet(
-                        context,
-                        auth: auth,
-                        answer: answerText,
-                        question: question,
-                        modelId: answer['executed_on'] as String?,
-                      ),
-                    ),
-                ],
-              ),
-            ],
+        if (showSources) ...[
+          SourceChips(
+            citations: citations,
+            label: citationLabel,
+            onTap: onCitationTap,
+          ),
+          const SizedBox(height: HarborSpace.s5),
+        ],
+        HarborAnswerSectionLabel(
+          icon: Icons.auto_awesome_outlined,
+          label: l10n.askAnswerHeading,
+          trailing: StatusBadge(
+            semantic:
+                grounded ? ExecutionSemantic.local : ExecutionSemantic.hybrid,
+            icon: grounded ? Icons.verified_outlined : Icons.help_outline,
+            label: grounded ? l10n.askGroundedBadge : l10n.askUngroundedBadge,
           ),
         ),
-        if (answer['used_citations'] == true && citations.isNotEmpty) ...[
-          const SizedBox(height: HarborSpace.s3),
-          CitationList(
-            title: l10n.askCitationsHeading,
-            citations: citations,
-            onTap: onCitationTap,
-            label: citationLabel,
-          ),
+        const SizedBox(height: HarborSpace.s3),
+        if (insufficient)
+          HarborBanner(
+            tone: HarborBannerTone.warning,
+            title: l10n.askAbstentionHeading,
+            body: l10n.askInsufficientNote,
+            dense: true,
+          )
+        else
+          SelectableText(answerText,
+              style: t.text
+                  .bodyOf(t.colors.ink)
+                  .copyWith(fontSize: 16, height: 1.6)),
+        if (answer['truncated'] == true && !insufficient) ...[
+          const SizedBox(height: HarborSpace.s2),
+          Text(l10n.askTruncatedNote,
+              key: const ValueKey('answer-truncated'),
+              style: t.text.captionOf(t.colors.inkMuted)),
         ],
+        const SizedBox(height: HarborSpace.s3),
+        Wrap(
+          spacing: HarborSpace.s1,
+          runSpacing: HarborSpace.s1,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            if (hasText)
+              IconButton(
+                key: const ValueKey('answer-copy'),
+                tooltip: l10n.answerCopy,
+                iconSize: 18,
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.copy_outlined),
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: answerText));
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                      SnackBar(content: Text(l10n.answerCopied)));
+                },
+              ),
+            if (hasText) SaveAnswerPdfButton(text: answerText),
+            if (AuthScope.maybeOf(context) case final auth? when hasText)
+              IconButton(
+                key: const ValueKey('answer-report'),
+                tooltip: l10n.reportAction,
+                iconSize: 18,
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.flag_outlined),
+                onPressed: () => showReportSheet(
+                  context,
+                  auth: auth,
+                  answer: answerText,
+                  question: question,
+                  modelId: answer['executed_on'] as String?,
+                ),
+              ),
+            const SizedBox(width: HarborSpace.s2),
+            StatusBadge(
+              semantic: ExecutionSemantic.local,
+              label: ((answer['execution'] as String?) ?? 'ON_DEVICE')
+                  .replaceAll('_', ' '),
+            ),
+            Text(
+              l10n.askExecutedOnLine(
+                (answer['executed_on'] as String?) ?? '',
+                ((answer['usage']?['completion_tokens'] as num?) ?? 0).toInt(),
+              ),
+              style: t.text.captionOf(t.colors.inkMuted),
+            ),
+          ],
+        ),
       ],
     );
   }
+}
+
+/// An answer's sources as a row of numbered chips plus "All sources",
+/// which opens the full list (quotes, scores). A chip jumps to its
+/// passage when [onTap] is set (an answer about the open file), and
+/// otherwise opens the full list too.
+class SourceChips extends StatelessWidget {
+  const SourceChips(
+      {super.key, required this.citations, this.label, this.onTap});
+  final List<Map> citations;
+  final CitationLabeler? label;
+  final ValueChanged<Map>? onTap;
+
+  static String titleOf(Map c, String? label) =>
+      label ??
+      (c['title'] as String?) ??
+      (c['locator'] as String?) ??
+      (c['source_id'] as String?) ??
+      '';
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final t = HarborTheme.of(context);
+    void showAll() => showSourcesSheet(context,
+        citations: citations, label: label, onTap: onTap);
+    return Column(
+      key: const ValueKey('answer-sources'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        HarborAnswerSectionLabel(
+          icon: Icons.format_list_bulleted,
+          label: l10n.answerSources,
+        ),
+        const SizedBox(height: HarborSpace.s2),
+        Wrap(
+          spacing: HarborSpace.s2,
+          runSpacing: HarborSpace.s2,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            for (final (i, c) in citations.indexed)
+              HarborSourceChip(
+                index: i + 1,
+                label: titleOf(c, label?.call(c)),
+                semanticLabel: onTap == null
+                    ? l10n.answerSourceOpen(titleOf(c, label?.call(c)))
+                    : l10n.workCitationJump(titleOf(c, label?.call(c))),
+                onTap: onTap == null ? showAll : () => onTap!(c),
+              ),
+            TextButton.icon(
+              key: const ValueKey('answer-sources-all'),
+              onPressed: showAll,
+              style: TextButton.styleFrom(
+                  foregroundColor: t.colors.brand,
+                  visualDensity: VisualDensity.compact),
+              icon: const Icon(Icons.unfold_more, size: 16),
+              label: Text(l10n.answerSourcesAll),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// The full list of an answer's sources, as a sheet.
+Future<void> showSourcesSheet(
+  BuildContext context, {
+  required List<Map> citations,
+  CitationLabeler? label,
+  ValueChanged<Map>? onTap,
+}) {
+  final l10n = AppLocalizations.of(context)!;
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    constraints:
+        BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.85),
+    builder: (sheetContext) => SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+          HarborSpace.s4, HarborSpace.s2, HarborSpace.s4, HarborSpace.s5),
+      child: CitationList(
+        key: const ValueKey('answer-sources-sheet'),
+        title: l10n.askCitationsHeading,
+        citations: citations,
+        label: label,
+        onTap: onTap == null
+            ? null
+            : (c) {
+                Navigator.of(sheetContext).pop();
+                onTap(c);
+              },
+      ),
+    ),
+  );
 }
 
 /// Retrieval-only evidence (no generation), or an honest "nothing found".

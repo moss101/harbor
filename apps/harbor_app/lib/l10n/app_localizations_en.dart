@@ -2556,4 +2556,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deckRestyling => 'Applying the design…';
+
+  @override
+  String get shellNewThread => 'New thread';
+
+  @override
+  String get shellRecentThreads => 'Recent';
+
+  @override
+  String get shellNoThreads => 'Your questions and answers will appear here.';
+
+  @override
+  String get shellManageThreads => 'Manage threads';
+
+  @override
+  String get shellSidebarCollapse => 'Collapse sidebar';
+
+  @override
+  String get shellSidebarExpand => 'Expand sidebar';
+
+  @override
+  String get answerSources => 'Sources';
+
+  @override
+  String get answerSourcesAll => 'All sources';
+
+  @override
+  String answerSourceOpen(String title) {
+    return 'Open source $title';
+  }
+
+  @override
+  String get answerCopy => 'Copy answer';
+
+  @override
+  String get answerCopied => 'Answer copied';
+
+  @override
+  String get homeFollowUpHint => 'Ask a follow-up…';
+
+  @override
+  String get homeSuggestionsTitle => 'Try';
 }

@@ -11,10 +11,11 @@ import 'package:harbor_ui/harbor_ui.dart';
 
 import 'fake_service.dart';
 
-/// The navigation contract (scripted core, no dylib): four primary
-/// destinations — Home (with Ask merged in) · Work · Library · Models (with
-/// the Store as a tab) — and three secondary ones — Skills · Activity (with
-/// scheduled goals) · Settings. Ask, Store and Agents are not destinations.
+/// The navigation contract (scripted core, no dylib): three primary
+/// destinations in the answer-first sidebar — Home (with Ask merged in) ·
+/// Work · Library — and four out of the main path under More — Models
+/// (with the Store as a tab) · Skills · Activity (with scheduled goals) ·
+/// Settings. Ask, Store and Agents are not destinations.
 Future<AppState> pumpShell(
   WidgetTester tester,
   FakeHarborService service, {
@@ -68,10 +69,13 @@ void main() {
       HarborSurface.home,
       HarborSurface.work,
       HarborSurface.knowledge,
-      HarborSurface.models,
     ]);
-    expect(HarborSurface.secondary,
-        [HarborSurface.skills, HarborSurface.activity, HarborSurface.settings]);
+    expect(HarborSurface.secondary, [
+      HarborSurface.models,
+      HarborSurface.skills,
+      HarborSurface.activity,
+      HarborSurface.settings
+    ]);
     // Every destination is primary or secondary, exactly once.
     expect({...HarborSurface.primary, ...HarborSurface.secondary},
         HarborSurface.values.toSet());
@@ -88,52 +92,75 @@ void main() {
     expect(digits, {0, 1, 2, 3, 4, 5, 6});
   });
 
-  testWidgets('the rail lists exactly the seven destinations, in order',
+  testWidgets(
+      'the sidebar lists Home · Work · Library; More holds the other four',
       (tester) async {
     await pumpShell(tester, FakeHarborService());
-    final rail = tester.widget<HarborRail>(find.byType(HarborRail));
-    expect(rail.destinations.map((d) => d.label), [
-      'Home',
-      'Work',
-      'Library',
-      'Models',
-      'Skills',
-      'Activity',
-      'Settings',
-    ]);
+    final bar = tester.widget<HarborSidebar>(find.byType(HarborSidebar));
+    expect(bar.destinations.map((d) => d.label), ['Home', 'Work', 'Library']);
+    expect(bar.collapsed, isFalse, reason: 'open by default at 1440');
     if (harborHasKeyboardShortcuts) {
-      expect([for (var i = 0; i < 7; i++) rail.shortcutHint!(i)],
-          [for (var i = 1; i <= 7; i++) harborShortcutHint('$i')]);
+      expect([for (var i = 0; i < 3; i++) bar.shortcutHint!(i)],
+          [for (var i = 1; i <= 3; i++) harborShortcutHint('$i')]);
     }
+    expect(find.byKey(const ValueKey('shell-new-thread')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('shell-more')));
+    await settle(tester);
+    expect(
+        tester
+            .widgetList<MenuItemButton>(find.byType(MenuItemButton))
+            .map((b) => ((b.child as Text).data)),
+        ['Models', 'Skills', 'Activity', 'Settings']);
   });
 
-  testWidgets('the rail mirrors in Arabic with the localized Library',
+  testWidgets('the sidebar mirrors in Arabic with the localized Library',
       (tester) async {
     final state = await pumpShell(tester, FakeHarborService());
     // The language is the app's own preference (Settings), not the host's.
     state.setLocale(const Locale('ar'));
     await settle(tester);
-    final rail = tester.widget<HarborRail>(find.byType(HarborRail));
-    expect(rail.destinations.map((d) => d.label), contains('المكتبة'));
-    expect(rail.destinations.length, 7);
-    expect(Directionality.of(tester.element(find.byType(HarborRail))),
-        TextDirection.rtl);
+    final bar = tester.widget<HarborSidebar>(find.byType(HarborSidebar));
+    expect(bar.destinations.map((d) => d.label), contains('المكتبة'));
+    expect(bar.destinations.length, 3);
+    final sidebar = find.byType(HarborSidebar);
+    expect(Directionality.of(tester.element(sidebar)), TextDirection.rtl);
+    expect(tester.getRect(sidebar).right, 1440,
+        reason: 'the sidebar sits at the start (right) edge in RTL');
   });
 
-  testWidgets('compact: Home · Work · Library · Models + More (three more)',
+  testWidgets('compact: no bottom bar; the drawer holds the sidebar',
       (tester) async {
-    await pumpShell(tester, FakeHarborService(), size: const Size(390, 844));
-    final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
-    expect(bar.destinations.cast<NavigationDestination>().map((d) => d.label),
-        ['Home', 'Work', 'Library', 'Models', 'More']);
-    await tester.tap(find.text('More'));
+    final state = await pumpShell(tester, FakeHarborService(),
+        size: const Size(390, 844));
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byType(HarborSidebar), findsNothing);
+    await tester.tap(find.byTooltip('Open navigation menu'));
     await settle(tester);
-    final sheet = find.byType(BottomSheet);
-    final rows = tester
-        .widgetList<HarborListRow>(
-            find.descendant(of: sheet, matching: find.byType(HarborListRow)))
-        .map((r) => (r.title as Text).data);
-    expect(rows, ['Skills', 'Activity', 'Settings']);
+    final bar = tester.widget<HarborSidebar>(find.byType(HarborSidebar));
+    expect(bar.destinations.map((d) => d.label), ['Home', 'Work', 'Library']);
+    await tester.tap(find.byKey(const ValueKey('shell-more')));
+    await settle(tester);
+    await tester.tap(find.text('Settings'));
+    await settle(tester);
+    expect(state.surface, HarborSurface.settings);
+    final scaffold = tester.state<ScaffoldState>(find.byType(Scaffold).first);
+    expect(scaffold.isDrawerOpen, isFalse, reason: 'navigating closes it');
+    await settle(tester);
+    expect(find.byType(Drawer), findsNothing, reason: 'navigating closes it');
+  });
+
+  testWidgets('the sidebar collapses to icons and back', (tester) async {
+    await pumpShell(tester, FakeHarborService(), size: const Size(1440, 900));
+    final sidebar = find.byType(HarborSidebar);
+    expect(tester.getSize(sidebar).width, HarborLayout.sidebar);
+    await tester.tap(find.byKey(const ValueKey('sidebar-toggle')));
+    await settle(tester);
+    expect(tester.getSize(sidebar).width, HarborLayout.sidebarCollapsed);
+    expect(find.text('Library'), findsNothing);
+    expect(find.byTooltip(RegExp(r'^Library')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('sidebar-toggle')));
+    await settle(tester);
+    expect(tester.getSize(sidebar).width, HarborLayout.sidebar);
   });
 
   testWidgets('⌘1–7 switch to each surface in order', (tester) async {

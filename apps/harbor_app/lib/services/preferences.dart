@@ -18,7 +18,7 @@ class HarborPreferences {
   const HarborPreferences({
     this.locale = const Locale('en'),
     this.themeMode = ThemeMode.system,
-    this.lensDocked = true,
+    this.lensDocked = false,
     this.chatModel,
     this.deckDesign,
   });
@@ -68,7 +68,7 @@ class HarborPreferences {
         orElse: () => ThemeMode.system,
       ),
       lensDocked:
-          json['lens_docked'] is bool ? json['lens_docked'] as bool : true,
+          json['lens_docked'] is bool ? json['lens_docked'] as bool : false,
       chatModel:
           json['chat_model'] is String ? json['chat_model'] as String : null,
       deckDesign: json['deck_design'] is Map

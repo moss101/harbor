@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
@@ -12,20 +14,20 @@ import 'surface_stack.dart';
 
 export 'harbor_lens.dart' show HarborLens;
 
-/// The adaptive product shell (UI authority §4/§20):
-/// - <=599: top bar (title + Trust chip), five-item bottom navigation
-///   (Home · Work · Library · Models · More; More holds Skills · Activity
-///   · Settings), Lens as a modal sheet
-/// - 600-1023: icon + label side rail, Lens as an end drawer
-/// - 1024-1179: collapsed 72px rail, Lens drawer; canvas >= 640
-/// - 1180-1279: full 220px rail, Lens drawer
-/// - 1280+: 220px rail + docked 320px Lens (toggleable), canvas >= 640
+/// The answer-first product shell. Asking is the main path; everything
+/// else steps aside:
+/// - <=599 (phones): a slim top bar (menu · mark · new thread · Trust
+///   chip) over the canvas; the sidebar opens as a drawer; the Lens is a
+///   modal sheet. No bottom navigation.
+/// - 600+: a slim sidebar at the start edge — new thread, Home · Work ·
+///   Library, recent threads, and a footer with the Trust chip and a More
+///   menu (Models · Skills · Activity · Settings). It starts collapsed to
+///   icons below 1180 and open from 1180, and the person can toggle it.
+///   The Lens is an end drawer, docked only on 1280+ when the person
+///   turns docking on in Settings.
 ///
-/// The rail lists the primary destinations first, then the secondary ones
-/// ([HarborSurface.primary] / [HarborSurface.secondary]).
-///
-/// Desktop adds keyboard intents (⌘/Ctrl+1…7, ⌘K palette, ⌘L Lens, ⌘O
-/// open file, ⌘, settings) and shortcut hints in rail tooltips.
+/// Desktop keeps the keyboard intents (⌘/Ctrl+1…7, ⌘K palette, ⌘L Lens,
+/// ⌘O open file, ⌘, settings) and shortcut hints in sidebar tooltips.
 class AdaptiveShell extends StatefulWidget {
   const AdaptiveShell({super.key, required this.state});
   final AppState state;
@@ -44,8 +46,8 @@ class _AdaptiveShellState extends State<AdaptiveShell> {
       openHarborLens(context);
       return;
     }
-    if (HarborBreakpoints.lensIsPersistent(wc)) {
-      state.setLensDocked(!state.lensDocked);
+    if (HarborBreakpoints.lensIsPersistent(wc) && state.lensDocked) {
+      state.setLensDocked(false);
       return;
     }
     final scaffold = _scaffoldKey.currentState;
@@ -59,10 +61,8 @@ class _AdaptiveShellState extends State<AdaptiveShell> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final width = MediaQuery.sizeOf(context).width;
     final wc = HarborBreakpoints.classify(width);
-    final destinations = harborDestinations(l10n);
     final sp = HarborServiceProvider.of(context);
     final canvas = SurfaceStack(
       index: state.surfaceIndex,
@@ -70,26 +70,23 @@ class _AdaptiveShellState extends State<AdaptiveShell> {
       builder: (i) => surfaceFor(i, state),
     );
 
-    final body = switch (wc) {
-      HarborWindowClass.compact => _CompactShell(
-          scaffoldKey: _scaffoldKey,
-          state: state,
-          destinations: destinations,
-          canvas: canvas,
-          failed: sp.failed,
-          onLens: () => _openLens(wc),
-        ),
-      _ => _RailShell(
-          scaffoldKey: _scaffoldKey,
-          state: state,
-          windowClass: wc,
-          destinations: destinations,
-          canvas: canvas,
-          failed: sp.failed,
-          onLens: () => _openLens(wc),
-          onPalette: () => showCommandPalette(context, state),
-        ),
-    };
+    final body = HarborBreakpoints.isCompact(wc)
+        ? _PhoneShell(
+            scaffoldKey: _scaffoldKey,
+            state: state,
+            canvas: canvas,
+            failed: sp.failed,
+            onLens: () => _openLens(wc),
+          )
+        : _SidebarShell(
+            scaffoldKey: _scaffoldKey,
+            state: state,
+            windowClass: wc,
+            canvas: canvas,
+            failed: sp.failed,
+            onLens: () => _openLens(wc),
+            onPalette: () => showCommandPalette(context, state),
+          );
 
     return Actions(
       actions: <Type, Action<Intent>>{
@@ -123,12 +120,251 @@ class _AdaptiveShellState extends State<AdaptiveShell> {
   }
 }
 
-/// Phone-class shell: top bar, canvas, five-item bottom navigation.
-class _CompactShell extends StatelessWidget {
-  const _CompactShell({
+/// The sidebar's content, shared by the docked sidebar and the phone
+/// drawer. [inDrawer] closes the drawer after any navigation.
+class ShellSidebar extends StatelessWidget {
+  const ShellSidebar({
+    super.key,
+    required this.state,
+    required this.failed,
+    required this.onLens,
+    this.collapsed = false,
+    this.inDrawer = false,
+    this.onToggle,
+    this.onPalette,
+    this.width,
+  });
+  final AppState state;
+  final bool failed;
+  final VoidCallback onLens;
+  final bool collapsed;
+  final bool inDrawer;
+  final VoidCallback? onToggle;
+  final VoidCallback? onPalette;
+  final double? width;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final all = harborDestinations(l10n);
+    const primary = HarborSurface.primary;
+    final desktop = harborHasKeyboardShortcuts && !inDrawer;
+
+    void then(VoidCallback action) {
+      if (inDrawer) Scaffold.maybeOf(context)?.closeDrawer();
+      action();
+    }
+
+    final footer = _SidebarFooter(
+      state: state,
+      collapsed: collapsed,
+      failed: failed,
+      onLens: () => then(onLens),
+      onPalette: desktop ? onPalette : null,
+      onNavigate: (s) => then(() => state.goTo(s)),
+    );
+
+    return HarborSidebar(
+      width: width,
+      collapsed: collapsed,
+      onToggleCollapsed: onToggle,
+      toggleTooltip:
+          collapsed ? l10n.shellSidebarExpand : l10n.shellSidebarCollapse,
+      destinations: [for (final s in primary) all[s.index]],
+      selectedIndex: primary.indexOf(state.surface),
+      onSelected: (i) => then(() => state.goTo(primary[i])),
+      shortcutHint: desktop
+          ? (int i) {
+              // Hints follow the ⌘1–7 contract, not the list position.
+              final digit = HarborSurface.shortcutOrder.indexOf(primary[i]);
+              return digit >= 0 ? harborShortcutHint('${digit + 1}') : '';
+            }
+          : null,
+      primaryAction: HarborSidebarAction(
+        key: const ValueKey('shell-new-thread'),
+        label: l10n.shellNewThread,
+        icon: Icons.add,
+        onPressed: () => then(state.newThread),
+      ),
+      section: _RecentThreads(
+        state: state,
+        onOpen: (id) => then(() => state.openThread(id)),
+        onManage: () => then(state.manageThreads),
+      ),
+      footer: footer,
+    );
+  }
+}
+
+/// Recent threads in the open sidebar: the latest first, the current one
+/// marked, with the history dialog (rename, delete) one tap away.
+class _RecentThreads extends StatelessWidget {
+  const _RecentThreads(
+      {required this.state, required this.onOpen, required this.onManage});
+  final AppState state;
+  final ValueChanged<String> onOpen;
+  final VoidCallback onManage;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final t = HarborTheme.of(context);
+    final threads = state.threads;
+    final onHome = state.surface == HarborSurface.home;
+    // One scrolling list (heading included), so a short window or large
+    // text never overflows the sidebar.
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+      child: ListView(
+        key: const ValueKey('shell-recent-threads'),
+        padding: EdgeInsets.zero,
+        children: [
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(
+                HarborSpace.s3, 0, HarborSpace.s1, HarborSpace.s1),
+            child: Row(children: [
+              Expanded(
+                child: Text(l10n.shellRecentThreads,
+                    style: t.text.captionOf(t.colors.inkMuted)),
+              ),
+              IconButton(
+                key: const ValueKey('shell-manage-threads'),
+                tooltip: l10n.shellManageThreads,
+                visualDensity: VisualDensity.compact,
+                iconSize: 18,
+                onPressed: onManage,
+                icon: Icon(Icons.history, color: t.colors.inkMuted),
+              ),
+            ]),
+          ),
+          if (threads.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: HarborSpace.s3),
+              child: Text(l10n.shellNoThreads,
+                  style: t.text.smallOf(t.colors.inkMuted)),
+            )
+          else
+            for (final th in threads)
+              HarborSidebarRow(
+                key: ValueKey('shell-thread-${th['thread_id']}'),
+                dense: true,
+                // Thread titles are data (the first question).
+                label: _title(th, l10n),
+                selected: onHome && th['thread_id'] == state.currentThreadId,
+                onTap: () => onOpen(th['thread_id'] as String),
+              ),
+        ],
+      ),
+    );
+  }
+
+  static String _title(Map<String, dynamic> th, AppLocalizations l10n) {
+    final title = ((th['title'] as String?) ?? '').trim();
+    return title.isEmpty ? l10n.askConversationUntitled : title;
+  }
+}
+
+/// The sidebar footer: the Trust chip (opens the Lens), the command
+/// palette on desktop, and More — the surfaces out of the main path.
+class _SidebarFooter extends StatelessWidget {
+  const _SidebarFooter({
+    required this.state,
+    required this.collapsed,
+    required this.failed,
+    required this.onLens,
+    required this.onPalette,
+    required this.onNavigate,
+  });
+  final AppState state;
+  final bool collapsed;
+  final bool failed;
+  final VoidCallback onLens;
+  final VoidCallback? onPalette;
+  final ValueChanged<HarborSurface> onNavigate;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    // Large text: the chip keeps its icon so the footer row still fits.
+    final bigText = MediaQuery.textScalerOf(context).scale(10) > 13;
+    final trust = TrustChipLive(
+        onTap: onLens, iconOnly: collapsed || bigText, failed: failed);
+    final palette = onPalette == null
+        ? null
+        : IconButton(
+            tooltip:
+                '${l10n.commandPaletteTooltip} · ${harborShortcutHint('K')}',
+            onPressed: onPalette,
+            icon: const Icon(Icons.keyboard_command_key, size: 20),
+          );
+    final more = ShellMoreMenu(state: state, onNavigate: onNavigate);
+    if (collapsed) {
+      return Column(mainAxisSize: MainAxisSize.min, children: [
+        if (palette != null) palette,
+        more,
+        const SizedBox(height: HarborSpace.s1),
+        trust,
+      ]);
+    }
+    return Row(children: [
+      trust,
+      const Spacer(),
+      if (palette != null) palette,
+      more,
+    ]);
+  }
+}
+
+/// More: Models · Skills · Activity · Settings, as a menu.
+class ShellMoreMenu extends StatelessWidget {
+  const ShellMoreMenu(
+      {super.key, required this.state, required this.onNavigate});
+  final AppState state;
+  final ValueChanged<HarborSurface> onNavigate;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final t = HarborTheme.of(context);
+    final all = harborDestinations(l10n);
+    final onSecondary = HarborSurface.secondary.contains(state.surface);
+    return MenuAnchor(
+      builder: (context, controller, _) => IconButton(
+        key: const ValueKey('shell-more'),
+        tooltip: l10n.navMore,
+        isSelected: onSecondary,
+        onPressed: () =>
+            controller.isOpen ? controller.close() : controller.open(),
+        icon: const Icon(Icons.more_horiz),
+        selectedIcon: Icon(Icons.more_horiz, color: t.colors.brand),
+      ),
+      menuChildren: [
+        for (final s in HarborSurface.secondary)
+          MenuItemButton(
+            key: ValueKey('shell-more-${s.name}'),
+            leadingIcon: Icon(
+              s == state.surface
+                  ? (all[s.index].selectedIcon ?? all[s.index].icon)
+                  : all[s.index].icon,
+              size: 20,
+              color: s == state.surface ? t.colors.brand : t.colors.inkMuted,
+            ),
+            trailingIcon: s == state.surface
+                ? Icon(Icons.check, size: 18, color: t.colors.brand)
+                : null,
+            onPressed: () => onNavigate(s),
+            child: Text(all[s.index].label),
+          ),
+      ],
+    );
+  }
+}
+
+/// Phone shell: slim top bar, canvas, the sidebar as a drawer.
+class _PhoneShell extends StatelessWidget {
+  const _PhoneShell({
     required this.scaffoldKey,
     required this.state,
-    required this.destinations,
     required this.canvas,
     required this.failed,
     required this.onLens,
@@ -136,7 +372,6 @@ class _CompactShell extends StatelessWidget {
 
   final GlobalKey<ScaffoldState> scaffoldKey;
   final AppState state;
-  final List<HarborDestination> destinations;
   final Widget canvas;
   final bool failed;
   final VoidCallback onLens;
@@ -146,21 +381,40 @@ class _CompactShell extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final t = HarborTheme.of(context);
     final current = state.surface;
-    const primary = HarborSurface.primary;
-    final onPrimary = primary.contains(current);
-    final selectedIndex = onPrimary ? primary.indexOf(current) : primary.length;
-    // "More" keeps its label and simply reads as selected while a
-    // secondary surface is active; the app bar names that surface.
-    final moreDestination = HarborDestination(l10n.navMore, Icons.apps_outlined,
-        selectedIcon: Icons.apps);
+    final destinations = harborDestinations(l10n);
+    final drawerWidth =
+        math.min(320.0, MediaQuery.sizeOf(context).width * 0.86);
 
     return Scaffold(
       key: scaffoldKey,
+      drawer: Drawer(
+        width: drawerWidth,
+        backgroundColor: t.colors.surface,
+        shape: const RoundedRectangleBorder(),
+        child: ShellSidebar(
+          state: state,
+          failed: failed,
+          onLens: onLens,
+          inDrawer: true,
+          width: drawerWidth,
+        ),
+      ),
       appBar: AppBar(
+        titleSpacing: 0,
+        // Narrow phones at large text keep the mark's glyph only, so the
+        // bar's actions keep their room.
         title: current == HarborSurface.home
-            ? const HarborWordmark()
+            ? HarborWordmark(
+                compact: MediaQuery.sizeOf(context).width < 360 ||
+                    MediaQuery.textScalerOf(context).scale(10) > 15)
             : Text(destinations[current.index].label),
         actions: [
+          IconButton(
+            key: const ValueKey('shell-new-thread-bar'),
+            tooltip: l10n.shellNewThread,
+            onPressed: state.newThread,
+            icon: const Icon(Icons.add_comment_outlined),
+          ),
           Padding(
             padding: const EdgeInsetsDirectional.only(end: HarborSpace.s3),
             child: TrustChipLive(onTap: onLens, failed: failed),
@@ -168,88 +422,17 @@ class _CompactShell extends StatelessWidget {
         ],
       ),
       body: SafeArea(top: false, bottom: false, child: canvas),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedIndex,
-        onDestinationSelected: (i) {
-          if (i < primary.length) {
-            state.goTo(primary[i]);
-          } else {
-            _showMoreSheet(context);
-          }
-        },
-        destinations: [
-          for (final s in primary)
-            NavigationDestination(
-              icon: Icon(destinations[s.index].icon),
-              selectedIcon: Icon(destinations[s.index].selectedIcon ??
-                  destinations[s.index].icon),
-              label: destinations[s.index].label,
-              tooltip: '',
-            ),
-          NavigationDestination(
-            icon: Icon(moreDestination.icon),
-            selectedIcon:
-                Icon(moreDestination.selectedIcon ?? moreDestination.icon),
-            label: moreDestination.label,
-            tooltip: '',
-          ),
-        ],
-      ),
       backgroundColor: t.colors.canvas,
-    );
-  }
-
-  Future<void> _showMoreSheet(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final t = HarborTheme.of(context);
-    return showModalBottomSheet<void>(
-      context: context,
-      useSafeArea: true,
-      // Tall enough for every secondary destination at 200% text on a
-      // 320px phone; the list still scrolls beyond that.
-      isScrollControlled: true,
-      constraints:
-          BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.85),
-      builder: (sheetContext) => SafeArea(
-        top: false,
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.fromLTRB(
-              HarborSpace.s3, 0, HarborSpace.s3, HarborSpace.s4),
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(HarborSpace.s3, HarborSpace.s1,
-                  HarborSpace.s3, HarborSpace.s3),
-              child: Text(l10n.navMoreTitle,
-                  style: t.text.captionOf(t.colors.inkMuted)),
-            ),
-            for (final s in HarborSurface.secondary)
-              HarborListRow(
-                leading: Icon(destinations[s.index].icon),
-                title: Text(destinations[s.index].label),
-                selected: s == state.surface,
-                trailing: s == state.surface
-                    ? Icon(Icons.check, size: 18, color: t.colors.brand)
-                    : null,
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  state.goTo(s);
-                },
-              ),
-          ],
-        ),
-      ),
     );
   }
 }
 
-/// Tablet/desktop shell: rail + canvas (+ docked Lens on wide windows).
-class _RailShell extends StatelessWidget {
-  const _RailShell({
+/// Tablet/desktop shell: sidebar + canvas (+ docked Lens when chosen).
+class _SidebarShell extends StatelessWidget {
+  const _SidebarShell({
     required this.scaffoldKey,
     required this.state,
     required this.windowClass,
-    required this.destinations,
     required this.canvas,
     required this.failed,
     required this.onLens,
@@ -259,7 +442,6 @@ class _RailShell extends StatelessWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final AppState state;
   final HarborWindowClass windowClass;
-  final List<HarborDestination> destinations;
   final Widget canvas;
   final bool failed;
   final VoidCallback onLens;
@@ -267,71 +449,11 @@ class _RailShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final t = HarborTheme.of(context);
     final wc = windowClass;
-    final medium = wc == HarborWindowClass.medium;
-    final railWidth = medium ? 84.0 : HarborBreakpoints.railWidth(wc);
-    final mode = medium
-        ? HarborRailMode.medium
-        : HarborBreakpoints.railIsExtended(wc)
-            ? HarborRailMode.extended
-            : HarborRailMode.collapsed;
-    final extended = mode == HarborRailMode.extended;
+    final open =
+        state.sidebarOpen ?? HarborBreakpoints.sidebarOpenByDefault(wc);
     final docked = HarborBreakpoints.lensIsPersistent(wc) && state.lensDocked;
-    final desktop = harborHasKeyboardShortcuts;
-
-    final footer = Column(
-      crossAxisAlignment:
-          extended ? CrossAxisAlignment.stretch : CrossAxisAlignment.center,
-      children: [
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child:
-              TrustChipLive(onTap: onLens, iconOnly: !extended, failed: failed),
-        ),
-        const SizedBox(height: HarborSpace.s2),
-        Wrap(
-          alignment: extended ? WrapAlignment.start : WrapAlignment.center,
-          children: [
-            IconButton(
-              tooltip: desktop
-                  ? '${l10n.lensToggleTooltip} · ${harborShortcutHint('L')}'
-                  : l10n.lensToggleTooltip,
-              onPressed: onLens,
-              isSelected: docked,
-              icon: Icon(
-                  docked ? Icons.view_sidebar : Icons.view_sidebar_outlined),
-            ),
-            if (desktop)
-              IconButton(
-                tooltip:
-                    '${l10n.commandPaletteTooltip} · ${harborShortcutHint('K')}',
-                onPressed: onPalette,
-                icon: const Icon(Icons.keyboard_command_key),
-              ),
-          ],
-        ),
-      ],
-    );
-
-    final rail = HarborRail(
-      width: railWidth,
-      mode: mode,
-      destinations: destinations,
-      selectedIndex: state.surfaceIndex,
-      onSelected: state.selectSurface,
-      shortcutHint: desktop
-          ? (int i) {
-              // Hints follow the ⌘1–7 contract, not the raw index.
-              final digit =
-                  HarborSurface.shortcutOrder.indexOf(HarborSurface.values[i]);
-              return digit >= 0 ? harborShortcutHint('${digit + 1}') : '';
-            }
-          : null,
-      secondaryFromIndex: HarborSurface.secondary.first.index,
-      footer: footer,
-    );
 
     final lensDrawer = docked
         ? null
@@ -348,9 +470,17 @@ class _RailShell extends StatelessWidget {
       key: scaffoldKey,
       endDrawer: lensDrawer,
       endDrawerEnableOpenDragGesture: false,
+      backgroundColor: t.colors.canvas,
       body: Row(
         children: [
-          rail,
+          ShellSidebar(
+            state: state,
+            failed: failed,
+            onLens: onLens,
+            collapsed: !open,
+            onToggle: () => state.setSidebarOpen(!open),
+            onPalette: onPalette,
+          ),
           Expanded(child: SafeArea(child: canvas)),
           if (docked) ...[
             VerticalDivider(width: 1, color: t.colors.border),
