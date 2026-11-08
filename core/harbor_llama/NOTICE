@@ -1,0 +1,6 @@
+harbor_llama is derived from llama-cpp-2 0.1.156
+(https://github.com/utilityai/llama-cpp-rs, MIT OR Apache-2.0, Dial AI).
+The safe-wrapper modules under src/ are adapted (and trimmed) from that crate
+and remain available under its licence terms (LICENSE-MIT, LICENSE-APACHE);
+Harbor's modifications and additions are offered under the same dual licence.
+See HARBOR.md for what was kept, removed and added.

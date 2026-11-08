@@ -1,8 +1,10 @@
 # Decision 0022 — Inference runtime resilience: own the layer around llama.cpp, not a new engine
 
 Date: 2026-11-02
-Status: Proposed. Nothing in this record is implemented yet; each phase below lands
-with its own evidence and moves its line to "implemented" here.
+Status: Accepted and implemented on branch `runtime-resilience` (2026-11-02). See
+"Implementation record" at the end for what was built, where it departs from the plan
+below, and the evidence. Not yet run: a physical iPhone, a physical Android phone, Windows
+and Linux machines.
 
 ## Problem
 
@@ -141,3 +143,112 @@ scores within the 0.5 % band recorded in decision 0016.
 
 No new model, backend or platform is enabled by this decision. Windows and Linux evidence
 requires real machines; until those runs exist, those lines stay "not run" as in 0016.
+
+## Implementation record (2026-11-02)
+
+### Phase 1 — implemented
+- `harbor_inference::resilience`: `DeviceKey` (ggml backend + device description +
+  OS build fingerprint + weights sha256 + runtime revision), `QualState`
+  (`verifying`, `ok`, `qualified`, `canary_failed`, `crashed`), store at
+  `<models root>/.runtime/qualification.json` (atomic write, re-read on every access so
+  a worker process and the app share it), sentinels under `.runtime/sentinels/` named
+  `<key>.<pid>.<init|first|work>.<seq>`, fsynced before the risky step. `init` and
+  `first` sentinels pin at once; `work` pins after two consecutive. Sentinels of a live
+  pid are never read as crashes.
+- Wired into `GgufLlamaCppProvider::load` (store-pinned keys load on the true CPU path),
+  `generate_cancellable`, `embed`, the media embedder and vision OCR (`WorkTicket`).
+- **Departure — the knowledge canary was too weak.** On v0.8.0 the iOS-simulator GPU
+  keeps the canary's ranking while its vectors are wrong (cosine 0.79 against the CPU),
+  so the ranking-only canary passed it. A GPU key that is not yet `qualified` must now
+  also match a CPU reference embedding (cosine >= 0.99 per text); the check runs once
+  per key because the store remembers the verdict.
+- FFI ops `runtime.qualification` (records, GPU presence, inference mode and why) and
+  `runtime.qualification_reset`; Settings -> "GPU acceleration" lists each key with its
+  reason and a "Re-test the GPU" action; the knowledge backend label gains `cpu`
+  (no GPU path) and `cpu_pinned`.
+- Debug-only fault hooks for tests: `HARBOR_FAULT_ABORT_AT_TOKEN` (aborts only while
+  a GPU workload is armed) and `HARBOR_FAULT_SLOW_TOKEN_MS`. Neither exists in release.
+
+### Phase 2 — implemented
+- `gguf_check` parses the header, metadata and tensor table with every count and length
+  bounded; checks type ids against ggml's table, exact contiguous offsets, data bounds,
+  the architecture allow-list, and the generic `GGML_ASSERT`s in `load_hparams`
+  (block count, expert invariants). Drift tests re-derive the type table, the
+  architecture list and the `LLAMA_MAX_*` caps from the vendored sources; moving to
+  v0.8.0 they caught 22 new architectures and `LLAMA_MAX_EXPERTS` 512 -> 1024.
+- `memory_budget`: iOS `os_proc_available_memory`, Android/Linux `MemAvailable`,
+  macOS/Windows total RAM (refuse only what can never fit). Load refuses with a typed
+  error when weights + KV cache + projector + a 256 MiB margin exceed it.
+- Fuzz target `gguf_header` (2 x 60 s, ~2.2M runs each, no crash); in `tools/fuzz.sh`.
+- Not replicated: about 30 architecture-specific asserts, tokenizer contents, split
+  files, clip's own key requirements.
+
+### Phase 3 — implemented, with two departures
+- `harbor_inference::worker`: framed JSON + blob protocol, `WorkerProvider`
+  (supervisor), the worker loop (`harbor_worker_main` in the core library), and
+  `GgufRuntime`, which knowledge, chat and vision OCR now hold. Media embedding and OCR
+  run in the worker too.
+- **Departure — no XPC service, no Binder service.** The worker is a dependency-free
+  launcher (`core/harbor_worker`, about 0.3-0.5 MB) that loads the SAME core library the
+  app ships and calls `harbor_worker_main`: one copy of llama.cpp, one code path, the
+  same stdin/stdout protocol on every OS. macOS: `Contents/MacOS/harbor_worker`,
+  signed with `app-sandbox` + `inherit` only (`WorkerHelper.entitlements`). Windows:
+  `harbor_worker.exe` beside `harbor_ffi.dll`. Android: `libharbor_worker.so` in
+  jniLibs, extracted by `useLegacyPackaging = true` and executed from the native
+  library directory with that directory on `LD_LIBRARY_PATH` (without it the
+  installed app's worker could not find `libc++_shared.so`; found on the emulator).
+  iOS: in-process, always.
+- Exit status decides: SIGKILL/SIGTERM or exit 0 = stopped from outside (low-memory
+  killer, Android's phantom-process limit, our own stop) — sentinels discarded, never a
+  pin; anything else = crash — sentinels recovered. A call that died is retried once
+  only when recovery pinned a key (so the retry runs on the CPU); an idle worker that
+  died is replaced silently. The worker exits when its stdin closes.
+- `HARBOR_INFERENCE_WORKER=0|1` overrides; auto mode starts the worker at open and falls
+  back to in-process if it cannot start.
+
+### Phase 4 — implemented
+- `third_party/llama.cpp` = upstream **v0.8.0 (8642541b25, 2026-10-28)**, unmodified,
+  742 files, pinned by tarball sha256 and a tree hash in `HARBOR_PIN.json`
+  (`tools/vendor_llama_cpp.py --check`, in CI). It includes EmbeddingGemma 2
+  (4fbc76dec5), so the decision 0013 back-port is gone.
+- `core/harbor_llama_sys` (build.rs adapted from llama-cpp-sys-2, MIT/Apache, notices
+  kept) and `core/harbor_llama` (the wrapper trimmed to what Harbor uses, ~2.3k lines,
+  with the 0015 embedding-batch and mtmd-output additions; five wrapper bugs fixed, see
+  its `HARBOR.md`). `third_party/llama-cpp-sys-2` and `third_party/llama-cpp-2` and their
+  `[patch.crates-io]` lines are deleted. Download-capable build options are pinned OFF.
+- `runtime_revision()` = `llama.cpp@v0.8.0+8642541b25`. **Migration:** existing
+  knowledge indexes carry the old revision in their identity and rebuild from their
+  sealed texts on first open (by design: vectors from different runtimes never mix);
+  media items must be re-imported, as with any identity change (decision 0015).
+- Upstream behaviour change: the JSON-schema grammar converter now degrades an
+  unanchored `pattern` to an unconstrained string instead of refusing; Harbor's graph
+  validator already refuses such schemas.
+
+### Phase 5 — implemented (reports drafted, not filed)
+- `harbor_inference/tests/numerics_canary.rs` (default backend vs true CPU, cosine
+  >= 0.99 per text, Matryoshka 512/256/128) and a CI `numerics` job that fetches pinned,
+  hashed fixtures (`tools/fetch_numerics_fixtures.py`) and runs it on Metal and CPU.
+- `docs/upstream/`: the Adreno Vulkan wrong-embedding and `GGML_VK_DISABLE_F16`
+  segfault reports. Filing is public and needs a re-run on the pin and the device's
+  driver version first.
+
+### Evidence (this Mac, Apple M5 Pro, macOS 27.0.1)
+| Check | Result |
+|---|---|
+| `harbor_inference` unit + real-model tests (v0.8.0) | pass; resilience 17, gguf_check/memory_budget, 12/12 real fixtures |
+| Crash mid-GPU-generation, in-process (real abort) | next process loads on CPU (`cpu_pinned`), generates; reset restores GPU |
+| Worker tests (crash, OS kill, GPU-crash retry, cancel, parity) | 5/5 on macOS and on the Android 14 arm64 emulator |
+| `harbor_ffi` full suite, `HARBOR_INFERENCE_WORKER=required` | 31/31 binaries on v0.8.0 (30/30 in-process and in worker mode before the runtime swap) |
+| Flutter suite (auto mode: the worker is chosen) | 210/210 on v0.8.0, incl. the GPU card and worker-mode tests |
+| Numerics canary v0.8.0, Metal vs CPU | cosine >= 0.99987; margins 0.3225 / 0.3244 |
+| Media retrieval v0.8.0 vs 0.1.156 | ranks unchanged, scores within 0.15 % |
+| Vision OCR (Qwen2.5-VL-3B) v0.8.0 | CER 0.0000 all pages (Arabic improved from 0.086) |
+| iOS simulator (in-process) | GPU embeds wrong (cosine 0.79); first open `cpu_fallback`, second `cpu_pinned` |
+| Sandboxed macOS release app, qualification harness | `inference_mode=worker`, Metal key `qualified`, retrieval 5/5 |
+| Android 14 emulator, installed APK, harness | `inference_mode=worker` from the native library dir, `cpu`, retrieval 5/5 |
+
+Not run: a physical iPhone (Xcode had no signed-in account on 2026-11-02), a physical
+Android phone (none attached; the Adreno 829 result above is from decision 0016),
+Windows and Linux (the launcher type-checks for `x86_64-pc-windows-msvc`; the rest of
+the Windows code is checked by CI's `windows-core` job).
+

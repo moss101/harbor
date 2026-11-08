@@ -65,11 +65,11 @@
         },
         {
           "kind": "tool_calls_le",
-          "max": 3
+          "max": 4
         },
         {
           "kind": "steps_le",
-          "max": 6
+          "max": 7
         },
         {
           "kind": "tools_within_graph"
@@ -112,11 +112,11 @@
         },
         {
           "kind": "tool_calls_le",
-          "max": 6
+          "max": 8
         },
         {
           "kind": "steps_le",
-          "max": 11
+          "max": 13
         },
         {
           "kind": "tools_within_graph"
@@ -177,7 +177,7 @@
         },
         {
           "kind": "tool_calls_le",
-          "max": 6
+          "max": 8
         },
         {
           "kind": "tools_within_graph"

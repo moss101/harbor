@@ -144,6 +144,8 @@ impl Default for CapabilityCatalog {
                 "docx.build",
                 "workbook.verify_spec",
                 "deck.verify_outline",
+                "deck.drop_unsourced",
+                "text.dedupe_sections",
                 "deck.brief",
                 "document.verify_draft",
                 "email.verify_draft",

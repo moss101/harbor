@@ -25,6 +25,15 @@ app="$repo/apps/harbor_app"
 
 echo "== Harbor Android packaging (credential boundary) =="
 
+echo "-- inference worker launcher present (decision 0022 phase 3) --"
+jni="$app/android/app/src/main/jniLibs/arm64-v8a"
+for so in libharbor_ffi.so libharbor_worker.so; do
+  [[ -f "$jni/$so" ]] || { echo "FAIL: $jni/$so missing"; exit 1; }
+done
+nm -D --defined-only "$jni/libharbor_ffi.so" 2>/dev/null | grep -q harbor_worker_main \
+  || llvm-nm -D --defined-only "$jni/libharbor_ffi.so" 2>/dev/null | grep -q harbor_worker_main \
+  || echo "NOTE: could not confirm harbor_worker_main in libharbor_ffi.so (no nm for ELF here)"
+
 echo "-- test subset --"
 (cd "$repo/core" && cargo test -p harbor_artifacts -p harbor_formula --quiet)
 

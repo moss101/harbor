@@ -19,6 +19,11 @@ dependencies:
     path: ../../packages/harbor_domain
   path_provider: ^2.1.0
   file_selector: ^1.0.3
+  firebase_core: ^4.0.0
+  firebase_auth: ^6.0.0
+  google_sign_in: ^7.2.0
+  sign_in_with_apple: ^8.2.0
+  crypto: ^3.0.8
 
 dev_dependencies:
   flutter_test:
@@ -35,3 +40,6 @@ flutter:
   assets:
     - assets/catalog/signed_catalog.json
     - assets/catalog/root_public.hex
+    # Settings → Privacy Policy; also the source of the public page
+    # (tools/build_privacy_site.py).
+    - assets/privacy/privacy_policy.md

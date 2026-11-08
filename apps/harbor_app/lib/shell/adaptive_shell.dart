@@ -110,7 +110,15 @@ class _AdaptiveShellState extends State<AdaptiveShell> {
       },
       // A focused ancestor guarantees shortcuts resolve even before the
       // user tabs into a control.
-      child: Focus(autofocus: true, skipTraversal: true, child: body),
+      // System back (Android) walks back through visited surfaces to
+      // Home, and only leaves the app from Home.
+      child: PopScope(
+        canPop: state.atRoot,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) state.goBack();
+        },
+        child: Focus(autofocus: true, skipTraversal: true, child: body),
+      ),
     );
   }
 }

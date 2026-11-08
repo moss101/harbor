@@ -344,7 +344,7 @@ fn authoring_skills_are_listed_runnable_with_their_inputs() {
     let drafter = list.iter().find(|s| s["id"] == "document-drafter").unwrap();
     assert_eq!(
         drafter["graph"]["inputs"]["properties"]["kind"]["enum"],
-        serde_json::json!(["proposal", "report", "letter"])
+        serde_json::json!(["proposal", "report", "letter", "cv"])
     );
     let deck = list
         .iter()

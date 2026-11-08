@@ -21,11 +21,16 @@ sealed class RouteDecision {
 
 /// A question about content: answer it, grounded and cited.
 final class RouteAsk extends RouteDecision {
-  const RouteAsk({required this.fromCore});
+  const RouteAsk({required this.fromCore, this.general = false});
 
   /// True when the core's decision layer chose it; false for the local
   /// fallback heuristic or a mode the person picked.
   final bool fromCore;
+
+  /// The core named it `general_chat`: a question that needs no files, so
+  /// an unscoped answer skips Library retrieval (unrelated passages would
+  /// otherwise make the model abstain).
+  final bool general;
 }
 
 /// A task: open [skill]'s run sheet. [alternatives] are the other skills
@@ -102,7 +107,7 @@ class RequestRouter {
       final intent = await service.suggestIntent(request);
       final kind = _topKind(intent);
       if (kind != null && askKinds.contains(kind)) {
-        return const RouteAsk(fromCore: true);
+        return RouteAsk(fromCore: true, general: kind == 'general_chat');
       }
       if (kind != 'run_skill' && looksLikeQuestion(request)) {
         return const RouteAsk(fromCore: false);
@@ -134,9 +139,14 @@ class RequestRouter {
     final result =
         await service.suggestSkills(request, chatPackage: chatPackage);
     if (result == null) {
-      return RouteNone(RouteNoneReason.noIndex,
-          suggestions:
-              lexicalMatches(request, service.skills, hasFile: hasFile));
+      final matches = lexicalMatches(request, service.skills, hasFile: hasFile);
+      // No skill even names what was asked for: the chat model is a far
+      // better answer ("write a cv" gets a drafted CV) than a list of
+      // unrelated skills to pick from — when there is a chat model.
+      if (matches.isEmpty && !hasFile && chatPackage != null) {
+        return const RouteAsk(fromCore: false, general: true);
+      }
+      return RouteNone(RouteNoneReason.noIndex, suggestions: matches);
     }
     final ranked = [
       for (final r
@@ -184,9 +194,11 @@ class RequestRouter {
     return _interrogative.hasMatch(t);
   }
 
-  /// Runnable skills sharing at least one meaningful word with [request]
-  /// (title, id or description), best overlap first, at most four. Shown
-  /// as choices only — word overlap is too weak to pick a skill.
+  /// Runnable skills whose title or id shares at least one meaningful word
+  /// with [request], best overlap first (description words break ties), at
+  /// most four. Shown as choices only — word overlap is too weak to pick a
+  /// skill. A description-only match is not offered: "write a cv" matched
+  /// Spreadsheet Builder because its description says "Harbor writes".
   static List<SkillSummary> lexicalMatches(
       String request, List<SkillSummary> skills,
       {required bool hasFile}) {
@@ -197,9 +209,9 @@ class RequestRouter {
       if (!fits(s, hasFile: hasFile)) continue;
       final name = _words('${s.title} ${s.id.replaceAll('-', ' ')}');
       final about = _words(s.description);
-      final score = 3 * words.intersection(name).length +
-          words.intersection(about).length;
-      if (score > 0) scored.add((score, s));
+      final named = words.intersection(name).length;
+      if (named == 0) continue;
+      scored.add((3 * named + words.intersection(about).length, s));
     }
     scored.sort((a, b) => b.$1.compareTo(a.$1));
     return [for (final (_, s) in scored.take(4)) s];
@@ -276,8 +288,20 @@ List<Map<String, dynamic>> chatModelsOf(HarborService? service) => [
 String? chatPackageFor(HarborService service, String? preferred) {
   final installed = [for (final m in chatModelsOf(service)) m['id'] as String];
   if (preferred != null && installed.contains(preferred)) return preferred;
+  // Unquantized weights (F16/BF16/F32) are several times the size of a
+  // quantized copy of the same model and often do not fit a phone: never
+  // the default while a quantized model is installed (`...-bf16` sorted
+  // before `...-q4_k_m` and every skill run failed to load).
+  final quantized = [
+    for (final id in installed)
+      if (!_fullPrecision.hasMatch(id)) id
+  ];
+  if (quantized.isNotEmpty) return quantized.first;
   return installed.isEmpty ? null : installed.first;
 }
+
+final _fullPrecision =
+    RegExp(r'(^|[-_.])(b?f16|f32|fp16|fp32)($|[-_.])', caseSensitive: false);
 
 /// Files a skill can take as its artifact and the canvas can read: the
 /// Office formats and PDF.

@@ -1,0 +1,21 @@
+# Harbor LM "Report this answer" endpoint (Google Play AI-generated content
+# policy; App Review 1.2). Deploy: npx wrangler deploy
+name = "harbor-lm-reports"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[vars]
+FIREBASE_PROJECT_ID = "harbor-lm"
+RETENTION_DAYS = "180"
+MAX_REPORTS_PER_HOUR = "20"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "harbor-lm-reports"
+database_id = "bef92b0e-34da-4ce3-981b-de7fc87acfc2"
+migrations_dir = "migrations"
+
+# Daily purge of reports older than RETENTION_DAYS.
+[triggers]
+crons = ["17 3 * * *"]

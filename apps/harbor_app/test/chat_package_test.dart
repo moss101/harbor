@@ -18,6 +18,16 @@ void main() {
         for (final i in ids) {'id': i}
       ]);
 
+  test('a quantized copy is the default over full-precision weights', () {
+    final s = with_(['lfm3-omni-2b-gguf-bf16', 'lfm3-omni-2b-gguf-q4_k_m']);
+    expect(chatPackageFor(s, null), 'lfm3-omni-2b-gguf-q4_k_m');
+    // The person's own choice still wins.
+    expect(
+        chatPackageFor(s, 'lfm3-omni-2b-gguf-bf16'), 'lfm3-omni-2b-gguf-bf16');
+    // Only full precision installed: it is still offered.
+    expect(chatPackageFor(with_(['tiny-f16']), null), 'tiny-f16');
+  });
+
   test('embedders are skipped when choosing the default chat model', () {
     final s = with_([
       'bge-small-en-v1.5',

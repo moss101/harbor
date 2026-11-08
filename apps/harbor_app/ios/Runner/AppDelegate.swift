@@ -10,7 +10,24 @@ import UniformTypeIdentifiers
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    excludeDataRootFromBackup()
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  // Keep the workspace (Dart: main.dart `<Application Support>/harbor-data`)
+  // out of iCloud and Finder backups: user content stays on this device,
+  // as the privacy policy says. The flag on the folder covers its contents.
+  private func excludeDataRootFromBackup() {
+    guard
+      let support = FileManager.default.urls(
+        for: .applicationSupportDirectory, in: .userDomainMask
+      ).first
+    else { return }
+    var root = support.appendingPathComponent("harbor-data", isDirectory: true)
+    try? FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    var values = URLResourceValues()
+    values.isExcludedFromBackup = true
+    try? root.setResourceValues(values)
   }
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {

@@ -96,7 +96,9 @@ impl<'a> HfDiscovery<'a> {
         serde_json::from_slice(&resp.body).map_err(|e| HfError::Decode(e.to_string()))
     }
 
-    /// Search public models. `query` is acquisition metadata only.
+    /// Search public models. `query` is acquisition metadata only. Only
+    /// repos tagged GGUF are returned: a safetensors-only repo has nothing
+    /// Harbor can install, so listing it just leads to a failed install.
     pub fn search(
         &self,
         session: &harbor_net::broker::EgressSession,
@@ -106,7 +108,9 @@ impl<'a> HfDiscovery<'a> {
         let q = urlencode(query);
         let v = self.get_json(
             session,
-            &format!("/api/models?search={q}&limit={limit}&sort=downloads&direction=-1"),
+            &format!(
+                "/api/models?search={q}&filter=gguf&limit={limit}&sort=downloads&direction=-1"
+            ),
         )?;
         serde_json::from_value(v).map_err(|e| HfError::Decode(e.to_string()))
     }
@@ -206,6 +210,10 @@ mod tests {
         let models = hf.search(&session, "tiny llama", 5).unwrap();
         assert_eq!(models.len(), 1);
         assert_eq!(models[0].id, "ggml-org/tiny");
+        assert!(
+            transport.calls.lock().unwrap()[0].contains("&filter=gguf&"),
+            "search asks HF for GGUF repos only"
+        );
         // Every request stayed on the authorized origin.
         for url in transport.calls.lock().unwrap().iter() {
             assert!(url.starts_with(HF_ORIGIN), "egress escaped: {url}");

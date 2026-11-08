@@ -774,11 +774,16 @@ class HarborPill extends StatelessWidget {
   }
 }
 
-/// Brand wordmark: an anchor glyph in brand blue + "Harbor".
+/// Brand wordmark: an anchor glyph in brand blue + the product name.
 class HarborWordmark extends StatelessWidget {
   const HarborWordmark({super.key, this.compact = false, this.size = 18});
   final bool compact;
   final double size;
+
+  /// The product name the mark shows. Apps set it once at startup
+  /// (Harbor LM: "Harbor LM"); every wordmark, including the ones inside
+  /// shared navigation, then reads the same name.
+  static String productName = 'Harbor';
 
   @override
   Widget build(BuildContext context) {
@@ -793,7 +798,8 @@ class HarborWordmark extends StatelessWidget {
       child: Icon(Icons.anchor, size: size, color: t.colors.onBrand),
     );
     if (compact) {
-      return Semantics(label: 'Harbor', child: ExcludeSemantics(child: glyph));
+      return Semantics(
+          label: productName, child: ExcludeSemantics(child: glyph));
     }
     // A brand mark is not body copy: like navigation labels it scales to
     // at most 1.3x and yields (ellipsis) instead of overflowing the bar.
@@ -803,7 +809,7 @@ class HarborWordmark extends StatelessWidget {
         ExcludeSemantics(child: glyph),
         const SizedBox(width: HarborSpace.s2 + 2),
         Flexible(
-          child: Text('Harbor',
+          child: Text(productName,
               maxLines: 1,
               softWrap: false,
               overflow: TextOverflow.ellipsis,

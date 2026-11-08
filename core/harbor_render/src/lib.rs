@@ -8,7 +8,7 @@
 pub mod pdf;
 pub mod pdf_out;
 pub mod scan_images;
-pub use pdf_out::{write_text_pdf, TextBlock};
+pub use pdf_out::{markdown_blocks, unsupported_chars, write_text_pdf, TextBlock};
 pub mod preview;
 pub mod scene;
 pub mod scene_chart;

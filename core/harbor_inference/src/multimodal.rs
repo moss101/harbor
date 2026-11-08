@@ -277,6 +277,30 @@ fn f16_to_f32(h: u16) -> f32 {
 // The embedder
 // ---------------------------------------------------------------------
 
+/// A media embedder wherever it runs: [`MediaEmbedder`] in this process,
+/// or the worker's (decision 0022 phase 3).
+pub trait MediaEmbed: Send + Sync {
+    fn embed(&self, parts: &[MediaPart]) -> Result<Vec<f32>, ProviderError>;
+    fn supports_vision(&self) -> bool;
+    fn supports_audio(&self) -> bool;
+    fn audio_sample_rate(&self) -> Option<u32>;
+}
+
+impl MediaEmbed for MediaEmbedder {
+    fn embed(&self, parts: &[MediaPart]) -> Result<Vec<f32>, ProviderError> {
+        MediaEmbedder::embed(self, parts)
+    }
+    fn supports_vision(&self) -> bool {
+        MediaEmbedder::supports_vision(self)
+    }
+    fn supports_audio(&self) -> bool {
+        MediaEmbedder::supports_audio(self)
+    }
+    fn audio_sample_rate(&self) -> Option<u32> {
+        MediaEmbedder::audio_sample_rate(self)
+    }
+}
+
 /// Joint text / image / audio embedder over an installed package that has
 /// an `mmproj` file. It owns its model handle and projector: DROP IT to
 /// free the media towers (the owning service does so on memory release).
@@ -289,6 +313,8 @@ pub struct MediaEmbedder {
     n_ctx: u32,
     backend: &'static llama_cpp_2::llama_backend::LlamaBackend,
     guard: Mutex<()>,
+    /// GPU crash sentinel for this engine's workloads (decision 0022).
+    work: Option<crate::resilience::WorkTicket>,
 }
 
 impl MediaEmbedder {
@@ -313,9 +339,11 @@ impl MediaEmbedder {
         }
         // Honor the CPU pin: a package whose GPU path failed the numerics
         // canary must not run its projector on the GPU either.
+        let use_gpu = !provider.is_cpu_pinned(package_id)
+            && provider.backend_of(package_id) == Some("gpu")
+            && std::env::var("HARBOR_GGUF_CPU_ONLY").as_deref() != Ok("1");
         let params = MtmdContextParams {
-            use_gpu: !provider.is_cpu_pinned(package_id)
-                && std::env::var("HARBOR_GGUF_CPU_ONLY").as_deref() != Ok("1"),
+            use_gpu,
             n_threads: crate::gguf::compute_threads(),
             ..MtmdContextParams::default()
         };
@@ -336,6 +364,11 @@ impl MediaEmbedder {
             n_ctx,
             backend: provider.backend(),
             guard: Mutex::new(()),
+            work: if use_gpu {
+                provider.work_ticket(package_id)
+            } else {
+                None
+            },
         })
     }
 
@@ -357,6 +390,7 @@ impl MediaEmbedder {
     /// normalized — callers normalize / truncate like text vectors).
     pub fn embed(&self, parts: &[MediaPart]) -> Result<Vec<f32>, ProviderError> {
         let _g = self.guard.lock().unwrap();
+        let _work = self.work.as_ref().map(|t| t.arm());
         if parts.is_empty() {
             return Err(backend_err("multimodal", "empty input"));
         }

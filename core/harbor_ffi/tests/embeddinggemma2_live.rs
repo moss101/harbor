@@ -1,9 +1,10 @@
-//! EmbeddingGemma 2 on the patched runtime (decision 0013).
+//! EmbeddingGemma 2 on the pinned runtime (decisions 0013, 0022).
 //!
 //! The official `ggml-org/embeddinggemma-2-GGUF` declares
-//! `general.architecture = gemma-embedding2`, which stock llama-cpp-sys-2
-//! 0.1.156 cannot load. Harbor's vendored copy back-ports the architecture;
-//! this proves the model really loads and embeds through the PRODUCTION
+//! `general.architecture = gemma-embedding2`, which upstream llama.cpp
+//! supports since 4fbc76dec5 (in the pinned v0.8.0; decision 0013 carried
+//! a back-port before that). This proves the model really loads and embeds
+//! through the PRODUCTION
 //! path (installer -> KnowledgeService -> instruction policy -> sealed
 //! index), not just a bare provider call. Skips (passes) when the
 //! fixture is absent.

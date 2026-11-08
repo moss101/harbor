@@ -114,16 +114,18 @@ class FakeHarborService extends HarborService {
   @override
   Future<Map<String, dynamic>> generateAnswer(String question,
       {required String chatPackage,
-      int maxTokens = 256,
+      int maxTokens = 1024,
       String? runId,
       String? collection,
-      String? threadId}) async {
+      String? threadId,
+      bool general = false}) async {
     calls.add('generateAnswer');
     generateArgs.add({
       'question': question,
       'chat_package': chatPackage,
       'collection': collection,
       'thread_id': threadId,
+      'general': general,
     });
     generateRunIds.add(runId);
     final gate = generateGate;

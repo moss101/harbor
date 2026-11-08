@@ -117,7 +117,7 @@
   "entry": "brief",
   "budgets": {
     "max_steps": 13,
-    "max_tool_calls": 5,
+    "max_tool_calls": 6,
     "max_context_tokens": 26000
   },
   "nodes": [
@@ -258,7 +258,7 @@
     {
       "id": "gate",
       "kind": "branch",
-      "description": "A failed check goes back to the model once with its problems; a second failure stops.",
+      "description": "A failed check goes back to the model once with its problems; a second failure removes what is still unsourced instead of withholding the deck.",
       "cases": [
         {
           "when": {
@@ -271,8 +271,61 @@
       "default": {
         "to": "draft",
         "max_iterations": 1,
-        "exhausted": "unfixable"
+        "exhausted": "trim"
       }
+    },
+    {
+      "id": "trim",
+      "kind": "tool.call",
+      "description": "Last resort after the repair round: drop the bullets, notes and slides that state figures the notes do not give (listed in /outline/removed), then check again.",
+      "tool": "deck.drop_unsourced",
+      "args": {
+        "outline": {
+          "$state": "/outline"
+        },
+        "source": {
+          "$state": "/input/notes"
+        }
+      },
+      "out": "/outline",
+      "next": "recheck"
+    },
+    {
+      "id": "recheck",
+      "kind": "tool.call",
+      "tool": "deck.verify_outline",
+      "args": {
+        "outline": {
+          "$state": "/outline"
+        },
+        "source": {
+          "$state": "/input/notes"
+        },
+        "slides": {
+          "$state": "/input/slides"
+        },
+        "min_slides": 2,
+        "max_slides": 8,
+        "max_bullets": 4,
+        "max_bullet_words": 22
+      },
+      "out": "/check",
+      "next": "gate2"
+    },
+    {
+      "id": "gate2",
+      "kind": "branch",
+      "description": "What is left must pass the same check; otherwise the user is asked for better notes.",
+      "cases": [
+        {
+          "when": {
+            "from": "/check/ok",
+            "op": "truthy"
+          },
+          "next": "build"
+        }
+      ],
+      "default": "unfixable"
     },
     {
       "id": "build",
@@ -322,7 +375,8 @@
         "/proposal/checks",
         "/approvals/approve",
         "/check/warnings",
-        "/check/normalized"
+        "/check/normalized",
+        "/outline/removed"
       ]
     },
     {

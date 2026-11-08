@@ -27,14 +27,29 @@ notarization has already been paid for in time.
 
 | Platform | Identifier | Source of truth |
 | --- | --- | --- |
-| iOS / iPadOS | `dev.harbor.harborApp` | `ios/Runner.xcodeproj` → `PRODUCT_BUNDLE_IDENTIFIER` |
-| macOS | `dev.harbor.harborApp` | same project; `codesign -dv` reports it as `Identifier=` |
-| Android | `dev.harbor.harbor_app` | `android/app/build.gradle.kts` → `applicationId` |
+| iOS / iPadOS | `com.cogniwiss.harborlm` | `ios/Runner.xcodeproj` → `PRODUCT_BUNDLE_IDENTIFIER` |
+| Android | `com.cogniwiss.harborlm` | `android/app/build.gradle.kts` → `applicationId` |
+| macOS | `dev.harbor.harborApp` | `macos/Runner/Configs/AppInfo.xcconfig` (not part of the 2026-11 mobile submission; unchanged) |
 
-Note the difference: Apple uses `harborApp`, Android `harbor_app`. Read
-them from the build outputs rather than from memory —
+The mobile store identity (Harbor LM, Cogniwiss Labs) was set on
+2026-11-03. The Android Kotlin `namespace` stays `dev.harbor.harbor_app`;
+only `applicationId` is the store identity. Read identifiers from the build
+outputs rather than from memory —
 `/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" <App>/Info.plist`
 and `apksigner verify --print-certs` / the APK's manifest.
+
+## Privacy policy
+
+Canonical text: `apps/harbor_app/assets/privacy/privacy_policy.md` (shown
+in the app under Settings → Privacy Policy). Public URL for both store
+records: **https://harbor-lm.pages.dev/privacy** (Cloudflare Pages project
+`harbor-lm`), rebuilt from the same file:
+
+    python3 tools/build_privacy_site.py
+    npx wrangler pages deploy build/privacy_site --project-name harbor-lm --branch main
+
+`privacy_statement.md` below is the superseded RC 1.0 statement; do not
+paste it into a store record.
 
 Wording rules (from the release goal):
 

@@ -50,3 +50,8 @@ fixtures/models/SmolVLM2-500M-Video-Instruct-Q8_0.gguf
 fixtures/models/mmproj-SmolVLM2-500M-Video-Instruct-Q8_0.gguf
 fixtures/models/Qwen2.5-VL-3B-Instruct-Q4_K_M.gguf
 fixtures/models/mmproj-Qwen2.5-VL-3B-Instruct-Q8_0.gguf
+
+# Firebase client config (public repo: kept out of git; see docs/release/store/README.md)
+apps/harbor_app/ios/Runner/GoogleService-Info.plist
+apps/harbor_app/android/app/google-services.json
+apps/harbor_app/lib/firebase_options.dart

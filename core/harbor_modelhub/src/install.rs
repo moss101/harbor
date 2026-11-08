@@ -193,6 +193,72 @@ impl PackageInstaller {
         Ok(())
     }
 
+    /// Ingest one local file by streaming it from `reader` into staging,
+    /// hashing as it goes (1 MiB chunks). Memory use is O(chunk), so a
+    /// multi-GB GGUF imported from the device never has to fit in RAM
+    /// (upgrade plan C14). The returned entry carries the computed SHA-256
+    /// and size; the weights GGUF magic (SEC-021) is still enforced.
+    pub fn ingest_reader(
+        &self,
+        staged: &mut StagedInstall,
+        role: &str,
+        file_name: &str,
+        reader: &mut dyn std::io::Read,
+    ) -> Result<PackageFile, InstallError> {
+        use sha2::Digest as _;
+        use std::io::Write as _;
+        verify_relative_path(file_name)?;
+        staged.stage = InstallStage::Downloading;
+        let out = staged.staging_dir.join(file_name);
+        if let Some(parent) = out.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let mut copy = || -> Result<(String, u64, [u8; 4]), InstallError> {
+            let mut file = std::fs::File::create(&out)?;
+            let mut hasher = sha2::Sha256::new();
+            let mut buf = vec![0u8; 1024 * 1024];
+            let mut size = 0u64;
+            let mut magic = [0u8; 4];
+            loop {
+                let n = match reader.read(&mut buf) {
+                    Ok(0) => break,
+                    Ok(n) => n,
+                    Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
+                    Err(e) => return Err(e.into()),
+                };
+                let chunk = &buf[..n];
+                // First four bytes, even if they straddle reads.
+                if size < 4 {
+                    let at = size as usize;
+                    let take = (4 - at).min(n);
+                    magic[at..at + take].copy_from_slice(&chunk[..take]);
+                }
+                hasher.update(chunk);
+                file.write_all(chunk)?;
+                size += n as u64;
+            }
+            file.flush()?;
+            Ok((hex::encode(hasher.finalize()), size, magic))
+        };
+        let (sha256, size_bytes, magic) = copy().inspect_err(|_| {
+            let _ = std::fs::remove_file(&out);
+        })?;
+        staged.stage = InstallStage::Verifying;
+        if role == "weights" && (size_bytes < 4 || &magic != b"GGUF") {
+            let _ = std::fs::remove_file(&out);
+            return Err(InstallError::NotGguf(file_name.to_string()));
+        }
+        staged
+            .verified_files
+            .insert(file_name.to_string(), size_bytes);
+        Ok(PackageFile {
+            role: role.to_string(),
+            path: file_name.to_string(),
+            sha256,
+            size_bytes,
+        })
+    }
+
     /// Validate the staged tree: manifest files all present and verified.
     pub fn validate(
         &self,
@@ -533,6 +599,93 @@ mod tests {
         assert_eq!(again, final_dir);
         inst.remove("tiny-test-model").unwrap();
         assert!(inst.installed_packages().unwrap().is_empty());
+    }
+
+    /// Reader that hands out at most `cap` bytes per read, so chunk
+    /// boundaries (and the GGUF magic) straddle reads.
+    struct Trickle<R> {
+        inner: R,
+        cap: usize,
+    }
+    impl<R: std::io::Read> std::io::Read for Trickle<R> {
+        fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+            let n = buf.len().min(self.cap);
+            self.inner.read(&mut buf[..n])
+        }
+    }
+
+    #[test]
+    fn ingest_reader_streams_hash_and_size_identically() {
+        let dir = tempfile::tempdir().unwrap();
+        let inst = PackageInstaller::new(dir.path().join("installed"));
+        // > 3 x the 1 MiB chunk, odd length, varied content.
+        let mut weights = b"GGUF".to_vec();
+        weights.extend((0..(3 * 1024 * 1024 + 17)).map(|i: u32| (i % 251) as u8));
+        for cap in [1usize, 3, 1024 * 1024 + 5, usize::MAX] {
+            let mut staged = inst.begin("streamed").unwrap();
+            let mut reader = Trickle {
+                inner: std::io::Cursor::new(&weights),
+                cap,
+            };
+            let f = inst
+                .ingest_reader(&mut staged, "weights", "model.gguf", &mut reader)
+                .unwrap();
+            // Same entry the old read-everything path produced.
+            assert_eq!(f.sha256, harbor_canonical::sha256_hex(&weights));
+            assert_eq!(f.size_bytes, weights.len() as u64);
+            assert_eq!(f.role, "weights");
+            assert_eq!(f.path, "model.gguf");
+            let staged_bytes = std::fs::read(staged.staging_dir.join("model.gguf")).unwrap();
+            assert!(staged_bytes == weights, "staged copy identical (cap {cap})");
+            let m = PackageManifest {
+                files: vec![f],
+                ..manifest("streamed", &weights, b"{}")
+            };
+            let report = inst.validate(&staged, &m).unwrap();
+            assert!(report.ok, "problems: {:?}", report.problems);
+            inst.discard_staging("streamed");
+        }
+    }
+
+    #[test]
+    fn ingest_reader_refuses_non_gguf_weights_and_cleans_up() {
+        let dir = tempfile::tempdir().unwrap();
+        let inst = PackageInstaller::new(dir.path().join("installed"));
+        let mut staged = inst.begin("bad").unwrap();
+        for body in [&b"GGU"[..], &b"#!/bin/sh\necho"[..]] {
+            let err = inst
+                .ingest_reader(
+                    &mut staged,
+                    "weights",
+                    "model.gguf",
+                    &mut Trickle {
+                        inner: std::io::Cursor::new(body),
+                        cap: 2,
+                    },
+                )
+                .unwrap_err();
+            assert!(matches!(err, InstallError::NotGguf(p) if p == "model.gguf"));
+            assert!(!staged.staging_dir.join("model.gguf").exists());
+        }
+        // Non-weights roles carry no magic requirement.
+        let f = inst
+            .ingest_reader(
+                &mut staged,
+                "mmproj",
+                "proj.bin",
+                &mut std::io::Cursor::new(b"abc"),
+            )
+            .unwrap();
+        assert_eq!(f.size_bytes, 3);
+        let err = inst
+            .ingest_reader(
+                &mut staged,
+                "config",
+                "../escape.json",
+                &mut std::io::Cursor::new(b"{}"),
+            )
+            .unwrap_err();
+        assert!(matches!(err, InstallError::PathEscape(_)));
     }
 
     #[test]

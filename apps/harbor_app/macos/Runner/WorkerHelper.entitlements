@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Entitlements of the inference worker launcher (Contents/MacOS/harbor_worker,
+  decision 0022 phase 3). A helper tool spawned by a sandboxed app must be
+  signed with exactly these two: it runs inside the app's sandbox and gains
+  nothing of its own.
+-->
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.inherit</key>
+	<true/>
+</dict>
+</plist>

@@ -307,7 +307,7 @@ fn text_svg(t: &TextBody, w: f64, h: f64, out: &mut String) {
                 r.c,
                 r.a,
                 r.spc,
-                esc(s)
+                esc(s.as_str())
             );
         }
         out.push_str("</text>");

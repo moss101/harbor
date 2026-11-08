@@ -73,7 +73,7 @@ Step "Native core (release)"
 $buildDir = "$repo\apps\harbor_app\build\windows\x64\runner\Release"
 if (-not (Test-Path $buildDir)) { throw "expected build output missing: $buildDir" }
 Push-Location "$repo\core"
-cargo build --release -p harbor_ffi
+cargo build --release -p harbor_ffi -p harbor_worker
 if ($LASTEXITCODE -ne 0) { Pop-Location; throw "harbor_ffi build failed" }
 Pop-Location
 $coreDll = "$repo\core\target\release\harbor_ffi.dll"
@@ -85,6 +85,16 @@ if (-not (Test-Path "$buildDir\harbor_ffi.dll")) {
   throw "harbor_ffi.dll missing from $buildDir after copy"
 }
 Write-Host "   native core bundled: harbor_ffi.dll" -ForegroundColor Green
+# The inference worker launcher (decision 0022 phase 3): the core finds it
+# beside harbor_ffi.dll and runs llama.cpp in it, so a GPU driver crash ends
+# the worker instead of the app. Without it models run in-process.
+$worker = "$repo\core\target\release\harbor_worker.exe"
+if (-not (Test-Path $worker)) { throw "harbor_worker.exe not produced at $worker" }
+Copy-Item -Force $worker $buildDir
+if (-not (Test-Path "$buildDir\harbor_worker.exe")) {
+  throw "harbor_worker.exe missing from $buildDir after copy"
+}
+Write-Host "   inference worker bundled: harbor_worker.exe" -ForegroundColor Green
 
 # 6. Package the release folder (portable zip; installer is a later,
 #    credential-gated step).

@@ -13,6 +13,7 @@
 //! The workspace event log and egress broker are shared across threads
 //! (`Arc`), so activity logged by a background op is durable and audited.
 
+pub mod calc;
 pub mod doc_scope;
 #[cfg(feature = "gguf")]
 pub mod knowledge;
@@ -583,6 +584,16 @@ fn str_from_ptr<'a>(p: *const c_char) -> Result<&'a str, HarborError> {
 /// 32-byte device root key generated and sealed by the embedding layer's
 /// OS keystore; when null the platform adapter is used (Keychain on
 /// Apple platforms, DPAPI on Windows).
+/// Entry point of the inference worker process (decision 0022 phase 3).
+/// The `harbor_worker` launcher loads this library and calls it; the
+/// process then serves model requests over stdin/stdout until stdin closes.
+/// Never called inside the app's own process.
+#[cfg(feature = "gguf")]
+#[no_mangle]
+pub extern "C" fn harbor_worker_main() -> i32 {
+    harbor_inference::worker::server::worker_main()
+}
+
 #[no_mangle]
 pub extern "C" fn harbor_core_open_ex(
     data_root: *const c_char,
@@ -2489,13 +2500,41 @@ fn dispatch(
                 .collect();
             let out = harbor_render::write_text_pdf(title, &blocks);
             // Page objects: two per page in the object table.
-            let pages = out.windows(11).filter(|w| w == b"/Type /Page").count();
+            let pages = out.windows(12).filter(|w| w == b"/Type /Page ").count();
             Ok(serde_json::json!({
                 "data_b64": base64::engine::general_purpose::STANDARD.encode(&out),
                 "pages": pages,
                 "blocks": blocks.len(),
                 "bytes": out.len(),
                 "extraction_level": "text-only (no layout, tables or images)",
+            }))
+        }
+        // An answer's text (light Markdown) → a one-column text PDF, e.g. a
+        // CV drafted in chat. Characters the base-14 fonts cannot show
+        // (Arabic, emoji) are reported so the host can warn before saving.
+        "convert.text_to_pdf" => {
+            let text = args
+                .get("text")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing text".into()))?;
+            let blocks = harbor_render::markdown_blocks(text);
+            if blocks.is_empty() {
+                return Err(HarborError::Other("nothing to write".into()));
+            }
+            let title = args
+                .get("title")
+                .and_then(|v| v.as_str())
+                .map(str::to_string)
+                .unwrap_or_else(|| blocks[0].text.lines().next().unwrap_or("").to_string());
+            let out = harbor_render::write_text_pdf(&title, &blocks);
+            let pages = out.windows(12).filter(|w| w == b"/Type /Page ").count();
+            use base64::Engine as _;
+            Ok(serde_json::json!({
+                "data_b64": base64::engine::general_purpose::STANDARD.encode(&out),
+                "title": title,
+                "pages": pages,
+                "bytes": out.len(),
+                "unsupported_chars": harbor_render::unsupported_chars(text),
             }))
         }
         // XLSX → PDF at TEXT-EXTRACTION level: the focused sheet's grid
@@ -2561,7 +2600,7 @@ fn dispatch(
                 });
             }
             let out = harbor_render::write_text_pdf(title, &blocks);
-            let pages = out.windows(11).filter(|w| w == b"/Type /Page").count();
+            let pages = out.windows(12).filter(|w| w == b"/Type /Page ").count();
             Ok(serde_json::json!({
                 "data_b64": base64::engine::general_purpose::STANDARD.encode(&out),
                 "pages": pages,
@@ -3180,23 +3219,17 @@ fn dispatch(
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| HarborError::Other("package_id is required".into()))?
                     .to_string();
-                let provider =
-                    harbor_inference::GgufLlamaCppProvider::new(ws.data_root.join("models"))
+                // In the inference worker where the platform allows one
+                // (decision 0022): a vision tower that crashes takes the
+                // worker down, not the app.
+                let runtime =
+                    harbor_inference::worker::GgufRuntime::open(ws.data_root.join("models"))
                         .map_err(|e| HarborError::Other(e.to_string()))?;
-                let model = harbor_inference::provider::ModelRef::InstalledPackage {
-                    package_id: package.clone(),
-                };
-                use harbor_inference::ModelProvider as _;
-                provider
-                    .load(&model)
+                let (engine, backend) = runtime
+                    .open_vision_ocr(&package)
                     .map_err(|e| HarborError::Other(e.to_string()))?;
-                let (engine, backend) = harbor_inference::vision_ocr::VisionOcr::open_verified(
-                    &provider, &model, &package,
-                )
-                .map_err(|e| HarborError::Other(e.to_string()))?;
-                use harbor_inference::ocr::OcrEngine as _;
                 let name = engine.name();
-                harbor_inference::ocr::register_ocr_engine(Arc::new(engine));
+                harbor_inference::ocr::register_ocr_engine(engine);
                 Ok(serde_json::json!({ "engine": name, "backend": backend }))
             }
         }
@@ -3211,6 +3244,62 @@ fn dispatch(
         "ocr.release" => {
             let fallback = harbor_inference::ocr::release_ocr_engine();
             Ok(serde_json::json!({ "released": true, "platform_engine_available": fallback }))
+        }
+        // The GPU qualification store (decision 0022): which device +
+        // model + runtime combinations run on the GPU, which are pinned to
+        // the CPU after a crash or a failed numerics canary, and why.
+        "runtime.qualification" => {
+            let state = harbor_inference::resilience::RuntimeState::open(
+                harbor_inference::resilience::runtime_dir_for(&ws.data_root.join("models")),
+            );
+            let recovered: Vec<String> = state.recovered().iter().map(|r| r.key.id()).collect();
+            let records: Vec<serde_json::Value> = state
+                .records()
+                .into_iter()
+                .map(|r| {
+                    serde_json::json!({
+                        "id": r.key.id(),
+                        "backend": r.key.backend,
+                        "device": r.key.device,
+                        "platform": r.key.platform,
+                        "model_sha256": r.key.model_sha256,
+                        "runtime": r.key.runtime,
+                        "state": r.state.as_str(),
+                        "pins_cpu": r.state.pins_cpu(),
+                        "note": r.note,
+                        "updated": r.updated,
+                        "recovered_this_launch": recovered.contains(&r.key.id()),
+                    })
+                })
+                .collect();
+            #[cfg(feature = "gguf")]
+            let gpu = harbor_inference::gguf::gpu_backend_present();
+            #[cfg(not(feature = "gguf"))]
+            let gpu = false;
+            // Where models run (decision 0022 phase 3): "worker" or
+            // "in_process", and the launcher or the reason for falling back.
+            #[cfg(feature = "gguf")]
+            let (mode, why) = harbor_inference::worker::last_runtime_choice()
+                .map(|(m, w)| (Some(m), Some(w)))
+                .unwrap_or((None, None));
+            #[cfg(not(feature = "gguf"))]
+            let (mode, why): (Option<&str>, Option<String>) = (None, None);
+            Ok(serde_json::json!({
+                "runtime": harbor_inference::runtime_identity(),
+                "gpu_backend": gpu,
+                "inference_mode": mode,
+                "inference_mode_detail": why,
+                "records": records,
+            }))
+        }
+        // Forget one key (`id`) or every key: the next load re-tests the GPU.
+        // Already-loaded models keep their placement until reloaded.
+        "runtime.qualification_reset" => {
+            let state = harbor_inference::resilience::RuntimeState::open(
+                harbor_inference::resilience::runtime_dir_for(&ws.data_root.join("models")),
+            );
+            let removed = state.reset(args.get("id").and_then(|v| v.as_str()));
+            Ok(serde_json::json!({ "removed": removed }))
         }
         "speech.status" => Ok(match harbor_inference::asr::asr_engine() {
             Ok(e) => serde_json::json!({ "available": true, "engine": e.name(),
@@ -4306,27 +4395,22 @@ fn dispatch(
             let mut staged = installer
                 .begin(package_id)
                 .map_err(|e| HarborError::Other(format!("staging: {e}")))?;
-            // One file in memory at a time (a projector is hundreds of MB).
+            // Streamed copy + hash (1 MiB chunks): a 1-5 GB GGUF is never
+            // loaded into memory (upgrade plan C14).
             let mut files = Vec::new();
             let mut total_bytes = 0usize;
             for (p, r) in &to_install {
-                let bytes =
-                    std::fs::read(p).map_err(|e| HarborError::Other(format!("read {p}: {e}")))?;
                 let file_name = std::path::Path::new(p)
                     .file_name()
                     .and_then(|n| n.to_str())
                     .ok_or_else(|| HarborError::Other("bad file name".into()))?
                     .to_string();
-                let file = harbor_modelhub::install::PackageFile {
-                    role: r.clone(),
-                    path: file_name,
-                    sha256: harbor_canonical::sha256_hex(&bytes),
-                    size_bytes: bytes.len() as u64,
-                };
-                installer
-                    .ingest_file(&mut staged, &file, &bytes)
+                let mut reader = std::fs::File::open(p)
+                    .map_err(|e| HarborError::Other(format!("read {p}: {e}")))?;
+                let file = installer
+                    .ingest_reader(&mut staged, r, &file_name, &mut reader)
                     .map_err(|e| HarborError::Other(format!("ingest: {e}")))?;
-                total_bytes += bytes.len();
+                total_bytes += file.size_bytes as usize;
                 files.push(file);
             }
             let manifest = harbor_modelhub::install::PackageManifest {
@@ -4789,6 +4873,7 @@ fn dispatch(
                         question,
                         citations.as_array().cloned().unwrap_or_default(),
                         &history,
+                        crate::knowledge::Grounding::Open,
                         max_tokens,
                         &never,
                         None,
@@ -5049,6 +5134,13 @@ fn dispatch(
                 // set): retrieve ONLY from that collection's sources. An
                 // unknown collection grounds on nothing (abstention).
                 let collection = optional_collection(args)?;
+                // Optional `general: true` (the router named the request
+                // general chat): an unscoped question skips Library
+                // retrieval, so unrelated passages cannot force an
+                // abstention. Ignored with a file or collection scope.
+                let general = args.get("general").and_then(|v| v.as_bool()) == Some(true)
+                    && document.is_none()
+                    && collection.is_none();
                 refuse_embedder_as_chat(&ws.data_root, &chat_package)?;
                 let thread_id = args
                     .get("thread_id")
@@ -5096,6 +5188,7 @@ fn dispatch(
                     //    rank when an index model is open, else lexical).
                     let mut scope = None;
                     let citations = match &document {
+                        None if general => serde_json::json!([]),
                         None => {
                             let found = knowledge
                                 .as_ref()
@@ -5169,15 +5262,22 @@ fn dispatch(
                             true,
                         );
                     }
-                    // 3. Generate on-device (cooperatively cancellable).
-                    let never = AtomicBool::new(false);
+                    // 3. Generate on-device; `op.cancel` stops it between tokens.
+                    // Only an unscoped question may answer without evidence;
+                    // a file or collection scope abstains instead.
+                    let grounding = if document.is_none() && collection.is_none() {
+                        crate::knowledge::Grounding::Open
+                    } else {
+                        crate::knowledge::Grounding::Required
+                    };
                     let result = chat.generate_rag_with_history(
                         &chat_package,
                         &question,
                         citations.as_array().cloned().unwrap_or_default(),
                         &history,
+                        grounding,
                         max_tokens,
-                        &never,
+                        &progress.cancel,
                         Some(&progress),
                     );
                     match result {
@@ -5224,8 +5324,12 @@ fn dispatch(
                                     false,
                                 );
                             }
+                            // Generation stopped at the token limit, not at
+                            // the model's own end: the answer is cut off.
+                            let truncated = answer.completion_tokens >= u64::from(max_tokens);
                             let mut out = serde_json::json!({
                                 "answer": answer.answer,
+                                "truncated": truncated,
                                 "used_citations": answer.used_citations,
                                 "executed_on": answer.executed_on,
                                 "execution": "ON_DEVICE",
@@ -5290,9 +5394,8 @@ fn dispatch(
                 let progress = entry.progress.clone();
                 let entry_clone = entry.clone();
                 spawn_op(entry.clone(), ws.diagnostics.clone(), move || {
-                    let never = AtomicBool::new(false);
                     let result = knowledge
-                        .ingest_with_progress(&sources, &never, Some(&progress))
+                        .ingest_with_progress(&sources, &progress.cancel, Some(&progress))
                         .map_err(|e| e.to_string());
                     let cancelled = matches!(&result, Err(e) if e.contains("cancelled"));
                     complete_op(&entry_clone, result, cancelled);

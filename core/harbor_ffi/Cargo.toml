@@ -50,5 +50,6 @@ gguf = ["harbor_inference/gguf-backend"]
 # an mmproj projector (EmbeddingGemma 2; decision 0015).
 multimodal = ["gguf", "harbor_inference/multimodal"]
 # Vulkan GPU backend; build with VULKAN_INCLUDE_DIR / SPIRV_HEADERS_DIR /
-# VULKAN_GLSLC for Android (see third_party/llama-cpp-sys-2/build.rs).
+# VULKAN_GLSLC for Android (see core/harbor_llama_sys/build.rs and
+# scripts/build_android_vulkan.sh).
 vulkan = ["gguf", "harbor_inference/vulkan"]
