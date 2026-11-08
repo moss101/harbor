@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,23 +10,38 @@ import 'package:harbor_ui/harbor_ui.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'l10n/app_localizations.dart';
+import 'services/auth_service.dart';
 import 'services/diagnostics.dart';
 import 'services/harbor_service.dart';
 import 'services/native_adapters.dart';
 import 'services/preferences.dart';
 import 'shell/adaptive_shell.dart';
 import 'shell/keyboard.dart';
+import 'surfaces/sign_in_page.dart';
 import 'surfaces/surfaces.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  HarborWordmark.productName = 'Harbor LM';
   // Uncaught errors go to the core's encrypted diagnostics log (no
   // telemetry; the user exports it by hand from Settings).
   DiagnosticsSink.instance.install();
   // Edge-to-edge on Android (and a no-op elsewhere): the shell paints
   // behind the system bars and insets its own content.
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  runApp(const HarborApp());
+  // The store builds (iOS, Android) require a Harbor LM account. Firebase
+  // reads GoogleService-Info.plist / google-services.json; desktop builds
+  // have neither and run without sign-in.
+  HarborAuth? auth;
+  // Store-listing screenshots only: `--dart-define=HARBOR_SCREENSHOT_MODE=true`
+  // skips the sign-in gate. Never set for store builds (package scripts
+  // and release.yml pass no dart-defines).
+  const screenshotMode = bool.fromEnvironment('HARBOR_SCREENSHOT_MODE');
+  if (!screenshotMode && (Platform.isIOS || Platform.isAndroid)) {
+    await Firebase.initializeApp();
+    auth = FirebaseHarborAuth();
+  }
+  runApp(HarborApp(auth: auth));
 }
 
 /// Import `assets/catalog/signed_catalog.json` with its pinned root key.
@@ -162,10 +178,37 @@ class AppState extends ChangeNotifier {
   void setDeckDesign(DeckDesignPrefs d) =>
       _update(_prefs.copyWith(deckDesign: d));
 
+  /// Surfaces visited before the current one, for the system back
+  /// gesture (Android back used to exit the app from every surface).
+  final List<int> _backStack = [];
+
+  void _moveTo(int i) {
+    if (i == surfaceIndex) return;
+    _backStack.remove(i);
+    _backStack.add(surfaceIndex);
+    surfaceIndex = i;
+  }
+
   void selectSurface(int i) {
     if (i == surfaceIndex) return;
-    surfaceIndex = i;
+    _moveTo(i);
     notifyListeners();
+  }
+
+  /// True when system back should leave the app: on Home with nothing
+  /// visited before it.
+  bool get atRoot =>
+      surfaceIndex == HarborSurface.home.index && _backStack.isEmpty;
+
+  /// Back to the previous surface (or Home); false when already at root.
+  bool goBack() {
+    if (atRoot) return false;
+    surfaceIndex = _backStack.isNotEmpty
+        ? _backStack.removeLast()
+        : HarborSurface.home.index;
+    if (surfaceIndex == HarborSurface.home.index) _backStack.clear();
+    notifyListeners();
+    return true;
   }
 
   void goTo(HarborSurface s) => selectSurface(s.index);
@@ -173,34 +216,34 @@ class AppState extends ChangeNotifier {
   /// Navigate to Work and ask it to open the file picker.
   void requestOpenFile() {
     pendingOpenFile = true;
-    surfaceIndex = HarborSurface.work.index;
+    _moveTo(HarborSurface.work.index);
     notifyListeners();
   }
 
   /// Prefill the Home composer and navigate there.
   void composeOnHome(String text) {
     pendingComposerText = text;
-    surfaceIndex = HarborSurface.home.index;
+    _moveTo(HarborSurface.home.index);
     notifyListeners();
   }
 
   void filterSkills(String query) {
     pendingSkillsFilter = query;
-    surfaceIndex = HarborSurface.skills.index;
+    _moveTo(HarborSurface.skills.index);
     notifyListeners();
   }
 
   /// Navigate to Models on [tab] (Store and model installs live there).
   void openModels(ModelsTab tab) {
     pendingModelsTab = tab;
-    surfaceIndex = HarborSurface.models.index;
+    _moveTo(HarborSurface.models.index);
     notifyListeners();
   }
 
   /// Navigate to Activity on [tab] (scheduled goals live there).
   void openActivity(ActivityTab tab) {
     pendingActivityTab = tab;
-    surfaceIndex = HarborSurface.activity.index;
+    _moveTo(HarborSurface.activity.index);
     notifyListeners();
   }
 }
@@ -219,7 +262,10 @@ class AppStateScope extends InheritedNotifier<AppState> {
 }
 
 class HarborApp extends StatefulWidget {
-  const HarborApp({super.key, this.service, this.preferences});
+  const HarborApp({super.key, this.service, this.preferences, this.auth});
+
+  /// Account gate; null (tests, desktop) means no sign-in is required.
+  final HarborAuth? auth;
 
   /// Injectable for tests; when null a real FFI service is created over
   /// the persistent application-support data root.
@@ -357,6 +403,20 @@ class _HarborAppState extends State<HarborApp> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  /// The shell only once an account is signed in (store builds).
+  Widget _gated(Widget app) {
+    final auth = widget.auth;
+    if (auth == null) return app;
+    return ListenableBuilder(
+      listenable: auth,
+      builder: (context, _) {
+        if (auth.restoring) return const _BootingView();
+        if (auth.account == null) return SignInPage(auth: auth);
+        return app;
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -364,7 +424,7 @@ class _HarborAppState extends State<HarborApp> with WidgetsBindingObserver {
       builder: (context, _) {
         final arabic = _state.locale.languageCode == 'ar';
         return MaterialApp(
-          onGenerateTitle: (context) => 'Harbor',
+          onGenerateTitle: (context) => 'Harbor LM',
           debugShowCheckedModeBanner: false,
           theme: harborThemeData(dark: false, arabic: arabic),
           darkTheme: harborThemeData(dark: true, arabic: arabic),
@@ -407,19 +467,22 @@ class _HarborAppState extends State<HarborApp> with WidgetsBindingObserver {
                 text: HarborType(arabic: arabic),
                 child: AppStateScope(
                   state: _state,
-                  child: HarborServiceProvider(
-                    service: service,
-                    failed: _serviceFailed,
-                    failureDetail: _serviceError,
-                    child: child ?? const SizedBox.shrink(),
+                  child: AuthScope(
+                    auth: widget.auth,
+                    child: HarborServiceProvider(
+                      service: service,
+                      failed: _serviceFailed,
+                      failureDetail: _serviceError,
+                      child: child ?? const SizedBox.shrink(),
+                    ),
                   ),
                 ),
               ),
             );
           },
-          home: _initializing
+          home: _gated(_initializing
               ? const _BootingView()
-              : AdaptiveShell(state: _state),
+              : AdaptiveShell(state: _state)),
         );
       },
     );

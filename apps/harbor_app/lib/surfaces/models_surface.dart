@@ -4,6 +4,7 @@ import 'package:harbor_native/harbor_ffi.dart' as ffi;
 import 'package:harbor_ui/harbor_ui.dart';
 
 import '../services/file_types.dart';
+import '../services/gguf_variants.dart';
 
 import '../l10n/app_localizations.dart';
 import '../main.dart';
@@ -341,7 +342,7 @@ class _CatalogCardState extends State<_CatalogCard> {
       setState(() {
         _error = e.message.toLowerCase().contains('cancel')
             ? l10n.modelInstallCancelled
-            : l10n.modelInstallFailed;
+            : '${l10n.modelInstallFailed}: ${e.message}';
       });
     } finally {
       if (mounted) setState(() => _installing = false);
@@ -764,17 +765,17 @@ class _HfSearchViewState extends State<_HfSearchView> {
     if (service == null || !mounted) return;
     final l10n = AppLocalizations.of(context)!;
     setState(() => _installError = null);
-    final files = await service.huggingFaceFiles(repoId);
+    final variants = ggufVariants(await service.huggingFaceFiles(repoId));
     if (!mounted) return;
-    if (files.isEmpty) {
-      setState(() => _installError = l10n.modelInstallFailed);
+    if (variants.isEmpty) {
+      setState(() => _installError = l10n.modelsHfNoGguf);
       return;
     }
+    // One quantization, not every file in the repo (tens of GB).
+    final variant = await _pickVariant(variants);
+    if (variant == null || !mounted) return;
     try {
-      final acquireFiles = [
-        for (final f in files)
-          {'path': f['path'] as String, 'role': 'weights', 'sha256': ''},
-      ];
+      final acquireFiles = variant.acquireFiles;
       // SEC-029: quote the transfer and require an explicit confirmation
       // for exactly that size before the op starts.
       final quote = await service.acquirePreflight(
@@ -785,7 +786,7 @@ class _HfSearchViewState extends State<_HfSearchView> {
       final confirmed = await showAcquireConfirmDialog(context, quote);
       if (!mounted || !confirmed) return;
       final result = await service.acquireModelHf(
-        packageId: repoId.split('/').last,
+        packageId: '${repoId.split('/').last}-${variant.label}'.toLowerCase(),
         repoId: repoId,
         files: acquireFiles,
         confirmedTotalBytes: (quote['quoted_bytes'] as num? ?? 0).toInt(),
@@ -803,9 +804,50 @@ class _HfSearchViewState extends State<_HfSearchView> {
       setState(() {
         _installError = e.message.toLowerCase().contains('cancel')
             ? l10n.modelInstallCancelled
-            : l10n.modelInstallFailed;
+            : '${l10n.modelInstallFailed}: ${e.message}';
       });
     }
+  }
+
+  /// Ask which quantization to install; the recommended one is first.
+  Future<GgufVariant?> _pickVariant(List<GgufVariant> variants) {
+    final l10n = AppLocalizations.of(context)!;
+    final t = HarborTheme.of(context);
+    final recommended = preferredVariant(variants);
+    final ordered = [
+      variants[recommended],
+      for (var i = 0; i < variants.length; i++)
+        if (i != recommended) variants[i],
+    ];
+    return showDialog<GgufVariant>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text(l10n.modelsHfPickTitle),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+                HarborSpace.s6, 0, HarborSpace.s6, HarborSpace.s2),
+            child: Text(l10n.modelsHfPickBody,
+                style: t.text.captionOf(t.colors.inkMuted)),
+          ),
+          for (final v in ordered)
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(context).pop(v),
+              child: Row(children: [
+                Expanded(child: Text(v.label)),
+                if (identical(v, variants[recommended]))
+                  Padding(
+                    padding:
+                        const EdgeInsetsDirectional.only(end: HarborSpace.s2),
+                    child: HarborPill(l10n.modelsHfPickRecommended),
+                  ),
+                Text(_CatalogCardState._gb(v.totalBytes),
+                    style: t.text.captionOf(t.colors.inkMuted)),
+              ]),
+            ),
+        ],
+      ),
+    );
   }
 
   @override

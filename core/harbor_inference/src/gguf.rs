@@ -476,7 +476,6 @@ impl GgufLlamaCppProvider {
             chain.push(LlamaSampler::dist(0x48415242)); // "HARB"
         }
         let mut sampler = LlamaSampler::chain_simple(chain);
-        let eos = model.token_eos();
         let mut out = String::new();
         // One decoder for the whole generation: it holds the bytes of a
         // multi-byte character that a token only starts (byte-level BPE
@@ -495,7 +494,12 @@ impl GgufLlamaCppProvider {
                 return Err(ProviderError::Cancelled);
             }
             let tok = sampler.sample(&ctx, logits_index);
-            if tok == eos {
+            // Stop on ANY end-of-generation token, not only EOS: chat
+            // models end a turn with a token that is EOG but not EOS
+            // (Llama 3 <|eot_id|>, Gemma <end_of_turn>, ChatML
+            // <|im_end|>); checking EOS alone ran them to max_tokens
+            // (upgrade plan C2). Same check as the vision/OCR loop.
+            if model.is_eog_token(tok) {
                 break;
             }
             let piece = model
@@ -537,7 +541,8 @@ impl GgufLlamaCppProvider {
             logits_index = 0;
         }
         Ok(ChatResponse {
-            content: out,
+            // Reasoning blocks are scratch work, never the answer.
+            content: crate::reasoning::strip_reasoning(&out),
             usage: Usage {
                 prompt_tokens: prompt_len as u64,
                 completion_tokens: generated,

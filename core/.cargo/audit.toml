@@ -12,6 +12,7 @@ ignore = [
   "RUSTSEC-2026-0367", # zip extract() SUID/SGID; Harbor never extracts to disk (see deny.toml)
   "RUSTSEC-2026-0368", # zip extract() symlink escape; Harbor never extracts to disk (see deny.toml)
   "RUSTSEC-2026-0369", # zip extract() perms through symlinks; Harbor never extracts to disk (see deny.toml)
+  "RUSTSEC-2026-0429", # zip extract() abort on large symlink entry; Harbor never extracts to disk (see deny.toml)
 ]
 informational_warnings = ["unmaintained", "unsound", "notice"]
 

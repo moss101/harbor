@@ -287,6 +287,31 @@ class AppLocalizationsAr extends AppLocalizations {
       'يفيد النموذج بأن الأدلة غير كافية — هذه الإجابة غير مستندة إلى مصادرك.';
 
   @override
+  String get askTruncatedNote =>
+      'بلغت هذه الإجابة الحد الأقصى للطول وانقطعت. اكتب \"أكمل\" للحصول على البقية.';
+
+  @override
+  String get answerSavePdf => 'حفظ بصيغة PDF';
+
+  @override
+  String answerPdfSaved(String where) {
+    return 'حُفظ $where';
+  }
+
+  @override
+  String answerPdfSavedPartial(String where, int count) {
+    return 'حُفظ $where. لا يمكن عرض $count من الأحرف (مثل العربية أو الرموز التعبيرية) في ملف PDF هذا وتظهر على شكل ؟.';
+  }
+
+  @override
+  String answerPdfInFiles(String name) {
+    return 'في الملفات › Harbor LM › $name';
+  }
+
+  @override
+  String get answerPdfFailed => 'تعذّر حفظ ملف PDF';
+
+  @override
   String get askNoChatModel =>
       'لا يوجد نموذج محادثة مثبّت. تحتاج الإجابات إلى نموذج محادثة (النماذج ← الموصى بها)؛ وعند فتح المكتبة تبقى الاستشهادات المسترجَعة متاحة.';
 
@@ -372,6 +397,20 @@ class AppLocalizationsAr extends AppLocalizations {
   String get modelInstallCancelled => 'أُلغي التثبيت';
 
   @override
+  String get modelsHfNoGguf =>
+      'لا يحتوي هذا المستودع على ملفات GGUF، لذا لا يستطيع Harbor تشغيله. ابحث عن نسخة من النموذج ينتهي اسمها بـ ‎-GGUF.';
+
+  @override
+  String get modelsHfPickTitle => 'اختر نسخة';
+
+  @override
+  String get modelsHfPickBody =>
+      'النسخ الأصغر أسرع تنزيلًا وأقل استهلاكًا للذاكرة، والأكبر أدق قليلًا.';
+
+  @override
+  String get modelsHfPickRecommended => 'موصى به';
+
+  @override
   String get modelsHfSearchFailed =>
       'فشل البحث — رفضت الشبكة الاستعلام. أعد المحاولة بعد قليل.';
 
@@ -440,13 +479,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get navMoreTitle => 'كل الأقسام';
 
   @override
-  String get lensTitle => 'عدسة هاربر';
+  String get lensTitle => 'عدسة Harbor LM';
 
   @override
   String get lensSubtitle => 'السياق والمهام والمعرفة';
 
   @override
-  String get lensToggleTooltip => 'إظهار أو إخفاء عدسة هاربر';
+  String get lensToggleTooltip => 'إظهار أو إخفاء عدسة Harbor LM';
 
   @override
   String get closeAction => 'إغلاق';
@@ -512,7 +551,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get commandSectionActions => 'الإجراءات';
 
   @override
-  String get commandToggleLens => 'تبديل عدسة هاربر';
+  String get commandToggleLens => 'تبديل عدسة Harbor LM';
 
   @override
   String get commandToggleTheme => 'تبديل المظهر الفاتح/الداكن';
@@ -911,7 +950,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get agentsPartPolicyBody =>
-      'تتوقف التأثيرات المحمية لمراجعة في ورقة هاربر قبل كتابة أي شيء.';
+      'تتوقف التأثيرات المحمية لمراجعة في ورقة Harbor LM قبل كتابة أي شيء.';
 
   @override
   String get skillsSubtitle =>
@@ -1051,6 +1090,99 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get settingsPrivacyBody =>
       'محلي فقط هو الافتراضي والسياسة الوحيدة في هذا الإصدار.';
+
+  @override
+  String get signInTitle => 'سجّل الدخول إلى Harbor LM';
+
+  @override
+  String get signInBody =>
+      'يتطلب Harbor LM حساباً. تبقى محادثاتك وملفاتك وتسجيلاتك على هذا الجهاز؛ ولا يحفظ الحساب سوى معرّف الدخول وبريدك الإلكتروني واسمك.';
+
+  @override
+  String get signInWithApple => 'تسجيل الدخول باستخدام Apple';
+
+  @override
+  String get signInWithGoogle => 'تسجيل الدخول باستخدام Google';
+
+  @override
+  String get signInNeedsNetwork =>
+      'يتطلب تسجيل الدخول اتصالاً بالإنترنت. بعد ذلك يعمل Harbor LM دون اتصال.';
+
+  @override
+  String get signInFailed =>
+      'لم يكتمل تسجيل الدخول. تحقق من الاتصال وحاول مجدداً.';
+
+  @override
+  String get settingsAccount => 'الحساب';
+
+  @override
+  String get accountSignOut => 'تسجيل الخروج';
+
+  @override
+  String get accountDelete => 'حذف الحساب';
+
+  @override
+  String get accountDeleteTitle => 'حذف حسابك؟';
+
+  @override
+  String get accountDeleteBody =>
+      'سيؤدي هذا إلى حذف حسابك في Harbor LM نهائياً. سيُطلب منك تسجيل الدخول مرة أخرى للتأكيد. لا تتأثر المحادثات والملفات والنماذج على هذا الجهاز؛ احذف التطبيق لإزالتها.';
+
+  @override
+  String get accountDeleted => 'تم حذف حسابك.';
+
+  @override
+  String get accountDeleteFailed =>
+      'لم يُحذف الحساب. تحقق من الاتصال وحاول مجدداً.';
+
+  @override
+  String get reportAction => 'الإبلاغ عن هذه الإجابة';
+
+  @override
+  String get reportTitle => 'الإبلاغ عن هذه الإجابة';
+
+  @override
+  String get reportExplainer =>
+      'أبلغ Cogniwiss Labs عن إجابة ضارة أو مسيئة. يؤدي الإرسال إلى مشاركة الإجابة والسبب وتعليقك مع Cogniwiss Labs مرتبطةً بحسابك. تُحفظ البلاغات 180 يوماً.';
+
+  @override
+  String get reportReasonOffensive => 'مسيئة';
+
+  @override
+  String get reportReasonHarmful => 'ضارة أو خطرة';
+
+  @override
+  String get reportReasonSexual => 'محتوى جنسي';
+
+  @override
+  String get reportReasonHateful => 'تحض على الكراهية';
+
+  @override
+  String get reportReasonIllegal => 'غير قانونية';
+
+  @override
+  String get reportReasonMisinformation => 'خاطئة أو مضللة';
+
+  @override
+  String get reportReasonOther => 'أخرى';
+
+  @override
+  String get reportComment => 'تعليق (اختياري)';
+
+  @override
+  String get reportIncludeQuestion => 'تضمين سؤالي';
+
+  @override
+  String get reportSend => 'إرسال البلاغ';
+
+  @override
+  String get reportSent => 'شكراً. تم إرسال بلاغك.';
+
+  @override
+  String get reportFailed => 'لم يُرسل البلاغ. تحقق من الاتصال وحاول مجدداً.';
+
+  @override
+  String get settingsPrivacyPolicy => 'سياسة الخصوصية';
 
   @override
   String get settingsAbout => 'حول';
@@ -1558,7 +1690,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get goalsBannerBody =>
-      'الهدف طلب ثابت على جدول تضبطه أنت. لا تقترح هاربر شيئًا من تلقاء نفسه: لا يعمل الهدف إلا أثناء فتح هاربر وعند ضغطك على «تشغيل الآن»، وكل موقدة مجدولة تعمل مرة واحدة على الأكثر — إعادة التشغيل لا تكررها. تُشفَّر الأهداف في وضع السكون ككل محتوى مساحة العمل.';
+      'الهدف طلب ثابت على جدول تضبطه أنت. لا تقترح Harbor LM شيئًا من تلقاء نفسه: لا يعمل الهدف إلا أثناء فتح Harbor LM وعند ضغطك على «تشغيل الآن»، وكل موقدة مجدولة تعمل مرة واحدة على الأكثر — إعادة التشغيل لا تكررها. تُشفَّر الأهداف في وضع السكون ككل محتوى مساحة العمل.';
 
   @override
   String get goalsSectionTitle => 'أهدافك';
@@ -1701,7 +1833,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'تنتظر عملية الهدف موافقتك — افتح النشاط لمراجعتها.';
 
   @override
-  String get skillsSuggestHint => 'صف ما تريد فعله وسيقترح هاربر مهارة';
+  String get skillsSuggestHint => 'صف ما تريد فعله وسيقترح Harbor LM مهارة';
 
   @override
   String get skillsSuggestAction => 'اقترح مهارة';
@@ -1729,7 +1861,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get memoryExplainer =>
-      'ملاحظات يستطيع هاربر استدعاءها بالمعنى. تُظهر كل ملاحظة من كتبها، ويمكنك حذف أي منها، ولا تُستخدم الذاكرة أبدًا كمصدر للمستندات.';
+      'ملاحظات يستطيع Harbor LM استدعاءها بالمعنى. تُظهر كل ملاحظة من كتبها، ويمكنك حذف أي منها، ولا تُستخدم الذاكرة أبدًا كمصدر للمستندات.';
 
   @override
   String get memoryAddHint => 'شيء تريد تذكّره، مثل: «أفضّل الوحدات المترية».';
@@ -1765,7 +1897,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get skillsSuggestUncalibrated =>
-      'لم يُختبر نموذج التضمين لديك لأغراض الاقتراح، لذا يعرض هاربر أقرب المهارات دون ترشيح إحداها.';
+      'لم يُختبر نموذج التضمين لديك لأغراض الاقتراح، لذا يعرض Harbor LM أقرب المهارات دون ترشيح إحداها.';
 
   @override
   String get skillsSuggestLlmChose =>
@@ -2076,7 +2208,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get routeNoIndex =>
-      'تُرتَّب المهارات بنموذج التضمين في المكتبة، وهو غير مفتوح. اختر مهارة بنفسك:';
+      'يحتاج Harbor إلى نموذج تضمين لاختيار مهارة، ولا يوجد نموذج جاهز. ثبّت نموذجًا من «النماذج» (مثل bge-small) للحصول على اقتراحات تلقائية، أو اختر مهارة بنفسك:';
 
   @override
   String get routeNoMatch => 'لا توجد مهارة تناسب هذا الطلب بوضوح.';

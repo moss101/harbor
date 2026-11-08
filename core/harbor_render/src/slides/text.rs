@@ -248,10 +248,7 @@ pub(crate) fn parse_body_pr(n: Node) -> BodyPr {
             _ => "t".to_string(),
         }),
         wrap: n.attribute("wrap").map(|w| w != "none"),
-        vertical: n
-            .attribute("vert")
-            .map(|v| v != "horz")
-            .unwrap_or(false),
+        vertical: n.attribute("vert").map(|v| v != "horz").unwrap_or(false),
         ..Default::default()
     };
     for c in n.children().filter(|c| c.is_element()) {
@@ -528,8 +525,9 @@ mod tests {
         scheme.insert("dk1".to_string(), [0x10, 0x10, 0x10]);
         scheme.insert("accent1".to_string(), [0x1F, 0x5F, 0xCC]);
         let scheme = SchemeColors(scheme);
-        let map: HashMap<String, String> =
-            [("tx1".to_string(), "dk1".to_string())].into_iter().collect();
+        let map: HashMap<String, String> = [("tx1".to_string(), "dk1".to_string())]
+            .into_iter()
+            .collect();
         let colors = ColorCtx {
             scheme: &scheme,
             map: &map,
@@ -615,7 +613,11 @@ mod tests {
                 .iter()
                 .filter_map(|p| p.bullet.as_ref().map(|b| b.start))
                 .collect();
-            assert_eq!(n, vec![1, 2, 1], "a bullet-less paragraph restarts numbering");
+            assert_eq!(
+                n,
+                vec![1, 2, 1],
+                "a bullet-less paragraph restarts numbering"
+            );
             assert_eq!(tb.paras[1].runs[1].t, "\n");
             assert_eq!(tb.paras[2].runs[0].t, "7", "slide number field resolved");
         });

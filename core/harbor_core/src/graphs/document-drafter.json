@@ -10,9 +10,10 @@
         "enum": [
           "proposal",
           "report",
-          "letter"
+          "letter",
+          "cv"
         ],
-        "description": "Which template to follow."
+        "description": "Which template to follow (cv: a résumé)."
       },
       "brief": {
         "type": "string",
@@ -76,6 +77,14 @@
             "value": "letter"
           },
           "next": "t_letter"
+        },
+        {
+          "when": {
+            "from": "/input/kind",
+            "op": "eq",
+            "value": "cv"
+          },
+          "next": "t_cv"
         }
       ],
       "default": "t_report"
@@ -126,6 +135,22 @@
       "next": "gather"
     },
     {
+      "id": "t_cv",
+      "kind": "const",
+      "value": {
+        "headings": [
+          "Profile",
+          "Experience",
+          "Skills",
+          "Education"
+        ],
+        "layout": "headed",
+        "guidance": "This is a CV (résumé). Write in the first person without pronouns. Profile: two or three sentences on who the person is and what they offer. Experience: each role with employer, dates from the brief and what was achieved. Skills: listed plainly. Education: degrees and institutions. Nothing about the person beyond the brief. The title is the person's name."
+      },
+      "out": "/template",
+      "next": "gather"
+    },
+    {
       "id": "gather",
       "kind": "tool.call",
       "description": "Optional retrieval from the user's Knowledge index; a no-op unless use_sources is set and an index is open.",
@@ -148,12 +173,17 @@
       "instructions": "Draft the document from the brief alone. Use exactly the section headings given, in that order, with one or two paragraphs in each (under 110 words per paragraph). Write plainly for the reader the brief names. Every figure, date, name and commitment must come from the brief; where the brief has nothing for a section or a detail, write [needs input] instead of inventing it. For a letter, Opening says why you are writing, Body carries the substance and Closing states the next step; do not write the salutation or the sign-off, Harbor adds them. The title is a short name for the document; use the title given, if any.",
       "context": [
         {
-          "label": "Kind of document",
+          "label": "Document type",
           "from": "/input/kind"
         },
         {
           "label": "Section headings, in order (use exactly these)",
           "from": "/template/headings"
+        },
+        {
+          "label": "How to write this kind of document",
+          "from": "/template/guidance",
+          "optional": true
         },
         {
           "label": "Title to use",

@@ -9,9 +9,11 @@ import 'package:path_provider/path_provider.dart';
 import '../build_info.dart';
 import '../l10n/app_localizations.dart';
 import '../main.dart';
+import '../services/auth_service.dart';
 import '../services/harbor_service.dart';
 import '../shell/keyboard.dart';
 import '../widgets/trust.dart';
+import 'privacy_policy_page.dart';
 
 /// Settings (UX-032/037/038): appearance, language, workspace privacy,
 /// identity, keyboard shortcuts (desktop) and about — grouped in cards.
@@ -197,6 +199,8 @@ class SettingsSurface extends StatelessWidget {
                   ),
                 ),
               ),
+            if (AuthScope.maybeOf(context) case final auth?)
+              section(l10n.settingsAccount, AccountCard(auth: auth)),
             section(
               l10n.settingsAbout,
               HarborCard(
@@ -226,6 +230,19 @@ class SettingsSurface extends StatelessWidget {
                             ? ExecutionSemantic.danger
                             : ExecutionSemantic.local,
                         label: sp.failed ? 'OFFLINE' : 'LOCAL',
+                      ),
+                    ),
+                    const SizedBox(height: HarborSpace.s2),
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: TextButton.icon(
+                        key: const ValueKey('settings-privacy-policy'),
+                        icon: const Icon(Icons.privacy_tip_outlined, size: 18),
+                        label: Text(l10n.settingsPrivacyPolicy),
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                              builder: (_) => const PrivacyPolicyPage()),
+                        ),
                       ),
                     ),
                   ],
@@ -581,6 +598,85 @@ class _DiagnosticsCardState extends State<DiagnosticsCard> {
                 title: l10n.settingsDiagnosticsExportFailed,
                 body: _error),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Settings → Account: who is signed in, sign out, and in-app account
+/// deletion (Apple 5.1.1(v)). Deleting the account never touches the
+/// on-device workspace.
+class AccountCard extends StatefulWidget {
+  const AccountCard({super.key, required this.auth});
+  final HarborAuth auth;
+
+  @override
+  State<AccountCard> createState() => _AccountCardState();
+}
+
+class _AccountCardState extends State<AccountCard> {
+  bool _busy = false;
+
+  Future<void> _delete() async {
+    final l10n = AppLocalizations.of(context)!;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.accountDeleteTitle),
+        content: Text(l10n.accountDeleteBody),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(l10n.cancelAction)),
+          FilledButton(
+              key: const ValueKey('account-delete-confirm'),
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(l10n.accountDelete)),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    setState(() => _busy = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await widget.auth.deleteAccount();
+      messenger.showSnackBar(SnackBar(content: Text(l10n.accountDeleted)));
+    } on SignInCancelled {
+      // Re-authentication was dismissed: nothing was deleted.
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.accountDeleteFailed)));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final account = widget.auth.account;
+    return HarborCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (account != null)
+            HarborKeyValue(
+              label: account.provider == 'apple.com' ? 'Apple' : 'Google',
+              value: account.email ?? account.displayName ?? account.uid,
+            ),
+          const SizedBox(height: HarborSpace.s2),
+          Wrap(spacing: HarborSpace.s2, children: [
+            OutlinedButton(
+              key: const ValueKey('account-sign-out'),
+              onPressed: _busy ? null : widget.auth.signOut,
+              child: Text(l10n.accountSignOut),
+            ),
+            TextButton(
+              key: const ValueKey('account-delete'),
+              onPressed: _busy ? null : _delete,
+              child: Text(l10n.accountDelete),
+            ),
+          ]),
         ],
       ),
     );

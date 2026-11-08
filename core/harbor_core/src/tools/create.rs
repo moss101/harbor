@@ -936,6 +936,47 @@ pub fn normalize_table_spec(v: &Value) -> (Value, Vec<String>) {
             ));
         }
     }
+    // (c2) a totals row the model typed itself ("Total", 1850): Harbor adds
+    // the totals row as SUM formulas, so a typed one is a second, static
+    // copy — and its sums are figures the description never states, which
+    // the grounding check rightly refuses. Its numeric columns become
+    // totalled columns instead.
+    let is_total_label = |t: &str| {
+        matches!(
+            lower(t).trim_end_matches(':'),
+            "total" | "totals" | "sum" | "grand total" | "overall total"
+        )
+    };
+    let mut typed_totals: Vec<String> = Vec::new();
+    if let Some(rows) = out.get_mut("rows").and_then(Value::as_array_mut) {
+        let last_is_total = rows
+            .last()
+            .and_then(Value::as_array)
+            .and_then(|cells| cells.iter().find_map(Value::as_str))
+            .is_some_and(is_total_label);
+        if last_is_total && rows.len() > 1 {
+            if let Some(cells) = rows.pop().and_then(|r| r.as_array().cloned()) {
+                for (c, h) in cells.iter().zip(&headers) {
+                    if c.is_number() && numeric.contains(&lower(h)) {
+                        typed_totals.push(h.clone());
+                    }
+                }
+            }
+            notes.push("the typed totals row was removed; Harbor adds the totals as formulas".into());
+        }
+    }
+    if !typed_totals.is_empty() {
+        let totals = out
+            .as_object_mut()
+            .map(|o| o.entry("total_columns").or_insert_with(|| json!([])));
+        if let Some(Value::Array(t)) = totals {
+            for h in typed_totals {
+                if !t.iter().any(|x| x.as_str().map(lower) == Some(lower(&h))) {
+                    t.push(json!(h));
+                }
+            }
+        }
+    }
     // (d) computed columns over operands that are not numeric columns.
     let mut dropped_computed = BTreeSet::new();
     if let Some(computed) = out.get_mut("computed").and_then(Value::as_array_mut) {
@@ -3137,6 +3178,25 @@ mod tests {
         assert!(notes.contains("repeated the column headers"), "{notes}");
         assert!(notes.contains("2 example row(s)"), "{notes}");
         assert!(notes.contains("\"Total\" was dropped"), "{notes}");
+    }
+
+    /// LFM3-Omni-2B's household budget: it typed its own "Total" row with
+    /// a sum (1850) the description never states, so the grounding check
+    /// stopped the run twice. The typed row goes; Harbor's SUM row stays.
+    #[test]
+    fn a_typed_totals_row_becomes_a_formula_total() {
+        let spec = WorkbookSpec::from_value(&json!({
+            "title": "Monthly Household Budget", "sheet": "Budget",
+            "columns": [{"header": "Category", "type": "text"}, {"header": "Budget", "type": "number"}],
+            "rows": [["Category", "Budget"], ["Rent", 1200], ["Groceries", 400], ["Total", 1600]],
+            "total_columns": [],
+            "computed": [],
+            "currency_symbol": null
+        }))
+        .unwrap();
+        assert_eq!(spec.rows.len(), 2, "header repeat and typed total removed");
+        assert_eq!(spec.totals, vec![1], "Budget is totalled by formula");
+        assert!(spec.notes.join(" | ").contains("typed totals row was removed"));
     }
 
     #[test]

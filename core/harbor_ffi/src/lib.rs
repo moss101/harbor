@@ -13,6 +13,7 @@
 //! The workspace event log and egress broker are shared across threads
 //! (`Arc`), so activity logged by a background op is durable and audited.
 
+pub mod calc;
 pub mod doc_scope;
 #[cfg(feature = "gguf")]
 pub mod knowledge;
@@ -2499,13 +2500,41 @@ fn dispatch(
                 .collect();
             let out = harbor_render::write_text_pdf(title, &blocks);
             // Page objects: two per page in the object table.
-            let pages = out.windows(11).filter(|w| w == b"/Type /Page").count();
+            let pages = out.windows(12).filter(|w| w == b"/Type /Page ").count();
             Ok(serde_json::json!({
                 "data_b64": base64::engine::general_purpose::STANDARD.encode(&out),
                 "pages": pages,
                 "blocks": blocks.len(),
                 "bytes": out.len(),
                 "extraction_level": "text-only (no layout, tables or images)",
+            }))
+        }
+        // An answer's text (light Markdown) → a one-column text PDF, e.g. a
+        // CV drafted in chat. Characters the base-14 fonts cannot show
+        // (Arabic, emoji) are reported so the host can warn before saving.
+        "convert.text_to_pdf" => {
+            let text = args
+                .get("text")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| HarborError::Other("missing text".into()))?;
+            let blocks = harbor_render::markdown_blocks(text);
+            if blocks.is_empty() {
+                return Err(HarborError::Other("nothing to write".into()));
+            }
+            let title = args
+                .get("title")
+                .and_then(|v| v.as_str())
+                .map(str::to_string)
+                .unwrap_or_else(|| blocks[0].text.lines().next().unwrap_or("").to_string());
+            let out = harbor_render::write_text_pdf(&title, &blocks);
+            let pages = out.windows(12).filter(|w| w == b"/Type /Page ").count();
+            use base64::Engine as _;
+            Ok(serde_json::json!({
+                "data_b64": base64::engine::general_purpose::STANDARD.encode(&out),
+                "title": title,
+                "pages": pages,
+                "bytes": out.len(),
+                "unsupported_chars": harbor_render::unsupported_chars(text),
             }))
         }
         // XLSX → PDF at TEXT-EXTRACTION level: the focused sheet's grid
@@ -2571,7 +2600,7 @@ fn dispatch(
                 });
             }
             let out = harbor_render::write_text_pdf(title, &blocks);
-            let pages = out.windows(11).filter(|w| w == b"/Type /Page").count();
+            let pages = out.windows(12).filter(|w| w == b"/Type /Page ").count();
             Ok(serde_json::json!({
                 "data_b64": base64::engine::general_purpose::STANDARD.encode(&out),
                 "pages": pages,
@@ -4366,27 +4395,22 @@ fn dispatch(
             let mut staged = installer
                 .begin(package_id)
                 .map_err(|e| HarborError::Other(format!("staging: {e}")))?;
-            // One file in memory at a time (a projector is hundreds of MB).
+            // Streamed copy + hash (1 MiB chunks): a 1-5 GB GGUF is never
+            // loaded into memory (upgrade plan C14).
             let mut files = Vec::new();
             let mut total_bytes = 0usize;
             for (p, r) in &to_install {
-                let bytes =
-                    std::fs::read(p).map_err(|e| HarborError::Other(format!("read {p}: {e}")))?;
                 let file_name = std::path::Path::new(p)
                     .file_name()
                     .and_then(|n| n.to_str())
                     .ok_or_else(|| HarborError::Other("bad file name".into()))?
                     .to_string();
-                let file = harbor_modelhub::install::PackageFile {
-                    role: r.clone(),
-                    path: file_name,
-                    sha256: harbor_canonical::sha256_hex(&bytes),
-                    size_bytes: bytes.len() as u64,
-                };
-                installer
-                    .ingest_file(&mut staged, &file, &bytes)
+                let mut reader = std::fs::File::open(p)
+                    .map_err(|e| HarborError::Other(format!("read {p}: {e}")))?;
+                let file = installer
+                    .ingest_reader(&mut staged, r, &file_name, &mut reader)
                     .map_err(|e| HarborError::Other(format!("ingest: {e}")))?;
-                total_bytes += bytes.len();
+                total_bytes += file.size_bytes as usize;
                 files.push(file);
             }
             let manifest = harbor_modelhub::install::PackageManifest {
@@ -5238,8 +5262,7 @@ fn dispatch(
                             true,
                         );
                     }
-                    // 3. Generate on-device (cooperatively cancellable).
-                    let never = AtomicBool::new(false);
+                    // 3. Generate on-device; `op.cancel` stops it between tokens.
                     // Only an unscoped question may answer without evidence;
                     // a file or collection scope abstains instead.
                     let grounding = if document.is_none() && collection.is_none() {
@@ -5254,7 +5277,7 @@ fn dispatch(
                         &history,
                         grounding,
                         max_tokens,
-                        &never,
+                        &progress.cancel,
                         Some(&progress),
                     );
                     match result {
@@ -5301,8 +5324,12 @@ fn dispatch(
                                     false,
                                 );
                             }
+                            // Generation stopped at the token limit, not at
+                            // the model's own end: the answer is cut off.
+                            let truncated = answer.completion_tokens >= u64::from(max_tokens);
                             let mut out = serde_json::json!({
                                 "answer": answer.answer,
+                                "truncated": truncated,
                                 "used_citations": answer.used_citations,
                                 "executed_on": answer.executed_on,
                                 "execution": "ON_DEVICE",
@@ -5367,9 +5394,8 @@ fn dispatch(
                 let progress = entry.progress.clone();
                 let entry_clone = entry.clone();
                 spawn_op(entry.clone(), ws.diagnostics.clone(), move || {
-                    let never = AtomicBool::new(false);
                     let result = knowledge
-                        .ingest_with_progress(&sources, &never, Some(&progress))
+                        .ingest_with_progress(&sources, &progress.cancel, Some(&progress))
                         .map_err(|e| e.to_string());
                     let cancelled = matches!(&result, Err(e) if e.contains("cancelled"));
                     complete_op(&entry_clone, result, cancelled);

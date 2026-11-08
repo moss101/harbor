@@ -70,7 +70,7 @@ either way. So the simulator's GPU kernels compute the wrong thing for
 q4_K, and are slower than the CPU they lose to.
 
     SIMCTL_CHILD_HARBOR_GGUF_CPU_ONLY=1 xcrun simctl launch \
-      --stderr=<path> <device> dev.harbor.harborApp
+      --stderr=<path> <device> com.cogniwiss.harborlm
 
 `--stderr` also gets llama.cpp's own logs out of the simulator, which
 nothing else does.

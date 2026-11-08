@@ -347,7 +347,10 @@ void main() {
         await tester.pump(const Duration(milliseconds: 50));
       }
       expect(s.calls, contains('suggestSkills'));
-      expect(find.byKey(const ValueKey('route-panel')), findsOneWidget);
+      // No index and no skill named by the request: the chat model takes
+      // it (it asks for the document) instead of a list of unrelated
+      // skills. Either way it is acted on, never just recorded.
+      expect(s.calls, contains('generateAnswer'));
       expect(find.text('Request recorded as a durable run'), findsNothing);
     });
   });

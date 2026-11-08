@@ -285,6 +285,31 @@ class AppLocalizationsEn extends AppLocalizations {
       'The model reports the evidence is insufficient — this answer is not grounded in your sources.';
 
   @override
+  String get askTruncatedNote =>
+      'This answer reached the length limit and was cut off. Ask \"continue\" for the rest.';
+
+  @override
+  String get answerSavePdf => 'Save as PDF';
+
+  @override
+  String answerPdfSaved(String where) {
+    return 'Saved $where';
+  }
+
+  @override
+  String answerPdfSavedPartial(String where, int count) {
+    return 'Saved $where. $count characters (such as Arabic or emoji) can\'t be shown in this PDF and appear as ?.';
+  }
+
+  @override
+  String answerPdfInFiles(String name) {
+    return 'to Files › Harbor LM › $name';
+  }
+
+  @override
+  String get answerPdfFailed => 'Couldn\'t save the PDF';
+
+  @override
   String get askNoChatModel =>
       'No chat model installed. Answers need a chat model (Models → Recommended); with the Library open, retrieval-only citations still work.';
 
@@ -366,6 +391,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get modelInstallCancelled => 'Install cancelled';
 
   @override
+  String get modelsHfNoGguf =>
+      'This repository has no GGUF files, so Harbor can\'t run it. Look for a version of the model whose name ends in -GGUF.';
+
+  @override
+  String get modelsHfPickTitle => 'Choose a version';
+
+  @override
+  String get modelsHfPickBody =>
+      'Smaller versions download faster and use less memory; larger ones are a little more accurate.';
+
+  @override
+  String get modelsHfPickRecommended => 'Recommended';
+
+  @override
   String get modelsHfSearchFailed =>
       'Search failed — the network refused the query. Try again shortly.';
 
@@ -419,7 +458,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get coreStartFailed =>
-      'The native core could not be loaded. Harbor runs degraded without it.';
+      'The native core could not be loaded. Harbor LM runs degraded without it.';
 
   @override
   String get knowledgeIngestFailed => 'Indexing failed';
@@ -1004,6 +1043,100 @@ class AppLocalizationsEn extends AppLocalizations {
       'Local Only is the default and the only policy in this release.';
 
   @override
+  String get signInTitle => 'Sign in to Harbor LM';
+
+  @override
+  String get signInBody =>
+      'Harbor LM needs an account. Your conversations, files and recordings stay on this device; the account holds only your sign-in ID, email address and name.';
+
+  @override
+  String get signInWithApple => 'Sign in with Apple';
+
+  @override
+  String get signInWithGoogle => 'Sign in with Google';
+
+  @override
+  String get signInNeedsNetwork =>
+      'Signing in needs an internet connection. After that, Harbor LM works offline.';
+
+  @override
+  String get signInFailed =>
+      'Sign-in did not complete. Check your connection and try again.';
+
+  @override
+  String get settingsAccount => 'Account';
+
+  @override
+  String get accountSignOut => 'Sign out';
+
+  @override
+  String get accountDelete => 'Delete account';
+
+  @override
+  String get accountDeleteTitle => 'Delete your account?';
+
+  @override
+  String get accountDeleteBody =>
+      'This permanently deletes your Harbor LM account. You will be asked to sign in once more to confirm. Conversations, files and models on this device are not touched; uninstall the app to remove them.';
+
+  @override
+  String get accountDeleted => 'Your account was deleted.';
+
+  @override
+  String get accountDeleteFailed =>
+      'The account was not deleted. Check your connection and try again.';
+
+  @override
+  String get reportAction => 'Report this answer';
+
+  @override
+  String get reportTitle => 'Report this answer';
+
+  @override
+  String get reportExplainer =>
+      'Tell Cogniwiss Labs about a harmful or offensive answer. Sending shares the answer, the reason and your comment with Cogniwiss Labs, linked to your account. Reports are kept for 180 days.';
+
+  @override
+  String get reportReasonOffensive => 'Offensive';
+
+  @override
+  String get reportReasonHarmful => 'Harmful or dangerous';
+
+  @override
+  String get reportReasonSexual => 'Sexual content';
+
+  @override
+  String get reportReasonHateful => 'Hateful';
+
+  @override
+  String get reportReasonIllegal => 'Illegal';
+
+  @override
+  String get reportReasonMisinformation => 'False or misleading';
+
+  @override
+  String get reportReasonOther => 'Other';
+
+  @override
+  String get reportComment => 'Comment (optional)';
+
+  @override
+  String get reportIncludeQuestion => 'Include my question';
+
+  @override
+  String get reportSend => 'Send report';
+
+  @override
+  String get reportSent => 'Thanks. Your report was sent.';
+
+  @override
+  String get reportFailed =>
+      'The report was not sent. Check your connection and try again.';
+
+  @override
+  String get settingsPrivacyPolicy => 'Privacy Policy';
+
+  @override
   String get settingsAbout => 'About';
 
   @override
@@ -1207,7 +1340,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String skillsOverwriteConfirmBody(String name) {
-    return 'Harbor will replace $name in place. This only happens if the file still matches the approved base; otherwise nothing is written and the run stops with the reason.';
+    return 'Harbor LM will replace $name in place. This only happens if the file still matches the approved base; otherwise nothing is written and the run stops with the reason.';
   }
 
   @override
@@ -1232,7 +1365,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsDiagnosticsBody =>
-      'Harbor keeps an encrypted crash and error log on this device and never uploads it. Export it to share with support by hand.';
+      'Harbor LM keeps an encrypted crash and error log on this device and never uploads it. Export it to share with support by hand.';
 
   @override
   String get settingsDiagnosticsContains =>
@@ -1275,7 +1408,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeFirstRunBody =>
-      'Harbor runs entirely on this device — nothing you open leaves it. Every answer, skill and index needs a local model, so the first step is choosing one that fits your device.';
+      'Harbor LM runs entirely on this device — nothing you open leaves it. Every answer, skill and index needs a local model, so the first step is choosing one that fits your device.';
 
   @override
   String get homeFirstRunAction => 'Choose a model';
@@ -1285,7 +1418,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get modelsFirstRunBody =>
-      'These packages come from Harbor\'s signed catalog. Check size & fit reads the file list from Hugging Face through the broker; Install downloads once and verifies the pinned hash. Nothing else leaves the device.';
+      'These packages come from Harbor LM\'s signed catalog. Check size & fit reads the file list from Hugging Face through the broker; Install downloads once and verifies the pinned hash. Nothing else leaves the device.';
 
   @override
   String modelsCatalogHeading(int count) {
@@ -1350,7 +1483,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get skillsCopied => 'Copied to the clipboard';
 
   @override
-  String get storeTagline => 'Products included with Harbor';
+  String get storeTagline => 'Products included with Harbor LM';
 
   @override
   String get storeOfficeTitle => 'Harbor Office Suite';
@@ -1500,7 +1633,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalsBannerBody =>
-      'A goal is a fixed request on a schedule you set. Harbor proposes nothing on its own: a goal runs only while Harbor is open, when you tap Run now, and each scheduled slot runs at most once — a restart never doubles it. Goals are encrypted at rest like everything else in the workspace.';
+      'A goal is a fixed request on a schedule you set. Harbor LM proposes nothing on its own: a goal runs only while Harbor LM is open, when you tap Run now, and each scheduled slot runs at most once — a restart never doubles it. Goals are encrypted at rest like everything else in the workspace.';
 
   @override
   String get goalsSectionTitle => 'Your goals';
@@ -1646,7 +1779,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get skillsSuggestHint =>
-      'Describe what you want to do and Harbor suggests a skill';
+      'Describe what you want to do and Harbor LM suggests a skill';
 
   @override
   String get skillsSuggestAction => 'Suggest a skill';
@@ -1675,7 +1808,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get memoryExplainer =>
-      'Notes Harbor can recall by meaning. Each one shows who wrote it, you can delete any of them, and memory is never used as a document source.';
+      'Notes Harbor LM can recall by meaning. Each one shows who wrote it, you can delete any of them, and memory is never used as a document source.';
 
   @override
   String get memoryAddHint =>
@@ -1712,7 +1845,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get skillsSuggestUncalibrated =>
-      'Your embedding model has not been benchmarked for suggestions, so Harbor shows the closest skills without recommending one.';
+      'Your embedding model has not been benchmarked for suggestions, so Harbor LM shows the closest skills without recommending one.';
 
   @override
   String get skillsSuggestLlmChose =>
@@ -1762,7 +1895,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsGpuBody =>
-      'Models run on this device\'s GPU only after it has worked with them. If the GPU crashes or gives wrong results with a model, Harbor keeps that model on the CPU until you re-test it or the system or Harbor updates.';
+      'Models run on this device\'s GPU only after it has worked with them. If the GPU crashes or gives wrong results with a model, Harbor LM keeps that model on the CPU until you re-test it or the system or Harbor LM updates.';
 
   @override
   String get settingsGpuNone =>
@@ -1891,7 +2024,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get intentRememberFact => 'Remember something';
 
   @override
-  String get intentRecallMemory => 'Recall what you told Harbor';
+  String get intentRecallMemory => 'Recall what you told Harbor LM';
 
   @override
   String get intentScheduleGoal => 'Do this on a schedule';
@@ -1965,7 +2098,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get composerModeAutoTooltip =>
-      'Harbor picks Ask or Change from your words. Tap one to choose yourself.';
+      'Harbor LM picks Ask or Change from your words. Tap one to choose yourself.';
 
   @override
   String get workCommandHintAuto => 'Ask about this file, or describe a change';
@@ -2000,7 +2133,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get workNoReadableText =>
-      'This file has no text Harbor can read to answer from.';
+      'This file has no text Harbor LM can read to answer from.';
 
   @override
   String workReloadedResult(String name) {
@@ -2021,7 +2154,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get routeNoIndex =>
-      'Skills are ranked by the Library\'s embedding model, which is not open. Choose a skill yourself:';
+      'Harbor needs an embedding model to pick a skill, and none is ready. Install one from Models (for example bge-small) for automatic suggestions, or choose a skill yourself:';
 
   @override
   String get routeNoMatch => 'No skill clearly fits this request.';

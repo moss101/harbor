@@ -79,18 +79,26 @@ pub trait Transport: Send + Sync {
         timeout: Duration,
     ) -> std::io::Result<TransportResponse>;
 
-    /// Streaming variant for large bodies: each chunk is handed to `sink`
-    /// as it arrives. Default delegates to the buffered [`Self::execute`];
-    /// real transports override this so multi-GB models never need to fit
-    /// in memory.
+    /// Streaming variant for large bodies: each chunk of a 2xx body is
+    /// handed to `sink` as it arrives; a non-2xx body (redirect, error
+    /// document) is returned in the response instead, never sunk.
+    ///
+    /// `idle_timeout` is an IDLE timeout (longest wait for the next bytes),
+    /// not an overall deadline: a multi-GB download may take as long as it
+    /// needs while it keeps making progress (upgrade plan C6).
+    ///
+    /// Default delegates to the buffered [`Self::execute`]; real transports
+    /// override this so multi-GB models never need to fit in memory.
     fn execute_streaming(
         &self,
         req: &TransportRequest,
-        timeout: Duration,
+        idle_timeout: Duration,
         sink: &mut dyn FnMut(&[u8]) -> std::io::Result<()>,
     ) -> std::io::Result<TransportResponse> {
-        let response = self.execute(req, timeout)?;
-        sink(&response.body)?;
+        let response = self.execute(req, idle_timeout)?;
+        if (200..300).contains(&response.status) {
+            sink(&response.body)?;
+        }
         Ok(response)
     }
 }
@@ -113,8 +121,16 @@ pub enum DispatchOutcome {
 pub struct EgressBroker {
     sink: Box<dyn AuditSink>,
     sessions: Mutex<HashMap<String, EgressSession>>,
+    /// Overall deadline for buffered (metadata) requests.
     default_timeout: Duration,
+    /// Idle timeout for streaming transfers; no overall deadline applies.
+    stream_idle_timeout: Duration,
 }
+
+/// Default overall deadline for buffered metadata requests.
+pub const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+/// Default idle timeout for streaming downloads.
+pub const DEFAULT_STREAM_IDLE_TIMEOUT: Duration = Duration::from_secs(60);
 
 /// Header names treated as credentials for cross-origin stripping.
 const CREDENTIAL_HEADERS: &[&str] = &[
@@ -129,8 +145,17 @@ impl EgressBroker {
         EgressBroker {
             sink,
             sessions: Mutex::new(HashMap::new()),
-            default_timeout: Duration::from_secs(30),
+            default_timeout: DEFAULT_REQUEST_TIMEOUT,
+            stream_idle_timeout: DEFAULT_STREAM_IDLE_TIMEOUT,
         }
+    }
+
+    /// Override the timeouts: `request` is the overall deadline for
+    /// buffered calls, `stream_idle` the idle timeout for streaming ones.
+    pub fn with_timeouts(mut self, request: Duration, stream_idle: Duration) -> Self {
+        self.default_timeout = request;
+        self.stream_idle_timeout = stream_idle;
+        self
     }
 
     /// Open an explicit egress session (user-visible action). Sessions are
@@ -390,7 +415,7 @@ impl EgressBroker {
                 format!("stream hop {hops}"),
             );
             let response = transport
-                .execute_streaming(&current, self.default_timeout, sink)
+                .execute_streaming(&current, self.stream_idle_timeout, sink)
                 .map_err(|e| {
                     self.log(
                         NetworkEventKind::Completed,
@@ -463,9 +488,8 @@ impl EgressBroker {
                 run_id,
                 "stream completed".into(),
             );
-            // Non-2xx after streaming: the error document may already be
-            // streamed to the caller's discard/hash sink; the caller must
-            // treat non-2xx as failure and discard state.
+            // Non-2xx: transports never stream a non-2xx body into the
+            // sink, but the caller must still treat it as failure.
             if !(200..300).contains(&response.status) {
                 return Err(BrokerError::Http(response.status));
             }

@@ -705,9 +705,12 @@ class HarborService extends ChangeNotifier implements DeckDesignerApi {
   /// With [threadId] the core supplies the thread's earlier turns to the
   /// model as conversation memory and records this turn in the thread once
   /// it completes (a cancelled or failed turn is never recorded).
+  ///
+  /// [maxTokens] bounds the answer: 256 cut stories, plans and code off
+  /// mid-sentence; a result with `truncated: true` still hit the bound.
   Future<Map<String, dynamic>> generateAnswer(String question,
       {required String chatPackage,
-      int maxTokens = 256,
+      int maxTokens = 1024,
       String? runId,
       String? collection,
       String? threadId,
@@ -843,6 +846,16 @@ class HarborService extends ChangeNotifier implements DeckDesignerApi {
       return false;
     }
   }
+
+  /// An answer's text (light Markdown) as a one-column text PDF:
+  /// `data_b64`, `title` (the first heading), `pages` and
+  /// `unsupported_chars` (Arabic, emoji… written as `?`). Throws
+  /// [ffi.HarborCoreException] on an empty text.
+  Future<Map<String, dynamic>> textToPdf(String text, {String? title}) =>
+      _call('convert.text_to_pdf', {
+        'text': text,
+        if (title != null) 'title': title,
+      });
 
   /// Run a graph skill as a cancellable background op (decision 0006).
   /// Artifacts are passed as bytes: this layer holds the user-granted file

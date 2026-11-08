@@ -129,6 +129,31 @@ void main() {
       expect(r.suggestions.map((s) => s.id), ['email-drafting']);
     });
 
+    test('a task no skill names goes to chat, not to unrelated skills',
+        () async {
+      // Spreadsheet Builder's description says "Harbor writes the
+      // formulas": that word alone must not offer it for a CV.
+      final builder = graphSkill('sheet-builder', 'Spreadsheet Builder',
+          inputs: {
+            'request': {'type': 'string'},
+          },
+          description:
+              'Build a new Excel workbook. Harbor writes the formulas.');
+      final s = FakeHarborService(
+          indexOpens: false, skillList: [emailSkill, builder]);
+      final r = await RequestRouter(s).route(
+          'write a cv of system analyst and provide pdf',
+          chatPackage: 'qwen-chat');
+      expect(r, isA<RouteAsk>());
+      expect((r as RouteAsk).general, isTrue);
+      // Without a chat model there is nothing to answer with: the panel
+      // stays, with its way to the Skills library.
+      final none = await RequestRouter(s)
+          .route('write a cv of system analyst and provide pdf');
+      expect(none, isA<RouteNone>());
+      expect((none as RouteNone).reason, RouteNoneReason.noIndex);
+    });
+
     test('openers that usually ask for an action are not questions', () {
       expect(RequestRouter.looksLikeQuestion('Can you shorten the intro'),
           isFalse);

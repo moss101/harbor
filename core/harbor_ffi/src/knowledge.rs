@@ -1354,6 +1354,16 @@ impl ChatHandle {
         cancel: &AtomicBool,
         progress: Option<&harbor_modelhub::progress::AcquireProgress>,
     ) -> Result<RagAnswer, String> {
+        // Pure arithmetic is computed exactly, not guessed by the model.
+        if let Some(answer) = crate::calc::arithmetic_answer(question) {
+            return Ok(RagAnswer {
+                answer,
+                used_citations: false,
+                executed_on: crate::calc::CALCULATOR.to_string(),
+                prompt_tokens: 0,
+                completion_tokens: 0,
+            });
+        }
         let mut keep = history.len();
         loop {
             let window = &history[history.len() - keep..];
@@ -1386,7 +1396,7 @@ impl ChatHandle {
         }
         {
             let mut loaded = self.loaded.lock().unwrap();
-            if loaded.insert(package_id.to_string(), ()).is_none() {
+            if !loaded.contains_key(package_id) {
                 if let Some(p) = progress {
                     p.set_phase("loading");
                     p.set_detail(package_id);
@@ -1396,6 +1406,10 @@ impl ChatHandle {
                         package_id: package_id.into(),
                     })
                     .map_err(|e| e.to_string())?;
+                // Recorded only after a successful load: a failed load
+                // must not leave the id "loaded" (every later generate
+                // would then fail with ModelNotFound).
+                loaded.insert(package_id.to_string(), ());
             }
         }
         // Compose: instructions + cited evidence + question. The
@@ -1545,13 +1559,17 @@ pub fn compose_ask_messages(
         return compose_rag_messages(question, citations, history);
     }
     let mut messages = Vec::with_capacity(history.len() * 2 + 2);
+    // The model has no clock: without the device's date it invents one
+    // ("Today is September 16, 2024").
+    let today = chrono::Local::now().format("%A, %B %-d, %Y");
     messages.push((
         "system".to_string(),
-        "You are Harbor LM, an assistant that runs entirely on this device. \
-         Answer helpfully and concisely. No documents were consulted for \
-         this question: answer from general knowledge and never claim a \
-         source or citation."
-            .to_string(),
+        format!(
+            "You are Harbor LM, an assistant that runs entirely on this device. \
+             Answer helpfully and concisely. No documents were consulted for \
+             this question: answer from general knowledge and never claim a \
+             source or citation. Today's date is {today}."
+        ),
     ));
     for t in bound_history(history) {
         messages.push(("user".to_string(), t.question));

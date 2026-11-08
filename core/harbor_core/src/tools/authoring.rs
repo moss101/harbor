@@ -970,6 +970,204 @@ impl Tool for DeckVerifyOutline {
 }
 
 // ---------------------------------------------------------------------------
+// deck.drop_unsourced
+
+/// The last resort after the model has had its repair round: remove what
+/// it keeps inventing instead of withholding the whole deck. A small model
+/// asked for "a deck about solar energy" fills slides with prices the notes
+/// never gave, twice; the figure check is right to refuse them, but the
+/// answer to that is a deck without them, not no deck. Only ever removes
+/// (bullets, notes and a subtitle with a figure the source lacks, then
+/// slides left empty), and lists every removal in `removed` so the user
+/// sees what was dropped. The outline is checked again afterwards.
+pub struct DeckDropUnsourced {
+    spec: ToolSpec,
+}
+
+impl DeckDropUnsourced {
+    pub fn new() -> Self {
+        DeckDropUnsourced {
+            spec: ToolSpec {
+                id: "deck.drop_unsourced".into(),
+                description: "Remove from a deck outline every bullet, speaker note and subtitle that states a figure the source does not contain, and any slide left without bullets. Only removes; lists each removal.".into(),
+                args_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "outline": {"type": "object"},
+                        "source": {"type": "string", "maxLength": 2000000}
+                    },
+                    "required": ["outline", "source"],
+                    "additionalProperties": false
+                }),
+                risk: RiskClass::Read,
+                requires: vec![],
+                timeout_ms: 5_000,
+                max_output_bytes: MB,
+            },
+        }
+    }
+}
+
+impl Default for DeckDropUnsourced {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// See [`DeckDropUnsourced`]: the outline with ungrounded figures removed,
+/// and one note per removal.
+pub fn drop_unsourced(outline: &Value, source: &str) -> (Value, Vec<String>) {
+    let g = Grounding::of(source);
+    let mut out = outline.clone();
+    let mut removed = Vec::new();
+    let text_of = |b: &Value| {
+        b.as_str()
+            .or_else(|| b.get("text").and_then(Value::as_str))
+            .unwrap_or("")
+            .to_string()
+    };
+    if let Some(sub) = out.get("subtitle").and_then(Value::as_str) {
+        if !g.ungrounded(sub).is_empty() {
+            removed.push(format!("Subtitle {sub:?}"));
+            out["subtitle"] = Value::Null;
+        }
+    }
+    if let Some(slides) = out.get_mut("slides").and_then(Value::as_array_mut) {
+        let mut kept = Vec::with_capacity(slides.len());
+        for (i, mut slide) in std::mem::take(slides).into_iter().enumerate() {
+            let at = i + 1;
+            let title = slide
+                .get("title")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_string();
+            if !g.ungrounded(&title).is_empty() {
+                removed.push(format!(
+                    "Slide {at} {title:?}: its title states a figure the notes do not give"
+                ));
+                continue;
+            }
+            if let Some(bullets) = slide.get_mut("bullets").and_then(Value::as_array_mut) {
+                bullets.retain(|b| {
+                    let t = text_of(b);
+                    let stray = g.ungrounded(&t);
+                    if stray.is_empty() {
+                        return true;
+                    }
+                    removed.push(format!(
+                        "Slide {at}: {t:?} ({} not in the notes)",
+                        stray.join(", ")
+                    ));
+                    false
+                });
+                if bullets.is_empty() {
+                    removed.push(format!(
+                        "Slide {at} {title:?}: nothing left once those bullets were removed"
+                    ));
+                    continue;
+                }
+            }
+            if let Some(notes) = slide.get("notes").and_then(Value::as_str) {
+                if !g.ungrounded(notes).is_empty() {
+                    removed.push(format!(
+                        "Slide {at}: speaker notes with figures the notes do not give"
+                    ));
+                    slide["notes"] = Value::Null;
+                }
+            }
+            kept.push(slide);
+        }
+        *slides = kept;
+    }
+    (out, removed)
+}
+
+impl Tool for DeckDropUnsourced {
+    fn spec(&self) -> &ToolSpec {
+        &self.spec
+    }
+
+    fn call(&self, _ctx: &ToolContext<'_>, args: &Value) -> Result<Value, ToolError> {
+        let (mut outline, removed) = drop_unsourced(&args["outline"], &s(args, "source"));
+        if let Some(o) = outline.as_object_mut() {
+            o.insert("removed".into(), json!(removed));
+        }
+        Ok(outline)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// text.dedupe_sections
+
+/// A small model fills every section to its quota by repeating itself
+/// ("Next week: vendor API keys resolved" twice under Problems and again
+/// under Plans). Keeps the first occurrence of each item across the named
+/// list sections, in order; a section left empty gets `empty_note`. Only
+/// removes repeats, never rewrites.
+pub struct TextDedupeSections {
+    spec: ToolSpec,
+}
+
+impl TextDedupeSections {
+    pub fn new() -> Self {
+        TextDedupeSections {
+            spec: ToolSpec {
+                id: "text.dedupe_sections".into(),
+                description: "Remove repeated items from the list sections of a drafted object (first occurrence wins, across sections); a section left empty gets the given note. Other fields are returned unchanged.".into(),
+                args_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "draft": {"type": "object"},
+                        "sections": {"type": "array", "maxItems": 20, "items": {"type": "string", "minLength": 1, "maxLength": 60}},
+                        "empty_note": {"type": "string", "maxLength": 200}
+                    },
+                    "required": ["draft", "sections"],
+                    "additionalProperties": false
+                }),
+                risk: RiskClass::Read,
+                requires: vec![],
+                timeout_ms: 5_000,
+                max_output_bytes: MB,
+            },
+        }
+    }
+}
+
+impl Default for TextDedupeSections {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Tool for TextDedupeSections {
+    fn spec(&self) -> &ToolSpec {
+        &self.spec
+    }
+
+    fn call(&self, _ctx: &ToolContext<'_>, args: &Value) -> Result<Value, ToolError> {
+        let mut draft = args["draft"].clone();
+        let note = s(args, "empty_note");
+        let fold = |t: &str| {
+            t.split_whitespace()
+                .collect::<Vec<_>>()
+                .join(" ")
+                .trim_end_matches(['.', '!', '?'])
+                .to_lowercase()
+        };
+        let mut seen: BTreeSet<String> = BTreeSet::new();
+        for key in args["sections"].as_array().into_iter().flatten().filter_map(Value::as_str) {
+            if let Some(items) = draft.get_mut(key).and_then(Value::as_array_mut) {
+                items.retain(|v| v.as_str().is_none_or(|t| seen.insert(fold(t))));
+                if items.is_empty() && !note.is_empty() {
+                    items.push(json!(note));
+                }
+            }
+        }
+        Ok(draft)
+    }
+}
+
+// ---------------------------------------------------------------------------
 // document.verify_draft
 
 pub struct DocumentVerifyDraft {
@@ -1042,6 +1240,31 @@ impl Tool for DocumentVerifyDraft {
         match DocumentSpec::from_value(&args["draft"]) {
             Err(p) => problems.extend(p),
             Ok(mut doc) => {
+                // A small model copies a prompt label or the template name
+                // as the title ("Kind of document", "Report"): a title must
+                // name this document.
+                let title = doc.title.trim().trim_end_matches(':').to_lowercase();
+                let generic = [
+                    "kind of document",
+                    "document type",
+                    "template",
+                    "title",
+                    "document",
+                    "proposal",
+                    "report",
+                    "letter",
+                    "cv",
+                    "résumé",
+                    "resume",
+                ];
+                if generic.contains(&title.as_str())
+                    || required.iter().any(|h| h.to_lowercase() == title)
+                {
+                    problems.push(format!(
+                        "The title {:?} is a label, not a name for this document; use the title given, or a short name taken from the brief.",
+                        doc.title
+                    ));
+                }
                 // A letter's salutation and sign-off are written by Harbor
                 // from the inputs; check the body as it will be printed.
                 if letter {
@@ -1344,6 +1567,63 @@ impl Default for EmailVerifyDraft {
     }
 }
 
+/// A name a small model signs with that is nobody's: the app's own name
+/// or a template placeholder. Harbor writes the sender's name itself, so
+/// these are dropped rather than costing the whole draft; any OTHER name
+/// is still the checker's to reject (signing as the customer is wrong).
+fn is_filler_signature(tail: &str, sender: &str, greeted: &[String]) -> bool {
+    let t = tail
+        .trim()
+        .trim_matches(|c: char| !c.is_alphanumeric() && c != ']' && c != '[')
+        .to_lowercase();
+    t.is_empty()
+        || matches!(
+            t.as_str(),
+            "harbor" | "harbor lm" | "harbor team" | "the harbor team" | "[your name]" | "your name" | "[name]"
+        )
+        || (!sender.trim().is_empty() && t == sender.trim().to_lowercase())
+        // Signed with the name of the person it greets: the model swapped
+        // the parties ("Hi Sam, ... Thanks, Sam"); Harbor adds the sender.
+        || greeted.iter().any(|g| g.to_lowercase() == t)
+}
+
+/// "Best regards, Harbor" → "Best regards" (see [`is_filler_signature`]).
+fn closing_phrase_only(sign_off: &str, sender: &str, greeted: &[String]) -> String {
+    let sign_off = sign_off.trim();
+    let Some(at) = sign_off.find([',', '\n']) else {
+        return sign_off.to_string();
+    };
+    let (head, tail) = (sign_off[..at].trim(), &sign_off[at + 1..]);
+    let only_closing = !head.is_empty()
+        && head.split_whitespace().all(|w| {
+            CLOSING_WORDS.contains(&w.trim_matches(|c: char| !c.is_alphanumeric()).to_lowercase().as_str())
+        });
+    if only_closing && is_filler_signature(tail, sender, greeted) {
+        head.to_string()
+    } else {
+        sign_off.to_string()
+    }
+}
+
+/// The body without a trailing closing paragraph that only repeats the
+/// sign-off ("Thanks, Harbor"): Harbor lays out the sign-off and name
+/// after the body. A closing signed with a real name stays, for the
+/// checker to reject.
+fn body_paragraphs(draft: &Value, sender: &str) -> Vec<String> {
+    let greeted = greeting_names(&s(draft, "greeting"));
+    let mut paragraphs = paragraphs_of(draft);
+    while paragraphs.len() > 1
+        && paragraphs.last().is_some_and(|p| {
+            let flat = p.split_whitespace().collect::<Vec<_>>().join(" ");
+            closing_paragraph_re().is_match(&flat)
+                && closing_phrase_only(&flat, sender, &greeted) != flat
+        })
+    {
+        paragraphs.pop();
+    }
+    paragraphs
+}
+
 fn paragraphs_of(draft: &Value) -> Vec<String> {
     draft
         .get("paragraphs")
@@ -1385,12 +1665,20 @@ impl Tool for EmailVerifyDraft {
             .unwrap_or(false);
         let subject = s(draft, "subject").trim().to_string();
         let greeting = s(draft, "greeting").trim().to_string();
-        let paragraphs = paragraphs_of(draft);
+        let paragraphs = body_paragraphs(draft, &s(args, "sender_name"));
         let mut problems = Vec::new();
         if subject.is_empty() {
             problems.push("The subject is empty; write a short subject.".to_string());
         } else if subject.chars().count() > 120 {
             problems.push("The subject is over 120 characters; shorten it.".to_string());
+        } else if ["short subject", "re: in front", "keep the message's subject", "the subject"]
+            .iter()
+            .any(|p| subject.to_lowercase().contains(p))
+        {
+            // LFM3-Omni-2B copied the instruction text as the subject.
+            problems.push(format!(
+                "The subject {subject:?} repeats the instructions; write a short subject about what this email says."
+            ));
         }
         if paragraphs.is_empty() {
             problems.push("The draft has no body.".to_string());
@@ -1419,7 +1707,11 @@ impl Tool for EmailVerifyDraft {
                 ));
             }
         }
-        let sign_off = closing_without_sender(&s(draft, "sign_off"), &sender);
+        let sign_off = closing_phrase_only(
+            &closing_without_sender(&s(draft, "sign_off"), &sender),
+            &sender,
+            &greeting_names(&greeting),
+        );
         let named_in_sign_off = sign_off
             .split(|c: char| !c.is_alphanumeric() && c != '-' && c != '\'')
             .filter(|t| t.chars().next().is_some_and(char::is_uppercase))
@@ -1535,12 +1827,13 @@ impl Tool for EmailRender {
         let draft = &args["draft"];
         let subject = s(draft, "subject").trim().to_string();
         let greeting = s(draft, "greeting").trim().to_string();
-        let mut sign_off = closing_without_sender(
-            &s(draft, "sign_off"),
-            args.get("sender_name")
-                .and_then(Value::as_str)
-                .unwrap_or(""),
-        );
+        let sender = s(args, "sender_name");
+        let mut sign_off =
+            closing_phrase_only(
+                &closing_without_sender(&s(draft, "sign_off"), &sender),
+                &sender,
+                &greeting_names(&greeting),
+            );
         if sign_off.is_empty() {
             sign_off = "Best regards".into();
         }
@@ -1548,10 +1841,37 @@ impl Tool for EmailRender {
             sign_off.push(',');
         }
         let mut parts = Vec::new();
-        if !greeting.is_empty() {
-            parts.push(greeting);
+        let mut body = body_paragraphs(draft, &sender);
+        // A small model often greets twice: greeting "Sam" and a body
+        // opening "Hi Sam, ...". The body's own greeting wins; a greeting
+        // that is a bare name gets a salutation.
+        let opens_with_greeting = body.first().is_some_and(|p| {
+            let first = p.split([',', '\n']).next().unwrap_or("").trim().to_lowercase();
+            first.split_whitespace().count() <= 4
+                && ["hi ", "hello", "dear ", "hey "].iter().any(|g| first.starts_with(g))
+        });
+        if !opens_with_greeting && !greeting.is_empty() {
+            let bare_name = !greeting.contains([',', ' ']) && greeting.chars().next().is_some_and(char::is_uppercase);
+            parts.push(if bare_name {
+                format!("Hi {greeting},")
+            } else if greeting.ends_with([',', '.', '!', ':', '،']) {
+                greeting
+            } else {
+                format!("{greeting},")
+            });
         }
-        parts.extend(paragraphs_of(draft));
+        if opens_with_greeting {
+            if let Some(first) = body.first_mut() {
+                if let Some((hello, rest)) = first.clone().split_once(',') {
+                    let rest = rest.trim_start();
+                    if !rest.is_empty() {
+                        *first = rest.to_string();
+                        parts.push(format!("{},", hello.trim()));
+                    }
+                }
+            }
+        }
+        parts.append(&mut body);
         let mut closing = sign_off;
         if let Some(name) = args
             .get("sender_name")
@@ -1982,6 +2302,61 @@ mod tests {
             json!({"draft": bad, "sources": [message, notes]}),
         );
         assert_eq!(out["problems"].as_array().unwrap().len(), 2);
+    }
+
+    /// What LFM3-Omni-2B wrote on the phone: signed as "Harbor" in the
+    /// sign-off and again at the end of the body. Nobody's name: tidied,
+    /// not refused (it used to stop the run at needs_input).
+    #[test]
+    fn a_filler_signature_is_tidied_not_refused() {
+        let notes = "Tell Sam the Friday demo moves to Monday 10am because the build is not ready; ask him to confirm.";
+        let draft = json!({
+            "subject": "Demo moved to Monday",
+            "greeting": "Hi Sam,",
+            "paragraphs": [
+                "The Friday demo moves to Monday at 10am because the build is not ready. Could you confirm that works?",
+                "Thanks, Harbor"
+            ],
+            "sign_off": "Best regards, Harbor"
+        });
+        let out = call("email.verify_draft", json!({"draft": draft, "sources": [notes]}));
+        assert_eq!(out["ok"], true, "{}", out["problems"]);
+        let text = call("email.render", json!({"draft": draft, "sender_name": "Omar Haddad"}))["text"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        assert!(text.ends_with("Best regards,\nOmar Haddad"), "{text}");
+        assert!(!text.contains("Harbor"), "{text}");
+        // A real name that is not the sender's is still refused.
+        let mut wrong = draft.clone();
+        wrong["sign_off"] = json!("Best regards, Amina");
+        let out = call("email.verify_draft", json!({"draft": wrong, "sources": [notes], "sender_name": "Omar Haddad"}));
+        assert_eq!(out["ok"], false);
+    }
+
+    /// LFM3-Omni-2B on the phone: subject copied from the instructions,
+    /// greeting "Sam" and a body that greets again.
+    #[test]
+    fn a_copied_subject_is_refused_and_a_double_greeting_rendered_once() {
+        let notes = "Tell Sam the Friday demo moves to Monday 10am.";
+        let draft = json!({
+            "subject": "when replying keep the message's subject with Re: in front, otherwise write a short subject",
+            "greeting": "Sam",
+            "paragraphs": ["Hi Sam, the Friday demo has moved to Monday at 10am."],
+            "sign_off": "Best regards"
+        });
+        let out = call("email.verify_draft", json!({"draft": draft, "sources": [notes]}));
+        assert!(out["problems"].to_string().contains("repeats the instructions"), "{out}");
+        let text = call("email.render", json!({"draft": draft, "sender_name": "Omar"}))["body"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        assert!(text.starts_with("Hi Sam,\n\nthe Friday demo"), "{text}");
+        assert_eq!(text.matches("Sam").count(), 1, "{text}");
+        let mut bare = draft.clone();
+        bare["paragraphs"] = json!(["The Friday demo has moved to Monday at 10am."]);
+        let text = call("email.render", json!({"draft": bare}))["body"].as_str().unwrap().to_string();
+        assert!(text.starts_with("Hi Sam,\n\nThe Friday demo"), "{text}");
     }
 
     #[test]

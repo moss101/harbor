@@ -114,7 +114,7 @@ class FakeHarborService extends HarborService {
   @override
   Future<Map<String, dynamic>> generateAnswer(String question,
       {required String chatPackage,
-      int maxTokens = 256,
+      int maxTokens = 1024,
       String? runId,
       String? collection,
       String? threadId,

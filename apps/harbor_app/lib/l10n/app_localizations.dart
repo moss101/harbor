@@ -572,6 +572,42 @@ abstract class AppLocalizations {
   /// **'The model reports the evidence is insufficient — this answer is not grounded in your sources.'**
   String get askInsufficientNote;
 
+  /// No description provided for @askTruncatedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This answer reached the length limit and was cut off. Ask \"continue\" for the rest.'**
+  String get askTruncatedNote;
+
+  /// No description provided for @answerSavePdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as PDF'**
+  String get answerSavePdf;
+
+  /// No description provided for @answerPdfSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved {where}'**
+  String answerPdfSaved(String where);
+
+  /// No description provided for @answerPdfSavedPartial.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved {where}. {count} characters (such as Arabic or emoji) can\'t be shown in this PDF and appear as ?.'**
+  String answerPdfSavedPartial(String where, int count);
+
+  /// No description provided for @answerPdfInFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'to Files › Harbor LM › {name}'**
+  String answerPdfInFiles(String name);
+
+  /// No description provided for @answerPdfFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save the PDF'**
+  String get answerPdfFailed;
+
   /// No description provided for @askNoChatModel.
   ///
   /// In en, this message translates to:
@@ -698,6 +734,30 @@ abstract class AppLocalizations {
   /// **'Install cancelled'**
   String get modelInstallCancelled;
 
+  /// No description provided for @modelsHfNoGguf.
+  ///
+  /// In en, this message translates to:
+  /// **'This repository has no GGUF files, so Harbor can\'t run it. Look for a version of the model whose name ends in -GGUF.'**
+  String get modelsHfNoGguf;
+
+  /// No description provided for @modelsHfPickTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a version'**
+  String get modelsHfPickTitle;
+
+  /// No description provided for @modelsHfPickBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Smaller versions download faster and use less memory; larger ones are a little more accurate.'**
+  String get modelsHfPickBody;
+
+  /// No description provided for @modelsHfPickRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get modelsHfPickRecommended;
+
   /// No description provided for @modelsHfSearchFailed.
   ///
   /// In en, this message translates to:
@@ -791,7 +851,7 @@ abstract class AppLocalizations {
   /// No description provided for @coreStartFailed.
   ///
   /// In en, this message translates to:
-  /// **'The native core could not be loaded. Harbor runs degraded without it.'**
+  /// **'The native core could not be loaded. Harbor LM runs degraded without it.'**
   String get coreStartFailed;
 
   /// No description provided for @knowledgeIngestFailed.
@@ -1700,6 +1760,180 @@ abstract class AppLocalizations {
   /// **'Local Only is the default and the only policy in this release.'**
   String get settingsPrivacyBody;
 
+  /// No description provided for @signInTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to Harbor LM'**
+  String get signInTitle;
+
+  /// No description provided for @signInBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Harbor LM needs an account. Your conversations, files and recordings stay on this device; the account holds only your sign-in ID, email address and name.'**
+  String get signInBody;
+
+  /// No description provided for @signInWithApple.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with Apple'**
+  String get signInWithApple;
+
+  /// No description provided for @signInWithGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with Google'**
+  String get signInWithGoogle;
+
+  /// No description provided for @signInNeedsNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Signing in needs an internet connection. After that, Harbor LM works offline.'**
+  String get signInNeedsNetwork;
+
+  /// No description provided for @signInFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in did not complete. Check your connection and try again.'**
+  String get signInFailed;
+
+  /// No description provided for @settingsAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get settingsAccount;
+
+  /// No description provided for @accountSignOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get accountSignOut;
+
+  /// No description provided for @accountDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get accountDelete;
+
+  /// No description provided for @accountDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete your account?'**
+  String get accountDeleteTitle;
+
+  /// No description provided for @accountDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently deletes your Harbor LM account. You will be asked to sign in once more to confirm. Conversations, files and models on this device are not touched; uninstall the app to remove them.'**
+  String get accountDeleteBody;
+
+  /// No description provided for @accountDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account was deleted.'**
+  String get accountDeleted;
+
+  /// No description provided for @accountDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The account was not deleted. Check your connection and try again.'**
+  String get accountDeleteFailed;
+
+  /// No description provided for @reportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Report this answer'**
+  String get reportAction;
+
+  /// No description provided for @reportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report this answer'**
+  String get reportTitle;
+
+  /// No description provided for @reportExplainer.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell Cogniwiss Labs about a harmful or offensive answer. Sending shares the answer, the reason and your comment with Cogniwiss Labs, linked to your account. Reports are kept for 180 days.'**
+  String get reportExplainer;
+
+  /// No description provided for @reportReasonOffensive.
+  ///
+  /// In en, this message translates to:
+  /// **'Offensive'**
+  String get reportReasonOffensive;
+
+  /// No description provided for @reportReasonHarmful.
+  ///
+  /// In en, this message translates to:
+  /// **'Harmful or dangerous'**
+  String get reportReasonHarmful;
+
+  /// No description provided for @reportReasonSexual.
+  ///
+  /// In en, this message translates to:
+  /// **'Sexual content'**
+  String get reportReasonSexual;
+
+  /// No description provided for @reportReasonHateful.
+  ///
+  /// In en, this message translates to:
+  /// **'Hateful'**
+  String get reportReasonHateful;
+
+  /// No description provided for @reportReasonIllegal.
+  ///
+  /// In en, this message translates to:
+  /// **'Illegal'**
+  String get reportReasonIllegal;
+
+  /// No description provided for @reportReasonMisinformation.
+  ///
+  /// In en, this message translates to:
+  /// **'False or misleading'**
+  String get reportReasonMisinformation;
+
+  /// No description provided for @reportReasonOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get reportReasonOther;
+
+  /// No description provided for @reportComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment (optional)'**
+  String get reportComment;
+
+  /// No description provided for @reportIncludeQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Include my question'**
+  String get reportIncludeQuestion;
+
+  /// No description provided for @reportSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send report'**
+  String get reportSend;
+
+  /// No description provided for @reportSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks. Your report was sent.'**
+  String get reportSent;
+
+  /// No description provided for @reportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The report was not sent. Check your connection and try again.'**
+  String get reportFailed;
+
+  /// No description provided for @settingsPrivacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get settingsPrivacyPolicy;
+
   /// No description provided for @settingsAbout.
   ///
   /// In en, this message translates to:
@@ -2015,7 +2249,7 @@ abstract class AppLocalizations {
   /// No description provided for @skillsOverwriteConfirmBody.
   ///
   /// In en, this message translates to:
-  /// **'Harbor will replace {name} in place. This only happens if the file still matches the approved base; otherwise nothing is written and the run stops with the reason.'**
+  /// **'Harbor LM will replace {name} in place. This only happens if the file still matches the approved base; otherwise nothing is written and the run stops with the reason.'**
   String skillsOverwriteConfirmBody(String name);
 
   /// No description provided for @skillsSavedNewCopy.
@@ -2057,7 +2291,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsDiagnosticsBody.
   ///
   /// In en, this message translates to:
-  /// **'Harbor keeps an encrypted crash and error log on this device and never uploads it. Export it to share with support by hand.'**
+  /// **'Harbor LM keeps an encrypted crash and error log on this device and never uploads it. Export it to share with support by hand.'**
   String get settingsDiagnosticsBody;
 
   /// No description provided for @settingsDiagnosticsContains.
@@ -2105,7 +2339,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeFirstRunBody.
   ///
   /// In en, this message translates to:
-  /// **'Harbor runs entirely on this device — nothing you open leaves it. Every answer, skill and index needs a local model, so the first step is choosing one that fits your device.'**
+  /// **'Harbor LM runs entirely on this device — nothing you open leaves it. Every answer, skill and index needs a local model, so the first step is choosing one that fits your device.'**
   String get homeFirstRunBody;
 
   /// No description provided for @homeFirstRunAction.
@@ -2123,7 +2357,7 @@ abstract class AppLocalizations {
   /// No description provided for @modelsFirstRunBody.
   ///
   /// In en, this message translates to:
-  /// **'These packages come from Harbor\'s signed catalog. Check size & fit reads the file list from Hugging Face through the broker; Install downloads once and verifies the pinned hash. Nothing else leaves the device.'**
+  /// **'These packages come from Harbor LM\'s signed catalog. Check size & fit reads the file list from Hugging Face through the broker; Install downloads once and verifies the pinned hash. Nothing else leaves the device.'**
   String get modelsFirstRunBody;
 
   /// No description provided for @modelsCatalogHeading.
@@ -2213,7 +2447,7 @@ abstract class AppLocalizations {
   /// No description provided for @storeTagline.
   ///
   /// In en, this message translates to:
-  /// **'Products included with Harbor'**
+  /// **'Products included with Harbor LM'**
   String get storeTagline;
 
   /// No description provided for @storeOfficeTitle.
@@ -2465,7 +2699,7 @@ abstract class AppLocalizations {
   /// No description provided for @goalsBannerBody.
   ///
   /// In en, this message translates to:
-  /// **'A goal is a fixed request on a schedule you set. Harbor proposes nothing on its own: a goal runs only while Harbor is open, when you tap Run now, and each scheduled slot runs at most once — a restart never doubles it. Goals are encrypted at rest like everything else in the workspace.'**
+  /// **'A goal is a fixed request on a schedule you set. Harbor LM proposes nothing on its own: a goal runs only while Harbor LM is open, when you tap Run now, and each scheduled slot runs at most once — a restart never doubles it. Goals are encrypted at rest like everything else in the workspace.'**
   String get goalsBannerBody;
 
   /// No description provided for @goalsSectionTitle.
@@ -2717,7 +2951,7 @@ abstract class AppLocalizations {
   /// No description provided for @skillsSuggestHint.
   ///
   /// In en, this message translates to:
-  /// **'Describe what you want to do and Harbor suggests a skill'**
+  /// **'Describe what you want to do and Harbor LM suggests a skill'**
   String get skillsSuggestHint;
 
   /// No description provided for @skillsSuggestAction.
@@ -2765,7 +2999,7 @@ abstract class AppLocalizations {
   /// No description provided for @memoryExplainer.
   ///
   /// In en, this message translates to:
-  /// **'Notes Harbor can recall by meaning. Each one shows who wrote it, you can delete any of them, and memory is never used as a document source.'**
+  /// **'Notes Harbor LM can recall by meaning. Each one shows who wrote it, you can delete any of them, and memory is never used as a document source.'**
   String get memoryExplainer;
 
   /// No description provided for @memoryAddHint.
@@ -2831,7 +3065,7 @@ abstract class AppLocalizations {
   /// No description provided for @skillsSuggestUncalibrated.
   ///
   /// In en, this message translates to:
-  /// **'Your embedding model has not been benchmarked for suggestions, so Harbor shows the closest skills without recommending one.'**
+  /// **'Your embedding model has not been benchmarked for suggestions, so Harbor LM shows the closest skills without recommending one.'**
   String get skillsSuggestUncalibrated;
 
   /// No description provided for @skillsSuggestLlmChose.
@@ -2915,7 +3149,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsGpuBody.
   ///
   /// In en, this message translates to:
-  /// **'Models run on this device\'s GPU only after it has worked with them. If the GPU crashes or gives wrong results with a model, Harbor keeps that model on the CPU until you re-test it or the system or Harbor updates.'**
+  /// **'Models run on this device\'s GPU only after it has worked with them. If the GPU crashes or gives wrong results with a model, Harbor LM keeps that model on the CPU until you re-test it or the system or Harbor LM updates.'**
   String get settingsGpuBody;
 
   /// No description provided for @settingsGpuNone.
@@ -3149,7 +3383,7 @@ abstract class AppLocalizations {
   /// No description provided for @intentRecallMemory.
   ///
   /// In en, this message translates to:
-  /// **'Recall what you told Harbor'**
+  /// **'Recall what you told Harbor LM'**
   String get intentRecallMemory;
 
   /// No description provided for @intentScheduleGoal.
@@ -3275,7 +3509,7 @@ abstract class AppLocalizations {
   /// No description provided for @composerModeAutoTooltip.
   ///
   /// In en, this message translates to:
-  /// **'Harbor picks Ask or Change from your words. Tap one to choose yourself.'**
+  /// **'Harbor LM picks Ask or Change from your words. Tap one to choose yourself.'**
   String get composerModeAutoTooltip;
 
   /// No description provided for @workCommandHintAuto.
@@ -3329,7 +3563,7 @@ abstract class AppLocalizations {
   /// No description provided for @workNoReadableText.
   ///
   /// In en, this message translates to:
-  /// **'This file has no text Harbor can read to answer from.'**
+  /// **'This file has no text Harbor LM can read to answer from.'**
   String get workNoReadableText;
 
   /// No description provided for @workReloadedResult.
@@ -3359,7 +3593,7 @@ abstract class AppLocalizations {
   /// No description provided for @routeNoIndex.
   ///
   /// In en, this message translates to:
-  /// **'Skills are ranked by the Library\'s embedding model, which is not open. Choose a skill yourself:'**
+  /// **'Harbor needs an embedding model to pick a skill, and none is ready. Install one from Models (for example bge-small) for automatic suggestions, or choose a skill yourself:'**
   String get routeNoIndex;
 
   /// No description provided for @routeNoMatch.

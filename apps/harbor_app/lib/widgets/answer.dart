@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
 import '../l10n/app_localizations.dart';
+import '../services/auth_service.dart';
 import '../services/file_passages.dart';
+import 'report_sheet.dart';
+import 'save_pdf.dart';
 
 /// One question and what came back for it: a grounded answer, retrieval-
 /// only evidence, an error or a cancellation. Shared by the Home
@@ -96,6 +99,7 @@ class AnswerTurnView extends StatelessWidget {
           else if (turn.answer != null)
             GroundedAnswerView(
               answer: turn.answer!,
+              question: turn.question,
               onCitationTap: onCitationTap,
               citationLabel: citationLabel,
             )
@@ -175,10 +179,14 @@ class GroundedAnswerView extends StatelessWidget {
   const GroundedAnswerView({
     super.key,
     required this.answer,
+    this.question,
     this.onCitationTap,
     this.citationLabel,
   });
   final Map<String, dynamic> answer;
+
+  /// What was asked; offered (switchable) in the Report sheet.
+  final String? question;
   final ValueChanged<Map>? onCitationTap;
   final CitationLabeler? citationLabel;
 
@@ -226,6 +234,12 @@ class GroundedAnswerView extends StatelessWidget {
               else
                 SelectableText(answerText,
                     style: t.text.bodyOf(t.colors.ink).copyWith(fontSize: 15)),
+              if (answer['truncated'] == true && !insufficient) ...[
+                const SizedBox(height: HarborSpace.s2),
+                Text(l10n.askTruncatedNote,
+                    key: const ValueKey('answer-truncated'),
+                    style: t.text.captionOf(t.colors.inkMuted)),
+              ],
               const SizedBox(height: HarborSpace.s3),
               Wrap(
                 spacing: HarborSpace.s2,
@@ -245,6 +259,24 @@ class GroundedAnswerView extends StatelessWidget {
                     ),
                     style: t.text.captionOf(t.colors.inkMuted),
                   ),
+                  if (answerText.isNotEmpty && !insufficient)
+                    SaveAnswerPdfButton(text: answerText),
+                  if (AuthScope.maybeOf(context) case final auth?
+                      when answerText.isNotEmpty && !insufficient)
+                    IconButton(
+                      key: const ValueKey('answer-report'),
+                      tooltip: l10n.reportAction,
+                      iconSize: 18,
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(Icons.flag_outlined),
+                      onPressed: () => showReportSheet(
+                        context,
+                        auth: auth,
+                        answer: answerText,
+                        question: question,
+                        modelId: answer['executed_on'] as String?,
+                      ),
+                    ),
                 ],
               ),
             ],

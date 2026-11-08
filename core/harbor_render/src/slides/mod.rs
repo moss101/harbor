@@ -27,12 +27,10 @@ use roxmltree::{Document, Node};
 
 use self::color::{color_child, ColorCtx, ColorSpec, Rgba};
 use self::style::{
-    fill_child, parse_effects, parse_line, parse_theme, resolve_fill, resolve_line,
-    resolve_shadow, EffectSpec, FillSpec, LineSpec, Theme,
+    fill_child, parse_effects, parse_line, parse_theme, resolve_fill, resolve_line, resolve_shadow,
+    EffectSpec, FillSpec, LineSpec, Theme,
 };
-use self::text::{
-    build_text_body, parse_body_pr, parse_list_style, BodyPr, LevelStyles, TextCtx,
-};
+use self::text::{build_text_body, parse_body_pr, parse_list_style, BodyPr, LevelStyles, TextCtx};
 use crate::scene::*;
 
 const REL_NS: &str = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
@@ -326,7 +324,9 @@ fn build_slide(
         ..Default::default()
     };
     let Some(slide_xml) = pkg.text(slide_part) else {
-        scene.unsupported.push("slide part could not be read".into());
+        scene
+            .unsupported
+            .push("slide part could not be read".into());
         return scene;
     };
     let Ok(slide_doc) = Document::parse(&slide_xml) else {
@@ -350,9 +350,10 @@ fn build_slide(
         .unwrap_or_default();
     let theme_part = rel_of_type(&master_rels, "theme").map(|r| r.target.clone());
     let theme_xml = theme_part.as_deref().and_then(|p| pkg.text(p));
-    let theme = theme_xml.as_deref().map(parse_theme).unwrap_or_else(|| {
-        parse_theme("")
-    });
+    let theme = theme_xml
+        .as_deref()
+        .map(parse_theme)
+        .unwrap_or_else(|| parse_theme(""));
 
     let slide_root = slide_doc.root_element();
     let master_root = master_doc.as_ref().map(|d| d.root_element());
@@ -465,8 +466,9 @@ fn notes_text(xml: &str) -> Option<String> {
     let body = doc.descendants().find(|n| {
         n.is_element()
             && n.tag_name().name() == "sp"
-            && n.descendants()
-                .any(|p| p.is_element() && p.tag_name().name() == "ph" && p.attribute("type") == Some("body"))
+            && n.descendants().any(|p| {
+                p.is_element() && p.tag_name().name() == "ph" && p.attribute("type") == Some("body")
+            })
     })?;
     let lines: Vec<String> = body
         .descendants()
@@ -778,7 +780,11 @@ impl<'p, 'b, 'd> Builder<'p, 'b, 'd> {
         } else {
             &self.theme.fills
         };
-        let at = if idx >= 1001 { idx - 1001 } else { idx.checked_sub(1)? };
+        let at = if idx >= 1001 {
+            idx - 1001
+        } else {
+            idx.checked_sub(1)?
+        };
         let spec = list.get(at)?;
         Some(resolve_fill(spec, &ctx, ph.as_ref()))
     }
@@ -806,16 +812,26 @@ impl<'p, 'b, 'd> Builder<'p, 'b, 'd> {
                 "pic" => self.picture(n, layer, groups, out),
                 "graphicFrame" => self.graphic_frame(n, layer, groups, out),
                 "grpSp" => {
-                    let Some(pr) = child(n, "grpSpPr") else { continue };
-                    let Some(xf) = child(pr, "xfrm") else { continue };
+                    let Some(pr) = child(n, "grpSpPr") else {
+                        continue;
+                    };
+                    let Some(xf) = child(pr, "xfrm") else {
+                        continue;
+                    };
                     let (Some(off), Some(ext)) = (child(xf, "off"), child(xf, "ext")) else {
                         continue;
                     };
                     let ch_off = child(xf, "chOff");
                     let ch_ext = child(xf, "chExt");
                     let g = GroupXf {
-                        off: (attr_f(off, "x").unwrap_or(0.0), attr_f(off, "y").unwrap_or(0.0)),
-                        ext: (attr_f(ext, "cx").unwrap_or(0.0), attr_f(ext, "cy").unwrap_or(0.0)),
+                        off: (
+                            attr_f(off, "x").unwrap_or(0.0),
+                            attr_f(off, "y").unwrap_or(0.0),
+                        ),
+                        ext: (
+                            attr_f(ext, "cx").unwrap_or(0.0),
+                            attr_f(ext, "cy").unwrap_or(0.0),
+                        ),
                         ch_off: ch_off
                             .map(|c| (attr_f(c, "x").unwrap_or(0.0), attr_f(c, "y").unwrap_or(0.0)))
                             .unwrap_or((
@@ -823,7 +839,12 @@ impl<'p, 'b, 'd> Builder<'p, 'b, 'd> {
                                 attr_f(off, "y").unwrap_or(0.0),
                             )),
                         ch_ext: ch_ext
-                            .map(|c| (attr_f(c, "cx").unwrap_or(0.0), attr_f(c, "cy").unwrap_or(0.0)))
+                            .map(|c| {
+                                (
+                                    attr_f(c, "cx").unwrap_or(0.0),
+                                    attr_f(c, "cy").unwrap_or(0.0),
+                                )
+                            })
                             .unwrap_or((
                                 attr_f(ext, "cx").unwrap_or(0.0),
                                 attr_f(ext, "cy").unwrap_or(0.0),
@@ -919,10 +940,11 @@ impl<'p, 'b, 'd> Builder<'p, 'b, 'd> {
         // Geometry.
         let own_xfrm = sp_pr.and_then(|p| child(p, "xfrm")).and_then(parse_xfrm);
         let xfrm = own_xfrm.or_else(|| {
-            ph_chain
-                .iter()
-                .rev()
-                .find_map(|n| child(*n, "spPr").and_then(|p| child(p, "xfrm")).and_then(parse_xfrm))
+            ph_chain.iter().rev().find_map(|n| {
+                child(*n, "spPr")
+                    .and_then(|p| child(p, "xfrm"))
+                    .and_then(parse_xfrm)
+            })
         });
         let Some(xfrm) = xfrm else { return };
         let geom = sp_pr
@@ -953,14 +975,12 @@ impl<'p, 'b, 'd> Builder<'p, 'b, 'd> {
         let (_, font_clr) = style_ref("fontRef");
 
         // Fill: own, then the placeholder chain, then the style.
-        let spec_fill = sp_pr
-            .and_then(fill_child)
-            .or_else(|| {
-                ph_chain
-                    .iter()
-                    .rev()
-                    .find_map(|n| child(*n, "spPr").and_then(fill_child))
-            });
+        let spec_fill = sp_pr.and_then(fill_child).or_else(|| {
+            ph_chain
+                .iter()
+                .rev()
+                .find_map(|n| child(*n, "spPr").and_then(fill_child))
+        });
         let fill_ph = fill_clr.as_ref().map(|c| colors.resolve(c, None));
         let mut fill = Paint::None;
         let mut blip_rid = None;
@@ -1056,7 +1076,8 @@ impl<'p, 'b, 'd> Builder<'p, 'b, 'd> {
                 body = body.merged(&parse_body_pr(bp));
             }
             if body.vertical {
-                self.unsupported.push("vertical text (drawn horizontally)".into());
+                self.unsupported
+                    .push("vertical text (drawn horizontally)".into());
             }
             let default_color = font_clr
                 .as_ref()
@@ -1116,7 +1137,12 @@ impl<'p, 'b, 'd> Builder<'p, 'b, 'd> {
         crop: Option<[f64; 4]>,
     ) -> Option<PictureItem> {
         let rel = layer.rels.get(rid)?;
-        let ext = rel.target.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
+        let ext = rel
+            .target
+            .rsplit('.')
+            .next()
+            .unwrap_or("")
+            .to_ascii_lowercase();
         let mime = match ext.as_str() {
             "png" => "image/png",
             "jpg" | "jpeg" => "image/jpeg",
@@ -1158,12 +1184,20 @@ impl<'p, 'b, 'd> Builder<'p, 'b, 'd> {
         })
     }
 
-    fn picture(&mut self, pic: Node<'d, 'd>, layer: &Layer, groups: &[GroupXf], out: &mut Vec<Item>) {
+    fn picture(
+        &mut self,
+        pic: Node<'d, 'd>,
+        layer: &Layer,
+        groups: &[GroupXf],
+        out: &mut Vec<Item>,
+    ) {
         let c_nv_pr = child(pic, "nvPicPr").and_then(|n| child(n, "cNvPr"));
         if c_nv_pr.and_then(|n| n.attribute("hidden")) == Some("1") {
             return;
         }
-        let Some(sp_pr) = child(pic, "spPr") else { return };
+        let Some(sp_pr) = child(pic, "spPr") else {
+            return;
+        };
         let Some(xfrm) = child(sp_pr, "xfrm").and_then(parse_xfrm) else {
             return;
         };
@@ -1173,12 +1207,10 @@ impl<'p, 'b, 'd> Builder<'p, 'b, 'd> {
             .and_then(|b| b.attribute((REL_NS, "embed")))
             .map(str::to_string);
         let Some(rid) = rid else { return };
-        let crop = bf
-            .and_then(|b| child(b, "srcRect"))
-            .map(|r| {
-                let f = |a: &str| attr_f(r, a).unwrap_or(0.0) / 100000.0;
-                [f("l"), f("t"), f("r"), f("b")]
-            });
+        let crop = bf.and_then(|b| child(b, "srcRect")).map(|r| {
+            let f = |a: &str| attr_f(r, a).unwrap_or(0.0) / 100000.0;
+            [f("l"), f("t"), f("r"), f("b")]
+        });
         let (rect, rot) = self.place(&xfrm, groups);
         let (id, name, alt) = self.frame_id(layer, c_nv_pr);
         let frame = Frame {
@@ -1240,9 +1272,15 @@ impl<'p, 'b, 'd> Builder<'p, 'b, 'd> {
         };
         let uri = data.attribute("uri").unwrap_or("");
         if uri.ends_with("/chart") {
-            let Some(chart) = descendant(data, "chart") else { return };
-            let Some(rid) = chart.attribute((REL_NS, "id")) else { return };
-            let Some(rel) = layer.rels.get(rid) else { return };
+            let Some(chart) = descendant(data, "chart") else {
+                return;
+            };
+            let Some(rid) = chart.attribute((REL_NS, "id")) else {
+                return;
+            };
+            let Some(rel) = layer.rels.get(rid) else {
+                return;
+            };
             let target = rel.target.clone();
             let Some(xml) = self.pkg.text(&target) else {
                 self.note("chart part could not be read");
@@ -1321,7 +1359,9 @@ impl<'p, 'b, 'd> Builder<'p, 'b, 'd> {
                 let own_fill = tc_pr.and_then(fill_child);
                 let fill = match own_fill {
                     Some(f) => resolve_fill(&f, &colors, None),
-                    None if is_header => resolve_fill(&FillSpec::Solid(accent.clone()), &colors, None),
+                    None if is_header => {
+                        resolve_fill(&FillSpec::Solid(accent.clone()), &colors, None)
+                    }
                     None if band_row && ri % 2 == 1 => {
                         let mut c = accent.clone();
                         c.xf.push(("tint".into(), 0.4));
@@ -1395,10 +1435,7 @@ impl<'p, 'b, 'd> Builder<'p, 'b, 'd> {
     }
 }
 
-fn chart_from_xml(
-    xml: &str,
-    scheme: &dyn Fn(&str) -> Option<String>,
-) -> Result<ChartData, String> {
+fn chart_from_xml(xml: &str, scheme: &dyn Fn(&str) -> Option<String>) -> Result<ChartData, String> {
     crate::scene_chart::parse_chart(xml, scheme).map_err(|e| {
         // "unsupported chart: ..." is a feature note; anything else is a
         // damaged part.

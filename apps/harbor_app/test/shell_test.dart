@@ -1184,7 +1184,7 @@ void _appendComposerTest() {
     // cannot rank skills and must say so rather than guess.
     await settleUntil(tester, find.byKey(const ValueKey('route-panel')),
         budget: const Duration(seconds: 30), what: 'the routing panel');
-    expect(find.textContaining('Choose a skill yourself'), findsOneWidget);
+    expect(find.textContaining('choose a skill yourself'), findsOneWidget);
     // Sending no longer records a log-only "request" run that nothing
     // ever executes.
     final sp =

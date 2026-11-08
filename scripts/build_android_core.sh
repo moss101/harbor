@@ -29,6 +29,9 @@ TC="$(echo "$NDK"/toolchains/llvm/prebuilt/*)"
   export CXX_aarch64_linux_android="$TC/bin/aarch64-linux-android30-clang++"
   export AR_aarch64_linux_android="$TC/bin/llvm-ar"
   export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$TC/bin/aarch64-linux-android30-clang"
+  # Google Play rejects native libraries whose LOAD segments are not 16 KB
+  # aligned (apps targeting Android 15+); the NDK 27 default is 4 KB.
+  export CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS="-C link-arg=-Wl,-z,max-page-size=16384"
   export PATH="$HOME/.cargo/bin:$TC/bin:$PATH"
   cd "$repo/core"
   if [ "${1:-}" = "--vulkan" ]; then
@@ -47,4 +50,8 @@ cp "$out/harbor_worker" "$jni/libharbor_worker.so"
   || { echo "FAIL: libharbor_ffi.so does not export harbor_worker_main" >&2; exit 1; }
 file "$jni/libharbor_worker.so" | grep -q "executable" \
   || { echo "FAIL: libharbor_worker.so is not an executable" >&2; exit 1; }
+for so in libharbor_ffi.so libharbor_worker.so; do
+  "$TC/bin/llvm-readelf" -lW "$jni/$so" | awk '$1=="LOAD" && $NF!="0x4000" && $NF!="0x10000" {bad=1} END {exit bad}' \
+    || { echo "FAIL: $so has LOAD segments that are not 16 KB aligned" >&2; exit 1; }
+done
 echo "installed: $jni/libharbor_ffi.so, $jni/libharbor_worker.so"

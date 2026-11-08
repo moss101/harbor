@@ -2,6 +2,9 @@
 //! `harbor_core::graph` enforces at validation time so structured nodes
 //! never fail (or silently lose a constraint) at run time: patterns must be
 //! fully anchored and may not be combined with length keywords.
+
+#![cfg(feature = "gguf-backend")]
+
 fn ok(schema: &str) -> bool {
     llama_cpp_2::json_schema_to_grammar(schema).is_ok()
 }

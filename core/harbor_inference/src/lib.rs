@@ -24,6 +24,7 @@ pub mod mrl;
 pub mod multimodal;
 pub mod ocr;
 pub mod provider;
+pub mod reasoning;
 pub mod resilience;
 pub mod router;
 pub mod system;

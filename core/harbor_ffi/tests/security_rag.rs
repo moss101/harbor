@@ -363,6 +363,13 @@ fn open_question_without_evidence_is_plain_chat() {
         assert!(!text.contains("ONLY the evidence"), "{text}");
     }
     assert!(messages[0].1.contains("never claim a source"));
+    // The model has no clock; the device supplies today's date.
+    let year = chrono::Local::now().format("%Y").to_string();
+    assert!(
+        messages[0].1.contains("Today's date is") && messages[0].1.contains(&year),
+        "{}",
+        messages[0].1
+    );
 }
 
 /// Scoped questions keep abstention: with nothing retrieved from the

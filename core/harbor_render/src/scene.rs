@@ -146,11 +146,7 @@ pub enum Geom {
     Preset { name: String, adj: Vec<f64> },
     /// A custom path in its own `w`×`h` coordinate space, scaled to the
     /// frame.
-    Path {
-        w: f64,
-        h: f64,
-        cmds: Vec<PathCmd>,
-    },
+    Path { w: f64, h: f64, cmds: Vec<PathCmd> },
 }
 
 impl Default for Geom {
@@ -165,8 +161,14 @@ impl Default for Geom {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "c")]
 pub enum PathCmd {
-    M { x: f64, y: f64 },
-    L { x: f64, y: f64 },
+    M {
+        x: f64,
+        y: f64,
+    },
+    L {
+        x: f64,
+        y: f64,
+    },
     /// Cubic Bézier.
     C {
         x1: f64,
@@ -177,7 +179,12 @@ pub enum PathCmd {
         y: f64,
     },
     /// Quadratic Bézier.
-    Q { x1: f64, y1: f64, x: f64, y: f64 },
+    Q {
+        x1: f64,
+        y1: f64,
+        x: f64,
+        y: f64,
+    },
     Z,
 }
 
