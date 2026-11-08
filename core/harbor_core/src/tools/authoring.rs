@@ -1159,7 +1159,12 @@ impl Tool for TextDedupeSections {
                 .to_lowercase()
         };
         let mut seen: BTreeSet<String> = BTreeSet::new();
-        for key in args["sections"].as_array().into_iter().flatten().filter_map(Value::as_str) {
+        for key in args["sections"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(Value::as_str)
+        {
             if let Some(items) = draft.get_mut(key).and_then(Value::as_array_mut) {
                 items.retain(|v| v.as_str().is_none_or(|t| seen.insert(fold(t))));
                 if items.is_empty() && !note.is_empty() {
@@ -1600,7 +1605,11 @@ fn closing_phrase_only(sign_off: &str, sender: &str, greeted: &[String]) -> Stri
     let (head, tail) = (sign_off[..at].trim(), &sign_off[at + 1..]);
     let only_closing = !head.is_empty()
         && head.split_whitespace().all(|w| {
-            CLOSING_WORDS.contains(&w.trim_matches(|c: char| !c.is_alphanumeric()).to_lowercase().as_str())
+            CLOSING_WORDS.contains(
+                &w.trim_matches(|c: char| !c.is_alphanumeric())
+                    .to_lowercase()
+                    .as_str(),
+            )
         });
     if only_closing && is_filler_signature(tail, sender, greeted) {
         head.to_string()
@@ -1675,9 +1684,14 @@ impl Tool for EmailVerifyDraft {
             problems.push("The subject is empty; write a short subject.".to_string());
         } else if subject.chars().count() > 120 {
             problems.push("The subject is over 120 characters; shorten it.".to_string());
-        } else if ["short subject", "re: in front", "keep the message's subject", "the subject"]
-            .iter()
-            .any(|p| subject.to_lowercase().contains(p))
+        } else if [
+            "short subject",
+            "re: in front",
+            "keep the message's subject",
+            "the subject",
+        ]
+        .iter()
+        .any(|p| subject.to_lowercase().contains(p))
         {
             // LFM3-Omni-2B copied the instruction text as the subject.
             problems.push(format!(
@@ -1832,12 +1846,11 @@ impl Tool for EmailRender {
         let subject = s(draft, "subject").trim().to_string();
         let greeting = s(draft, "greeting").trim().to_string();
         let sender = s(args, "sender_name");
-        let mut sign_off =
-            closing_phrase_only(
-                &closing_without_sender(&s(draft, "sign_off"), &sender),
-                &sender,
-                &greeting_names(&greeting),
-            );
+        let mut sign_off = closing_phrase_only(
+            &closing_without_sender(&s(draft, "sign_off"), &sender),
+            &sender,
+            &greeting_names(&greeting),
+        );
         if sign_off.is_empty() {
             sign_off = "Best regards".into();
         }
@@ -1850,12 +1863,20 @@ impl Tool for EmailRender {
         // opening "Hi Sam, ...". The body's own greeting wins; a greeting
         // that is a bare name gets a salutation.
         let opens_with_greeting = body.first().is_some_and(|p| {
-            let first = p.split([',', '\n']).next().unwrap_or("").trim().to_lowercase();
+            let first = p
+                .split([',', '\n'])
+                .next()
+                .unwrap_or("")
+                .trim()
+                .to_lowercase();
             first.split_whitespace().count() <= 4
-                && ["hi ", "hello", "dear ", "hey "].iter().any(|g| first.starts_with(g))
+                && ["hi ", "hello", "dear ", "hey "]
+                    .iter()
+                    .any(|g| first.starts_with(g))
         });
         if !opens_with_greeting && !greeting.is_empty() {
-            let bare_name = !greeting.contains([',', ' ']) && greeting.chars().next().is_some_and(char::is_uppercase);
+            let bare_name = !greeting.contains([',', ' '])
+                && greeting.chars().next().is_some_and(char::is_uppercase);
             parts.push(if bare_name {
                 format!("Hi {greeting},")
             } else if greeting.ends_with([',', '.', '!', ':', '،']) {
@@ -2323,9 +2344,15 @@ mod tests {
             ],
             "sign_off": "Best regards, Harbor"
         });
-        let out = call("email.verify_draft", json!({"draft": draft, "sources": [notes]}));
+        let out = call(
+            "email.verify_draft",
+            json!({"draft": draft, "sources": [notes]}),
+        );
         assert_eq!(out["ok"], true, "{}", out["problems"]);
-        let text = call("email.render", json!({"draft": draft, "sender_name": "Omar Haddad"}))["text"]
+        let text = call(
+            "email.render",
+            json!({"draft": draft, "sender_name": "Omar Haddad"}),
+        )["text"]
             .as_str()
             .unwrap()
             .to_string();
@@ -2334,7 +2361,10 @@ mod tests {
         // A real name that is not the sender's is still refused.
         let mut wrong = draft.clone();
         wrong["sign_off"] = json!("Best regards, Amina");
-        let out = call("email.verify_draft", json!({"draft": wrong, "sources": [notes], "sender_name": "Omar Haddad"}));
+        let out = call(
+            "email.verify_draft",
+            json!({"draft": wrong, "sources": [notes], "sender_name": "Omar Haddad"}),
+        );
         assert_eq!(out["ok"], false);
     }
 
@@ -2349,9 +2379,20 @@ mod tests {
             "paragraphs": ["Hi Sam, the Friday demo has moved to Monday at 10am."],
             "sign_off": "Best regards"
         });
-        let out = call("email.verify_draft", json!({"draft": draft, "sources": [notes]}));
-        assert!(out["problems"].to_string().contains("repeats the instructions"), "{out}");
-        let text = call("email.render", json!({"draft": draft, "sender_name": "Omar"}))["body"]
+        let out = call(
+            "email.verify_draft",
+            json!({"draft": draft, "sources": [notes]}),
+        );
+        assert!(
+            out["problems"]
+                .to_string()
+                .contains("repeats the instructions"),
+            "{out}"
+        );
+        let text = call(
+            "email.render",
+            json!({"draft": draft, "sender_name": "Omar"}),
+        )["body"]
             .as_str()
             .unwrap()
             .to_string();
@@ -2359,7 +2400,10 @@ mod tests {
         assert_eq!(text.matches("Sam").count(), 1, "{text}");
         let mut bare = draft.clone();
         bare["paragraphs"] = json!(["The Friday demo has moved to Monday at 10am."]);
-        let text = call("email.render", json!({"draft": bare}))["body"].as_str().unwrap().to_string();
+        let text = call("email.render", json!({"draft": bare}))["body"]
+            .as_str()
+            .unwrap()
+            .to_string();
         assert!(text.starts_with("Hi Sam,\n\nThe Friday demo"), "{text}");
     }
 

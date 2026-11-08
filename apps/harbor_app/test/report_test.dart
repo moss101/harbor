@@ -33,8 +33,7 @@ void main() {
     final auth = FakeAuth()..signInWithGoogle();
     final svc = ReportService(auth,
         endpoint: Uri.parse('http://127.0.0.1:${server.port}/v1/reports'));
-    expect(
-        await svc.send(reason: 'harmful', answer: 'A', comment: 'c'), 'r1');
+    expect(await svc.send(reason: 'harmful', answer: 'A', comment: 'c'), 'r1');
     expect(authz, 'Bearer token');
     expect(seen.single['reason'], 'harmful');
     expect(seen.single['answer'], 'A');

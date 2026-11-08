@@ -962,7 +962,9 @@ pub fn normalize_table_spec(v: &Value) -> (Value, Vec<String>) {
                     }
                 }
             }
-            notes.push("the typed totals row was removed; Harbor adds the totals as formulas".into());
+            notes.push(
+                "the typed totals row was removed; Harbor adds the totals as formulas".into(),
+            );
         }
     }
     if !typed_totals.is_empty() {
@@ -3282,7 +3284,10 @@ mod tests {
         .unwrap();
         assert_eq!(spec.rows.len(), 2, "header repeat and typed total removed");
         assert_eq!(spec.totals, vec![1], "Budget is totalled by formula");
-        assert!(spec.notes.join(" | ").contains("typed totals row was removed"));
+        assert!(spec
+            .notes
+            .join(" | ")
+            .contains("typed totals row was removed"));
     }
 
     #[test]
