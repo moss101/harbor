@@ -1391,8 +1391,10 @@ impl<'p, 'b, 'd> Builder<'p, 'b, 'd> {
                     default_color,
                     slide_index: self.slide_index,
                 };
-                let mut body = BodyPr::default();
-                body.ins = [Some(91440.0), Some(45720.0), Some(91440.0), Some(45720.0)];
+                let mut body = BodyPr {
+                    ins: [Some(91440.0), Some(45720.0), Some(91440.0), Some(45720.0)],
+                    ..Default::default()
+                };
                 if let Some(p) = tc_pr {
                     body.ins = [
                         attr_f(p, "marL").or(body.ins[0]),

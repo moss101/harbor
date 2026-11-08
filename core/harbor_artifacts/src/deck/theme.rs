@@ -10,7 +10,8 @@
 //! missing. No font is embedded.
 
 use super::look::{
-    AgendaStyle, CompareStyle, Header, Look, SectionStyle, StatsStyle, TeamStyle, TimelineStyle, CardsStyle,
+    AgendaStyle, CardsStyle, CompareStyle, Header, Look, SectionStyle, StatsStyle, TeamStyle,
+    TimelineStyle,
 };
 pub use super::look::{CardStyle, CoverStyle, Deco};
 use super::palette;
@@ -95,6 +96,7 @@ const CAL: Fonts = Fonts {
     cs: "Arial",
 };
 
+#[allow(clippy::too_many_arguments)]
 const fn look(
     header: Header,
     stats: StatsStyle,
@@ -105,7 +107,16 @@ const fn look(
     team: TeamStyle,
     section: SectionStyle,
 ) -> Look {
-    Look { header, stats, cards, timeline, compare, agenda, team, section }
+    Look {
+        header,
+        stats,
+        cards,
+        timeline,
+        compare,
+        agenda,
+        team,
+        section,
+    }
 }
 
 use AgendaStyle as Ag;
@@ -116,20 +127,146 @@ use StatsStyle as St;
 use TeamStyle as Tm;
 use TimelineStyle as Tl;
 
-const LOOK_AURORA: Look = look(Header::TopLeft, St::Tiles, Cs::Grid, Tl::Spine, Cp::Panels, Ag::Rows, Tm::Cards, Sc::Numeral);
-const LOOK_HARBOR: Look = look(Header::Banner, St::Tiles, Cs::Grid, Tl::Chevrons, Cp::Panels, Ag::Rows, Tm::Cards, Sc::Band);
-const LOOK_IVORY: Look = look(Header::Rail, St::Rows, Cs::Rows, Tl::Vertical, Cp::Rows, Ag::Rows, Tm::Inline, Sc::Numeral);
-const LOOK_SLATE: Look = look(Header::TopLeft, St::Hero, Cs::Columns, Tl::Spine, Cp::Fields, Ag::Grid, Tm::Cards, Sc::Split);
-const LOOK_SUNRISE: Look = look(Header::TopLeft, St::Tiles, Cs::Stickers, Tl::Chevrons, Cp::Panels, Ag::Grid, Tm::Cards, Sc::Band);
-const LOOK_OBSIDIAN: Look = look(Header::TopLeft, St::Hero, Cs::Bento, Tl::Chevrons, Cp::Panels, Ag::Grid, Tm::Cards, Sc::Split);
-const LOOK_OCEAN: Look = look(Header::Sidebar { right: false }, St::Rows, Cs::Rows, Tl::Vertical, Cp::Rows, Ag::Rows, Tm::Inline, Sc::Split);
-const LOOK_FOREST: Look = look(Header::Centered, St::Columns, Cs::Columns, Tl::Spine, Cp::Panels, Ag::Grid, Tm::Inline, Sc::Numeral);
-const LOOK_MIDNIGHT: Look = look(Header::Rail, St::Columns, Cs::Columns, Tl::Spine, Cp::Fields, Ag::Grid, Tm::Cards, Sc::Band);
-const LOOK_PLAYGROUND: Look = look(Header::Centered, St::Tiles, Cs::Stickers, Tl::Chevrons, Cp::Fields, Ag::Grid, Tm::Cards, Sc::Band);
-const LOOK_MONO: Look = look(Header::Poster, St::Hero, Cs::Columns, Tl::Vertical, Cp::Fields, Ag::Rows, Tm::Inline, Sc::Band);
-const LOOK_TERRACOTTA: Look = look(Header::Sidebar { right: true }, St::Tiles, Cs::Grid, Tl::Spine, Cp::Fields, Ag::Grid, Tm::Cards, Sc::Numeral);
-const LOOK_ROYAL: Look = look(Header::Poster, St::Tiles, Cs::Bento, Tl::Spine, Cp::Panels, Ag::Grid, Tm::Cards, Sc::Split);
-const LOOK_BLUEPRINT: Look = look(Header::Banner, St::Columns, Cs::Columns, Tl::Vertical, Cp::Rows, Ag::Grid, Tm::Inline, Sc::Numeral);
+const LOOK_AURORA: Look = look(
+    Header::TopLeft,
+    St::Tiles,
+    Cs::Grid,
+    Tl::Spine,
+    Cp::Panels,
+    Ag::Rows,
+    Tm::Cards,
+    Sc::Numeral,
+);
+const LOOK_HARBOR: Look = look(
+    Header::Banner,
+    St::Tiles,
+    Cs::Grid,
+    Tl::Chevrons,
+    Cp::Panels,
+    Ag::Rows,
+    Tm::Cards,
+    Sc::Band,
+);
+const LOOK_IVORY: Look = look(
+    Header::Rail,
+    St::Rows,
+    Cs::Rows,
+    Tl::Vertical,
+    Cp::Rows,
+    Ag::Rows,
+    Tm::Inline,
+    Sc::Numeral,
+);
+const LOOK_SLATE: Look = look(
+    Header::TopLeft,
+    St::Hero,
+    Cs::Columns,
+    Tl::Spine,
+    Cp::Fields,
+    Ag::Grid,
+    Tm::Cards,
+    Sc::Split,
+);
+const LOOK_SUNRISE: Look = look(
+    Header::TopLeft,
+    St::Tiles,
+    Cs::Stickers,
+    Tl::Chevrons,
+    Cp::Panels,
+    Ag::Grid,
+    Tm::Cards,
+    Sc::Band,
+);
+const LOOK_OBSIDIAN: Look = look(
+    Header::TopLeft,
+    St::Hero,
+    Cs::Bento,
+    Tl::Chevrons,
+    Cp::Panels,
+    Ag::Grid,
+    Tm::Cards,
+    Sc::Split,
+);
+const LOOK_OCEAN: Look = look(
+    Header::Sidebar { right: false },
+    St::Rows,
+    Cs::Rows,
+    Tl::Vertical,
+    Cp::Rows,
+    Ag::Rows,
+    Tm::Inline,
+    Sc::Split,
+);
+const LOOK_FOREST: Look = look(
+    Header::Centered,
+    St::Columns,
+    Cs::Columns,
+    Tl::Spine,
+    Cp::Panels,
+    Ag::Grid,
+    Tm::Inline,
+    Sc::Numeral,
+);
+const LOOK_MIDNIGHT: Look = look(
+    Header::Rail,
+    St::Columns,
+    Cs::Columns,
+    Tl::Spine,
+    Cp::Fields,
+    Ag::Grid,
+    Tm::Cards,
+    Sc::Band,
+);
+const LOOK_PLAYGROUND: Look = look(
+    Header::Centered,
+    St::Tiles,
+    Cs::Stickers,
+    Tl::Chevrons,
+    Cp::Fields,
+    Ag::Grid,
+    Tm::Cards,
+    Sc::Band,
+);
+const LOOK_MONO: Look = look(
+    Header::Poster,
+    St::Hero,
+    Cs::Columns,
+    Tl::Vertical,
+    Cp::Fields,
+    Ag::Rows,
+    Tm::Inline,
+    Sc::Band,
+);
+const LOOK_TERRACOTTA: Look = look(
+    Header::Sidebar { right: true },
+    St::Tiles,
+    Cs::Grid,
+    Tl::Spine,
+    Cp::Fields,
+    Ag::Grid,
+    Tm::Cards,
+    Sc::Numeral,
+);
+const LOOK_ROYAL: Look = look(
+    Header::Poster,
+    St::Tiles,
+    Cs::Bento,
+    Tl::Spine,
+    Cp::Panels,
+    Ag::Grid,
+    Tm::Cards,
+    Sc::Split,
+);
+const LOOK_BLUEPRINT: Look = look(
+    Header::Banner,
+    St::Columns,
+    Cs::Columns,
+    Tl::Vertical,
+    Cp::Rows,
+    Ag::Grid,
+    Tm::Inline,
+    Sc::Numeral,
+);
 
 pub const THEMES: &[ThemeSpec] = &[
     ThemeSpec {
@@ -462,7 +599,6 @@ impl ThemeSpec {
     }
 }
 
-
 fn hsl_of(h: &str) -> (f64, f64, f64) {
     let [r, g, b] = hex_rgb(h);
     let max = r.max(g).max(b);
@@ -472,7 +608,11 @@ fn hsl_of(h: &str) -> (f64, f64, f64) {
     if d < 1e-12 {
         return (0.0, 0.0, l);
     }
-    let s = if l > 0.5 { d / (2.0 - max - min) } else { d / (max + min) };
+    let s = if l > 0.5 {
+        d / (2.0 - max - min)
+    } else {
+        d / (max + min)
+    };
     let hue = if (max - r).abs() < 1e-12 {
         ((g - b) / d).rem_euclid(6.0)
     } else if (max - g).abs() < 1e-12 {
@@ -484,7 +624,11 @@ fn hsl_of(h: &str) -> (f64, f64, f64) {
 }
 
 fn hex_of_hsl(h: f64, s: f64, l: f64) -> String {
-    let q = if l < 0.5 { l * (1.0 + s) } else { l + s - l * s };
+    let q = if l < 0.5 {
+        l * (1.0 + s)
+    } else {
+        l + s - l * s
+    };
     let p = 2.0 * l - q;
     let f = |mut t: f64| {
         if t < 0.0 {
@@ -509,7 +653,12 @@ fn hex_of_hsl(h: f64, s: f64, l: f64) -> String {
         let v = (l * 255.0).round() as u8;
         return format!("{v:02X}{v:02X}{v:02X}");
     }
-    format!("{:02X}{:02X}{:02X}", f(hn + 1.0 / 3.0), f(hn), f(hn - 1.0 / 3.0))
+    format!(
+        "{:02X}{:02X}{:02X}",
+        f(hn + 1.0 / 3.0),
+        f(hn),
+        f(hn - 1.0 / 3.0)
+    )
 }
 
 impl ThemeSpec {
@@ -523,10 +672,34 @@ impl ThemeSpec {
         let p = &self.palette;
         let dark = self.is_dark();
         let hex: &str = match c.slot {
-            Slot::Bg1 => if dark { p.dk1 } else { p.lt1 },
-            Slot::Tx1 => if dark { p.lt1 } else { p.dk1 },
-            Slot::Bg2 => if dark { p.dk2 } else { p.lt2 },
-            Slot::Tx2 => if dark { p.lt2 } else { p.dk2 },
+            Slot::Bg1 => {
+                if dark {
+                    p.dk1
+                } else {
+                    p.lt1
+                }
+            }
+            Slot::Tx1 => {
+                if dark {
+                    p.lt1
+                } else {
+                    p.dk1
+                }
+            }
+            Slot::Bg2 => {
+                if dark {
+                    p.dk2
+                } else {
+                    p.lt2
+                }
+            }
+            Slot::Tx2 => {
+                if dark {
+                    p.lt2
+                } else {
+                    p.dk2
+                }
+            }
             Slot::Accent(n) => p.accents[(n as usize).clamp(1, 6) - 1],
             Slot::Dk1 => p.dk1,
             Slot::Lt1 => p.lt1,
@@ -536,7 +709,9 @@ impl ThemeSpec {
         let mut out = hex.to_string();
         if c.lum_mod.is_some() || c.lum_off.is_some() {
             let (h, s, l) = hsl_of(hex);
-            let l = (l * c.lum_mod.unwrap_or(100) as f64 / 100.0 + c.lum_off.unwrap_or(0) as f64 / 100.0).clamp(0.0, 1.0);
+            let l = (l * c.lum_mod.unwrap_or(100) as f64 / 100.0
+                + c.lum_off.unwrap_or(0) as f64 / 100.0)
+                .clamp(0.0, 1.0);
             out = hex_of_hsl(h, s, l);
         }
         (out, c.alpha.map_or(1.0, |a| a as f64 / 100.0))
@@ -595,8 +770,16 @@ mod tests {
                     Mode::Dark => t.palette.dk2,
                 };
                 let who = format!("{} in {}", base.id, pal.id);
-                assert!(contrast(ink, page) >= 7.0, "{who}: ink/page {:.2}", contrast(ink, page));
-                assert!(contrast(ink, tint) >= 7.0, "{who}: ink/tint {:.2}", contrast(ink, tint));
+                assert!(
+                    contrast(ink, page) >= 7.0,
+                    "{who}: ink/page {:.2}",
+                    contrast(ink, page)
+                );
+                assert!(
+                    contrast(ink, tint) >= 7.0,
+                    "{who}: ink/tint {:.2}",
+                    contrast(ink, tint)
+                );
                 let mix = |a: &str, b: &str, k: f64| {
                     let (x, y) = (hex_rgb(a), hex_rgb(b));
                     format!(
@@ -608,7 +791,11 @@ mod tests {
                 };
                 for bg in [page, tint] {
                     let muted = mix(ink, bg, 0.7);
-                    assert!(contrast(&muted, bg) >= 4.5, "{who}: muted on {bg}: {:.2}", contrast(&muted, bg));
+                    assert!(
+                        contrast(&muted, bg) >= 4.5,
+                        "{who}: muted on {bg}: {:.2}",
+                        contrast(&muted, bg)
+                    );
                 }
                 assert!(
                     contrast(t.palette.accents[0], page) >= 3.0,
@@ -650,7 +837,10 @@ mod tests {
             }
         }
         // And the catalogue spans the full range of header compositions.
-        let mut headers: Vec<String> = THEMES.iter().map(|t| format!("{:?}", t.look.header)).collect();
+        let mut headers: Vec<String> = THEMES
+            .iter()
+            .map(|t| format!("{:?}", t.look.header))
+            .collect();
         headers.sort();
         headers.dedup();
         assert!(headers.len() >= 6, "{headers:?}");
@@ -674,10 +864,15 @@ mod tests {
         assert_eq!(aurora.resolve(&Clr::bg1()).0, aurora.palette.dk1);
         // Office "Lighter 80%" of blue is a pale blue, and alpha is reported, not applied.
         let (lighter, a) = harbor.resolve(&Clr::accent(1).lum(20, 80).alpha(40));
-        assert!(contrast(&lighter, "FFFFFF") < 1.5, "a pale tint, got {lighter}");
+        assert!(
+            contrast(&lighter, "FFFFFF") < 1.5,
+            "a pale tint, got {lighter}"
+        );
         assert!((a - 0.4).abs() < 1e-9);
         // A 50% ink over the page lands halfway.
         let mid = harbor.resolve_over(&Clr::tx1().alpha(50), harbor.palette.lt1);
-        assert!(contrast(&mid, harbor.palette.lt1) > 1.5 && contrast(&mid, harbor.palette.lt1) < 12.0);
+        assert!(
+            contrast(&mid, harbor.palette.lt1) > 1.5 && contrast(&mid, harbor.palette.lt1) < 12.0
+        );
     }
 }

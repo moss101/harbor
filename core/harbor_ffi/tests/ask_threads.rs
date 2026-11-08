@@ -313,12 +313,18 @@ fn real_chat_model_resolves_a_follow_up_from_thread_memory() {
     let root = repo_root();
     let chat = root.join("fixtures/models/qwen2.5-1.5b-instruct-q4_k_m.gguf");
     let bge = root.join("fixtures/models/bge-small-en-v1.5-q8_0.gguf");
-    assert!(
-        chat.exists() && bge.exists(),
-        "fixture models missing ({} / {})",
-        chat.display(),
-        bge.display()
-    );
+    // The 1.1 GB Qwen weights are gitignored (CI runners do not have
+    // them): skip unless HARBOR_REQUIRE_FIXTURES=1, as inference_worker.rs.
+    if !(chat.exists() && bge.exists()) {
+        assert!(
+            std::env::var("HARBOR_REQUIRE_FIXTURES").as_deref() != Ok("1"),
+            "fixture models missing ({} / {})",
+            chat.display(),
+            bge.display()
+        );
+        eprintln!("SKIP: fixture models missing ({})", chat.display());
+        return;
+    }
     let dir = tempfile::tempdir().unwrap();
     let h = Handle::open(dir.path());
     install_and_index(&h, "qwen2.5-1.5b", &chat, &bge);

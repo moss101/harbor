@@ -289,7 +289,7 @@ fn resolve_font(name: &str, theme: &Theme) -> Option<String> {
         "+mj-cs" => theme.major_cs.clone()?,
         "+mn-cs" => theme.minor_cs.clone()?,
         "+mj-ea" | "+mn-ea" => return None,
-        other if other.is_empty() => return None,
+        "" => return None,
         other => other.to_string(),
     })
 }

@@ -18,115 +18,115 @@ pub struct PaletteSpec {
 }
 
 pub const HARBOR: Palette = Palette {
-            dk1: "0B1B2E",
-            lt1: "FFFFFF",
-            dk2: "12304F",
-            lt2: "EEF3FA",
-            accents: ["1F5FCC", "0EA5A4", "F59E0B", "7C5CFF", "E5484D", "5B6B7A"],
+    dk1: "0B1B2E",
+    lt1: "FFFFFF",
+    dk2: "12304F",
+    lt2: "EEF3FA",
+    accents: ["1F5FCC", "0EA5A4", "F59E0B", "7C5CFF", "E5484D", "5B6B7A"],
 };
 
 pub const AURORA: Palette = Palette {
-            dk1: "070B18",
-            lt1: "F4F6FF",
-            dk2: "141C38",
-            lt2: "C9D2F2",
-            accents: ["7C5CFF", "22D3EE", "F472B6", "34D399", "FBBF24", "94A3B8"],
+    dk1: "070B18",
+    lt1: "F4F6FF",
+    dk2: "141C38",
+    lt2: "C9D2F2",
+    accents: ["7C5CFF", "22D3EE", "F472B6", "34D399", "FBBF24", "94A3B8"],
 };
 
 pub const IVORY: Palette = Palette {
-            dk1: "1D2A24",
-            lt1: "FFFDF8",
-            dk2: "24443A",
-            lt2: "F4EFE4",
-            accents: ["24604F", "B8893B", "8C3B2B", "3F6C8F", "6B7F5A", "7A7467"],
+    dk1: "1D2A24",
+    lt1: "FFFDF8",
+    dk2: "24443A",
+    lt2: "F4EFE4",
+    accents: ["24604F", "B8893B", "8C3B2B", "3F6C8F", "6B7F5A", "7A7467"],
 };
 
 pub const SLATE: Palette = Palette {
-            dk1: "1B2430",
-            lt1: "FFFFFF",
-            dk2: "2B3A4D",
-            lt2: "F1F4F7",
-            accents: ["0F766E", "2563EB", "D97706", "DC2626", "16A34A", "64748B"],
+    dk1: "1B2430",
+    lt1: "FFFFFF",
+    dk2: "2B3A4D",
+    lt2: "F1F4F7",
+    accents: ["0F766E", "2563EB", "D97706", "DC2626", "16A34A", "64748B"],
 };
 
 pub const SUNRISE: Palette = Palette {
-            dk1: "231815",
-            lt1: "FFFBF7",
-            dk2: "3B2A24",
-            lt2: "FFEFE3",
-            accents: ["FF5A36", "FFB020", "8B5CF6", "06B6D4", "22C55E", "F43F5E"],
+    dk1: "231815",
+    lt1: "FFFBF7",
+    dk2: "3B2A24",
+    lt2: "FFEFE3",
+    accents: ["FF5A36", "FFB020", "8B5CF6", "06B6D4", "22C55E", "F43F5E"],
 };
 
 pub const OBSIDIAN: Palette = Palette {
-            dk1: "0A0A0A",
-            lt1: "FAFAFA",
-            dk2: "1A1A1A",
-            lt2: "D4D4D4",
-            accents: ["C6F432", "38BDF8", "FB7185", "A78BFA", "FACC15", "A3A3A3"],
+    dk1: "0A0A0A",
+    lt1: "FAFAFA",
+    dk2: "1A1A1A",
+    lt2: "D4D4D4",
+    accents: ["C6F432", "38BDF8", "FB7185", "A78BFA", "FACC15", "A3A3A3"],
 };
 
 pub const OCEAN: Palette = Palette {
-            dk1: "0B2530",
-            lt1: "FFFFFF",
-            dk2: "0E4A5C",
-            lt2: "E8F4F7",
-            accents: ["0891B2", "0E7490", "F59E0B", "10B981", "6366F1", "64748B"],
+    dk1: "0B2530",
+    lt1: "FFFFFF",
+    dk2: "0E4A5C",
+    lt2: "E8F4F7",
+    accents: ["0891B2", "0E7490", "F59E0B", "10B981", "6366F1", "64748B"],
 };
 
 pub const FOREST: Palette = Palette {
-            dk1: "14261C",
-            lt1: "FBFAF5",
-            dk2: "1F4D36",
-            lt2: "EEF0E3",
-            accents: ["2F7D4F", "D9A441", "B5533C", "4F7CAC", "7A9E5D", "80806F"],
+    dk1: "14261C",
+    lt1: "FBFAF5",
+    dk2: "1F4D36",
+    lt2: "EEF0E3",
+    accents: ["2F7D4F", "D9A441", "B5533C", "4F7CAC", "7A9E5D", "80806F"],
 };
 
 pub const MIDNIGHT_GOLD: Palette = Palette {
-            dk1: "0B1220",
-            lt1: "F8F5EE",
-            dk2: "16213A",
-            lt2: "D9D2C0",
-            accents: ["D4A94F", "7FB1E8", "E0B1A0", "9FD3B8", "C9CED8", "B08D57"],
+    dk1: "0B1220",
+    lt1: "F8F5EE",
+    dk2: "16213A",
+    lt2: "D9D2C0",
+    accents: ["D4A94F", "7FB1E8", "E0B1A0", "9FD3B8", "C9CED8", "B08D57"],
 };
 
 pub const PLAYGROUND: Palette = Palette {
-            dk1: "1E1B3A",
-            lt1: "FFFFFF",
-            dk2: "3730A3",
-            lt2: "F3F0FF",
-            accents: ["6D4AFF", "FF6B6B", "FFC233", "2DD4BF", "3B82F6", "EC4899"],
+    dk1: "1E1B3A",
+    lt1: "FFFFFF",
+    dk2: "3730A3",
+    lt2: "F3F0FF",
+    accents: ["6D4AFF", "FF6B6B", "FFC233", "2DD4BF", "3B82F6", "EC4899"],
 };
 
 pub const MONO: Palette = Palette {
-            dk1: "111111",
-            lt1: "FFFFFF",
-            dk2: "333333",
-            lt2: "F2F2F2",
-            accents: ["E11D48", "111111", "6B7280", "9CA3AF", "D1D5DB", "F59E0B"],
+    dk1: "111111",
+    lt1: "FFFFFF",
+    dk2: "333333",
+    lt2: "F2F2F2",
+    accents: ["E11D48", "111111", "6B7280", "9CA3AF", "D1D5DB", "F59E0B"],
 };
 
 pub const TERRACOTTA: Palette = Palette {
-            dk1: "2B1D17",
-            lt1: "FFFBF6",
-            dk2: "5A3A2C",
-            lt2: "F6EADF",
-            accents: ["C2562F", "2F6F73", "D9A441", "6B4F8A", "8C9A5B", "8A7B70"],
+    dk1: "2B1D17",
+    lt1: "FFFBF6",
+    dk2: "5A3A2C",
+    lt2: "F6EADF",
+    accents: ["C2562F", "2F6F73", "D9A441", "6B4F8A", "8C9A5B", "8A7B70"],
 };
 
 pub const ROYAL: Palette = Palette {
-            dk1: "1A1033",
-            lt1: "FFFFFF",
-            dk2: "2D1B5E",
-            lt2: "E4D9FF",
-            accents: ["B06BFF", "FF4FA3", "22D3EE", "FFB020", "34D399", "A1A1AA"],
+    dk1: "1A1033",
+    lt1: "FFFFFF",
+    dk2: "2D1B5E",
+    lt2: "E4D9FF",
+    accents: ["B06BFF", "FF4FA3", "22D3EE", "FFB020", "34D399", "A1A1AA"],
 };
 
 pub const BLUEPRINT: Palette = Palette {
-            dk1: "071A33",
-            lt1: "EAF2FF",
-            dk2: "0D2B52",
-            lt2: "B7CCEA",
-            accents: ["4DA3FF", "5EEAD4", "FDE047", "FB923C", "F87171", "94A3B8"],
+    dk1: "071A33",
+    lt1: "EAF2FF",
+    dk2: "0D2B52",
+    lt2: "B7CCEA",
+    accents: ["4DA3FF", "5EEAD4", "FDE047", "FB923C", "F87171", "94A3B8"],
 };
 
 pub const GRAPHITE: Palette = Palette {
@@ -178,26 +178,146 @@ pub const EMBER: Palette = Palette {
 };
 
 pub const PALETTES: &[PaletteSpec] = &[
-    PaletteSpec { id: "harbor", name: "Harbor Blue", mood: "Clean corporate blue", mode: Mode::Light, palette: HARBOR },
-    PaletteSpec { id: "aurora", name: "Aurora", mood: "Violet and cyan on near-black", mode: Mode::Dark, palette: AURORA },
-    PaletteSpec { id: "ivory", name: "Ivory & Pine", mood: "Warm paper, pine green and gold", mode: Mode::Light, palette: IVORY },
-    PaletteSpec { id: "slate", name: "Slate", mood: "Calm greys with signal colours", mode: Mode::Light, palette: SLATE },
-    PaletteSpec { id: "sunrise", name: "Sunrise", mood: "Coral and amber on cream", mode: Mode::Light, palette: SUNRISE },
-    PaletteSpec { id: "obsidian", name: "Obsidian", mood: "Black, white and electric lime", mode: Mode::Dark, palette: OBSIDIAN },
-    PaletteSpec { id: "ocean", name: "Ocean", mood: "Deep teal and open water", mode: Mode::Light, palette: OCEAN },
-    PaletteSpec { id: "forest", name: "Forest", mood: "Greens and sand", mode: Mode::Light, palette: FOREST },
-    PaletteSpec { id: "midnight", name: "Midnight Gold", mood: "Navy and brushed gold", mode: Mode::Dark, palette: MIDNIGHT_GOLD },
-    PaletteSpec { id: "playground", name: "Playground", mood: "Bright violet, coral and sun", mode: Mode::Light, palette: PLAYGROUND },
-    PaletteSpec { id: "mono", name: "Mono", mood: "Black, white and one red", mode: Mode::Light, palette: MONO },
-    PaletteSpec { id: "terracotta", name: "Terracotta", mood: "Earthy clay and teal", mode: Mode::Light, palette: TERRACOTTA },
-    PaletteSpec { id: "royal", name: "Royal", mood: "Deep violet and hot pink", mode: Mode::Dark, palette: ROYAL },
-    PaletteSpec { id: "blueprint", name: "Blueprint", mood: "Drafting blue and cyan", mode: Mode::Dark, palette: BLUEPRINT },
-    PaletteSpec { id: "graphite", name: "Graphite", mood: "Neutral dark with amber", mode: Mode::Dark, palette: GRAPHITE },
-    PaletteSpec { id: "rose", name: "Rose", mood: "Soft rose, plum and gold", mode: Mode::Light, palette: ROSE },
-    PaletteSpec { id: "mint", name: "Mint", mood: "Fresh mint and deep green", mode: Mode::Light, palette: MINT },
-    PaletteSpec { id: "sand", name: "Sand & Navy", mood: "Warm sand with navy and brass", mode: Mode::Light, palette: SAND },
-    PaletteSpec { id: "indigo", name: "Indigo", mood: "Confident indigo and sky", mode: Mode::Light, palette: INDIGO },
-    PaletteSpec { id: "ember", name: "Ember", mood: "Warm dark with orange fire", mode: Mode::Dark, palette: EMBER },
+    PaletteSpec {
+        id: "harbor",
+        name: "Harbor Blue",
+        mood: "Clean corporate blue",
+        mode: Mode::Light,
+        palette: HARBOR,
+    },
+    PaletteSpec {
+        id: "aurora",
+        name: "Aurora",
+        mood: "Violet and cyan on near-black",
+        mode: Mode::Dark,
+        palette: AURORA,
+    },
+    PaletteSpec {
+        id: "ivory",
+        name: "Ivory & Pine",
+        mood: "Warm paper, pine green and gold",
+        mode: Mode::Light,
+        palette: IVORY,
+    },
+    PaletteSpec {
+        id: "slate",
+        name: "Slate",
+        mood: "Calm greys with signal colours",
+        mode: Mode::Light,
+        palette: SLATE,
+    },
+    PaletteSpec {
+        id: "sunrise",
+        name: "Sunrise",
+        mood: "Coral and amber on cream",
+        mode: Mode::Light,
+        palette: SUNRISE,
+    },
+    PaletteSpec {
+        id: "obsidian",
+        name: "Obsidian",
+        mood: "Black, white and electric lime",
+        mode: Mode::Dark,
+        palette: OBSIDIAN,
+    },
+    PaletteSpec {
+        id: "ocean",
+        name: "Ocean",
+        mood: "Deep teal and open water",
+        mode: Mode::Light,
+        palette: OCEAN,
+    },
+    PaletteSpec {
+        id: "forest",
+        name: "Forest",
+        mood: "Greens and sand",
+        mode: Mode::Light,
+        palette: FOREST,
+    },
+    PaletteSpec {
+        id: "midnight",
+        name: "Midnight Gold",
+        mood: "Navy and brushed gold",
+        mode: Mode::Dark,
+        palette: MIDNIGHT_GOLD,
+    },
+    PaletteSpec {
+        id: "playground",
+        name: "Playground",
+        mood: "Bright violet, coral and sun",
+        mode: Mode::Light,
+        palette: PLAYGROUND,
+    },
+    PaletteSpec {
+        id: "mono",
+        name: "Mono",
+        mood: "Black, white and one red",
+        mode: Mode::Light,
+        palette: MONO,
+    },
+    PaletteSpec {
+        id: "terracotta",
+        name: "Terracotta",
+        mood: "Earthy clay and teal",
+        mode: Mode::Light,
+        palette: TERRACOTTA,
+    },
+    PaletteSpec {
+        id: "royal",
+        name: "Royal",
+        mood: "Deep violet and hot pink",
+        mode: Mode::Dark,
+        palette: ROYAL,
+    },
+    PaletteSpec {
+        id: "blueprint",
+        name: "Blueprint",
+        mood: "Drafting blue and cyan",
+        mode: Mode::Dark,
+        palette: BLUEPRINT,
+    },
+    PaletteSpec {
+        id: "graphite",
+        name: "Graphite",
+        mood: "Neutral dark with amber",
+        mode: Mode::Dark,
+        palette: GRAPHITE,
+    },
+    PaletteSpec {
+        id: "rose",
+        name: "Rose",
+        mood: "Soft rose, plum and gold",
+        mode: Mode::Light,
+        palette: ROSE,
+    },
+    PaletteSpec {
+        id: "mint",
+        name: "Mint",
+        mood: "Fresh mint and deep green",
+        mode: Mode::Light,
+        palette: MINT,
+    },
+    PaletteSpec {
+        id: "sand",
+        name: "Sand & Navy",
+        mood: "Warm sand with navy and brass",
+        mode: Mode::Light,
+        palette: SAND,
+    },
+    PaletteSpec {
+        id: "indigo",
+        name: "Indigo",
+        mood: "Confident indigo and sky",
+        mode: Mode::Light,
+        palette: INDIGO,
+    },
+    PaletteSpec {
+        id: "ember",
+        name: "Ember",
+        mood: "Warm dark with orange fire",
+        mode: Mode::Dark,
+        palette: EMBER,
+    },
 ];
 
 pub fn palette(id: &str) -> Option<&'static PaletteSpec> {

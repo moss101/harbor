@@ -94,7 +94,11 @@ pub fn to_json(deck: &DesignedDeck) -> Value {
 
 fn str_list(v: Option<&Value>) -> Vec<String> {
     v.and_then(Value::as_array)
-        .map(|a| a.iter().filter_map(|x| x.as_str().map(str::to_string)).collect())
+        .map(|a| {
+            a.iter()
+                .filter_map(|x| x.as_str().map(str::to_string))
+                .collect()
+        })
         .unwrap_or_default()
 }
 
@@ -121,11 +125,21 @@ pub fn from_json(v: &Value) -> Result<DesignedDeck, String> {
             .unwrap_or(MotionPreset::Subtle),
         rtl: d.get("rtl").and_then(Value::as_bool).unwrap_or(false),
         footer: d.get("footer").and_then(Value::as_str).map(str::to_string),
-        slide_numbers: d.get("slide_numbers").and_then(Value::as_bool).unwrap_or(true),
-        progressive_bullets: d.get("progressive_bullets").and_then(Value::as_bool).unwrap_or(false),
+        slide_numbers: d
+            .get("slide_numbers")
+            .and_then(Value::as_bool)
+            .unwrap_or(true),
+        progressive_bullets: d
+            .get("progressive_bullets")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
     };
     let mut slides = Vec::new();
-    for s in v.get("slides").and_then(Value::as_array).ok_or("missing slides")? {
+    for s in v
+        .get("slides")
+        .and_then(Value::as_array)
+        .ok_or("missing slides")?
+    {
         if slides.len() >= 200 {
             return Err("too many slides".into());
         }
@@ -136,7 +150,11 @@ pub fn from_json(v: &Value) -> Result<DesignedDeck, String> {
                     .and_then(Value::as_str)
                     .and_then(chart_kind_parse)
                     .ok_or("unknown chart kind")?,
-                title: c.get("title").and_then(Value::as_str).unwrap_or("").to_string(),
+                title: c
+                    .get("title")
+                    .and_then(Value::as_str)
+                    .unwrap_or("")
+                    .to_string(),
                 categories: str_list(c.get("categories")),
                 series: c
                     .get("series")
@@ -145,7 +163,10 @@ pub fn from_json(v: &Value) -> Result<DesignedDeck, String> {
                         a.iter()
                             .map(|s| {
                                 (
-                                    s.get("name").and_then(Value::as_str).unwrap_or("").to_string(),
+                                    s.get("name")
+                                        .and_then(Value::as_str)
+                                        .unwrap_or("")
+                                        .to_string(),
                                     s.get("values")
                                         .and_then(Value::as_array)
                                         .map(|v| v.iter().filter_map(Value::as_f64).collect())
@@ -160,7 +181,11 @@ pub fn from_json(v: &Value) -> Result<DesignedDeck, String> {
         };
         let image = match s.get("image").filter(|i| !i.is_null()) {
             Some(i) => Some(SlideImage {
-                name: i.get("name").and_then(Value::as_str).unwrap_or("image").to_string(),
+                name: i
+                    .get("name")
+                    .and_then(Value::as_str)
+                    .unwrap_or("image")
+                    .to_string(),
                 extension: match i.get("extension").and_then(Value::as_str) {
                     Some("png") => "png".to_string(),
                     Some("jpg") => "jpg".to_string(),
@@ -173,9 +198,16 @@ pub fn from_json(v: &Value) -> Result<DesignedDeck, String> {
             None => None,
         };
         slides.push(DesignedSlide {
-            title: s.get("title").and_then(Value::as_str).unwrap_or("").to_string(),
+            title: s
+                .get("title")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_string(),
             kicker: s.get("kicker").and_then(Value::as_str).map(str::to_string),
-            layout: s.get("layout").and_then(Value::as_str).and_then(LayoutKind::parse),
+            layout: s
+                .get("layout")
+                .and_then(Value::as_str)
+                .and_then(LayoutKind::parse),
             bullets: str_list(s.get("bullets")),
             blocks: s
                 .get("blocks")
@@ -183,7 +215,11 @@ pub fn from_json(v: &Value) -> Result<DesignedDeck, String> {
                 .map(|a| {
                     a.iter()
                         .map(|b| Block {
-                            heading: b.get("heading").and_then(Value::as_str).unwrap_or("").to_string(),
+                            heading: b
+                                .get("heading")
+                                .and_then(Value::as_str)
+                                .unwrap_or("")
+                                .to_string(),
                             text: str_list(b.get("text")),
                             value: b.get("value").and_then(Value::as_str).map(str::to_string),
                             label: b.get("label").and_then(Value::as_str).map(str::to_string),
@@ -194,12 +230,22 @@ pub fn from_json(v: &Value) -> Result<DesignedDeck, String> {
             notes: s.get("notes").and_then(Value::as_str).map(str::to_string),
             chart,
             image,
-            attribution: s.get("attribution").and_then(Value::as_str).map(str::to_string),
+            attribution: s
+                .get("attribution")
+                .and_then(Value::as_str)
+                .map(str::to_string),
         });
     }
     Ok(DesignedDeck {
-        title: v.get("title").and_then(Value::as_str).unwrap_or("").to_string(),
-        subtitle: v.get("subtitle").and_then(Value::as_str).map(str::to_string),
+        title: v
+            .get("title")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .to_string(),
+        subtitle: v
+            .get("subtitle")
+            .and_then(Value::as_str)
+            .map(str::to_string),
         slides,
         design,
     })
@@ -306,19 +352,28 @@ mod tests {
         let theme = {
             let mut ar = zip::ZipArchive::new(Cursor::new(&out)).unwrap();
             let mut s = String::new();
-            ar.by_name("ppt/theme/theme1.xml").unwrap().read_to_string(&mut s).unwrap();
+            ar.by_name("ppt/theme/theme1.xml")
+                .unwrap()
+                .read_to_string(&mut s)
+                .unwrap();
             s
         };
         assert!(theme.contains("24604F"));
         let slide = {
             let mut ar = zip::ZipArchive::new(Cursor::new(&out)).unwrap();
             let mut s = String::new();
-            ar.by_name("ppt/slides/slide3.xml").unwrap().read_to_string(&mut s).unwrap();
+            ar.by_name("ppt/slides/slide3.xml")
+                .unwrap()
+                .read_to_string(&mut s)
+                .unwrap();
             s
         };
         assert!(!slide.contains("<p:timing>") && !slide.contains("<p:transition"));
         // Restyle is itself deterministic.
-        assert_eq!(out, restyle(&bytes, Some("ivory"), None, Some(MotionPreset::None), None).unwrap());
+        assert_eq!(
+            out,
+            restyle(&bytes, Some("ivory"), None, Some(MotionPreset::None), None).unwrap()
+        );
     }
 
     #[test]
@@ -345,7 +400,9 @@ mod tests {
         json["design"]["theme"] = "neon".into();
         assert!(from_json(&json).is_err());
         json["schema"] = "other/v9".into();
-        assert!(from_json(&json).unwrap_err().contains("not a Harbor deck source"));
+        assert!(from_json(&json)
+            .unwrap_err()
+            .contains("not a Harbor deck source"));
     }
 
     #[test]
@@ -357,8 +414,14 @@ mod tests {
             bytes: vec![1, 2, 3, 4],
         });
         let back = from_json(&to_json(&deck)).unwrap();
-        assert_eq!(back.slides[2].image.as_ref().unwrap().bytes, vec![1, 2, 3, 4]);
+        assert_eq!(
+            back.slides[2].image.as_ref().unwrap().bytes,
+            vec![1, 2, 3, 4]
+        );
         let chart_slide = deck.slides.iter().position(|s| s.chart.is_some()).unwrap();
-        assert_eq!(back.slides[chart_slide].chart, deck.slides[chart_slide].chart);
+        assert_eq!(
+            back.slides[chart_slide].chart,
+            deck.slides[chart_slide].chart
+        );
     }
 }

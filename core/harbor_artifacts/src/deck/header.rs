@@ -24,8 +24,22 @@ fn background_ornament(t: &ThemeSpec) -> Vec<Shape> {
     let mut out = Vec::new();
     match t.deco {
         Deco::Orbs => {
-            out.push(orb("Glow", SLIDE_W - 600_000, 200_000, 5_200_000, Clr::accent(1), 14));
-            out.push(orb("Glow 2", 300_000, SLIDE_H + 200_000, 4_400_000, Clr::accent(2), 10));
+            out.push(orb(
+                "Glow",
+                SLIDE_W - 600_000,
+                200_000,
+                5_200_000,
+                Clr::accent(1),
+                14,
+            ));
+            out.push(orb(
+                "Glow 2",
+                300_000,
+                SLIDE_H + 200_000,
+                4_400_000,
+                Clr::accent(2),
+                10,
+            ));
         }
         Deco::Arcs => {
             for (i, d) in [3_000_000i64, 4_400_000, 5_800_000].iter().enumerate() {
@@ -137,7 +151,14 @@ fn furniture(t: &ThemeSpec, f: &Frame) -> Vec<Shape> {
         }
         Header::Rail => {
             let x = f.side_w + 230_000;
-            v.push(vline("Rail rule", x, 520_000, SLIDE_H - 1_100_000, Clr::tx1().alpha(24), 0.75));
+            v.push(vline(
+                "Rail rule",
+                x,
+                520_000,
+                SLIDE_H - 1_100_000,
+                Clr::tx1().alpha(24),
+                0.75,
+            ));
             v.push(Shape::deco(
                 "Rail mark",
                 Geom::Rect,
@@ -147,7 +168,14 @@ fn furniture(t: &ThemeSpec, f: &Frame) -> Vec<Shape> {
         }
         Header::Centered => {
             let cx = SLIDE_W / 2;
-            v.push(hairline("Header rule", cx - 520_000, 1_930_000, 1_040_000, Clr::accent(1), 2.0));
+            v.push(hairline(
+                "Header rule",
+                cx - 520_000,
+                1_930_000,
+                1_040_000,
+                Clr::accent(1),
+                2.0,
+            ));
             v.push(Shape::deco(
                 "Header dot",
                 Geom::Ellipse,
@@ -195,7 +223,12 @@ mod tests {
                 assert!(r.w >= 0 && r.h >= 0, "{} {}", t.id, s.name);
             }
             if !matches!(t.look.header, Header::TopLeft) {
-                assert!(!shapes.is_empty(), "{}: a {:?} header must draw its furniture", t.id, t.look.header);
+                assert!(
+                    !shapes.is_empty(),
+                    "{}: a {:?} header must draw its furniture",
+                    t.id,
+                    t.look.header
+                );
             }
         }
     }

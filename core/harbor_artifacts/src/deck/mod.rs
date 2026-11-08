@@ -34,9 +34,9 @@ pub use model::{infer_layout, split_stat, Block, Design, DesignedDeck, DesignedS
 pub use motion::MotionPreset;
 pub use theme::{theme as theme_by_id, ThemeSpec, THEMES};
 
+use self::layouts::{Built, Ctx, El};
 use self::motion::{ElKind, Role, Target};
 use self::parts::{LayoutPart, LAYOUTS};
-use self::layouts::{Built, Ctx, El};
 use self::xml::{esc, pic_xml, SLIDE_H, SLIDE_W};
 use crate::pptx::{ChartKind, ChartSpec, PptxError, SlideContent};
 
@@ -98,7 +98,11 @@ fn slide_out(
         match &item.el {
             El::Sp(s) => {
                 body.push_str(&s.xml(id, rtl));
-                let k = if s.text.is_some() { ElKind::Text } else { ElKind::Plain };
+                let k = if s.text.is_some() {
+                    ElKind::Text
+                } else {
+                    ElKind::Plain
+                };
                 targets.push(Target {
                     id,
                     role: item.role,
@@ -106,7 +110,13 @@ fn slide_out(
                     paras: paragraph_count(s),
                 });
             }
-            El::Pic { name, alt, rect, geom, image: img } => {
+            El::Pic {
+                name,
+                alt,
+                rect,
+                geom,
+                image: img,
+            } => {
                 body.push_str(&pic_xml(id, name, alt, "rId4", *rect, geom, rtl));
                 image = Some(img.clone());
                 targets.push(Target {
@@ -116,7 +126,12 @@ fn slide_out(
                     paras: 0,
                 });
             }
-            El::Chart { name, alt, rect, spec } => {
+            El::Chart {
+                name,
+                alt,
+                rect,
+                spec,
+            } => {
                 body.push_str(&chart_frame(id, name, alt, *rect, rtl));
                 chart = Some((spec.clone(), theme.is_dark()));
                 targets.push(Target {
@@ -152,8 +167,9 @@ fn slide_out(
 impl DesignedDeck {
     /// The theme this deck is designed with, in the palette chosen for it.
     pub fn theme(&self) -> Result<ThemeSpec, PptxError> {
-        let base = theme::theme(&self.design.theme)
-            .ok_or_else(|| PptxError::Malformed(format!("unknown theme {:?}", self.design.theme)))?;
+        let base = theme::theme(&self.design.theme).ok_or_else(|| {
+            PptxError::Malformed(format!("unknown theme {:?}", self.design.theme))
+        })?;
         match self.design.palette.as_deref() {
             None => Ok(*base),
             Some(id) => {
@@ -229,34 +245,66 @@ impl DesignedDeck {
         if outs.iter().any(|o| o.chart.is_some()) {
             ct.push_str("<Default Extension=\"xlsx\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\"/>");
         }
-        if outs.iter().any(|o| o.image.as_ref().map_or(false, |i| i.extension == "png")) {
+        if outs
+            .iter()
+            .any(|o| o.image.as_ref().is_some_and(|i| i.extension == "png"))
+        {
             ct.push_str("<Default Extension=\"png\" ContentType=\"image/png\"/>");
         }
-        if outs.iter().any(|o| o.image.as_ref().map_or(false, |i| i.extension == "jpg")) {
+        if outs
+            .iter()
+            .any(|o| o.image.as_ref().is_some_and(|i| i.extension == "jpg"))
+        {
             ct.push_str("<Default Extension=\"jpg\" ContentType=\"image/jpeg\"/>");
         }
-        let ov = |part: &str, ty: &str| format!("<Override PartName=\"{part}\" ContentType=\"application/vnd.openxmlformats-officedocument.{ty}\"/>");
-        ct.push_str(&ov("/ppt/presentation.xml", "presentationml.presentation.main+xml"));
+        let ov = |part: &str, ty: &str| {
+            format!("<Override PartName=\"{part}\" ContentType=\"application/vnd.openxmlformats-officedocument.{ty}\"/>")
+        };
+        ct.push_str(&ov(
+            "/ppt/presentation.xml",
+            "presentationml.presentation.main+xml",
+        ));
         ct.push_str(&ov("/ppt/presProps.xml", "presentationml.presProps+xml"));
         ct.push_str(&ov("/ppt/viewProps.xml", "presentationml.viewProps+xml"));
-        ct.push_str(&ov("/ppt/tableStyles.xml", "presentationml.tableStyles+xml"));
-        ct.push_str(&ov("/ppt/slideMasters/slideMaster1.xml", "presentationml.slideMaster+xml"));
+        ct.push_str(&ov(
+            "/ppt/tableStyles.xml",
+            "presentationml.tableStyles+xml",
+        ));
+        ct.push_str(&ov(
+            "/ppt/slideMasters/slideMaster1.xml",
+            "presentationml.slideMaster+xml",
+        ));
         for l in LAYOUTS {
-            ct.push_str(&ov(&format!("/ppt/slideLayouts/slideLayout{}.xml", l as u32), "presentationml.slideLayout+xml"));
+            ct.push_str(&ov(
+                &format!("/ppt/slideLayouts/slideLayout{}.xml", l as u32),
+                "presentationml.slideLayout+xml",
+            ));
         }
         ct.push_str(&ov("/ppt/theme/theme1.xml", "theme+xml"));
         if any_notes {
-            ct.push_str(&ov("/ppt/notesMasters/notesMaster1.xml", "presentationml.notesMaster+xml"));
+            ct.push_str(&ov(
+                "/ppt/notesMasters/notesMaster1.xml",
+                "presentationml.notesMaster+xml",
+            ));
             ct.push_str(&ov("/ppt/theme/theme2.xml", "theme+xml"));
         }
         for (i, o) in outs.iter().enumerate() {
             let k = i + 1;
-            ct.push_str(&ov(&format!("/ppt/slides/slide{k}.xml"), "presentationml.slide+xml"));
+            ct.push_str(&ov(
+                &format!("/ppt/slides/slide{k}.xml"),
+                "presentationml.slide+xml",
+            ));
             if o.notes.is_some() {
-                ct.push_str(&ov(&format!("/ppt/notesSlides/notesSlide{k}.xml"), "presentationml.notesSlide+xml"));
+                ct.push_str(&ov(
+                    &format!("/ppt/notesSlides/notesSlide{k}.xml"),
+                    "presentationml.notesSlide+xml",
+                ));
             }
             if o.chart.is_some() {
-                ct.push_str(&ov(&format!("/ppt/charts/chart{k}.xml"), "drawingml.chart+xml"));
+                ct.push_str(&ov(
+                    &format!("/ppt/charts/chart{k}.xml"),
+                    "drawingml.chart+xml",
+                ));
             }
         }
         ct.push_str("<Override PartName=\"/docProps/core.xml\" ContentType=\"application/vnd.openxmlformats-package.core-properties+xml\"/>");
@@ -312,25 +360,42 @@ impl DesignedDeck {
         pr.push_str(&rel(n + 4, "viewProps", "viewProps.xml"));
         pr.push_str(&rel(n + 5, "tableStyles", "tableStyles.xml"));
         if any_notes {
-            pr.push_str(&rel(notes_rid, "notesMaster", "notesMasters/notesMaster1.xml"));
+            pr.push_str(&rel(
+                notes_rid,
+                "notesMaster",
+                "notesMasters/notesMaster1.xml",
+            ));
         }
         pr.push_str("</Relationships>");
         put("ppt/_rels/presentation.xml.rels", pr.as_bytes())?;
         put("ppt/presProps.xml", crate::pptx::PRES_PROPS_XML.as_bytes())?;
         put("ppt/viewProps.xml", crate::pptx::VIEW_PROPS_XML.as_bytes())?;
-        put("ppt/tableStyles.xml", crate::pptx::TABLE_STYLES_XML.as_bytes())?;
+        put(
+            "ppt/tableStyles.xml",
+            crate::pptx::TABLE_STYLES_XML.as_bytes(),
+        )?;
 
         // Master, layouts, theme.
-        put("ppt/slideMasters/slideMaster1.xml", parts::master_xml(theme, rtl).as_bytes())?;
+        put(
+            "ppt/slideMasters/slideMaster1.xml",
+            parts::master_xml(theme, rtl).as_bytes(),
+        )?;
         let mut mr = String::from(
             "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">",
         );
         for l in LAYOUTS {
-            mr.push_str(&rel(l as usize, "slideLayout", &format!("../slideLayouts/slideLayout{}.xml", l as u32)));
+            mr.push_str(&rel(
+                l as usize,
+                "slideLayout",
+                &format!("../slideLayouts/slideLayout{}.xml", l as u32),
+            ));
         }
         mr.push_str(&rel(LAYOUTS.len() + 1, "theme", "../theme/theme1.xml"));
         mr.push_str("</Relationships>");
-        put("ppt/slideMasters/_rels/slideMaster1.xml.rels", mr.as_bytes())?;
+        put(
+            "ppt/slideMasters/_rels/slideMaster1.xml.rels",
+            mr.as_bytes(),
+        )?;
         for l in LAYOUTS {
             put(
                 &format!("ppt/slideLayouts/slideLayout{}.xml", l as u32),
@@ -350,18 +415,33 @@ impl DesignedDeck {
             let mut sr = String::from(
                 "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">",
             );
-            sr.push_str(&rel(1, "slideLayout", &format!("../slideLayouts/slideLayout{}.xml", o.layout as u32)));
+            sr.push_str(&rel(
+                1,
+                "slideLayout",
+                &format!("../slideLayouts/slideLayout{}.xml", o.layout as u32),
+            ));
             if o.notes.is_some() {
-                sr.push_str(&rel(2, "notesSlide", &format!("../notesSlides/notesSlide{k}.xml")));
+                sr.push_str(&rel(
+                    2,
+                    "notesSlide",
+                    &format!("../notesSlides/notesSlide{k}.xml"),
+                ));
             }
             if o.chart.is_some() {
                 sr.push_str(&rel(3, "chart", &format!("../charts/chart{k}.xml")));
             }
             if let Some(img) = &o.image {
-                sr.push_str(&rel(4, "image", &format!("../media/slide{k}-image.{}", img.extension)));
+                sr.push_str(&rel(
+                    4,
+                    "image",
+                    &format!("../media/slide{k}-image.{}", img.extension),
+                ));
             }
             sr.push_str("</Relationships>");
-            put(&format!("ppt/slides/_rels/slide{k}.xml.rels"), sr.as_bytes())?;
+            put(
+                &format!("ppt/slides/_rels/slide{k}.xml.rels"),
+                sr.as_bytes(),
+            )?;
             if let Some(text) = &o.notes {
                 let dummy = SlideContent {
                     title: String::new(),
@@ -370,7 +450,10 @@ impl DesignedDeck {
                     chart: None,
                     image: None,
                 };
-                put(&format!("ppt/notesSlides/notesSlide{k}.xml"), crate::pptx::notes_xml(&dummy).as_bytes())?;
+                put(
+                    &format!("ppt/notesSlides/notesSlide{k}.xml"),
+                    crate::pptx::notes_xml(&dummy).as_bytes(),
+                )?;
                 put(
                     &format!("ppt/notesSlides/_rels/notesSlide{k}.xml.rels"),
                     format!("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">{}{}</Relationships>", rel(1, "notesMaster", "../notesMasters/notesMaster1.xml"), rel(2, "slide", &format!("../slides/slide{k}.xml"))).as_bytes(),
@@ -396,11 +479,17 @@ impl DesignedDeck {
                 )?;
             }
             if let Some(img) = &o.image {
-                put(&format!("ppt/media/slide{k}-image.{}", img.extension), &img.bytes)?;
+                put(
+                    &format!("ppt/media/slide{k}-image.{}", img.extension),
+                    &img.bytes,
+                )?;
             }
         }
         if any_notes {
-            put("ppt/notesMasters/notesMaster1.xml", crate::pptx::notes_master_xml().as_bytes())?;
+            put(
+                "ppt/notesMasters/notesMaster1.xml",
+                crate::pptx::notes_master_xml().as_bytes(),
+            )?;
             put(
                 "ppt/notesMasters/_rels/notesMaster1.xml.rels",
                 format!("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">{}</Relationships>", rel(1, "theme", "../theme/theme2.xml")).as_bytes(),

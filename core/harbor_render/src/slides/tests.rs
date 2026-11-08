@@ -421,9 +421,8 @@ fn hostile_packages_are_refused_not_panicked_on() {
     // A package whose slide is malformed degrades to a noted slide.
     let bytes = handmade("<p:sp>", "", "");
     let scene = deck_scene(&bytes);
-    match scene {
-        Ok(s) => assert!(!s.slides[0].unsupported.is_empty()),
-        Err(_) => {}
+    if let Ok(s) = scene {
+        assert!(!s.slides[0].unsupported.is_empty());
     }
     // A slide list with no slides.
     use std::io::Write;
@@ -480,8 +479,7 @@ fn absurdly_nested_xml_is_refused_not_a_stack_overflow() {
     let body = format!("<p:sp>{deep}</p:sp>");
     // The slide part exceeds the depth budget: the deck is refused or the
     // slide is noted; either way the process lives.
-    match deck_scene(&handmade(&body, "", "")) {
-        Ok(s) => assert!(!s.slides[0].unsupported.is_empty()),
-        Err(_) => {}
+    if let Ok(s) = deck_scene(&handmade(&body, "", "")) {
+        assert!(!s.slides[0].unsupported.is_empty());
     }
 }

@@ -725,7 +725,11 @@ impl Tool for DeckBrief {
             .iter()
             .enumerate()
             .map(|(i, b)| {
-                let label = if b.kicker.is_empty() { "Slide" } else { b.kicker };
+                let label = if b.kicker.is_empty() {
+                    "Slide"
+                } else {
+                    b.kicker
+                };
                 format!("{}. {label} \u{2014} {}", i + 1, b.says)
             })
             .collect::<Vec<_>>()

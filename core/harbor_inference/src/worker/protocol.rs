@@ -106,8 +106,10 @@ pub fn bytes_to_f32s(b: &[u8]) -> Result<Vec<f32>, ProviderError> {
     if !b.len().is_multiple_of(4) {
         return Err(ProviderError::Backend("worker: ragged f32 blob".into()));
     }
-    Ok(b.chunks_exact(4)
-        .map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]))
+    Ok(b.as_chunks::<4>()
+        .0
+        .iter()
+        .map(|c| f32::from_le_bytes(*c))
         .collect())
 }
 

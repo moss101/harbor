@@ -58,15 +58,24 @@ pub(crate) struct B<'a> {
 
 impl<'a> B<'a> {
     pub(crate) fn new(cx: &'a Ctx<'a>) -> Self {
-        B { cx, items: Vec::new() }
+        B {
+            cx,
+            items: Vec::new(),
+        }
     }
     pub(crate) fn sp(&mut self, s: Shape, role: Role) {
-        self.items.push(Item { el: El::Sp(s), role });
+        self.items.push(Item {
+            el: El::Sp(s),
+            role,
+        });
     }
     /// A card's chrome, all shapes tagged with the same motion role.
     pub(crate) fn card(&mut self, name: &str, rect: R, role: Role) {
         for shape in chrome(self.cx.t, name, rect) {
-            self.items.push(Item { el: El::Sp(shape), role });
+            self.items.push(Item {
+                el: El::Sp(shape),
+                role,
+            });
         }
     }
     pub(crate) fn finish(self, part: LayoutPart) -> Built {
@@ -76,7 +85,6 @@ impl<'a> B<'a> {
         }
     }
 }
-
 
 pub(crate) fn page_hex(t: &ThemeSpec) -> &'static str {
     let (page, _) = t.page_and_ink();
@@ -134,7 +142,13 @@ pub(crate) fn factor_minor(t: &ThemeSpec) -> f64 {
 /// The shapes that make one card: the box (and, for stickers, its hard
 /// offset shadow; for rule cards, just a hairline).
 pub(crate) fn chrome(t: &ThemeSpec, name: &str, rect: R) -> Vec<Shape> {
-    let round = |pct: u32| if t.radius == 0 { Geom::Rect } else { Geom::Round(pct) };
+    let round = |pct: u32| {
+        if t.radius == 0 {
+            Geom::Rect
+        } else {
+            Geom::Round(pct)
+        }
+    };
     match t.card {
         CardStyle::Filled => vec![Shape::deco(name, radius(t), rect, Fill::Solid(Clr::bg2()))],
         CardStyle::Outlined => {
@@ -157,17 +171,23 @@ pub(crate) fn chrome(t: &ThemeSpec, name: &str, rect: R) -> Vec<Shape> {
             // A hard offset shadow behind a thick-outlined card.
             let off = 80_000;
             let back = Shape::deco(
-                &format!("{name} shadow"),
+                format!("{name} shadow"),
                 round(t.radius.min(14)),
                 R::new(rect.x + off, rect.y + off, rect.w, rect.h),
                 Fill::Solid(Clr::tx1()),
             );
-            let mut front = Shape::deco(name, round(t.radius.min(14)), rect, Fill::Solid(Clr::bg1()));
+            let mut front =
+                Shape::deco(name, round(t.radius.min(14)), rect, Fill::Solid(Clr::bg1()));
             front.line = Some(Line::new(Clr::tx1(), 2.25));
             vec![back, front]
         }
         CardStyle::Rule => {
-            let mut s = Shape::deco(name, Geom::Line, R::new(rect.x, rect.y, rect.w, 0), Fill::None);
+            let mut s = Shape::deco(
+                name,
+                Geom::Line,
+                R::new(rect.x, rect.y, rect.w, 0),
+                Fill::None,
+            );
             s.line = Some(Line::new(Clr::tx1().alpha(55), 1.0));
             vec![s]
         }
@@ -175,7 +195,11 @@ pub(crate) fn chrome(t: &ThemeSpec, name: &str, rect: R) -> Vec<Shape> {
             name,
             Geom::Round(t.radius.max(14)),
             rect,
-            Fill::Solid(if t.is_dark() { Clr::tx1().alpha(8) } else { Clr::bg2() }),
+            Fill::Solid(if t.is_dark() {
+                Clr::tx1().alpha(8)
+            } else {
+                Clr::bg2()
+            }),
         )],
     }
 }
@@ -198,9 +222,25 @@ pub(crate) fn badge(t: &ThemeSpec, name: &str, rect: R, accent: u8, label: &str,
     s
 }
 
-pub(crate) fn title_shape(cx: &Ctx, text: &str, rect: Option<R>, max_pt: f64, min_pt: f64, hero: bool) -> Shape {
+pub(crate) fn title_shape(
+    cx: &Ctx,
+    text: &str,
+    rect: Option<R>,
+    max_pt: f64,
+    min_pt: f64,
+    hero: bool,
+) -> Shape {
     let area = rect.unwrap_or(cx.frame.title);
-    let pt = fit_pt(&[text.to_string()], area.w, area.h, max_pt, min_pt, factor_major(cx.t), 0.92, 0.0);
+    let pt = fit_pt(
+        &[text.to_string()],
+        area.w,
+        area.h,
+        max_pt,
+        min_pt,
+        factor_major(cx.t),
+        0.92,
+        0.0,
+    );
     let mut run = Run::new(text);
     if pt < max_pt - 0.01 || rect.is_some() {
         run = run.size(pt);
@@ -232,14 +272,24 @@ pub(crate) fn kicker_shape(cx: &Ctx, text: &str) -> Shape {
     } else {
         accent_text(cx.t, 1, 4.5)
     };
-    let mut para = Para::from_runs(vec![Run::new(text).size(12.0).bold().caps().spacing(1.6).color(clr)]).no_bullet();
+    let mut para = Para::from_runs(vec![Run::new(text)
+        .size(12.0)
+        .bold()
+        .caps()
+        .spacing(1.6)
+        .color(clr)])
+    .no_bullet();
     if cx.frame.title_align == Align::Center {
         para = para.align(Align::Center);
     }
     Shape::text_box(
         "Kicker",
         cx.frame.kicker,
-        Text::one(para).anchor(if matches!(cx.t.look.header, Header::Rail) { Anchor::Top } else { Anchor::Bottom }),
+        Text::one(para).anchor(if matches!(cx.t.look.header, Header::Rail) {
+            Anchor::Top
+        } else {
+            Anchor::Bottom
+        }),
     )
 }
 
@@ -248,23 +298,43 @@ pub(crate) fn footer_shapes(cx: &Ctx) -> Vec<Shape> {
     if !cx.footer.is_empty() {
         v.push(Shape::placeholder(
             "Footer",
-            Ph { ty: "ftr", idx: Some(11) },
+            Ph {
+                ty: "ftr",
+                idx: Some(11),
+            },
             Text::one(Para::from_runs(vec![Run::new(cx.footer.clone())]).no_bullet()),
         ));
     }
     if cx.numbers {
         v.push(Shape::placeholder(
             "Slide Number",
-            Ph { ty: "sldNum", idx: Some(12) },
+            Ph {
+                ty: "sldNum",
+                idx: Some(12),
+            },
             Text::one(Para::from_runs(vec![Run::slide_number()]).no_bullet()),
         ));
     }
     v
 }
 
-pub(crate) fn bullets_paras(cx: &Ctx, bullets: &[String], rect: R, max_pt: f64) -> (Vec<Para>, f64) {
+pub(crate) fn bullets_paras(
+    cx: &Ctx,
+    bullets: &[String],
+    rect: R,
+    max_pt: f64,
+) -> (Vec<Para>, f64) {
     let w = rect.w - 320_040;
-    let pt = fit_pt(bullets, w, rect.h, max_pt, 14.0, factor_minor(cx.t), 1.04, 12.0);
+    let pt = fit_pt(
+        bullets,
+        w,
+        rect.h,
+        max_pt,
+        14.0,
+        factor_minor(cx.t),
+        1.04,
+        12.0,
+    );
     let paras = bullets
         .iter()
         .map(|b| {
@@ -282,7 +352,10 @@ pub(crate) fn standard_header(b: &mut B, s: &DesignedSlide) {
     if let Some(k) = &s.kicker {
         b.sp(kicker_shape(b.cx, k), Role::Kicker);
     }
-    b.sp(title_shape(b.cx, &s.title, None, b.cx.frame.title_pt, 20.0, false), Role::Title);
+    b.sp(
+        title_shape(b.cx, &s.title, None, b.cx.frame.title_pt, 20.0, false),
+        Role::Title,
+    );
 }
 
 pub(crate) fn standard_footer(b: &mut B) {
@@ -333,7 +406,7 @@ pub(crate) fn art_panel(t: &ThemeSpec, rect: R) -> Vec<Shape> {
     let (cx, cy) = (rect.x + rect.w * 2 / 3, rect.y + rect.h / 3);
     for (i, d) in [rect.w / 2, rect.w * 3 / 4, rect.w].iter().enumerate() {
         let mut r = Shape::deco(
-            &format!("Art ring {}", i + 1),
+            format!("Art ring {}", i + 1),
             Geom::Ellipse,
             R::new(cx - d / 2, cy - d / 2, *d, *d),
             Fill::None,
@@ -361,6 +434,9 @@ pub(crate) fn person_name(blk: &Block) -> String {
 pub(crate) fn initials(name: &str) -> String {
     let mut it = name.split_whitespace().filter_map(|w| w.chars().next());
     let a = it.next();
-    let b = it.last();
-    a.into_iter().chain(b).flat_map(|c| c.to_uppercase()).collect()
+    let b = it.next_back();
+    a.into_iter()
+        .chain(b)
+        .flat_map(|c| c.to_uppercase())
+        .collect()
 }

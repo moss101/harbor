@@ -200,7 +200,7 @@ fn text_svg(t: &TextBody, w: f64, h: f64, out: &mut String) {
             }
         });
         let mut first = true;
-        let mut new_line = |first: &mut bool, lines: &mut Vec<Line>, cur: &mut Option<Line>| {
+        let new_line = |first: &mut bool, lines: &mut Vec<Line>, cur: &mut Option<Line>| {
             if let Some(l) = cur.take() {
                 lines.push(l);
             }
@@ -307,7 +307,7 @@ fn text_svg(t: &TextBody, w: f64, h: f64, out: &mut String) {
                 r.c,
                 r.a,
                 r.spc,
-                esc(if r.caps { s.as_str() } else { s.as_str() })
+                esc(s.as_str())
             );
         }
         out.push_str("</text>");
