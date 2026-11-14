@@ -31,6 +31,27 @@ pub fn arithmetic_answer(question: &str) -> Option<String> {
     Some(format!("{} = {}", show_expr(&tokens), show_num(value)))
 }
 
+/// Evaluate an arithmetic expression (digits, `+ - * / ^ ( )`, `×`, `÷`):
+/// the shown form and the value, or `None` when it is not one complete
+/// expression or the value is not finite. For expressions a model wrote.
+pub fn evaluate(expr: &str) -> Option<(String, f64)> {
+    let tokens = tokenize(expr.trim())?;
+    let mut p = Parser {
+        tokens: &tokens,
+        pos: 0,
+    };
+    let value = p.sum()?;
+    if p.pos != tokens.len() || !value.is_finite() || value.abs() >= 1e15 {
+        return None;
+    }
+    Some((show_expr(&tokens), value))
+}
+
+/// The shown form of a value: integers exactly, else up to 10 decimals.
+pub fn show_value(v: f64) -> String {
+    show_num(v)
+}
+
 /// Strip the question wording around an expression; `None` when anything
 /// but an expression remains.
 fn expression_of(question: &str) -> Option<String> {

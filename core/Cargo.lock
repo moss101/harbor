@@ -1553,6 +1553,7 @@ dependencies = [
  "harbor_store",
  "hex",
  "libloading",
+ "regex",
  "rusqlite",
  "serde_json",
  "tempfile",

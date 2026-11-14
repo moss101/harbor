@@ -1389,15 +1389,27 @@ impl ChatHandle {
         cancel: &AtomicBool,
         progress: Option<&harbor_modelhub::progress::AcquireProgress>,
     ) -> Result<RagAnswer, String> {
-        // Pure arithmetic is computed exactly, not guessed by the model.
-        if let Some(answer) = crate::calc::arithmetic_answer(question) {
-            return Ok(RagAnswer {
-                answer,
-                used_citations: false,
-                executed_on: crate::calc::CALCULATOR.to_string(),
-                prompt_tokens: 0,
-                completion_tokens: 0,
-            });
+        // Exact tools first: arithmetic, percentages, units, calendar and
+        // text questions are computed, not guessed. A word problem with no
+        // evidence to ground on has the model write the arithmetic and
+        // Harbor evaluate it. HARBOR_EVAL_RAW=1 turns both off: the harness
+        // eval's baseline, never set in the app.
+        if std::env::var_os("HARBOR_EVAL_RAW").is_none() {
+            let today = chrono::Local::now().date_naive();
+            if let Some(answer) = crate::exact::answer(question, today) {
+                return Ok(RagAnswer {
+                    answer,
+                    used_citations: false,
+                    executed_on: crate::calc::CALCULATOR.to_string(),
+                    prompt_tokens: 0,
+                    completion_tokens: 0,
+                });
+            }
+            if citations.is_empty() && crate::exact::looks_like_word_problem(question) {
+                if let Some(a) = self.word_problem(package_id, question, cancel, progress) {
+                    return Ok(a);
+                }
+            }
         }
         let mut keep = history.len();
         loop {
@@ -1411,6 +1423,113 @@ impl ChatHandle {
                 other => return other,
             }
         }
+    }
+
+    fn ensure_chat_loaded(
+        &self,
+        package_id: &str,
+        progress: Option<&harbor_modelhub::progress::AcquireProgress>,
+    ) -> Result<(), String> {
+        let mut loaded = self.loaded.lock().unwrap();
+        if !loaded.contains_key(package_id) {
+            if let Some(p) = progress {
+                p.set_phase("loading");
+                p.set_detail(package_id);
+            }
+            self.provider
+                .load(&ModelRef::InstalledPackage {
+                    package_id: package_id.into(),
+                })
+                .map_err(|e| e.to_string())?;
+            // Recorded only after a successful load: a failed load
+            // must not leave the id "loaded" (every later generate
+            // would then fail with ModelNotFound).
+            loaded.insert(package_id.to_string(), ());
+        }
+        Ok(())
+    }
+
+    /// Program-aided answer to a word problem: the model writes ONE
+    /// arithmetic expression (constrained to a JSON object), Harbor checks
+    /// that it only uses the question's numbers and evaluates it exactly.
+    /// Small models set problems up far better than they carry them out
+    /// ("420 km at 7 L/100 km" came back as 294 L). `None` sends the
+    /// question to the model's ordinary answer.
+    fn word_problem(
+        &self,
+        package_id: &str,
+        question: &str,
+        cancel: &AtomicBool,
+        progress: Option<&harbor_modelhub::progress::AcquireProgress>,
+    ) -> Option<RagAnswer> {
+        use harbor_inference::provider::{Capabilities, ChatRequest};
+        self.ensure_chat_loaded(package_id, progress).ok()?;
+        if let Some(p) = progress {
+            p.set_phase("generating");
+            p.set_detail(question);
+        }
+        let model = ModelRef::InstalledPackage {
+            package_id: package_id.into(),
+        };
+        let schema = self
+            .provider
+            .supports(&model, &Capabilities::StructuredOutput)
+            .then(|| {
+                harbor_canonical::convert(serde_json::json!({
+                    "type": "object",
+                    "properties": { "expression": { "type": "string" } },
+                    "required": ["expression"],
+                    "additionalProperties": false,
+                }))
+                .expect("schema is canonical JSON")
+            });
+        let prompt = format!(
+            "Turn the question into ONE arithmetic expression that computes the \
+             answer. Use only numbers from the question, + - * / and parentheses. \
+             Write a percent as a decimal (10% is 0.10); \"a third\" is / 3.\n\n\
+             Examples:\n\
+             Q: Pens cost 4 SAR each. I buy 6 and pay with a 50 note. How much change do I get?\n\
+             {{\"expression\": \"50 - 6 * 4\"}}\n\
+             Q: A tank holds 80 litres and is 25% full. How many litres are in it?\n\
+             {{\"expression\": \"80 * 0.25\"}}\n\n\
+             Q: {question}\n"
+        );
+        let resp = self
+            .provider
+            .generate_cancellable(
+                ChatRequest {
+                    model,
+                    messages: vec![JsonValue::object([
+                        ("role", JsonValue::str("user")),
+                        ("content", JsonValue::str(prompt)),
+                    ])],
+                    max_tokens: 64,
+                    temperature: 0.0,
+                    requires: vec![Capabilities::Chat],
+                    response_schema: schema,
+                    trace_key: Some("chat/word-problem".into()),
+                },
+                cancel,
+                progress.map(|p| &p.items_done),
+            )
+            .ok()?;
+        let expr = serde_json::from_str::<serde_json::Value>(resp.content.trim())
+            .ok()?
+            .get("expression")?
+            .as_str()?
+            .to_string();
+        if !crate::exact::uses_question_numbers(&expr, question) {
+            return None;
+        }
+        let (shown, value) = crate::calc::evaluate(&expr)?;
+        let v = crate::calc::show_value((value * 1e6).round() / 1e6);
+        Some(RagAnswer {
+            answer: format!("**{v}**\n\nWorked out as {shown} = {v}."),
+            used_citations: false,
+            executed_on: format!("{}+{}", resp.executed_on, crate::calc::CALCULATOR),
+            prompt_tokens: resp.usage.prompt_tokens,
+            completion_tokens: resp.usage.completion_tokens,
+        })
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -1429,24 +1548,7 @@ impl ChatHandle {
         if cancel.load(Ordering::Relaxed) {
             return Err("cancelled".into());
         }
-        {
-            let mut loaded = self.loaded.lock().unwrap();
-            if !loaded.contains_key(package_id) {
-                if let Some(p) = progress {
-                    p.set_phase("loading");
-                    p.set_detail(package_id);
-                }
-                self.provider
-                    .load(&ModelRef::InstalledPackage {
-                        package_id: package_id.into(),
-                    })
-                    .map_err(|e| e.to_string())?;
-                // Recorded only after a successful load: a failed load
-                // must not leave the id "loaded" (every later generate
-                // would then fail with ModelNotFound).
-                loaded.insert(package_id.to_string(), ());
-            }
-        }
+        self.ensure_chat_loaded(package_id, progress)?;
         // Compose: instructions + cited evidence + question. The
         // composition lives in [`compose_rag_context`] so the untrusted
         // tagging SEC-006 requires is executable and testable, not a

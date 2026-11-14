@@ -15,6 +15,7 @@
 
 pub mod calc;
 pub mod doc_scope;
+pub mod exact;
 #[cfg(feature = "gguf")]
 pub mod knowledge;
 pub mod threads;

@@ -29,6 +29,7 @@ serde_json = { workspace = true }
 base64 = "0.22"
 zip = { workspace = true }
 chrono = { workspace = true }
+regex = { workspace = true }
 hex = { workspace = true }
 thiserror = { workspace = true }
 encoding_rs = "0.8"
