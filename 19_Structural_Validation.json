@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "8743b4570653c399a66d16d6e078de9c038be0810d33bceba9863c665d75ca9c",
+  "input_manifest_sha256": "7ec9b7e55daf79b48f3331555f8a6cf42faa06c87ef1ecbb7d9fb8bc813b1fbf",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -991,8 +991,8 @@
     },
     {
       "path": "apps/harbor_app/test/accessibility_audit_test.dart",
-      "bytes": 11944,
-      "sha256": "635a5371367ec1d91aabc01fd5c5df321015fd5f30dd32dfc34fe0a98a504eee"
+      "bytes": 11950,
+      "sha256": "22339f342910ef8a7d896cf43fdcdd3a71ff90f4fe33ae493e1bea0fa71a9c4f"
     },
     {
       "path": "apps/harbor_app/test/answer_truncated_test.dart",
@@ -1131,8 +1131,8 @@
     },
     {
       "path": "apps/harbor_app/test/shell_test.dart",
-      "bytes": 66416,
-      "sha256": "2abfa9772bf9e569a6bf5a75abcfbff2429a626e6186fe01c4f13832a6fc9f27"
+      "bytes": 66197,
+      "sha256": "8328141e5fb5e88168f65d1332d657f06e87d6b60c63809c0b58aaebac1d23ec"
     },
     {
       "path": "apps/harbor_app/test/sign_in_test.dart",
@@ -1146,13 +1146,18 @@
     },
     {
       "path": "apps/harbor_app/test/store_test.dart",
-      "bytes": 4644,
-      "sha256": "63130a4860234b9e376dd4e3a24a64f8055140957d12e8e97a8bd3d25e61a613"
+      "bytes": 4650,
+      "sha256": "2de3576439249beef26446508451a7e94fe583d9a5e5d622a315ed536953faa2"
+    },
+    {
+      "path": "apps/harbor_app/test/temp_data_root.dart",
+      "bytes": 996,
+      "sha256": "972d863877f6eaf0da5096ce60e5ee238b8c58de6eb2a959091bc66147782306"
     },
     {
       "path": "apps/harbor_app/test/ux_walkthrough_test.dart",
-      "bytes": 6525,
-      "sha256": "97637ca671383fbdf1891f2b6a89d86deb1df90f36256fbdb26797b49c28a6ce"
+      "bytes": 6741,
+      "sha256": "62964a96aba47292c8ca6291ebf780d5c80040092a6906d814068c48a1cb744b"
     },
     {
       "path": "apps/harbor_app/test/video_frames_test.dart",
@@ -1961,8 +1966,8 @@
     },
     {
       "path": "core/Cargo.lock",
-      "bytes": 97854,
-      "sha256": "1428302ec54ea7fde121359242fdff13e0657223d88850fe828e7faa6d26fbce"
+      "bytes": 97864,
+      "sha256": "c25c5818ddfd2cd4453a2e8bbf6949e6b7ace34c2516881940d2b7dca8dca6c4"
     },
     {
       "path": "core/Cargo.toml",
@@ -2790,6 +2795,11 @@
       "sha256": "18f8b0957059f2bc83a9ca12c48f5e7e7f9fa2355861b5f622632b247a863c3a"
     },
     {
+      "path": "core/harbor_core/src/router_lite.rs",
+      "bytes": 19459,
+      "sha256": "5c6d6b20fa1d6ba4546cb69f0158ad6af3aba2f6694d72727ec0a59c6485e2db"
+    },
+    {
       "path": "core/harbor_core/src/skills.rs",
       "bytes": 18100,
       "sha256": "d0a2ab0be840252cde23c4bfa5946a90e85ef053166c59a73b9893b042cfc664"
@@ -2926,13 +2936,13 @@
     },
     {
       "path": "core/harbor_ffi/Cargo.toml",
-      "bytes": 1947,
-      "sha256": "95fe6199a972e3234e1c9be154b4109459d3ffc1c52bd23630aa220a5c41ec60"
+      "bytes": 1976,
+      "sha256": "052d60b0b7c9139a3f3010527f1fa3b94b462a86243543f6a8783459340258b1"
     },
     {
       "path": "core/harbor_ffi/src/calc.rs",
-      "bytes": 7195,
-      "sha256": "6ba5e6e19b9b7eed658e349c074d240b6d290ed6ccc43923e3d44f1e52b2b916"
+      "bytes": 7887,
+      "sha256": "8547eab40eeda64afd15f20efcc245aeb7845d1ac980982ea8b41c9312fe61c9"
     },
     {
       "path": "core/harbor_ffi/src/doc_scope.rs",
@@ -2941,13 +2951,13 @@
     },
     {
       "path": "core/harbor_ffi/src/knowledge.rs",
-      "bytes": 66447,
-      "sha256": "84b5457cacbc8841d5d74223cca1d04541798677e78a482ae6a600023d45b6e1"
+      "bytes": 70871,
+      "sha256": "81c66f19981e2a2706a8e439abb2a1394a10621483c83b899ccdfb0a401a9fc1"
     },
     {
       "path": "core/harbor_ffi/src/lib.rs",
-      "bytes": 274591,
-      "sha256": "db19e876012f68a4a50c81a625d0236f67f2bb58b75b949fb5a4e250108f1fba"
+      "bytes": 274606,
+      "sha256": "c51ebd859641bdce3986a00b8d3ec569cec141b7a83f7097d2dde3eaa811d16c"
     },
     {
       "path": "core/harbor_ffi/src/threads.rs",
@@ -3068,6 +3078,11 @@
       "path": "core/harbor_ffi/tests/security_rag.rs",
       "bytes": 15229,
       "sha256": "9461056d56b99d4ae7914ced79895da6e7442a5facb234c7a50aecce435b77e4"
+    },
+    {
+      "path": "core/harbor_ffi/tests/skill_route_lite.rs",
+      "bytes": 2448,
+      "sha256": "61d7ce5c1273e254179cc9b64117ecb5638b7fbf9fba1909e07419e038fd2f30"
     },
     {
       "path": "core/harbor_ffi/tests/skill_runs.rs",
