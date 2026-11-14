@@ -12,7 +12,7 @@ Contract regression cases: 124 passed, 0 failed.
 
 Product readiness remains **BLOCKED**. No product gate is marked PASS by this report. Formula qualification remains 0 of 407; model, engine, adapter, fixture, evaluation and device bindings require implementation evidence. Performance thresholds must be approved and measured.
 
-Input manifest SHA-256: `a5498056cfaa0b7feaee9162810cf1f520b825048535402802ceb53fc6fffef3`. File 19 records every input digest. The package manifest excludes itself and includes this report.
+Input manifest SHA-256: `4cf1bc59e698119cacf58ecf7cda9712754e19f33e70d3b4c33ed97cf8c91c1e`. File 19 records every input digest. The package manifest excludes itself and includes this report.
 
 Reproduce: install `requirements-validation.txt`, then run `python3 tools/validate_dossier.py`. Regenerate derived reports only after authority edits with `python3 tools/validate_dossier.py --write`.
 

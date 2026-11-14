@@ -17,6 +17,49 @@ void main() {
     expect(pdfFileStem('x' * 90).length, 60);
   });
 
+  group('composeAnswerDocument', () {
+    test('the question is the title; broken lines rejoin into paragraphs', () {
+      // Exactly how a 1B model answered: a hard break mid-sentence.
+      const answer =
+          'A bill becomes a law through a process. The bill is then\n'
+          'referred to a committee for review.\n\n'
+          'If the President signs the bill,\n'
+          'it becomes a law.';
+      expect(
+          composeAnswerDocument('How does a bill become a law?', answer),
+          '# How does a bill become a law?\n\n'
+          'A bill becomes a law through a process. The bill is then referred '
+          'to a committee for review.\n\n'
+          'If the President signs the bill, it becomes a law.');
+    });
+
+    test('lists stay line by line, with a gap before and after', () {
+      expect(
+          composeAnswerDocument('Why?',
+              'Reasons:\n- rivers carry salt\n- rain erodes rock\nDone.'),
+          '# Why?\n\nReasons:\n\n- rivers carry salt\n- rain erodes rock\n\nDone.');
+    });
+
+    test('numbered items stay separate lines', () {
+      expect(composeAnswerDocument(null, '1. one\n2. two'), '1. one\n2. two');
+    });
+
+    test('an answer with its own heading is not given a second title', () {
+      final out = composeAnswerDocument('Q?', '# Own title\n\nBody text.');
+      expect(out, '# Own title\n\nBody text.');
+    });
+
+    test('no question: no title is invented; code blocks are untouched', () {
+      expect(composeAnswerDocument('  ', 'Text\n```\na\n  b\n```'),
+          'Text\n\n```\na\n  b\n```');
+    });
+
+    test('a very long question is shortened in the title', () {
+      final out = composeAnswerDocument('word ' * 60, 'Body.');
+      expect(out.split('\n').first.length, lessThanOrEqualTo(122));
+    });
+  });
+
   Future<void> show(WidgetTester tester, String text) =>
       tester.pumpWidget(HarborTheme(
         colors: HarborColors.light,

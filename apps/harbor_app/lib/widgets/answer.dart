@@ -381,7 +381,7 @@ class GroundedAnswerView extends StatelessWidget {
                       SnackBar(content: Text(l10n.answerCopied)));
                 },
               ),
-              SaveAnswerPdfButton(text: answerText),
+              SaveAnswerPdfButton(text: answerText, question: question),
               if (AuthScope.maybeOf(context) case final auth?)
                 IconButton(
                   key: const ValueKey('answer-report'),
