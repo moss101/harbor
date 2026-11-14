@@ -2621,4 +2621,45 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get deckRestyling => 'جارٍ تطبيق التصميم…';
+
+  @override
+  String get shellNewThread => 'محادثة جديدة';
+
+  @override
+  String get shellRecentThreads => 'الأخيرة';
+
+  @override
+  String get shellNoThreads => 'ستظهر أسئلتك وإجاباتك هنا.';
+
+  @override
+  String get shellManageThreads => 'إدارة المحادثات';
+
+  @override
+  String get shellSidebarCollapse => 'طي الشريط الجانبي';
+
+  @override
+  String get shellSidebarExpand => 'توسيع الشريط الجانبي';
+
+  @override
+  String get answerSources => 'المصادر';
+
+  @override
+  String get answerSourcesAll => 'كل المصادر';
+
+  @override
+  String answerSourceOpen(String title) {
+    return 'فتح المصدر $title';
+  }
+
+  @override
+  String get answerCopy => 'نسخ الإجابة';
+
+  @override
+  String get answerCopied => 'تم نسخ الإجابة';
+
+  @override
+  String get homeFollowUpHint => 'اطرح سؤال متابعة…';
+
+  @override
+  String get homeSuggestionsTitle => 'جرّب';
 }

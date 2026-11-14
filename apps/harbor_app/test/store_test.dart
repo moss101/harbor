@@ -67,16 +67,17 @@ void main() {
       (tester) async {
     if (!coreAvailable) return;
     await pumpApp(tester);
-    // Store is no longer a destination: Models is, on the bottom bar.
-    await tester.tap(find.text('More').first);
+    // Store is no longer a destination: Models is, under More (in the
+    // phone's drawer).
+    await tester.tap(find.byIcon(Icons.menu).first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('Store'), findsNothing);
-    Navigator.of(tester.element(find.text('Settings'))).pop();
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.tap(find.text('Models').first);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byKey(const ValueKey('shell-more-store')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('shell-more-models')));
+    for (var i = 0; i < 3; i++) {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+    }
     await tester.ensureVisible(find.text('Store'));
     await tester.pump();
     await tester.tap(find.text('Store'));
@@ -107,7 +108,8 @@ void main() {
     await tester.tap(find.text('Open in Work'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    final nav = tester.widget<NavigationBar>(find.byType(NavigationBar));
-    expect(nav.selectedIndex, 1, reason: 'Work is the second destination');
+    expect(
+        AppStateScope.of(tester.element(find.byType(Scaffold).first)).surface,
+        HarborSurface.work);
   });
 }

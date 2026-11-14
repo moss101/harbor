@@ -69,6 +69,7 @@ class HarborComposer extends StatefulWidget {
     this.busy = false,
     this.onCancel,
     this.elevated = true,
+    this.tools = const [],
   });
   final String hint;
 
@@ -114,6 +115,10 @@ class HarborComposer extends StatefulWidget {
   /// A soft shadow (Home); docked bars sit flat on their surface.
   final bool elevated;
 
+  /// Extra controls at the end of the action row, before send (Home: the
+  /// Library-only search and the model picker).
+  final List<Widget> tools;
+
   @override
   State<HarborComposer> createState() => _HarborComposerState();
 }
@@ -158,8 +163,12 @@ class _HarborComposerState extends State<HarborComposer> {
     if (widget.busy) return;
     final text = _controller.text.trim();
     if (text.isEmpty) return;
+    HapticFeedback.lightImpact();
     widget.onSubmit?.call(text);
     _controller.clear();
+    // Touch: put the keyboard away so the answer has the screen. With a
+    // hardware keyboard the person keeps typing follow-ups.
+    if (!harborHasKeyboardShortcuts) widget.focusNode?.unfocus();
   }
 
   @override
@@ -204,7 +213,16 @@ class _HarborComposerState extends State<HarborComposer> {
         options != null &&
         options.length > 1 &&
         widget.onScopeChanged != null;
-    final scopeChip = scope == null
+    // Phones: the default "Everything" with nothing else to pick says
+    // nothing, and costs the box a whole row; it shows once there is a
+    // choice (collections) or a narrower scope (an attached file).
+    // Likewise "This file" over the attached file's own card.
+    final quietScope = compact &&
+        !menu &&
+        (scope?.kind == ComposerScopeKind.everything ||
+            (scope?.kind == ComposerScopeKind.thisFile &&
+                widget.attachments.isNotEmpty));
+    final scopeChip = scope == null || quietScope
         ? null
         : ConstrainedBox(
             constraints: BoxConstraints(maxWidth: compact ? 280 : 240),
@@ -245,27 +263,36 @@ class _HarborComposerState extends State<HarborComposer> {
     final showAttach = widget.onAttach != null ||
         widget.onScan != null ||
         widget.onRecord != null;
+    // The app-wide icon button theme mutes every glyph; the send button is
+    // the one primary action here, so it carries the action pair (a muted
+    // glyph on the brand fill all but vanished in dark mode).
+    final sendStyle = IconButton.styleFrom(
+      backgroundColor: t.colors.primaryActionFill,
+      foregroundColor: t.colors.primaryActionText,
+      disabledBackgroundColor: t.colors.ink.withValues(alpha: 0.08),
+      disabledForegroundColor: t.colors.inkMuted.withValues(alpha: 0.7),
+      shape: const CircleBorder(),
+      fixedSize: const Size.square(HarborLayout.touchTarget),
+    );
     final Widget sendButton;
     if (widget.busy && widget.onCancel != null) {
       sendButton = IconButton.filled(
         key: const ValueKey('composer-cancel'),
         tooltip: l10n.cancelAction,
-        onPressed: widget.onCancel,
-        icon: const Icon(Icons.stop),
+        style: sendStyle,
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          widget.onCancel!();
+        },
+        icon: const Icon(Icons.stop_rounded, size: 20),
       );
-    } else if (compact) {
+    } else {
       sendButton = IconButton.filled(
         key: const ValueKey('composer-send'),
         tooltip: l10n.sendAction,
+        style: sendStyle,
         onPressed: canSend ? _send : null,
-        icon: const Icon(Icons.arrow_upward),
-      );
-    } else {
-      sendButton = FilledButton.icon(
-        key: const ValueKey('composer-send'),
-        onPressed: canSend ? _send : null,
-        icon: const Icon(Icons.arrow_forward, size: 16),
-        label: Text(l10n.sendAction),
+        icon: const Icon(Icons.arrow_upward_rounded, size: 22),
       );
     }
     return Container(
@@ -274,7 +301,7 @@ class _HarborComposerState extends State<HarborComposer> {
       decoration: ShapeDecoration(
         color: t.colors.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(HarborRadius.lg),
+          borderRadius: BorderRadius.circular(HarborRadius.xl),
           side: BorderSide(color: t.colors.border),
         ),
         shadows: [
@@ -350,7 +377,19 @@ class _HarborComposerState extends State<HarborComposer> {
                   ),
                 ),
               ),
-            const Spacer(),
+            Expanded(
+              child: Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: Wrap(
+                  alignment: WrapAlignment.end,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: HarborSpace.s1,
+                  runSpacing: HarborSpace.s1,
+                  children: widget.tools,
+                ),
+              ),
+            ),
+            const SizedBox(width: HarborSpace.s1),
             sendButton,
           ]),
         ],

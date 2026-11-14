@@ -1084,5 +1084,18 @@
   "deckApplyDesign": "تطبيق التصميم",
   "deckDesignApplied": "تم تغيير التصميم. احفظ نسخة للاحتفاظ به.",
   "deckDesignFailed": "تعذّر تغيير التصميم",
-  "deckRestyling": "جارٍ تطبيق التصميم…"
+  "deckRestyling": "جارٍ تطبيق التصميم…",
+  "shellNewThread": "محادثة جديدة",
+  "shellRecentThreads": "الأخيرة",
+  "shellNoThreads": "ستظهر أسئلتك وإجاباتك هنا.",
+  "shellManageThreads": "إدارة المحادثات",
+  "shellSidebarCollapse": "طي الشريط الجانبي",
+  "shellSidebarExpand": "توسيع الشريط الجانبي",
+  "answerSources": "المصادر",
+  "answerSourcesAll": "كل المصادر",
+  "answerSourceOpen": "فتح المصدر {title}",
+  "answerCopy": "نسخ الإجابة",
+  "answerCopied": "تم نسخ الإجابة",
+  "homeFollowUpHint": "اطرح سؤال متابعة…",
+  "homeSuggestionsTitle": "جرّب"
 }

@@ -43,7 +43,9 @@ class SettingsSurface extends StatelessWidget {
 
     return Column(children: [
       HarborSurfaceHeader(
-          title: l10n.surfaceSettings, subtitle: l10n.settingsSubtitle),
+          title: l10n.surfaceSettings,
+          subtitle: l10n.settingsSubtitle,
+          maxWidth: HarborLayout.readingMax + 80),
       Expanded(
         child: HarborPage(
           maxWidth: HarborLayout.readingMax + 80,

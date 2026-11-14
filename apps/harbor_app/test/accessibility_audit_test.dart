@@ -10,6 +10,7 @@ import 'package:harbor_app/services/harbor_service.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
 import 'temp_data_root.dart';
+import 'support/shell_nav.dart';
 
 final repoRoot = Directory.current.parent.parent.path; // apps/harbor_app
 final dylibPath = '$repoRoot/core/target/debug/libharbor_ffi.dylib';
@@ -94,29 +95,9 @@ Future<void> pumpApp(
   await tester.pump(const Duration(milliseconds: 100));
 }
 
-/// Navigate by label; on compact widths secondary surfaces live under More.
-Future<void> goTo(WidgetTester tester, String label) async {
-  var target = find.text(label);
-  if (target.evaluate().isEmpty) {
-    final rail = find.byType(HarborRail);
-    if (rail.evaluate().isNotEmpty) {
-      await tester.scrollUntilVisible(find.text(label), 80,
-          scrollable:
-              find.descendant(of: rail, matching: find.byType(Scrollable)));
-    } else {
-      await tester.tap(find.text('More').first);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-    }
-    target = find.text(label);
-  }
-  await tester.tap(target.first);
-  await tester.pump();
-  await tester.pump(const Duration(milliseconds: 400));
-  // One more frame: the previous surface retires (goes offstage) after
-  // its fade completes.
-  await tester.pump();
-}
+/// Navigate by label through the sidebar (or the phone drawer) and More.
+Future<void> goTo(WidgetTester tester, String label) =>
+    navigateTo(tester, label);
 
 /// Every enabled interactive control reachable in the critical flows must
 /// expose a non-empty semantic label (screen reader requirement, goal §27).
@@ -233,12 +214,8 @@ void main() {
         reason: 'overflow in the Home conversation\n${takeLayoutError()}');
     _assertLabeled(tester, 'home conversation');
     // The notice's own "Models" action is in the conversation too: use the
-    // bottom bar.
-    await tester.tap(find.descendant(
-        of: find.byType(NavigationBar), matching: find.text('Models')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pump();
+    // shell's More menu.
+    await goTo(tester, 'Models');
     await tester.ensureVisible(find.text('Store'));
     await tester.pump();
     await tester.tap(find.text('Store'));
@@ -261,7 +238,7 @@ void main() {
   testWidgets('critical flows survive 320px at 200% text scale',
       (tester) async {
     await pumpApp(tester, width: 320, height: 568, textScale: 2.0);
-    expect(tester.takeException(), isNull);
+    expect(tester.takeException(), isNull, reason: takeLayoutError());
     for (final surface in ['Work', 'Settings']) {
       await goTo(tester, surface);
       expect(tester.takeException(), isNull,
@@ -271,7 +248,7 @@ void main() {
 
   testWidgets('desktop surfaces survive 200% text scale', (tester) async {
     await pumpApp(tester, width: 1280, height: 800, textScale: 2.0);
-    expect(tester.takeException(), isNull);
+    expect(tester.takeException(), isNull, reason: takeLayoutError());
     for (final surface in [
       'Work',
       'Library',
@@ -286,18 +263,30 @@ void main() {
     }
   });
 
-  testWidgets('compact navigation destinations meet the 44px minimum target',
+  testWidgets('compact navigation targets meet the 44px minimum',
       (tester) async {
     await pumpApp(tester, width: 390, height: 844);
-    final destinations = find.byType(NavigationDestination);
-    expect(destinations, findsWidgets);
-    for (final d in destinations.evaluate()) {
-      final box = d.renderObject as RenderBox;
-      expect(
-        box.size.height,
-        greaterThanOrEqualTo(44),
-        reason: 'navigation destination under 44px tall',
-      );
+    // The phone top bar: menu, new thread, Trust chip.
+    for (final f in [
+      find.ancestor(
+          of: find.byIcon(Icons.menu), matching: find.byType(IconButton)),
+      find.byKey(const ValueKey('shell-new-thread-bar')),
+    ]) {
+      expect(tester.getSize(f.first).height, greaterThanOrEqualTo(44));
+    }
+    await tester.tap(find.byIcon(Icons.menu).first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    // Home · Work · Library and, listed in the drawer, More's four.
+    final rows =
+        find.byWidgetPredicate((w) => w is HarborSidebarRow && !w.dense);
+    expect(rows, findsNWidgets(7));
+    for (final f in [
+      ...[for (final e in rows.evaluate()) find.byWidget(e.widget)],
+      find.byKey(const ValueKey('shell-new-thread')),
+    ]) {
+      expect(tester.getSize(f.first).height, greaterThanOrEqualTo(44),
+          reason: 'navigation target under 44px tall');
     }
   });
 

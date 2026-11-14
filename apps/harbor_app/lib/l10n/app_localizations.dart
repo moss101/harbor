@@ -4285,6 +4285,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Applying the design…'**
   String get deckRestyling;
+
+  /// No description provided for @shellNewThread.
+  ///
+  /// In en, this message translates to:
+  /// **'New thread'**
+  String get shellNewThread;
+
+  /// No description provided for @shellRecentThreads.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get shellRecentThreads;
+
+  /// No description provided for @shellNoThreads.
+  ///
+  /// In en, this message translates to:
+  /// **'Your questions and answers will appear here.'**
+  String get shellNoThreads;
+
+  /// No description provided for @shellManageThreads.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage threads'**
+  String get shellManageThreads;
+
+  /// No description provided for @shellSidebarCollapse.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse sidebar'**
+  String get shellSidebarCollapse;
+
+  /// No description provided for @shellSidebarExpand.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand sidebar'**
+  String get shellSidebarExpand;
+
+  /// No description provided for @answerSources.
+  ///
+  /// In en, this message translates to:
+  /// **'Sources'**
+  String get answerSources;
+
+  /// No description provided for @answerSourcesAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All sources'**
+  String get answerSourcesAll;
+
+  /// No description provided for @answerSourceOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open source {title}'**
+  String answerSourceOpen(String title);
+
+  /// No description provided for @answerCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy answer'**
+  String get answerCopy;
+
+  /// No description provided for @answerCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer copied'**
+  String get answerCopied;
+
+  /// No description provided for @homeFollowUpHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask a follow-up…'**
+  String get homeFollowUpHint;
+
+  /// No description provided for @homeSuggestionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Try'**
+  String get homeSuggestionsTitle;
 }
 
 class _AppLocalizationsDelegate

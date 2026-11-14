@@ -87,12 +87,13 @@ enum HarborSurface {
   activity,
   settings;
 
-  /// Primary destinations: the compact bottom bar (plus More) and the
-  /// upper rail group.
-  static const primary = [home, work, knowledge, models];
+  /// Primary destinations: the rows of the sidebar (and the phone
+  /// drawer). Asking is the main path; these are the places answers come
+  /// from or go to.
+  static const primary = [home, work, knowledge];
 
-  /// Under More on compact widths; the lower rail group elsewhere.
-  static const secondary = [skills, activity, settings];
+  /// Out of the main path: the sidebar footer's More menu.
+  static const secondary = [models, skills, activity, settings];
 
   /// ⌘1–7 map to this stable order (a published desktop contract the
   /// tests pin): every destination, in rail order.
@@ -143,6 +144,22 @@ class AppState extends ChangeNotifier {
 
   /// An Activity tab to show on arrival (scheduled goals).
   ActivityTab? pendingActivityTab;
+
+  /// Home's saved threads, mirrored here so the sidebar (or the phone
+  /// drawer) can list them; Home loads them from the core and publishes.
+  List<Map<String, dynamic>> threads = const [];
+
+  /// The thread Home is showing (null: a new, unsaved one).
+  String? currentThreadId;
+
+  /// Requests the sidebar hands to Home, consumed there.
+  String? pendingThreadId;
+  bool pendingNewThread = false;
+  bool pendingManageThreads = false;
+
+  /// The sidebar's open/collapsed choice; null follows the window class
+  /// ([HarborBreakpoints.sidebarOpenByDefault]).
+  bool? sidebarOpen;
 
   Locale get locale => _prefs.locale;
   ThemeMode get themeMode => _prefs.themeMode;
@@ -212,6 +229,40 @@ class AppState extends ChangeNotifier {
   }
 
   void goTo(HarborSurface s) => selectSurface(s.index);
+
+  /// Home publishes its thread list and the current thread.
+  void publishThreads(List<Map<String, dynamic>> list, String? current) {
+    threads = List.unmodifiable(list);
+    currentThreadId = current;
+    notifyListeners();
+  }
+
+  /// Open a saved thread on Home (from the sidebar).
+  void openThread(String id) {
+    pendingThreadId = id;
+    _moveTo(HarborSurface.home.index);
+    notifyListeners();
+  }
+
+  /// Start a new, empty thread on Home.
+  void newThread() {
+    pendingNewThread = true;
+    _moveTo(HarborSurface.home.index);
+    notifyListeners();
+  }
+
+  /// Rename or delete threads (Home shows the history dialog).
+  void manageThreads() {
+    pendingManageThreads = true;
+    _moveTo(HarborSurface.home.index);
+    notifyListeners();
+  }
+
+  void setSidebarOpen(bool open) {
+    if (sidebarOpen == open) return;
+    sidebarOpen = open;
+    notifyListeners();
+  }
 
   /// Navigate to Work and ask it to open the file picker.
   void requestOpenFile() {

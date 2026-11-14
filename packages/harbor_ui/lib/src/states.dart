@@ -228,23 +228,3 @@ class HarborLoadingState extends StatelessWidget {
     );
   }
 }
-
-/// Skeleton block for lists that are still loading.
-class HarborSkeleton extends StatelessWidget {
-  const HarborSkeleton({super.key, this.height = 14, this.width});
-  final double height;
-  final double? width;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = HarborTheme.of(context);
-    return Container(
-      height: height,
-      width: width,
-      decoration: BoxDecoration(
-        color: t.colors.skeleton,
-        borderRadius: BorderRadius.circular(HarborRadius.sm / 2),
-      ),
-    );
-  }
-}

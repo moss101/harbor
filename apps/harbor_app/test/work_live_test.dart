@@ -177,12 +177,17 @@ void main() {
     final cited = find.text('Paragraph 2');
     await settleUntil(tester, cited,
         what: 'the grounded answer to cite paragraph 2');
-    expect(
-        tester
-            .widgetList<Text>(find.byType(Text))
-            .map((t) => t.data ?? '')
-            .any((t) => t.contains('45')),
-        isTrue,
+    // The answer is a SelectableText (an EditableText) or a rich Text, so read
+    // every kind of text widget, not only Text.data.
+    final shown = [
+      ...tester
+          .widgetList<Text>(find.byType(Text))
+          .map((t) => t.data ?? t.textSpan?.toPlainText() ?? ''),
+      ...tester
+          .widgetList<EditableText>(find.byType(EditableText))
+          .map((e) => e.controller.text),
+    ];
+    expect(shown.any((t) => t.contains('45')), isTrue,
         reason: 'the answer should state the 45-day term');
 
     await send(tester, "What is the name of Harbor Ltd's chief executive?");

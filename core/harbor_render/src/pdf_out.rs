@@ -142,7 +142,26 @@ pub fn write_text_pdf(title: &str, blocks: &[TextBlock]) -> Vec<u8> {
         current.push(line);
         *y -= advance;
     }
-    for b in blocks {
+    // Lines are placed by their own size plus LINE_GAP, so a gap between
+    // blocks is an empty spacer line of the right height (a spacer at the
+    // top of a page is dropped). Adjusting `y` alone moved only the page
+    // breaks: the gaps never showed up in the file.
+    let spacer = |gap: f64,
+                  y: &mut f64,
+                  current: &mut Vec<(f64, bool, bool, String)>,
+                  pages: &mut Vec<Vec<(f64, bool, bool, String)>>| {
+        let size = gap - LINE_GAP;
+        if size > 0.5 && !current.is_empty() {
+            push_line((size, false, false, String::new()), y, current, pages);
+        }
+    };
+    for (i, b) in blocks.iter().enumerate() {
+        // A heading is a bold, non-monospace block set larger than body
+        // text: it gets room above and sits close to what it introduces.
+        let heading = b.bold && !b.mono && b.size > 11.0;
+        if heading && i > 0 {
+            spacer(b.size * 0.8, &mut y, &mut current, &mut pages);
+        }
         for line in wrap(&b.text, b.size) {
             push_line(
                 (b.size, b.bold, b.mono, line),
@@ -151,8 +170,18 @@ pub fn write_text_pdf(title: &str, blocks: &[TextBlock]) -> Vec<u8> {
                 &mut pages,
             );
         }
-        // Paragraph spacing.
-        y -= b.size * 0.45;
+        // After the block: a clear gap between paragraphs, a small one
+        // under a heading.
+        spacer(
+            if heading {
+                b.size * 0.35
+            } else {
+                10.0 + LINE_GAP
+            },
+            &mut y,
+            &mut current,
+            &mut pages,
+        );
     }
     if !current.is_empty() {
         pages.push(current);
@@ -419,6 +448,80 @@ mod tests {
         let preview = crate::pdf::extract_pages(&pdf).unwrap();
         let all: String = preview.pages.iter().map(|p| p.text.clone()).collect();
         assert!(all.contains("Sheet1"));
+    }
+
+    /// The y position of each text line, top to bottom, read back from the
+    /// (uncompressed) content stream.
+    fn line_ys(pdf: &[u8]) -> Vec<f64> {
+        String::from_utf8_lossy(pdf)
+            .lines()
+            .filter(|l| l.starts_with("BT ") && !l.contains(" () Tj"))
+            .map(|l| {
+                let tm = l.split(" Tm").next().unwrap();
+                tm.rsplit(' ').next().unwrap().parse().unwrap()
+            })
+            .collect()
+    }
+
+    #[test]
+    fn paragraphs_and_headings_get_room_in_the_file() {
+        let body = |t: &str| TextBlock {
+            size: 10.5,
+            bold: false,
+            text: t.into(),
+            mono: false,
+        };
+        let title = TextBlock {
+            size: 18.0,
+            bold: true,
+            text: "Title".into(),
+            mono: false,
+        };
+        let pdf = write_text_pdf("t", &[title, body("one"), body("two"), body("three")]);
+        let ys = line_ys(&pdf);
+        assert_eq!(ys.len() >= 4, true, "{ys:?}");
+        let step = 10.5 + LINE_GAP; // consecutive lines of one paragraph
+                                    // Under the title: closer than a paragraph gap; between paragraphs:
+                                    // clearly more than a plain line step.
+        assert!(ys[2] - ys[3] > step + 6.0, "paragraph gap {:?}", ys);
+        assert!(ys[1] - ys[2] > step + 6.0, "paragraph gap {:?}", ys);
+        assert!(ys[0] - ys[1] > 18.0, "title leading {:?}", ys);
+    }
+
+    #[test]
+    fn a_new_page_does_not_start_with_a_gap() {
+        let blocks: Vec<TextBlock> = (0..120)
+            .map(|i| TextBlock {
+                size: 10.5,
+                bold: false,
+                text: format!("paragraph {i}"),
+                mono: false,
+            })
+            .collect();
+        let pdf = write_text_pdf("t", &blocks);
+        let tops: Vec<f64> = String::from_utf8_lossy(&pdf)
+            .split("stream\n")
+            .skip(1)
+            .filter_map(|c| c.lines().next())
+            .filter(|l| l.starts_with("BT "))
+            .map(|l| {
+                l.split(" Tm")
+                    .next()
+                    .unwrap()
+                    .rsplit(' ')
+                    .next()
+                    .unwrap()
+                    .parse()
+                    .unwrap()
+            })
+            .collect();
+        assert!(tops.len() >= 2, "expected several pages");
+        for t in &tops {
+            assert!(
+                (t - tops[0]).abs() < 0.01,
+                "pages start at the same height: {tops:?}"
+            );
+        }
     }
 
     #[test]

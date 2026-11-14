@@ -1384,5 +1384,25 @@
   "deckApplyDesign": "Apply design",
   "deckDesignApplied": "Design changed. Save a copy to keep it.",
   "deckDesignFailed": "Couldn't change the design",
-  "deckRestyling": "Applying the design…"
+  "deckRestyling": "Applying the design…",
+  "shellNewThread": "New thread",
+  "shellRecentThreads": "Recent",
+  "shellNoThreads": "Your questions and answers will appear here.",
+  "shellManageThreads": "Manage threads",
+  "shellSidebarCollapse": "Collapse sidebar",
+  "shellSidebarExpand": "Expand sidebar",
+  "answerSources": "Sources",
+  "answerSourcesAll": "All sources",
+  "answerSourceOpen": "Open source {title}",
+  "@answerSourceOpen": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "answerCopy": "Copy answer",
+  "answerCopied": "Answer copied",
+  "homeFollowUpHint": "Ask a follow-up…",
+  "homeSuggestionsTitle": "Try"
 }
