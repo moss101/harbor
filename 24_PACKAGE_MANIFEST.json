@@ -4,8 +4,8 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "50d6fe5f4b1db2af1ae049c0baaa381e776822d263fe8cc7108614073bd355e4",
-  "file_count_excluding_manifest": 2311,
+  "input_manifest_sha256": "73356d9efcbc0e70ae1364039fce6e371c9a382ca6f34c9bf2f7d9aff420d554",
+  "file_count_excluding_manifest": 2301,
   "files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -124,33 +124,13 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 433718,
-      "sha256": "8d0f5724682bedfcf2658de91af016d7d0285fb044ab6109d36160457879fdf0"
-    },
-    {
-      "path": "19_Structural_Validation.json",
-      "bytes": 433718,
-      "sha256": "8d0f5724682bedfcf2658de91af016d7d0285fb044ab6109d36160457879fdf0"
-    },
-    {
-      "path": "19_Structural_Validation.json",
-      "bytes": 433718,
-      "sha256": "8d0f5724682bedfcf2658de91af016d7d0285fb044ab6109d36160457879fdf0"
+      "bytes": 432762,
+      "sha256": "cb2c1bc4fb21934a4681e0799946066530c6d0d85be6a604724525cd3998efb1"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1375,
-      "sha256": "38c327a52ac9a8586f3a296efa1fbe6d74d05e47da4a92026788d2fcf0b42c91"
-    },
-    {
-      "path": "20_Readiness_Validation_Report.md",
-      "bytes": 1375,
-      "sha256": "38c327a52ac9a8586f3a296efa1fbe6d74d05e47da4a92026788d2fcf0b42c91"
-    },
-    {
-      "path": "20_Readiness_Validation_Report.md",
-      "bytes": 1375,
-      "sha256": "38c327a52ac9a8586f3a296efa1fbe6d74d05e47da4a92026788d2fcf0b42c91"
+      "sha256": "40a7a7785bcc2f8feab418e660b4b50403316a76f146caf305748574dc8958dc"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -2023,16 +2003,6 @@
       "sha256": "54a27d3fa5599b26544c5a8a5ba5e69bee362c7f1777075e54a0cdd1b8ae7aa9"
     },
     {
-      "path": "core/Cargo.lock",
-      "bytes": 90618,
-      "sha256": "54a27d3fa5599b26544c5a8a5ba5e69bee362c7f1777075e54a0cdd1b8ae7aa9"
-    },
-    {
-      "path": "core/Cargo.lock",
-      "bytes": 90618,
-      "sha256": "54a27d3fa5599b26544c5a8a5ba5e69bee362c7f1777075e54a0cdd1b8ae7aa9"
-    },
-    {
       "path": "core/Cargo.toml",
       "bytes": 2967,
       "sha256": "73caee4db924d4202ddd10c0b92669fff1d3f2f78c7e500e352a78c060afffcd"
@@ -2046,16 +2016,6 @@
       "path": "core/fuzz/.gitignore",
       "bytes": 208,
       "sha256": "789caa40975cb1fe7988adb109252114488ff0454d6769e4ba482b5b487a6271"
-    },
-    {
-      "path": "core/fuzz/Cargo.lock",
-      "bytes": 89969,
-      "sha256": "d8d4d3543921f7c6dc27635da550ed1cd79907849ed3d249f38429a6f9912509"
-    },
-    {
-      "path": "core/fuzz/Cargo.lock",
-      "bytes": 89969,
-      "sha256": "d8d4d3543921f7c6dc27635da550ed1cd79907849ed3d249f38429a6f9912509"
     },
     {
       "path": "core/fuzz/Cargo.lock",
@@ -4156,16 +4116,6 @@
       "path": "docs/operations/slide-scene-contract.md",
       "bytes": 8980,
       "sha256": "d5b7156b60af3c5d45ada63a07807e06959940a474865af2cddf58fcd02a9e75"
-    },
-    {
-      "path": "docs/release/THIRD_PARTY_NOTICES.md",
-      "bytes": 35494,
-      "sha256": "63ff8e44b66e51fc9366856e91a65c122c72e58a38b7493ae055760382ba5ade"
-    },
-    {
-      "path": "docs/release/THIRD_PARTY_NOTICES.md",
-      "bytes": 35494,
-      "sha256": "63ff8e44b66e51fc9366856e91a65c122c72e58a38b7493ae055760382ba5ade"
     },
     {
       "path": "docs/release/THIRD_PARTY_NOTICES.md",

@@ -2,7 +2,7 @@
   "validator_version": "harbor-dossier-validator/1.0.0",
   "status": "PASS",
   "scope": "Specification structure and contract regressions only; no product release evidence",
-  "input_manifest_sha256": "50d6fe5f4b1db2af1ae049c0baaa381e776822d263fe8cc7108614073bd355e4",
+  "input_manifest_sha256": "73356d9efcbc0e70ae1364039fce6e371c9a382ca6f34c9bf2f7d9aff420d554",
   "input_files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -1985,16 +1985,6 @@
       "sha256": "54a27d3fa5599b26544c5a8a5ba5e69bee362c7f1777075e54a0cdd1b8ae7aa9"
     },
     {
-      "path": "core/Cargo.lock",
-      "bytes": 90618,
-      "sha256": "54a27d3fa5599b26544c5a8a5ba5e69bee362c7f1777075e54a0cdd1b8ae7aa9"
-    },
-    {
-      "path": "core/Cargo.lock",
-      "bytes": 90618,
-      "sha256": "54a27d3fa5599b26544c5a8a5ba5e69bee362c7f1777075e54a0cdd1b8ae7aa9"
-    },
-    {
       "path": "core/Cargo.toml",
       "bytes": 2967,
       "sha256": "73caee4db924d4202ddd10c0b92669fff1d3f2f78c7e500e352a78c060afffcd"
@@ -2008,16 +1998,6 @@
       "path": "core/fuzz/.gitignore",
       "bytes": 208,
       "sha256": "789caa40975cb1fe7988adb109252114488ff0454d6769e4ba482b5b487a6271"
-    },
-    {
-      "path": "core/fuzz/Cargo.lock",
-      "bytes": 89969,
-      "sha256": "d8d4d3543921f7c6dc27635da550ed1cd79907849ed3d249f38429a6f9912509"
-    },
-    {
-      "path": "core/fuzz/Cargo.lock",
-      "bytes": 89969,
-      "sha256": "d8d4d3543921f7c6dc27635da550ed1cd79907849ed3d249f38429a6f9912509"
     },
     {
       "path": "core/fuzz/Cargo.lock",
@@ -4118,16 +4098,6 @@
       "path": "docs/operations/slide-scene-contract.md",
       "bytes": 8980,
       "sha256": "d5b7156b60af3c5d45ada63a07807e06959940a474865af2cddf58fcd02a9e75"
-    },
-    {
-      "path": "docs/release/THIRD_PARTY_NOTICES.md",
-      "bytes": 35494,
-      "sha256": "63ff8e44b66e51fc9366856e91a65c122c72e58a38b7493ae055760382ba5ade"
-    },
-    {
-      "path": "docs/release/THIRD_PARTY_NOTICES.md",
-      "bytes": 35494,
-      "sha256": "63ff8e44b66e51fc9366856e91a65c122c72e58a38b7493ae055760382ba5ade"
     },
     {
       "path": "docs/release/THIRD_PARTY_NOTICES.md",
