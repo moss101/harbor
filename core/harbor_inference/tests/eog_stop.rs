@@ -8,7 +8,7 @@
 //! missing fixture is reported and skipped, never faked. The package is
 //! linked, not copied, into a temp install root (no extra disk use).
 
-#![cfg(feature = "gguf-backend")]
+#![cfg(all(feature = "gguf-backend", unix))]
 
 use harbor_canonical::JsonValue;
 use harbor_inference::gguf::GgufLlamaCppProvider;
