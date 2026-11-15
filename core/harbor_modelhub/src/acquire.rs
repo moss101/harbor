@@ -1045,10 +1045,25 @@ fn check_listing_path(path: &str) -> Result<(), AcquireError> {
     Ok(())
 }
 
-/// Free space at `path`'s filesystem, probed natively per platform
-/// (SEC-029 preflight; no third-party dependency).
-#[cfg(unix)]
+/// Free space for writing at `path`, probed natively per platform
+/// (SEC-029 preflight; no third-party dependency). `path` need not exist
+/// yet: a fresh install has no `models/` directory until the first model
+/// lands, and probing it failed every first install with ENOENT ("Install
+/// failed: No such file or directory"). The nearest existing ancestor is
+/// on the same filesystem the directory will be created on.
 pub fn free_disk_bytes(path: &Path) -> std::io::Result<u64> {
+    let mut probe = path;
+    while !probe.exists() {
+        match probe.parent() {
+            Some(parent) if !parent.as_os_str().is_empty() => probe = parent,
+            _ => break,
+        }
+    }
+    free_disk_bytes_at(probe)
+}
+
+#[cfg(unix)]
+fn free_disk_bytes_at(path: &Path) -> std::io::Result<u64> {
     use std::os::unix::ffi::OsStrExt as _;
     let c = std::ffi::CString::new(path.as_os_str().as_bytes())
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidInput, e))?;
@@ -1062,9 +1077,10 @@ pub fn free_disk_bytes(path: &Path) -> std::io::Result<u64> {
     Ok(fs.f_bavail as u64 * fs.f_frsize as u64)
 }
 
-/// Free space at `path`'s filesystem (Windows: GetDiskFreeSpaceExW).
+/// Free space at an existing `path`'s filesystem (Windows:
+/// GetDiskFreeSpaceExW).
 #[cfg(windows)]
-pub fn free_disk_bytes(path: &Path) -> std::io::Result<u64> {
+fn free_disk_bytes_at(path: &Path) -> std::io::Result<u64> {
     use std::os::windows::ffi::OsStrExt as _;
     let wide: Vec<u16> = path
         .as_os_str()
@@ -1952,6 +1968,15 @@ mod sec029_tests {
         // nonzero; a nonsense path is an io error, not a panic.
         let ok = free_disk_bytes(std::path::Path::new("/tmp")).unwrap();
         assert!(ok > 0);
-        assert!(free_disk_bytes(std::path::Path::new("/nonexistent-harbor-probe-xyz")).is_err());
+        // A directory that does not exist yet (a fresh install's models/)
+        // reports the space of the filesystem it will be created on.
+        let dir = TempDir::new().unwrap();
+        let missing = dir.path().join("models").join("not-yet");
+        let here = free_disk_bytes(dir.path()).unwrap();
+        let there = free_disk_bytes(&missing).unwrap();
+        assert!(
+            there > 0 && there.abs_diff(here) < 1 << 30,
+            "{here} vs {there}"
+        );
     }
 }

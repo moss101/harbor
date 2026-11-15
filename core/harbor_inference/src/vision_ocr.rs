@@ -34,6 +34,8 @@ pub struct VisionOcr {
     backend: &'static llama_cpp_2::llama_backend::LlamaBackend,
     package: String,
     guard: Mutex<()>,
+    /// GPU crash sentinel for this engine's workloads (decision 0022).
+    work: Option<crate::resilience::WorkTicket>,
 }
 
 fn err(m: impl std::fmt::Display) -> OcrError {
@@ -50,9 +52,11 @@ impl VisionOcr {
         let mmproj = provider
             .mmproj_file(package_id)
             .map_err(|e| err(format!("{package_id} has no vision projector: {e}")))?;
+        let use_gpu = !provider.is_cpu_pinned(package_id)
+            && provider.backend_of(package_id) == Some("gpu")
+            && std::env::var("HARBOR_GGUF_CPU_ONLY").as_deref() != Ok("1");
         let params = MtmdContextParams {
-            use_gpu: !provider.is_cpu_pinned(package_id)
-                && std::env::var("HARBOR_GGUF_CPU_ONLY").as_deref() != Ok("1"),
+            use_gpu,
             n_threads: crate::gguf::compute_threads(),
             ..MtmdContextParams::default()
         };
@@ -71,6 +75,11 @@ impl VisionOcr {
             backend: provider.backend(),
             package: package_id.to_string(),
             guard: Mutex::new(()),
+            work: if use_gpu {
+                provider.work_ticket(package_id)
+            } else {
+                None
+            },
         })
     }
 
@@ -78,7 +87,8 @@ impl VisionOcr {
     /// produces non-finite scores (a GPU path that loads fine and computes
     /// wrongly - measured on Metal with Qwen2.5-VL), pin the package to the
     /// CPU, reload and reopen. Returns the engine and which backend it runs on
-    /// (`"gpu"`, `"cpu_fallback"`).
+    /// (`"gpu"`, `"cpu"`, `"cpu_pinned"` — see
+    /// [`GgufLlamaCppProvider::backend_of`] — or `"cpu_fallback"`).
     pub fn open_verified(
         provider: &GgufLlamaCppProvider,
         model: &crate::provider::ModelRef,
@@ -113,7 +123,11 @@ impl VisionOcr {
         };
         let first = Self::open(provider, package_id)?;
         match canary(&first) {
-            Ok(()) => Ok((first, "gpu")),
+            Ok(()) => {
+                provider.mark_qualified(package_id);
+                let backend = provider.backend_of(package_id).unwrap_or("cpu");
+                Ok((first, backend))
+            }
             Err(OcrError::Failed(m)) if m.contains("non-finite") => {
                 drop(first);
                 provider.force_cpu(package_id);
@@ -130,6 +144,7 @@ impl VisionOcr {
 
     fn read(&self, bitmap: MtmdBitmap, cancel: &AtomicBool) -> Result<(String, f64), OcrError> {
         let _g = self.guard.lock().unwrap();
+        let _work = self.work.as_ref().map(|t| t.arm());
         let marker = mtmd_default_marker();
         let content = format!("{marker}\n{INSTRUCTION}");
         let chat = vec![LlamaChatMessage::new("user".into(), content.clone()).map_err(err)?];

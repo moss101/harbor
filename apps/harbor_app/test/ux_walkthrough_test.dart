@@ -10,6 +10,8 @@ import 'package:harbor_app/services/harbor_service.dart';
 import 'package:harbor_app/services/preferences.dart';
 import 'package:harbor_ui/harbor_ui.dart';
 
+import 'support/shell_nav.dart';
+
 final repoRoot = Directory.current.parent.parent.path; // apps/harbor_app
 final dylibPath = '$repoRoot/core/target/debug/libharbor_ffi.dylib';
 final coreAvailable = File(dylibPath).existsSync();
@@ -43,10 +45,12 @@ Future<void> pumpApp(WidgetTester tester, HarborService? service) async {
 
 void main() {
   late HarborService service;
+  Directory? dataRoot;
 
   setUpAll(() async {
     if (!coreAvailable) return;
-    final dir = await Directory.systemTemp.createTemp('harbor-ux-test-');
+    final dir =
+        dataRoot = await Directory.systemTemp.createTemp('harbor-ux-test-');
     service = await HarborService.open(
         libraryPath: dylibPath,
         dataRoot: dir.path,
@@ -76,6 +80,10 @@ void main() {
 
   tearDownAll(() async {
     if (coreAvailable) await service.close();
+    // Close first, then drop the data root so runs don't pile up in $TMPDIR.
+    if (dataRoot?.existsSync() ?? false) {
+      await dataRoot!.delete(recursive: true);
+    }
   });
 
   testWidgets(
@@ -84,9 +92,7 @@ void main() {
     if (!coreAvailable) return;
     await pumpApp(tester, service);
     // Go to Models → Recommended.
-    await tester.tap(find.text('Models').first);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await navigateTo(tester, 'Models');
     // A real catalog entry renders (qwen chat model first).
     expect(find.text('qwen2.5-1.5b-instruct'), findsOneWidget);
     // NOVICE: no quantization jargon on the card.
@@ -108,9 +114,7 @@ void main() {
       'backend/license/files BEFORE install', (tester) async {
     if (!coreAvailable) return;
     await pumpApp(tester, service);
-    await tester.tap(find.text('Models').first);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await navigateTo(tester, 'Models');
     await tester.tap(
         find.byKey(const ValueKey('catalog-advanced-qwen2.5-1.5b-instruct')));
     await tester.pump();
@@ -137,9 +141,7 @@ void main() {
       '(trail expandability is the harbor_ui contract test)', (tester) async {
     if (!coreAvailable) return;
     await pumpApp(tester, service);
-    await tester.tap(find.text('Activity').first);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
+    await navigateTo(tester, 'Activity');
     // The durable run is listed under Activity with its readable state.
     expect(find.textContaining('ux-trail-run'), findsWidgets);
     // The trail's user-readable + expandable-technical contract is

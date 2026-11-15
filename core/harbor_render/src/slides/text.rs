@@ -104,9 +104,7 @@ pub(crate) fn parse_list_style(n: Node) -> LevelStyles {
         .find(|c| c.is_element() && c.tag_name().name() == "defPPr")
         .map(parse_ppr)
         .unwrap_or_default();
-    for lvl in 0..9 {
-        out.levels[lvl] = base.clone();
-    }
+    out.levels.fill(base.clone());
     for c in n.children().filter(|c| c.is_element()) {
         let name = c.tag_name().name();
         if let Some(num) = name

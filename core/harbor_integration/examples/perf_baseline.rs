@@ -229,7 +229,7 @@ fn main() {
             "package": "qwen2.5-1.5b-instruct",
             "sha256": "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e",
         },
-        "runtime": "llama.cpp/llama-cpp-sys-2@0.1.156",
+        "runtime": harbor_inference::runtime_revision(),
         "protocol": "raw samples; p50/p95 derived; greedy decoding",
         "memory_pressure_simulation": if ballast_gb > 0 {
             serde_json::json!({

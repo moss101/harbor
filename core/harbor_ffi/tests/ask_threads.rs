@@ -241,6 +241,7 @@ fn multi_turn_ask_remembers_persists_and_reflects_removed_sources() {
                 "What is the contract value?",
                 vec![serde_json::json!({"title": "t", "_text": "The contract value is 5000 USD."})],
                 &history,
+                harbor_ffi::knowledge::Grounding::Required,
                 16,
                 &std::sync::atomic::AtomicBool::new(false),
                 None,
@@ -312,16 +313,16 @@ fn real_chat_model_resolves_a_follow_up_from_thread_memory() {
     let root = repo_root();
     let chat = root.join("fixtures/models/qwen2.5-1.5b-instruct-q4_k_m.gguf");
     let bge = root.join("fixtures/models/bge-small-en-v1.5-q8_0.gguf");
+    // The 1.1 GB Qwen weights are gitignored (CI runners do not have
+    // them): skip unless HARBOR_REQUIRE_FIXTURES=1, as inference_worker.rs.
     if !(chat.exists() && bge.exists()) {
-        // The qwen weights are not in git, so CI runners lack them; the
-        // qualification machine sets HARBOR_REQUIRE_FIXTURES=1 to fail instead.
         assert!(
             std::env::var("HARBOR_REQUIRE_FIXTURES").as_deref() != Ok("1"),
             "fixture models missing ({} / {})",
             chat.display(),
             bge.display()
         );
-        eprintln!("SKIP: qwen2.5-1.5b / bge-small fixture absent");
+        eprintln!("SKIP: fixture models missing ({})", chat.display());
         return;
     }
     let dir = tempfile::tempdir().unwrap();

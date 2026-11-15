@@ -422,7 +422,7 @@ fn hostile_packages_are_refused_not_panicked_on() {
     let bytes = handmade("<p:sp>", "", "");
     let scene = deck_scene(&bytes);
     if let Ok(s) = scene {
-        assert!(!s.slides[0].unsupported.is_empty())
+        assert!(!s.slides[0].unsupported.is_empty());
     }
     // A slide list with no slides.
     use std::io::Write;
@@ -480,6 +480,6 @@ fn absurdly_nested_xml_is_refused_not_a_stack_overflow() {
     // The slide part exceeds the depth budget: the deck is refused or the
     // slide is noted; either way the process lives.
     if let Ok(s) = deck_scene(&handmade(&body, "", "")) {
-        assert!(!s.slides[0].unsupported.is_empty())
+        assert!(!s.slides[0].unsupported.is_empty());
     }
 }

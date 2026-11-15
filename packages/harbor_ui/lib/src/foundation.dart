@@ -124,6 +124,7 @@ class HarborSurfaceHeader extends StatelessWidget {
     this.leading,
     this.titleIsIdentifier = false,
     this.showTitleOnCompact = false,
+    this.maxWidth,
   });
 
   final String title;
@@ -138,8 +139,26 @@ class HarborSurfaceHeader extends StatelessWidget {
   /// the title is omitted unless it carries something else (a file name).
   final bool showTitleOnCompact;
 
+  /// Matches a page whose column is narrower than the canvas (a
+  /// [HarborPage] with the same maxWidth), so the title lines up with the
+  /// content under it instead of the canvas edge.
+  final double? maxWidth;
+
   @override
   Widget build(BuildContext context) {
+    final header = _build(context);
+    final max = maxWidth;
+    if (max == null) return header;
+    final gutter = HarborBreakpoints.gutter(HarborBreakpoints.of(context));
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: max + gutter * 2),
+          child: header),
+    );
+  }
+
+  Widget _build(BuildContext context) {
     final t = HarborTheme.of(context);
     final wc = HarborBreakpoints.of(context);
     final compact = HarborBreakpoints.isCompact(wc);
@@ -774,11 +793,16 @@ class HarborPill extends StatelessWidget {
   }
 }
 
-/// Brand wordmark: an anchor glyph in brand blue + "Harbor".
+/// Brand wordmark: an anchor glyph in brand blue + the product name.
 class HarborWordmark extends StatelessWidget {
   const HarborWordmark({super.key, this.compact = false, this.size = 18});
   final bool compact;
   final double size;
+
+  /// The product name the mark shows. Apps set it once at startup
+  /// (Harbor LM: "Harbor LM"); every wordmark, including the ones inside
+  /// shared navigation, then reads the same name.
+  static String productName = 'Harbor';
 
   @override
   Widget build(BuildContext context) {
@@ -793,7 +817,8 @@ class HarborWordmark extends StatelessWidget {
       child: Icon(Icons.anchor, size: size, color: t.colors.onBrand),
     );
     if (compact) {
-      return Semantics(label: 'Harbor', child: ExcludeSemantics(child: glyph));
+      return Semantics(
+          label: productName, child: ExcludeSemantics(child: glyph));
     }
     // A brand mark is not body copy: like navigation labels it scales to
     // at most 1.3x and yields (ellipsis) instead of overflowing the bar.
@@ -803,7 +828,7 @@ class HarborWordmark extends StatelessWidget {
         ExcludeSemantics(child: glyph),
         const SizedBox(width: HarborSpace.s2 + 2),
         Flexible(
-          child: Text('Harbor',
+          child: Text(productName,
               maxLines: 1,
               softWrap: false,
               overflow: TextOverflow.ellipsis,

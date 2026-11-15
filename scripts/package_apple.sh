@@ -36,8 +36,13 @@ echo "-- bundle the native core into the app (Contents/Frameworks) --"
 # Without this step the app runs the honest degraded state: the Dart FFI
 # opens libharbor_ffi.dylib by bare name, which dyld resolves against the
 # bundle Frameworks dir only when the dylib is actually there.
-(cd "$repo/core" && cargo build --release -p harbor_ffi)
+(cd "$repo/core" && cargo build --release -p harbor_ffi -p harbor_worker)
 cp "$repo/core/target/release/libharbor_ffi.dylib" "$macos_app/Contents/Frameworks/"
+# The inference worker launcher (decision 0022 phase 3). The core finds it
+# at Frameworks/../MacOS/harbor_worker and runs llama.cpp in it, so a GPU
+# driver crash ends the worker instead of the app. Without it the core runs
+# models in-process (the app still works, just without that isolation).
+cp "$repo/core/target/release/harbor_worker" "$macos_app/Contents/MacOS/harbor_worker"
 cp "$app/macos/Runner/PrivacyInfo.xcprivacy" "$macos_app/Contents/Resources/"
 # Re-signing REPLACES the signature, and a codesign without
 # --entitlements discards the ones Xcode embedded. Both signings below
@@ -45,6 +50,10 @@ cp "$app/macos/Runner/PrivacyInfo.xcprivacy" "$macos_app/Contents/Resources/"
 # user-selected file access declared, and rejected by the Mac App Store.
 ents="$app/macos/Runner/Release.entitlements"
 codesign --force --sign - "$macos_app/Contents/Frameworks/libharbor_ffi.dylib"
+# A helper spawned by a sandboxed app must carry app-sandbox + inherit and
+# nothing else, and must be signed before the bundle that contains it.
+helper_ents="$app/macos/Runner/WorkerHelper.entitlements"
+codesign --force --sign - --entitlements "$helper_ents" "$macos_app/Contents/MacOS/harbor_worker"
 codesign --force --sign - --entitlements "$ents" "$macos_app"
 # Read them back off the bundle: the entitlements the app ships with are
 # whatever the LAST codesign wrote, not whatever the plist says.
@@ -53,12 +62,23 @@ for key in app-sandbox files.user-selected.read-write network.client; do
     || { echo "FAIL: entitlement $key missing after signing"; exit 1; }
 done
 echo "   entitlements verified on the bundle: sandbox + user-selected files + network client"
+for key in app-sandbox inherit; do
+  codesign -d --entitlements - "$macos_app/Contents/MacOS/harbor_worker" 2>&1 | grep -q "$key" \
+    || { echo "FAIL: worker entitlement $key missing after signing"; exit 1; }
+done
 echo "   dylib bundled: Contents/Frameworks/libharbor_ffi.dylib"
+echo "   inference worker bundled: Contents/MacOS/harbor_worker (sandbox-inherit)"
 echo "   privacy manifest bundled: Contents/Resources/PrivacyInfo.xcprivacy"
 
 if [[ -n "${HARBOR_APPLE_SIGNING_IDENTITY:-}" ]]; then
   echo "-- signing macOS app with OPERATOR identity (keychain-provided) --"
-  codesign --deep --force --options runtime --entitlements "$ents" \
+  # Inside-out: the helper keeps its own (inherit) entitlements; --deep
+  # would re-sign it with the app's and break the sandbox handshake.
+  codesign --force --options runtime --sign "$HARBOR_APPLE_SIGNING_IDENTITY" \
+    "$macos_app/Contents/Frameworks/libharbor_ffi.dylib"
+  codesign --force --options runtime --entitlements "$helper_ents" \
+    --sign "$HARBOR_APPLE_SIGNING_IDENTITY" "$macos_app/Contents/MacOS/harbor_worker"
+  codesign --force --options runtime --entitlements "$ents" \
     --sign "$HARBOR_APPLE_SIGNING_IDENTITY" "$macos_app"
   codesign --verify --strict "$macos_app"
 else

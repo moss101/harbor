@@ -165,8 +165,8 @@
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
 			buildPhases = (
 				9740EEB61CF901F6004384FC /* Run Script */,
-				97C146EA1CF9000F007C117D /* Sources */,
 				74B0F1A12B7F000000000002 /* Stage Harbor Native Archive */,
+				97C146EA1CF9000F007C117D /* Sources */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
@@ -293,7 +293,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ \"$PLATFORM_NAME\" = \"iphonesimulator\" ]; then\nFFI_LIB=\"$SRCROOT/../../../core/target/aarch64-apple-ios-sim/release/libharbor_ffi.dylib\"\n# Always invoke cargo. This used to be `if [ ! -f \"$FFI_LIB\" ]`,\n# which treated the artifact EXISTING as proof it was CURRENT: after\n# the first simulator build every later one copied that same dylib\n# forward, so any Rust change silently did not reach the simulator\n# and the app under test was not the app in the tree. cargo decides\n# what is stale, which is its job and not this script's guess; an\n# unchanged workspace makes this a no-op.\necho \"harbor_ffi: building libharbor_ffi.dylib (aarch64-apple-ios-sim)...\"\n# rustup's rustc must win over any Homebrew rustc on PATH, which has\n# no Apple targets installed. Pinning the cargo BINARY is not enough:\n# cargo resolves `rustc` through PATH, so a Homebrew-first PATH fails\n# with \"can't find crate for `core`\" / \"target may not be installed\".\nexport PATH=\"$HOME/.cargo/bin:$PATH\"\n(cd \"$SRCROOT/../../../core\" && \"$HOME/.cargo/bin/cargo\" build --release -p harbor_ffi --target aarch64-apple-ios-sim) || exit 1\n[ -f \"$FFI_LIB\" ] || { echo \"harbor_ffi: cargo reported success but $FFI_LIB is missing\" >&2; exit 1; }\ncp -f \"$FFI_LIB\" \"$BUILT_PRODUCTS_DIR/$PRODUCT_NAME.app/libharbor_ffi.dylib\" || exit 1\ncodesign --force --sign - \"$BUILT_PRODUCTS_DIR/$PRODUCT_NAME.app/libharbor_ffi.dylib\" || exit 1\necho \"harbor_ffi: embedded into $PRODUCT_NAME.app\"\nelse\necho \"harbor_ffi: device build links the static archive staged by Stage Harbor Native Archive\"\nfi\ncp -f \"$SRCROOT/Runner/PrivacyInfo.xcprivacy\" \"$BUILT_PRODUCTS_DIR/$PRODUCT_NAME.app/PrivacyInfo.xcprivacy\" || exit 1\necho \"privacy manifest: bundled into $PRODUCT_NAME.app\"";
+			shellScript = "if [ \"$PLATFORM_NAME\" = \"iphonesimulator\" ]; then\nFFI_LIB=\"$SRCROOT/../../../core/target/aarch64-apple-ios-sim/release/libharbor_ffi.dylib\"\n# Always invoke cargo. This used to be `if [ ! -f \"$FFI_LIB\" ]`,\n# which treated the artifact EXISTING as proof it was CURRENT: after\n# the first simulator build every later one copied that same dylib\n# forward, so any Rust change silently did not reach the simulator\n# and the app under test was not the app in the tree. cargo decides\n# what is stale, which is its job and not this script's guess; an\n# unchanged workspace makes this a no-op.\necho \"harbor_ffi: building libharbor_ffi.dylib (aarch64-apple-ios-sim)...\"\n# rustup's rustc must win over any Homebrew rustc on PATH, which has\n# no Apple targets installed. Pinning the cargo BINARY is not enough:\n# cargo resolves `rustc` through PATH, so a Homebrew-first PATH fails\n# with \"can't find crate for `core`\" / \"target may not be installed\".\nexport PATH=\"$HOME/.cargo/bin:$PATH\"\n(cd \"$SRCROOT/../../../core\" && \"$HOME/.cargo/bin/cargo\" build --release -p harbor_ffi --target aarch64-apple-ios-sim) || exit 1\n[ -f \"$FFI_LIB\" ] || { echo \"harbor_ffi: cargo reported success but $FFI_LIB is missing\" >&2; exit 1; }\ncp -f \"$FFI_LIB\" \"$BUILT_PRODUCTS_DIR/$PRODUCT_NAME.app/libharbor_ffi.dylib\" || exit 1\ncodesign --force --sign - \"$BUILT_PRODUCTS_DIR/$PRODUCT_NAME.app/libharbor_ffi.dylib\" || exit 1\necho \"harbor_ffi: embedded into $PRODUCT_NAME.app\"\nelse\necho \"harbor_ffi: device build links the static archive staged by Stage Harbor Native Archive\"\nfi\ncp -f \"$SRCROOT/Runner/PrivacyInfo.xcprivacy\" \"$BUILT_PRODUCTS_DIR/$PRODUCT_NAME.app/PrivacyInfo.xcprivacy\" || exit 1\necho \"privacy manifest: bundled into $PRODUCT_NAME.app\"\n# Firebase client config: kept out of git (public repo), so a checkout\n# without it builds an app that cannot sign in. Release device builds\n# refuse to continue without it.\nGSI=\"$SRCROOT/Runner/GoogleService-Info.plist\"\nif [ -f \"$GSI\" ]; then\ncp -f \"$GSI\" \"$BUILT_PRODUCTS_DIR/$PRODUCT_NAME.app/GoogleService-Info.plist\" || exit 1\nelif [ \"$CONFIGURATION\" = \"Release\" ] && [ \"$PLATFORM_NAME\" = \"iphoneos\" ]; then\necho \"error: $GSI missing (download it from the Firebase console, project harbor-lm)\" >&2; exit 1\nelse\necho \"warning: $GSI missing; sign-in will not work in this build\"\nfi";
 		};
 		74B0F1A12B7F000000000002 /* Stage Harbor Native Archive */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -305,6 +305,8 @@
 			);
 			name = "Stage Harbor Native Archive";
 			outputPaths = (
+				"$(SRCROOT)/../../../core/target/aarch64-apple-ios/release/libharbor_ffi.a",
+				"$(BUILT_PRODUCTS_DIR)/libharbor_ffi.a",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -447,7 +449,8 @@
 					"-framework",
 					Security,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = dev.harbor.harborApp;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cogniwiss.harborlm;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
@@ -463,7 +466,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.harbor.harborApp.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cogniwiss.harborlm.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -480,7 +483,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.harbor.harborApp.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cogniwiss.harborlm.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
@@ -495,7 +498,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.harbor.harborApp.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cogniwiss.harborlm.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
@@ -644,7 +647,8 @@
 					"-framework",
 					Security,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = dev.harbor.harborApp;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cogniwiss.harborlm;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -682,7 +686,8 @@
 					"-framework",
 					Security,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = dev.harbor.harborApp;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cogniwiss.harborlm;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;

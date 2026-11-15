@@ -1,0 +1,15 @@
+[package]
+name = "harbor_worker"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Launcher for the Harbor inference worker process (decision 0022 phase 3)"
+
+# No dependencies on purpose: the launcher only loads the core library the
+# app already ships (libharbor_ffi) and calls its harbor_worker_main, so
+# llama.cpp exists once on disk and runs the same code in both processes.
+
+[[bin]]
+name = "harbor_worker"
+path = "src/main.rs"

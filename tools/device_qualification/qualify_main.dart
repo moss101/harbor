@@ -29,18 +29,20 @@ void say(String s) {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(MaterialApp(
-    home: Scaffold(
-      appBar: AppBar(title: const Text('Harbor device qualification')),
-      body: ValueListenableBuilder<List<String>>(
-        valueListenable: _lines,
-        builder: (_, lines, __) => ListView(
-          padding: const EdgeInsets.all(12),
-          children: [for (final l in lines) Text(l)],
+  runApp(
+    MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(title: const Text('Harbor device qualification')),
+        body: ValueListenableBuilder<List<String>>(
+          valueListenable: _lines,
+          builder: (_, lines, __) => ListView(
+            padding: const EdgeInsets.all(12),
+            children: [for (final l in lines) Text(l)],
+          ),
         ),
       ),
     ),
-  ));
+  );
   final docs = await getApplicationDocumentsDirectory();
   final base = Directory('${docs.path}/qualify')..createSync(recursive: true);
   _out = File('${base.path}/result.txt');
@@ -62,7 +64,10 @@ Future<void> _run(Directory base) async {
   if (data.existsSync()) data.deleteSync(recursive: true);
   data.createSync(recursive: true);
   final service = await HarborService.open(
-    libraryPath: 'libharbor_ffi.dylib', // device: resolved in-process
+    // iOS device: resolved in-process; Android: the jniLibs library.
+    libraryPath: Platform.isAndroid
+        ? 'libharbor_ffi.so'
+        : 'libharbor_ffi.dylib',
     dataRoot: data.path,
     workspaceId: 'ws-device-qualify',
     deviceRootHex:
@@ -70,7 +75,9 @@ Future<void> _run(Directory base) async {
   );
   final t0 = DateTime.now();
   final installed = await service.installModelFromPath(
-      packageId: 'embeddinggemma2-device', path: model.path);
+    packageId: 'embeddinggemma2-device',
+    path: model.path,
+  );
   if (!installed) {
     say('RESULT FAIL model install failed');
     return;
@@ -78,30 +85,44 @@ Future<void> _run(Directory base) async {
   say('install ${DateTime.now().difference(t0).inMilliseconds} ms');
 
   final t1 = DateTime.now();
-  final opened =
-      await service.openKnowledge(packageId: 'embeddinggemma2-device');
-  say('open=$opened backend=${service.knowledgeBackend} '
-      'dim=${service.knowledgeDimension} '
-      '${DateTime.now().difference(t1).inMilliseconds} ms');
+  final opened = await service.openKnowledge(
+    packageId: 'embeddinggemma2-device',
+  );
+  say(
+    'open=$opened backend=${service.knowledgeBackend} '
+    'dim=${service.knowledgeDimension} '
+    '${DateTime.now().difference(t1).inMilliseconds} ms',
+  );
   if (!opened) {
     say('RESULT FAIL EmbeddingGemma 2 did not open on this device');
     return;
+  }
+  // Decision 0022: where models run on this device and what the GPU
+  // qualification store concluded.
+  final q = await service.runtimeQualification();
+  say(
+    'runtime=${q['runtime']} inference_mode=${q['inference_mode']} '
+    '(${q['inference_mode_detail']}) gpu_backend=${q['gpu_backend']}',
+  );
+  for (final r in (q['records'] as List? ?? const [])) {
+    final m = (r as Map).cast<String, dynamic>();
+    say('gpu key ${m['backend']} ${m['device']}: ${m['state']} — ${m['note']}');
   }
   await service.ingestSources([
     {
       'id': 'contract',
       'title': 'Contract',
-      'text': 'The contract value is 5000 USD and ends 2026-12-31.'
+      'text': 'The contract value is 5000 USD and ends 2026-12-31.',
     },
     {
       'id': 'travel',
       'title': 'Travel',
-      'text': 'Employees may claim up to 180 USD per night for hotels.'
+      'text': 'Employees may claim up to 180 USD per night for hotels.',
     },
     {
       'id': 'leave',
       'title': 'Leave',
-      'text': 'Annual leave entitlement is 24 days per year.'
+      'text': 'Annual leave entitlement is 24 days per year.',
     },
   ]);
   var correct = 0;
@@ -119,11 +140,15 @@ Future<void> _run(Directory base) async {
     final top = c.isEmpty ? null : c.first['source_id'];
     final score = c.isEmpty ? null : c.first['score'];
     if (top == e.value) correct++;
-    say('query "${e.key}" -> $top (want ${e.value}) score=$score '
-        '${DateTime.now().difference(t).inMilliseconds} ms');
+    say(
+      'query "${e.key}" -> $top (want ${e.value}) score=$score '
+      '${DateTime.now().difference(t).inMilliseconds} ms',
+    );
   }
-  say('RESULT ${correct == cases.length ? 'PASS' : 'FAIL'} '
-      'backend=${service.knowledgeBackend} correct=$correct/${cases.length}');
+  say(
+    'RESULT ${correct == cases.length ? 'PASS' : 'FAIL'} '
+    'backend=${service.knowledgeBackend} correct=$correct/${cases.length}',
+  );
   service.close();
 
   final proj = File('${base.path}/mmproj-embeddinggemma-2-Q8_0.gguf');
@@ -158,15 +183,20 @@ Future<void> _runMultimodal(Directory base, File model, File proj) async {
       {'path': proj.path, 'role': 'mmproj'},
     ],
   );
-  say('MM install ok=$installed ${DateTime.now().difference(t0).inMilliseconds} ms');
+  say(
+    'MM install ok=$installed ${DateTime.now().difference(t0).inMilliseconds} ms',
+  );
   if (!installed) {
     say('MM RESULT FAIL package install failed');
     return;
   }
-  final opened =
-      await service.openKnowledge(packageId: 'embeddinggemma2-mm-device');
-  say('MM open=$opened multimodal=${service.knowledgeMultimodal} '
-      'backend=${service.knowledgeBackend}');
+  final opened = await service.openKnowledge(
+    packageId: 'embeddinggemma2-mm-device',
+  );
+  say(
+    'MM open=$opened multimodal=${service.knowledgeMultimodal} '
+    'backend=${service.knowledgeBackend}',
+  );
   if (!opened || !service.knowledgeMultimodal) {
     say('MM RESULT FAIL media towers not available');
     return;
@@ -180,19 +210,25 @@ Future<void> _runMultimodal(Directory base, File model, File proj) async {
   for (final n in ['invoice.jpg', 'landscape.jpg', 'chart.jpg']) {
     await timed(n, () async {
       await service.ingestMedia(
-          bytes: await m(n).readAsBytes(), kind: 'image', title: n);
+        bytes: await m(n).readAsBytes(),
+        kind: 'image',
+        title: n,
+      );
     });
   }
   for (final n in ['speech_revenue.wav', 'speech_weather.wav']) {
     await timed(n, () async {
       await service.ingestMedia(
-          bytes: await m(n).readAsBytes(), kind: 'audio', title: n);
+        bytes: await m(n).readAsBytes(),
+        kind: 'audio',
+        title: n,
+      );
     });
   }
   for (final v in ['chart_growth', 'landscape_sun']) {
     await timed('$v (video, 4 frames)', () async {
       final frames = [
-        for (var i = 0; i < 4; i++) await m('${v}_frame$i.jpg').readAsBytes()
+        for (var i = 0; i < 4; i++) await m('${v}_frame$i.jpg').readAsBytes(),
       ];
       await service.ingestVideo(frames: frames, title: '$v.mp4');
     });
@@ -209,8 +245,10 @@ Future<void> _runMultimodal(Directory base, File model, File proj) async {
     final got = await top(r);
     if (got == want) ok++;
     final c = (r?['citations'] as List?)?.cast<Map>() ?? const [];
-    say('MM $label -> $got (want $want) '
-        'score=${c.isEmpty ? null : c.first['score']}');
+    say(
+      'MM $label -> $got (want $want) '
+      'score=${c.isEmpty ? null : c.first['score']}',
+    );
   }
 
   const textCases = {
@@ -234,11 +272,17 @@ Future<void> _runMultimodal(Directory base, File model, File proj) async {
   // Search BY an image: the invoice picture must find itself first.
   final t = DateTime.now();
   final byImage = await service.searchByMedia(
-      await m('invoice.jpg').readAsBytes(), 'image',
-      topK: 3);
+    await m('invoice.jpg').readAsBytes(),
+    'image',
+    topK: 3,
+  );
   await check('image query invoice.jpg', 'invoice.jpg', byImage);
-  say('MM   image query took ${DateTime.now().difference(t).inMilliseconds} ms');
-  say('MM RESULT ${ok == total ? 'PASS' : 'FAIL'} '
-      'backend=${service.knowledgeBackend} correct=$ok/$total');
+  say(
+    'MM   image query took ${DateTime.now().difference(t).inMilliseconds} ms',
+  );
+  say(
+    'MM RESULT ${ok == total ? 'PASS' : 'FAIL'} '
+    'backend=${service.knowledgeBackend} correct=$ok/$total',
+  );
   service.close();
 }

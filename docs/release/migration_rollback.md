@@ -82,5 +82,6 @@ storage contracts in `13_Network_and_Storage_Policy.md`.
 A CycloneDX 1.5 SBOM covering all Rust and Dart dependencies is generated
 from the lockfiles by `tools/generate_sbom.py --write`
 (evidence/sbom.cyclonedx.json). Deterministic given identical lockfiles;
-the pinned security-relevant components (formualizer, llama-cpp-sys-2,
-rusqlite, chacha20poly1305) appear with their exact versions.
+the pinned security-relevant components (formualizer, rusqlite,
+chacha20poly1305, and llama.cpp — vendored at one commit and recorded from
+third_party/llama.cpp/HARBOR_PIN.json) appear with their exact versions.

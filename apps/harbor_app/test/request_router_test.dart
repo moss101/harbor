@@ -35,7 +35,22 @@ void main() {
     final r = await RequestRouter(s).route('revenue last quarter');
     expect(r, isA<RouteAsk>());
     expect((r as RouteAsk).fromCore, isTrue);
+    expect(r.general, isFalse);
     expect(s.calls, ['openKnowledge', 'suggestIntent']);
+  });
+
+  test('general chat is an Ask that skips Library retrieval', () async {
+    final s = FakeHarborService(skillList: [
+      tidySkill
+    ], intent: {
+      'abstained': false,
+      'ranked': [
+        {'id': 'general_chat', 'score': 0.9}
+      ]
+    });
+    final r = await RequestRouter(s).route('what is your name');
+    expect(r, isA<RouteAsk>());
+    expect((r as RouteAsk).general, isTrue);
   });
 
   test('run_skill goes to the skill router even when phrased as a question',
@@ -111,6 +126,82 @@ void main() {
       final r = await RequestRouter(s).route('draft an email to the team');
       expect(r, isA<RouteNone>());
       expect((r as RouteNone).reason, RouteNoneReason.noIndex);
+      expect(r.suggestions.map((s) => s.id), ['email-drafting']);
+    });
+
+    test('a task no skill names goes to chat, not to unrelated skills',
+        () async {
+      // Spreadsheet Builder's description says "Harbor writes the
+      // formulas": that word alone must not offer it for a CV.
+      final builder = graphSkill('sheet-builder', 'Spreadsheet Builder',
+          inputs: {
+            'request': {'type': 'string'},
+          },
+          description:
+              'Build a new Excel workbook. Harbor writes the formulas.');
+      final s = FakeHarborService(
+          indexOpens: false, skillList: [emailSkill, builder]);
+      final r = await RequestRouter(s).route(
+          'write a cv of system analyst and provide pdf',
+          chatPackage: 'qwen-chat');
+      expect(r, isA<RouteAsk>());
+      expect((r as RouteAsk).general, isTrue);
+      // Without a chat model there is nothing to answer with: the panel
+      // stays, with its way to the Skills library.
+      final none = await RequestRouter(s)
+          .route('write a cv of system analyst and provide pdf');
+      expect(none, isA<RouteNone>());
+      expect((none as RouteNone).reason, RouteNoneReason.noIndex);
+    });
+
+    test('the core picks a skill without an index (keywords or chat model)',
+        () async {
+      final s = FakeHarborService(
+          indexOpens: false, skillList: [emailSkill, tidySkill])
+        ..liteSuggestion = {
+          'abstained': false,
+          'router': 'keywords',
+          'ranked': [
+            {'skill_id': 'email-drafting', 'title': 'Email', 'score': 0.0},
+          ],
+        };
+      final r = await RequestRouter(s)
+          .route('let Sara know the shipment is late', chatPackage: 'lfm');
+      expect(r, isA<RouteSkill>());
+      expect((r as RouteSkill).skill.id, 'email-drafting');
+    });
+
+    test("the chat model's none means the chat model answers", () async {
+      final s = FakeHarborService(indexOpens: false, skillList: [emailSkill])
+        ..liteSuggestion = {
+          'abstained': true,
+          'none_fit': true,
+          'router': 'chat',
+          'reason': 'no_confident_match',
+          'ranked': [
+            {'skill_id': 'email-drafting', 'title': 'Email', 'score': 0.0},
+          ],
+        };
+      final r = await RequestRouter(s).route('cheer me up', chatPackage: 'lfm');
+      expect(r, isA<RouteAsk>());
+      expect((r as RouteAsk).general, isTrue);
+    });
+
+    test('keyword ties the model could not settle are offered', () async {
+      final s = FakeHarborService(
+          indexOpens: false, skillList: [emailSkill, tidySkill])
+        ..liteSuggestion = {
+          'abstained': true,
+          'router': 'undecided',
+          'reason': 'ambiguous',
+          'ranked': [
+            {'skill_id': 'email-drafting', 'title': 'Email', 'score': 0.0},
+            {'skill_id': 'table-cleanup', 'title': 'Tidy', 'score': 0.0},
+          ],
+        };
+      final r = await RequestRouter(s).route('email the cleaned table');
+      expect(r, isA<RouteNone>());
+      expect((r as RouteNone).reason, RouteNoneReason.ambiguous);
       expect(r.suggestions.map((s) => s.id), ['email-drafting']);
     });
 

@@ -33,7 +33,8 @@ void main() {
       'inline turn on a durable run; clearing returns to the dashboard',
       (tester) async {
     final s = FakeHarborService(models: chat, indexOpens: false);
-    await pumpSurface(tester, s, (state) => HomeSurface(state: state));
+    final state =
+        await pumpSurface(tester, s, (state) => HomeSurface(state: state));
     expect(find.text('What do you want to get done?'), findsOneWidget);
     expect(find.text('Summarize document'), findsOneWidget);
     expect(find.byKey(const ValueKey('home-conversation')), findsNothing);
@@ -50,11 +51,13 @@ void main() {
     expect(s.calls, containsAllInOrder(['createRun', 'generateAnswer']));
     expect(s.generateRunIds.single, startsWith('run-'));
 
-    // A second question appends a turn; the composer stays docked.
+    // A second question appends a turn; the follow-up box stays docked.
+    expect(find.text('Ask a follow-up…'), findsOneWidget);
     await send(tester, 'Who attended?');
     expect(find.byKey(const ValueKey('home-answer')), findsNWidgets(2));
 
-    await tester.tap(find.byKey(const ValueKey('home-clear-conversation')));
+    // The shell's New thread (sidebar, drawer or phone top bar).
+    state.newThread();
     await tester.pump();
     expect(find.text('What do you want to get done?'), findsOneWidget);
     expect(find.byKey(const ValueKey('home-answer')), findsNothing);
@@ -81,8 +84,11 @@ void main() {
     await pumpSurface(tester, s, (state) => HomeSurface(state: state));
     await send(tester, 'What did the board decide?');
     // While it generates: live progress in the turn, stop in the composer.
-    expect(find.text('Generating on-device…'), findsOneWidget);
-    expect(find.text('3 tokens generated'), findsOneWidget);
+    // One status line: what is happening and the core's token count.
+    expect(find.textContaining('Generating on-device…', findRichText: true),
+        findsOneWidget);
+    expect(find.textContaining('3 tokens generated', findRichText: true),
+        findsOneWidget);
     expect(find.byKey(const ValueKey('composer-cancel')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('composer-cancel')));
     for (var i = 0; i < 5; i++) {
@@ -199,7 +205,7 @@ void main() {
         size: const Size(390, 844), locale: const Locale('ar'));
     await send(tester, 'ما الذي قرره المجلس؟');
     expect(find.byKey(const ValueKey('home-conversation')), findsOneWidget);
-    expect(find.text('محادثة جديدة'), findsOneWidget);
+    expect(find.text('اطرح سؤال متابعة…'), findsOneWidget);
     expect(
         Directionality.of(
             tester.element(find.byKey(const ValueKey('home-conversation')))),

@@ -242,8 +242,16 @@ jobs:
           export AR_aarch64_linux_android="$bin/llvm-ar"
           export CMAKE_TOOLCHAIN_FILE_aarch64_linux_android="$NDK/build/cmake/android.toolchain.cmake"
           export CMAKE_ARGS="-DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-24 -DGGML_OPENMP=OFF"
-          cargo build --manifest-path core/Cargo.toml -p harbor_ffi --release --target aarch64-linux-android
+          # Play requires 16 KB-aligned LOAD segments (Android 15+ targets).
+          export CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS="-C link-arg=-Wl,-z,max-page-size=16384"
+          cargo build --manifest-path core/Cargo.toml -p harbor_ffi -p harbor_worker --release --target aarch64-linux-android
           cp core/target/aarch64-linux-android/release/libharbor_ffi.so apps/harbor_app/android/app/src/main/jniLibs/arm64-v8a/
+          cp core/target/aarch64-linux-android/release/harbor_worker apps/harbor_app/android/app/src/main/jniLibs/arm64-v8a/libharbor_worker.so
+          for so in libharbor_ffi.so libharbor_worker.so; do
+            "$bin/llvm-readelf" -lW "apps/harbor_app/android/app/src/main/jniLibs/arm64-v8a/$so" \
+              | awk '$1=="LOAD" && $NF!="0x4000" && $NF!="0x10000" {bad=1} END {exit bad}' \
+              || { echo "::error::$so is not 16 KB aligned"; exit 1; }
+          done
           cp "$NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so" apps/harbor_app/android/app/src/main/jniLibs/arm64-v8a/
       - name: Pub get
         run: |

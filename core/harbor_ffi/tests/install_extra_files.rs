@@ -70,6 +70,28 @@ fn weights_plus_projector_install_as_one_package() {
         .collect();
     assert_eq!(roles, vec!["weights", "mmproj"]);
 
+    // Streamed install (upgrade plan C14): the manifest hash/size and the
+    // reported byte total match the source files exactly.
+    let src_weights = std::fs::read(&weights).unwrap();
+    let src_proj = std::fs::read(&proj).unwrap();
+    let files = manifest["files"].as_array().unwrap();
+    for (f, src) in files.iter().zip([&src_weights, &src_proj]) {
+        assert_eq!(
+            f["sha256"].as_str().unwrap(),
+            harbor_canonical::sha256_hex(src)
+        );
+        assert_eq!(f["size_bytes"].as_u64().unwrap(), src.len() as u64);
+    }
+    assert_eq!(
+        std::fs::read(pkg.join("stories260K.gguf")).unwrap(),
+        src_weights
+    );
+    assert_eq!(
+        r["result"]["bytes"].as_u64(),
+        Some((src_weights.len() + src_proj.len()) as u64),
+        "{r}"
+    );
+
     // A bad extra file (missing) fails the whole install: nothing half-installed.
     let bad = call(
         h,

@@ -756,3 +756,112 @@ fn worst_case_json(sc: &serde_json::Value) -> String {
         _ => "null".into(),
     }
 }
+
+/// Decision 0022 phase 1, end to end on the real runtime: a process that
+/// dies during its first GPU workload leaves a sentinel; the next process
+/// pins the model to the CPU and still generates.
+#[test]
+fn crash_during_first_gpu_workload_pins_cpu_next_time() {
+    use harbor_inference::resilience::{QualState, RuntimeState};
+    // Child half: load on the GPU; the debug-only fault hook aborts the
+    // process right after the first generated token, inside the workload.
+    if let Ok(root) = std::env::var("HARBOR_CRASH_CHILD_ROOT") {
+        let provider = GgufLlamaCppProvider::new(&root)
+            .unwrap()
+            .with_context_tokens(512);
+        let m = ModelRef::InstalledPackage {
+            package_id: "stories260k".into(),
+        };
+        provider.load(&m).unwrap();
+        assert_eq!(provider.backend_of("stories260k"), Some("gpu"));
+        let never = AtomicBool::new(false);
+        let _ = provider.generate_cancellable(
+            ChatRequest {
+                model: m,
+                messages: vec![JsonValue::object([
+                    ("role", JsonValue::str("user")),
+                    ("content", JsonValue::str("Once upon a time")),
+                ])],
+                max_tokens: 64,
+                temperature: 0.0,
+                requires: vec![],
+                response_schema: None,
+                trace_key: None,
+            },
+            &never,
+            None,
+        );
+        unreachable!("the fault hook aborts the process");
+    }
+    if !cfg!(debug_assertions) {
+        eprintln!("the fault hook exists in debug builds only");
+        return;
+    }
+    if !llama_cpp_2_has_gpu() {
+        eprintln!("no GPU backend in this build/device; nothing to pin");
+        return;
+    }
+    let dir = tempfile::tempdir().unwrap();
+    install_test_model(dir.path());
+    let out = std::process::Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            "crash_during_first_gpu_workload_pins_cpu_next_time",
+            "--test-threads=1",
+        ])
+        .env("HARBOR_CRASH_CHILD_ROOT", dir.path())
+        .env("HARBOR_FAULT_ABORT_AT_TOKEN", "1")
+        .env_remove("HARBOR_GGUF_CPU_ONLY")
+        .output()
+        .unwrap();
+    let child_log =
+        String::from_utf8_lossy(&out.stdout).to_string() + &String::from_utf8_lossy(&out.stderr);
+    let tail: String = child_log
+        .lines()
+        .filter(|l| l.contains("test ") || l.contains("panicked") || l.contains("Err"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(!out.status.success(), "the child must have died: {tail}");
+
+    let provider = GgufLlamaCppProvider::new(dir.path())
+        .unwrap()
+        .with_context_tokens(512);
+    let state = RuntimeState::open(harbor_inference::gguf::runtime_dir_for(dir.path()));
+    assert_eq!(
+        state.recovered().len(),
+        1,
+        "{:?}\nchild: {tail}",
+        state.records()
+    );
+    assert_eq!(state.recovered()[0].state, QualState::Crashed);
+    let m = ModelRef::InstalledPackage {
+        package_id: "stories260k".into(),
+    };
+    provider.load(&m).unwrap();
+    assert_eq!(provider.backend_of("stories260k"), Some("cpu_pinned"));
+    let r = provider
+        .generate(ChatRequest {
+            model: m.clone(),
+            messages: vec![JsonValue::object([
+                ("role", JsonValue::str("user")),
+                ("content", JsonValue::str("Once upon a time")),
+            ])],
+            max_tokens: 8,
+            temperature: 0.0,
+            requires: vec![],
+            response_schema: None,
+            trace_key: None,
+        })
+        .unwrap();
+    assert!(r.usage.completion_tokens > 0);
+    // Reset re-enables the GPU for the next load.
+    assert_eq!(state.reset(None), 1);
+    provider.unload(&m).unwrap();
+    provider.load(&m).unwrap();
+    assert_eq!(provider.backend_of("stories260k"), Some("gpu"));
+}
+
+fn llama_cpp_2_has_gpu() -> bool {
+    std::env::var("HARBOR_GGUF_CPU_ONLY").as_deref() != Ok("1")
+        && harbor_inference::gguf::gpu_backend_present()
+}

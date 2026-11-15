@@ -351,6 +351,13 @@ class HarborLayout {
 
   /// Compact top bar and bottom bar heights.
   static const double topBar = 56;
+
+  /// Answer-first shell: the slim sidebar, open and collapsed to icons.
+  static const double sidebar = 264;
+  static const double sidebarCollapsed = 64;
+
+  /// The centred ask box on an empty Home, and the answer thread column.
+  static const double askMax = 720;
 }
 
 /// Theme access.

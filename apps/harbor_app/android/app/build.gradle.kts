@@ -16,6 +16,7 @@ val hasOperatorKey = keystorePropertiesFile.exists()
 
 plugins {
     id("com.android.application")
+    id("com.google.gms.google-services")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
@@ -31,8 +32,8 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "dev.harbor.harbor_app"
+        // Store identity (Cogniwiss Labs). The Kotlin namespace stays dev.harbor.harbor_app.
+        applicationId = "com.cogniwiss.harborlm"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -61,6 +62,12 @@ android {
     // release workflow asserts the packaged ABI list after the build.
     packaging {
         jniLibs {
+            // Extract native libraries at install (decision 0022 phase 3):
+            // the inference worker launcher ships as lib/arm64-v8a/
+            // libharbor_worker.so and is EXECUTED from the native library
+            // directory, which only exists on disk when libraries are
+            // extracted. Without it the core runs models in-process.
+            useLegacyPackaging = true
             excludes += listOf(
                 "lib/armeabi-v7a/**", "lib/armeabi/**",
                 "lib/x86/**", "lib/x86_64/**",

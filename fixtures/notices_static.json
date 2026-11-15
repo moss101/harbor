@@ -3,8 +3,15 @@
     {
       "title": "Vendored native components",
       "entries": [
-        "llama.cpp (vendored snapshot via llama-cpp-2 0.1.156) — MIT — https://github.com/ggerganov/llama.cpp. Used for on-device GGUF inference.",
-        "ggml (vendored within llama.cpp) — MIT — https://github.com/ggerganov/ggml."
+        "llama.cpp v0.8.0 (commit 8642541b255bfb5dc39cd351a178be09013a55d6, unmodified, vendored in third_party/llama.cpp and pinned by HARBOR_PIN.json; bound by core/harbor_llama_sys + core/harbor_llama) — MIT — © 2023-2026 The ggml authors — https://github.com/ggml-org/llama.cpp. Used for on-device GGUF inference and the mtmd image/audio projectors.",
+        "ggml (vendored within llama.cpp) — MIT — https://github.com/ggml-org/ggml.",
+        "xxHash 0.8.3 (vendored within llama.cpp, vendor/hash; media hashing in mtmd) — BSD-2-Clause — © 2012-2021 Yann Collet — https://github.com/Cyan4973/xxHash.",
+        "SHA-1 in C by Steve Reid and Crypto/Sha256.c by Igor Pavlov (vendored within llama.cpp, vendor/hash) — public domain.",
+        "rotate-bits (vendored within llama.cpp, vendor/hash) — MIT — © 2021 William Casarin.",
+        "nlohmann/json 3.12.0 (vendored within llama.cpp; JSON Schema parsing for structured output) — MIT — © 2013-2025 Niels Lohmann — https://github.com/nlohmann/json.",
+        "stb_image 2.30 (vendored within llama.cpp; image decoding in mtmd) — public domain or MIT — Sean Barrett — https://github.com/nothings/stb.",
+        "miniaudio 0.11.25 (vendored within llama.cpp; audio decoding in mtmd) — public domain or MIT-0 — David Reid — https://github.com/mackron/miniaudio.",
+        "harbor_llama / harbor_llama_sys (core/) are derived from llama-cpp-2 / llama-cpp-sys-2 0.1.156 — MIT OR Apache-2.0 — © Dial AI and the utilityai/llama-cpp-rs contributors — https://github.com/utilityai/llama-cpp-rs."
       ]
     },
     {

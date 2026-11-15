@@ -1,3 +1,9 @@
+> **Superseded (2026-11-03).** The current policy is
+> `apps/harbor_app/assets/privacy/privacy_policy.md`, published at
+> https://harbor-lm.pages.dev/privacy. This RC 1.0 text is kept for the
+> record and is inaccurate for 1.1 (it omits model search, microphone,
+> camera and exported files, and promises an in-app network log UI).
+
 # Harbor — Privacy Statement (release candidate 1.0.0)
 
 ## English

@@ -33,8 +33,8 @@
   },
   "entry": "compose",
   "budgets": {
-    "max_steps": 12,
-    "max_tool_calls": 6,
+    "max_steps": 13,
+    "max_tool_calls": 8,
     "max_context_tokens": 20000
   },
   "nodes": [
@@ -126,6 +126,25 @@
       "out": "/update",
       "max_tokens": 700,
       "max_retries": 1,
+      "next": "dedupe"
+    },
+    {
+      "id": "dedupe",
+      "kind": "tool.call",
+      "description": "Drop items the model repeated within or across sections; a repeat is kept where it is most specific (problems, then plans, then progress).",
+      "tool": "text.dedupe_sections",
+      "args": {
+        "draft": {
+          "$state": "/update"
+        },
+        "sections": [
+          "problems",
+          "plans",
+          "progress"
+        ],
+        "empty_note": "The notes do not cover this."
+      },
+      "out": "/update",
       "next": "ground_progress"
     },
     {

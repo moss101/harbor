@@ -93,10 +93,14 @@ class FakeHarborService extends HarborService {
 
   @override
   Future<Map<String, dynamic>?> suggestSkills(String text,
-      {String? chatPackage}) async {
+      {String? chatPackage, bool hasFile = false}) async {
     calls.add('suggestSkills');
-    return knowledgeOpen ? suggestion : null;
+    return knowledgeOpen ? suggestion : liteSuggestion;
   }
+
+  /// The core's embedder-free route (keywords, then the chat model), used
+  /// when no index is open. Null: the core refused.
+  Map<String, dynamic>? liteSuggestion;
 
   @override
   Future<Map<String, dynamic>?> createRun(String runId) async {
@@ -114,16 +118,18 @@ class FakeHarborService extends HarborService {
   @override
   Future<Map<String, dynamic>> generateAnswer(String question,
       {required String chatPackage,
-      int maxTokens = 256,
+      int maxTokens = 1024,
       String? runId,
       String? collection,
-      String? threadId}) async {
+      String? threadId,
+      bool general = false}) async {
     calls.add('generateAnswer');
     generateArgs.add({
       'question': question,
       'chat_package': chatPackage,
       'collection': collection,
       'thread_id': threadId,
+      'general': general,
     });
     generateRunIds.add(runId);
     final gate = generateGate;

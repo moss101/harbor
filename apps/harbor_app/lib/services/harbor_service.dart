@@ -139,8 +139,10 @@ class HarborService extends ChangeNotifier implements DeckDesignerApi {
   /// The open embedding model has image/audio towers (multimodal package).
   bool knowledgeMultimodal = false;
 
-  /// Which backend serves embeddings: `gpu`, `cpu_fallback` (the device's
-  /// GPU path failed the core's numerics canary) or `cpu_unverified`.
+  /// Which backend serves embeddings: `gpu`, `cpu` (no GPU path),
+  /// `cpu_pinned` (the GPU crashed or failed the canary on an earlier run and
+  /// stays off until re-tested), `cpu_fallback` (the device's GPU path failed
+  /// the core's numerics canary now) or `cpu_unverified`.
   String knowledgeBackend = 'gpu';
 
   /// Media items the last open had to drop because the embedding identity
@@ -703,12 +705,16 @@ class HarborService extends ChangeNotifier implements DeckDesignerApi {
   /// With [threadId] the core supplies the thread's earlier turns to the
   /// model as conversation memory and records this turn in the thread once
   /// it completes (a cancelled or failed turn is never recorded).
+  ///
+  /// [maxTokens] bounds the answer: 256 cut stories, plans and code off
+  /// mid-sentence; a result with `truncated: true` still hit the bound.
   Future<Map<String, dynamic>> generateAnswer(String question,
       {required String chatPackage,
-      int maxTokens = 256,
+      int maxTokens = 1024,
       String? runId,
       String? collection,
-      String? threadId}) async {
+      String? threadId,
+      bool general = false}) async {
     final answer = await _runOp('op.start_generate', {
       'question': question,
       'chat_package': chatPackage,
@@ -716,6 +722,7 @@ class HarborService extends ChangeNotifier implements DeckDesignerApi {
       if (runId != null) 'run_id': runId,
       if (collection != null) 'collection': collection,
       if (threadId != null) 'thread_id': threadId,
+      if (general) 'general': true,
     });
     if (runId != null) await refresh();
     return answer;
@@ -840,6 +847,16 @@ class HarborService extends ChangeNotifier implements DeckDesignerApi {
     }
   }
 
+  /// An answer's text (light Markdown) as a one-column text PDF:
+  /// `data_b64`, `title` (the first heading), `pages` and
+  /// `unsupported_chars` (Arabic, emoji… written as `?`). Throws
+  /// [ffi.HarborCoreException] on an empty text.
+  Future<Map<String, dynamic>> textToPdf(String text, {String? title}) =>
+      _call('convert.text_to_pdf', {
+        'text': text,
+        if (title != null) 'title': title,
+      });
+
   /// Run a graph skill as a cancellable background op (decision 0006).
   /// Artifacts are passed as bytes: this layer holds the user-granted file
   /// handles, the core never sees a path. Returns the run report; a
@@ -909,19 +926,23 @@ class HarborService extends ChangeNotifier implements DeckDesignerApi {
 
   /// Rank the built-in skills for a free-text request. Returns
   /// `{abstained, reason, ranked: [{skill_id, title, score}]}`, or null
-  /// when no embedding index is open or the core refuses. A suggestion
-  /// never starts or authorizes anything.
+  /// when the core refuses. A suggestion never starts or authorizes
+  /// anything.
   ///
-  /// [chatPackage] (the user's currently selected chat model, whichever it
-  /// is) is consulted ONLY to break a tie the embedder cannot; routing
-  /// itself never depends on it.
+  /// With an embedding index, [chatPackage] (the user's selected chat
+  /// model) only breaks ties the embedder cannot. Without one, the core
+  /// picks by keywords and then asks [chatPackage] to choose a skill or
+  /// `none_fit` (answer in chat). [hasFile]: a file is attached, so only
+  /// skills that take one are considered.
   Future<Map<String, dynamic>?> suggestSkills(String text,
-      {String? chatPackage}) async {
-    if (!knowledgeOpen) return null;
+      {String? chatPackage, bool hasFile = false}) async {
+    // No embedding index: the core routes by keywords, then by the chat
+    // model (`router` is "keywords" | "chat" | "undecided" in the result).
     try {
       return await _call('skills.suggest', {
         'text': text,
         if (chatPackage != null) 'chat_package': chatPackage,
+        'has_file': hasFile,
       });
     } on ffi.HarborCoreException {
       return null;
@@ -1116,6 +1137,26 @@ class HarborService extends ChangeNotifier implements DeckDesignerApi {
       'ocr': await one('ocr.status'),
       'speech': await one('speech.status')
     };
+  }
+
+  /// The core's GPU qualification store (decision 0022): each device +
+  /// model + runtime combination, its state (`verifying`, `ok`,
+  /// `qualified`, `canary_failed`, `crashed`) and whether it is pinned to the
+  /// CPU. Never throws: an older core without the op reads as empty.
+  Future<Map<String, dynamic>> runtimeQualification() async {
+    try {
+      return await _call('runtime.qualification', {});
+    } catch (_) {
+      return {'records': <dynamic>[], 'gpu_backend': false};
+    }
+  }
+
+  /// Forget one combination ([id]) or all of them, so the next model load
+  /// tries the GPU again.
+  Future<int> resetRuntimeQualification({String? id}) async {
+    final r =
+        await _call('runtime.qualification_reset', {if (id != null) 'id': id});
+    return (r['removed'] as num?)?.toInt() ?? 0;
   }
 
   Future<Map<String, dynamic>> listDiagnostics({int limit = 50}) =>
