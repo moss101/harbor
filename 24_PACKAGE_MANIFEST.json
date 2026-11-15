@@ -4,8 +4,8 @@
   "date": "2026-09-12",
   "authority_status": "Corrected specification; product qualification remains evidence-blocked",
   "validator_version": "harbor-dossier-validator/1.0.0",
-  "input_manifest_sha256": "55fc2cc3b34786fc3bf9daa787a4eca41a1471834634d7a61d14471ebcc892f3",
-  "file_count_excluding_manifest": 2301,
+  "input_manifest_sha256": "50d6fe5f4b1db2af1ae049c0baaa381e776822d263fe8cc7108614073bd355e4",
+  "file_count_excluding_manifest": 2311,
   "files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -124,13 +124,33 @@
     },
     {
       "path": "19_Structural_Validation.json",
-      "bytes": 432762,
-      "sha256": "e85327a979e50008bcc1b176c321933f895344dcaf9a66752ef1f061ca9e19fc"
+      "bytes": 433718,
+      "sha256": "8d0f5724682bedfcf2658de91af016d7d0285fb044ab6109d36160457879fdf0"
+    },
+    {
+      "path": "19_Structural_Validation.json",
+      "bytes": 433718,
+      "sha256": "8d0f5724682bedfcf2658de91af016d7d0285fb044ab6109d36160457879fdf0"
+    },
+    {
+      "path": "19_Structural_Validation.json",
+      "bytes": 433718,
+      "sha256": "8d0f5724682bedfcf2658de91af016d7d0285fb044ab6109d36160457879fdf0"
     },
     {
       "path": "20_Readiness_Validation_Report.md",
       "bytes": 1375,
-      "sha256": "17f414aee7a5ea2e1014a75b7a064d774bb329134874e5e045a903f26e5d6fa2"
+      "sha256": "38c327a52ac9a8586f3a296efa1fbe6d74d05e47da4a92026788d2fcf0b42c91"
+    },
+    {
+      "path": "20_Readiness_Validation_Report.md",
+      "bytes": 1375,
+      "sha256": "38c327a52ac9a8586f3a296efa1fbe6d74d05e47da4a92026788d2fcf0b42c91"
+    },
+    {
+      "path": "20_Readiness_Validation_Report.md",
+      "bytes": 1375,
+      "sha256": "38c327a52ac9a8586f3a296efa1fbe6d74d05e47da4a92026788d2fcf0b42c91"
     },
     {
       "path": "21_Office_Feature_Matrix.csv",
@@ -1989,8 +2009,8 @@
     },
     {
       "path": "core/.cargo/audit.toml",
-      "bytes": 1205,
-      "sha256": "4fa1242afa37d6193fcfefdd3f96645558469d41ec1027dfca29175566b1f828"
+      "bytes": 1103,
+      "sha256": "04107ffd8e4f4272f0e707c8657b2dc9c574f6f21c1b8d418ebf0678213cc8d9"
     },
     {
       "path": "core/.cargo/config.toml",
@@ -1999,18 +2019,28 @@
     },
     {
       "path": "core/Cargo.lock",
-      "bytes": 97864,
-      "sha256": "c25c5818ddfd2cd4453a2e8bbf6949e6b7ace34c2516881940d2b7dca8dca6c4"
+      "bytes": 90618,
+      "sha256": "54a27d3fa5599b26544c5a8a5ba5e69bee362c7f1777075e54a0cdd1b8ae7aa9"
+    },
+    {
+      "path": "core/Cargo.lock",
+      "bytes": 90618,
+      "sha256": "54a27d3fa5599b26544c5a8a5ba5e69bee362c7f1777075e54a0cdd1b8ae7aa9"
+    },
+    {
+      "path": "core/Cargo.lock",
+      "bytes": 90618,
+      "sha256": "54a27d3fa5599b26544c5a8a5ba5e69bee362c7f1777075e54a0cdd1b8ae7aa9"
     },
     {
       "path": "core/Cargo.toml",
-      "bytes": 2406,
-      "sha256": "4c6adca48eb7a947908140ad05b5d812b09d2872166cb0d31b8b652928715d59"
+      "bytes": 2967,
+      "sha256": "73caee4db924d4202ddd10c0b92669fff1d3f2f78c7e500e352a78c060afffcd"
     },
     {
       "path": "core/deny.toml",
-      "bytes": 7173,
-      "sha256": "02e053a7ba8b3b852839f0147b81688afdb21e94a9f0f8098350bda6e9145b53"
+      "bytes": 6549,
+      "sha256": "325b155005887c235d33857ae4204adf5b71363e872455d5e5aca4b37718de42"
     },
     {
       "path": "core/fuzz/.gitignore",
@@ -2019,8 +2049,18 @@
     },
     {
       "path": "core/fuzz/Cargo.lock",
-      "bytes": 97205,
-      "sha256": "e61e963147219abd95950eb32dcd990a3672952a800e36a0e237027f09ce440c"
+      "bytes": 89969,
+      "sha256": "d8d4d3543921f7c6dc27635da550ed1cd79907849ed3d249f38429a6f9912509"
+    },
+    {
+      "path": "core/fuzz/Cargo.lock",
+      "bytes": 89969,
+      "sha256": "d8d4d3543921f7c6dc27635da550ed1cd79907849ed3d249f38429a6f9912509"
+    },
+    {
+      "path": "core/fuzz/Cargo.lock",
+      "bytes": 89969,
+      "sha256": "d8d4d3543921f7c6dc27635da550ed1cd79907849ed3d249f38429a6f9912509"
     },
     {
       "path": "core/fuzz/Cargo.toml",
@@ -3174,8 +3214,8 @@
     },
     {
       "path": "core/harbor_formula/Cargo.toml",
-      "bytes": 462,
-      "sha256": "bc8118b42aa5798de5a4627467f72184311f42750f92339f3e852476813f703f"
+      "bytes": 502,
+      "sha256": "a438dc372e480e45eb6b816fcc56010ef019a2ada5101c167694e1f3d634f0af"
     },
     {
       "path": "core/harbor_formula/examples/probe_cases.rs",
@@ -3339,8 +3379,8 @@
     },
     {
       "path": "core/harbor_inference/tests/eog_stop.rs",
-      "bytes": 5459,
-      "sha256": "55c4c8af7f99421a461ef4f0c8ef3731747944e5daa12e6c78ced7ee789eaedb"
+      "bytes": 5470,
+      "sha256": "baa7accc96d16d0b7b28ce124abb2632dc0cc50a7e27d42d86490838fe0b70bd"
     },
     {
       "path": "core/harbor_inference/tests/gguf_provider.rs",
@@ -3734,8 +3774,8 @@
     },
     {
       "path": "core/harbor_render/src/pdf_out.rs",
-      "bytes": 20853,
-      "sha256": "e0b1802de57fc406699b379a39882c8bbe8b3885727922d9ec7ab4a953e48721"
+      "bytes": 20844,
+      "sha256": "4e1a4baf85bc46a48309ad76542d7dcf273c500b6c95543c798eb63bd58399f0"
     },
     {
       "path": "core/harbor_render/src/preview.rs",
@@ -3784,8 +3824,8 @@
     },
     {
       "path": "core/harbor_render/src/slides/text.rs",
-      "bytes": 23945,
-      "sha256": "f2c7bc3d32e9cc9a48be9070e6960f2a261c409b08ca0601e12993721c27ab6a"
+      "bytes": 23912,
+      "sha256": "c6ce8b6987f18669aa75a13048aa23b5d70f04e584488095f8b29bdb44b65925"
     },
     {
       "path": "core/harbor_render/tests/chart_roundtrip.rs",
@@ -3979,8 +4019,8 @@
     },
     {
       "path": "docs/decisions/0001-formula-engine-pin.md",
-      "bytes": 6423,
-      "sha256": "fffd453be652e4dd7be825c13e8b47506f4e881453b9375673bf0878f095b79e"
+      "bytes": 8191,
+      "sha256": "3ac87243f5b46080c1df284aee9d358c121276f15b5d7b75a1b996c25d9d4f7f"
     },
     {
       "path": "docs/decisions/0002-llama-cpp-runtime-pin.md",
@@ -4119,8 +4159,18 @@
     },
     {
       "path": "docs/release/THIRD_PARTY_NOTICES.md",
-      "bytes": 38150,
-      "sha256": "f793ff1291721e7fb4be6363e637448b954a5b7cf926505e423c323944e2abe4"
+      "bytes": 35494,
+      "sha256": "63ff8e44b66e51fc9366856e91a65c122c72e58a38b7493ae055760382ba5ade"
+    },
+    {
+      "path": "docs/release/THIRD_PARTY_NOTICES.md",
+      "bytes": 35494,
+      "sha256": "63ff8e44b66e51fc9366856e91a65c122c72e58a38b7493ae055760382ba5ade"
+    },
+    {
+      "path": "docs/release/THIRD_PARTY_NOTICES.md",
+      "bytes": 35494,
+      "sha256": "63ff8e44b66e51fc9366856e91a65c122c72e58a38b7493ae055760382ba5ade"
     },
     {
       "path": "docs/release/closeout_runbook.md",
@@ -5415,12 +5465,12 @@
     {
       "path": "third_party/formualizer-eval/Cargo.toml",
       "bytes": 4915,
-      "sha256": "f49cc1723920b00b81f6a713af9afd8383d2630138b9d3411cceb0d89d377ee1"
+      "sha256": "b6a582813e55431f7fd27ac3d47da2857ae39a4579684fa4386ae55cb4c8e935"
     },
     {
       "path": "third_party/formualizer-eval/Cargo.toml.orig",
       "bytes": 4882,
-      "sha256": "cc1f34ce5cf0c44ecd6fc574b8e9c63ce97838f67eec1ecd4fd45db5980c9f44"
+      "sha256": "864ff7d23c5d1ca2d503db916783377eddff7e377937d51f0f77ca31ecbc2ad6"
     },
     {
       "path": "third_party/formualizer-eval/LICENSE-APACHE",

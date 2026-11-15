@@ -51,7 +51,7 @@ hex = "0.4"
 thiserror = "2"
 ureq = { version = "2", default-features = false, features = ["tls", "gzip"] }
 url = "2"
-rusqlite = { version = "0.37", features = ["bundled", "hooks"] }
+rusqlite = { version = "0.43", features = ["bundled", "hooks"] }
 chacha20poly1305 = "0.10"
 argon2 = "0.5"
 rand = "0.8"
@@ -60,7 +60,13 @@ rand_core = { version = "0.6", features = ["getrandom"] }
 zeroize = { version = "1", features = ["zeroize_derive"] }
 uuid = { version = "1", features = ["v4"] }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
-formualizer = { version = "0.9", features = ["umya"] }
+# Default features off: the default `xlsx-recalc` pulls in calamine, which
+# Harbor never calls (RUSTSEC-2026-0436; decision 0001 addendum 4).
+# `system-clock` (a default) is enabled on formualizer-eval directly: going
+# through formualizer's weak `formualizer-sheetport?/system-clock` would keep
+# sheetport-spec/serde_yaml in Cargo.lock even though nothing builds it.
+formualizer = { version = "0.9", default-features = false, features = ["eval", "workbook", "parse", "common", "umya"] }
+formualizer-eval = { version = "0.9", features = ["system-clock"] }
 umya-spreadsheet = "3.1"
 zip = { version = "4", default-features = false, features = ["deflate"] }
 roxmltree = "0.21"
@@ -74,6 +80,7 @@ strip = "debuginfo"
 
 # HARBOR PATCH (decision 0001 addendum): formualizer-eval 0.9.3 with the
 # TEXT percent deviation fixed (txt-text-2). Everything else is the exact
-# crates.io source; the patched tree is pinned by tools/pin_engine.py.
+# crates.io source (plus arrow 59 -> 60 for RUSTSEC-2026-0442, addendum 4);
+# the patched tree is pinned by tools/pin_engine.py.
 [patch.crates-io]
 formualizer-eval = { path = "../third_party/formualizer-eval" }

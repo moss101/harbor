@@ -479,7 +479,7 @@ mod tests {
         };
         let pdf = write_text_pdf("t", &[title, body("one"), body("two"), body("three")]);
         let ys = line_ys(&pdf);
-        assert_eq!(ys.len() >= 4, true, "{ys:?}");
+        assert!(ys.len() >= 4, "{ys:?}");
         let step = 10.5 + LINE_GAP; // consecutive lines of one paragraph
                                     // Under the title: closer than a paragraph gap; between paragraphs:
                                     // clearly more than a plain line step.

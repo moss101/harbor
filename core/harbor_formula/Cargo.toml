@@ -8,6 +8,7 @@ publish.workspace = true
 [dependencies]
 harbor_canonical = { workspace = true }
 formualizer = { workspace = true, features = ["umya"] }
+formualizer-eval = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

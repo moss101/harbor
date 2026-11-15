@@ -118,22 +118,22 @@ harness = false
 required-features = ["test-support"]
 
 [dependencies.arrow]
-version = "59.2.0"
+version = "60.1.0"
 
 [dependencies.arrow-array]
-version = "59.2.0"
+version = "60.1.0"
 
 [dependencies.arrow-buffer]
-version = "59.2.0"
+version = "60.1.0"
 
 [dependencies.arrow-cast]
-version = "59.2.0"
+version = "60.1.0"
 
 [dependencies.arrow-schema]
-version = "59.2.0"
+version = "60.1.0"
 
 [dependencies.arrow-select]
-version = "59.2.0"
+version = "60.1.0"
 
 [dependencies.bitflags]
 version = "2.9.1"
